@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Apply EnsureFrontendRequestsAreStateful specifically to the api group
         $middleware->api(append: [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -33,6 +33,11 @@
 
 <head>
     <script>
+    function handlePopState(event) {
+        // This is a placeholder function to prevent the "handlePopState is not defined" error.
+        // You can add your own logic here to handle popstate events if needed.
+        console.log('popstate event:', event);
+    }
     </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -334,8 +339,10 @@
             async toggleUpvote() {
                 if (this.isLoading) return;
 
+                console.log('isAuthenticated:', this.isAuthenticated);
                 if (!this.isAuthenticated) {
-                    window.dispatchEvent(new CustomEvent('open-modal', { detail: 'login-required-modal' }));
+                    console.log('User not authenticated, dispatching open-modal event.');
+                    window.dispatchEvent(new CustomEvent('open-modal', { detail: { name: 'login-required-modal' } }));
                     return;
                 }
 
@@ -346,6 +353,7 @@
                 const url = `/api/products/${productSlug}/upvote`;
 
                 try {
+                    console.log('Making API call:', method, url);
                     const response = await fetch(url, {
                         method: method,
                         headers: {
@@ -355,8 +363,10 @@
                         },
                         credentials: 'include',
                     });
+                    console.log('API response status:', response.status);
 
                     const data = await response.json();
+                    console.log('API response data:', data);
 
                     if (response.ok) {
                         this.isUpvoted = !this.isUpvoted;
@@ -374,6 +384,7 @@
                 } finally {
                     this.isLoading = false;
                     if (this.errorMessage) {
+                        console.error('Upvote error:', this.errorMessage);
                         setTimeout(() => this.errorMessage = '', 3000);
                     }
                 }
