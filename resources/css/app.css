@@ -1,0 +1,98 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap'); */ /* Removed: Font is now loaded dynamically via app.blade.php */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Force light theme for Flowbite Datepicker */
+.force-light-theme .datepicker-picker {
+    background-color: white !important;
+    color: #828282 !important; /* Equivalent to text-gray-600 */
+    /* border: 1px solid #e5e7eb !important; */ /* Border was commented out, keeping it so */
+    box-shadow: none !important; /* Ensure no shadow on the picker itself */
+}
+
+.force-light-theme .datepicker-picker span, /* For day names like Mon, Tue */
+.force-light-theme .datepicker-picker th, /* For table headers if any */
+.force-light-theme .datepicker-picker td { /* For date cells */
+    color: rgb(125, 125, 125) !important; /* Equivalent to text-gray-600 */
+}
+
+.force-light-theme .datepicker-picker .datepicker-cell.selected,
+.force-light-theme .datepicker-picker .datepicker-cell.selected:hover,
+.force-light-theme .datepicker-picker .datepicker-cell.focused,
+.force-light-theme .datepicker-picker .datepicker-cell.focused:hover {
+    background-color: lightgray !important; /* Equivalent to bg-blue-500 */
+    color: black !important;
+}
+
+.force-light-theme .datepicker-picker .datepicker-cell:hover:not(.selected):not(.disabled) {
+    background-color: #f3f4f6 !important; /* Equivalent to bg-gray-100 */
+}
+
+.force-light-theme .datepicker-picker .datepicker-cell.disabled,
+.force-light-theme .datepicker-picker .datepicker-cell.disabled:hover {
+    color: #d5d5d5 !important; /* Equivalent to text-gray-500, for disabled dates */
+}
+
+/* Override dark mode specific selectors if known, e.g., from browser inspection */
+/* Example:
+.dark .force-light-theme .datepicker-picker span {
+    color: #1f2937 !important;
+}
+*/
+
+/* Targeting datepicker controls */
+.force-light-theme .datepicker-controls .view-switch {
+    color: #4B5563 !important; /* text-gray-600 for Month Year display */
+    background-color: transparent !important;
+}
+.force-light-theme .datepicker-controls .view-switch:hover {
+    background-color: #f3f4f6 !important; /* bg-gray-100 */
+    color: #4B5563 !important; /* text-gray-600 for hover, or a slightly darker gray if preferred e.g., #374151 (text-gray-700) */
+}
+
+/* Specifically for prev/next arrow buttons */
+.force-light-theme .datepicker-controls .prev-btn,
+.force-light-theme .datepicker-controls .next-btn {
+    background-color: transparent !important;
+    color: #4B5563 !important; /* text-gray-600, for currentColor SVG inheritance */
+}
+
+.force-light-theme .datepicker-controls .prev-btn:hover,
+.force-light-theme .datepicker-controls .next-btn:hover {
+    background-color: #e5e7eb !important; /* bg-gray-200 for button hover */
+    color: #4B5563 !important; /* text-gray-600 for hover, or a slightly darker gray */
+}
+
+/* Ensure SVGs within prev/next buttons are text-gray-600 equivalent */
+.force-light-theme .datepicker-controls .prev-btn svg,
+.force-light-theme .datepicker-controls .next-btn svg {
+    fill: rgb(231, 231, 231) !important; /* text-gray-600 */
+    stroke: lightgray !important; /* text-gray-600 */
+}
+
+/* Target common SVG shapes within those buttons for good measure */
+.force-light-theme .datepicker-controls .prev-btn svg *,
+.force-light-theme .datepicker-controls .next-btn svg * {
+    fill: inherit !important;  /* Inherit from parent SVG's fill */
+    stroke: inherit !important; /* Inherit from parent SVG's stroke */
+}
+
+/* If the above isn't enough, try targeting specific shape types if known */
+/*
+.force-light-theme .datepicker-controls .prev-btn svg path,
+.force-light-theme .datepicker-controls .next-btn svg path,
+.force-light-theme .datepicker-controls .prev-btn svg line,
+.force-light-theme .datepicker-controls .next-btn svg line {
+    fill: #1f2937 !important;
+    stroke: #1f2937 !important;
+}
+*/
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
