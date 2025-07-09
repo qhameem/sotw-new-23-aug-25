@@ -1,57 +1,10 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
     x-data="{
         searchModalOpen: false,
         open: false, // For mobile navigation
-        isProductModalOpen: false,
-        selectedProduct: null,
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
-
-        openProductModal(product) {
-            console.log('openProductModal called with:', product);
-            if (!product || !product.slug) {
-                console.error('Product data or slug is missing for modal.', product);
-                return;
-            }
-            this.selectedProduct = product;
-            this.isProductModalOpen = true;
-            document.body.style.overflow = 'hidden';
-            const productUrl = `/product/${product.slug}`;
-            history.pushState({ productSlug: product.slug }, product.name, productUrl);
-            this.$nextTick(() => { // Ensure title is updated after state change
-                document.title = `${product.name} | Software on the web`;
-            });
-        },
-
-        closeProductModal() {
-            this.isProductModalOpen = false;
-            this.selectedProduct = null;
-            document.body.style.overflow = '';
-            history.pushState({}, 'Software on the web', this.initialPath); // Revert to initial path
-            document.title = 'Software on the web'; // Revert title
-        },
-        
-        handlePopState(event) {
-            const path = window.location.pathname;
-            const productSlugMatch = path.match(/^\/product\/([a-zA-Z0-9-]+)$/);
-            if (productSlugMatch && productSlugMatch[1]) {
-                const slug = productSlugMatch[1];
-                if (!this.isProductModalOpen || (this.selectedProduct && this.selectedProduct.slug !== slug)) {
-                    console.log('Popstate to product URL, would need to fetch product data for slug:', slug);
-                    if (this.isProductModalOpen && this.selectedProduct && this.selectedProduct.slug !== slug) {
-                        this.closeProductModal();
-                    } else if (!this.isProductModalOpen) {
-                        // Let dedicated page render
-                    }
-                }
-            } else {
-                if (this.isProductModalOpen) {
-                    this.closeProductModal();
-                }
-                document.title = 'Software on the web';
-            }
-        }
     }"
     x-init="() => {
         window.addEventListener('popstate', handlePopState.bind($data));
@@ -62,7 +15,6 @@
             console.log('Initial load on product page:', initialProductSlugMatch[1]);
         }
     }"
-    @open-product-modal.window="openProductModal($event.detail)"
     @open-search-modal.window="searchModalOpen = true; $nextTick(() => document.getElementById('globalSearchInput')?.focus())"
     @close-search-modal-from-js.window="searchModalOpen = false"
     @open-login-modal.window="
@@ -77,7 +29,7 @@
             $dispatch('open-modal', { name: 'login-required-modal' });
         });
     "
-    x-on:livewire:navigating.window="searchModalOpen = false; isProductModalOpen = false; if(typeof closeProductModal === 'function') closeProductModal();">
+    x-on:livewire:navigating.window="searchModalOpen = false; if(typeof closeProductModal === 'function') closeProductModal();">
 
 <head>
     <script>
@@ -93,11 +45,9 @@
         }
         $metaTag = \App\Models\PageMetaTag::where('path', $currentPath)->first();
         $metaDescription = $metaTag ? $metaTag->description : config('app.description', 'Default meta description for Software on the Web.'); // Fallback to a default
-
         // Dynamic Title Logic
         $siteNameBase = "Software on the web";
         $finalTitle = '';
-
         // Priority 1: A specific $title variable passed from the controller.
         if (isset($title) && !empty(trim($title))) {
             $finalTitle = trim($title);
@@ -135,7 +85,6 @@
                 $finalTitle = $contentTitle . " | " . $siteNameBase;
             }
         }
-
         // Final clean-up
         if (empty(trim($finalTitle)) || str_starts_with(trim($finalTitle), "| " . $siteNameBase)) {
             $finalTitle = $siteNameBase;
@@ -321,8 +270,7 @@
                                     const fullProductData = searchResults.find(p => p.id === product.id);
                                     console.log('Found product data:', fullProductData);
                                     if(fullProductData && fullProductData.slug) {
-                                        window.dispatchEvent(new CustomEvent('open-product-modal', { detail: fullProductData }));
-                                        window.dispatchEvent(new CustomEvent('close-search-modal-from-js'));
+                                        window.location.href = `/product/${fullProductData.slug}`;
                                     } else {
                                         console.error('Could not find full product data or slug for:', product, fullProductData);
                                     }
@@ -356,122 +304,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     @stack('scripts')
-
-    <!-- Product Details Modal -->
-    <div x-show="isProductModalOpen"
-         x-transition:enter="ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900 bg-opacity-75"
-         @keydown.escape.window="closeProductModal()"
-         x-cloak>
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 md:p-8"
-             @click.outside="closeProductModal()">
-            <template x-if="selectedProduct">
-                <div>
-                    <div class="flex items-start mb-6">
-                        {{-- Logo on the left --}}
-                        <div class="mr-4 flex-shrink-0">
-                            <template x-if="selectedProduct.logo">
-                                <img :src="selectedProduct.logo.startsWith('http') ? selectedProduct.logo : `/storage/${selectedProduct.logo}`"
-                                     :alt="selectedProduct.name + ' logo'"
-                                     class="w-16 h-16 md:w-16 md:h-16 object-contain rounded-lg">
-                            </template>
-                            <template x-if="!selectedProduct.logo && selectedProduct.link">
-                                <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(selectedProduct.link)}`"
-                                     :alt="selectedProduct.name + ' favicon'"
-                                     class="w-16 h-16 md:w-20 md:h-20 object-contain rounded-lg">
-                            </template>
-                            <template x-if="!selectedProduct.logo && !selectedProduct.link">
-                                <div class="w-16 h-16 md:w-20 md:h-20 bg-gray-200  rounded-lg flex items-center justify-center">
-                                    <svg class="w-10 h-10 text-gray-400 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                </div>
-                            </template>
-                        </div>
-                        {{-- Name and Tagline --}}
-                        <div class="flex-grow">
-                            <h2 class="text-lg md:text-lg font-semibold text-gray-900 " x-text="selectedProduct.name"></h2>
-                            <p class="text-gray-800 text-base" x-text="selectedProduct.tagline"></p>
-                        </div>
-                        {{-- Close Button --}}
-                        <button @click="closeProductModal()" class="text-gray-400  hover:text-gray-600  ml-4 flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="prose max-w-none text-sm mb-6">
-                        <p x-html="selectedProduct.description || 'No description available.'"></p>
-                    </div>
-                    
-                    {{-- Software Categories (excluding Pricing) --}}
-                    <div class="mb-6" x-show="selectedProduct.categories && selectedProduct.categories.filter(cat => !cat.types || !cat.types.some(t => t.name === 'Pricing')).length > 0">
-                        <h3 class="text-sm font-medium text-gray-800 mb-2">Categories</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <template x-for="category in selectedProduct.categories.filter(cat => !cat.types || !cat.types.some(t => t.name === 'Pricing'))" :key="category.id">
-                                <span class="text-gray-700 text-xs" x-text="category.name"></span>
-                            </template>
-                        </div>
-                    </div>
-
-                    {{-- Pricing Categories --}}
-                    <div class="mb-6" x-show="selectedProduct.categories && selectedProduct.categories.some(cat => cat.types && cat.types.some(t => t.name === 'Pricing'))">
-                        <h3 class="text-sm font-medium text-gray-800  mb-2">Pricing model</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <template x-for="category in selectedProduct.categories.filter(cat => cat.types && cat.types.some(t => t.name === 'Pricing'))" :key="category.id">
-                                <span class="bg-gray-100  text-gray-700  px-3 py-1 text-xs rounded-sm" x-text="category.name"></span>
-                            </template>
-                        </div>
-                    </div>
-
-                    {{-- Pricing Information (direct fields) --}}
-                    <div class="mb-6" x-show="selectedProduct.pricing_type || (selectedProduct.price && Number(selectedProduct.price) > 0)">
-                        <h3 class="text-md font-semibold text-gray-800  mb-2">Pricing Information:</h3>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <span class="text-gray-700  text-sm">
-                                <template x-if="selectedProduct.pricing_type">
-                                    <span x-text="selectedProduct.pricing_type"></span>
-                                </template>
-                                <template x-if="selectedProduct.pricing_type && selectedProduct.price && Number(selectedProduct.price) > 0">
-                                    <span> - </span>
-                                </template>
-                                <template x-if="selectedProduct.price && Number(selectedProduct.price) > 0">
-                                    <span x-text="`$${Number(selectedProduct.price).toFixed(2)}`"></span>
-                                </template>
-                            </span>
-                        </div>
-                    </div>
-                    
-                    {{-- Fallback if no specific information is available --}}
-                    <template x-if="
-                        !(selectedProduct.categories && selectedProduct.categories.filter(cat => !cat.types || !cat.types.some(t => t.name === 'Pricing')).length > 0) &&
-                        !(selectedProduct.categories && selectedProduct.categories.some(cat => cat.types && cat.types.some(t => t.name === 'Pricing'))) &&
-                        !(selectedProduct.pricing_type || (selectedProduct.price && Number(selectedProduct.price) > 0))
-                    ">
-                         <p class="text-gray-500  italic mb-6">No category or pricing information available.</p>
-                    </template>
-                    
-                    <div class="mt-8 flex justify-end space-x-3">
-                         <a :href="selectedProduct.link + (new URL(selectedProduct.link).search ? '&' : '?') + 'utm_source=softwareontheweb.com'"
-                           target="_blank" rel="noopener nofollow"
-                           class="inline-flex items-center px-4 py-2 bg-primary-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-primary-600 active:bg-primary-700 focus:outline-none focus:border-primary-700 focus:ring ring-primary-300 disabled:opacity-25 transition ease-in-out duration-150">
-                            Visit Product Page
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                        <button @click="closeProductModal()" type="button" class="px-4 py-2 text-sm font-medium text-gray-700  bg-white  border border-gray-300  rounded-md shadow-sm hover:bg-gray-50  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500  ">
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </template>
-        </div>
-    </div>
 
     <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
         @include('auth.partials.login-modal-content')

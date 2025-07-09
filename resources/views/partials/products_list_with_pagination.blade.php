@@ -93,13 +93,7 @@
     @endphp
     <article class="p-4 flex items-center gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
              x-data='{}'
-             @if($isPromoted || $product->is_premium)
-                @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com', '_blank')"
-             @else
-                @click="if (!$event.target.closest('.upvote-control-wrapper, a')) {
-                    $dispatch('open-product-modal', {{ json_encode($alpineProducts->firstWhere('id', $product->id)) }})
-                }"
-             @endif
+             @click="window.location.href = '{{ route('products.show', $product->slug) }}'"
     >
         <span class="text-xs text-gray-500">{{ $baseNumber + $loop->index }}.</span>
         <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
@@ -134,7 +128,7 @@
                     </a>
                  @if(!$loop->last)
                     <span class="text-gray-400">•</span>
-                @endif
+                 @endif
                 @endforeach
             </div>
 
