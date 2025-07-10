@@ -19,7 +19,7 @@
                             });
                     }
                 }" x-init="$watch('searchFocused', value => $dispatch('search-focus-changed', value))" @click.away="searchFocused = false">
-                <input @input.debounce.300ms="search()" x-model="query" @focus="searchFocused = true" x-ref="searchInput" type="text" placeholder="Search software" class="w-3/4 pl-8 pr-8 py-1 text-sm text-gray-800 placeholder-gray-600 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                <input @input.debounce.300ms="search()" x-model="query" @focus="searchFocused = true" x-ref="searchInput" type="text" placeholder="Search software" class="w-auto pl-8 pr-8 py-1 text-sm text-gray-800 placeholder-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-500 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-gray-600"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </div>
