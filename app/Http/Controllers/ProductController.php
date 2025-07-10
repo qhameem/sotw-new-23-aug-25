@@ -879,6 +879,7 @@ class ProductController extends Controller
         if (!$product->approved || !$product->is_published) {
             abort(404);
         }
-        return view('products.show', compact('product'));
+        $title = $product->name; // Set the title variable for the layout
+        return view('products.show', compact('product', 'title'));
     }
 }

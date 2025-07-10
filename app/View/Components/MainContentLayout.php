@@ -12,9 +12,12 @@ class MainContentLayout extends Component
      * Create a new component instance.
      */
     public $hideSidebar;
-    public function __construct($hideSidebar = false)
+    public $mainContentMaxWidth;
+
+    public function __construct($hideSidebar = false, $mainContentMaxWidth = 'max-w-2xl')
     {
         $this->hideSidebar = $hideSidebar;
+        $this->mainContentMaxWidth = $mainContentMaxWidth;
     }
 
     /**

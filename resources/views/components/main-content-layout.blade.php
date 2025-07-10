@@ -5,7 +5,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 w-full @if(isset($hideSidebar) && $hideSidebar) max-w-full @else max-w-2xl @endif no-scrollbar order-1 md:order-2">
+    <main class="flex-1 w-full {{ $mainContentMaxWidth }} no-scrollbar order-1 md:order-2">
         <x-page-header>
             <x-slot:title>
                 {{ $title }}

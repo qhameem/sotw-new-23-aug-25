@@ -69,4 +69,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserProductUpvote::class);
     }
+    public function avatar()
+    {
+        if ($this->google_avatar) {
+            return $this->google_avatar;
+        }
+
+        $hash = md5(strtolower(trim($this->email)));
+        return "https://www.gravatar.com/avatar/$hash?d=mp";
+    }
 }

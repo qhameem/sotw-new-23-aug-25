@@ -186,7 +186,7 @@
       data-login-url="{{ route('login') }}"
       data-csrf-token="{{ csrf_token() }}">
 
-    <x-main-content-layout :hide-sidebar="$hideSidebar ?? false" :full-width="$fullWidth ?? false">
+    <x-main-content-layout :hide-sidebar="$hideSidebar ?? false" :main-content-max-width="$mainContentMaxWidth ?? 'max-w-2xl'">
         <x-slot:title>
             @yield('title')
         </x-slot:title>
