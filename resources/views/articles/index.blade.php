@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title')
+@section('title', 'Articles | Software on the Web')
+
+@section('header-title')
     <h1 class="text-xl font-bold text-gray-800">{{ __('Articles') }}</h1>
 @endsection
 
@@ -14,7 +16,7 @@
 @endsection
 
 @section('content')
-    <div class="p-4">
+    <div>
         @if($posts->isNotEmpty())
             @foreach($posts as $post)
                 @include('articles.partials._post_card', ['post' => $post])

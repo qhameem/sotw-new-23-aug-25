@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title')
+@section('title', 'Promote your software | Software on the Web')
+
+@section('header-title')
 <h2 class="text-base font-semibold py-[3px] hidden md:block">Promote your software</h2>
 @endsection
 

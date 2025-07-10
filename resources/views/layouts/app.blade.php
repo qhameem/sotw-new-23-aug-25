@@ -97,7 +97,7 @@
     @endphp
     <meta name="description" content="{{ $metaDescription }}">
 
-    <title>{{ $finalTitle }}</title>
+    <title>@yield('title', $finalTitle)</title>
 
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,9 +186,9 @@
       data-login-url="{{ route('login') }}"
       data-csrf-token="{{ csrf_token() }}">
 
-    <x-main-content-layout :hide-sidebar="$hideSidebar ?? false" :main-content-max-width="$mainContentMaxWidth ?? 'max-w-2xl'">
+    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'">
         <x-slot:title>
-            @yield('title')
+            @yield('header-title', View::getSection('title'))
         </x-slot:title>
         <x-slot:actions>
             @yield('actions')

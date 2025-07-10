@@ -8,11 +8,13 @@
     <main class="flex-1 w-full {{ $mainContentMaxWidth }} no-scrollbar order-1 md:order-2">
         <x-page-header>
             <x-slot:title>
-                {{ $title }}
+                {!! $title !!}
             </x-slot:title>
-            <x-slot:actions>
-                {{ $actions }}
-            </x-slot:actions>
+            @if (isset($actions))
+                <x-slot:actions>
+                    {{ $actions }}
+                </x-slot:actions>
+            @endif
         </x-page-header>
         <div >
             {{ $slot }}
@@ -20,14 +22,12 @@
     </main>
 
     <!-- Right Sidebar -->
-    <div class="hidden md:flex md:flex-col @if(!$hideSidebar) md:w-96 @else md:w-auto @endif md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-gray-200 flex-shrink-0 order-2 md:order-3">
+    <div class="hidden md:flex md:flex-col md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-gray-200 flex-shrink-0 order-2 md:order-3">
         <x-right-sidebar-header />
-        @if(!$hideSidebar)
-            @if(!request()->is('admin/*'))
-                <div class="flex-grow overflow-y-auto scrollbar-hide">
-                    @include('partials._right-sidebar')
-                </div>
-            @endif
+        @if(!request()->is('admin/*'))
+            <div class="flex-grow overflow-y-auto scrollbar-hide">
+                @include('partials._right-sidebar')
+            </div>
         @endif
     </div>
 

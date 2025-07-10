@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title')
+@section('title', 'Top Software Products | Software on the Web')
+
+@section('header-title')
     @if(isset($isCategoryPage) && $isCategoryPage)
         <div>
             <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
