@@ -98,7 +98,7 @@
                     <ul class="space-y-2">
                         <template x-for="product in results.products" :key="product.id">
                             <li>
-                                <div @click="$dispatch('open-product-modal', product)" class="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                                <a :href="`/product/${product.slug}`" class="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer" wire:navigate>
                                     <template x-if="product.logo_url">
                                         <img :src="product.logo_url" :alt="product.name" class="w-8 h-8 mr-3 rounded-md object-cover">
                                     </template>

@@ -284,6 +284,7 @@
                                 article.className = 'p-4 flex gap-3 transition border-b border-gray-200 last:border-b-0 hover:bg-gray-50 cursor-pointer';
                                 article.setAttribute('itemscope', '');
                                 article.setAttribute('itemtype', 'https://schema.org/Product');
+                                article.setAttribute('wire:navigate', '');
                                 article.onclick = (e) => {
                                     e.preventDefault();
                                     e.stopPropagation();

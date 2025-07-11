@@ -31,8 +31,28 @@ class ProductController extends Controller
     public function home(Request $request)
     {
         $range = $request->input('range', 'daily');
-        $serverTodayDateString = Carbon::now('UTC')->toDateString();
-        $displayDateString = $serverTodayDateString;
+        $serverTodayDate = Carbon::now('UTC');
+
+        if ($range === 'daily') {
+            $productsToday = Product::where('approved', true)
+                ->where('is_published', true)
+                ->whereDate(DB::raw('COALESCE(published_at, created_at)'), $serverTodayDate->toDateString())
+                ->exists();
+
+            if (!$productsToday) {
+                $latestDateWithProducts = Product::where('approved', true)
+                    ->where('is_published', true)
+                    ->whereDate(DB::raw('COALESCE(published_at, created_at)'), '<=', $serverTodayDate->toDateString())
+                    ->max(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'));
+
+                if ($latestDateWithProducts) {
+                    return redirect()->route('products.byDate', ['date' => $latestDateWithProducts]);
+                }
+            }
+            return $this->productsByDate($request, $serverTodayDate->toDateString());
+        }
+
+        $displayDateString = $serverTodayDate->toDateString();
 
         $categories = Category::withCount(['products' => function ($query) {
             $query->where('approved', true)
@@ -88,9 +108,6 @@ class ProductController extends Controller
                 $today = Carbon::now()->toDateString();
                 $regularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear, $today]);
                 break;
-            default: // daily
-                $date = Carbon::now('UTC');
-                return $this->productsByDate($request, $date->toDateString());
         }
 
         $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->paginate(15);
