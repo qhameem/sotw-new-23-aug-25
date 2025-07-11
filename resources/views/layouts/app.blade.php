@@ -188,13 +188,29 @@
 
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'">
         <x-slot:title>
-            @yield('header-title', View::getSection('title'))
+            @hasSection('header-title')
+                @yield('header-title')
+            @else
+                {{ $title ?? '' }}
+            @endif
         </x-slot:title>
         <x-slot:actions>
-            @yield('actions')
+            @hasSection('actions')
+                @yield('actions')
+            @else
+                {{ $actions ?? '' }}
+            @endif
         </x-slot:actions>
 
-        @if (isset($slot) && trim($slot))
+        <x-slot:right_sidebar_content>
+            @hasSection('right_sidebar_content')
+                @yield('right_sidebar_content')
+            @else
+                {{ $right_sidebar_content ?? '' }}
+            @endif
+        </x-slot:right_sidebar_content>
+
+        @if (isset($slot))
             {{ $slot }}
         @else
             @yield('content')

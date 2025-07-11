@@ -48,38 +48,28 @@
 </div>
 <div class="mb-4">
     <label class="block mb-1 font-semibold">Description*</label>
-    <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md">
-        {!! old('description', $displayData['description'] ?? '') !!}
-    </div>
+    <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md"></div>
     <input type="hidden" name="description" id="description" x-model="description">
 </div>
 
-@if(isset($product) && $product->logo)
-<div class="mb-2">
-    <label class="block mb-1 text-xs font-medium text-gray-600">Current Live Logo</label>
-    <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="Current Live Logo" class="w-20 h-20 object-cover rounded-md mb-2 border">
-</div>
-@endif
-
-@if(isset($product) && $product->approved && $product->has_pending_edits && $product->proposed_logo_path)
-<div class="mb-4">
-    <label class="block mb-1 text-xs font-medium text-yellow-700">Currently Proposed Logo (Pending Review)</label>
-    <img src="{{ asset('storage/' . $product->proposed_logo_path) }}" alt="Proposed Logo" class="w-20 h-20 object-cover rounded-md mb-2 border border-yellow-400">
-</div>
-@endif
-
-@if(isset($product))
-<div class="mb-4">
-    <label class="flex items-center text-sm">
-        <input type="checkbox" name="remove_logo" value="1" class="mr-2 rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500">
-        Propose to remove logo
-    </label>
-</div>
-@endif
-
+<!-- Logo Upload Section -->
 <div class="mb-4">
     <label class="block mb-1 font-semibold">{{ isset($product) && $product->logo ? 'Upload New Logo (Optional)' : 'Product Logo' }}</label>
     
+    @if(isset($product) && $product->logo)
+    <div class="mb-2">
+        <label class="block mb-1 text-xs font-medium text-gray-600">Current Live Logo</label>
+        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="Current Live Logo" class="w-20 h-20 object-cover rounded-md mb-2 border">
+    </div>
+    @endif
+
+    @if(isset($product) && $product->approved && $product->has_pending_edits && $product->proposed_logo_path)
+    <div class="mb-4">
+        <label class="block mb-1 text-xs font-medium text-yellow-700">Currently Proposed Logo (Pending Review)</label>
+        <img src="{{ asset('storage/' . $product->proposed_logo_path) }}" alt="Proposed Logo" class="w-20 h-20 object-cover rounded-md mb-2 border border-yellow-400">
+    </div>
+    @endif
+
     <input type="file" name="logo" id="logoInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/avif" @change="uploadLogo">
 
     <div x-show="!logoPreviewUrl"
@@ -109,8 +99,18 @@
     <template x-if="logoUploadError">
         <div class="text-red-600 text-sm mt-1" x-text="logoUploadError"></div>
     </template>
+
+    @if(isset($product))
+    <div class="mt-4">
+        <label class="flex items-center text-sm">
+            <input type="checkbox" name="remove_logo" value="1" class="mr-2 rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500">
+            Propose to remove logo
+        </label>
+    </div>
+    @endif
 </div>
 
+<!-- Categories Section -->
 <div class="mb-4">
     <label class="block mb-1 text-base font-semibold">Categories*</label>
     @error('categories')<div class="text-red-600 text-sm mb-2">{{ $message }}</div>@enderror
@@ -139,7 +139,7 @@
     <div class="mb-4">
         <h3 class="text-md font-semibold text-gray-600 mb-2">Pricing Model<span class="text-red-500 text-xs">* (select at least one)</span></h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 border rounded-md p-3">
-            <template x-for="category in pricingCategories" :key="category.id">
+            <template x-for="category in pricingCategoriesList" :key="category.id">
                 <label class="flex items-center py-1 text-xs cursor-pointer hover:bg-gray-50 px-1 rounded">
                     <input type="checkbox" name="categories[]" :value="category.id"
                            x-model="selectedCategories"
@@ -147,7 +147,7 @@
                     <span x-text="category.name" class="text-gray-700"></span>
                </label>
            </template>
-            <template x-if="pricingCategories.length === 0">
+            <template x-if="pricingCategoriesList.length === 0">
                  <p class="col-span-full text-center text-xs text-gray-500 py-2">No pricing categories available.</p>
             </template>
         </div>

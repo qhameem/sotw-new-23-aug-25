@@ -1,22 +1,15 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="title">
+        <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
+            {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
+        </h1>
+    </x-slot>
 
-@section('title')
-    <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
-        {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
-    </h1>
-@endsection
+    <x-slot name="actions">
+        {{-- No actions needed for this page --}}
+    </x-slot>
 
-@section('actions')
-    {{-- No actions needed for this page --}}
-@endsection
-
-@section('content')
-<script>
-    const productData = @json($product ?? null);
-    const formData = @json($displayData ?? []);
-    const allCategoriesData = @json($allCategoriesData ?? []);
-</script>
-    <div class="relative" x-data="productForm(productData, formData, allCategoriesData)">
+    <div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}')">
         @guest
         <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
             <div class="text-center p-8 bg-white border rounded-lg shadow-md">
@@ -59,62 +52,62 @@
            </div>
        </div>
    </div>
-@endsection
 
-@section('right_sidebar_content')
-<div class="md:w-5/6 mx-auto w-full mt-6 p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
-       <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
-       <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
-           <!-- <p>Please ensure your product submission adheres to the following guidelines:</p> -->
-           <p class="text-gray-800 font-medium">
-             <span>Product URL</span>
-           </p>
-           <ul class="list-disc ml-3 space-y-2 text-gray-600">
-             <li>Provide a direct link to your product's main page.</li>
-             <li>Avoid links to articles, blog posts, or press releases unless they are the primary product page.</li>
-           </ul>
+    <x-slot name="right_sidebar_content">
+        <div class="md:w-5/6 mx-auto w-full mt-6 p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
+            <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
+            <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
+                <!-- <p>Please ensure your product submission adheres to the following guidelines:</p> -->
+                <p class="text-gray-800 font-medium">
+                    <span>Product URL</span>
+                </p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Provide a direct link to your product's main page.</li>
+                    <li>Avoid links to articles, blog posts, or press releases unless they are the primary product page.</li>
+                </ul>
 
-           <p class="text-gray-800 font-medium">
-             <span>Name & Tagline</span>
-           </p>
-           <ul class="list-disc ml-3 space-y-2 text-gray-600">
-             <li>Use the official product name.</li>
-             <li>The tagline should be a concise and compelling summary of your product.</li>
-           </ul>
+                <p class="text-gray-800 font-medium">
+                    <span>Name & Tagline</span>
+                </p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Use the official product name.</li>
+                    <li>The tagline should be a concise and compelling summary of your product.</li>
+                </ul>
 
-           <p class="text-gray-800 font-medium">
-             <span>Description</span>
-           </p>
-           <ul class="list-disc ml-3 space-y-2 text-gray-600">
-             <li>Briefly describe your product.</li>
-             <li>Highlight its key features.</li>
-             <li>Clearly state its value proposition.</li>
-             <li>Keep it informative and to the point.</li>
-           </ul>
+                <p class="text-gray-800 font-medium">
+                    <span>Description</span>
+                </p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Briefly describe your product.</li>
+                    <li>Highlight its key features.</li>
+                    <li>Clearly state its value proposition.</li>
+                    <li>Keep it informative and to the point.</li>
+                </ul>
 
-           <p class="text-gray-800 font-medium">
-             <span>Logo</span>
-           </p>
-           <ul class="list-disc ml-3 space-y-2 text-gray-600">
-             <li>Upload a clear, high-quality logo.</li>
-             <li>A square aspect ratio is preferred.</li>
-             <li>If a favicon is fetched automatically, you can still upload a custom logo to override it.</li>
-           </ul>
+                <p class="text-gray-800 font-medium">
+                    <span>Logo</span>
+                </p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Upload a clear, high-quality logo.</li>
+                    <li>A square aspect ratio is preferred.</li>
+                    <li>If a favicon is fetched automatically, you can still upload a custom logo to override it.</li>
+                </ul>
 
-           <p class="text-gray-800 font-medium">
-             <span>Categories</span>
-           </p>
-           <ul class="list-disc ml-3 space-y-2 text-gray-600">
-             <li>Select the most relevant categories that accurately describe your product.</li>
-             <li>This helps users discover your product.</li>
-             <li>Please select at least one "Pricing" category.</li>
-             <li>Please also select one "Software Category".</li>
-           </ul>
-           <p>Submissions are reviewed by our team. Approved products will typically appear on the site based on their publish date (if set during approval) or immediately if no specific publish date is chosen by the admin.</p>
-           <p>Thank you for contributing!</p>
-       </div>
-   </div>
-@endsection
+                <p class="text-gray-800 font-medium">
+                    <span>Categories</span>
+                </p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Select the most relevant categories that accurately describe your product.</li>
+                    <li>This helps users discover your product.</li>
+                    <li>Please select at least one "Pricing" category.</li>
+                    <li>Please also select one "Software Category".</li>
+                </ul>
+                <p>Submissions are reviewed by our team. Approved products will typically appear on the site based on their publish date (if set during approval) or immediately if no specific publish date is chosen by the admin.</p>
+                <p>Thank you for contributing!</p>
+            </div>
+        </div>
+    </x-slot>
+</x-app-layout>
 
 
 @push('styles')
@@ -148,7 +141,10 @@
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
-function productForm(productData = null, formData = [], allCategoriesData = {}) { // formData is $displayData from controller
+function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
+    const productData = JSON.parse(productDataJson);
+    const formData = JSON.parse(formDataJson);
+    const allCategoriesData = JSON.parse(allCategoriesDataJson);
     let urlCheckTimeout;
     const formId = productData ? `product_form_${productData.id}` : 'new_product_form';
 
@@ -165,7 +161,7 @@ function productForm(productData = null, formData = [], allCategoriesData = {}) 
         logoPreviewUrl: '',
         logoFileSelected: false,
         logoUploadError: '',
-        allCategories: allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] })),
+        allCategories: [],
         categorySearchTerm: '',
         softwareCategoriesList: [],
         selectedCategoriesDisplay: [],
@@ -175,6 +171,7 @@ function productForm(productData = null, formData = [], allCategoriesData = {}) 
         autoSlug: !productData,
 
         init() {
+            this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
             this.loadState();
 
             this.$nextTick(() => {
@@ -283,11 +280,6 @@ function productForm(productData = null, formData = [], allCategoriesData = {}) 
             localStorage.removeItem(formId);
         },
 
-        get pricingCategories() {
-            return this.allCategories.filter(category =>
-                category.types && category.types.includes('Pricing')
-            ).sort((a, b) => a.name.localeCompare(b.name));
-        },
 
         updateSelectedCategoriesDisplay() {
             this.selectedCategoriesDisplay = this.selectedCategories

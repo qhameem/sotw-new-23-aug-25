@@ -22,11 +22,15 @@
     </main>
 
     <!-- Right Sidebar -->
-    <div class="hidden md:flex md:flex-col md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-gray-200 flex-shrink-0 order-2 md:order-3">
+    <div class="hidden md:flex md:flex-col md:w-96 md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-l border-gray-200 flex-shrink-0 order-2 md:order-3">
         <x-right-sidebar-header />
         @if(!request()->is('admin/*'))
             <div class="flex-grow overflow-y-auto scrollbar-hide">
-                @include('partials._right-sidebar')
+                @if (isset($right_sidebar_content) && trim($right_sidebar_content))
+                    {{ $right_sidebar_content }}
+                @else
+                    @include('partials._right-sidebar')
+                @endif
             </div>
         @endif
     </div>
