@@ -1,13 +1,14 @@
 @php $mainContentMaxWidth = 'max-w-full'; @endphp
 @extends('layouts.app')
 
-@section('title')
-    <div class="flex items-center">
+@section('header-title')
+    <div class="flex items-center pt-1.5">
         <a href="javascript:history.back()" class="text-gray-500 hover:text-gray-700 mr-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
         </a>
+        <h1 class="text-lg md:text-base font-semibold tracking-tight">{{ $title }} details</h1>
     </div>
 @endsection
 
@@ -61,12 +62,12 @@
                 {!! $product->description !!}
             </div>
         </div>
-        <div class="md:col-span-1">
+        <!-- <div class="md:col-span-1">
             <div class="bg-gray-100 p-4 rounded-lg">
                 <h3 class="font-bold text-lg mb-2">Design and Development tips in your inbox. Every weekday.</h3>
                 <p class="text-sm text-gray-600 mb-4">ads via Carbon</p>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 @endsection

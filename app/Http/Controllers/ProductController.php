@@ -536,7 +536,7 @@ class ProductController extends Controller
         }])->orderBy('name')->get();
 
         $currentYear = Carbon::now()->year;
-        $title = "The Best <span>" . $category->name . "</span> Software Products of " . $currentYear;
+        $title = "The Best " . strip_tags($category->name) . " Software Products of " . $currentYear;
         $isCategoryPage = true;
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
