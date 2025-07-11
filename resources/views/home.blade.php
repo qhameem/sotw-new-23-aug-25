@@ -5,7 +5,7 @@
 @section('header-title')
     @if(isset($isCategoryPage) && $isCategoryPage)
         <div>
-            <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
+            <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{!! $title !!}</h1>
 
             @if(isset($category))
                 <nav class="-mt-2 mb-4" aria-label="Breadcrumb">
@@ -17,7 +17,7 @@
                             <span>/</span>
                         </li>
                         <li>
-                            <span>{{ $category->name }}</span>
+                            <span>{!! $category->name !!}</span>
                         </li>
                     </ol>
                 </nav>

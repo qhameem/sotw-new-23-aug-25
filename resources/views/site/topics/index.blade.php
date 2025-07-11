@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">All Categories</h1>
+    All Categories
 @endsection
 
 @section('actions')
