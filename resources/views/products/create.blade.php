@@ -1,113 +1,115 @@
-<x-app-layout>
-    <x-slot name="title">
-        <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
-            {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
-        </h1>
-    </x-slot>
+@extends('layouts.app')
 
-    <x-slot name="actions">
-        {{-- No actions needed for this page --}}
-    </x-slot>
+@section('header-title')
+    <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
+        {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
+    </h1>
+@endsection
 
-    <div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}')">
-        @guest
-        <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
-            <div class="text-center p-8 bg-white border rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to add your product</h2>
-                <p class="text-gray-600 mb-4 text-sm tracking-tight">Join our community and showcase your product to a wider audience.</p>
-                <button @click.prevent="$dispatch('open-login-modal')" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
-                    Log in or Sign up &rarr;
-                </button>
-            </div>
+@section('actions')
+    {{-- No actions needed for this page --}}
+@endsection
+
+@section('content')
+<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}')">
+    @guest
+    <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
+        <div class="text-center p-8 bg-white border rounded-lg shadow-md">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to add your product</h2>
+            <p class="text-gray-600 mb-4 text-sm tracking-tight">Join our community and showcase your product to a wider audience.</p>
+            <button @click.prevent="$dispatch('open-login-modal')" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
+                Log in or Sign up &rarr;
+            </button>
         </div>
-        @endguest
-        <div class="mx-auto px-4 sm:px-6 lg:px-2 py-6 @guest blur-sm pointer-events-none @endguest">
-            @if(isset($product))
-                <div class="mb-4 p-3 rounded-md bg-blue-50 border border-blue-300 text-blue-700 text-sm">
-                    <strong>Note:</strong> Product Name, URL, and Slug cannot be changed through this form. To request changes to these fields, please contact support (support system to be implemented).
-                </div>
-            @endif
+    </div>
+    @endguest
+    <div class="mx-auto px-4 sm:px-6 lg:px-2 py-6 @guest blur-sm pointer-events-none @endguest">
+        @if(isset($product))
+            <div class="mb-4 p-3 rounded-md bg-blue-50 border border-blue-300 text-blue-700 text-sm">
+                <strong>Note:</strong> Product Name, URL, and Slug cannot be changed through this form. To request changes to these fields, please contact support (support system to be implemented).
+            </div>
+        @endif
 
-            @if(isset($product) && $product->approved && $product->has_pending_edits)
-                <div class="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-400 text-yellow-800 text-sm">
-                    <strong>Pending Review:</strong> You have submitted edits for this product that are currently awaiting administrator approval. The changes you make below will update your pending proposal. The live product will not change until an admin approves your edits.
-                </div>
-            @endif
-           
-            @if($errors->any())
-                <div class="bg-red-100 text-red-800 p-2 rounded mb-4">
-                    <ul>
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            <div class="flex flex-col md:flex-row gap-6">
-                <div class="md:w-full">
-                <form action="{{ isset($product) ? route('products.update', $product) : route('products.store') }}" method="POST" enctype="multipart/form-data" class="text-sm p-0 rounded md:px-2 w-full" @submit.prevent="submitForm">
-                    @include('products.partials._form', ['types' => $types])
-                </form>
-               </div>
+        @if(isset($product) && $product->approved && $product->has_pending_edits)
+            <div class="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-400 text-yellow-800 text-sm">
+                <strong>Pending Review:</strong> You have submitted edits for this product that are currently awaiting administrator approval. The changes you make below will update your pending proposal. The live product will not change until an admin approves your edits.
+            </div>
+        @endif
+       
+        @if($errors->any())
+            <div class="bg-red-100 text-red-800 p-2 rounded mb-4">
+                <ul>
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="md:w-full">
+            <form action="{{ isset($product) ? route('products.update', $product) : route('products.store') }}" method="POST" enctype="multipart/form-data" class="text-sm p-0 rounded md:px-2 w-full" @submit.prevent="submitForm">
+                @include('products.partials._form', ['types' => $types])
+            </form>
            </div>
        </div>
    </div>
+</div>
+@endsection
 
-    <x-slot name="right_sidebar_content">
-        <div class="md:w-5/6 mx-auto w-full mt-6 p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
-            <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
-            <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
-                <!-- <p>Please ensure your product submission adheres to the following guidelines:</p> -->
-                <p class="text-gray-800 font-medium">
-                    <span>Product URL</span>
-                </p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Provide a direct link to your product's main page.</li>
-                    <li>Avoid links to articles, blog posts, or press releases unless they are the primary product page.</li>
-                </ul>
+@section('right_sidebar_content')
+    <div class="md:w-5/6 mx-auto w-full mt-6 p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
+        <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
+        <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
+            <!-- <p>Please ensure your product submission adheres to the following guidelines:</p> -->
+            <p class="text-gray-800 font-medium">
+                <span>Product URL</span>
+            </p>
+            <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                <li>Provide a direct link to your product's main page.</li>
+                <li>Avoid links to articles, blog posts, or press releases unless they are the primary product page.</li>
+            </ul>
 
-                <p class="text-gray-800 font-medium">
-                    <span>Name & Tagline</span>
-                </p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Use the official product name.</li>
-                    <li>The tagline should be a concise and compelling summary of your product.</li>
-                </ul>
+            <p class="text-gray-800 font-medium">
+                <span>Name & Tagline</span>
+            </p>
+            <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                <li>Use the official product name.</li>
+                <li>The tagline should be a concise and compelling summary of your product.</li>
+            </ul>
 
-                <p class="text-gray-800 font-medium">
-                    <span>Description</span>
-                </p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Briefly describe your product.</li>
-                    <li>Highlight its key features.</li>
-                    <li>Clearly state its value proposition.</li>
-                    <li>Keep it informative and to the point.</li>
-                </ul>
+            <p class="text-gray-800 font-medium">
+                <span>Description</span>
+            </p>
+            <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                <li>Briefly describe your product.</li>
+                <li>Highlight its key features.</li>
+                <li>Clearly state its value proposition.</li>
+                <li>Keep it informative and to the point.</li>
+            </ul>
 
-                <p class="text-gray-800 font-medium">
-                    <span>Logo</span>
-                </p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Upload a clear, high-quality logo.</li>
-                    <li>A square aspect ratio is preferred.</li>
-                    <li>If a favicon is fetched automatically, you can still upload a custom logo to override it.</li>
-                </ul>
+            <p class="text-gray-800 font-medium">
+                <span>Logo</span>
+            </p>
+            <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                <li>Upload a clear, high-quality logo.</li>
+                <li>A square aspect ratio is preferred.</li>
+                <li>If a favicon is fetched automatically, you can still upload a custom logo to override it.</li>
+            </ul>
 
-                <p class="text-gray-800 font-medium">
-                    <span>Categories</span>
-                </p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Select the most relevant categories that accurately describe your product.</li>
-                    <li>This helps users discover your product.</li>
-                    <li>Please select at least one "Pricing" category.</li>
-                    <li>Please also select one "Software Category".</li>
-                </ul>
-                <p>Submissions are reviewed by our team. Approved products will typically appear on the site based on their publish date (if set during approval) or immediately if no specific publish date is chosen by the admin.</p>
-                <p>Thank you for contributing!</p>
-            </div>
+            <p class="text-gray-800 font-medium">
+                <span>Categories</span>
+            </p>
+            <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                <li>Select the most relevant categories that accurately describe your product.</li>
+                <li>This helps users discover your product.</li>
+                <li>Please select at least one "Pricing" category.</li>
+                <li>Please also select one "Software Category".</li>
+            </ul>
+            <p>Submissions are reviewed by our team. Approved products will typically appear on the site based on their publish date (if set during approval) or immediately if no specific publish date is chosen by the admin.</p>
+            <p>Thank you for contributing!</p>
         </div>
-    </x-slot>
-</x-app-layout>
+    </div>
+@endsection
 
 
 @push('styles')
