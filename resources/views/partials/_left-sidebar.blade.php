@@ -35,7 +35,7 @@
             @endif
         </nav>
     </div>
-    <div class="hidden md:block p-4 mt-auto flex-shrink-0">
+    <div class="hidden md:block md:w-3/4 p-4 mt-auto flex-shrink-0 ml-auto">
         <div class="text-xs text-gray-500 ">
             <a href="{{ route('promote') }}" class="hover:underline">Pricing</a> •
             <a href="{{ route('about') }}" class="hover:underline">About</a> •
@@ -54,10 +54,14 @@
 
     <!-- Mobile Footer -->
     <div class="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200  ">
-        <div class="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+        <div class="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
             <a href="{{ route('home') }}" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 ">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mb-1 @if(request()->routeIs('home') || request()->routeIs('products.byDate') || request()->routeIs('categories.show') || request()->routeIs('products.show')) text-primary-500 @else text-gray-500 @endif "><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-                <span class="text-xs @if(request()->routeIs('home') || request()->routeIs('products.byDate') || request()->routeIs('categories.show') || request()->routeIs('products.show')) text-primary-500 font-semibold @else text-gray-500 @endif ">Products</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mb-1 @if(request()->routeIs('home') || request()->routeIs('products.byDate') || request()->routeIs('products.show')) text-primary-500 @else text-gray-500 @endif "><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                <span class="text-xs @if(request()->routeIs('home') || request()->routeIs('products.byDate') || request()->routeIs('products.show')) text-primary-500 font-semibold @else text-gray-500 @endif ">Products</span>
+            </a>
+            <a href="{{ route('categories.index') }}" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mb-1 @if(request()->routeIs('categories.index') || request()->routeIs('categories.show')) text-primary-500 @else text-gray-500 @endif "><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><path d="M7 7h.01"/></svg>
+                <span class="text-xs @if(request()->routeIs('categories.index') || request()->routeIs('categories.show')) text-primary-500 font-semibold @else text-gray-500 @endif ">Categories</span>
             </a>
             <a href="{{ route('articles.index') }}" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 ">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mb-1 @if(request()->routeIs('articles.index') || request()->routeIs('articles.show') || request()->routeIs('articles.category') || request()->routeIs('articles.tag')) text-primary-500 @else text-gray-500 @endif ">
