@@ -7,7 +7,7 @@
     <!-- Product URL -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4" for="product_url">Product URL*</label>
+            <label class="block font-semibold md:text-left md:pr-4" for="product_url">Product URL<span class="text-red-500 ml-1"><span class="text-red-500 ml-1">*</span></span></label>
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center relative">
@@ -31,7 +31,7 @@
     <!-- Name -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4" for="product_name">Name*</label>
+            <label class="block font-semibold md:text-left md:pr-4" for="product_name">Name<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
             <input type="text" id="product_name" name="name" x-model="name" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required :disabled="isEditMode" :class="{'bg-gray-100 cursor-not-allowed': isEditMode}" @input="updateSlugOnNameChange">
@@ -56,7 +56,7 @@
     <!-- Tagline -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4" for="tagline">Tagline*</label>
+            <label class="block font-semibold md:text-left md:pr-4" for="tagline">Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
             <input type="text" id="tagline" name="tagline" x-model="tagline" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
@@ -67,7 +67,7 @@
     <!-- Tagline on Product Page -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4" for="product_page_tagline">Product Page Tagline*</label>
+            <label class="block font-semibold md:text-left md:pr-4" for="product_page_tagline">Product Page Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
             <input type="text" id="product_page_tagline" name="product_page_tagline" x-model="product_page_tagline" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
@@ -77,7 +77,7 @@
     <!-- Description -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4" for="quill-editor">Description*</label>
+            <label class="block font-semibold md:text-left md:pr-4" for="quill-editor">Description<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
             <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md"></div>
@@ -146,7 +146,7 @@
     <!-- Categories Section -->
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
-            <label class="block font-semibold md:text-left md:pr-4">Categories*</label>
+            <label class="block font-semibold md:text-left md:pr-4">Categories<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
             @error('categories')<div class="text-red-600 text-sm mb-2">{{ $message }}</div>@enderror
@@ -171,7 +171,7 @@
             </div>
 
             <div class="mb-4">
-                <h3 class="text-md font-semibold text-gray-600 mb-2">Pricing Model<span class="text-red-500 text-xs">* (select at least one)</span></h3>
+                <h3 class="text-md font-semibold text-gray-600 mb-2">Pricing Model<span class="text-red-500 text-xs"><span class="text-red-500 ml-1">*</span> (select at least one)</span></h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 border rounded-md p-3">
                     <template x-for="category in pricingCategoriesList" :key="category.id">
                         <label class="flex items-center py-1 text-xs cursor-pointer hover:bg-gray-50 px-1 rounded">
@@ -186,7 +186,7 @@
             </div>
 
             <div class="mb-4">
-                <h3 class="text-md font-semibold text-gray-600 mb-2">Software Categories <span class="text-red-500 text-xs">* (select at least one)</span></h3>
+                <h3 class="text-md font-semibold text-gray-600 mb-2">Software Categories <span class="text-red-500 text-xs"><span class="text-red-500 ml-1">*</span> (select at least one)</span></h3>
                 <div class="mb-2 relative">
                     <input type="text" x-model="categorySearchTerm" x-ref="categorySearchInput" placeholder="Search software categories..." class="w-full text-sm text-gray-700 border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 placeholder-gray-400 focus:border-primary-500 pr-8">
                     <button type="button" x-show="categorySearchTerm.length > 0" @click="categorySearchTerm = ''; $refs.categorySearchInput.focus()" class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600" aria-label="Clear search">
@@ -226,8 +226,8 @@
                     $pricingTypeFromLoop = $types->firstWhere('name', 'Pricing');
                     $softwareTypeFromLoop = $types->firstWhere('name', 'Software Categories');
                 @endphp
-                @if($pricingTypeFromLoop) <span class="text-red-500">*Min 1 from {{ $pricingTypeFromLoop->name }}</span>@endif
-                @if($softwareTypeFromLoop) <span class="text-red-500 ml-1">*Min 1 from {{ $softwareTypeFromLoop->name }}</span>@endif
+                @if($pricingTypeFromLoop) <span class="text-red-500"><span class="text-red-500 ml-1">*</span>Min 1 from {{ $pricingTypeFromLoop->name }}</span>@endif
+                @if($softwareTypeFromLoop) <span class="text-red-500 ml-1"><span class="text-red-500 ml-1">*</span>Min 1 from {{ $softwareTypeFromLoop->name }}</span>@endif
             </div>
             <div>
                 <x-primary-button type="submit" x-bind:disabled="!canSubmitForm">
