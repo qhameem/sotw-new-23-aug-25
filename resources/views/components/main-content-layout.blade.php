@@ -5,7 +5,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 w-full {{ $mainContentMaxWidth }} no-scrollbar order-1 md:order-2">
+    <main class="flex-1 w-full {{ $mainContentMaxWidth }} overflow-x-hidden order-1 md:order-2 md:h-screen md:overflow-y-auto no-scrollbar">
         <x-page-header>
             <x-slot:title>
                 {!! $title !!}
@@ -15,8 +15,13 @@
                     {{ $actions }}
                 </x-slot:actions>
             @endif
+            @if (isset($below_header))
+                <x-slot:below_header>
+                    {{ $below_header }}
+                </x-slot:below_header>
+            @endif
         </x-page-header>
-        <div >
+        <div>
             {{ $slot }}
         </div>
     </main>

@@ -13,62 +13,39 @@
     </div>
 @endsection
 
-@section('content')
-    <div>
-        @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
-            <div class="bg-white px-4 py-3">
-                <p class="text-sm text-gray-700">{{ $category->description }}</p>
-            </div>
-        @elseif(!isset($isCategoryPage) || !$isCategoryPage)
-            <div class="bg-white px-4 py-2">
-                <div class="flex justify-between items-center text-xs" x-data='dailyNavigation(@json($activeDates ?? []))'>
-                    <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800">&lt;</button>
-                    <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
-                        <template x-for="day in days" :key="day.date">
-                            <a :href="day.url"
-                               :id="'day-' + day.date"
-                               :class="{ 
-                                   'bg-gray-200 text-gray-700 font-bold': day.isSelected,
-                                   'text-primary-500 font-bold': day.isToday && !day.isSelected,
-                                   'text-gray-400 cursor-not-allowed': !day.isActive && !day.isFuture,
-                                   'hover:bg-gray-100': !day.isSelected && !day.isToday && !day.isFuture 
-                               }"
-                               class="px-2 py-1 rounded whitespace-nowrap"
-                               @click.prevent="if(day.isActive || day.isToday) window.location.href = day.url">
-                                <span x-text="day.label"></span>
-                            </a>
-                        </template>
-                    </div>
-{{-- In-page headings and breadcrumbs --}}
-        @if(isset($isCategoryPage) && $isCategoryPage)
-            <div>
-                <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
-
-                @if(isset($category))
-                    <nav class="-mt-2 mb-4" aria-label="Breadcrumb">
-                        <ol class="inline-flex items-center space-x-1 text-xs text-gray-500">
-                            <li>
-                                <a href="{{ route('categories.index') }}" class="text-gray-900 hover:text-primary-600">Category</a>
-                            </li>
-                            <li>
-                                <span>/</span>
-                            </li>
-                            <li>
-                                <span>{{ $category->name }}</span>
-                            </li>
-                        </ol>
-                    </nav>
-                @endif
-            </div>
-        @elseif(!isset($isCategoryPage) && !isset($displayDateString)) {{-- Only show on main home page --}}
-            <h2 class="text-base font-semibold hidden md:block">Top Software Products</h2>
-            <h2 class="text-base font-semibold md:hidden">Top Products</h2>
-        @endif
-                    <button @click="scroll('right')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800">&gt;</button>
+@section('below_header')
+    @if(!isset($isCategoryPage) || !$isCategoryPage)
+        <div class="bg-white px-4 py-2">
+            <div class="flex justify-between items-center text-xs" x-data='dailyNavigation(@json($activeDates ?? []))'>
+                <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
+                <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
+                    <template x-for="day in days" :key="day.date">
+                        <a :href="day.url"
+                           :id="'day-' + day.date"
+                           :class="{ 
+                               'bg-gray-200 text-gray-700 font-bold': day.isSelected,
+                               'text-primary-500 font-bold': day.isToday && !day.isSelected,
+                               'text-gray-400 cursor-not-allowed': !day.isActive && !day.isFuture,
+                               'hover:bg-gray-100': !day.isSelected && !day.isToday && !day.isFuture 
+                           }"
+                           class="px-2 py-1 rounded whitespace-nowrap"
+                           @click.prevent="if(day.isActive || day.isToday) window.location.href = day.url">
+                            <span x-text="day.label"></span>
+                        </a>
+                    </template>
                 </div>
+                <button @click="scroll('right')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800">></button>
             </div>
-        @endif
-    </div>
+        </div>
+    @endif
+@endsection
+
+@section('content')
+    @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
+        <div class="bg-white px-4 py-3">
+            <p class="text-sm text-gray-700">{{ $category->description }}</p>
+        </div>
+    @endif
 
     <div class="bg-gradient-to-t from-white to-gray-50 md:space-y-1">
         @if(isset($displayDateString) && (!isset($isCategoryPage) || !$isCategoryPage))

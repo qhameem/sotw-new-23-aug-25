@@ -202,6 +202,12 @@
             @endif
         </x-slot:actions>
 
+        <x-slot:below_header>
+            @hasSection('below_header')
+                @yield('below_header')
+            @endif
+        </x-slot:below_header>
+
         <x-slot:right_sidebar_content>
             @hasSection('right_sidebar_content')
                 @yield('right_sidebar_content')
