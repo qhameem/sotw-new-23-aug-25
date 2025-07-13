@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title')
+@section('title', 'Product Submission Complete')
+
+@section('header-title')
     <h1 class="sm:text-sm md:text-base font-bold text-gray-800 py-[3px]">Product Submission Complete</h1>
 @endsection
 
