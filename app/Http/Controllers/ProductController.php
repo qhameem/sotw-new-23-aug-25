@@ -896,7 +896,27 @@ class ProductController extends Controller
         if (!$product->approved || !$product->is_published) {
             abort(404);
         }
-        $title = $product->name; // Set the title variable for the layout
-        return view('products.show', compact('product', 'title'));
+
+        $product->load('categories.types', 'user', 'userUpvotes');
+
+        $pricingCategory = $product->categories->first(function ($category) {
+            return $category->types->contains('name', 'Pricing');
+        });
+
+        $categoryIds = $product->categories->pluck('id');
+
+        $similarProducts = Product::where('id', '!=', $product->id)
+            ->where('approved', true)
+            ->where('is_published', true)
+            ->whereHas('categories', function ($query) use ($categoryIds) {
+                $query->whereIn('categories.id', $categoryIds);
+            })
+            ->orderByDesc('votes_count')
+            ->orderByDesc('created_at')
+            ->take(3)
+            ->get();
+
+        $title = $product->name;
+        return view('products.show', compact('product', 'title', 'pricingCategory', 'similarProducts'));
     }
 }

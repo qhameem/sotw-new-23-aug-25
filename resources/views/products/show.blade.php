@@ -25,14 +25,17 @@
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
                     <p class="text-gray-600">{{ $product->product_page_tagline }}</p>
-                    <div class="flex flex-wrap gap-2 mt-2">
+                    <div class="flex flex-wrap items-center mt-2">
                         @php
                             $generalCategories = $product->categories->filter(function ($cat) {
                                 return !$cat->types->contains('name', 'Pricing');
                             });
                         @endphp
                         @foreach($generalCategories as $category)
-                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="text-sm text-gray-500 hover:underline">{{ $category->name }}</a>
+                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="text-xs text-gray-500 hover:underline">{{ $category->name }}</a>
+                            @if(!$loop->last)
+                                <span class="text-gray-400 mx-2">&middot;</span>
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -48,7 +51,7 @@
                 <div class="flex items-center space-x-2">
                     <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
                        target="_blank" rel="noopener nofollow noreferrer"
-                       class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                       class="inline-flex items-center px-4 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         Visit
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -62,12 +65,44 @@
                 {!! $product->description !!}
             </div>
         </div>
-        <!-- <div class="md:col-span-1">
-            <div class="bg-gray-100 p-4 rounded-lg">
-                <h3 class="font-bold text-lg mb-2">Design and Development tips in your inbox. Every weekday.</h3>
-                <p class="text-sm text-gray-600 mb-4">ads via Carbon</p>
+        <div class="md:col-span-1">
+            @section('right_sidebar_content')
+            <div class="space-y-6 px-8 py-8">
+                @if($pricingCategory)
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2">Pricing Model</h3>
+                        <p class="text-xs text-gray-600">{{ $pricingCategory->name }}</p>
+                    </div>
+                @endif
+
+                @if($similarProducts->isNotEmpty())
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2">Similar Products</h3>
+                        <ul class="space-y-5">
+                            @foreach($similarProducts as $similarProduct)
+                                <li class="flex items-start">
+                                    <a href="{{ route('products.show', $similarProduct->slug) }}">
+                                        @if($similarProduct->logo)
+                                            <img src="{{ Str::startsWith($similarProduct->logo, 'http') ? $similarProduct->logo : asset('storage/' . $similarProduct->logo) }}" alt="{{ $similarProduct->name }} logo" class="w-10 h-10 object-contain rounded-lg mr-2 bottom-2">
+                                        @elseif($similarProduct->link)
+                                            <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($similarProduct->link) }}" alt="{{ $similarProduct->name }} favicon" class="w-10 h-10 object-contain rounded-lg mr-2">
+                                        @endif
+                                    </a>
+                                    <div class="flex-1">
+                                        <a href="{{ route('products.show', $similarProduct->slug) }}" class="text-sm font-semibold text-gray-700 hover:text-primary-500">{{ $similarProduct->name }}</a>
+                                        <p class="text-xs text-gray-600 mt-0">{{ str::limit($similarProduct->tagline, 40) }}</p>
+                                        <!-- <div class="text-xs text-gray-500 mt-2">
+                                            <span class="font-bold">{{ $similarProduct->votes_count }}</span> Upvotes
+                                        </div> -->
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
-        </div> -->
+            @endsection
+        </div>
     </div>
 </div>
 @endsection
