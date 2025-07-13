@@ -30,9 +30,8 @@ class Category extends Model implements Sitemapable
             return []; // Return empty array if not sitemapable
         }
 
-        // Using the 'categories.products' route as it's used for internal linking
-        // and displays products for a category.
-        $url = route('categories.products', $this->slug);
+        // Using the 'categories.show' route as it's used for displaying products for a category.
+        $url = route('categories.show', $this->slug);
 
         return Url::create($url)
             ->setLastModificationDate(Carbon::parse($this->updated_at))
