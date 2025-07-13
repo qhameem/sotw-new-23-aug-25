@@ -72,10 +72,6 @@
 
     <div class="bg-gradient-to-t from-white to-gray-50 md:space-y-1">
         @if(isset($displayDateString) && (!isset($isCategoryPage) || !$isCategoryPage))
-            <div class="py-2 pl-4 pr-4">
-                <h1 class="hidden md:block text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
-                <h1 class="md:hidden text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $mobileTitle }}</h1>
-            </div>
             <div class="flex justify-between items-center py-2 pl-4 pr-4">
                 <div>
                     @php
