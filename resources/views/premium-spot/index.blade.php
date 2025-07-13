@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
-@section('title')
- <h1 class="text-lg md:text-base pt-1.5 font-semibold tracking-tight">{{ $title }}</h1>
-@endsection
+@section('title', 'Get a Premium Spot')
 
 @section('content')
 <div class="container mx-auto p-4">
@@ -23,7 +21,7 @@
 
         <div class="mt-4 p-4">
             <h2 class="text-xl font-semibold mb-4">Select the products you want to feature</h2>
-            <div id="cart" class="mb-4 p-4 border rounded bg-gray-50">
+            <div id="cart" class="mb-4 p-4 border rounded bg-gray-50" data-available-spots="{{ (int) $availableSpots }}">
                 <p class="font-bold">Total Price: $<span id="total-price">0</span></p>
             </div>
             @foreach($products as $product)
@@ -39,7 +37,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const availableSpots = {{ $availableSpots }};
+        const availableSpots = parseInt(document.getElementById('cart').dataset.availableSpots);
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const totalPriceElement = document.getElementById('total-price');
         const productIdsElement = document.getElementById('product_ids');
