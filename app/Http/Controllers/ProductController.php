@@ -604,7 +604,8 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $date->toDateString();
-        $title = 'on ' . $date->format('F d, Y'); // For potential in-page display
+        $title = 'Top software products on ' . $date->format('F d, Y'); // For desktop in-page display
+        $mobileTitle = 'Top products on ' . $date->format('F d, Y'); // For mobile in-page display
         $pageTitle = 'Best of ' . $date->format('d F, Y') . ' | Software on the web'; // For <title> tag
         
         $activeDates = Product::where('approved', true)
@@ -642,7 +643,7 @@ class ProductController extends Controller
             ];
         })->values();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts'));
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'mobileTitle', 'pageTitle', 'activeDates', 'alpineProducts'));
     }
     public function redirectToCurrentWeek()
     {

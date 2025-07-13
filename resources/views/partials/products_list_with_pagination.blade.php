@@ -59,20 +59,17 @@
 @endphp
 
 <script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "itemListElement": [
-        @foreach($finalProductList as $loopIndexActual => $product)
-        {
-            "@type": "ListItem",
-            "position": {{ $loop->iteration }},
-            "url": "{{ route('products.show', $product->slug) }}"
-        }
-        @if(!$loop->last),@endif
-        @endforeach
-    ]
-}
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'ItemList',
+    'itemListElement' => collect($finalProductList)->values()->map(function ($product, $index) {
+        return [
+            '@type' => 'ListItem',
+            'position' => $index + 1,
+            'url' => route('products.show', $product->slug),
+        ];
+    }),
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
 </script>
 
 @if($productCountForAd === 0 && $shouldDisplayAd)

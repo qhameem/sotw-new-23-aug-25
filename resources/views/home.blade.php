@@ -1,38 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Top Software Products | Software on the Web')
-
-@section('header-title')
-    @if(isset($isCategoryPage) && $isCategoryPage)
-        <div>
-            <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{!! $title !!}</h1>
-
-            @if(isset($category))
-                <nav class="-mt-2 mb-4" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 text-xs text-gray-500">
-                        <li>
-                            <a href="{{ route('categories.index') }}" class="text-gray-900 hover:text-primary-600">Category</a>
-                        </li>
-                        <li>
-                            <span>/</span>
-                        </li>
-                        <li>
-                            <span>{!! $category->name !!}</span>
-                        </li>
-                    </ol>
-                </nav>
-            @endif
-        </div>
-    @else
-        <h2 class="text-base font-semibold hidden md:block">Top Software Products</h2>
-        <h2 class="text-base font-semibold md:hidden">Top Products</h2>
-    @endif
-@endsection
+@section('title', $pageTitle ?? 'Software on the Web')
 
 @section('actions')
     <div class="md:flex items-center space-x-2">
         @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <a href="{{ route('categories.index') }}" class="hidden md:inline-block bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
+        <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
             Categories
         </a>
         @endif
@@ -66,6 +39,31 @@
                             </a>
                         </template>
                     </div>
+{{-- In-page headings and breadcrumbs --}}
+        @if(isset($isCategoryPage) && $isCategoryPage)
+            <div>
+                <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
+
+                @if(isset($category))
+                    <nav class="-mt-2 mb-4" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 text-xs text-gray-500">
+                            <li>
+                                <a href="{{ route('categories.index') }}" class="text-gray-900 hover:text-primary-600">Category</a>
+                            </li>
+                            <li>
+                                <span>/</span>
+                            </li>
+                            <li>
+                                <span>{{ $category->name }}</span>
+                            </li>
+                        </ol>
+                    </nav>
+                @endif
+            </div>
+        @elseif(!isset($isCategoryPage) && !isset($displayDateString)) {{-- Only show on main home page --}}
+            <h2 class="text-base font-semibold hidden md:block">Top Software Products</h2>
+            <h2 class="text-base font-semibold md:hidden">Top Products</h2>
+        @endif
                     <button @click="scroll('right')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800">&gt;</button>
                 </div>
             </div>
@@ -74,6 +72,10 @@
 
     <div class="bg-gradient-to-t from-white to-gray-50 md:space-y-1">
         @if(isset($displayDateString) && (!isset($isCategoryPage) || !$isCategoryPage))
+            <div class="py-2 pl-4 pr-4">
+                <h1 class="hidden md:block text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $title }}</h1>
+                <h1 class="md:hidden text-lg md:text-base pt-4 font-semibold tracking-tight">{{ $mobileTitle }}</h1>
+            </div>
             <div class="flex justify-between items-center py-2 pl-4 pr-4">
                 <div>
                     @php
