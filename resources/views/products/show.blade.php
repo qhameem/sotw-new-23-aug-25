@@ -1,6 +1,8 @@
 @php $mainContentMaxWidth = 'max-w-full'; @endphp
 @extends('layouts.app')
 
+@section('title', $pageTitle)
+
 @section('header-title')
     <div class="flex items-center pt-1.5">
         <a href="javascript:history.back()" class="text-gray-500 hover:text-gray-700 mr-3">
@@ -14,7 +16,7 @@
 
 @section('content')
 <div class="bg-white rounded-lg p-6 md:p-8">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
         <div class="md:col-span-2">
             <div class="flex items-center mb-4">
                 @if($product->logo)
@@ -64,43 +66,14 @@
             <div class="prose max-w-none">
                 {!! $product->description !!}
             </div>
-        </div>
-        <div class="md:col-span-1">
-            @section('right_sidebar_content')
-            <div class="space-y-6 px-8 py-8">
-                @if($pricingCategory)
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-800 mb-2">Pricing Model</h3>
-                        <p class="text-xs text-gray-600">{{ $pricingCategory->name }}</p>
-                    </div>
-                @endif
 
-                @if($similarProducts->isNotEmpty())
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-800 mb-2">Similar Products</h3>
-                        <ul class="space-y-5">
-                            @foreach($similarProducts as $similarProduct)
-                                <li class="flex items-start">
-                                    <a href="{{ route('products.show', $similarProduct->slug) }}">
-                                        @if($similarProduct->logo)
-                                            <img src="{{ Str::startsWith($similarProduct->logo, 'http') ? $similarProduct->logo : asset('storage/' . $similarProduct->logo) }}" alt="{{ $similarProduct->name }} logo" class="w-10 h-10 object-contain rounded-lg mr-2 bottom-2">
-                                        @elseif($similarProduct->link)
-                                            <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($similarProduct->link) }}" alt="{{ $similarProduct->name }} favicon" class="w-10 h-10 object-contain rounded-lg mr-2">
-                                        @endif
-                                    </a>
-                                    <div class="flex-1">
-                                        <a href="{{ route('products.show', $similarProduct->slug) }}" class="text-sm font-semibold text-gray-700 hover:text-primary-500">{{ $similarProduct->name }}</a>
-                                        <p class="text-xs text-gray-600 mt-0">{{ str::limit($similarProduct->tagline, 40) }}</p>
-                                        <!-- <div class="text-xs text-gray-500 mt-2">
-                                            <span class="font-bold">{{ $similarProduct->votes_count }}</span> Upvotes
-                                        </div> -->
-                                    </div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+            <div class="md:hidden mt-8">
+                @include('products.partials._sidebar-info')
             </div>
+        </div>
+        <div class="hidden md:block md:col-span-1">
+            @section('right_sidebar_content')
+                @include('products.partials._sidebar-info')
             @endsection
         </div>
     </div>

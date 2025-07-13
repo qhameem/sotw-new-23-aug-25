@@ -917,6 +917,7 @@ class ProductController extends Controller
             ->get();
 
         $title = $product->name;
-        return view('products.show', compact('product', 'title', 'pricingCategory', 'similarProducts'));
+        $pageTitle = $product->name . ' - Software on the web';
+        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts'));
     }
 }
