@@ -13,7 +13,7 @@ class PremiumSpotCard extends Component
      */
     public $spotsAvailable;
 
-    public function __construct($spotsAvailable)
+    public function __construct($spotsAvailable = 0)
     {
         $this->spotsAvailable = $spotsAvailable;
     }
