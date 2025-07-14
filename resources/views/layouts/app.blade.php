@@ -191,15 +191,11 @@
             @hasSection('header-title')
                 @yield('header-title')
             @else
-                {{ $title ?? '' }}
+                {!! $title ?? '' !!}
             @endif
         </x-slot:title>
         <x-slot:actions>
-            @hasSection('actions')
-                @yield('actions')
-            @else
-                {{ $actions ?? '' }}
-            @endif
+            @yield('actions')
         </x-slot:actions>
 
         <x-slot:below_header>

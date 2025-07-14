@@ -13,9 +13,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
+        $users = User::latest()->get();
         return view('admin.users.index', [
             'users' => $users,
+            'title' => 'Manage Users',
             'actions' => [],
         ]);
     }

@@ -1,9 +1,6 @@
 @extends('layouts.app')
 
-@section('content')
-@section('title')
-    <h1 class="text-xl font-semibold text-gray-800">Manage Users</h1>
-@endsection
+@section('title', 'Manage Users')
 
 @section('actions')
 @endsection
@@ -28,5 +25,4 @@
             @endforelse
         </div>
     </div>
-@endsection
 @endsection

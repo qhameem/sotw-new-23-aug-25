@@ -12,7 +12,7 @@
             </x-slot:title>
             @if (isset($actions))
                 <x-slot:actions>
-                    {{ $actions }}
+                    {!! $actions !!}
                 </x-slot:actions>
             @endif
             @if (isset($below_header))

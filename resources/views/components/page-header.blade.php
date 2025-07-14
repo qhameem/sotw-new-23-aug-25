@@ -5,7 +5,7 @@
         </div>
         <div>
             @if (isset($actions))
-                {{ $actions }}
+                {!! $actions !!}
             @endif
         </div>
     </div>

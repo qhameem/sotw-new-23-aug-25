@@ -1,18 +1,17 @@
 @extends('layouts.app')
 
-@section('content')
-<x-main-content-layout>
-    <x-slot:title>
-        <div class="flex items-center">
-            <a href="{{ route('admin.users.index') }}" class="mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </a>
-            <h1 class="text-xl font-semibold text-gray-800">{{ $user->name }}</h1>
-        </div>
-    </x-slot:title>
+@section('header-title')
+    <div class="flex items-center">
+        <a href="{{ route('admin.users.index') }}" class="mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-800">{{ $user->name }}</h1>
+    </div>
+@endsection
 
+@section('content')
     <div class="p-4">
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-lg font-semibold mb-4">User Details</h2>
@@ -31,5 +30,4 @@
             @endforelse
         </div>
     </div>
-</x-main-content-layout>
 @endsection
