@@ -199,6 +199,11 @@ Route::get('/faq', function () {
 
 // Dedicated product page - Ensure this doesn't conflict with article post slugs if products can have any slug.
 // If product slugs might overlap with 'articles', consider prefixing product routes, e.g., /products/{product:slug}
+// Redirect for old product URLs
+Route::get('/{product_name}', function ($product_name) {
+    return redirect('/product/' . $product_name);
+});
+
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
 
