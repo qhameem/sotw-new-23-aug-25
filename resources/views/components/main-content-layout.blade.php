@@ -31,11 +31,7 @@
         <x-right-sidebar-header />
         @if(!request()->is('admin/*'))
             <div class="flex-grow overflow-y-auto scrollbar-hide">
-                @if (isset($right_sidebar_content) && trim($right_sidebar_content))
-                    {{ $right_sidebar_content }}
-                @else
-                    @include('partials._right-sidebar')
-                @endif
+                @include('partials._right-sidebar')
             </div>
         @endif
     </div>

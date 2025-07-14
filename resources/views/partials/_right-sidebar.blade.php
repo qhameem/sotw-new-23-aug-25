@@ -14,77 +14,68 @@
                     @endforeach
                 </ul>
             </div>
-        @else
-            @if(Route::currentRouteName() == 'home')
+        @elseif(in_array(Route::currentRouteName(), ['home', 'products.byDate']))
             <div class="p-4">
-                <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
-                    <div class="relative group inline-block">
-                        <span class="cursor-default text-gray-900 font-semibold">&#9432;</span>
-                        <div class="absolute z-10 hidden group-hover:block mt-1 px-2 py-1 text-xs text-gray-600 rounded border bg-gray-50 whitespace-nowrap">
-                            Updated every day.
-                        </div>
+            <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
+                <div class="relative group inline-block">
+                    <span class="cursor-default text-gray-900 font-semibold">&#9432;</span>
+                    <div class="absolute z-10 hidden group-hover:block mt-1 px-2 py-1 text-xs text-gray-600 rounded border bg-gray-50 whitespace-nowrap">
+                        Updated every day.
                     </div>
-                </h3>
-                <div class="mt-2 grid grid-cols-2 gap-4">
-                    <div class="p-4 rounded-lg text-center border">
-                        <span id="total-visits" class="text-sm text-gray-700 font-bold">Loading...</span>
-                        <p class="text-xs text-gray-600">Visits</p>
-                    </div>
-                    <div class="p-4 rounded-lg text-center border">
-                        <span id="total-pageviews" class="text-sm text-gray-700 font-bold">Loading...</span>
-                        <p class="text-xs text-gray-600">Page views</p>
-                    </div>
+                </div>
+            </h3>
+            <div class="mt-2 grid grid-cols-2 gap-4">
+                <div class="p-4 rounded-lg text-center border">
+                    <span id="total-visits" class="text-sm text-gray-700 font-bold">Loading...</span>
+                    <p class="text-xs text-gray-600">Visits</p>
+                </div>
+                <div class="p-4 rounded-lg text-center border">
+                    <span id="total-pageviews" class="text-sm text-gray-700 font-bold">Loading...</span>
+                    <p class="text-xs text-gray-600">Page views</p>
                 </div>
             </div>
-            @endif
-            @if(Route::currentRouteName() == 'home')
-                @guest
-                    <div class="p-4">
-                        @include('partials._what-is-sotw-card')
-                    </div>
-                @endguest
-            @endif
-            @if (View::hasSection('right_sidebar_content'))
-                @yield('right_sidebar_content')
-            @else
-            @if(!request()->is('promote-your-software'))
-                @if(request()->is('articles*'))
+            </div>
+            @guest
                 <div class="p-4">
-                    @if(isset($staffPicks) && $staffPicks->isNotEmpty())
-                        <h3 class="text-sm font-semibold mb-4 text-gray-800">Staff Picks</h3>
-                        <ul class="space-y-4">
-                            @foreach($staffPicks as $pick)
-                                <li>
-                                    <div class="flex items-center mb-2">
-                                        @if($pick->author->hasRole('admin'))
-                                            @php
-                                                $faviconUrl = config('theme.favicon_url') ? Illuminate\Support\Facades\Storage::url(config('theme.favicon_url')) : asset('favicon/favicon.ico');
-                                            @endphp
-                                            <img src="{{ $faviconUrl }}" alt="Software on the web" class="h-6 w-6 rounded-full object-cover mr-2">
-                                            <span class="text-sm text-gray-600">
-                                                In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by Software on the web
-                                            </span>
-                                        @else
-                                            <img src="{{ $pick->author->google_avatar ?? 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($pick->author->email ?? ''))) . '?d=mp' }}" alt="{{ $pick->author->name ?? 'Author' }}" class="h-6 w-6 rounded-full object-cover mr-2">
-                                            <span class="text-sm text-gray-600">
-                                                In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by {{ $pick->author->name ?? 'Unknown' }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    <a href="{{ route('articles.show', $pick->slug) }}" class="text-sm font-semibold text-gray-900 hover:text-primary-500">
-                                        {{ $pick->title }}
-                                    </a>
-                                    <div class="text-xs text-gray-500 mt-1">
-                                        <span>{{ $pick->published_at->format('M d') }}</span>
-                                    </div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
+                    @include('partials._what-is-sotw-card')
                 </div>
+            @endguest
+        @elseif(request()->is('articles*') && !request()->is('promote-your-software'))
+            <div class="p-4">
+                @if(isset($staffPicks) && $staffPicks->isNotEmpty())
+                    <h3 class="text-sm font-semibold mb-4 text-gray-800">Staff Picks</h3>
+                    <ul class="space-y-4">
+                        @foreach($staffPicks as $pick)
+                            <li>
+                                <div class="flex items-center mb-2">
+                                    @if($pick->author->hasRole('admin'))
+                                        @php
+                                            $faviconUrl = config('theme.favicon_url') ? Illuminate\Support\Facades\Storage::url(config('theme.favicon_url')) : asset('favicon/favicon.ico');
+                                        @endphp
+                                        <img src="{{ $faviconUrl }}" alt="Software on the web" class="h-6 w-6 rounded-full object-cover mr-2">
+                                        <span class="text-sm text-gray-600">
+                                            In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by Software on the web
+                                        </span>
+                                    @else
+                                        <img src="{{ $pick->author->google_avatar ?? 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($pick->author->email ?? ''))) . '?d=mp' }}" alt="{{ $pick->author->name ?? 'Author' }}" class="h-6 w-6 rounded-full object-cover mr-2">
+                                        <span class="text-sm text-gray-600">
+                                            In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by {{ $pick->author->name ?? 'Unknown' }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <a href="{{ route('articles.show', $pick->slug) }}" class="text-sm font-semibold text-gray-900 hover:text-primary-500">
+                                    {{ $pick->title }}
+                                </a>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span>{{ $pick->published_at->format('M d') }}</span>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
                 @endif
-            @endif
-            @endif
+            </div>
+        @elseif (View::hasSection('right_sidebar_content'))
+            @yield('right_sidebar_content')
         @endif
     </div>
     <div x-show="searchFocused" style="display: none;" class="p-4 text-gray-500" x-data="{ results: null }" @search-results.window="results = $event.detail">
