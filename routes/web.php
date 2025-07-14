@@ -201,8 +201,17 @@ Route::get('/faq', function () {
 // If product slugs might overlap with 'articles', consider prefixing product routes, e.g., /products/{product:slug}
 // Redirect for old product URLs
 Route::get('/{product_name}', function ($product_name) {
-    return redirect('/product/' . $product_name);
-});
+    // Check if a product with this slug exists
+    $product = \App\Models\Product::where('slug', $product_name)->first();
+
+    if ($product) {
+        return redirect()->route('products.show', ['product' => $product->slug], 301);
+    }
+
+    // If no product is found, it might be a request for a non-existent page,
+    // so we let Laravel handle it (which will likely result in a 404).
+    abort(404);
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details)[^/]+$');
 
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
