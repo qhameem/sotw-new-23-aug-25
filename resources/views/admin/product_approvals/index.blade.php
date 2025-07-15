@@ -10,21 +10,22 @@
     <div class="mb-10">
         <h2 class="text-lg font-semibold mb-3">Pending Approval</h2>
         @if($pendingProducts->count() > 0)
-            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form">
+            {{-- Bulk Approve Form (moved outside individual product cards) --}}
+            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form" class="mb-4">
                 @csrf
-                <div class="mb-4 flex items-center gap-4">
+                <div class="flex items-center gap-4">
                     <label class="inline-flex items-center">
                         <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
                         <span class="text-sm font-medium text-gray-700">Select All</span>
                     </label>
                     <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium" onclick="return confirm('Are you sure you want to approve all selected products?')">Approve Selected</button>
                 </div>
-                <div class="space-y-6">
-                    @foreach($pendingProducts as $product)
-                        @include('admin.product_approvals._product_approval_card', ['product' => $product])
-                    @endforeach
-                </div>
             </form>
+            <div class="space-y-6">
+                @foreach($pendingProducts as $product)
+                    @include('admin.product_approvals._product_approval_card', ['product' => $product])
+                @endforeach
+            </div>
         @else
             <div class="text-gray-500 text-center py-10">
                 <p>No products are currently pending approval.</p>

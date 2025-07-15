@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -26,12 +27,13 @@ class SettingsController extends Controller
         }
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
-        return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots'));
+        $productPublishTime = $settings['product_publish_time'] ?? '07:00';
+        return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots', 'productPublishTime'));
     }
 
     public function storeAnalyticsCode(Request $request)
     {
-        if (!auth()->check() || !auth()->user()->hasRole('admin')) {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -52,7 +54,7 @@ class SettingsController extends Controller
         
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Google Analytics code updated by user: ' . auth()->id());
+            Log::info('Google Analytics code updated by user: ' . Auth::id());
             return back()->with('success', 'Google Analytics code saved successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to save Google Analytics code: ' . $e->getMessage());
@@ -62,7 +64,7 @@ class SettingsController extends Controller
 
     public function storePremiumProductSpots(Request $request)
     {
-        if (!auth()->check() || !auth()->user()->hasRole('admin')) {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -79,11 +81,48 @@ class SettingsController extends Controller
         
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Premium product spots updated by user: ' . auth()->id());
+            Log::info('Premium product spots updated by user: ' . Auth::id());
             return back()->with('success', 'Premium product spots saved successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to save premium product spots: ' . $e->getMessage());
             return back()->with('error', 'Failed to save premium product spots. Please check logs.');
+        }
+    }
+
+    public function storePublishTime(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'product_publish_time' => 'required|date_format:H:i',
+        ]);
+
+        $settingsPath = 'settings.json';
+        $currentSettings = [];
+
+        if (Storage::disk('local')->exists($settingsPath)) {
+            $currentSettings = json_decode(Storage::disk('local')->get($settingsPath), true);
+        }
+
+        // Ensure default structure if file was just created or empty
+        $defaultSettings = [
+            'google_analytics_code' => '',
+            'premium_product_spots' => 6,
+            'product_publish_time' => '07:00',
+        ];
+
+        $settingsToSave = array_merge($defaultSettings, $currentSettings);
+        $settingsToSave['product_publish_time'] = $request->input('product_publish_time');
+        
+        try {
+            Storage::disk('local')->put($settingsPath, json_encode($settingsToSave, JSON_PRETTY_PRINT));
+            Log::info('Product publish time updated by user: ' . Auth::id());
+            return back()->with('success', 'Product publish time saved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save product publish time: ' . $e->getMessage());
+            return back()->with('error', 'Failed to save product publish time. Please check logs.');
         }
     }
 
@@ -93,7 +132,7 @@ class SettingsController extends Controller
     public function exportDatabase()
     {
         // Ensure only admins can access this. Middleware should also protect the route.
-        if (!auth()->check() || !auth()->user()->hasRole('admin')) {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -209,7 +248,7 @@ class SettingsController extends Controller
             Storage::disk('local')->put($fullStorageDiskPathWithFile, $process->getOutput());
             
             // Log success *after* file is written
-            Log::info("Database export process successful for user: " . auth()->id() . ". File: {$filename} stored at {$fullStorageDiskPathWithFile}");
+            Log::info("Database export process successful for user: " . Auth::id() . ". File: {$filename} stored at {$fullStorageDiskPathWithFile}");
 
             $headers = [
                 'Content-Type' => 'application/sql',
@@ -227,7 +266,7 @@ class SettingsController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error("Database export failed for user: " . auth()->id() . ". Error: " . $e->getMessage());
+            Log::error("Database export failed for user: " . Auth::id() . ". Error: " . $e->getMessage());
             return back()->with('error', 'Database export failed. Please check the logs. Error: ' . $e->getMessage());
         }
     }

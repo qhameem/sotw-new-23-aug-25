@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\PublishScheduledProducts;
+use Illuminate\Support\Facades\Storage;
 
 class Kernel extends ConsoleKernel
 {
@@ -29,7 +30,9 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('sitemap:generate')->daily();
-        $schedule->command('products:publish-scheduled')->dailyAt('07:00');
+        $settings = Storage::disk('local')->exists('settings.json') ? json_decode(Storage::disk('local')->get('settings.json'), true) : [];
+        $publishTime = $settings['product_publish_time'] ?? '07:00';
+        $schedule->command('products:publish-scheduled')->dailyAt($publishTime);
     }
 
     /**

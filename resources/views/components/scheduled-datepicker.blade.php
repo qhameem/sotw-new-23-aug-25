@@ -1,7 +1,7 @@
 @props(['name' => 'published_at', 'value' => ''])
 
 @php
-    $minDate = \Carbon\Carbon::now('UTC')->hour >= 7 ? \Carbon\Carbon::tomorrow('UTC')->toDateString() : \Carbon\Carbon::today('UTC')->toDateString();
+    $minDate = \Carbon\Carbon::today('UTC')->toDateString(); // Always allow today's date to be selected
 @endphp
 
 <input type="date" 

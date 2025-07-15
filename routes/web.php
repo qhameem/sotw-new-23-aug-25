@@ -122,6 +122,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::post('settings/store-analytics', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAnalyticsCode'])->name('settings.storeAnalyticsCode');
     Route::post('settings/send-test-email', [\App\Http\Controllers\Admin\SettingsController::class, 'sendTestEmail'])->name('settings.sendTestEmail');
     Route::post('settings/store-premium-product-spots', [\App\Http\Controllers\Admin\SettingsController::class, 'storePremiumProductSpots'])->name('settings.storePremiumProductSpots');
+    Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
 
     // SEO Meta Tag Management
     Route::get('seo/meta-tags', \App\Livewire\Admin\Seo\ManageMetaTags::class)->name('seo.meta-tags.index');

@@ -53,41 +53,93 @@ class ProductApprovalController extends Controller
         
         $approvedProducts = $approvedProductsQuery->paginate($perPage)->withQueryString();
 
-        return view('admin.product_approvals.index', compact('pendingProducts', 'approvedProducts', 'perPage', 'sortBy', 'sortDirection'));
+        $settings = ['product_publish_time' => '07:00']; // Default value
+        $fileContents = Storage::get('settings.json');
+        if ($fileContents) {
+            $decodedSettings = json_decode($fileContents, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSettings)) {
+                $settings = array_merge($settings, $decodedSettings);
+            } else {
+                Log::warning('ProductApprovalController: settings.json exists but is invalid JSON or not an array. Using default settings.');
+            }
+        } else {
+            Log::info('ProductApprovalController: settings.json not found. Using default settings.');
+        }
+
+        return view('admin.product_approvals.index', compact('pendingProducts', 'approvedProducts', 'perPage', 'sortBy', 'sortDirection', 'settings'));
     }
 
     public function approve(Request $request, Product $product)
     {
         $product->approved = true;
+        $publishOption = $request->input('publish_option', 'now');
 
-        $publishDate = $request->input('published_at');
-        if (!empty($publishDate)) {
-            try {
-                $product->published_at = \Carbon\Carbon::parse($publishDate)->setTime(7, 0, 0);
-                $product->is_published = false; // It's scheduled, not published yet.
-            } catch (\Exception $e) {
-                // If parsing fails, publish immediately.
-                $product->published_at = now()->utc();
-                $product->is_published = true;
-            }
-        } else {
-            // If no date is provided, publish immediately.
-            $product->published_at = now()->utc();
-            $product->is_published = true;
+        $publishOption = $request->input('publish_option', 'specific_date'); // Default to specific_date
+
+        switch ($publishOption) {
+            case 'specific_date':
+                $publishDate = $request->input('published_at');
+                if (!empty($publishDate)) {
+                    try {
+                        $parsedDate = \Carbon\Carbon::parse($publishDate)->setTime(7, 0, 0);
+                        $product->published_at = $parsedDate;
+
+                        // If the selected date is today or in the past, publish immediately
+                        if ($parsedDate->lte(now()->utc()->startOfDay())) {
+                            $product->is_published = true;
+                        } else {
+                            // Otherwise, schedule for the future
+                            $product->is_published = false;
+                        }
+                    } catch (\Exception $e) {
+                        // Fallback to immediate publish if date parsing fails
+                        Log::error("ProductApprovalController: Failed to parse published_at date '{$publishDate}'. Error: {$e->getMessage()}. Publishing immediately.");
+                        $product->published_at = now()->utc();
+                        $product->is_published = true;
+                    }
+                } else {
+                    // If no specific date is provided (e.g., field was empty), publish immediately
+                    Log::info("ProductApprovalController: No published_at date provided. Publishing immediately.");
+                    $product->published_at = now()->utc();
+                    $product->is_published = true;
+                }
+                break;
+            case 'next_launch':
+                $settings = ['product_publish_time' => '07:00']; // Default value
+                $fileContents = Storage::get('settings.json');
+                if ($fileContents) {
+                    $decodedSettings = json_decode($fileContents, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSettings)) {
+                        $settings = array_merge($settings, $decodedSettings);
+                    } else {
+                        Log::warning('ProductApprovalController: settings.json exists but is invalid JSON or not an array in approve method. Using default settings.');
+                    }
+                } else {
+                    Log::info('ProductApprovalController: settings.json not found in approve method. Using default settings.');
+                }
+                $publishTime = $settings['product_publish_time'] ?? '07:00'; // Use product_publish_time as per context
+                [$hour, $minute] = explode(':', $publishTime);
+                $now = now()->utc();
+                $nextLaunch = now()->utc()->setTime($hour, $minute, 0);
+                if ($now->gt($nextLaunch)) {
+                    $nextLaunch->addDay();
+                }
+                $product->published_at = $nextLaunch;
+                $product->is_published = false;
+                break;
         }
-        
+
         $product->save();
 
-        // Dispatch event
-        if ($product->user) { // Ensure product has an associated user
+        if ($product->user) {
             Log::info("ProductApprovalController: Approving product ID {$product->id} for user ID {$product->user->id}. Dispatching ProductApproved event.");
             event(new ProductApproved($product, $product->user));
         } else {
             Log::warning("ProductApprovalController: Product ID {$product->id} has no associated user. Cannot dispatch ProductApproved event.");
         }
- 
+
         Artisan::call('products:publish-scheduled');
- 
+
         return back()->with('success', 'Product approved.');
     }
 

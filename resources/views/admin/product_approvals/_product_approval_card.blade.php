@@ -27,7 +27,7 @@
                     <div class="text-xs text-gray-500 mt-1">Submitted by: {{ $product->user->name ?? 'N/A' }}</div>
                 </div>
                 <label class="absolute top-4 right-4">
-                    <input type="checkbox" name="products[]" value="{{ $product->id }}" class="product-checkbox h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <input type="checkbox" name="products[]" value="{{ $product->id }}" class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded product-checkbox">
                 </label>
             </div>
 
@@ -51,22 +51,76 @@
     </div>
 
     {{-- Actions --}}
-    <div class="mt-6 flex justify-between items-center gap-3">
-        <div>
-            <label for="published_at_{{ $product->id }}" class="block text-xs font-medium text-gray-700 mb-1">Publish On:</label>
-            <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today()->toDateString() }}" />
+    <div class="mt-6">
+        <div class="flex justify-between items-center gap-3">
+            <div>
+                <label for="published_at_{{ $product->id }}" class="block text-xs font-medium text-gray-700 mb-1">Publish On:</label>
+                <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today()->toDateString() }}" />
+                <div id="utc-time-info-{{ $product->id }}" class="text-xs text-gray-500 mt-1"></div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.products.edit', $product->id) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Edit
+                </a>
+            </div>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.products.edit', $product->id) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Edit
-            </a>
+        <div class="mt-4 flex justify-end items-center gap-3">
             <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
                 @csrf
+                <input type="hidden" name="publish_option" value="specific_date">
                 <input type="hidden" name="published_at" id="hidden_published_at_{{ $product->id }}">
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.getElementById('published_at_{{ $product->id }}').value; return confirm('Are you sure you want to approve this product?')">
-                    Approve
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value; return confirm('Are you sure you want to approve this product for the selected date?')">
+                    Publish on selected date and time
+                </button>
+            </form>
+            <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
+                @csrf
+                <input type="hidden" name="publish_option" value="next_launch">
+                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                    Publish
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const settings = JSON.parse('{!! addslashes(json_encode($settings)) !!}');
+    const publishTime = settings.product_publish_time || '07:00';
+    const [publishHour, publishMinute] = publishTime.split(':').map(Number);
+
+    function updateUTCTime() {
+        const now = new Date();
+        
+        const timeInfoDiv = document.getElementById('utc-time-info-{{ $product->id }}');
+        if (timeInfoDiv) {
+            const formattedUTC = now.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true,
+                timeZone: 'UTC'
+            });
+
+            let nextLaunch = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), publishHour, publishMinute, 0));
+            if (now >= nextLaunch) {
+                nextLaunch.setUTCDate(nextLaunch.getUTCDate() + 1);
+            }
+
+            const diff = nextLaunch - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            timeInfoDiv.textContent = `Current UTC: ${formattedUTC} (${hours} hours ${minutes} mins left till next launch)`;
+        }
+    }
+
+    updateUTCTime();
+    setInterval(updateUTCTime, 60000); // Update every minute
+});
+</script>
+@endpush

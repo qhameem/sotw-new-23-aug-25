@@ -72,6 +72,40 @@
         </div>
     </div>
 
+    <!-- Product Publishing Time Section -->
+    <div class="mt-10 bg-white  shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 ">
+                Product Publishing Time
+            </h3>
+            <div class="mt-2 max-w-xl text-sm text-gray-500 ">
+                <p>Set the default time (in UTC) for scheduled products to be published.</p>
+            </div>
+            <form action="{{ route('admin.settings.storePublishTime') }}" method="POST" class="mt-5">
+                @csrf
+                <div>
+                    <label for="product_publish_time" class="block text-sm font-medium text-gray-700 ">
+                        Publish Time (UTC)
+                    </label>
+                    <div class="mt-1">
+                        <input type="time" id="product_publish_time" name="product_publish_time"
+                                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                  value="{{ old('product_publish_time', $productPublishTime ?? '07:00') }}">
+                    </div>
+                    @error('product_publish_time')
+                        <p class="mt-2 text-sm text-red-600 ">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="mt-4">
+                    <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
+                        Save Time
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Google Analytics Integration Section -->
     <div class="mt-10 bg-white  shadow sm:rounded-lg">
         <div class="px-4 py-5 sm:p-6">
