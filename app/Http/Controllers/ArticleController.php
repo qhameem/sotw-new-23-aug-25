@@ -6,11 +6,92 @@ use App\Models\Article;
 use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Spatie\Feed\Feedable;
 use Spatie\Feed\FeedItem;
 
 class ArticleController extends Controller implements Feedable
 {
+    public function create()
+    {
+        $categories = ArticleCategory::orderBy('name')->get();
+        $tags = ArticleTag::orderBy('name')->get();
+        $statuses = ['draft' => 'Draft', 'published' => 'Published']; // Users can't schedule
+        return view('articles.create', compact('categories', 'tags', 'statuses'));
+    }
+
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('articles', 'slug'),
+            ],
+            'content' => 'required|string',
+            'status' => 'required|string|in:draft,published',
+            'published_at' => 'nullable|date',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:65535',
+            'meta_keywords' => 'nullable|string|max:255',
+            'og_title' => 'nullable|string|max:255',
+            'og_description' => 'nullable|string|max:65535',
+            'og_image' => 'nullable|string|max:255',
+            'og_url' => 'nullable|string|max:255|url',
+            'twitter_card' => 'nullable|string|max:255',
+            'twitter_title' => 'nullable|string|max:255',
+            'twitter_description' => 'nullable|string|max:65535',
+            'featured_image_path' => 'nullable|string|max:255',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:article_categories,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:article_tags,id',
+        ]);
+
+        $post = new Article($validatedData);
+        $post->user_id = Auth::id();
+
+        if (empty($validatedData['slug'])) {
+            $post->slug = Str::slug($validatedData['title']);
+        } else {
+            $post->slug = Str::slug($validatedData['slug']);
+        }
+
+        $originalSlug = $post->slug;
+        $counter = 1;
+        while (Article::where('slug', $post->slug)->exists()) {
+            $post->slug = $originalSlug . '-' . $counter++;
+        }
+
+        if ($validatedData['status'] === 'published' && empty($validatedData['published_at'])) {
+            $post->published_at = now();
+        }
+
+        $post->save();
+
+        if (!empty($validatedData['categories'])) {
+            $post->categories()->sync($validatedData['categories']);
+        }
+        if (!empty($validatedData['tags'])) {
+            $post->tags()->sync($validatedData['tags']);
+        }
+
+        return redirect()->route('articles.index')->with('success', 'Article submitted successfully.');
+    }
+
+    public function myArticles()
+    {
+        $posts = Article::where('user_id', Auth::id())
+            ->with('categories', 'tags')
+            ->latest('created_at')
+            ->paginate(10);
+
+        return view('articles.my-articles', compact('posts'));
+    }
     /**
      * Display a listing of published articles.
      */

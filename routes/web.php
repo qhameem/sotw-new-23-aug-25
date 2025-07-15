@@ -54,6 +54,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::get('/subscribe', [SubscriptionController::class, 'create'])->name('subscribe');
     Route::post('/stripe/checkout', [StripeController::class, 'checkout'])->name('stripe.checkout');
+
+    // Article routes for authenticated users
+    Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::get('/my-articles', [ArticleController::class, 'myArticles'])->name('articles.my');
     Route::get('/promote/success', [StripeController::class, 'promoteSuccess'])->name('promote.success');
     Route::post('/promote/update-date', [StripeController::class, 'updateDate'])->name('promote.update-date');
 });
@@ -98,8 +103,6 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::prefix('articles')->name('articles.')->group(function () {
         // Admin ArticlePost routes using ID for binding
         Route::get('posts', [ArticlePostController::class, 'index'])->name('posts.index');
-        Route::get('posts/create', [ArticlePostController::class, 'create'])->name('posts.create');
-        Route::post('posts', [ArticlePostController::class, 'store'])->name('posts.store');
         Route::get('posts/{post:id}/edit', [ArticlePostController::class, 'edit'])->name('posts.edit'); // Explicitly bind by ID
         Route::put('posts/{post:id}', [ArticlePostController::class, 'update'])->name('posts.update');   // Explicitly bind by ID
         Route::delete('posts/{post:id}', [ArticlePostController::class, 'destroy'])->name('posts.destroy'); // Explicitly bind by ID
