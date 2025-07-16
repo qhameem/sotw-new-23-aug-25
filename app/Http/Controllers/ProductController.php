@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
@@ -256,7 +256,12 @@ class ProductController extends Controller
         $tentativeLiveDate = $submissionDate->copy()->addWeeks(2);
         $daysToLive = $submissionDate->diffInDays($tentativeLiveDate);
 
-        return view('products.submission_success', compact('product', 'daysToLive'));
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+        $totalSpots = $settings['premium_product_spots'] ?? 6; // Use 6 as default if not found in settings
+        $spotsTaken = PremiumProduct::where('expires_at', '>', now())->count();
+        $spotsAvailable = $totalSpots - $spotsTaken;
+
+        return view('products.submission_success', compact('product', 'daysToLive', 'spotsAvailable'));
     }
 
     public function edit(Product $product)

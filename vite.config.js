@@ -8,4 +8,7 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        allowedHosts: ['production-textbook-lately-traditions.trycloudflare.com'],
+    },
 });

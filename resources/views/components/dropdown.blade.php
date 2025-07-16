@@ -15,7 +15,7 @@ $width = match ($width) {
 
 <div class="relative" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false"
      @toggle-dropdown.window="open = !open; console.log('Dropdown toggled by event, open is now:', open)">
-    <div class="inline-block"> <!-- Ensure this div has layout, but click is handled by event -->
+    <div>
         {{ $trigger }}
     </div>
 

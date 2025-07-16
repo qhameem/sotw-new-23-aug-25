@@ -26,7 +26,7 @@
              <x-promote.fast-track-card />
 <div class="flex flex-col gap-2">
     <div>
-           <x-promote.premium-spot-card />
+           <x-promote.premium-spot-card :spots-available="$spotsAvailable" />
     </div>
     <div>
          <x-promote.product-review-card />

@@ -3,10 +3,13 @@
         <div>
             <h1 class="hidden md:block text-lg md:text-base font-semibold tracking-tight">{{ $title }}</h1>
         </div>
-        <div>
+        <div class="flex items-center space-x-4">
             @if (isset($actions))
                 {!! $actions !!}
             @endif
+            <div class="md:hidden">
+                <x-user-dropdown />
+            </div>
         </div>
     </div>
     <hr class="">
