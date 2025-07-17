@@ -5,7 +5,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 w-full {{ $mainContentMaxWidth }} overflow-x-hidden order-1 md:order-2 md:h-screen md:overflow-y-auto no-scrollbar">
+    <main class="flex-1 w-full {{ $mainContentMaxWidth }} order-1 md:order-2 no-scrollbar">
         <x-page-header>
             <x-slot:title>
                 {!! $title !!}
