@@ -1,11 +1,11 @@
 import './bootstrap';
 import 'flowbite'; // This initializes Flowbite components based on data attributes
 import { Datepicker as FlowbiteDatepicker } from 'flowbite';
-//import Alpine from 'alpinejs';
+import Alpine from 'alpinejs';
 
 // Initialize Alpine before DOMContentLoaded for better reliability
-//window.Alpine = Alpine;
-// Alpine.start(); // Livewire will handle starting Alpine
+window.Alpine = Alpine;
+Alpine.start(); // Livewire will handle starting Alpine
 
 // Make Datepicker available globally for inline scripts
 if (typeof window.Flowbite === 'undefined') {
