@@ -63,6 +63,14 @@
                 </div>
             </div>
 
+            @if($product->video_url)
+                <div class="mb-6">
+                    <div class="aspect-w-16 aspect-h-9">
+                        <iframe src="{{ $product->getEmbedUrl() }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            @endif
+
             <div class="prose max-w-none">
                 {!! $product->description !!}
             </div>

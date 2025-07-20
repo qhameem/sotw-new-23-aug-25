@@ -12,8 +12,7 @@
             @endif
             <span class="hidden sm:block">{{ strtok(Auth::user()->name, ' ') }}</span>
         @else
-            <span class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-400 text-white text-xs font-semibold me-2">?</span>
-            <span>Guest</span>
+            <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
         @endauth
         <svg xmlns="http://www.w3.org/2000/svg"
              width="24" height="24" viewBox="0 0 24 24"

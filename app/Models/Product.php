@@ -2,28 +2,46 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class Product extends Model implements Sitemapable
 {
+    use HasFactory;
+
     protected $fillable = [
-        'user_id', 'name', 'slug', 'tagline', 'description', 'link', 'votes_count', 'logo', 'product_page_tagline',
-        'approved', 'published_at',
-        'proposed_logo_path', 'proposed_tagline', 'proposed_description', 'has_pending_edits', // Added new fields
-        'is_promoted', 'promoted_position' // Added promotion fields
+        'name',
+        'slug',
+        'tagline',
+        'product_page_tagline',
+        'description',
+        'link',
+        'logo',
+        'user_id',
+        'votes_count',
+        'approved',
+        'is_promoted',
+        'promoted_position',
+        'is_published',
+        'published_at',
+        'has_pending_edits',
+        'proposed_tagline',
+        'proposed_description',
+        'proposed_logo_path',
+        'video_url',
     ];
 
     protected $casts = [
         'approved' => 'boolean',
+        'is_promoted' => 'boolean',
+        'is_published' => 'boolean',
+        'has_pending_edits' => 'boolean',
         'published_at' => 'datetime',
-        'has_pending_edits' => 'boolean', // Added cast for new field
-        'is_promoted' => 'boolean',        // Added cast for promotion field
-        'promoted_position' => 'integer',  // Added cast for promotion field
     ];
 
     protected $appends = ['logo_url'];
@@ -47,11 +65,6 @@ class Product extends Model implements Sitemapable
         return null;
     }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -62,18 +75,12 @@ class Product extends Model implements Sitemapable
         return $this->belongsToMany(Category::class);
     }
 
-    /**
-     * The categories proposed for this product when edits are pending.
-     */
     public function proposedCategories()
     {
         return $this->belongsToMany(Category::class, 'product_category_proposed');
     }
 
-    /**
-     * Get the user upvotes for the product.
-     */
-    public function userUpvotes(): HasMany
+    public function userUpvotes()
     {
         return $this->hasMany(UserProductUpvote::class);
     }
@@ -82,58 +89,59 @@ class Product extends Model implements Sitemapable
     {
         return $this->hasOne(PremiumProduct::class);
     }
-/**
-     * Check if the product is upvoted by the current authenticated user.
-     *
-     * @return bool
-     */
-    public function getIsUpvotedByCurrentUserAttribute(): bool
+
+    public function getIsUpvotedByCurrentUserAttribute()
     {
         if (!Auth::check()) {
             return false;
         }
-
-        // Check if a UserProductUpvote record exists for this product and the current user.
-        // Eager load this relationship when fetching products if performance becomes an issue.
-        // For a single product check, this is fine.
         return $this->userUpvotes()->where('user_id', Auth::id())->exists();
     }
 
-    /**
-     * Get the pricing model description from associated 'Pricing' categories.
-     *
-     * @return string|null
-     */
+    public function getEmbedUrl()
+    {
+        if (!$this->video_url) {
+            return null;
+        }
+
+        if (str_contains($this->video_url, 'youtube.com') || str_contains($this->video_url, 'youtu.be')) {
+            $videoId = '';
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $this->video_url, $matches)) {
+                $videoId = $matches[1];
+            }
+            return 'https://www.youtube.com/embed/' . $videoId;
+        }
+
+        if (str_contains($this->video_url, 'vimeo.com')) {
+            $videoId = '';
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $this->video_url, $matches)) {
+                $videoId = $matches[3];
+            }
+            return 'https://player.vimeo.com/video/' . $videoId;
+        }
+
+        return null;
+    }
+
     public function getPricingModelDescriptionAttribute(): ?string
     {
         $pricingCategories = $this->categories->filter(function ($category) {
-            // Assuming Category model has a 'types' relationship
-            // And Type model has a 'name' attribute
             return $category->types->contains('name', 'Pricing');
         });
 
         if ($pricingCategories->isNotEmpty()) {
             return $pricingCategories->pluck('name')->implode(', ');
         }
-        
-        // Fallback if pricing_type field exists and has a value, and no pricing categories are found
-        // This part is commented out as 'pricing_type' is not in the $fillable array currently.
-        // if (!empty($this->attributes['pricing_type'])) {
-        //     return $this->attributes['pricing_type'];
-        // }
 
         return null;
     }
 
     public function toSitemapTag(): Url | string | array
     {
-        // Ensure the product has a slug and is approved
         if (!$this->slug || !$this->approved) {
-            return []; // Return empty array if not sitemapable
+            return [];
         }
 
-        // Assuming you have a route named 'products.show' that takes a product slug
-        // <web.php line 111 | Route::get('/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');>
         $url = route('products.show', $this->slug);
 
         return Url::create($url)

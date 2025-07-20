@@ -159,6 +159,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         tagline: '',
         product_page_tagline: '',
         description: '',
+        video_url: '',
         selectedCategories: [],
         logoPreviewUrl: '',
         logoFileSelected: false,
@@ -232,7 +233,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             }, { deep: true });
 
             // Watch for changes and save state
-            const fieldsToWatch = ['link', 'name', 'slug', 'tagline', 'product_page_tagline'];
+            const fieldsToWatch = ['link', 'name', 'slug', 'tagline', 'product_page_tagline', 'video_url'];
             fieldsToWatch.forEach(field => {
                 this.$watch(field, () => this.saveState());
             });
@@ -247,6 +248,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 tagline: (formData && formData.tagline !== undefined) ? formData.tagline : '',
                 product_page_tagline: (formData && formData.product_page_tagline !== undefined) ? formData.product_page_tagline : '',
                 description: (formData && formData.description !== undefined) ? formData.description : '',
+                video_url: (formData && formData.video_url !== undefined) ? formData.video_url : '',
                 selectedCategories: (formData && Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
             };
 
@@ -259,6 +261,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 this.tagline = initialState.tagline || parsedState.tagline || '';
                 this.product_page_tagline = initialState.product_page_tagline || parsedState.product_page_tagline || '';
                 this.description = initialState.description || parsedState.description || '';
+                this.video_url = initialState.video_url || parsedState.video_url || '';
                 this.selectedCategories = initialState.selectedCategories.length ? initialState.selectedCategories : (parsedState.selectedCategories || []);
             } else {
                 Object.assign(this, initialState);
@@ -273,6 +276,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 tagline: this.tagline,
                 product_page_tagline: this.product_page_tagline,
                 description: this.description,
+                video_url: this.video_url,
                 selectedCategories: this.selectedCategories,
             };
             localStorage.setItem(formId, JSON.stringify(state));

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
+use Intervention\Image\Laravel\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -213,6 +214,7 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|url|max:2048',
+            'video_url' => 'nullable|url|max:2048',
         ]);
 
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
@@ -233,7 +235,15 @@ class ProductController extends Controller
         $validated['approved'] = false;
         
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+            $image = $request->file('logo');
+            $filename = Str::uuid() . '.webp';
+            $path = 'logos/' . $filename;
+
+            $img = Image::read($image->getRealPath());
+            $img->toWebp(80); // Convert to WebP with 80% quality
+            Storage::disk('public')->put($path, (string) $img);
+
+            $validated['logo'] = $path;
         } elseif ($request->filled('logo_url')) {
             $validated['logo'] = $validated['logo_url'];
         }
@@ -328,6 +338,7 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
+            'video_url' => 'nullable|url|max:2048',
         ]);
 
         // Category validation (ensure at least one from each required type is selected)
@@ -351,6 +362,7 @@ class ProductController extends Controller
             'tagline' => $validated['tagline'],
             'product_page_tagline' => $validated['product_page_tagline'],
             'description' => $validated['description'],
+            'video_url' => $validated['video_url'],
         ];
         $newCategories = $validated['categories'];
         $logoPath = null;
@@ -359,7 +371,13 @@ class ProductController extends Controller
         if ($request->boolean('remove_logo')) {
             $logoPath = null; // Explicitly set to null for removal
         } elseif ($request->hasFile('logo')) {
-            $logoPath = $request->file('logo')->store('logos', 'public');
+            $image = $request->file('logo');
+            $filename = Str::uuid() . '.webp';
+            $logoPath = 'logos/' . $filename;
+
+            $img = Image::read($image->getRealPath());
+            $img->toWebp(80); // Convert to WebP with 80% quality
+            Storage::disk('public')->put($logoPath, (string) $img);
         }
 
         if ($product->approved) {

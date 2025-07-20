@@ -104,6 +104,10 @@ class ProductApprovalController extends Controller
                     $product->is_published = true;
                 }
                 break;
+            case 'now':
+                $product->published_at = now()->utc();
+                $product->is_published = true;
+                break;
             case 'next_launch':
                 $settings = ['product_publish_time' => '07:00']; // Default value
                 $fileContents = Storage::get('settings.json');
