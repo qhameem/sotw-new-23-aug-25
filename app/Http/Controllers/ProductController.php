@@ -241,7 +241,7 @@ class ProductController extends Controller
 
             $img = Image::read($image->getRealPath());
             $img->toWebp(80); // Convert to WebP with 80% quality
-            Storage::disk('public')->put($path, (string) $img);
+            Storage::disk('public')->put($path, $img->encode());
 
             $validated['logo'] = $path;
         } elseif ($request->filled('logo_url')) {
@@ -377,7 +377,7 @@ class ProductController extends Controller
 
             $img = Image::read($image->getRealPath());
             $img->toWebp(80); // Convert to WebP with 80% quality
-            Storage::disk('public')->put($logoPath, (string) $img);
+            Storage::disk('public')->put($logoPath, $img->encode());
         }
 
         if ($product->approved) {
