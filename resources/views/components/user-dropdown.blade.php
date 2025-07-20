@@ -1,4 +1,4 @@
-<div class="relative flex items-center ms-auto me-4 sm:ms-6 z-50 bg-white" id="userDropdownContainer">
+<div class="relative flex items-center ms-auto me-4 sm:ms-6 z-50" id="userDropdownContainer">
     <button id="userDropdownTrigger" type="button"
         class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
         aria-haspopup="true" aria-expanded="false" aria-controls="userDropdownMenu">
@@ -25,16 +25,8 @@
 
     <!-- Sliding drawer-style dropdown -->
     <div id="userDropdownMenu"
-         class="fixed top-0 right-0 h-full w-64 bg-white shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+         class="hidden md:absolute md:top-full md:right-0 md:mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
          role="menu" aria-orientation="vertical" aria-labelledby="userDropdownTrigger" tabindex="-1">
-        <div class="px-4 py-4 border-b border-gray-200 flex justify-between items-center">
-            <div class="text-base font-semibold">
-                @auth {{ strtok(Auth::user()->name, ' ') }} @else Guest @endauth
-            </div>
-            <button id="userDropdownClose" class="text-gray-500 hover:text-gray-700">
-                &times;
-            </button>
-        </div>
 
         <div class="py-1">
             @auth
@@ -68,9 +60,9 @@
                 <a href="{{ route('admin.ad-zones.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>Manage Ad Zones</a>
                 <a href="{{ route('admin.ads.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>Manage Ads</a>
                 <a href="{{ route('admin.articles.posts.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v16a2 2 0 0 0-2 2Z"/><path d="M15 2h-5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M8 8h2"/><path d="M8 12h2"/><path d="M8 16h2"/></svg>Articles Management</a>
-            @else
-                <a href="{{ url('/my-products') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>My Products</a>
             @endrole
+            <a href="{{ route('articles.my') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v16a2 2 0 0 0-2 2Z"/><path d="M15 2h-5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M8 8h2"/><path d="M8 12h2"/><path d="M8 16h2"/></svg>My Articles</a>
+            <a href="{{ url('/my-products') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>My Products</a>
             <div class="border-t border-gray-200 my-1"></div>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
@@ -88,26 +80,21 @@
             const trigger = document.getElementById('userDropdownTrigger');
             const menu = document.getElementById('userDropdownMenu');
             const container = document.getElementById('userDropdownContainer');
-            const closeBtn = document.getElementById('userDropdownClose');
 
             function openMenu() {
-                menu.classList.remove('translate-x-full');
+                menu.classList.remove('hidden');
                 trigger.setAttribute('aria-expanded', 'true');
             }
 
             function closeMenu() {
-                menu.classList.add('translate-x-full');
+                menu.classList.add('hidden');
                 trigger.setAttribute('aria-expanded', 'false');
             }
 
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
-                const isOpen = !menu.classList.contains('translate-x-full');
+                const isOpen = !menu.classList.contains('hidden');
                 isOpen ? closeMenu() : openMenu();
-            });
-
-            closeBtn.addEventListener('click', function () {
-                closeMenu();
             });
 
             document.addEventListener('click', function (e) {

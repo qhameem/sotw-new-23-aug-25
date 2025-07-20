@@ -103,6 +103,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::prefix('articles')->name('articles.')->group(function () {
         // Admin ArticlePost routes using ID for binding
         Route::get('posts', [ArticlePostController::class, 'index'])->name('posts.index');
+        Route::get('posts/create', [ArticlePostController::class, 'create'])->name('posts.create');
         Route::get('posts/{post:id}/edit', [ArticlePostController::class, 'edit'])->name('posts.edit'); // Explicitly bind by ID
         Route::put('posts/{post:id}', [ArticlePostController::class, 'update'])->name('posts.update');   // Explicitly bind by ID
         Route::delete('posts/{post:id}', [ArticlePostController::class, 'destroy'])->name('posts.destroy'); // Explicitly bind by ID
@@ -248,3 +249,7 @@ Route::get('/software-review', function () {
 })->name('software-review');
 
 Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController::class, 'details'])->name('premium-spot.details');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/my-articles', [App\Http\Controllers\ArticleController::class, 'myArticles'])->name('articles.my');
+});

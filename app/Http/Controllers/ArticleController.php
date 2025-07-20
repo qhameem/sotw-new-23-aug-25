@@ -83,15 +83,6 @@ class ArticleController extends Controller implements Feedable
         return redirect()->route('articles.index')->with('success', 'Article submitted successfully.');
     }
 
-    public function myArticles()
-    {
-        $posts = Article::where('user_id', Auth::id())
-            ->with('categories', 'tags')
-            ->latest('created_at')
-            ->paginate(10);
-
-        return view('articles.my-articles', compact('posts'));
-    }
     /**
      * Display a listing of published articles.
      */
@@ -216,5 +207,11 @@ class ArticleController extends Controller implements Feedable
         return response()->view('articles.feed', [
             'posts' => $posts,
         ], 200)->header('Content-Type', 'application/xml');
+    }
+
+    public function myArticles()
+    {
+        $articles = Auth::user()->articles()->latest()->paginate(10);
+        return view('articles.my-articles', compact('articles'));
     }
 }
