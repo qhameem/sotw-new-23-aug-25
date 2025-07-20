@@ -1,9 +1,18 @@
 @extends('layouts.app')
 
 @section('header-title')
-    <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
-        {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
-    </h1>
+    <div class="flex gap-4 justify-between items-center">
+        <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
+            {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
+        </h1>
+        <button data-tooltip-target="tooltip-clear-form" onclick="clearForm()" type="button" class="bg-white border border-gray-300 hover:bg-gray-100 text-xs font-semibold py-1 px-3 rounded-lg transition-all duration-200 ease-in-out">
+            Clear Form
+        </button>
+        <div id="tooltip-clear-form" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-xs text-white transition-opacity duration-300 bg-gray-700 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700">
+            Refresh the page and clear all existing form data
+            <div class="tooltip-arrow" data-popper-arrow></div>
+        </div>
+    </div>
 @endsection
 
 @section('actions')
@@ -143,6 +152,14 @@
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
+function clearForm() {
+    const formId = '{{ isset($product) ? 'product_form_' . $product->id : 'new_product_form' }}';
+    if (confirm('Are you sure you want to clear the form? All unsaved changes will be lost.')) {
+        localStorage.removeItem(formId);
+        window.location.reload();
+    }
+}
+
 function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
     const productData = JSON.parse(productDataJson);
     const formData = JSON.parse(formDataJson);
@@ -383,6 +400,13 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             if (!this.canSubmitForm || this.logoUploadError) return;
             this.clearState();
             e.target.submit();
+        },
+
+        clearForm() {
+            if (confirm('Are you sure you want to clear the form? All unsaved changes will be lost.')) {
+                this.clearState();
+                window.location.reload();
+            }
         },
         
         generateSlug(text) {
