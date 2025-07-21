@@ -1,6 +1,9 @@
 @props(['user'])
 
 <article class="p-4 flex items-center gap-3 md:gap-3 transition relative group">
+    <div class="flex-shrink-0">
+        <img src="{{ $user->avatar() }}" alt="{{ $user->name }}" class="w-10 h-10 rounded-full object-cover">
+    </div>
     <div class="flex-1">
         <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
             <a href="{{ route('admin.users.show', $user) }}" class="text-left text-blue-600 hover:underline">{{ $user->name }}</a>
