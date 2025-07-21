@@ -14,8 +14,10 @@ class UserController extends Controller
     public function index()
     {
         $users = User::latest()->get();
+        $userCount = User::count();
         return view('admin.users.index', [
             'users' => $users,
+            'userCount' => $userCount,
             'title' => 'Manage Users',
             'actions' => [],
         ]);

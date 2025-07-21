@@ -2,6 +2,10 @@
 
 @section('title', 'Manage Users')
 
+@section('header-title')
+    Manage Users ({{ $userCount }})
+@endsection
+
 @section('actions')
 @endsection
 
