@@ -90,7 +90,7 @@
     @endphp
     <article class="p-4 flex items-center gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
              x-data='{}'
-             @click="window.location.href = '{{ route('products.show', $product->slug) }}'"
+             @click="window.open('{{ $isPromoted || $product->is_premium ? $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') . 'utm_source=softwareontheweb.com' : route('products.show', $product->slug) }}', '{{ $isPromoted || $product->is_premium ? '_blank' : '_self' }}')"
     >
         <span class="text-xs text-gray-500">{{ $baseNumber + $loop->index }}.</span>
         <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
