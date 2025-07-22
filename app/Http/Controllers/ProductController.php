@@ -236,14 +236,21 @@ class ProductController extends Controller
         
         if ($request->hasFile('logo')) {
             $image = $request->file('logo');
-            $filename = Str::uuid() . '.webp';
-            $path = 'logos/' . $filename;
+            $extension = $image->getClientOriginalExtension();
+            $filename = Str::uuid();
+            $path = 'logos/';
 
-            $img = Image::read($image->getRealPath());
-            $img->toWebp(80); // Convert to WebP with 80% quality
-            Storage::disk('public')->put($path, $img->encode());
-
-            $validated['logo'] = $path;
+            if ($extension === 'svg') {
+                $filenameWithExtension = $filename . '.svg';
+                $image->storePubliclyAs($path, $filenameWithExtension, 'public');
+                $validated['logo'] = $path . $filenameWithExtension;
+            } else {
+                $filenameWithExtension = $filename . '.webp';
+                $img = Image::read($image->getRealPath());
+                $img->toWebp(80); // Convert to WebP with 80% quality
+                Storage::disk('public')->put($path . $filenameWithExtension, $img->encode());
+                $validated['logo'] = $path . $filenameWithExtension;
+            }
         } elseif ($request->filled('logo_url')) {
             $validated['logo'] = $validated['logo_url'];
         }
@@ -372,25 +379,34 @@ class ProductController extends Controller
             $logoPath = null; // Explicitly set to null for removal
         } elseif ($request->hasFile('logo')) {
             $image = $request->file('logo');
-            $filename = Str::uuid() . '.webp';
-            $logoPath = 'logos/' . $filename;
+            $extension = $image->getClientOriginalExtension();
+            $filename = Str::uuid();
+            $logoPath = 'logos/';
 
-            $img = Image::read($image->getRealPath());
-            $img->toWebp(80); // Convert to WebP with 80% quality
-            Storage::disk('public')->put($logoPath, $img->encode());
+            if ($extension === 'svg') {
+                $filenameWithExtension = $filename . '.svg';
+                $image->storePubliclyAs($logoPath, $filenameWithExtension, 'public');
+                $logoPath .= $filenameWithExtension;
+            } else {
+                $filenameWithExtension = $filename . '.webp';
+                $img = Image::read($image->getRealPath());
+                $img->toWebp(80); // Convert to WebP with 80% quality
+                Storage::disk('public')->put($logoPath . $filenameWithExtension, $img->encode());
+                $logoPath .= $filenameWithExtension;
+            }
         }
-
+ 
         if ($product->approved) {
             // Product is approved, store edits as proposed changes
             if ($request->boolean('remove_logo')) {
                 // If there was a proposed logo, delete it. The live logo remains.
-                if ($product->proposed_logo_path) {
+                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = null;
             } elseif ($logoPath) {
                  // If there was a previous proposed logo, delete it before storing the new one
-                if ($product->proposed_logo_path) {
+                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = $logoPath;
