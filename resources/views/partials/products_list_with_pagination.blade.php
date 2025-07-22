@@ -112,6 +112,11 @@
             <p class="text-gray-800 text-sm md:text-sm mt-0.5 line-clamp-2">{{ $product->tagline }}</p>
             
             <div class="mt-1 flex flex-wrap gap-2 items-center">
+@if($isPromoted || $product->is_premium)
+                    <span class="inline-flex items-center bg-rose-50 text-rose-400 rounded text-xs mr-2">
+                        <span class="px-2 py-1 font-medium">Premium</span>
+                    </span>
+                @endif
                 @foreach($product->categories as $cat)
                 <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
                        @click.stop
@@ -139,30 +144,6 @@
             </div>
         </div>
 
-        @if($isPromoted || $product->is_premium)
-            <div class="flex-shrink-0">
-                <span class="inline-flex items-center bg-sky-100 text-sky-600 rounded text-xs">
-                    <span class="px-2 py-1 font-medium">Premium</span>
-                </span>
-            </div>
-        @else
-        <div x-data="upvote({{ $product->isUpvotedByCurrentUser ? 'true' : 'false' }}, {{ $product->votes_count }}, {{ $product->id }}, '{{ $product->slug }}', {{ Auth::check() ? 'true' : 'false' }}, '{{ csrf_token() }}')" class="upvote-control-wrapper flex flex-col items-center justify-start pt-1 ml-1 md:ml-2 w-10 flex-shrink-0 relative z-10">
-            <button type="button"
-                    @click.stop="toggleUpvote"
-                    :class="{ 'text-[var(--color-primary-500)]': isUpvoted, 'text-gray-400 hover:text-gray-600': !isUpvoted, 'opacity-50': isLoading }"
-                    class="p-1 rounded-md outline-none"
-                    :disabled="isLoading"
-                    aria-label="Upvote {{ $product->name }}">
-                <svg class="w-4 h-4 opacity-35 pointer-events-none" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g id="Shape / Triangle">
-                <path id="Vector" d="M4.37891 15.1999C3.46947 16.775 3.01489 17.5634 3.08281 18.2097C3.14206 18.7734 3.43792 19.2851 3.89648 19.6182C4.42204 20.0001 5.3309 20.0001 7.14853 20.0001H16.8515C18.6691 20.0001 19.5778 20.0001 20.1034 19.6182C20.5619 19.2851 20.8579 18.7734 20.9172 18.2097C20.9851 17.5634 20.5307 16.775 19.6212 15.1999L14.7715 6.79986C13.8621 5.22468 13.4071 4.43722 12.8135 4.17291C12.2957 3.94236 11.704 3.94236 11.1862 4.17291C10.5928 4.43711 10.1381 5.22458 9.22946 6.79845L4.37891 15.1999Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </g>
-                </svg>
-            </button>
-            <span x-text="votesCount" class="text-xs text-gray-600 mt-0.5"></span>
-            <span x-show="errorMessage" x-text="errorMessage" class="text-red-500 text-xs mt-1"></span>
-        </div>
-        @endif
     </article>
 
     @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
