@@ -32,7 +32,7 @@
         </div>
     </div>
     @endguest
-    <div class="mx-auto px-4 sm:px-6 lg:px-2 py-6 @guest blur-sm pointer-events-none @endguest">
+    <div class="mx-auto px-4 sm:px-6 lg:px-2 py-6 pb-24 @guest blur-sm pointer-events-none @endguest">
         @if(isset($product))
             <div class="mb-4 p-3 rounded-md bg-blue-50 border border-blue-300 text-blue-700 text-sm">
                 <strong>Note:</strong> Product Name, URL, and Slug cannot be changed through this form. To request changes to these fields, please contact support (support system to be implemented).
