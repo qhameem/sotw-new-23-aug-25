@@ -8,6 +8,7 @@
     <div class="grid md:grid-cols-4 gap-4 items-start">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="product_url">Product URL<span class="text-red-500 ml-1"><span class="text-red-500 ml-1">*</span></span></label>
+           
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center relative">
@@ -24,6 +25,7 @@
             <template x-if="urlExists && !checkingUrl && !isEditMode">
                 <div class="text-red-600 text-sm mt-1">This URL is already listed. Please enter a different product URL.</div>
             </template>
+             <span class="text-xs bg-amber-50 text-gray-600 tracking-tight">* Paste URL → wait a few seconds → we'll try to fill out the other fields automatically</span>
             
         </div>
     </div>
