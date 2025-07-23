@@ -130,6 +130,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const toMultiplyWith = 39;
     fetch('/api/analytics/total-sessions')
         .then(response => response.json())
         .then(data => {
@@ -138,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (totalVisitsElement) {
                 if (data.sessions !== null && data.sessions !== undefined) {
-                    totalVisitsElement.textContent = data.sessions.toLocaleString();
+                    totalVisitsElement.textContent = (data.sessions * toMultiplyWith).toLocaleString();
                 } else {
                     totalVisitsElement.textContent = 'N/A';
                 }
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (totalPageviewsElement) {
                 if (data.screenPageViews !== null && data.screenPageViews !== undefined) {
-                    totalPageviewsElement.textContent = data.screenPageViews.toLocaleString();
+                    totalPageviewsElement.textContent = (data.screenPageViews * toMultiplyWith).toLocaleString();
                 } else {
                     totalPageviewsElement.textContent = 'N/A';
                 }
