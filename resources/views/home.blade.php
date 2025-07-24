@@ -5,9 +5,11 @@
 @section('actions')
     <div class="md:flex items-center space-x-2">
         @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
-            Categories
-        </a>
+        <div class="hidden sm:flex">
+            <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
+                Categories
+            </a>
+        </div>
         @endif
        <x-add-product-button />
     </div>
@@ -47,7 +49,7 @@
         </div>
     @endif
 
-    <div class="bg-gradient-to-t from-white to-gray-50 md:space-y-1">
+    <div class="bg-white md:space-y-1">
         @if(isset($displayDateString) && (!isset($isCategoryPage) || !$isCategoryPage))
             <div class="flex justify-between items-center py-2 pl-4 pr-4">
                 <div>

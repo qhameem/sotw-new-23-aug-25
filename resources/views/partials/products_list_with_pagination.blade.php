@@ -1,5 +1,5 @@
 @php use Illuminate\Support\Str; @endphp
-<div class="md:space-y-2">
+<div class="md:space-y-2 pb-24">
 @php
     $promotedProductsList = $promotedProducts ?? collect();
     $regularProductsList = $regularProducts ?? collect();
@@ -88,14 +88,14 @@
         $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
         $isPromoted = $product->is_promoted ?? false;
     @endphp
-    <article wire:key="product-{{ $product->id }}" class="p-4 flex items-center gap-3 md:gap-3 transition relative group hover:bg-gray-50">
+    <article wire:key="product-{{ $product->id }}" class="p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-gray-50">
         <div class="flex items-center gap-3 flex-1">
-            <a href="{{ route('products.show', $product->slug) }}" class="flex items-center gap-3">
+            <a href="{{ route('products.show', $product->slug) }}" class="flex items-center gap-2">
             <span class="text-xs text-gray-500">{{ $baseNumber + $loop->index }}.</span>
-            <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-            <div>
-                <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
-                    <span class="text-left">{{ $product->name }}</span>
+            <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover border flex-shrink-0" loading="lazy" />
+            <div class="flex flex-col space-y-1">
+                <h2 class="text-sm font-semibold flex items-center leading-none">
+                    <span class="text-left text-black mt-1">{{ $product->name }}</span>
                     @if(!$isPromoted)
                         <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
                            target="_blank" rel="noopener nofollow"
@@ -108,9 +108,10 @@
                         </a>
                     @endif
                 </h2>
-                <p class="text-gray-800 text-sm md:text-sm mt-0.5 line-clamp-2">{{ $product->tagline }}</p>
                 
-                <div class="mt-1 flex flex-wrap gap-2 items-center">
+                <p class="text-gray-900 text-sm line-clamp-2">{{ $product->tagline }}</p>
+                
+                <div class="flex flex-wrap gap-2 items-center">
                     @if($isPromoted || $product->is_premium)
                         <span class="inline-flex items-center bg-rose-50 text-rose-400 rounded text-xs mr-2">
                             <span class="px-2 py-1 font-medium">Premium</span>
@@ -128,12 +129,12 @@
                             @endif
                         </a>
                      @if(!$loop->last)
-                        <span class="text-gray-400">•</span>
+                        <span class="hidden sm:inline text-gray-400">•</span>
                      @endif
                     @endforeach
                 </div>
 
-                <div class="text-xs text-gray-600  mt-1">
+                <div class="text-xs text-gray-600">
                     @if(isset($product->price) && is_numeric($product->price) && $product->price > 0)
                         Price: <span>${{ number_format($product->price, 2) }}</span>
                     @elseif(isset($product->pricing_type) && strtolower($product->pricing_type ?? '') === 'free')
