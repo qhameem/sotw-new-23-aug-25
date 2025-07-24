@@ -12,7 +12,7 @@
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center relative">
-                <input type="url" id="product_url" name="link" x-model="link" @input.debounce.500ms="checkUrlUnique" @blur="checkUrlUnique" @keydown.enter.prevent="checkUrlUnique" class="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500" required :disabled="isEditMode" :class="{'bg-gray-100 cursor-not-allowed': isEditMode}">
+                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="checkUrlUnique" @blur="checkUrlUnique" @keydown.enter.prevent="checkUrlUnique" class="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500" required>
                 <template x-if="checkingUrl && !isEditMode">
                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@
             <label class="block font-semibold md:text-left md:pr-4" for="product_name">Name<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
-            <input type="text" id="product_name" name="name" x-model="name" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required :disabled="isEditMode" :class="{'bg-gray-100 cursor-not-allowed': isEditMode}" @input="updateSlugOnNameChange">
+            <input type="text" id="product_name" name="name" x-model="name" value="{{ old('name', $product->name ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required @input="updateSlugOnNameChange">
             <template x-if="slug && !isEditMode">
                 <div class="mt-1">
                     <span class="text-xs text-gray-500">Slug:</span>
@@ -61,7 +61,7 @@
             <label class="block font-semibold md:text-left md:pr-4" for="tagline">Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
-            <input type="text" id="tagline" name="tagline" x-model="tagline" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
+            <input type="text" id="tagline" name="tagline" x-model="tagline" value="{{ old('tagline', $product->tagline ?? '') }}" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
             <p class="text-xs text-gray-500 mt-1">Describe your product in 150 characters or less.</p>
         </div>
     </div>
@@ -72,7 +72,7 @@
             <label class="block font-semibold md:text-left md:pr-4" for="product_page_tagline">Product Page Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
-            <input type="text" id="product_page_tagline" name="product_page_tagline" x-model="product_page_tagline" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
+            <input type="text" id="product_page_tagline" name="product_page_tagline" value="{{ old('product_page_tagline', $product->product_page_tagline ?? '') }}" x-model="product_page_tagline" maxlength="150" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
         </div>
     </div>
 
@@ -93,7 +93,7 @@
             <label class="block font-semibold md:text-left md:pr-4" for="video_url">Video URL</label>
         </div>
         <div class="md:col-span-3">
-            <input type="url" id="video_url" name="video_url" x-model="video_url" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500">
+            <input type="url" id="video_url" name="video_url" x-model="video_url" value="{{ old('video_url', $product->video_url ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500">
             <p class="text-xs text-gray-500 mt-1">Enter a YouTube or Vimeo URL to embed a video on the product page.</p>
         </div>
     </div>
