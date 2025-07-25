@@ -50,7 +50,7 @@ class ProductController extends Controller
                     return redirect()->route('products.byDate', ['date' => $latestDateWithProducts]);
                 }
             }
-            return $this->productsByDate($request, $serverTodayDate->toDateString());
+            return $this->productsByDate($request, $serverTodayDate->toDateString(), true);
         }
 
         $displayDateString = $serverTodayDate->toDateString();
@@ -604,7 +604,7 @@ class ProductController extends Controller
         return response()->json($dates);
     }
 
-    public function productsByDate(Request $request, $date)
+    public function productsByDate(Request $request, $date, $isHomepage = false)
     {
         try {
             $date = Carbon::parse($date);
@@ -643,8 +643,14 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $date->toDateString();
-        $title = 'on ' . $date->format('F d, Y'); // For potential in-page display
-        $pageTitle = 'Best of ' . $date->format('d F, Y') . ' | Software on the web'; // For <title> tag
+
+        if ($isHomepage) {
+            $title = 'Top Products';
+            $pageTitle = 'Top Products - Software on the web';
+        } else {
+            $title = 'on ' . $date->format('F d, Y'); // For potential in-page display
+            $pageTitle = 'Best of ' . $date->format('d F, Y') . ' | Software on the web'; // For <title> tag
+        }
         
         $activeDates = Product::where('approved', true)
             ->where('is_published', true)

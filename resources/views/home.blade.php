@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', $pageTitle ?? 'Software on the Web')
-
 @section('actions')
     <div class="md:flex items-center space-x-2">
         @if(!isset($isCategoryPage) || !$isCategoryPage)
@@ -50,18 +48,6 @@
     @endif
 
     <div class="bg-white md:space-y-1">
-        @if(isset($displayDateString) && (!isset($isCategoryPage) || !$isCategoryPage))
-            <div class="flex justify-between items-center py-2 pl-4 pr-4">
-                <div>
-                    @php
-                        $displayDate = \Carbon\Carbon::parse($displayDateString);
-                        $dayOfYear = $displayDate->dayOfYear;
-                    @endphp
-                    <h2 class="text-2xl font-noto-serif font-light tracking-tighter">Day {{ $dayOfYear }}</h2>
-                    <p class="text-xs text-gray-500">{{ $displayDate->format('j F') }}</p>
-                </div>
-            </div>
-        @endif
 
         @include('partials.products_list_with_pagination', [
             'promotedProducts' => $promotedProducts,

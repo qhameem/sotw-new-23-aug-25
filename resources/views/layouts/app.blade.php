@@ -53,15 +53,11 @@
         // Dynamic Title Logic
         $siteNameBase = "Software on the web";
         $finalTitle = '';
-        // Priority 1: A specific $title variable passed from the controller.
-        if (isset($title) && !empty(trim($title))) {
-            $finalTitle = trim($title);
-        }
-        // Priority 2: An alternative $pageTitle variable.
-        elseif (isset($pageTitle) && !empty(trim($pageTitle))) {
+        // Priority 1: A specific $pageTitle variable passed from the controller for the <title> tag.
+        if (isset($pageTitle) && !empty(trim($pageTitle))) {
             $finalTitle = trim($pageTitle);
         }
-        // Priority 3: Meta tag from the database for the current path.
+        // Priority 2: Meta tag from the database for the current path.
         elseif ($metaTag && !empty(trim($metaTag->title))) {
             $contentTitle = trim($metaTag->title);
             // Apply suffix rule
@@ -97,7 +93,7 @@
     @endphp
     <meta name="description" content="{{ $metaDescription }}">
 
-    <title>@yield('title', $finalTitle)</title>
+    <title>{{ $finalTitle }}</title>
 
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
