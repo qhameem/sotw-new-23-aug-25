@@ -687,7 +687,10 @@ class ProductController extends Controller
             ];
         })->values();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts'));
+        $dayOfYear = $date->dayOfYear;
+        $fullDate = $date->format('d F, Y');
+
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate'));
     }
     public function redirectToCurrentWeek()
     {

@@ -41,6 +41,10 @@
 @endsection
 
 @section('content')
+    @if(isset($dayOfYear) && isset($fullDate))
+        <x-day-header :day-of-year="$dayOfYear" :full-date="$fullDate" />
+    @endif
+
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
         <div class="bg-white px-4 py-3">
             <p class="text-sm text-gray-700">{{ $category->description }}</p>
