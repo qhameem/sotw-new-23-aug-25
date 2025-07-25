@@ -42,7 +42,7 @@
 
 @section('content')
     @if(isset($dayOfYear) && isset($fullDate))
-        <x-day-header :day-of-year="$dayOfYear" :full-date="$fullDate" />
+        <x-day-header :day-of-year="$dayOfYear" :full-date="$fullDate" :next-launch-time="$nextLaunchTime" />
     @endif
 
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)

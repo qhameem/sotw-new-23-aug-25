@@ -162,6 +162,12 @@ class ProductController extends Controller
             ->pluck('product')
             ->shuffle();
 
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
         return view('home', compact(
             'categories', 'types',
             'promotedProducts',
@@ -171,7 +177,8 @@ class ProductController extends Controller
             'serverTodayDateString', 'displayDateString',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
-            'activeDates'
+            'activeDates',
+            'nextLaunchTime'
         ));
     }
 
@@ -584,12 +591,19 @@ class ProductController extends Controller
             ->pluck('product')
             ->shuffle();
 
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
         return view('home', compact(
             'category', 'categories', 'types',
             'promotedProducts', 'regularProducts', 'premiumProducts', 'alpineProducts',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
-            'title', 'isCategoryPage'
+            'title', 'isCategoryPage',
+            'nextLaunchTime'
         ));
     }
 
@@ -690,7 +704,13 @@ class ProductController extends Controller
         $dayOfYear = $date->dayOfYear;
         $fullDate = $date->format('d F, Y');
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate'));
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
     }
     public function redirectToCurrentWeek()
     {
@@ -761,7 +781,13 @@ class ProductController extends Controller
             ];
         })->values();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts'));
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -815,7 +841,13 @@ class ProductController extends Controller
             ];
         })->values();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts'));
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function productsByYear(Request $request, $year)
@@ -869,7 +901,13 @@ class ProductController extends Controller
             ];
         })->values();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts'));
+        $latestProduct = Product::where('approved', true)
+            ->whereNotNull('published_at')
+            ->orderBy('published_at', 'desc')
+            ->first();
+        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+
+        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function search(Request $request)
