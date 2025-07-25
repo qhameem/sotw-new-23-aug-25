@@ -162,11 +162,12 @@ class ProductController extends Controller
             ->pluck('product')
             ->shuffle();
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact(
             'categories', 'types',
@@ -591,11 +592,12 @@ class ProductController extends Controller
             ->pluck('product')
             ->shuffle();
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact(
             'category', 'categories', 'types',
@@ -704,11 +706,12 @@ class ProductController extends Controller
         $dayOfYear = $date->dayOfYear;
         $fullDate = $date->format('d F, Y');
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
     }
@@ -781,11 +784,12 @@ class ProductController extends Controller
             ];
         })->values();
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
@@ -841,11 +845,12 @@ class ProductController extends Controller
             ];
         })->values();
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
@@ -901,11 +906,12 @@ class ProductController extends Controller
             ];
         })->values();
 
-        $latestProduct = Product::where('approved', true)
-            ->whereNotNull('published_at')
-            ->orderBy('published_at', 'desc')
-            ->first();
-        $nextLaunchTime = $latestProduct ? (new Carbon($latestProduct->published_at))->addDay()->toDateTimeString() : null;
+        $now = Carbon::now('UTC');
+        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
+        if ($nextLaunchTime->isPast()) {
+            $nextLaunchTime->addDay();
+        }
+        $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
         return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
