@@ -33,7 +33,6 @@ class Kernel extends ConsoleKernel
         $settings = Storage::disk('local')->exists('settings.json') ? json_decode(Storage::disk('local')->get('settings.json'), true) : [];
         $publishTime = $settings['product_publish_time'] ?? '07:00';
         $schedule->command('products:publish-scheduled')->dailyAt($publishTime);
-        $schedule->command('queue:work --stop-when-empty')->everyFifteenMinutes();
     }
 
     /**

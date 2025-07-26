@@ -74,19 +74,19 @@ class SendProductApprovedNotification
         }
         
         try {
-            Mail::to($user->email)->queue(new \App\Mail\ProductApproved($product));
+            Mail::to($user->email)->send(new \App\Mail\ProductApproved($product));
             EmailLog::create([
                 'product_id' => $product->id,
                 'user_id' => $user->id,
-                'status' => 'queued',
-                'message' => 'Email has been successfully queued for sending.'
+                'status' => 'sent',
+                'message' => 'Email sent successfully.'
             ]);
         } catch (Exception $e) {
             EmailLog::create([
                 'product_id' => $product->id,
                 'user_id' => $user->id,
                 'status' => 'failed',
-                'message' => 'Failed to queue email: ' . $e->getMessage()
+                'message' => 'Failed to send email: ' . $e->getMessage()
             ]);
         }
     }

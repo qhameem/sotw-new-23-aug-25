@@ -3,16 +3,13 @@
 namespace App\Mail;
 
 use App\Models\Product;
-use App\Models\EmailLog;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
-class ProductApproved extends Mailable implements ShouldQueue
+class ProductApproved extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -54,25 +51,4 @@ class ProductApproved extends Mailable implements ShouldQueue
         return [];
     }
 
-    public function build()
-    {
-        EmailLog::create([
-            'product_id' => $this->product->id,
-            'user_id' => $this->product->user_id,
-            'status' => 'building',
-            'message' => 'Queue worker is building the email.'
-        ]);
-
-        try {
-            return $this->markdown('emails.product.approved');
-        } catch (\Exception $e) {
-            EmailLog::create([
-                'product_id' => $this->product->id,
-                'user_id' => $this->product->user_id,
-                'status' => 'failed',
-                'message' => 'Failed during email build: ' . $e->getMessage()
-            ]);
-            throw $e;
-        }
-    }
 }
