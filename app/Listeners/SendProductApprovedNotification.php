@@ -5,30 +5,12 @@ namespace App\Listeners;
 use App\Events\ProductApproved;
 use App\Mail\ProductApprovedNotification as EmailNotification; // Alias for clarity
 use App\Notifications\ProductApprovedInApp; // Import In-App Notification
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Exception;
 
-class SendProductApprovedNotification implements ShouldQueue
+class SendProductApprovedNotification
 {
-    use InteractsWithQueue;
-
-    /**
-     * The number of times the job may be attempted.
-     *
-     * @var int
-     */
-    public $tries = 3;
-
-    /**
-     * The number of seconds to wait before retrying the job.
-     *
-     * @var int
-     */
-    public $backoff = [60, 300, 900]; // 1 min, 5 mins, 15 mins
-
     /**
      * Create the event listener.
      */
@@ -75,14 +57,13 @@ class SendProductApprovedNotification implements ShouldQueue
         }
         
         try {
-            Mail::to($user->email)->send(new \App\Mail\ProductApproved($product));
-            Log::info("Email Product Approved Notification: Email sent successfully to user {$user->id} for product {$product->id}.");
+            Mail::to($user->email)->queue(new \App\Mail\ProductApproved($product));
+            Log::info("Email Product Approved Notification: Email queued successfully for user {$user->id} for product {$product->id}.");
         } catch (Exception $e) {
-            Log::error("Email Product Approved Notification: Failed to send email to user {$user->id} for product {$product->id}. Error: {$e->getMessage()}");
-            if ($this->attempts() >= $this->tries) {
-                Log::critical("Email Product Approved Notification: Persistent failure sending email to user {$user->id} for product {$product->id}. Needs admin review. Error: {$e->getMessage()}");
-            }
-            throw $e; // Re-throw to let Laravel handle retry for the email part
+            Log::error("Email Product Approved Notification: Failed to queue email for user {$user->id} for product {$product->id}. Error: {$e->getMessage()}");
+            // Since this is not a queued job itself, we don't re-throw.
+            // The failure is logged, and we can decide if further action is needed,
+            // like a notification to an admin channel.
         }
     }
 }
