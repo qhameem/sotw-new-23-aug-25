@@ -37,7 +37,7 @@ class ProductApproved extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.product.approved',
+            markdown: 'emails.product-approved',
         );
     }
 
