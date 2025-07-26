@@ -69,7 +69,7 @@
                 @csrf
                 <input type="hidden" name="publish_option" value="specific_date">
                 <input type="hidden" name="published_at" id="hidden_published_at_{{ $product->id }}">
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value; return confirm('Are you sure you want to approve this product for the selected date?')">
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value;">
                     Publish on selected date and time
                 </button>
             </form>

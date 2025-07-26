@@ -18,7 +18,7 @@
                         <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
                         <span class="text-sm font-medium text-gray-700">Select All</span>
                     </label>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium" onclick="return confirm('Are you sure you want to approve all selected products?')">Approve Selected</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium">Approve Selected</button>
                 </div>
             </form>
             <div class="space-y-6">
