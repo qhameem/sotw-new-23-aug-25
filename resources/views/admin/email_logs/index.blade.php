@@ -37,5 +37,34 @@
     <div class="mt-6">
         {{ $logs->links() }}
     </div>
+
+    <h2 class="text-2xl font-bold py-10 pt-12">Failed Jobs</h2>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border rounded">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 border-b text-left">ID</th>
+                    <th class="px-4 py-2 border-b text-left">Connection</th>
+                    <th class="px-4 py-2 border-b text-left">Queue</th>
+                    <th class="px-4 py-2 border-b text-left">Failed At</th>
+                    <th class="px-4 py-2 border-b text-left">Exception</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($failed_jobs as $job)
+                    <tr>
+                        <td class="px-4 py-2 border-b align-top">{{ $job->id }}</td>
+                        <td class="px-4 py-2 border-b align-top">{{ $job->connection }}</td>
+                        <td class="px-4 py-2 border-b align-top">{{ $job->queue }}</td>
+                        <td class="px-4 py-2 border-b align-top">{{ $job->failed_at }}</td>
+                        <td class="px-4 py-2 border-b align-top"><pre class="whitespace-pre-wrap">{{ $job->exception }}</pre></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="text-gray-400 text-center py-4">No failed jobs found.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 @endsection
