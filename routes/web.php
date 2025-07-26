@@ -253,3 +253,7 @@ Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController
 Route::middleware('auth')->group(function () {
     Route::get('/my-articles', [App\Http\Controllers\ArticleController::class, 'myArticles'])->name('articles.my');
 });
+
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
+});

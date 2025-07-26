@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\ProductApproved;
 use App\Mail\ProductApprovedNotification as EmailNotification; // Alias for clarity
+use App\Models\EmailLog;
 use App\Notifications\ProductApprovedInApp; // Import In-App Notification
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,46 +25,69 @@ class SendProductApprovedNotification
      */
     public function handle(ProductApproved $event): void
     {
-        Log::info("SendProductApprovedNotification listener: Handling ProductApproved event for product ID {$event->product->id}, user ID {$event->user->id}.");
         $user = $event->user;
         $product = $event->product;
+
+        EmailLog::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'status' => 'initiated',
+            'message' => 'Processing product approval email.'
+        ]);
 
         // Send In-App Notification
         try {
             $user->notify(new ProductApprovedInApp($product));
-            Log::info("In-App Product Approved Notification: Sent successfully to user {$user->id} for product {$product->id}.");
         } catch (Exception $e) {
-            Log::error("In-App Product Approved Notification: Failed to send to user {$user->id} for product {$product->id}. Error: {$e->getMessage()}");
-            // Log and continue, as email notification might still be desired/possible.
+            // Log and continue
         }
 
         // Email Notification Logic
-        // 0. Ensure user profile exists (for email preferences)
         if (!$user->profile) {
-            Log::warning("Email Product Approved Notification: User profile not found for user {$user->id}. Product ID: {$product->id}. Cannot check email notification preferences. Skipping email.");
-            return; // Skip email if profile is missing
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'failed',
+                'message' => 'User profile not found.'
+            ]);
+            return;
         }
 
-        // 1. Check if user's email is valid
         if (!filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
-            Log::warning("Email Product Approved Notification: Invalid email for user {$user->id}. Product ID: {$product->id}. Email: {$user->email}. Skipping email.");
-            return; // Skip email if invalid
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'failed',
+                'message' => 'Invalid email address.'
+            ]);
+            return;
         }
 
-        // 2. Check user's email notification preferences for 'product_approval_notifications'
         if ($user->profile->optedOutOfNotification('product_approval_notifications')) {
-            Log::info("Email Product Approved Notification: User {$user->id} opted out of 'product_approval_notifications' (email). Product ID: {$product->id}. Skipping email.");
-            return; // Skip email if opted out
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'skipped',
+                'message' => 'User opted out of this notification.'
+            ]);
+            return;
         }
         
         try {
             Mail::to($user->email)->queue(new \App\Mail\ProductApproved($product));
-            Log::info("Email Product Approved Notification: Email queued successfully for user {$user->id} for product {$product->id}.");
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'queued',
+                'message' => 'Email has been successfully queued for sending.'
+            ]);
         } catch (Exception $e) {
-            Log::error("Email Product Approved Notification: Failed to queue email for user {$user->id} for product {$product->id}. Error: {$e->getMessage()}");
-            // Since this is not a queued job itself, we don't re-throw.
-            // The failure is logged, and we can decide if further action is needed,
-            // like a notification to an admin channel.
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'failed',
+                'message' => 'Failed to queue email: ' . $e->getMessage()
+            ]);
         }
     }
 }
