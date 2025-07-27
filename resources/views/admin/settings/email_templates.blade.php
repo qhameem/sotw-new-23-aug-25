@@ -11,7 +11,7 @@
     @endif
 
     <div class="bg-white shadow sm:rounded-lg p-6">
-        <form action="{{ route('admin.settings.storeEmailTemplates') }}" method="POST">
+        <form action="{{ route('admin.settings.storeEmailTemplates') }}" method="POST" id="template-form">
             @csrf
             <div class="mb-4">
                 <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
@@ -44,7 +44,9 @@
             <div class="mb-4">
                 <label for="body" class="block text-sm font-medium text-gray-700">Body</label>
                 <div id="editor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-white" style="min-height: 200px;"></div>
-                <textarea name="body" id="body_hidden" class="hidden">{{ old('body', $template->body) }}</textarea>
+                <!-- <textarea name="body" id="body_hidden" class="hidden">{{ old('body', $template->body) }}</textarea> -->
+                <textarea name="body" id="body_hidden" class="hidden">{!! old('body', $template->body) !!}</textarea>
+
                 @error('body')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -96,12 +98,17 @@
         }
     });
 
-    // Set initial content
-    quill.root.innerHTML = document.querySelector('#body_hidden').value;
+    // Load saved HTML content into Quill
+    const hiddenTextarea = document.querySelector('#body_hidden');
+    if (hiddenTextarea && hiddenTextarea.value) {
+        quill.root.innerHTML = hiddenTextarea.value;
+    }
 
-    // On form submit, populate the hidden textarea with Quill's HTML content
-    document.querySelector('form').onsubmit = function() {
-        document.querySelector('#body_hidden').value = quill.root.innerHTML;
-    };
+    quill.on('text-change', function() {
+        var newContent = quill.root.innerHTML;
+        var hiddenTextarea = document.querySelector('#body_hidden');
+        hiddenTextarea.value = newContent;
+    });
+
 </script>
 @endpush

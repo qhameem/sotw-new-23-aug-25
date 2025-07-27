@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -41,17 +42,53 @@ class SettingsController extends Controller
 
     public function storeEmailTemplates(Request $request)
     {
-        $request->validate([
+        Log::info('storeEmailTemplates: Received request data.', ['data' => $request->all()]);
+
+        $rules = [
             'subject' => 'required|string|max:255',
             'body' => 'required|string',
-            'is_html' => 'boolean',
+            'is_html' => 'nullable',
             'from_name' => 'nullable|string|max:255',
             'from_email' => 'nullable|email|max:255',
             'reply_to_email' => 'nullable|email|max:255',
-        ]);
+        ];
+        Log::info('storeEmailTemplates: Validation rules.', ['rules' => $rules]);
+
+        $validator = Validator::make($request->all(), $rules);
+        Log::info('storeEmailTemplates: Validation fails status.', ['fails' => $validator->fails()]);
+
+        if ($validator->fails()) {
+            Log::error('storeEmailTemplates: Validation failed.', ['errors' => $validator->errors()]);
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $validatedData = $validator->validated();
+        Log::info('storeEmailTemplates: Validated data.', ['validated_data' => $validatedData]);
 
         $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
-        $template->update($request->all());
+
+        if ($template) {
+            Log::info('Database connection name: ' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName());
+
+            Log::info('Email template attributes before update: ', $template->getAttributes());
+
+            $updateData = $validatedData;
+            $updateData['is_html'] = $request->boolean('is_html') ? 1 : 0;
+            $updateData['updated_at'] = now();
+
+            Log::info('storeEmailTemplates: Data for raw DB update.', ['update_data' => $updateData]);
+
+            $result = DB::table('email_templates')
+                ->where('id', $template->id)
+                ->update($updateData);
+
+            Log::info('storeEmailTemplates: Raw DB update result.', ['result' => $result]);
+
+            $updatedTemplate = DB::table('email_templates')->where('id', $template->id)->first();
+            Log::info('Email template attributes after update: ', (array) $updatedTemplate);
+        } else {
+            Log::warning('storeEmailTemplates: Template "product_approved" not found.');
+        }
 
         return back()->with('success', 'Email template updated successfully.');
     }
