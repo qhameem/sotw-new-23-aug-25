@@ -72,8 +72,6 @@ class ProductApprovalController extends Controller
     public function approve(Request $request, Product $product)
     {
         $product->approved = true;
-        $publishOption = $request->input('publish_option', 'now');
-
         $publishOption = $request->input('publish_option', 'specific_date'); // Default to specific_date
 
         switch ($publishOption) {
@@ -142,8 +140,6 @@ class ProductApprovalController extends Controller
             Log::warning("ProductApprovalController: Product ID {$product->id} has no associated user. Cannot dispatch ProductApproved event.");
         }
 
-        Artisan::call('products:publish-scheduled');
-
         return back()->with('success', 'Product approved.');
     }
 
@@ -192,7 +188,6 @@ class ProductApprovalController extends Controller
                 }
             }
             if ($approvedCount > 0) {
-                Artisan::call('products:publish-scheduled');
                 return back()->with('success', ' product(s) approved.');
             }
         }

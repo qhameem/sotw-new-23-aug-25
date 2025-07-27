@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             UserProfileSeeder::class,
             VoteSeeder::class,
             AdZoneSeeder::class,
+            EmailTemplateSeeder::class,
         ]);
     }
 }

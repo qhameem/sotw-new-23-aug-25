@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
+use App\Models\EmailTemplate;
+
 class SettingsController extends Controller
 {
     /**
@@ -29,6 +31,29 @@ class SettingsController extends Controller
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots', 'productPublishTime'));
+    }
+
+    public function emailTemplates()
+    {
+        $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
+        return view('admin.settings.email_templates', compact('template'));
+    }
+
+    public function storeEmailTemplates(Request $request)
+    {
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
+            'is_html' => 'boolean',
+            'from_name' => 'nullable|string|max:255',
+            'from_email' => 'nullable|email|max:255',
+            'reply_to_email' => 'nullable|email|max:255',
+        ]);
+
+        $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
+        $template->update($request->all());
+
+        return back()->with('success', 'Email template updated successfully.');
     }
 
     public function storeAnalyticsCode(Request $request)

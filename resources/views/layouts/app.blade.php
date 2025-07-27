@@ -69,7 +69,7 @@
         }
         // Priority 4: Route-specific titles.
         elseif (request()->is('/')) { // Home page
-            $finalTitle = "Top Software Tools, Updated Daily | " . $siteNameBase;
+            $finalTitle = "Top Products | " . $siteNameBase;
         }
         elseif (request()->segment(1) === 'categories' && request()->segment(2) && !request()->segment(3)) {
             $categorySlug = request()->segment(2);

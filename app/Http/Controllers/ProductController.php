@@ -664,8 +664,8 @@ class ProductController extends Controller
             $title = 'Top Products';
             $pageTitle = 'Top Products - Software on the web';
         } else {
-            $title = 'on ' . $date->format('F d, Y'); // For potential in-page display
-            $pageTitle = 'Best of ' . $date->format('d F, Y') . ' | Software on the web'; // For <title> tag
+            $title = 'Top Products';
+            $pageTitle = 'Top Products';
         }
         
         $activeDates = Product::where('approved', true)

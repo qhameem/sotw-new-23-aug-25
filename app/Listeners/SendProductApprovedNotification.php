@@ -25,21 +25,16 @@ class SendProductApprovedNotification
      */
     public function handle(ProductApproved $event): void
     {
+        Log::info("SendProductApprovedNotification listener triggered for product ID: {$event->product->id}");
+
         $user = $event->user;
         $product = $event->product;
-
-        EmailLog::create([
-            'product_id' => $product->id,
-            'user_id' => $user->id,
-            'status' => 'initiated',
-            'message' => 'Processing product approval email.'
-        ]);
 
         // Send In-App Notification
         try {
             $user->notify(new ProductApprovedInApp($product));
         } catch (Exception $e) {
-            // Log and continue
+            Log::error("Failed to send in-app notification for product ID {$product->id}: " . $e->getMessage());
         }
 
         // Email Notification Logic
@@ -50,6 +45,7 @@ class SendProductApprovedNotification
                 'status' => 'failed',
                 'message' => 'User profile not found.'
             ]);
+            Log::warning("Email not sent for product ID {$product->id}: User profile not found.");
             return;
         }
 
@@ -60,6 +56,7 @@ class SendProductApprovedNotification
                 'status' => 'failed',
                 'message' => 'Invalid email address.'
             ]);
+            Log::warning("Email not sent for product ID {$product->id}: Invalid email address '{$user->email}'.");
             return;
         }
 
@@ -70,17 +67,28 @@ class SendProductApprovedNotification
                 'status' => 'skipped',
                 'message' => 'User opted out of this notification.'
             ]);
+            Log::info("Email skipped for product ID {$product->id}: User opted out.");
             return;
         }
         
         try {
-            Mail::to($user->email)->send(new \App\Mail\ProductApproved($product));
+            // Log that email sending is initiated before attempting to send
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'initiated',
+                'message' => 'Attempting to send product approval email.'
+            ]);
+
+            Mail::to($user->email)->send(new EmailNotification($user, $product));
+            
             EmailLog::create([
                 'product_id' => $product->id,
                 'user_id' => $user->id,
                 'status' => 'sent',
                 'message' => 'Email sent successfully.'
             ]);
+            Log::info("Email sent successfully for product ID {$product->id} to {$user->email}.");
         } catch (Exception $e) {
             EmailLog::create([
                 'product_id' => $product->id,
@@ -88,6 +96,7 @@ class SendProductApprovedNotification
                 'status' => 'failed',
                 'message' => 'Failed to send email: ' . $e->getMessage()
             ]);
+            Log::error("Failed to send email for product ID {$product->id}: " . $e->getMessage());
         }
     }
 }
