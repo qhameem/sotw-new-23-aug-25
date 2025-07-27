@@ -2,12 +2,12 @@
 
 namespace App\Mail;
 
+use App\Models\EmailTemplate;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Address;
@@ -18,8 +18,7 @@ class ProductApprovedNotification extends Mailable implements ShouldQueue
 
     public User $user;
     public Product $product;
-    public string $approvalDate;
-    public string $productViewLink;
+    public ?EmailTemplate $template;
 
     /**
      * Create a new message instance.
@@ -28,8 +27,7 @@ class ProductApprovedNotification extends Mailable implements ShouldQueue
     {
         $this->user = $user;
         $this->product = $product;
-        $this->approvalDate = now()->format('F j, Y');
-        $this->productViewLink = route('products.show', $this->product);
+        $this->template = EmailTemplate::where('name', 'product_approved')->first();
     }
 
     /**
@@ -37,29 +35,51 @@ class ProductApprovedNotification extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        $subject = $this->replacePlaceholders($this->template->subject);
+
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: "Your Product Submission '{$this->product->name}' Has Been Approved!",
+            from: new Address($this->template->from_email, $this->template->from_name),
+            replyTo: [new Address($this->template->reply_to_email, $this->template->reply_to_name)],
+            subject: $subject,
         );
     }
 
     /**
-     * Get the message content definition.
+     * Build the message.
+     *
+     * @return $this
      */
-    public function content(): Content
+    public function build()
     {
-        return new Content(
-            markdown: 'emails.product_approved',
-            with: [
-                'userFirstName' => $this->user->profile->first_name ?? $this->user->name,
-                'userName' => $this->user->name,
-                'productName' => $this->product->name,
-                'submissionDate' => $this->product->created_at->format('F j, Y'),
-                'approvalDate' => $this->approvalDate,
-                'productViewLink' => $this->productViewLink,
-                'dashboardLink' => route('dashboard'), // Assuming a 'dashboard' route exists
-            ],
-        );
+        $body = $this->replacePlaceholders($this->template->body);
+
+        if ($this->template->is_html) {
+            return $this->html($body);
+        }
+
+        return $this->text($body);
+    }
+
+    /**
+     * Replace placeholders in the given content.
+     *
+     * @param string $content
+     * @return string
+     */
+    private function replacePlaceholders(string $content): string
+    {
+        $placeholders = [
+            '{{ user_name }}' => $this->user->name,
+            '{{ user_first_name }}' => $this->user->profile->first_name ?? $this->user->name,
+            '{{ product_name }}' => $this->product->name,
+            '{{ product_url }}' => route('products.show', $this->product),
+            '{{ product_publish_datetime }}' => $this->product->published_at ? $this->product->published_at->format('F j, Y, g:i a') : 'N/A',
+            '{{ approval_date }}' => now()->format('F j, Y'),
+            '{{ dashboard_url }}' => route('dashboard'),
+            '{{ site_name }}' => config('app.name'),
+        ];
+
+        return str_replace(array_keys($placeholders), array_values($placeholders), $content);
     }
 
     /**
