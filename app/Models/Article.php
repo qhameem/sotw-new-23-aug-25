@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Illuminate\Support\Facades\Log; // Added Log facade
+use DOMDocument;
 
 class Article extends Model implements Feedable, Sitemapable
 {
@@ -159,6 +160,43 @@ class Article extends Model implements Feedable, Sitemapable
                  Log::info("Article@saving: Slug generated for new post. New: '{$post->slug}' for Post ID: NEW");
             }
         });
+    }
+
+    /**
+     * Set the content attribute, adding rel="nofollow" to all <a> tags.
+     *
+     * @param  string  $value
+     * @return void
+     */
+    public function setContentAttribute($value)
+    {
+        if (empty($value)) {
+            $this->attributes['content'] = $value;
+            return;
+        }
+
+        $dom = new DOMDocument();
+        // Suppress warnings for malformed HTML
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $value, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $links = $dom->getElementsByTagName('a');
+
+        foreach ($links as $link) {
+            $rel = $link->getAttribute('rel');
+            if (empty($rel)) {
+                $link->setAttribute('rel', 'nofollow');
+            } else {
+                $rels = explode(' ', $rel);
+                if (!in_array('nofollow', $rels)) {
+                    $rels[] = 'nofollow';
+                }
+                $link->setAttribute('rel', implode(' ', array_unique($rels)));
+            }
+        }
+
+        $this->attributes['content'] = $dom->saveHTML();
     }
 
     /**

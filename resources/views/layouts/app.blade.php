@@ -91,7 +91,7 @@
             $finalTitle = $siteNameBase;
         }
     @endphp
-    <meta name="description" content="{{ $metaDescription }}">
+    @yield('meta_description')
 
     <title>{{ $finalTitle }}</title>
 

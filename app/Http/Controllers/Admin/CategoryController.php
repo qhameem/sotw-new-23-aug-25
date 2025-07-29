@@ -80,6 +80,7 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
             'slug' => 'required|string|max:255|unique:categories,slug,' . $category->id,
             'description' => 'nullable|string',
+            'meta_description' => 'nullable|string|max:255',
             'category_types' => 'nullable|array',
             'category_types.*' => 'exists:types,id', // Ensure selected types exist
         ]);

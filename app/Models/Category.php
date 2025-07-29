@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class Category extends Model implements Sitemapable
 {
     protected $fillable = [
-        'name', 'slug', 'description'
+        'name', 'slug', 'description', 'meta_description'
     ];
 
     public function products()

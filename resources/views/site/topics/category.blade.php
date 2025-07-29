@@ -1,5 +1,12 @@
 @extends('layouts.app')
 
+@section('meta_description')
+    @if(!empty(trim($category->meta_description)))
+        <meta name="description" content="{{ $category->meta_description }}">
+    @endif
+@endsection
+
+
 @section('content')
 <x-main-content-layout>
 
