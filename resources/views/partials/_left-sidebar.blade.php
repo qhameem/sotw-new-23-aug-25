@@ -42,7 +42,7 @@
             <a href="{{ route('faq') }}" class="hover:underline">FAQ</a> •
             <!-- <a href="{{ route('legal') }}" class="hover:underline">Terms of Use</a> • -->
             <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •
-            <!-- <a href="{{ route('legal') }}" class="hover:underline">Cookie Policy</a> • -->
+            <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
             <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a>
             <!-- <a href="{{ route('promote') }}" class="hover:underline">Advertise</a> -->
             <div class="h-2"></div>
