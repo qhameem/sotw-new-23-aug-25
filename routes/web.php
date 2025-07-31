@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\ArticleTagController; // Added
 use App\Http\Controllers\Admin\AdZoneController; // Added for Ad Zones
 use App\Http\Controllers\Admin\AdController; // Added for Ads
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ChangelogController as AdminChangelogController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\ArticleController; // Added for public articles
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TopicController; // Added for topics page
@@ -134,6 +136,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::get('product-reviews', [ProductReviewController::class, 'index'])->name('product-reviews.index');
     Route::patch('product-reviews/{product_review}', [ProductReviewController::class, 'update'])->name('product-reviews.update');
     Route::delete('premium-products/{premium_product}', [\App\Http\Controllers\Admin\PremiumProductController::class, 'destroy'])->name('premium-products.destroy');
+    Route::resource('changelogs', AdminChangelogController::class)->except(['show']);
 }); // End of admin prefix group
 
 Route::get('/api/product-meta', ProductMetaController::class);
@@ -218,7 +221,7 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog)[^/]+$');
 
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
@@ -249,6 +252,8 @@ Route::get('/premium-spot/success', [PremiumSpotController::class, 'success'])->
 Route::get('/software-review', function () {
     return view('site.software-review');
 })->name('software-review');
+
+Route::get('/changelog', [App\Http\Controllers\ChangelogController::class, 'index'])->name('changelog.index');
 
 Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController::class, 'details'])->name('premium-spot.details');
 

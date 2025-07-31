@@ -255,9 +255,11 @@
                 @if($softwareTypeFromLoop) <span class="text-red-500 ml-1"><span class="text-red-500 ml-1">*</span>Min 1 from {{ $softwareTypeFromLoop->name }}</span>@endif
             </div>
             <div>
-                <x-primary-button type="submit" x-bind:disabled="!canSubmitForm">
-                    {{ isset($product) ? 'Update Product' : 'Submit Product' }}
-                </x-primary-button>
+                <button type="submit" id="submit-product-button"
+                class="bg-primary-500 hover:bg-rose-400 text-white text-sm font-semibold py-1.5 px-3 rounded-md transition duration-300 shadow inline-flex items-center justify-center gap-2 relative"
+                 x-bind:disabled="!canSubmitForm">
+                    <span id="button-content">{{ isset($product) ? 'Update Product' : 'Submit Product' }}</span>
+                </button>
             </div>
         </div>
     </div>
