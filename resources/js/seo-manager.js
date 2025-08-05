@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const metaTitle = metaTitleInput.value;
         const metaDescription = metaDescriptionInput.value;
         const csrfToken = getCsrfToken();
+        const selectedPage = allPages.find(p => p.name === pageId);
+        const path = selectedPage ? selectedPage.uri : '';
 
         if (!pageId) {
             responseMessage.textContent = 'Please select a page.';
@@ -144,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     page_id: pageId,
+                    path: path,
                     meta_title: metaTitle,
                     meta_description: metaDescription
                 })

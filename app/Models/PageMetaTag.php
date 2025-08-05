@@ -10,6 +10,7 @@ class PageMetaTag extends Model
 
     protected $fillable = [
         'page_id',
+        'path',
         'meta_title',
         'meta_description',
     ];

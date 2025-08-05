@@ -57,6 +57,7 @@ class SeoApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'page_id' => 'required|string|max:255',
+            'path' => 'required|string|max:255',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
         ]);
@@ -68,6 +69,7 @@ class SeoApiController extends Controller
         $pageMetaTag = PageMetaTag::updateOrCreate(
             ['page_id' => $request->page_id],
             [
+                'path' => $request->path,
                 'meta_title' => $request->meta_title,
                 'meta_description' => $request->meta_description,
             ]
