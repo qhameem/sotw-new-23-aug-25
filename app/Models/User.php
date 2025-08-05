@@ -82,4 +82,8 @@ public function articles()
     {
         return $this->hasMany(Article::class);
     }
+    public function is_admin()
+    {
+        return $this->hasRole('admin');
+    }
 }

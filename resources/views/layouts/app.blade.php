@@ -43,57 +43,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @php
-        $currentPath = '/' . ltrim(request()->path(), '/');
-        if ($currentPath === '/index.php') { // Handle cases where index.php might be in the path
-            $currentPath = '/';
-        }
-        $metaTag = \App\Models\PageMetaTag::where('path', $currentPath)->first();
-        $metaDescription = $metaTag ? $metaTag->description : config('app.description', 'Default meta description for Software on the Web.'); // Fallback to a default
-        // Dynamic Title Logic
-        $siteNameBase = "Software on the web";
-        $finalTitle = '';
-        // Priority 1: A specific $pageTitle variable passed from the controller for the <title> tag.
-        if (isset($pageTitle) && !empty(trim($pageTitle))) {
-            $finalTitle = trim($pageTitle);
-        }
-        // Priority 2: Meta tag from the database for the current path.
-        elseif ($metaTag && !empty(trim($metaTag->title))) {
-            $contentTitle = trim($metaTag->title);
-            // Apply suffix rule
-            if ($contentTitle === $siteNameBase) {
-                $finalTitle = $siteNameBase;
-            } else {
-                $finalTitle = $contentTitle . " | " . $siteNameBase;
-            }
-        }
-        // Priority 4: Route-specific titles.
-        elseif (request()->is('/')) { // Home page
-            $finalTitle = "Top Products | " . $siteNameBase;
-        }
-        elseif (request()->segment(1) === 'categories' && request()->segment(2) && !request()->segment(3)) {
-            $categorySlug = request()->segment(2);
-            $categorySlug = preg_replace('/[^a-zA-Z0-9-]/', '', $categorySlug);
-            $formattedCategoryName = ucwords(str_replace('-', ' ', $categorySlug));
-            $finalTitle = $formattedCategoryName . " | " . $siteNameBase;
-        }
-        // Fallback: Use the application name.
-        else {
-            $contentTitle = config('app.name', $siteNameBase);
-            if ($contentTitle === $siteNameBase) {
-                $finalTitle = $siteNameBase;
-            } else {
-                $finalTitle = $contentTitle . " | " . $siteNameBase;
-            }
-        }
-        // Final clean-up
-        if (empty(trim($finalTitle)) || str_starts_with(trim($finalTitle), "| " . $siteNameBase)) {
-            $finalTitle = $siteNameBase;
-        }
-    @endphp
-    @yield('meta_description')
-
-    <title>{{ $finalTitle }}</title>
+    <title>{{ $meta_title ?? config('app.name', 'Laravel') }}</title>
+    @if(!empty($meta_description))
+        <meta name="description" content="{{ $meta_description }}">
+    @endif
 
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -322,7 +275,7 @@
             }, 300); 
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></script>
     @stack('scripts')
 
     <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
@@ -339,9 +292,7 @@
         window.upvoteActiveClass = 'text-[var(--color-primary-500)]';
         window.upvoteInactiveClass = 'text-gray-400 hover:text-gray-600  ';
     </script>
-    </body>
-
-<script>
+    <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('upvote', (initialUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
             isUpvoted: initialUpvoted,
@@ -407,4 +358,5 @@
         }));
     });
 </script>
+</body>
 </html>

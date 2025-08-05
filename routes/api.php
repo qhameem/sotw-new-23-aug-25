@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UpvoteController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\SeoApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,3 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/ga-stats', [AnalyticsController::class, 'getStats'])->name('api.ga-stats');
 Route::get('/analytics/total-sessions', [AnalyticsController::class, 'getTotalSessions']);
 Route::get('/search', [SearchController::class, 'search'])->name('api.search');
+
+// SEO API Routes
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/seo/pages', [SeoApiController::class, 'getPages'])->name('api.seo.pages');
+    Route::get('/seo/meta/{page_id}', [SeoApiController::class, 'getMeta'])->name('api.seo.meta');
+    Route::post('/seo/meta', [SeoApiController::class, 'saveMeta'])->name('api.seo.saveMeta');
+});

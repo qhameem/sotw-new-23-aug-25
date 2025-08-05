@@ -68,6 +68,7 @@ $logout = function (Logout $logout) {
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
+
                 <!-- Authentication -->
                 <button wire:click="logout" class="w-full text-start">
                     <x-responsive-nav-link>

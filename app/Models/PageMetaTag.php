@@ -9,7 +9,8 @@ class PageMetaTag extends Model
     protected $table = 'page_meta_tags';
 
     protected $fillable = [
-        'path',
-        'description',
+        'page_id',
+        'meta_title',
+        'meta_description',
     ];
 }

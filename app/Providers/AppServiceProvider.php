@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth; // Add this line
+use App\Http\View\Composers\SeoComposer;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
@@ -38,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('pendingProducts', $pendingProducts);
             }
         });
+
+        View::composer(
+            'layouts.app',
+            SeoComposer::class
+        );
 
         $this->loadThemeSettings();
     }

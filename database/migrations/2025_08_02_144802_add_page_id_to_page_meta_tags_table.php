@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('page_meta_tags', function (Blueprint $table) {
-            $table->id();
-            $table->string('path')->unique();
-            $table->text('description')->nullable();
-            $table->timestamps();
+        Schema::table('page_meta_tags', function (Blueprint $table) {
+            $table->string('page_id');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('page_meta_tags');
+        Schema::table('page_meta_tags', function (Blueprint $table) {
+            $table->dropColumn('page_id');
+        });
     }
 };

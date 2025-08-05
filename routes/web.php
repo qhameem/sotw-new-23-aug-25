@@ -130,7 +130,9 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::post('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'storeEmailTemplates'])->name('settings.storeEmailTemplates');
 
     // SEO Meta Tag Management
-    Route::get('seo/meta-tags', \App\Livewire\Admin\Seo\ManageMetaTags::class)->name('seo.meta-tags.index');
+    Route::get('seo', function () {
+        return view('admin.seo.index');
+    })->name('seo.index');
     Route::resource('users', UserController::class)->only(['index', 'show']);
     Route::get('premium-products', [\App\Http\Controllers\Admin\PremiumProductController::class, 'index'])->name('premium-products.index');
     Route::get('product-reviews', [ProductReviewController::class, 'index'])->name('product-reviews.index');
