@@ -98,7 +98,7 @@
                     <span class="text-left text-black mt-1">{{ $product->name }}</span>
                     @if(!$isPromoted)
                         <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
-                           target="_blank" rel="noopener nofollow"
+                           target="_blank" rel="noopener ugc"
                            @click.stop
                            class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200  rounded-full hover:bg-gray-100 "
                            aria-label="Open product link in new tab">
