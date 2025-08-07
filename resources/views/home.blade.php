@@ -54,7 +54,6 @@
     <div class="bg-white md:space-y-1">
 
         @include('partials.products_list_with_pagination', [
-            'promotedProducts' => $promotedProducts,
             'regularProducts' => $regularProducts,
             'belowProductListingAd' => $belowProductListingAd ?? null,
             'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null

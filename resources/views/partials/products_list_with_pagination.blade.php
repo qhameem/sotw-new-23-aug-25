@@ -1,42 +1,10 @@
 @php use Illuminate\Support\Str; @endphp
 <div class="pb-24">
 @php
-    $promotedProductsList = $promotedProducts ?? collect();
     $regularProductsList = $regularProducts ?? collect();
-    $finalProductList = [];
-    $maxPosition = 0;
+    $finalProductList = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator ? $regularProductsList->items() : $regularProductsList->all();
     $premiumProductsList = $premiumProducts ?? collect();
     $premiumProductIndex = 0;
-
-    // Place promoted products
-    foreach ($promotedProductsList as $p) {
-        if (isset($p->promoted_position) && $p->promoted_position > 0) {
-            $finalProductList[$p->promoted_position - 1] = $p;
-            if ($p->promoted_position > $maxPosition) {
-                $maxPosition = $p->promoted_position;
-            }
-        }
-    }
-
-    // Fill in with regular products
-    $regularProductIndex = 0;
-    $regularProductsCollection = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator ? $regularProductsList->getCollection() : $regularProductsList;
-    
-    $currentFinalListLength = count($finalProductList);
-    $targetListSize = max($maxPosition, $currentFinalListLength + $regularProductsCollection->count());
-    
-    for ($i = 0; $i < $targetListSize; $i++) {
-        if (!isset($finalProductList[$i])) {
-            if ($regularProductIndex < $regularProductsCollection->count()) {
-                $finalProductList[$i] = $regularProductsCollection[$regularProductIndex];
-                $regularProductIndex++;
-            } else {
-                 if ($i >= $maxPosition && $regularProductIndex >= $regularProductsCollection->count()) break;
-            }
-        }
-    }
-    $finalProductList = array_filter($finalProductList, fn($value) => $value !== null);
-    ksort($finalProductList);
 
     // Intersperse premium products
     if ($premiumProductsList->isNotEmpty()) {

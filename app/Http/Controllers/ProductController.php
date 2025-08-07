@@ -228,7 +228,6 @@ class ProductController extends Controller
 
         return view('home', compact(
             'categories', 'types',
-            'promotedProducts',
             'regularProducts',
             'premiumProducts',
             'alpineProducts',
@@ -824,7 +823,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
     }
     public function redirectToCurrentWeek()
     {
@@ -967,7 +966,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1093,7 +1092,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function productsByYear(Request $request, $year)
@@ -1219,7 +1218,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'promotedProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
     }
 
     public function search(Request $request)
