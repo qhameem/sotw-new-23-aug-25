@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
 use Intervention\Image\Laravel\Facades\Image;
@@ -82,38 +83,94 @@ class ProductController extends Controller
             ->whereNotNull('promoted_position')
             ->where('is_published', true)
             ->orderBy('promoted_position', 'asc')
-            ->get();
+            ->get()
+            ->keyBy('promoted_position'); // Key by position for easy lookup
 
-        $regularProductsQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
-            if (Auth::check()) {
-                $query->where('user_id', Auth::id());
-            }
-        }])
-            ->where('approved', true)
+        $baseRegularProductsQuery = Product::where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true);
 
+        // Apply date range filters to the base query for regular products
         switch ($range) {
             case 'weekly':
                 $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY)->toDateString();
                 $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY)->toDateString();
-                $regularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek, $endOfWeek]);
+                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek, $endOfWeek]);
                 break;
             case 'monthly':
                 $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
                 $today = Carbon::now()->toDateString();
-                $regularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth, $today]);
+                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth, $today]);
                 break;
             case 'yearly':
                 $startOfYear = Carbon::now()->startOfYear()->toDateString();
                 $today = Carbon::now()->toDateString();
-                $regularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear, $today]);
+                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear, $today]);
                 break;
         }
 
-        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->paginate(15);
+        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'home_' . $range);
 
-        $allProducts = collect($regularProducts->items())->merge($promotedProducts);
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $offset = ($currentPage - 1) * $perPage;
+
+        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
+        $paginatedRegularProductIds = [];
+        $finalProductOrder = [];
+        $regularProductIndex = 0;
+
+        for ($i = 1; $i <= $totalProductsCount; $i++) {
+            if ($promotedProducts->has($i)) {
+                $finalProductOrder[] = $promotedProducts->get($i);
+            } else {
+                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
+                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
+                    $regularProductIndex++;
+                }
+            }
+        }
+
+        // Manually paginate the final product order (which contains mixed Product objects and IDs)
+        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
+
+        // Separate IDs from Product objects to fetch full details for regular products
+        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
+        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
+
+        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+        ->whereIn('id', $regularProductIdsOnPage);
+
+        if ($regularProductIdsOnPage->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+        }
+        $regularProductsOnPage = $regularProductsOnPageQuery->get();
+
+        // Merge and re-sort to maintain the exact order
+        $combinedProducts = collect();
+        foreach ($currentPageItems as $item) {
+            if (is_object($item)) { // It's a promoted product object
+                $combinedProducts->push($item);
+            } else { // It's a regular product ID
+                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
+            }
+        }
+
+        // Create a LengthAwarePaginator manually
+        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combinedProducts,
+            $totalProductsCount,
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
+        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
         $alpineProducts = $allProducts->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -628,7 +685,7 @@ class ProductController extends Controller
             abort(404, 'Invalid date format provided.');
         }
 
-        $regularProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $baseRegularProductsQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
             }
@@ -638,10 +695,7 @@ class ProductController extends Controller
             ->where('is_published', true)
             ->where(function ($query) use ($date) {
                 $query->whereDate('published_at', $date->toDateString());
-            })
-            ->orderByDesc('votes_count')
-            ->orderBy('name', 'asc')
-            ->paginate(15);
+            });
 
         $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
@@ -653,7 +707,64 @@ class ProductController extends Controller
             ->whereNotNull('promoted_position')
             ->where('is_published', true)
             ->orderBy('promoted_position', 'asc')
-            ->get();
+            ->get()
+            ->keyBy('promoted_position');
+
+        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'date_' . $date->toDateString());
+
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $offset = ($currentPage - 1) * $perPage;
+
+        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
+        $finalProductOrder = [];
+        $regularProductIndex = 0;
+
+        for ($i = 1; $i <= $totalProductsCount; $i++) {
+            if ($promotedProducts->has($i)) {
+                $finalProductOrder[] = $promotedProducts->get($i);
+            } else {
+                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
+                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
+                    $regularProductIndex++;
+                }
+            }
+        }
+
+        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
+
+        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
+        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
+
+        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+        ->whereIn('id', $regularProductIdsOnPage);
+
+        if ($regularProductIdsOnPage->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+        }
+        $regularProductsOnPage = $regularProductsOnPageQuery->get();
+
+        $combinedProducts = collect();
+        foreach ($currentPageItems as $item) {
+            if (is_object($item)) {
+                $combinedProducts->push($item);
+            } else {
+                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
+            }
+        }
+
+        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combinedProducts,
+            $totalProductsCount,
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
 
         $categories = Category::all();
         $types = Type::with('categories')->get();
@@ -678,7 +789,7 @@ class ProductController extends Controller
             return view('partials.products_list_with_pagination', compact('regularProducts', 'promotedProducts'))->render();
         }
 
-        $allProducts = collect($regularProducts->items())->merge($promotedProducts);
+        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
         $alpineProducts = $allProducts->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -738,7 +849,7 @@ class ProductController extends Controller
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-        $regularProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $baseRegularProductsQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
             }
@@ -746,12 +857,77 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->orderByDesc('votes_count')
-            ->orderBy('name', 'asc')
-            ->paginate(15);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek->toDateString(), $endOfWeek->toDateString()]);
 
-        $promotedProducts = collect();
+        $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+            ->where('approved', true)
+            ->where('is_promoted', true)
+            ->whereNotNull('promoted_position')
+            ->where('is_published', true)
+            ->orderBy('promoted_position', 'asc')
+            ->get()
+            ->keyBy('promoted_position');
+
+        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
+
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $offset = ($currentPage - 1) * $perPage;
+
+        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
+        $finalProductOrder = [];
+        $regularProductIndex = 0;
+
+        for ($i = 1; $i <= $totalProductsCount; $i++) {
+            if ($promotedProducts->has($i)) {
+                $finalProductOrder[] = $promotedProducts->get($i);
+            } else {
+                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
+                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
+                    $regularProductIndex++;
+                }
+            }
+        }
+
+        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
+
+        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
+        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
+
+        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+        ->whereIn('id', $regularProductIdsOnPage);
+
+        if ($regularProductIdsOnPage->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+        }
+        $regularProductsOnPage = $regularProductsOnPageQuery->get();
+
+        $combinedProducts = collect();
+        foreach ($currentPageItems as $item) {
+            if (is_object($item)) {
+                $combinedProducts->push($item);
+            } else {
+                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
+            }
+        }
+
+        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combinedProducts,
+            $totalProductsCount,
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
         $categories = Category::all();
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
@@ -759,7 +935,7 @@ class ProductController extends Controller
         $title = 'This Week'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | Software on the web'; // For <title> tag
 
-        $allProducts = collect($regularProducts->items())->merge($promotedProducts);
+        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
         $alpineProducts = $allProducts->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -799,7 +975,7 @@ class ProductController extends Controller
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
-        $regularProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $baseRegularProductsQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
             }
@@ -807,12 +983,77 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
-            ->orderByDesc('votes_count')
-            ->orderBy('name', 'asc')
-            ->paginate(15);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth->toDateString(), $endOfMonth->toDateString()]);
 
-        $promotedProducts = collect();
+        $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+            ->where('approved', true)
+            ->where('is_promoted', true)
+            ->whereNotNull('promoted_position')
+            ->where('is_published', true)
+            ->orderBy('promoted_position', 'asc')
+            ->get()
+            ->keyBy('promoted_position');
+
+        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'month_' . $year . '_' . $month);
+
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $offset = ($currentPage - 1) * $perPage;
+
+        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
+        $finalProductOrder = [];
+        $regularProductIndex = 0;
+
+        for ($i = 1; $i <= $totalProductsCount; $i++) {
+            if ($promotedProducts->has($i)) {
+                $finalProductOrder[] = $promotedProducts->get($i);
+            } else {
+                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
+                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
+                    $regularProductIndex++;
+                }
+            }
+        }
+
+        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
+
+        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
+        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
+
+        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+        ->whereIn('id', $regularProductIdsOnPage);
+
+        if ($regularProductIdsOnPage->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+        }
+        $regularProductsOnPage = $regularProductsOnPageQuery->get();
+
+        $combinedProducts = collect();
+        foreach ($currentPageItems as $item) {
+            if (is_object($item)) {
+                $combinedProducts->push($item);
+            } else {
+                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
+            }
+        }
+
+        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combinedProducts,
+            $totalProductsCount,
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
         $categories = Category::all();
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
@@ -820,7 +1061,7 @@ class ProductController extends Controller
         $title = 'on ' . $startOfMonth->format('F Y'); // For potential in-page display
         $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | Software on the web'; // For <title> tag
 
-        $allProducts = collect($regularProducts->items())->merge($promotedProducts);
+        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
         $alpineProducts = $allProducts->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -860,7 +1101,7 @@ class ProductController extends Controller
         $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfYear();
         $endOfYear = $startOfYear->copy()->endOfYear();
 
-        $regularProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $baseRegularProductsQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
             }
@@ -868,12 +1109,77 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear->toDateString(), $endOfYear->toDateString()])
-            ->orderByDesc('votes_count')
-            ->orderBy('name', 'asc')
-            ->paginate(15);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear->toDateString(), $endOfYear->toDateString()]);
 
-        $promotedProducts = collect();
+        $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+            ->where('approved', true)
+            ->where('is_promoted', true)
+            ->whereNotNull('promoted_position')
+            ->where('is_published', true)
+            ->orderBy('promoted_position', 'asc')
+            ->get()
+            ->keyBy('promoted_position');
+
+        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'year_' . $year);
+
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $offset = ($currentPage - 1) * $perPage;
+
+        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
+        $finalProductOrder = [];
+        $regularProductIndex = 0;
+
+        for ($i = 1; $i <= $totalProductsCount; $i++) {
+            if ($promotedProducts->has($i)) {
+                $finalProductOrder[] = $promotedProducts->get($i);
+            } else {
+                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
+                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
+                    $regularProductIndex++;
+                }
+            }
+        }
+
+        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
+
+        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
+        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
+
+        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+        }])
+        ->whereIn('id', $regularProductIdsOnPage);
+
+        if ($regularProductIdsOnPage->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+        }
+        $regularProductsOnPage = $regularProductsOnPageQuery->get();
+
+        $combinedProducts = collect();
+        foreach ($currentPageItems as $item) {
+            if (is_object($item)) {
+                $combinedProducts->push($item);
+            } else {
+                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
+            }
+        }
+
+        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combinedProducts,
+            $totalProductsCount,
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
         $categories = Category::all();
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
@@ -881,7 +1187,7 @@ class ProductController extends Controller
         $title = 'in ' . $year; // For potential in-page display
         $pageTitle = 'Best of ' . $year . ' | Software on the web'; // For <title> tag
 
-        $allProducts = collect($regularProducts->items())->merge($promotedProducts);
+        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
         $alpineProducts = $allProducts->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -1011,5 +1317,33 @@ class ProductController extends Controller
         $title = $product->name;
         $pageTitle = $product->name . ' - Software on the web';
         return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts'));
+    }
+
+    /**
+     * Helper function to get shuffled product IDs for a given date range and filters.
+     * The shuffle is seeded daily per session to ensure fairness and consistency for the user.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query The base query for regular products.
+     * @param string $cacheKeySuffix A suffix for the cache key to differentiate between different product lists (e.g., 'home', 'category_X', 'date_Y').
+     * @return \Illuminate\Support\Collection
+     */
+    protected function getShuffledProductIds($query, $cacheKeySuffix)
+    {
+        $today = Carbon::now()->toDateString();
+        $sessionId = Session::getId();
+        $seed = crc32($today . '_' . $sessionId); // Generate a consistent seed for the day and session
+
+        $cacheKey = 'shuffled_product_ids_' . $cacheKeySuffix . '_' . $today . '_' . $sessionId;
+
+        // Try to retrieve from cache first
+        $shuffledIds = cache()->remember($cacheKey, Carbon::tomorrow()->diffInMinutes(), function () use ($query, $seed) {
+            $allProductIds = $query->pluck('id'); // Get all IDs first
+            
+            // Convert to array, shuffle with seed, then convert back to collection
+            $shuffledArray = $allProductIds->shuffle($seed)->all();
+            return collect($shuffledArray);
+        });
+
+        return $shuffledIds;
     }
 }
