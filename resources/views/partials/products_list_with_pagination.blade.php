@@ -52,8 +52,14 @@
 @forelse($finalProductList as $loopIndexActual => $product)
     @php
         $loopIndex = $loop->iteration;
+        $isPromoted = $product->is_promoted ?? ($product->is_premium ?? false);
     @endphp
-    @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
+
+    @if ($isPromoted)
+        @include('partials._promoted_product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
+    @else
+        @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
+    @endif
     @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
         @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
         @php $adDisplayed = true; @endphp
