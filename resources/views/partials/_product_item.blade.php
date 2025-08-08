@@ -7,7 +7,7 @@
 <article wire:key="product-{{ $product->id }}" class="p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-gray-50">
     <div class="flex items-center gap-3 flex-1">
         <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
-        <span class="text-xs text-gray-500">{{ $itemNumber }}.</span>
+        <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
         <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover border flex-shrink-0" />
         <div class="flex flex-col space-y-1">
             <h2 class="text-sm font-semibold flex items-center leading-none">
