@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
+use App\Helpers\HtmlHelper;
 
 class Product extends Model implements Sitemapable
 {
@@ -43,6 +44,15 @@ class Product extends Model implements Sitemapable
         'has_pending_edits' => 'boolean',
         'published_at' => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($product) {
+            $product->description = HtmlHelper::addNofollowToLinks($product->description);
+        });
+    }
 
     protected $appends = ['logo_url'];
 

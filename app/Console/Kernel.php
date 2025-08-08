@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         GenerateSitemap::class,
         PublishScheduledProducts::class,
+        \App\Console\Commands\AddNofollowToProductDescriptions::class,
     ];
 
     /**
