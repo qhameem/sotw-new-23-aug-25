@@ -12,7 +12,7 @@
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center relative">
-                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="checkUrlUnique" @blur="checkUrlUnique" @keydown.enter.prevent="checkUrlUnique" class="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500" required>
+                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="checkUrlUnique" @blur="checkUrlUnique" @keydown.enter.prevent="checkUrlUnique" class="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500 placeholder:text-xs placeholder-gray-400" placeholder="Paste product link here" required>
                 <template x-if="checkingUrl && !isEditMode">
                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -25,7 +25,8 @@
             <template x-if="urlExists && !checkingUrl && !isEditMode">
                 <div class="text-red-600 text-sm mt-1">This URL is already listed. Please enter a different product URL.</div>
             </template>
-             <span class="text-xs bg-amber-50 text-gray-600 tracking-tight">* Paste URL → wait a few seconds → we'll try to fill out the other fields automatically</span>
+            <div class="h-1"></div>
+             <span class="text-xs text-gray-600 tracking-tight">&#128161; Paste your product link — we’ll fetch the details automatically</span>
             <template x-if="loadingMeta">
                 <div class="text-sm text-gray-600 mt-2 flex items-center">
                     <svg class="animate-spin h-5 w-5 mr-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
