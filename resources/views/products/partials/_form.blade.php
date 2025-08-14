@@ -26,12 +26,20 @@
                 <div class="text-red-600 text-sm mt-1">This URL is already listed. Please enter a different product URL.</div>
             </template>
              <span class="text-xs bg-amber-50 text-gray-600 tracking-tight">* Paste URL → wait a few seconds → we'll try to fill out the other fields automatically</span>
-            
+            <template x-if="loadingMeta">
+                <div class="text-sm text-gray-600 mt-2 flex items-center">
+                    <svg class="animate-spin h-5 w-5 mr-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Fetching product details...
+                </div>
+            </template>
         </div>
     </div>
 
     <!-- Name -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showName" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="product_name">Name<span class="text-red-500 ml-1">*</span></label>
         </div>
@@ -42,7 +50,7 @@
     </div>
 
     <!-- Tagline -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showTagline" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="tagline">Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
@@ -53,7 +61,7 @@
     </div>
 
     <!-- Tagline on Product Page -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showProductPageTagline" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="product_page_tagline">Product Page Tagline<span class="text-red-500 ml-1">*</span></label>
         </div>
@@ -63,7 +71,7 @@
     </div>
 
     <!-- Description -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showDescription" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="quill-editor">Description<span class="text-red-500 ml-1">*</span></label>
         </div>
@@ -74,7 +82,7 @@
     </div>
 
     <!-- Video URL -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showVideoUrl" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4" for="video_url">Video URL</label>
         </div>
@@ -85,7 +93,7 @@
     </div>
 
     <!-- Logo Upload Section -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showLogo" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4">{{ isset($product) && $product->logo ? 'Logo' : 'Product Logo' }}</label>
         </div>
@@ -155,7 +163,7 @@
     </div>
 
     <!-- Categories Section -->
-    <div class="grid md:grid-cols-4 gap-4 items-start">
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showCategories" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">
             <label class="block font-semibold md:text-left md:pr-4">Categories<span class="text-red-500 ml-1">*</span></label>
         </div>
@@ -229,7 +237,7 @@
     </div>
 
     <!-- Submit Button -->
-    <div class="grid md:grid-cols-4 gap-4 mt-6">
+    <div class="grid md:grid-cols-4 gap-4 mt-6" x-show="showSubmit" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-start-2 md:col-span-3 flex justify-between items-center">
             <div class="text-xs text-gray-500">
                 Selected: <span x-text="selectedCategories.length"></span>.

@@ -187,10 +187,29 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         loadingMeta: false,
         urlExists: false,
         checkingUrl: false,
+        showName: false,
+        showTagline: false,
+        showProductPageTagline: false,
+        showDescription: false,
+        showVideoUrl: false,
+        showLogo: false,
+        showCategories: false,
+        showSubmit: false,
 
         init() {
             this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
             this.loadState();
+
+            if (this.isEditMode) {
+                this.showName = true;
+                this.showTagline = true;
+                this.showProductPageTagline = true;
+                this.showDescription = true;
+                this.showVideoUrl = true;
+                this.showLogo = true;
+                this.showCategories = true;
+                this.showSubmit = true;
+            }
 
             this.$nextTick(() => {
                 this.quill = new Quill('#quill-editor', {
@@ -314,31 +333,61 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         },
 
         fetchMetaAndFavicon() {
-            if (!this.link || this.urlExists || this.isEditMode) return;
-            this.loadingMeta = true;
-            fetch(`/api/product-meta?url=${encodeURIComponent(this.link)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.title && !this.name) this.name = data.title;
-                    if (data.description) {
-                        if (this.quill && this.quill.getText().trim() === '') {
-                            this.description = data.description;
-                            this.quill.root.innerHTML = data.description;
+            return new Promise((resolve, reject) => {
+                if (!this.link || this.urlExists || this.isEditMode) {
+                    resolve();
+                    return;
+                };
+                
+                this.loadingMeta = true;
+                
+                fetch(`/api/product-meta?url=${encodeURIComponent(this.link)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.title && !this.name) this.name = data.title;
+                        if (data.description) {
+                            if (this.quill && this.quill.getText().trim() === '') {
+                                this.description = data.description;
+                                this.quill.root.innerHTML = data.description;
+                            }
                         }
-                    }
-                    if (data.favicon && !this.logoFileSelected) {
-                        if(!this.isEditMode) {
-                           this.logoPreviewUrl = data.favicon;
+                        if (data.favicon && !this.logoFileSelected) {
+                            if(!this.isEditMode) {
+                            this.logoPreviewUrl = data.favicon;
+                            }
                         }
-                    }
-                    if (data.title && !this.tagline && !this.isEditMode) {
-                        this.tagline = data.title;
-                        this.product_page_tagline = data.title;
-                    }
-                })
-                .finally(() => {
-                    this.loadingMeta = false;
+                        if (data.title && !this.tagline && !this.isEditMode) {
+                            this.tagline = data.title;
+                            this.product_page_tagline = data.title;
+                        }
+                        resolve();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching meta and favicon:', error);
+                        reject(error);
+                    })
+                    .finally(() => {
+                        this.loadingMeta = false;
+                    });
+            });
+        },
+
+        sequentiallyRevealFields() {
+            const fields = [
+                'showName', 'showTagline', 'showProductPageTagline', 
+                'showDescription', 'showVideoUrl', 'showLogo', 
+                'showCategories', 'showSubmit'
+            ];
+            
+            let delay = 200;
+
+            this.fetchMetaAndFavicon().finally(() => {
+                fields.forEach((field, index) => {
+                    setTimeout(() => {
+                        this[field] = true;
+                    }, index * delay);
                 });
+            });
         },
 
         checkUrlUnique() {
@@ -351,7 +400,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                     .then(data => {
                         this.urlExists = data.exists;
                         if (!data.exists) {
-                            this.fetchMetaAndFavicon();
+                            this.sequentiallyRevealFields();
                         }
                     })
                     .finally(() => {
