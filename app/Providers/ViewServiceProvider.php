@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Category;
 use App\Http\View\Composers\RightSidebarComposer;
+use App\Http\View\Composers\SeoComposer;
 
 class ViewServiceProvider extends ServiceProvider
 {
@@ -51,5 +52,6 @@ class ViewServiceProvider extends ServiceProvider
         });
 
         View::composer('partials._right-sidebar', RightSidebarComposer::class);
+        View::composer('*', SeoComposer::class);
     }
 }
