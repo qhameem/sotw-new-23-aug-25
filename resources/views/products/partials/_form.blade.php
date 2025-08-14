@@ -36,21 +36,7 @@
             <label class="block font-semibold md:text-left md:pr-4" for="product_name">Name<span class="text-red-500 ml-1">*</span></label>
         </div>
         <div class="md:col-span-3">
-            <input type="text" id="product_name" name="name" x-model="name" value="{{ old('name', $product->name ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required @input="updateSlugOnNameChange">
-            <template x-if="slug && !isEditMode">
-                <div class="mt-1">
-                    <span class="text-xs text-gray-500">Slug:</span>
-                    <span class="text-xs text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded-md" x-text="slug"></span>
-                    <input type="hidden" name="slug" x-model="slug">
-                </div>
-            </template>
-            <template x-if="slug && isEditMode">
-                <div class="mt-1">
-                    <span class="text-xs text-gray-500">Slug:</span>
-                    <span class="text-xs text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded-md" x-text="slug"></span>
-                    <input type="hidden" name="slug" x-model="slug">
-                </div>
-            </template>
+            <input type="text" id="product_name" name="name" x-model="name" value="{{ old('name', $product->name ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:ring-primary-500" required>
         </div>
         
     </div>

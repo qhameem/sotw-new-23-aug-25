@@ -2,6 +2,7 @@
 @extends('layouts.app')
 
 @section('title', $pageTitle)
+@section('meta_description', $metaDescription)
 
 @section('header-title')
     <div class="flex items-center pt-1.5">

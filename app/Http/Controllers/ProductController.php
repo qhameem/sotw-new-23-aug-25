@@ -19,15 +19,18 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
+use App\Services\SlugService;
 use Intervention\Image\Laravel\Facades\Image;
 
 class ProductController extends Controller
 {
     protected FaviconExtractorService $faviconExtractor;
+    protected SlugService $slugService;
 
-    public function __construct(FaviconExtractorService $faviconExtractor)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService)
     {
         $this->faviconExtractor = $faviconExtractor;
+        $this->slugService = $slugService;
     }
 
     public function home(Request $request)
@@ -269,7 +272,6 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:products,slug',
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -280,6 +282,12 @@ class ProductController extends Controller
             'logo_url' => 'nullable|url|max:2048',
             'video_url' => 'nullable|url|max:2048',
         ]);
+
+        $existsCheck = function ($slug) {
+            return Product::where('slug', $slug)->exists();
+        };
+
+        $validated['slug'] = $this->slugService->generateUniqueSlug($validated['name'], $existsCheck);
 
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
         $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
@@ -1314,8 +1322,12 @@ class ProductController extends Controller
             ->get();
 
         $title = $product->name;
-        $pageTitle = $product->name . ' - Software on the web';
-        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts'));
+        $pageTitle = $product->name . ': ' . $product->product_page_tagline . ' - Software on the Web';
+
+        $description = strip_tags($product->description);
+        $metaDescription = Str::limit($description, 160);
+
+        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription'));
     }
 
     /**
