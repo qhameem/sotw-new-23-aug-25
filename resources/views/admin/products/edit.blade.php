@@ -75,6 +75,14 @@
             softwareCategoriesList: [],
             selectedCategoriesDisplay: [],
             autoSlug: !productData,
+            showName: true,
+            showTagline: true,
+            showProductPageTagline: true,
+            showDescription: true,
+            showVideoUrl: true,
+            showLogo: true,
+            showCategories: true,
+            showSubmit: true,
 
             init() {
                 this.$nextTick(() => {
