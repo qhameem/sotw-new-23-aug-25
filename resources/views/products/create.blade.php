@@ -153,7 +153,7 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
 function clearForm() {
-    const formId = '{{ isset($product) ? 'product_form_' . $product->id : 'new_product_form' }}';
+    const formId = "{{ isset($product) ? 'product_form_' . $product->id : 'new_product_form' }}";
     if (confirm('Are you sure you want to clear the form? All unsaved changes will be lost.')) {
         localStorage.removeItem(formId);
         window.location.reload();
@@ -169,10 +169,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
 
     return {
         isEditMode: !!productData,
+        autoSlug: !productData,
+        productSlug: productData?.slug || '',
         quill: null,
-        link: '',
-        name: '',
-        tagline: '',
+        link: productData?.link || '',
+        name: productData?.name || '',
+        tagline: productData?.tagline || '',
         product_page_tagline: '',
         description: '',
         video_url: '',
@@ -271,6 +273,10 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             fieldsToWatch.forEach(field => {
                 this.$watch(field, () => this.saveState());
             });
+
+            this.$watch('name', (val) => {
+                this.productSlug = this.generateSlug(val);
+            });
         },
 
         loadState() {
@@ -278,6 +284,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             const initialState = {
                 link: productData?.link || (formData && formData.link) || '',
                 name: productData?.name || (formData && formData.name) || '',
+                productSlug: productData?.slug || (formData && formData.slug) || '',
                 tagline: (formData && formData.tagline !== undefined) ? formData.tagline : '',
                 product_page_tagline: (formData && formData.product_page_tagline !== undefined) ? formData.product_page_tagline : '',
                 description: (formData && formData.description !== undefined) ? formData.description : '',
@@ -290,6 +297,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 // We merge saved state with initial state, giving precedence to initial state (from controller) if it exists
                 this.link = initialState.link || parsedState.link || '';
                 this.name = initialState.name || parsedState.name || '';
+                this.productSlug = initialState.productSlug || parsedState.productSlug || '';
                 this.tagline = initialState.tagline || parsedState.tagline || '';
                 this.product_page_tagline = initialState.product_page_tagline || parsedState.product_page_tagline || '';
                 this.description = initialState.description || parsedState.description || '';
@@ -304,6 +312,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             const state = {
                 link: this.link,
                 name: this.name,
+                productSlug: this.productSlug,
                 tagline: this.tagline,
                 product_page_tagline: this.product_page_tagline,
                 description: this.description,
@@ -344,7 +353,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 fetch(`/api/product-meta?url=${encodeURIComponent(this.link)}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.title && !this.name) this.name = data.title;
+                        if (data.title && !this.name) {
+                            this.name = data.title;
+                            if (this.autoSlug) {
+                                this.productSlug = this.generateSlug(this.name);
+                            }
+                        }
                         if (data.description) {
                             if (this.quill && this.quill.getText().trim() === '') {
                                 this.description = data.description;
@@ -457,10 +471,16 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             this.selectedCategories = this.selectedCategories.filter(id => id !== catIdStr);
         },
 
-        $watch: {
-            name(val) {
-                // Slug generation is now handled by the backend.
-            }
+        generateSlug(text) {
+            return text
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w-]+/g, '')
+                .replace(/--+/g, '-');
         }
     }
 }

@@ -57,24 +57,27 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
     function productForm(productData, allCategoriesData) {
+        const formId = `product_form_${productData.id}`;
+
         return {
-            isEditMode: !!productData,
+            isEditMode: true,
+            autoSlug: false, // Never auto-slug on edit from name, unless name is changed.
+            productSlug: productData?.slug || '',
             quill: null,
             link: productData?.link || '',
             name: productData?.name || '',
-            slug: productData?.slug || '',
             tagline: productData?.tagline || '',
             product_page_tagline: productData?.product_page_tagline || '',
             description: productData?.description || '',
             video_url: productData?.video_url || '',
             logoPreviewUrl: '',
             logoFileSelected: false,
-            selectedCategories: productData?.categories.map(cat => cat.id.toString()) || [],
+            logoUploadError: '',
             allCategories: allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] })),
             categorySearchTerm: '',
             softwareCategoriesList: [],
+            selectedCategories: productData?.categories.map(cat => cat.id.toString()) || [],
             selectedCategoriesDisplay: [],
-            autoSlug: !productData,
             showName: true,
             showTagline: true,
             showProductPageTagline: true,
@@ -107,7 +110,6 @@
 
                     this.quill.on('text-change', () => {
                         this.description = this.quill.root.innerHTML;
-                        document.querySelector('input[name=description]').value = this.description;
                     });
                 });
 
@@ -138,6 +140,10 @@
                 this.$watch('selectedCategories', () => {
                     this.updateSelectedCategoriesDisplay();
                 }, { deep: true });
+
+                this.$watch('name', (val) => {
+                    this.productSlug = this.generateSlug(val);
+                });
             },
 
             updateSelectedCategoriesDisplay() {
@@ -173,6 +179,18 @@
 
             deselectCategory(categoryId) {
                 this.selectedCategories = this.selectedCategories.filter(id => id.toString() !== categoryId.toString());
+            },
+
+            generateSlug(text) {
+                return text
+                    .toString()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w-]+/g, '')
+                    .replace(/--+/g, '-');
             }
         };
     }

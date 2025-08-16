@@ -50,6 +50,17 @@
         
     </div>
 
+    <!-- Slug as guidance -->
+    <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showName" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+        <div class="md:col-span-1"></div>
+        <div class="md:col-span-3">
+            <input type="hidden" name="slug" :value="productSlug">
+            <p class="text-xs text-gray-500">
+                <span class="font-semibold">Slug:</span> <span x-text="productSlug"></span>
+            </p>
+        </div>
+    </div>
+
     <!-- Tagline -->
     <div class="grid md:grid-cols-4 gap-4 items-start" x-show="showTagline" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
         <div class="md:col-span-1">

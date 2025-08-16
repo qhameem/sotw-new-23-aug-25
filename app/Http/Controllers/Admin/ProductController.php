@@ -91,7 +91,6 @@ class ProductController extends Controller
             'name' => $product->name,
             'slug' => $product->slug,
             'link' => $product->link,
-            'logo' => $product->logo,
             'tagline' => $product->tagline,
             'product_page_tagline' => $product->product_page_tagline,
             'description' => $product->description,
