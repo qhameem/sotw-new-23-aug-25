@@ -1,6 +1,5 @@
 @extends('layouts.app')
 
-@section('hide_right_sidebar', true)
 @section('content')
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <h1 class="text-2xl font-bold py-10 pt-12">Product Approvals</h1>
@@ -120,6 +119,9 @@
         </div>
     </div>
 </div>
+@endsection
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
@@ -129,4 +131,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection 
+@endpush

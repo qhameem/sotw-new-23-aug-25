@@ -77,6 +77,32 @@
         @elseif (View::hasSection('right_sidebar_content'))
             @yield('right_sidebar_content')
         @endif
+        
+        @if (isset($scheduledProductsStats) && Route::currentRouteName() == 'admin.product-approvals.index')
+            <div class="p-4">
+                <h3 class="text-base font-medium mb-2">Scheduled Products</h3>
+                @if(!$scheduledProductsStats->isEmpty())
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left py-2">Date</th>
+                                <th class="text-right py-2">#</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($scheduledProductsStats as $stat)
+                                <tr class="border-b">
+                                    <td class="py-2">{{ \Carbon\Carbon::parse($stat->date)->format('d M, Y') }}</td>
+                                    <td class="text-right py-2">{{ $stat->count }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @else
+                    <p class="text-sm text-gray-500">No products are currently scheduled.</p>
+                @endif
+            </div>
+        @endif
     </div>
     <div x-show="searchFocused" style="display: none;" class="p-4 text-gray-500" x-data="{ results: null }" @search-results.window="results = $event.detail">
         <div x-show="!results" class="text-center">

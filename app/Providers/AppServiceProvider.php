@@ -11,6 +11,7 @@ use App\Http\View\Composers\SeoComposer;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
+use App\Http\View\Composers\ScheduledProductsStatsComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -44,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
             'layouts.app',
             SeoComposer::class
         );
+
+        View::composer('partials._right-sidebar', ScheduledProductsStatsComposer::class);
 
         $this->loadThemeSettings();
     }
