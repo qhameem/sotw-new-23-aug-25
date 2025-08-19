@@ -46,6 +46,12 @@
     <title>@yield('title', $meta_title ?? config('app.name', 'Laravel'))</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
 
+    <meta name="application-name" content="{{ config('app.name', 'Laravel') }}">
+    <meta property="og:site_name" content="{{ config('app.name', 'Laravel') }}">
+    <meta property="og:title" content="@yield('title', $meta_title ?? config('app.name', 'Laravel'))">
+    <meta name="twitter:title" content="@yield('title', $meta_title ?? config('app.name', 'Laravel'))">
+
+
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="{{ config('theme.font_url') }}" rel="stylesheet">
@@ -126,6 +132,18 @@
     @livewireStyles
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Software on the Web",
+      "url": "https://www.softwareontheweb.com"
+    }
+    </script>
+
+
+
 </head>
 
 <body class="font-sans antialiased bg-white"
