@@ -133,6 +133,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')
 
+    @verbatim
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -141,6 +142,7 @@
       "url": "https://www.softwareontheweb.com"
     }
     </script>
+    @endverbatim
 </head>
 
 <body class="font-sans antialiased bg-white"
