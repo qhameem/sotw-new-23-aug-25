@@ -1,8 +1,13 @@
 @extends('layouts.app')
 
+@section('header-title', 'Product Approvals')
+
+@section('actions')
+    <x-add-product-button />
+@endsection
+
 @section('content')
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-2xl font-bold py-10 pt-12">Product Approvals</h1>
     @if(session('success'))
         <div class="mb-4 text-green-700 bg-green-100 rounded p-2">{{ session('success') }}</div>
     @endif
@@ -10,21 +15,22 @@
         <h2 class="text-lg font-semibold mb-3">Pending Approval</h2>
         @if($pendingProducts->count() > 0)
             {{-- Bulk Approve Form (moved outside individual product cards) --}}
-            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form" class="mb-4">
+            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form">
                 @csrf
-                <div class="flex items-center gap-4">
+                <div class="mb-4 flex items-center gap-4">
                     <label class="inline-flex items-center">
                         <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
                         <span class="text-sm font-medium text-gray-700">Select All</span>
                     </label>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium">Approve Selected</button>
+                    <x-scheduled-datepicker name="bulk_published_at" />
+                    <button type="submit" class="px-4 py-1 border border-sky-500 text-sky-600 rounded-md hover:bg-sky-50 text-sm font-medium">Approve Selected</button>
+                </div>
+                <div class="space-y-6">
+                    @foreach($pendingProducts as $product)
+                        @include('admin.product_approvals._product_approval_card', ['product' => $product])
+                    @endforeach
                 </div>
             </form>
-            <div class="space-y-6">
-                @foreach($pendingProducts as $product)
-                    @include('admin.product_approvals._product_approval_card', ['product' => $product])
-                @endforeach
-            </div>
         @else
             <div class="text-gray-500 text-center py-10">
                 <p>No products are currently pending approval.</p>

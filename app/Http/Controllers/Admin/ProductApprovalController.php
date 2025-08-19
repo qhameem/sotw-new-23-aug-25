@@ -153,7 +153,7 @@ class ProductApprovalController extends Controller
     public function bulkApprove(Request $request)
     {
         $productIds = $request->input('products', []);
-        $publishDates = $request->input('published_at', []);
+        $bulkPublishDate = $request->input('bulk_published_at');
 
         if (!empty($productIds)) {
             $approvedCount = 0;
@@ -161,11 +161,10 @@ class ProductApprovalController extends Controller
                 $product = Product::find($id);
                 if ($product) {
                     $product->approved = true;
-                    $publishDate = $publishDates[$id] ?? null;
 
-                    if (!empty($publishDate)) {
+                    if (!empty($bulkPublishDate)) {
                         try {
-                            $product->published_at = \Carbon\Carbon::parse($publishDate)->setTime(7, 0, 0);
+                            $product->published_at = \Carbon\Carbon::parse($bulkPublishDate)->setTime(7, 0, 0);
                             $product->is_published = false; // Scheduled
                         } catch (\Exception $e) {
                             $product->published_at = now()->utc();
@@ -188,7 +187,7 @@ class ProductApprovalController extends Controller
                 }
             }
             if ($approvedCount > 0) {
-                return back()->with('success', ' product(s) approved.');
+                return back()->with('success', $approvedCount . ' product(s) approved.');
             }
         }
         return back()->with('success', 'No products selected or found for approval.');

@@ -69,15 +69,15 @@
                 @csrf
                 <input type="hidden" name="publish_option" value="specific_date">
                 <input type="hidden" name="published_at" id="hidden_published_at_{{ $product->id }}">
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value;">
-                    Publish on selected date and time
+                <button type="submit" class="px-4 py-1 border border-sky-500 hover:bg-sky-50 text-sky-600 rounded-md text-sm font-medium  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500" onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value;">
+                    Publish on selected date
                 </button>
             </form>
             <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
                 @csrf
                 <input type="hidden" name="publish_option" value="now">
-                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                    Publish
+                <button type="submit" class="px-4 py-1 border border-gray-500 hover:bg-gray-50 text-gray-600 rounded-md text-sm font-medium  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                    Publish now
                 </button>
             </form>
         </div>

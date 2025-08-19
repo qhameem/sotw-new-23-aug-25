@@ -6,18 +6,18 @@
 @endphp
 <div class="flex items-center">
     <input type="date"
-           class="scheduled-datepicker mt-1 block w-48 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+           class="scheduled-datepicker mt-1 py-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50"
            name="{{ $name }}"
            value="{{ $initialValue }}"
            min="{{ $today }}"
            id="{{ $uniqueId }}"
            {{ $attributes }}>
     <div class="ml-2 flex">
-        <button type="button" class="prev-day px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" data-target="{{ $uniqueId }}">
-            &lt;
+        <button type="button" class="prev-day px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500" data-target="{{ $uniqueId }}">
+            &larr;
         </button>
-        <button type="button" class="next-day px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-1" data-target="{{ $uniqueId }}">
-            &gt;
+        <button type="button" class="next-day px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 ml-1" data-target="{{ $uniqueId }}">
+            &rarr;
         </button>
     </div>
 </div>
