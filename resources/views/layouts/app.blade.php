@@ -123,7 +123,7 @@
             $gaCode = $settings['google_analytics_code'] ?? '';
         }
     @endphp
-    @if(!empty($gaCode) && !Auth::check()) {{-- Only inject if code exists and user is not authenticated (optional: or not admin) --}}
+    @if(!empty($gaCode) && !Auth::check()) 
         {!! $gaCode !!}
     @endif
     {{-- End Google Analytics Code Injection --}}
