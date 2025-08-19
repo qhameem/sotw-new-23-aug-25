@@ -141,9 +141,6 @@
       "url": "https://www.softwareontheweb.com"
     }
     </script>
-
-
-
 </head>
 
 <body class="font-sans antialiased bg-white"
