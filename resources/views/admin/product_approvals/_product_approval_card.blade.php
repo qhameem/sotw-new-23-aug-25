@@ -27,7 +27,7 @@
                     <div class="text-xs text-gray-500 mt-1">Submitted by: {{ $product->user->name ?? 'N/A' }}</div>
                 </div>
                 <label class="absolute top-4 right-4">
-                    <input type="checkbox" name="products[]" value="{{ $product->id }}" class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded product-checkbox">
+                    <input type="checkbox" name="products[]" value="{{ $product->id }}" class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded product-checkbox" form="bulk-approve-form">
                 </label>
             </div>
 

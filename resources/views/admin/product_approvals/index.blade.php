@@ -25,12 +25,12 @@
                     <x-scheduled-datepicker name="bulk_published_at" />
                     <button type="submit" class="px-4 py-1 border border-sky-500 text-sky-600 rounded-md hover:bg-sky-50 text-sm font-medium">Approve Selected</button>
                 </div>
-                <div class="space-y-6">
-                    @foreach($pendingProducts as $product)
-                        @include('admin.product_approvals._product_approval_card', ['product' => $product])
-                    @endforeach
-                </div>
             </form>
+            <div class="space-y-6">
+                @foreach($pendingProducts as $product)
+                    @include('admin.product_approvals._product_approval_card', ['product' => $product])
+                @endforeach
+            </div>
         @else
             <div class="text-gray-500 text-center py-10">
                 <p>No products are currently pending approval.</p>
