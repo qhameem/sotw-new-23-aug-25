@@ -1,20 +1,21 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Write a New Article') }}
-        </h2>
-    </x-slot>
+@section('header-title')
+    <h1 class="text-xl font-bold text-gray-800">{{ __('Write an Article') }}</h1>
+@endsection
 
-    <div class="py-12">
+<x-app-layout>
+   
+
+    <div class="py-2">
+        
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
                     <form action="{{ route('articles.store') }}" method="POST">
                         @csrf
 
                         <!-- Main Content Section -->
                         <div class="mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{{ __('Main Content') }}</h3>
+                            <!-- <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Main Content') }}</h3> -->
                             <div class="space-y-4">
                                 <div>
                                     <x-input-label for="title" :value="__('Title')" />
@@ -30,7 +31,7 @@
 
                                 <div>
                                     <x-input-label for="content" :value="__('Content')" />
-                                    <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-md">
+                                    <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md">
                                         {!! old('content') !!}
                                     </div>
                                     <input type="hidden" name="content" id="content" value="{{ old('content') }}">
@@ -39,17 +40,17 @@
 
                                 <div>
                                     <x-input-label for="featured_image_upload" :value="__('Featured Image')" />
-                                    <input type="file" id="featured_image_upload" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" aria-describedby="featured_image_help">
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="featured_image_help">JPG, PNG, WEBP or GIF (MAX. 2MB).</p>
+                                    <input type="file" id="featured_image_upload" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" aria-describedby="featured_image_help">
+                                    <p class="mt-1 text-sm text-gray-500" id="featured_image_help">JPG, PNG, WEBP or GIF (MAX. 2MB).</p>
                                     <x-input-error :messages="$errors->get('featured_image_path')" class="mt-2" />
                                     <input type="hidden" name="featured_image_path" id="featured_image_path" :value="old('featured_image_path')">
                                     
                                     <div id="featured_image_preview_container" class="mt-2" style="display: none;">
                                         <img id="featured_image_preview" src="#" alt="Featured Image Preview" class="max-h-48 rounded shadow"/>
-                                        <button type="button" id="remove_featured_image" class="mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200">Remove Image</button>
+                                        <button type="button" id="remove_featured_image" class="mt-1 text-xs text-red-600 hover:text-red-800">Remove Image</button>
                                     </div>
-                                    <div id="featured_image_upload_error" class="mt-1 text-xs text-red-600 dark:text-red-400" style="display: none;"></div>
-                                    <div id="featured_image_upload_progress" class="mt-2 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700" style="display: none;">
+                                    <div id="featured_image_upload_error" class="mt-1 text-xs text-red-600" style="display: none;"></div>
+                                    <div id="featured_image_upload_progress" class="mt-2 w-full bg-gray-200 rounded-full h-2.5" style="display: none;">
                                         <div id="featured_image_progress_bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                                     </div>
                                 </div>
@@ -58,11 +59,11 @@
 
                         <!-- Taxonomy Section -->
                         <div class="mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{{ __('Taxonomies') }}</h3>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Taxonomies') }}</h3>
                             <div class="space-y-4">
                                 <div>
                                     <x-input-label for="categories" :value="__('Categories')" />
-                                    <select name="categories[]" id="categories" multiple class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                    <select name="categories[]" id="categories" multiple class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}" {{ in_array($category->id, old('categories', [])) ? 'selected' : '' }}>{{ $category->name }}</option>
                                         @endforeach
@@ -71,7 +72,7 @@
                                 </div>
                                 <div>
                                     <x-input-label for="tags" :value="__('Tags')" />
-                                     <select name="tags[]" id="tags" multiple class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                     <select name="tags[]" id="tags" multiple class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                         @foreach($tags as $tag)
                                             <option value="{{ $tag->id }}" {{ in_array($tag->id, old('tags', [])) ? 'selected' : '' }}>{{ $tag->name }}</option>
                                         @endforeach
@@ -83,11 +84,11 @@
 
                         <!-- Status and Publishing Section -->
                         <div class="mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{{ __('Status') }}</h3>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Status') }}</h3>
                             <div class="space-y-4">
                                 <div>
                                     <x-input-label for="status" :value="__('Status')" />
-                                    <select name="status" id="status" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                    <select name="status" id="status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                         @foreach($statuses as $key => $value)
                                             <option value="{{ $key }}" {{ old('status', 'draft') == $key ? 'selected' : '' }}>{{ $value }}</option>
                                         @endforeach
@@ -98,7 +99,7 @@
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
-                            <a href="{{ route('articles.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mr-4">
+                            <a href="{{ route('articles.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">
                                 {{ __('Cancel') }}
                             </a>
                             <x-primary-button>
@@ -117,24 +118,6 @@
         .ql-editor {
             min-height: 250px;
             font-size: 1rem;
-        }
-        .dark .ql-toolbar {
-            border-color: #4a5568;
-        }
-        .dark .ql-toolbar .ql-stroke {
-            stroke: #cbd5e0;
-        }
-        .dark .ql-toolbar .ql-fill {
-            fill: #cbd5e0;
-        }
-        .dark .ql-toolbar .ql-picker-label {
-            color: #cbd5e0;
-        }
-        .dark .ql-snow .ql-picker.ql-header .ql-picker-item::before {
-            color: #cbd5e0;
-        }
-        .dark .ql-snow .ql-picker.ql-header .ql-picker-label::before {
-            color: #cbd5e0;
         }
     </style>
     @endpush
