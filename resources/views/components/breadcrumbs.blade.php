@@ -1,7 +1,18 @@
-@if(!empty($items) && count($items) > 1) {{-- Only render if not homepage (more than just 'Home' link) --}}
+@php
+    $uniqueItems = [];
+    $seenLabels = [];
+    foreach ($items as $item) {
+        if (!in_array($item['label'], $seenLabels)) {
+            $uniqueItems[] = $item;
+            $seenLabels[] = $item['label'];
+        }
+    }
+@endphp
+
+@if(!empty($uniqueItems) && count($uniqueItems) > 1) {{-- Only render if not homepage (more than just 'Home' link) --}}
 <nav aria-label="breadcrumb" class="px-4 md:px-[100px] md:ml-16 mt-4 pt-20 text-xs text-gray-700 ">
     <ol class="inline-flex items-center space-x-1 md:space-x-1 rtl:space-x-reverse">
-        @foreach ($items as $index => $item)
+        @foreach ($uniqueItems as $index => $item)
             <li class="inline-flex items-center">
                 @if ($item['url'])
                     <a href="{{ $item['url'] }}" class="inline-flex items-center hover:text-primary-600 ">
@@ -17,7 +28,9 @@
                 @endif
 
                 @if (!$loop->last)
-                    <span class="text-gray-400 ml-2 rtl:rotate-180">></span>
+                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
                 @endif
             </li>
         @endforeach

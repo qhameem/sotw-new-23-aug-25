@@ -1,8 +1,5 @@
 @extends('layouts.app')
 
-@section('title')
-    <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
-@endsection
 
 @section('actions')
     <div class="md:flex items-center space-x-2">
