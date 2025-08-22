@@ -9,9 +9,26 @@
 @section('content')
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     @if(session('success'))
-        <div class="mb-4 text-green-700 bg-green-100 rounded p-2">{{ session('success') }}</div>
+        <div class="flex items-center gap-3 rounded-lg border border-green-400 bg-green-50 px-4 py-3">
+          <!-- Icon -->
+          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <!-- Text -->
+          <div class="flex flex-col">
+            <span class="font-semibold text-gray-900">Congratulations!</span>
+            <span class="text-gray-600 text-sm">{{ session('success') }}</span>
+          </div>
+        </div>
+        
     @endif
-    <div class="mb-10">
+
+    
+
+    <div class="mb-10 mt-2">
         <h2 class="text-lg font-semibold mb-3">Pending Approval</h2>
         @if($pendingProducts->count() > 0)
             {{-- Bulk Approve Form (moved outside individual product cards) --}}
