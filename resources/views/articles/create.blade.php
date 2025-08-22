@@ -118,6 +118,17 @@
         .ql-editor {
             min-height: 250px;
             font-size: 1rem;
+            background-color: #fff;
+            color: #000;
+        }
+        .ql-toolbar {
+            background-color: #f9fafb; /* A light gray, similar to other inputs */
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+        }
+        .ql-container {
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
         }
     </style>
     @endpush

@@ -32,7 +32,6 @@ export default {
         'hover:ring-gray-400',
     ],
 
-    darkMode: false, // Enable class-based dark mode
 
     theme: {
         extend: {
