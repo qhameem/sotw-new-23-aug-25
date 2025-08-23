@@ -86,10 +86,13 @@
             showLogo: true,
             showCategories: true,
             showSubmit: true,
-
-            init() {
-                this.$nextTick(() => {
-                    this.quill = new Quill('#quill-editor', {
+            fetchingDetails: false,
+            loadingMeta: false,
+            checkingUrl: false,
+ 
+             init() {
+                 this.$nextTick(() => {
+                     this.quill = new Quill('#quill-editor', {
                         modules: {
                             toolbar: [
                                 [{ 'header': [2, 3, 4, false] }],
@@ -175,6 +178,16 @@
                 if (!this.canSubmitForm) return;
                 document.querySelector('input[name=description]').value = this.quill.root.innerHTML;
                 e.target.submit();
+            },
+
+            checkUrlUnique() {
+                if (this.isEditMode) return;
+                this.loadingMeta = true;
+                this.checkingUrl = true;
+                setTimeout(() => {
+                    this.loadingMeta = false;
+                    this.checkingUrl = false;
+                }, 2000);
             },
 
             deselectCategory(categoryId) {
