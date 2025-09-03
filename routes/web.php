@@ -143,6 +143,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
 
 Route::get('/api/product-meta', ProductMetaController::class);
 Route::get('/check-product-url', [ProductController::class, 'checkUrl']);
+Route::get('/fetch-url-data', [ProductController::class, 'fetchUrlData'])->name('fetch-url-data');
 
 // Topics page to display all categories
 Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');

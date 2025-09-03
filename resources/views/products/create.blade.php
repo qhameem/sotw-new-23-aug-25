@@ -451,137 +451,40 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             return this.tagline.length > 0 && this.selectedCategories.length > 0;
         },
 
-        fetchMetaAndFavicon() {
-            return new Promise((resolve, reject) => {
-                if (!this.link || this.urlExists || this.isEditMode) {
-                    resolve();
-                    return;
-                };
-                
-                this.loadingMeta = true;
-                this.fetchingStatusMessage = 'Fetching metadata...';
-                
-                fetch(`/api/product-meta?url=${encodeURIComponent(this.link)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        this.fetchingStatusMessage = 'Polling for data...';
-                        this.pollForData();
-                        resolve();
-                    })
-                    .catch(error => {
-                        console.error('Error starting meta fetch:', error);
-                        this.loadingMeta = false; // Stop loading on error
-                        this.fetchError = true;
-                        this.fetchingStatusMessage = '';
-                        reject(error);
-                    });
-            });
-        },
 
-        pollForData() {
-            let attempts = 0;
-            const maxAttempts = 30; // e.g., 1 minute timeout
-            const interval = setInterval(() => {
-                fetch(`/api/get-cached-logos?url=${encodeURIComponent(this.link)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        // Update basic info if available
-                        if (data.title && !this.name) {
-                            this.name = data.title.substring(0, this.name_max_length);
-                            if (this.autoSlug) {
-                                this.productSlug = this.generateSlug(this.name);
-                            }
-                        }
-                        if (data.description && this.quill && this.quill.getText().trim() === '') {
-                            this.description = data.description;
-                            this.quill.root.innerHTML = data.description;
-                        }
-                        if (data.tagline && !this.tagline) {
-                            this.tagline = data.tagline.substring(0, this.tagline_max_length);
-                        }
-                        if (data.product_page_tagline && !this.product_page_tagline) {
-                            this.product_page_tagline = data.product_page_tagline.substring(0, this.product_page_tagline_max_length);
-                        }
-
-                        // Update categories if available
-                        if (data.categories && Array.isArray(data.categories)) {
-                            this.selectedCategories = [...new Set(data.categories.map(String))];
-                        }
-
-                        // Update logos if available and stop polling
-                        if (data.status === 'completed') {
-                            if (data.logos && data.logos.length > 0 && !this.logoFileSelected) {
-                                this.fetchedLogos = data.logos;
-                                if (!this.logoFileSelected) {
-                                    this.selectedLogoUrl = data.logos[0] || '';
-                                }
-                            }
-                            if (data.og_image) {
-                                this.fetchedOgImage = data.og_image;
-                            }
-                            clearInterval(interval);
-                            this.loadingMeta = false; // Stop loading on completion
-                            this.fetchingStatusMessage = 'Data fetching complete!';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error polling for data:', error);
-                        clearInterval(interval);
-                        this.loadingMeta = false; // Stop loading on error
-                        this.fetchingStatusMessage = '';
-                    });
-
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    console.log('Polling timed out.');
-                    clearInterval(interval);
-                    this.loadingMeta = false; // Stop loading on timeout
-                    this.fetchingStatusMessage = 'Polling timed out.';
-                }
-            }, 2000); // Poll every 2 seconds
-        },
-
-        sequentiallyRevealFields() {
-            this.fetchMetaAndFavicon();
-            this.fetchTechStack();
-        },
-
-        fetchTechStack() {
+        fetchUrlData() {
             if (!this.link || this.isEditMode) return;
-            this.fetchingStatusMessage = 'Fetching tech stack...';
-            fetch(`/api/tech-stack/detect?url=${encodeURIComponent(this.link)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        const detectedIds = data.map(ts => ts.id.toString());
-                        this.selectedTechStacks = [...new Set([...this.selectedTechStacks, ...detectedIds])];
+            this.loadingMeta = true;
+            this.fetchError = false;
+            this.fetchingStatusMessage = 'Fetching data from URL...';
+
+            fetch(`/fetch-url-data?url=${encodeURIComponent(this.link)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
                     }
+                    return response.json();
                 })
-                .catch(error => console.error('Error fetching tech stack:', error))
-                .finally(() => {
-                    if(this.loadingMeta) { // only update if polling is not finished
-                        this.fetchingStatusMessage = 'Tech stack fetch complete!';
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
                     }
+                    this.name = data.title || this.name;
+                    this.tagline = data.description || this.tagline;
+                    this.product_page_tagline = data.description || this.product_page_tagline;
+                    if (this.quill) {
+                        this.quill.root.innerHTML = data.description || '';
+                    }
+                    this.fetchingStatusMessage = 'Data fetched successfully!';
+                })
+                .catch(error => {
+                    console.error('Error fetching URL data:', error);
+                    this.fetchError = true;
+                    this.fetchingStatusMessage = '';
+                })
+                .finally(() => {
+                    this.loadingMeta = false;
                 });
-        },
-
-        checkUrlUnique() {
-            if (!this.link || this.isEditMode) return;
-            this.checkingUrl = true;
-            clearTimeout(urlCheckTimeout);
-            urlCheckTimeout = setTimeout(() => {
-                fetch(`/check-product-url?url=${encodeURIComponent(this.link)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        this.urlExists = data.exists;
-                        if (!data.exists) {
-                            this.sequentiallyRevealFields();
-                        }
-                    })
-                    .finally(() => {
-                        this.checkingUrl = false;
-                    });
-            }, 400);
         },
 
         uploadLogo(event) {

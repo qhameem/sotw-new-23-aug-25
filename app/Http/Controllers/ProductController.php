@@ -14,6 +14,7 @@ use App\Models\AdZone; // Added for AdZone model
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
 use Illuminate\Validation\Rule;
@@ -1409,5 +1410,49 @@ class ProductController extends Controller
         }
 
         return $dom->saveHTML();
+    }
+    public function fetchUrlData(Request $request)
+    {
+        $url = $request->input('url');
+        if (!$url) {
+            return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ])->get($url);
+
+            if ($response->failed()) {
+                Log::error('Failed to fetch URL data', ['url' => $url, 'status' => $response->status()]);
+                return response()->json(['error' => 'Failed to fetch data from the URL.'], 500);
+            }
+
+            $html = $response->body();
+            $doc = new DOMDocument();
+            @$doc->loadHTML($html);
+
+            $titleNode = $doc->getElementsByTagName('title')->item(0);
+            $title = $titleNode ? $titleNode->nodeValue : '';
+
+            $description = '';
+            $metas = $doc->getElementsByTagName('meta');
+            for ($i = 0; $i < $metas->length; $i++) {
+                $meta = $metas->item($i);
+                if (strtolower($meta->getAttribute('name')) == 'description') {
+                    $description = $meta->getAttribute('content');
+                    break;
+                }
+            }
+
+            return response()->json([
+                'title' => trim($title),
+                'description' => trim($description)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Exception when fetching URL data', ['url' => $url, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'An unexpected error occurred.'], 500);
+        }
     }
 }

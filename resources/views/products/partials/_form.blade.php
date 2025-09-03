@@ -25,8 +25,8 @@
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center space-x-2">
-                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="checkUrlUnique" @blur="checkUrlUnique" @keydown.enter.prevent="checkUrlUnique" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
-                <button @click.prevent="checkUrlUnique" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-24" :disabled="loadingMeta">
+                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="fetchUrlData" @blur="fetchUrlData" @keydown.enter.prevent="fetchUrlData" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
+                <button @click.prevent="fetchUrlData" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-24" :disabled="loadingMeta">
                     <div class="flex items-center justify-center">
                         <template x-if="loadingMeta && !isEditMode">
                             <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
