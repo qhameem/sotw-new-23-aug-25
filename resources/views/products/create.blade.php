@@ -475,6 +475,11 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                     if (this.quill) {
                         this.quill.root.innerHTML = data.description || '';
                     }
+                    this.fetchedOgImage = data.og_image || '';
+                    if (data.favicon) {
+                        this.fetchedLogos = [data.favicon];
+                        this.selectedLogoUrl = data.favicon;
+                    }
                     this.fetchingStatusMessage = 'Data fetched successfully!';
                 })
                 .catch(error => {

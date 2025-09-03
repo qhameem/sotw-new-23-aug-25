@@ -1436,18 +1436,41 @@ class ProductController extends Controller
             $title = $titleNode ? $titleNode->nodeValue : '';
 
             $description = '';
+            $ogImage = '';
+            $favicon = '';
+
             $metas = $doc->getElementsByTagName('meta');
             for ($i = 0; $i < $metas->length; $i++) {
                 $meta = $metas->item($i);
                 if (strtolower($meta->getAttribute('name')) == 'description') {
                     $description = $meta->getAttribute('content');
+                }
+                if (strtolower($meta->getAttribute('property')) == 'og:image') {
+                    $ogImage = $meta->getAttribute('content');
+                }
+            }
+
+            $links = $doc->getElementsByTagName('link');
+            for ($i = 0; $i < $links->length; $i++) {
+                $link = $links->item($i);
+                if (in_array(strtolower($link->getAttribute('rel')), ['icon', 'shortcut icon'])) {
+                    $favicon = $link->getAttribute('href');
+                    if (!Str::startsWith($favicon, 'http')) {
+                        $favicon = rtrim($url, '/') . '/' . ltrim($favicon, '/');
+                    }
                     break;
                 }
             }
 
+            if (empty($favicon)) {
+                $favicon = 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($url);
+            }
+
             return response()->json([
                 'title' => trim($title),
-                'description' => trim($description)
+                'description' => trim($description),
+                'og_image' => $ogImage,
+                'favicon' => $favicon,
             ]);
 
         } catch (\Exception $e) {
