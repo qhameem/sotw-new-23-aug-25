@@ -20,7 +20,7 @@
 @endsection
 
 @section('content')
-<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}')">
+<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}', '{{ json_encode($allTechStacksData ?? []) }}')">
     @guest
     <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
         <div class="text-center p-8 bg-white border rounded-lg shadow-md">
@@ -124,9 +124,20 @@
 @push('styles')
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
+   .ql-toolbar {
+        background-color: #f9fafb;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+        border-color: #d1d5db;
+    }
+    .ql-container {
+        border-bottom-left-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+        border-color: #d1d5db;
+    }
    .ql-editor {
        min-height: 250px;
-       font-size: 1rem;
+       font-size: 0.875rem;
    }
    .dark .ql-toolbar {
        border-color: #4a5568;
@@ -160,10 +171,11 @@ function clearForm() {
     }
 }
 
-function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
+function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTechStacksDataJson) {
     const productData = JSON.parse(productDataJson);
     const formData = JSON.parse(formDataJson);
     const allCategoriesData = JSON.parse(allCategoriesDataJson);
+    const allTechStacksData = JSON.parse(allTechStacksDataJson);
     let urlCheckTimeout;
     const formId = productData ? `product_form_${productData.id}` : 'new_product_form';
 
@@ -176,42 +188,46 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         name: productData?.name || '',
         tagline: productData?.tagline || '',
         product_page_tagline: '',
+        name_max_length: 50,
+        tagline_max_length: 60,
+        product_page_tagline_max_length: 250,
         description: '',
         video_url: '',
         selectedCategories: [],
+        selectedTechStacks: [],
         logoPreviewUrl: '',
+        fetchedLogos: [],
+        selectedLogoUrl: '',
+        fetchedOgImage: '',
         logoFileSelected: false,
         logoUploadError: '',
         allCategories: [],
         categorySearchTerm: '',
+        techStackSearchTerm: '',
         softwareCategoriesList: [],
+        techStacksList: [],
         selectedCategoriesDisplay: [],
+        selectedTechStacksDisplay: [],
         loadingMeta: false,
         urlExists: false,
         checkingUrl: false,
-        showName: false,
-        showTagline: false,
-        showProductPageTagline: false,
-        showDescription: false,
-        showVideoUrl: false,
-        showLogo: false,
-        showCategories: false,
-        showSubmit: false,
+        showName: true,
+        showTagline: true,
+        showProductPageTagline: true,
+        showDescription: true,
+        showVideoUrl: true,
+        showLogo: true,
+        showCategories: true,
+        showSubmit: true,
+        errors: {},
+        fetchError: false,
+        fetchingStatusMessage: '',
 
         init() {
             this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
+            this.allTechStacks = allTechStacksData.map(ts => ({ ...ts, id: ts.id.toString() }));
+            this.techStacksList = [...this.allTechStacks].sort((a, b) => a.name.localeCompare(b.name));
             this.loadState();
-
-            if (this.isEditMode) {
-                this.showName = true;
-                this.showTagline = true;
-                this.showProductPageTagline = true;
-                this.showDescription = true;
-                this.showVideoUrl = true;
-                this.showLogo = true;
-                this.showCategories = true;
-                this.showSubmit = true;
-            }
 
             this.$nextTick(() => {
                 this.quill = new Quill('#quill-editor', {
@@ -268,14 +284,52 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 this.saveState();
             }, { deep: true });
 
+            this.$watch('selectedTechStacks', () => {
+                this.updateSelectedTechStacksDisplay();
+                this.saveState();
+            }, { deep: true });
+
+            this.$watch('techStackSearchTerm', (value) => {
+                const searchTerm = value.toLowerCase().trim();
+                if (!searchTerm) {
+                    this.techStacksList = [...this.allTechStacks].sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    this.techStacksList = this.allTechStacks.filter(ts =>
+                        ts.name.toLowerCase().includes(searchTerm)
+                    ).sort((a, b) => a.name.localeCompare(b.name));
+                }
+            });
+
             // Watch for changes and save state
-            const fieldsToWatch = ['link', 'name', 'tagline', 'product_page_tagline', 'video_url'];
+            const fieldsToWatch = ['name', 'tagline', 'product_page_tagline', 'video_url'];
             fieldsToWatch.forEach(field => {
                 this.$watch(field, () => this.saveState());
             });
 
+            this.$watch('link', (newLink, oldLink) => {
+                if (newLink !== oldLink) {
+                    this.resetFormFields();
+                }
+                this.saveState();
+            });
+
             this.$watch('name', (val) => {
                 this.productSlug = this.generateSlug(val);
+                if (val.length > this.name_max_length) {
+                    this.name = val.substring(0, this.name_max_length);
+                }
+            });
+
+            this.$watch('tagline', (val) => {
+                if (val.length > this.tagline_max_length) {
+                    this.tagline = val.substring(0, this.tagline_max_length);
+                }
+            });
+
+            this.$watch('product_page_tagline', (val) => {
+                if (val.length > this.product_page_tagline_max_length) {
+                    this.product_page_tagline = val.substring(0, this.product_page_tagline_max_length);
+                }
             });
         },
 
@@ -290,6 +344,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 description: (formData && formData.description !== undefined) ? formData.description : '',
                 video_url: (formData && formData.video_url !== undefined) ? formData.video_url : '',
                 selectedCategories: (formData && Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
+                selectedTechStacks: (formData && Array.isArray(formData.current_tech_stacks) ? formData.current_tech_stacks : []).map(id => id.toString()),
             };
 
             if (savedState) {
@@ -303,6 +358,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 this.description = initialState.description || parsedState.description || '';
                 this.video_url = initialState.video_url || parsedState.video_url || '';
                 this.selectedCategories = initialState.selectedCategories.length ? initialState.selectedCategories : (parsedState.selectedCategories || []);
+                this.selectedTechStacks = initialState.selectedTechStacks.length ? initialState.selectedTechStacks : (parsedState.selectedTechStacks || []);
             } else {
                 Object.assign(this, initialState);
             }
@@ -318,6 +374,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 description: this.description,
                 video_url: this.video_url,
                 selectedCategories: this.selectedCategories,
+                selectedTechStacks: this.selectedTechStacks,
             };
             localStorage.setItem(formId, JSON.stringify(state));
         },
@@ -327,11 +384,64 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         },
 
 
+        resetFormFields() {
+            this.name = '';
+            this.tagline = '';
+            this.product_page_tagline = '';
+            if (this.quill) {
+                this.quill.root.innerHTML = '';
+            }
+            this.description = '';
+            this.video_url = '';
+            this.selectedCategories = [];
+            this.selectedTechStacks = [];
+            this.logoPreviewUrl = '';
+            this.fetchedLogos = [];
+            this.selectedLogoUrl = '';
+            this.fetchedOgImage = '';
+            this.logoFileSelected = false;
+            this.logoUploadError = '';
+            this.urlExists = false;
+            this.fetchError = false;
+            this.fetchingStatusMessage = '';
+        },
+
         updateSelectedCategoriesDisplay() {
             this.selectedCategoriesDisplay = this.selectedCategories
                 .map(id => this.allCategories.find(cat => cat.id === id.toString()))
                 .filter(cat => cat)
                 .sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        updateSelectedTechStacksDisplay() {
+            this.selectedTechStacksDisplay = this.selectedTechStacks
+                .map(id => this.allTechStacks.find(ts => ts.id === id.toString()))
+                .filter(ts => ts)
+                .sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        get isProductIdentityComplete() {
+            return this.name.trim() !== '' && this.tagline.trim() !== '' && this.product_page_tagline.trim() !== '';
+        },
+
+        get isCategorizationComplete() {
+            const hasPricing = this.selectedCategories.some(id => {
+                const cat = this.allCategories.find(c => c.id === id);
+                return cat && cat.types.includes('Pricing');
+            });
+            const hasSoftware = this.selectedCategories.some(id => {
+                const cat = this.allCategories.find(c => c.id === id);
+                return cat && !cat.types.includes('Pricing');
+            });
+            return hasPricing && hasSoftware;
+        },
+
+        get isMediaAndBrandingComplete() {
+            return this.logoFileSelected || this.selectedLogoUrl || (this.isEditMode && productData.logo);
+        },
+
+        get isDescriptionComplete() {
+            return this.description.trim() !== '' && this.description.trim() !== '<p><br></p>';
         },
 
         get canSubmitForm() {
@@ -349,59 +459,110 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
                 };
                 
                 this.loadingMeta = true;
+                this.fetchingStatusMessage = 'Fetching metadata...';
                 
                 fetch(`/api/product-meta?url=${encodeURIComponent(this.link)}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.title && !this.name) {
-                            this.name = data.title;
-                            if (this.autoSlug) {
-                                this.productSlug = this.generateSlug(this.name);
-                            }
-                        }
-                        if (data.description) {
-                            if (this.quill && this.quill.getText().trim() === '') {
-                                this.description = data.description;
-                                this.quill.root.innerHTML = data.description;
-                            }
-                        }
-                        if (data.favicon && !this.logoFileSelected) {
-                            if(!this.isEditMode) {
-                            this.logoPreviewUrl = data.favicon;
-                            }
-                        }
-                        if (data.title && !this.tagline && !this.isEditMode) {
-                            this.tagline = data.title;
-                            this.product_page_tagline = data.title;
-                        }
+                        this.fetchingStatusMessage = 'Polling for data...';
+                        this.pollForData();
                         resolve();
                     })
                     .catch(error => {
-                        console.error('Error fetching meta and favicon:', error);
+                        console.error('Error starting meta fetch:', error);
+                        this.loadingMeta = false; // Stop loading on error
+                        this.fetchError = true;
+                        this.fetchingStatusMessage = '';
                         reject(error);
-                    })
-                    .finally(() => {
-                        this.loadingMeta = false;
                     });
             });
         },
 
-        sequentiallyRevealFields() {
-            const fields = [
-                'showName', 'showTagline', 'showProductPageTagline', 
-                'showDescription', 'showVideoUrl', 'showLogo', 
-                'showCategories', 'showSubmit'
-            ];
-            
-            let delay = 200;
+        pollForData() {
+            let attempts = 0;
+            const maxAttempts = 30; // e.g., 1 minute timeout
+            const interval = setInterval(() => {
+                fetch(`/api/get-cached-logos?url=${encodeURIComponent(this.link)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Update basic info if available
+                        if (data.title && !this.name) {
+                            this.name = data.title.substring(0, this.name_max_length);
+                            if (this.autoSlug) {
+                                this.productSlug = this.generateSlug(this.name);
+                            }
+                        }
+                        if (data.description && this.quill && this.quill.getText().trim() === '') {
+                            this.description = data.description;
+                            this.quill.root.innerHTML = data.description;
+                        }
+                        if (data.tagline && !this.tagline) {
+                            this.tagline = data.tagline.substring(0, this.tagline_max_length);
+                        }
+                        if (data.product_page_tagline && !this.product_page_tagline) {
+                            this.product_page_tagline = data.product_page_tagline.substring(0, this.product_page_tagline_max_length);
+                        }
 
-            this.fetchMetaAndFavicon().finally(() => {
-                fields.forEach((field, index) => {
-                    setTimeout(() => {
-                        this[field] = true;
-                    }, index * delay);
+                        // Update categories if available
+                        if (data.categories && Array.isArray(data.categories)) {
+                            this.selectedCategories = [...new Set(data.categories.map(String))];
+                        }
+
+                        // Update logos if available and stop polling
+                        if (data.status === 'completed') {
+                            if (data.logos && data.logos.length > 0 && !this.logoFileSelected) {
+                                this.fetchedLogos = data.logos;
+                                if (!this.logoFileSelected) {
+                                    this.selectedLogoUrl = data.logos[0] || '';
+                                }
+                            }
+                            if (data.og_image) {
+                                this.fetchedOgImage = data.og_image;
+                            }
+                            clearInterval(interval);
+                            this.loadingMeta = false; // Stop loading on completion
+                            this.fetchingStatusMessage = 'Data fetching complete!';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling for data:', error);
+                        clearInterval(interval);
+                        this.loadingMeta = false; // Stop loading on error
+                        this.fetchingStatusMessage = '';
+                    });
+
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    console.log('Polling timed out.');
+                    clearInterval(interval);
+                    this.loadingMeta = false; // Stop loading on timeout
+                    this.fetchingStatusMessage = 'Polling timed out.';
+                }
+            }, 2000); // Poll every 2 seconds
+        },
+
+        sequentiallyRevealFields() {
+            this.fetchMetaAndFavicon();
+            this.fetchTechStack();
+        },
+
+        fetchTechStack() {
+            if (!this.link || this.isEditMode) return;
+            this.fetchingStatusMessage = 'Fetching tech stack...';
+            fetch(`/api/tech-stack/detect?url=${encodeURIComponent(this.link)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const detectedIds = data.map(ts => ts.id.toString());
+                        this.selectedTechStacks = [...new Set([...this.selectedTechStacks, ...detectedIds])];
+                    }
+                })
+                .catch(error => console.error('Error fetching tech stack:', error))
+                .finally(() => {
+                    if(this.loadingMeta) { // only update if polling is not finished
+                        this.fetchingStatusMessage = 'Tech stack fetch complete!';
+                    }
                 });
-            });
         },
 
         checkUrlUnique() {
@@ -445,16 +606,72 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
             this.logoUploadError = '';
             this.logoPreviewUrl = URL.createObjectURL(file);
             this.logoFileSelected = true;
+            this.selectedLogoUrl = ''; // Clear fetched logo selection
         },
 
         removePreviewLogo() {
             this.logoPreviewUrl = '';
             this.logoFileSelected = false;
             document.getElementById('logoInput').value = null;
+            // If there are fetched logos, select the first one by default
+            if (this.fetchedLogos.length > 0) {
+                this.selectedLogoUrl = this.fetchedLogos[0];
+            } else {
+                this.selectedLogoUrl = '';
+            }
+        },
+
+        selectLogo(logoUrl) {
+            this.selectedLogoUrl = logoUrl;
+            this.logoPreviewUrl = ''; // Clear file preview
+            this.logoFileSelected = false;
+            document.getElementById('logoInput').value = null;
+        },
+
+        removeFetchedOgImage() {
+            this.fetchedOgImage = '';
+        },
+
+        validateForm() {
+            this.errors = {};
+            if (!this.name) {
+                this.errors.name = 'Product Name is required.';
+            }
+            if (!this.tagline) {
+                this.errors.tagline = 'Tagline (List Page) is required.';
+            }
+            if (!this.product_page_tagline) {
+                this.errors.product_page_tagline = 'Tagline (Details Page) is required.';
+            }
+
+            const hasPricingCategory = this.selectedCategories.some(id => {
+                const cat = this.allCategories.find(c => c.id === id);
+                return cat && cat.types.includes('Pricing');
+            });
+
+            const hasSoftwareCategory = this.selectedCategories.some(id => {
+                const cat = this.allCategories.find(c => c.id === id);
+                return cat && !cat.types.includes('Pricing');
+            });
+
+            if (!hasPricingCategory || !hasSoftwareCategory) {
+                this.errors.categories = 'At least one Software and one Pricing category are required.';
+            }
+
+            return Object.keys(this.errors).length === 0;
         },
 
         submitForm(e) {
-            if (!this.canSubmitForm || this.logoUploadError) return;
+            if (!this.validateForm() || this.logoUploadError) {
+                // Scroll to the first error message if it exists
+                this.$nextTick(() => {
+                    const firstError = this.$el.querySelector('.text-red-600');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+                return;
+            }
             this.clearState();
             e.target.submit();
         },
@@ -469,6 +686,11 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson) {
         deselectCategory(categoryId) {
             const catIdStr = categoryId.toString();
             this.selectedCategories = this.selectedCategories.filter(id => id !== catIdStr);
+        },
+
+        deselectTechStack(techStackId) {
+            const tsIdStr = techStackId.toString();
+            this.selectedTechStacks = this.selectedTechStacks.filter(id => id !== tsIdStr);
         },
 
         generateSlug(text) {

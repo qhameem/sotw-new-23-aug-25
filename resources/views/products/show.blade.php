@@ -80,15 +80,21 @@
                 </div>
             </div>
 
-            @if($product->video_url)
-                <div class="mb-6">
+            <div class="grid grid-cols-1 @if($product->video_url && $product->media->isNotEmpty()) md:grid-cols-2 @endif gap-6 mb-6">
+                @if($product->video_url)
                     <div class="aspect-w-16 aspect-h-9">
-                        <iframe src="{{ $product->getEmbedUrl() }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe src="{{ $product->getEmbedUrl() }}" class="w-full h-full rounded-lg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
-                </div>
-            @endif
+                @endif
 
-            <div class="prose max-w-none">
+                @if($product->media->isNotEmpty())
+                    <div class="aspect-w-16 aspect-h-9">
+                        <img src="{{ asset('storage/' . $product->media->first()->path) }}" alt="{{ $product->media->first()->alt_text }}" class="w-full h-full object-cover rounded-lg border">
+                    </div>
+                @endif
+            </div>
+
+            <div class="prose max-w-none text-sm">
                 {!! $product->description !!}
             </div>
 

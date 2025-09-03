@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Type;
 use App\Models\PremiumProduct;
+use App\Models\TechStack;
 use App\Models\UserProductUpvote; // Added for upvote checking
 use App\Models\Ad; // Added for Ad model
 use App\Models\AdZone; // Added for AdZone model
@@ -20,7 +21,10 @@ use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
 use App\Services\SlugService;
-use Intervention\Image\Laravel\Facades\Image;
+use App\Jobs\FetchOgImage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use DOMDocument;
 
 class ProductController extends Controller
 {
@@ -246,11 +250,18 @@ class ProductController extends Controller
     {
         $types = Type::with('categories')->get();
         $allCategories = Category::with('types')->orderBy('name')->get();
+        $allTechStacks = TechStack::orderBy('name')->get();
         $allCategoriesData = $allCategories->map(function ($category) {
             return [
                 'id' => $category->id,
                 'name' => $category->name,
                 'types' => $category->types->pluck('name')->toArray(),
+            ];
+        });
+        $allTechStacksData = $allTechStacks->map(function ($ts) {
+            return [
+                'id' => $ts->id,
+                'name' => $ts->name,
             ];
         });
         $categories = $allCategories;
@@ -263,9 +274,10 @@ class ProductController extends Controller
             'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
             'description' => $oldInput['description'] ?? '',
             'current_categories' => $oldInput['categories'] ?? [],
+            'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
         ];
 
-        return view('products.create', compact('categories', 'types', 'allCategoriesData', 'displayData'));
+        return view('products.create', compact('categories', 'types', 'allCategoriesData', 'displayData', 'allTechStacksData'));
     }
 
     public function store(Request $request)
@@ -281,6 +293,8 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|url|max:2048',
             'video_url' => 'nullable|url|max:2048',
+            'tech_stacks' => 'nullable|array',
+            'tech_stacks.*' => 'exists:tech_stacks,id',
         ]);
 
         $existsCheck = function ($slug) {
@@ -318,9 +332,10 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = Image::read($image->getRealPath());
+                $manager = new ImageManager(new Driver());
+                $img = $manager->read($image->getRealPath());
                 $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($path . $filenameWithExtension, $img->encode());
+                Storage::disk('public')->put($path . $filenameWithExtension, (string) $img);
                 $validated['logo'] = $path . $filenameWithExtension;
             }
         } elseif ($request->filled('logo_url')) {
@@ -328,8 +343,15 @@ class ProductController extends Controller
         }
         unset($validated['logo_url']);
 
+        $validated['description'] = $this->addNofollowToLinks($validated['description']);
         $product = Product::create($validated);
         $product->categories()->sync($validated['categories']);
+        if (isset($validated['tech_stacks'])) {
+            $product->techStacks()->sync($validated['tech_stacks']);
+        }
+
+        FetchOgImage::dispatch($product);
+
         return redirect()->route('products.submission.success', ['product' => $product->id]);
     }
 
@@ -362,6 +384,7 @@ class ProductController extends Controller
         }
 
         $allCategories = Category::with('types')->orderBy('name')->get();
+        $allTechStacks = TechStack::orderBy('name')->get();
         $allCategoriesData = $allCategories->map(function ($category) {
             return [
                 'id' => $category->id,
@@ -369,9 +392,15 @@ class ProductController extends Controller
                 'types' => $category->types->pluck('name')->toArray(),
             ];
         });
+        $allTechStacksData = $allTechStacks->map(function ($ts) {
+            return [
+                'id' => $ts->id,
+                'name' => $ts->name,
+            ];
+        });
         $categories = $allCategories;
         $types = Type::with('categories')->get();
-        $product->load(['categories', 'proposedCategories']); // Eager load proposed categories as well
+        $product->load(['categories', 'proposedCategories', 'techStacks']); // Eager load proposed categories as well
 
         // Prepare data for the view, prioritizing proposed edits if they exist and product is approved
         $oldInput = session()->getOldInput();
@@ -383,6 +412,7 @@ class ProductController extends Controller
             'tagline' => $oldInput['tagline'] ?? $product->tagline,
             'description' => $oldInput['description'] ?? $product->description,
             'current_categories' => $oldInput['categories'] ?? $product->categories->pluck('id')->toArray(),
+            'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
         ];
 
         if ($product->approved && $product->has_pending_edits) {
@@ -394,7 +424,7 @@ class ProductController extends Controller
         
         // The view 'products.create' is used for both create and edit.
         // We pass $product for existing product context, and $displayData for form fields.
-        return view('products.create', compact('product', 'categories', 'types', 'displayData', 'allCategoriesData'));
+        return view('products.create', compact('product', 'categories', 'types', 'displayData', 'allCategoriesData', 'allTechStacksData'));
     }
 
     public function update(Request $request, Product $product)
@@ -409,7 +439,7 @@ class ProductController extends Controller
         // Validation rules for editable fields
         $validated = $request->validate([
             // 'name' and 'slug' are not editable by users directly in this form
-            'tagline' => 'required|string|max:150', // Max 150 chars
+            'tagline' => 'required|string|max:60', // Max 60 chars
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'required|string|max:5000', // Max 5000 chars
             // 'link' is not editable by users directly in this form
@@ -418,6 +448,8 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|url|max:2048',
+            'tech_stacks' => 'nullable|array',
+            'tech_stacks.*' => 'exists:tech_stacks,id',
         ]);
 
         // Category validation (ensure at least one from each required type is selected)
@@ -440,10 +472,11 @@ class ProductController extends Controller
         $updateData = [
             'tagline' => $validated['tagline'],
             'product_page_tagline' => $validated['product_page_tagline'],
-            'description' => $validated['description'],
+            'description' => $this->addNofollowToLinks($validated['description']),
             'video_url' => $validated['video_url'],
         ];
         $newCategories = $validated['categories'];
+        $newTechStacks = $validated['tech_stacks'] ?? [];
         $logoPath = null;
 
         // Handle logo upload
@@ -461,9 +494,10 @@ class ProductController extends Controller
                 $logoPath .= $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = Image::read($image->getRealPath());
+                $manager = new ImageManager(new Driver());
+                $img = $manager->read($image->getRealPath());
                 $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($logoPath . $filenameWithExtension, $img->encode());
+                Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $img);
                 $logoPath .= $filenameWithExtension;
             }
         }
@@ -490,6 +524,7 @@ class ProductController extends Controller
             $product->product_page_tagline = $updateData['product_page_tagline'];
             $product->proposed_description = $updateData['description'];
             $product->proposedCategories()->sync($newCategories);
+            $product->techStacks()->sync($newTechStacks);
             $product->has_pending_edits = true;
             $product->save(); // Save these specific fields and the flag
 
@@ -524,6 +559,7 @@ class ProductController extends Controller
             // Update main product fields
             $product->update($updateData);
             $product->categories()->sync($newCategories);
+            $product->techStacks()->sync($newTechStacks);
             // 'approved' status remains false as it's handled by admin
 
             return redirect()->route('products.my')->with('success', 'Product updated successfully. It is awaiting approval.');
@@ -1356,5 +1392,22 @@ class ProductController extends Controller
         });
 
         return $shuffledIds;
+    }
+    private function addNofollowToLinks($html)
+    {
+        if (empty($html)) {
+            return $html;
+        }
+
+        $dom = new DOMDocument();
+        // Suppress warnings for malformed HTML
+        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+        $links = $dom->getElementsByTagName('a');
+        foreach ($links as $link) {
+            $link->setAttribute('rel', 'nofollow');
+        }
+
+        return $dom->saveHTML();
     }
 }

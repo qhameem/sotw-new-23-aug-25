@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\DomCrawler\Crawler; // For parsing HTML
 use Illuminate\Support\Str; // For string manipulations
 use Exception;
+use Illuminate\Support\Facades\Cache;
 
 class FaviconExtractorService
 {
@@ -19,99 +20,100 @@ class FaviconExtractorService
     }
 
     /**
-     * Extracts the best quality favicon URL from a given domain URL.
+     * Extracts the best quality logo or icon URL from a given website URL.
      *
      * @param string $url The URL of the website.
-     * @return string|null The URL of the best favicon, or null if not found/error.
+     * @return array An array of the best logo URLs, empty if none found.
      */
-    public function extract(string $url): ?string // Corrected function name
+    public function extract(string $url): array
     {
-        $icons = [];
+        $cacheKey = 'favicon_extractor_' . md5($url);
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        // Step 1: Normalize the URL
+        if (!preg_match("~^(?:f|ht)tps?://~i", $url)) {
+            $url = "https://" . $url;
+        }
+        
         $baseUrl = $this->getBaseUrl($url);
         if (!$baseUrl) {
             Log::error("FaviconExtractor: Could not determine base URL for {$url}");
-            return null;
+            return [];
         }
 
+        // Step 2: Fetch homepage HTML
         try {
             $response = Http::timeout($this->timeoutSeconds)->get($url);
             if (!$response->successful()) {
                 Log::warning("FaviconExtractor: Failed to fetch main page {$url}. Status: " . $response->status());
-                // Try fetching favicon.ico as a fallback even if main page fails
-                return $this->getFallbackFaviconIco($baseUrl);
+                $fallback = $this->getFallbackFaviconIco($baseUrl);
+                $result = $fallback ? [$fallback] : [];
+                Cache::put($cacheKey, $result, now()->addHours(24));
+                return $result;
             }
             $htmlContent = $response->body();
-            $crawler = new Crawler($htmlContent, $url); // Pass URL as second arg to resolve relative links
-
-            // 1. Parse <link> tags
-            $crawler->filter('link[rel*="icon"], link[rel*="apple-touch-icon"]')->each(function (Crawler $node) use (&$icons, $baseUrl) {
-                $href = $node->attr('href');
-                if ($href) {
-                    $absoluteUrl = $this->makeAbsoluteUrl($href, $baseUrl);
-                    $sizes = $node->attr('sizes'); // e.g., "16x16", "32x32 64x64", "any"
-                    $type = $node->attr('type'); // e.g., "image/png", "image/svg+xml"
-                    
-                    $icons[] = [
-                        'url' => $absoluteUrl,
-                        'sizes' => $sizes,
-                        'type' => $type,
-                        'source' => 'link_tag',
-                        'rel' => $node->attr('rel')
-                    ];
-                }
-            });
-
-            // 2. Check for Web App Manifest (manifest.json)
-            $manifestUrl = null;
-            $crawler->filter('link[rel="manifest"]')->each(function (Crawler $node) use (&$manifestUrl, $baseUrl) {
-                $href = $node->attr('href');
-                if ($href) {
-                    $manifestUrl = $this->makeAbsoluteUrl($href, $baseUrl);
-                }
-            });
-
-            if ($manifestUrl) {
-                try {
-                    $manifestResponse = Http::timeout($this->timeoutSeconds)->get($manifestUrl);
-                    if ($manifestResponse->successful()) {
-                        $manifestData = $manifestResponse->json();
-                        if (isset($manifestData['icons']) && is_array($manifestData['icons'])) {
-                            foreach ($manifestData['icons'] as $iconData) {
-                                if (isset($iconData['src'])) {
-                                    $icons[] = [
-                                        'url' => $this->makeAbsoluteUrl($iconData['src'], $this->getBaseUrl($manifestUrl) ?: $baseUrl),
-                                        'sizes' => $iconData['sizes'] ?? null,
-                                        'type' => $iconData['type'] ?? null,
-                                        'source' => 'manifest'
-                                    ];
-                                }
-                            }
-                        }
-                    } else {
-                        Log::warning("FaviconExtractor: Failed to fetch manifest {$manifestUrl}. Status: " . $manifestResponse->status());
-                    }
-                } catch (Exception $e) {
-                    Log::error("FaviconExtractor: Error fetching or parsing manifest {$manifestUrl}: " . $e->getMessage());
-                }
-            }
-
+            $crawler = new Crawler($htmlContent, $url);
         } catch (Exception $e) {
             Log::error("FaviconExtractor: Error fetching main page {$url}: " . $e->getMessage());
-            // Fallback to favicon.ico if main page fetch fails catastrophically
-            return $this->getFallbackFaviconIco($baseUrl);
+            $fallback = $this->getFallbackFaviconIco($baseUrl);
+            $result = $fallback ? [$fallback] : [];
+            Cache::put($cacheKey, $result, now()->addHours(24));
+            return $result;
         }
-        
-        // 3. Add /favicon.ico as a candidate (will be processed with others)
-        $icons[] = [
-            'url' => $this->makeAbsoluteUrl('/favicon.ico', $baseUrl),
-            'sizes' => null, // We'll determine this if it exists
-            'type' => 'image/x-icon', // Common type for .ico
-            'source' => 'default_ico'
-        ];
 
+        // Step 3: Initialize empty candidate list
+        $candidates = [];
 
-        // Process icons to find the best one
-        return $this->findBestIcon($icons);
+        // Step 4: Parse <head> for icons
+        $crawler->filter('link[rel*="icon"], link[rel*="apple-touch-icon"], link[rel*="mask-icon"]')->each(function (Crawler $node) use (&$candidates, $baseUrl) {
+            if ($href = $node->attr('href')) {
+                $candidates[] = ['url' => $this->makeAbsoluteUrl($href, $baseUrl), 'source' => 'link_tag'];
+            }
+        });
+
+        // Step 5: Check for OpenGraph / Twitter images
+        $crawler->filter('meta[property="og:image"], meta[name="twitter:image"]')->each(function (Crawler $node) use (&$candidates, $baseUrl) {
+            if ($content = $node->attr('content')) {
+                $candidates[] = ['url' => $this->makeAbsoluteUrl($content, $baseUrl), 'source' => 'meta_tag'];
+            }
+        });
+
+        // Step 6: Look for <img> logos in common header/nav areas
+        $crawler->filter('header a img, nav a img, [role="banner"] a img')->each(function (Crawler $node) use (&$candidates, $baseUrl) {
+            $linkNode = $node->ancestors()->filter('a')->first();
+            $href = $linkNode->count() ? $linkNode->attr('href') : '';
+            $absoluteLink = $this->makeAbsoluteUrl($href, $baseUrl);
+
+            // Prioritize images that link back to the homepage
+            if ($href === '/' || $absoluteLink === $baseUrl . '/') {
+                $src = $node->attr('src');
+                if ($src) {
+                    $candidates[] = ['url' => $this->makeAbsoluteUrl($src, $baseUrl), 'source' => 'img_tag_home_link'];
+                }
+            }
+        });
+
+        // Broader search if the specific one fails
+        if (empty(array_filter($candidates, fn($c) => $c['source'] === 'img_tag_home_link'))) {
+            $crawler->filter('header img, nav img')->each(function (Crawler $node) use (&$candidates, $baseUrl) {
+                $src = $node->attr('src');
+                $alt = $node->attr('alt');
+                $filename = basename(parse_url($src, PHP_URL_PATH));
+                if ($src && (Str::contains(strtolower($alt), ['logo', 'brand']) || Str::contains(strtolower($filename), ['logo', 'brand']))) {
+                     $candidates[] = ['url' => $this->makeAbsoluteUrl($src, $baseUrl), 'source' => 'img_tag'];
+                }
+            });
+        }
+
+        // Step 7: Add fallback favicon
+        $candidates[] = ['url' => $this->makeAbsoluteUrl('/favicon.ico', $baseUrl), 'source' => 'fallback_ico'];
+
+        // Step 8 & 9: Score each candidate and select the best ones
+        $result = $this->findBestLogos($candidates);
+        Cache::put($cacheKey, $result, now()->addHours(24));
+        return $result;
     }
 
     protected function getBaseUrl(string $url): ?string
@@ -139,7 +141,7 @@ class FaviconExtractorService
     {
         $faviconIcoUrl = $this->makeAbsoluteUrl('/favicon.ico', $baseUrl);
         try {
-            $response = Http::timeout($this->timeoutSeconds / 2)->head($faviconIcoUrl); // Quicker HEAD request
+            $response = Http::timeout($this->timeoutSeconds / 2)->head($faviconIcoUrl);
             if ($response->successful()) {
                 Log::info("FaviconExtractor: Found fallback /favicon.ico at {$faviconIcoUrl}");
                 return $faviconIcoUrl;
@@ -150,126 +152,115 @@ class FaviconExtractorService
         return null;
     }
 
-
-    protected function findBestIcon(array $icons): ?string
+    protected function findBestLogos(array $candidates): array
     {
-        $validIcons = [];
-        $processedUrls = []; // To avoid processing the same URL multiple times
+        $scoredLogos = [];
+        $processedUrls = [];
 
-        foreach ($icons as $icon) {
-            if (empty($icon['url']) || in_array($icon['url'], $processedUrls)) {
+        foreach ($candidates as $candidate) {
+            if (empty($candidate['url']) || in_array($candidate['url'], $processedUrls)) {
                 continue;
             }
-            $processedUrls[] = $icon['url'];
+            $processedUrls[] = $candidate['url'];
 
-            Log::info("FaviconExtractor: Processing candidate icon: {$icon['url']} (Source: {$icon['source']})");
-
-            try {
-                // For SVGs, we might not get dimensions easily with getimagesize.
-                // We can prioritize them if found and assume they are scalable.
-                $fileExtension = strtolower(pathinfo(parse_url($icon['url'], PHP_URL_PATH), PATHINFO_EXTENSION));
-                if ($fileExtension === 'svg' || (isset($icon['type']) && Str::contains($icon['type'], 'svg'))) {
-                    // Check if SVG actually exists and is accessible
-                    $headResponse = Http::timeout($this->timeoutSeconds / 2)->head($icon['url']);
-                    if ($headResponse->successful()) {
-                        Log::info("FaviconExtractor: Found SVG icon: {$icon['url']}");
-                        $validIcons[] = ['url' => $icon['url'], 'width' => 99999, 'height' => 99999, 'format' => 'svg']; // Prioritize SVG
-                        continue; // Consider SVG the best if found
-                    } else {
-                         Log::warning("FaviconExtractor: SVG icon {$icon['url']} not accessible. Status: " . $headResponse->status());
-                         continue;
-                    }
-                }
-
-                // For raster images, try to get dimensions
-                // First, try to parse from 'sizes' attribute if available and not 'any'
-                $dimensions = $this->parseSizesAttribute($icon['sizes'] ?? '');
-                
-                if ($dimensions) {
-                     Log::info("FaviconExtractor: Parsed dimensions from 'sizes' for {$icon['url']}: {$dimensions['width']}x{$dimensions['height']}");
-                     $validIcons[] = ['url' => $icon['url'], 'width' => $dimensions['width'], 'height' => $dimensions['height'], 'format' => $fileExtension ?: 'unknown'];
-                } else {
-                    // If 'sizes' not helpful, download and inspect (be cautious with large files)
-                    // We can do a HEAD request first to check Content-Type and Content-Length
-                    $headResponse = Http::timeout($this->timeoutSeconds / 2)->head($icon['url']);
-                    if (!$headResponse->successful() || Str::contains($headResponse->header('Content-Type'), ['text/html', 'application/xml'])) {
-                        Log::warning("FaviconExtractor: Icon {$icon['url']} not accessible or not an image. Status: " . $headResponse->status() . " Type: " . $headResponse->header('Content-Type'));
-                        continue;
-                    }
-                    
-                    // Small optimization: if it's favicon.ico, getimagesize might work directly on URL
-                    if ($icon['source'] === 'default_ico' || $fileExtension === 'ico') {
-                         $imageSize = @getimagesize($icon['url']);
-                         if ($imageSize && $imageSize[0] > 0 && $imageSize[1] > 0) {
-                            Log::info("FaviconExtractor: Got dimensions for .ico {$icon['url']} via getimagesize: {$imageSize[0]}x{$imageSize[1]}");
-                            $validIcons[] = ['url' => $icon['url'], 'width' => $imageSize[0], 'height' => $imageSize[1], 'format' => 'ico'];
-                            continue;
-                         }
-                    }
-
-                    // For other types, or if getimagesize on URL fails for ICO, try fetching a small part or rely on Content-Type
-                    // This part can be complex. For now, we'll be optimistic if it's an image type.
-                    // A more robust solution would involve partial downloads or a library.
-                    // For simplicity, if it's an image type and 'sizes' wasn't present, we might assign a default low score or skip.
-                    // Or, if we must download, ensure it's small.
-                    $contentType = $headResponse->header('Content-Type');
-                    if (Str::startsWith($contentType, 'image/') && $contentType !== 'image/svg+xml') {
-                        // Could attempt to download and use getimagesize on temp file, but adds complexity & risk.
-                        // For now, if no 'sizes' attribute, we'll give it a lower priority or skip if other sized icons exist.
-                        // Let's assume if 'sizes' is missing, it's a less specified icon.
-                        Log::info("FaviconExtractor: Icon {$icon['url']} is an image but 'sizes' attribute was not definitive. Type: {$contentType}");
-                        // We could add it with a default small size to rank it lower if no other info.
-                        // $validIcons[] = ['url' => $icon['url'], 'width' => 16, 'height' => 16, 'format' => $fileExtension];
-                    }
-                }
-
-            } catch (Exception $e) {
-                Log::warning("FaviconExtractor: Error processing icon {$icon['url']}: " . $e->getMessage());
+            $score = $this->scoreLogo($candidate); // Pass the whole candidate
+            if ($score > 0) {
+                $scoredLogos[] = ['url' => $candidate['url'], 'score' => $score];
             }
         }
 
-        if (empty($validIcons)) {
-            Log::info("FaviconExtractor: No valid/accessible favicons found after processing candidates.");
-            return null;
+        if (empty($scoredLogos)) {
+            Log::info("FaviconExtractor: No valid/accessible logos found after scoring.");
+            return [];
         }
 
-        // Sort by area (width*height) descending, then by preferred format
-        usort($validIcons, function ($a, $b) {
-            $areaA = ($a['width'] ?? 0) * ($a['height'] ?? 0);
-            $areaB = ($b['width'] ?? 0) * ($b['height'] ?? 0);
+        // Sort by score descending
+        // Separate SVGs from other formats
+        $svgLogos = array_filter($scoredLogos, fn($logo) => Str::endsWith(strtolower($logo['url']), '.svg'));
+        $otherLogos = array_filter($scoredLogos, fn($logo) => !Str::endsWith(strtolower($logo['url']), '.svg'));
 
-            if ($areaA !== $areaB) {
-                return $areaB <=> $areaA; // Sort by area descending
-            }
+        // Sort each group by score descending
+        usort($svgLogos, fn($a, $b) => $b['score'] <=> $a['score']);
+        usort($otherLogos, fn($a, $b) => $b['score'] <=> $a['score']);
 
-            // If areas are equal, sort by preferred format
-            $formatAIndex = array_search($a['format'], $this->preferredFormats);
-            $formatBIndex = array_search($b['format'], $this->preferredFormats);
+        // Combine the lists, with SVGs first
+        $sortedLogos = array_merge($svgLogos, $otherLogos);
 
-            // Handle cases where format might not be in preferredFormats (treat as lowest priority)
-            $formatAIndex = ($formatAIndex === false) ? count($this->preferredFormats) : $formatAIndex;
-            $formatBIndex = ($formatBIndex === false) ? count($this->preferredFormats) : $formatBIndex;
-            
-            return $formatAIndex <=> $formatBIndex; // Sort by format index ascending (lower index is better)
-        });
-        
-        Log::info("FaviconExtractor: Best icon selected: " . $validIcons[0]['url'] . " (Dimensions: {$validIcons[0]['width']}x{$validIcons[0]['height']}, Format: {$validIcons[0]['format']})");
-        return $validIcons[0]['url'];
+        // Return the URLs of the top 3 logos
+        $topLogos = array_slice($sortedLogos, 0, 3);
+        Log::info("FaviconExtractor: Top logos selected: ", $topLogos);
+        return array_column($topLogos, 'url');
     }
 
-    protected function parseSizesAttribute(string $sizesAttr): ?array
+    protected function scoreLogo(array $candidate): int
     {
-        if (empty($sizesAttr) || strtolower($sizesAttr) === 'any') {
-            return null;
-        }
-        // Get the first size declaration, e.g., "192x192" from "192x192 128x128"
-        $sizeParts = explode(' ', trim($sizesAttr));
-        if (empty($sizeParts[0])) return null;
+        $imageUrl = $candidate['url'];
+        $source = $candidate['source'];
+        $score = 0;
 
-        $dimensions = explode('x', strtolower($sizeParts[0]));
-        if (count($dimensions) === 2 && is_numeric($dimensions[0]) && is_numeric($dimensions[1])) {
-            return ['width' => (int)$dimensions[0], 'height' => (int)$dimensions[1]];
+        $urlPath = parse_url($imageUrl, PHP_URL_PATH);
+        if (!$urlPath) return 0;
+
+        $filename = strtolower(basename($urlPath));
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        // 1. Score based on source
+        if ($source === 'img_tag_home_link') $score += 200;
+        if ($source === 'link_tag') $score += 150;
+        if ($source === 'meta_tag') $score += 50; // OG images are often not logos
+        if ($source === 'img_tag') $score += 25;
+
+        // 2. Score based on format
+        if ($extension === 'svg') $score += 500;
+        if (in_array($extension, ['png', 'webp'])) $score += 50;
+
+        // 3. Score based on filename keywords
+        if (Str::contains($filename, 'logo')) $score += 100;
+        if (Str::contains($filename, 'brand')) $score += 50;
+        if (Str::contains($filename, 'icon')) $score += 10;
+        
+        // Penalize non-logo keywords
+        $badKeywords = ['hero', 'banner', 'screenshot', 'illustration', 'background', 'og', 'twitter'];
+        foreach ($badKeywords as $keyword) {
+            if (Str::contains($filename, $keyword)) $score -= 100;
         }
-        return null;
+        if (Str::contains($filename, 'favicon')) $score -= 50;
+
+        // 4. Score based on dimensions (if not SVG)
+        if ($extension !== 'svg') {
+            try {
+                $imageSize = @getimagesize($imageUrl);
+                if ($imageSize && $imageSize[0] > 0 && $imageSize[1] > 0) {
+                    $width = $imageSize[0];
+                    $height = $imageSize[1];
+
+                    // Penalize very large images (likely not logos)
+                    if ($width > 1000 || $height > 1000) {
+                        $score -= 200;
+                    }
+
+                    // Add points for being square-ish
+                    $aspectRatio = $width / $height;
+                    if ($aspectRatio > 0.8 && $aspectRatio < 1.2) $score += 50;
+
+                    // Add points for ideal logo dimensions
+                    if (($width >= 64 && $width <= 512) && ($height >= 64 && $height <= 512)) {
+                        $score += 50;
+                    }
+                }
+            } catch (Exception $e) {
+                // Could not get dimensions, do nothing.
+            }
+        }
+
+        // 5. Final check for accessibility
+        try {
+             $headResponse = Http::timeout($this->timeoutSeconds / 2)->head($imageUrl);
+             if (!$headResponse->successful()) return 0;
+        } catch (Exception $ex) {
+            return 0;
+        }
+        
+        return max(0, $score); // Ensure score is not negative
     }
 }

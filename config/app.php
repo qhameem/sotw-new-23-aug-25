@@ -143,7 +143,7 @@ return [
          */
         App\Providers\VoltServiceProvider::class, // Added by Volt
         LemonSqueezy\Laravel\LemonSqueezyServiceProvider::class,
-        // Intervention\Image\Laravel\ImageServiceProvider::class, // Temporarily commented out
+        // Intervention\Image\Laravel\ImageServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -173,7 +173,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
-        // 'Image' => Intervention\Image\Laravel\Facades\Image::class, // Temporarily commented out
+        // 'Image' => Intervention\Image\Laravel\Facades\Image::class,
     ])->toArray(),
 
 ];

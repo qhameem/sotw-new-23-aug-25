@@ -100,6 +100,16 @@ class Product extends Model implements Sitemapable
         return $this->hasOne(PremiumProduct::class);
     }
 
+    public function media()
+    {
+        return $this->hasMany(ProductMedia::class);
+    }
+
+    public function techStacks()
+    {
+        return $this->belongsToMany(TechStack::class, 'product_tech_stack');
+    }
+
     public function getIsUpvotedByCurrentUserAttribute()
     {
         if (!Auth::check()) {

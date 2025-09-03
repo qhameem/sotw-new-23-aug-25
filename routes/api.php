@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UpvoteController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeoApiController;
+use App\Http\Controllers\Api\TechStackController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,3 +47,5 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/seo/meta/{page_id}', [SeoApiController::class, 'getMeta'])->name('api.seo.meta');
     Route::post('/seo/meta', [SeoApiController::class, 'saveMeta'])->name('api.seo.saveMeta');
 });
+Route::get('/get-cached-logos', [\App\Http\Controllers\Api\ProductMetaController::class, 'getCachedLogos']);
+Route::get('/tech-stack/detect', [TechStackController::class, 'detect']);
