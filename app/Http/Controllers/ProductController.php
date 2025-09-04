@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
 use App\Services\SlugService;
+use App\Services\CategoryClassifier;
 use App\Jobs\FetchOgImage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -31,11 +32,13 @@ class ProductController extends Controller
 {
     protected FaviconExtractorService $faviconExtractor;
     protected SlugService $slugService;
+    protected CategoryClassifier $categoryClassifier;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, CategoryClassifier $categoryClassifier)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
+        $this->categoryClassifier = $categoryClassifier;
     }
 
     public function home(Request $request)
@@ -1437,7 +1440,7 @@ class ProductController extends Controller
 
             $description = '';
             $ogImage = '';
-            $favicon = '';
+            $logos = [];
 
             $metas = $doc->getElementsByTagName('meta');
             for ($i = 0; $i < $metas->length; $i++) {
@@ -1451,31 +1454,66 @@ class ProductController extends Controller
             }
 
             $links = $doc->getElementsByTagName('link');
-            for ($i = 0; $i < $links->length; $i++) {
-                $link = $links->item($i);
-                if (in_array(strtolower($link->getAttribute('rel')), ['icon', 'shortcut icon'])) {
-                    $favicon = $link->getAttribute('href');
-                    if (!Str::startsWith($favicon, 'http')) {
-                        $favicon = rtrim($url, '/') . '/' . ltrim($favicon, '/');
+            foreach ($links as $link) {
+                $rel = strtolower($link->getAttribute('rel'));
+                if (in_array($rel, ['icon', 'shortcut icon', 'apple-touch-icon'])) {
+                    $href = $link->getAttribute('href');
+                    if ($href) {
+                        $logos[] = $this->resolveUrl($url, $href);
                     }
-                    break;
                 }
             }
 
-            if (empty($favicon)) {
-                $favicon = 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($url);
+            $images = $doc->getElementsByTagName('img');
+            foreach ($images as $img) {
+                $src = $img->getAttribute('src');
+                if (preg_match('/logo/i', $src)) {
+                    $logos[] = $this->resolveUrl($url, $src);
+                }
             }
+
+            $logos = array_unique($logos);
+            if (empty($logos)) {
+                $logos[] = 'https://www.google.com/s2/favicons?sz=128&domain_url=' . urlencode($url);
+            }
+
+
+            $categories = $this->categoryClassifier->classify($html);
 
             return response()->json([
                 'title' => trim($title),
                 'description' => trim($description),
                 'og_image' => $ogImage,
-                'favicon' => $favicon,
+                'logos' => array_values($logos),
+                'categories' => $categories,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Exception when fetching URL data', ['url' => $url, 'error' => $e->getMessage()]);
             return response()->json(['error' => 'An unexpected error occurred.'], 500);
         }
+    }
+
+    private function resolveUrl($baseUrl, $relativeUrl)
+    {
+        if (Str::startsWith($relativeUrl, ['http://', 'https://', '//'])) {
+            if (Str::startsWith($relativeUrl, '//')) {
+                return 'https:' . $relativeUrl;
+            }
+            return $relativeUrl;
+        }
+
+        $base = parse_url($baseUrl);
+        $path = $base['path'] ?? '';
+
+        if (Str::startsWith($relativeUrl, '/')) {
+            $path = '';
+        } else {
+            $path = dirname($path);
+        }
+        
+        $path = rtrim($path, '/');
+
+        return $base['scheme'] . '://' . $base['host'] . $path . '/' . ltrim($relativeUrl, '/');
     }
 }
