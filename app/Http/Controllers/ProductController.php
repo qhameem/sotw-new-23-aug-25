@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
 use App\Services\SlugService;
 use App\Services\CategoryClassifier;
+use App\Services\TechStackDetectorService;
 use App\Jobs\FetchOgImage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -33,12 +34,14 @@ class ProductController extends Controller
     protected FaviconExtractorService $faviconExtractor;
     protected SlugService $slugService;
     protected CategoryClassifier $categoryClassifier;
+    protected TechStackDetectorService $techStackDetector;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, CategoryClassifier $categoryClassifier)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, CategoryClassifier $categoryClassifier, TechStackDetectorService $techStackDetector)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
         $this->categoryClassifier = $categoryClassifier;
+        $this->techStackDetector = $techStackDetector;
     }
 
     public function home(Request $request)
@@ -1478,14 +1481,21 @@ class ProductController extends Controller
             }
 
 
-            $categories = $this->categoryClassifier->classify($html);
+            $categoryNames = array_keys($this->categoryClassifier->classify($html));
+            $categoryIds = \App\Models\Category::whereIn('name', $categoryNames)->pluck('id')->toArray();
+            Log::info('Classified Categories:', ['url' => $url, 'categories' => $categoryIds]);
+
+            $techStackNames = $this->techStackDetector->detect($url);
+            $techStackIds = \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray();
+            Log::info('Detected Tech Stacks:', ['url' => $url, 'tech_stacks' => $techStackIds]);
 
             return response()->json([
                 'title' => trim($title),
                 'description' => trim($description),
                 'og_image' => $ogImage,
                 'logos' => array_values($logos),
-                'categories' => $categories,
+                'categories' => $categoryIds,
+                'tech_stacks' => $techStackIds,
             ]);
 
         } catch (\Exception $e) {

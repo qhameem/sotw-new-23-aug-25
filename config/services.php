@@ -37,4 +37,8 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'builtwith' => [
+        'api_key' => env('BUILTWITH_API_KEY'),
+    ],
+
 ];

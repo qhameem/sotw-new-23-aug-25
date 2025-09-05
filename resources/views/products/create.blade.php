@@ -481,8 +481,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                         this.selectedLogoUrl = data.logos[0];
                     }
                     if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-                        const categoryIds = data.categories.map(String);
-                        this.selectedCategories = [...new Set([...this.selectedCategories, ...categoryIds])];
+                        const categoryIds = data.categories.map(id => id.toString());
+                        this.selectedCategories = Array.from(new Set([...this.selectedCategories, ...categoryIds]));
+                    }
+                    if (data.tech_stacks && Array.isArray(data.tech_stacks) && data.tech_stacks.length > 0) {
+                        const techStackIds = data.tech_stacks.map(id => id.toString());
+                        this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...techStackIds]));
                     }
                     this.fetchingStatusMessage = 'Data fetched successfully!';
                 })

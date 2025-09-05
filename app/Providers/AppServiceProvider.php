@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Services\CategoryClassifier;
+use App\Services\TechStackDetectorService;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use App\Models\Product;
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(CategoryClassifier::class, function ($app) {
             return new CategoryClassifier();
+        });
+
+        $this->app->singleton(TechStackDetectorService::class, function ($app) {
+            return new TechStackDetectorService();
         });
     }
 
