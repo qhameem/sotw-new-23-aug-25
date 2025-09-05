@@ -589,7 +589,10 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 return;
             }
             this.clearState();
-            e.target.submit();
+            showLoader();
+            this.$nextTick(() => {
+                e.target.submit();
+            });
         },
 
         clearForm() {
@@ -671,7 +674,7 @@ const button = document.getElementById('submit-product-button');
 const content = document.getElementById('button-content');
 const form = button.closest('form');
 
-form.addEventListener('submit', function (e) {
+function showLoader() {
     // Get current size
     const width = button.offsetWidth;
     const height = button.offsetHeight;
@@ -688,8 +691,6 @@ form.addEventListener('submit', function (e) {
             <div class="dot"></div>
         </div>
     `;
-
-    // Allow form to submit
-});
+}
 </script>
 @endpush

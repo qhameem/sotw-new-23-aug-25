@@ -341,8 +341,8 @@ class ProductController extends Controller
                 $filenameWithExtension = $filename . '.webp';
                 $manager = new ImageManager(new Driver());
                 $img = $manager->read($image->getRealPath());
-                $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($path . $filenameWithExtension, (string) $img);
+                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
                 $validated['logo'] = $path . $filenameWithExtension;
             }
         } elseif ($request->filled('logo_url')) {
@@ -503,8 +503,8 @@ class ProductController extends Controller
                 $filenameWithExtension = $filename . '.webp';
                 $manager = new ImageManager(new Driver());
                 $img = $manager->read($image->getRealPath());
-                $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $img);
+                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
                 $logoPath .= $filenameWithExtension;
             }
         }
