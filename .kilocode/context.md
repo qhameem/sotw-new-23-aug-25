@@ -51,3 +51,36 @@ The primary feature is the automatic filling of the product submission form base
 *   **Consistent Remove Icons**: Both uploaded logos and fetched media have a consistent red cross icon for removal.
 *   **Consolidated Media Section**: The fetched product image is displayed within the "Media and Branding" section for a more unified experience.
 *   **Product Details Page Layout**: On the product details page, the video and product image are displayed in the same dimensions, with the video on the left and the image on the right. The tech stack is also displayed in the sidebar.
+
+## Feature: To-Do List Tool
+
+A free to-do list tool with email notifications for deadlines.
+
+### Key Files:
+
+*   **View**: `resources/views/todolists/index.blade.php`
+    *   The main view for the to-do list, containing the pure JavaScript implementation for all client-side interactivity.
+*   **Controller**: `app/Http/Controllers/TodoListController.php`
+    *   Handles all CRUD operations for to-do lists and their items.
+*   **Policy**: `app/Policies/TodoListPolicy.php`
+    *   Handles authorization to ensure users can only manage their own lists.
+*   **Models**:
+    *   `app/Models/TodoList.php`
+    *   `app/Models/TodoListItem.php`
+    *   `app/Models/UserNotificationSetting.php`
+    *   `app/Models/EmailNotificationQueue.php`
+*   **Database Migrations**:
+    *   Migrations for `todo_lists`, `todo_list_items` (including `color` and `deadline` columns), `user_notification_settings`, and `email_notification_queue`.
+
+### Logic & Functionality:
+
+*   **Authentication**: Unauthenticated users can create lists, which are stored in local storage. Authenticated users' lists are persisted to the database.
+*   **Client-Side State**: The frontend is managed by a pure JavaScript implementation that handles all UI interactions, including creating, updating, and deleting lists and items.
+*   **Backend API**: The `TodoListController` provides a JSON API for the frontend to interact with the database.
+*   **Authorization**: A policy ensures that all database operations are authorized, preventing users from accessing or modifying other users' data.
+
+### UI/UX Enhancements:
+
+*   **Task Color Palettes**: Users can assign a color to each task from a visual color palette.
+*   **Task Deadlines**: Users can set a specific date and time as a deadline for each task using a datetime picker.
+*   **Responsive Design**: The form for adding new tasks is responsive and wraps on smaller screens to prevent overflow.

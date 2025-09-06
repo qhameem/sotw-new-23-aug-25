@@ -17,6 +17,13 @@
                  <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1 @if(request()->routeIs('articles.index') || request()->routeIs('articles.show') || request()->routeIs('articles.category') || request()->routeIs('articles.tag')) font-semibold @else font-normal @endif">Articles</span>
             </a>
 
+           <a href="{{ route('todolists.index') }}" class="flex items-center p-2 text-gray-900 rounded-lg group">
+               <svg class="size-6 group-hover:text-gray-900 @if(request()->routeIs('todolists.index')) text-primary-500 @else text-gray-400 @endif" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+               <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1 @if(request()->routeIs('todolists.index')) font-semibold @else font-normal @endif">To-Do List</span>
+           </a>
+
             <a href="{{ route('promote') }}" class="flex items-center p-2 text-gray-900 rounded-lg  group">
                 <svg class="size-6 group-hover:text-gray-900 -rotate-45 @if(request()->routeIs('promote')) text-primary-500 @else text-gray-600 @endif" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.3" stroke="currentColor">
                     <path fill-rule="evenodd" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clip-rule="evenodd" />

@@ -86,4 +86,9 @@ public function articles()
     {
         return $this->hasRole('admin');
     }
+
+    public function todoLists()
+    {
+        return $this->hasMany(TodoList::class);
+    }
 }

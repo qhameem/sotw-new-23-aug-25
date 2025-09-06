@@ -26,6 +26,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\ProductReviewController;
+use App\Http\Controllers\TodoListController;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
@@ -224,7 +225,7 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog|free-todo-list-tool)[^/]+$');
 
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
@@ -266,5 +267,16 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
+});
+
+Route::prefix('free-todo-list-tool')->name('todolists.')->group(function () {
+    Route::get('/', [TodoListController::class, 'index'])->name('index');
+    Route::post('/', [TodoListController::class, 'store'])->name('store');
+    Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');
+    Route::delete('/{todoList}', [TodoListController::class, 'destroy'])->name('destroy');
+
+    Route::post('/{todoList}/items', [TodoListController::class, 'storeItem'])->name('items.store');
+    Route::put('/items/{todoListItem}', [TodoListController::class, 'updateItem'])->name('items.update');
+    Route::delete('/items/{todoListItem}', [TodoListController::class, 'destroyItem'])->name('items.destroy');
 });
 
