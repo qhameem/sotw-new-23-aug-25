@@ -95,6 +95,8 @@ class ProductController extends Controller
             'product_page_tagline' => $product->product_page_tagline,
             'description' => $product->description,
             'current_categories' => $product->categories->pluck('id')->toArray(),
+            'logo' => $product->logo,
+            'logo_url' => $product->logo_url,
         ];
 
         return view('admin.products.edit', compact('product', 'categories', 'types', 'displayData'));

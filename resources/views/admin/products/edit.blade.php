@@ -70,7 +70,9 @@
             product_page_tagline: productData?.product_page_tagline || '',
             description: productData?.description || '',
             video_url: productData?.video_url || '',
+            existingLogoUrl: productData?.logo_url || '',
             logoPreviewUrl: '',
+            selectedLogoUrl: '',
             logoFileSelected: false,
             logoUploadError: '',
             allCategories: allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] })),
@@ -163,7 +165,15 @@
             uploadLogo(event) {
                 const file = event.target.files[0];
                 if (file) {
-                    this.logoPreviewUrl = URL.createObjectURL(file);
+                    if (file.type === 'image/svg+xml') {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.logoPreviewUrl = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        this.logoPreviewUrl = URL.createObjectURL(file);
+                    }
                     this.logoFileSelected = true;
                 }
             },
