@@ -23,10 +23,10 @@ class TechStackDetectorService
                     Log::info('BuiltWith API Response:', ['url' => $url, 'response' => $results]);
                     $detected = [];
 
-                    if (isset($results['Results'][0]['Result']['Paths'])) {
-                        foreach ($results['Results'][0]['Result']['Paths'] as $path) {
-                            foreach ($path['Technologies'] as $tech) {
-                                $detected[] = $tech['Name'];
+                    if (isset($results['groups'])) {
+                        foreach ($results['groups'] as $group) {
+                            if (isset($group['name'])) {
+                                $detected[] = $group['name'];
                             }
                         }
                     }

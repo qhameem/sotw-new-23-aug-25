@@ -485,6 +485,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                         this.selectedCategories = Array.from(new Set([...this.selectedCategories, ...categoryIds]));
                     }
                     if (data.tech_stacks && Array.isArray(data.tech_stacks) && data.tech_stacks.length > 0) {
+                        console.log('Tech Stacks from API:', data.tech_stacks);
                         const techStackIds = data.tech_stacks.map(id => id.toString());
                         this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...techStackIds]));
                     }
