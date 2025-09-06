@@ -25,7 +25,7 @@
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center space-x-2">
-                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" @input.debounce.500ms="fetchUrlData" @blur="fetchUrlData" @keydown.enter.prevent="fetchUrlData" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
+                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
                 <button @click.prevent="fetchUrlData" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-24" :disabled="loadingMeta">
                     <div class="flex items-center justify-center">
                         <template x-if="loadingMeta && !isEditMode">
@@ -41,16 +41,6 @@
             <template x-if="urlExists && !checkingUrl && !isEditMode">
                 <div class="text-red-600 text-sm mt-1">This URL is already listed. Please enter a different product URL.</div>
             </template>
-            <!-- <div class="mt-1 h-6 flex items-center">
-                <span x-show="!loadingMeta" class="text-xs text-gray-600 tracking-tight">&#128161; Paste your product link — we’ll fetch the details automatically</span>
-                <div x-show="loadingMeta" class="text-sm text-gray-600 flex items-center" style="display: none;">
-                    <svg class="animate-spin h-5 w-5 mr-2 text-rose-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Fetching product details...
-                </div>
-            </div> -->
         </div>
     </div>
 
@@ -64,7 +54,7 @@
         </h2>
         <div class="space-y-4">
             <!-- Name -->
-            <div x-show="showName" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+            <div>
                 <label class="block text-xs font-semibold mb-1" for="product_name">Product Name<span class="text-red-500 ml-1">*</span></label>
                 <input type="text" id="product_name" name="name" x-model="name" value="{{ old('name', $product->name ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                 <template x-if="errors.name"><p class="text-red-600 text-sm mt-1" x-text="errors.name"></p></template>
@@ -76,7 +66,7 @@
             <div class="space-y-4">
                 <h3 class="text-sm font-semibold text-gray-600">Product Taglines</h3>
                 <!-- Tagline -->
-                <div x-show="showTagline" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+                <div>
                     <label class="block text-xs font-semibold mb-1" for="tagline">Tagline (List Page)<span class="text-red-500 ml-1">*</span></label>
                     <input type="text" id="tagline" name="tagline" x-model="tagline" value="{{ old('tagline', $product->tagline ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                     <template x-if="errors.tagline"><p class="text-red-600 text-sm mt-1" x-text="errors.tagline"></p></template>
@@ -87,7 +77,7 @@
                 </div>
 
                 <!-- Tagline on Product Page -->
-                <div x-show="showProductPageTagline" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+                <div>
                     <label class="block text-xs font-semibold mb-1" for="product_page_tagline">Tagline (Details Page)<span class="text-red-500 ml-1">*</span></label>
                     <input type="text" id="product_page_tagline" name="product_page_tagline" value="{{ old('product_page_tagline', $product->product_page_tagline ?? '') }}" x-model="product_page_tagline" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                     <template x-if="errors.product_page_tagline"><p class="text-red-600 text-sm mt-1" x-text="errors.product_page_tagline"></p></template>
@@ -110,11 +100,7 @@
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <!-- Categories Section -->
-            <div x-show="showCategories"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 transform -translate-y-2"
-                 x-transition:enter-end="opacity-100 transform translate-y-0"
-                 x-data="{
+            <div x-data="{
                     highlightedCategoryIndex: -1,
                     isCategoryDropdownOpen: false,
                     toggleCategory(categoryId) {
@@ -290,7 +276,7 @@
         </h2>
         <div class="space-y-4">
             <!-- Logo Upload Section -->
-            <div x-show="showLogo" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+            <div>
                 <label class="block text-xs font-semibold mb-1">Logo (Max 1MB) <span class="text-red-500">*</span></label>
                 <p class="text-xs text-gray-500 mb-2">Recommended: 1:1 square image (e.g., 256x256px).</p>
                 @if(isset($product) && $product->logo)
@@ -310,17 +296,29 @@
                 <input type="file" name="logo" id="logoInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/avif" @change="uploadLogo">
                 <input type="hidden" name="selected_logo_url" x-model="selectedLogoUrl">
 
-                <button type="button" @click="document.getElementById('logoInput').click()" class="inline-flex items-center px-4 py-1 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
-                    <svg class="w-5 h-5 mr-2 -ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H17C17.93 21 18.395 21 18.7765 20.8978C19.8117 20.6204 20.6204 19.8117 20.8978 18.7765C21 18.395 21 17.93 21 17M19 8V2M16 5H22M10.5 8.5C10.5 9.60457 9.60457 10.5 8.5 10.5C7.39543 10.5 6.5 9.60457 6.5 8.5C6.5 7.39543 7.39543 6.5 8.5 6.5C9.60457 6.5 10.5 7.39543 10.5 8.5ZM14.99 11.9181L6.53115 19.608C6.05536 20.0406 5.81747 20.2568 5.79643 20.4442C5.77819 20.6066 5.84045 20.7676 5.96319 20.8755C6.10478 21 6.42628 21 7.06929 21H16.456C17.8951 21 18.6147 21 19.1799 20.7582C19.8894 20.4547 20.4547 19.8894 20.7582 19.1799C21 18.6147 21 17.8951 21 16.456C21 15.9717 21 15.7296 20.9471 15.5042C20.8805 15.2208 20.753 14.9554 20.5733 14.7264C20.4303 14.5442 20.2412 14.3929 19.8631 14.0905L17.0658 11.8527C16.6874 11.5499 16.4982 11.3985 16.2898 11.3451C16.1061 11.298 15.9129 11.3041 15.7325 11.3627C15.5279 11.4291 15.3486 11.5921 14.99 11.9181Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    Upload Logo
-                </button>
+                <div x-show="!logoPreviewUrl && !selectedLogoUrl" class="flex items-center space-x-2">
+                    <button type="button" @click="document.getElementById('logoInput').click()" class="inline-flex items-center px-4 py-1 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        <svg class="w-5 h-5 mr-2 -ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H17C17.93 21 18.395 21 18.7765 20.8978C19.8117 20.6204 20.6204 19.8117 20.8978 18.7765C21 18.395 21 17.93 21 17M19 8V2M16 5H22M10.5 8.5C10.5 9.60457 9.60457 10.5 8.5 10.5C7.39543 10.5 6.5 9.60457 6.5 8.5C6.5 7.39543 7.39543 6.5 8.5 6.5C9.60457 6.5 10.5 7.39543 10.5 8.5ZM14.99 11.9181L6.53115 19.608C6.05536 20.0406 5.81747 20.2568 5.79643 20.4442C5.77819 20.6066 5.84045 20.7676 5.96319 20.8755C6.10478 21 6.42628 21 7.06929 21H16.456C17.8951 21 18.6147 21 19.1799 20.7582C19.8894 20.4547 20.4547 19.8894 20.7582 19.1799C21 18.6147 21 17.8951 21 16.456C21 15.9717 21 15.7296 20.9471 15.5042C20.8805 15.2208 20.753 14.9554 20.5733 14.7264C20.4303 14.5442 20.2412 14.3929 19.8631 14.0905L17.0658 11.8527C16.6874 11.5499 16.4982 11.3985 16.2898 11.3451C16.1061 11.298 15.9129 11.3041 15.7325 11.3627C15.5279 11.4291 15.3486 11.5921 14.99 11.9181Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        Upload Logo
+                    </button>
+                </div>
+                
+                <div x-show="selectedLogoUrl && !logoPreviewUrl" class="mt-2">
+                    <label class="block mb-1 text-xs font-medium text-gray-600">Selected Logo:</label>
+                    <div class="relative inline-block group">
+                        <img :src="selectedLogoUrl" alt="Selected Logo" class="w-24 h-24 object-contain rounded-md border border-gray-300">
+                        <button @click="selectedLogoUrl = ''" type="button" class="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity focus:outline-none">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </div>
+                </div>
 
                 <template x-if="fetchedLogos.length > 0 && !logoFileSelected">
                     <div class="mt-4">
                         <label class="block text-xs font-semibold mb-2">Or select a fetched logo:</label>
                         <div class="flex flex-wrap gap-2">
                             <template x-for="logo in fetchedLogos" :key="logo">
-                                <img :src="logo" @click="selectLogo(logo)" :class="{'border-sky-500 ring-2 ring-sky-500': selectedLogoUrl === logo, 'border-gray-300': selectedLogoUrl !== logo}" class="w-16 h-16 object-contain rounded-md border-2 cursor-pointer hover:border-sky-400">
+                                <img :src="logo" @click="selectLogo(logo)" :class="{'border-sky-500 ring-2 ring-sky-500': selectedLogoUrl === logo, 'border-gray-300': selectedLogoUrl !== logo}" class="w-24 h-24 object-contain rounded-md border-2 cursor-pointer hover:border-sky-400">
                             </template>
                         </div>
                     </div>
@@ -355,25 +353,38 @@
             <div class="mt-4">
                 <label class="block text-xs font-semibold mb-1">Product Image (Optional)</label>
                 <p class="text-xs text-gray-500 mb-2">Add a product image. Recommended: 16:9 aspect ratio (e.g., 800x450px).</p>
-                <input type="file" name="media" id="mediaInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,image/avif">
+                <input type="file" name="media" id="mediaInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" @change="showMediaPreview(event)">
                 <button type="button" @click="document.getElementById('mediaInput').click()" class="inline-flex items-center px-4 py-1 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                     <svg class="w-5 h-5 mr-2 -ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H17C17.93 21 18.395 21 18.7765 20.8978C19.8117 20.6204 20.6204 19.8117 20.8978 18.7765C21 18.395 21 17.93 21 17M19 8V2M16 5H22M10.5 8.5C10.5 9.60457 9.60457 10.5 8.5 10.5C7.39543 10.5 6.5 9.60457 6.5 8.5C6.5 7.39543 7.39543 6.5 8.5 6.5C9.60457 6.5 10.5 7.39543 10.5 8.5ZM14.99 11.9181L6.53115 19.608C6.05536 20.0406 5.81747 20.2568 5.79643 20.4442C5.77819 20.6066 5.84045 20.7676 5.96319 20.8755C6.10478 21 6.42628 21 7.06929 21H16.456C17.8951 21 18.6147 21 19.1799 20.7582C19.8894 20.4547 20.4547 19.8894 20.7582 19.1799C21 18.6147 21 17.8951 21 16.456C21 15.9717 21 15.7296 20.9471 15.5042C20.8805 15.2208 20.753 14.9554 20.5733 14.7264C20.4303 14.5442 20.2412 14.3929 19.8631 14.0905L17.0658 11.8527C16.6874 11.5499 16.4982 11.3985 16.2898 11.3451C16.1061 11.298 15.9129 11.3041 15.7325 11.3627C15.5279 11.4291 15.3486 11.5921 14.99 11.9181Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                     Add Product Image
                 </button>
 
-                <div x-show="fetchedOgImage" class="mt-4 relative group">
-                    <h3 class="text-xs font-semibold mb-2">Fetched Image</h3>
-                    <div class="relative inline-block group">
-                        <img :src="fetchedOgImage" alt="Fetched OG Image" class="rounded-md border w-full object-cover">
-                        <button @click="removeFetchedOgImage()" type="button" class="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity focus:outline-none">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                        </button>
+                <div x-show="mediaPreviewUrl" class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Image Preview</h3>
+                    <img :src="mediaPreviewUrl" alt="Image Preview" class="rounded-md border w-full object-cover">
+                </div>
+
+                <div x-show="fetchedOgImages.length > 0 && !mediaPreviewUrl" class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Fetched Images (Select up to 2)</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="(image, index) in fetchedOgImages.slice(0, 3)" :key="index">
+                            <div class="relative group cursor-pointer" @click="toggleOgImage(image)">
+                                <img :src="image" alt="Fetched Image" class="w-32 h-32 object-cover rounded-md border-2" :class="{'border-sky-500 ring-2 ring-sky-500': selectedOgImages.includes(image), 'border-gray-300': !selectedOgImages.includes(image)}">
+                                <div x-show="selectedOgImages.includes(image)" class="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-green-500 text-white rounded-full">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
+                
+                <template x-for="image in selectedOgImages">
+                    <input type="hidden" name="selected_og_images[]" :value="image">
+                </template>
             </div>
 
             <!-- Video URL -->
-            <div x-show="showVideoUrl" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+            <div>
                 <label class="block text-xs font-semibold mb-1" for="video_url">Video URL</label>
                 <input type="url" id="video_url" name="video_url" x-model="video_url" value="{{ old('video_url', $product->video_url ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
                 <p class="text-xs text-gray-500 mt-1">Enter a YouTube or Vimeo URL to embed a video on the product page.</p>
@@ -390,7 +401,7 @@
             </template>
         </h2>
         <!-- Description -->
-        <div class="grid md:grid-cols-1 gap-4 items-start" x-show="showDescription" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+        <div class="grid md:grid-cols-1 gap-4 items-start">
             <div class="md:col-span-1">
                 <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md"></div>
                 <input type="hidden" name="description" id="description" x-model="description">
@@ -401,7 +412,7 @@
 
 
     <!-- Submit Button -->
-    <div class="grid md:grid-cols-4 gap-4 mt-6" x-show="showSubmit" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
+    <div class="grid md:grid-cols-4 gap-4 mt-6">
         <div class="md:col-start-2 md:col-span-3 flex justify-between items-center">
             <div class="text-xs text-gray-500">
                 Selected: <span x-text="selectedCategories.length"></span>.

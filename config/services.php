@@ -41,4 +41,8 @@ return [
         'api_key' => env('BUILTWITH_API_KEY'),
     ],
 
+    'wappalyzer' => [
+        'api_key' => env('WAPPALYZER_API_KEY'),
+    ],
+
 ];

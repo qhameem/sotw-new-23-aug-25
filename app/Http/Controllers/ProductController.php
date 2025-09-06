@@ -1443,6 +1443,7 @@ class ProductController extends Controller
 
             $description = '';
             $ogImage = '';
+            $ogImages = [];
             $logos = [];
 
             $metas = $doc->getElementsByTagName('meta');
@@ -1452,8 +1453,16 @@ class ProductController extends Controller
                     $description = $meta->getAttribute('content');
                 }
                 if (strtolower($meta->getAttribute('property')) == 'og:image') {
-                    $ogImage = $meta->getAttribute('content');
+                    $ogImageContent = $meta->getAttribute('content');
+                    if ($ogImageContent) {
+                        $ogImages[] = $this->resolveUrl($url, $ogImageContent);
+                    }
                 }
+            }
+
+            if (!empty($ogImages)) {
+                $ogImage = $ogImages[0];
+                $logos = array_merge($logos, $ogImages);
             }
 
             $links = $doc->getElementsByTagName('link');
@@ -1475,10 +1484,11 @@ class ProductController extends Controller
                 }
             }
 
-            $logos = array_unique($logos);
+            $logos = array_values(array_unique($logos));
             if (empty($logos)) {
                 $logos[] = 'https://www.google.com/s2/favicons?sz=128&domain_url=' . urlencode($url);
             }
+            $logos = $this->rankAndSelectLogos($logos);
 
 
             $categoryNames = array_keys($this->categoryClassifier->classify($html));
@@ -1494,6 +1504,7 @@ class ProductController extends Controller
                 'description' => trim($description),
                 'og_image' => $ogImage,
                 'logos' => array_values($logos),
+                'og_images' => array_values(array_unique($ogImages)),
                 'categories' => $categoryIds,
                 'tech_stacks' => $techStackIds,
             ]);
@@ -1525,5 +1536,31 @@ class ProductController extends Controller
         $path = rtrim($path, '/');
 
         return $base['scheme'] . '://' . $base['host'] . $path . '/' . ltrim($relativeUrl, '/');
+    }
+    private function rankAndSelectLogos(array $logos): array
+    {
+        $scoredLogos = [];
+        foreach ($logos as $logo) {
+            $score = 0;
+            if (stripos($logo, 'logo') !== false) {
+                $score += 5;
+            }
+            if (stripos($logo, '.svg') !== false) {
+                $score += 3;
+            }
+            if (stripos($logo, '.png') !== false) {
+                $score += 2;
+            }
+            if (stripos($logo, '.jpg') !== false || stripos($logo, '.jpeg') !== false || stripos($logo, '.webp') !== false) {
+                $score += 1;
+            }
+            $scoredLogos[] = ['url' => $logo, 'score' => $score];
+        }
+
+        usort($scoredLogos, function ($a, $b) {
+            return $b['score'] <=> $a['score'];
+        });
+
+        return array_slice(array_column($scoredLogos, 'url'), 0, 6);
     }
 }

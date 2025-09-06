@@ -199,8 +199,11 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         fetchedLogos: [],
         selectedLogoUrl: '',
         fetchedOgImage: '',
+        fetchedOgImages: [],
+        selectedOgImages: [],
         logoFileSelected: false,
         logoUploadError: '',
+        mediaPreviewUrl: '',
         allCategories: [],
         categorySearchTerm: '',
         techStackSearchTerm: '',
@@ -211,14 +214,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         loadingMeta: false,
         urlExists: false,
         checkingUrl: false,
-        showName: true,
-        showTagline: true,
-        showProductPageTagline: true,
-        showDescription: true,
-        showVideoUrl: true,
-        showLogo: true,
-        showCategories: true,
-        showSubmit: true,
         errors: {},
         fetchError: false,
         fetchingStatusMessage: '',
@@ -399,6 +394,8 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             this.fetchedLogos = [];
             this.selectedLogoUrl = '';
             this.fetchedOgImage = '';
+            this.fetchedOgImages = [];
+            this.selectedOgImages = [];
             this.logoFileSelected = false;
             this.logoUploadError = '';
             this.urlExists = false;
@@ -476,6 +473,9 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                         this.quill.root.innerHTML = data.description || '';
                     }
                     this.fetchedOgImage = data.og_image || '';
+                    if (data.og_images && data.og_images.length > 0) {
+                        this.fetchedOgImages = data.og_images;
+                    }
                     if (data.logos && data.logos.length > 0) {
                         this.fetchedLogos = data.logos;
                         this.selectedLogoUrl = data.logos[0];
@@ -528,13 +528,8 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         removePreviewLogo() {
             this.logoPreviewUrl = '';
             this.logoFileSelected = false;
+            this.selectedLogoUrl = '';
             document.getElementById('logoInput').value = null;
-            // If there are fetched logos, select the first one by default
-            if (this.fetchedLogos.length > 0) {
-                this.selectedLogoUrl = this.fetchedLogos[0];
-            } else {
-                this.selectedLogoUrl = '';
-            }
         },
 
         selectLogo(logoUrl) {
@@ -546,6 +541,33 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
         removeFetchedOgImage() {
             this.fetchedOgImage = '';
+        },
+
+        showMediaPreview(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.mediaPreviewUrl = URL.createObjectURL(file);
+            } else {
+                this.mediaPreviewUrl = '';
+            }
+        },
+
+        selectFetchedImage(imageUrl) {
+            this.selectedLogoUrl = imageUrl;
+            this.logoPreviewUrl = '';
+            this.logoFileSelected = false;
+            document.getElementById('logoInput').value = null;
+        },
+
+        toggleOgImage(imageUrl) {
+            const index = this.selectedOgImages.indexOf(imageUrl);
+            if (index > -1) {
+                this.selectedOgImages.splice(index, 1);
+            } else {
+                if (this.selectedOgImages.length < 2) {
+                    this.selectedOgImages.push(imageUrl);
+                }
+            }
         },
 
         validateForm() {

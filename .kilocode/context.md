@@ -36,15 +36,15 @@ The primary feature is the automatic filling of the product submission form base
 ### Current Algorithms & Logic:
 
 *   **Category Classification**: A keyword-based algorithm that scores and ranks categories by comparing scraped text from the URL against a predefined list of keywords for each category.
-*   **Tech Stack Detection**: A service that inspects a URL's HTML content and response headers for common signatures of frameworks and technologies (e.g., 'wp-content' for WordPress, '/_next/static/' for Next.js).
-*   **Logo Fetching**: A service that scrapes the page for potential logos from `<link>`, `<meta>`, and `<img>` tags. It uses a sophisticated scoring system that prioritizes SVGs and images explicitly identified as logos (e.g., linked to the homepage from the header) while penalizing generic media images.
+*   **Tech Stack Detection**: A service that uses the BuiltWith API to detect technologies. It includes a fallback to the Wappalyzer API if the BuiltWith API key is not configured.
+*   **Logo Fetching**: A service that scrapes the page for potential logos from `<link>`, `<meta>`, and `<img>` tags. It uses a scoring system to rank logos by quality (prioritizing keywords like "logo" and file types like SVG) and limits the selection to the top six.
 *   **Link Handling**: All user-submitted links in the product description are automatically processed on the server to add a `rel="nofollow"` attribute for SEO purposes.
 
 ### UI/UX Enhancements:
 
 *   **Numbered Sections & Completion Checkmarks**: The form is divided into numbered sections (e.g., "1 of 5") to guide the user. A green checkmark appears next to the section title when all required fields are completed.
 *   **Quill.js Editor**: The rich text editor has been styled to match the site's theme, with a smaller font size for a cleaner look.
-*   **"Fetch Data" Button**: A button next to the URL field allows users to manually trigger data fetching. It displays a spinner while fetching and maintains a consistent size.
+*   **"Fetch Data" Button**: A button next to the URL field allows users to manually trigger data fetching. Data is fetched *only* when this button is clicked. It displays a spinner while fetching and maintains a consistent size.
 *   **Inline Status Updates**: The URL card provides real-time feedback during the data fetching process (e.g., "Fetching metadata...").
 *   **Inline Error Messages**: If data fetching fails, an inline message appears in the URL card instead of a disruptive alert.
 *   **Multiple Logo Selection**: The form displays multiple fetched logos, allowing the user to choose their preferred one.
