@@ -283,7 +283,7 @@
                 <div class="flex items-center space-x-4">
                     @if(isset($product) && $product->logo)
                         <div class="shrink-0">
-                            <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="Current Logo" class="w-20 h-20 object-cover rounded-md border">
+                            <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="Current Logo" class="w-20 h-20 object-contain rounded-md border">
                         </div>
                     @endif
                     <div class="flex-grow">
