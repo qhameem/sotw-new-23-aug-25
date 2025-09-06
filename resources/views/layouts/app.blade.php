@@ -43,13 +43,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', $meta_title ?? config('app.name', 'Laravel'))</title>
+    <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
 
-    <meta name="application-name" content="{{ config('app.name', 'Laravel') }}">
-    <meta property="og:site_name" content="{{ config('app.name', 'Laravel') }}">
-    <meta property="og:title" content="@yield('title', $meta_title ?? config('app.name', 'Laravel'))">
-    <meta name="twitter:title" content="@yield('title', $meta_title ?? config('app.name', 'Laravel'))">
+    <meta name="application-name" content="Software on the Web">
+    <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
+    <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
 
 
     @if(config('theme.font_url'))
