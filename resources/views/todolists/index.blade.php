@@ -20,6 +20,11 @@
             <button id="add-list-button" class="mt-2 w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition">Create New List</button>
         </div>
 
+        <!-- List Pills -->
+        <div id="list-pills-container" class="flex flex-wrap gap-2 mb-4">
+            <!-- Pills will be rendered here -->
+        </div>
+
         <!-- To-Do Lists Container -->
         <div id="todo-lists-container" class="space-y-4">
             <!-- Lists will be rendered here by JavaScript -->
@@ -35,10 +40,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const baseUrl = appContainer.dataset.baseUrl;
     const csrfToken = appContainer.dataset.csrfToken;
     let lists = JSON.parse(appContainer.dataset.lists);
+    let activeListId = lists.length > 0 ? lists[0].id : null;
 
     const newListTitleInput = document.getElementById('new-list-title-input');
     const addListButton = document.getElementById('add-list-button');
     const listsContainer = document.getElementById('todo-lists-container');
+    const pillsContainer = document.getElementById('list-pills-container');
 
     const colors = {
         'gray': 'Gray',
@@ -80,11 +87,41 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const renderPills = () => {
+        pillsContainer.innerHTML = '';
+        lists.forEach(list => {
+            const pill = document.createElement('button');
+            pill.className = `px-3 py-1 rounded-full text-sm transition ${
+                list.id == activeListId
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`;
+            pill.textContent = list.title;
+            pill.dataset.listId = list.id;
+            pill.addEventListener('click', () => {
+                activeListId = list.id;
+                renderPills();
+                renderLists();
+            });
+            pillsContainer.appendChild(pill);
+        });
+    };
+
     const renderLists = () => {
         listsContainer.innerHTML = '';
-        lists.forEach(list => {
+
+        let orderedLists = [...lists];
+        if (activeListId) {
+            const activeList = orderedLists.find(l => l.id == activeListId);
+            if (activeList) {
+                orderedLists = [activeList, ...orderedLists.filter(l => l.id != activeListId)];
+            }
+        }
+
+        orderedLists.forEach(list => {
             const listElement = document.createElement('div');
             listElement.className = 'bg-white p-4 rounded-lg shadow-md';
+            listElement.id = `list-${list.id}`;
             listElement.innerHTML = `
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-gray-700">${list.title}</h2>
@@ -93,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </button>
                 </div>
                 <div class="flex flex-wrap gap-2 mb-4">
-                    <input type="text" data-list-id="${list.id}" placeholder="Add a new task..." class="new-item-title-input flex-grow px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <input type="text" data-list-id="${list.id}" placeholder="Add a new task..." class="new-item-title-input flex-grow px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500">
                     <div class="relative color-picker" data-list-id="${list.id}" data-selected-color="gray">
                         <button type="button" class="color-picker-button flex items-center gap-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 px-3 py-2">
                             <span class="color-swatch w-4 h-4 rounded-full bg-gray-500"></span>
@@ -108,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             `).join('')}
                         </div>
                     </div>
-                    <input type="datetime-local" data-list-id="${list.id}" class="new-item-deadline-input bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <input type="text" data-list-id="${list.id}" class="new-item-deadline-input bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500" placeholder="Set a deadline">
                     <button data-action="add-item" data-list-id="${list.id}" class="bg-gray-200 text-gray-700 font-semibold py-2 px-3 rounded-md hover:bg-gray-300 text-sm transition">Add</button>
                 </div>
                 <ul class="space-y-2">
@@ -127,6 +164,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 </ul>
             `;
             listsContainer.appendChild(listElement);
+
+            const deadlineInput = listElement.querySelector('.new-item-deadline-input');
+            deadlineInput.addEventListener('focus', (e) => {
+                e.target.type = 'datetime-local';
+            });
+            deadlineInput.addEventListener('blur', (e) => {
+                if (!e.target.value) {
+                    e.target.type = 'text';
+                }
+            });
         });
     };
 
@@ -137,6 +184,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const newList = await api.post(storeUrl, { title });
             lists.push(newList);
             newListTitleInput.value = '';
+            activeListId = newList.id;
+            renderPills();
             renderLists();
         } catch (error) {
             console.error('Failed to add list:', error);
@@ -175,6 +224,10 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 await api.delete(`${baseUrl}/${listId}`);
                 lists = lists.filter(list => list.id != listId);
+                if (activeListId == listId) {
+                    activeListId = lists.length > 0 ? lists[0].id : null;
+                }
+                renderPills();
                 renderLists();
             } catch (error) {
                 console.error('Failed to delete list:', error);
@@ -253,6 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    renderPills();
     renderLists();
 });
 </script>

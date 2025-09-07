@@ -173,6 +173,9 @@
                 @yield('right_sidebar_content')
             @else
                 {{ $right_sidebar_content ?? '' }}
+                @if(Request::is('free-todo-list-tool'))
+                    @include('todolists._lists')
+                @endif
             @endif
         </x-slot:right_sidebar_content>
 

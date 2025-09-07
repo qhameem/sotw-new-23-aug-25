@@ -14,14 +14,13 @@ class TodoListController extends Controller
 
     public function index()
     {
-        $user = Auth::user();
-        $lists = $user ? TodoList::where('user_id', $user->id)->with('items')->get() : [];
-
         if (request()->wantsJson()) {
+            $user = Auth::user();
+            $lists = $user ? TodoList::where('user_id', $user->id)->with('items')->get() : [];
             return response()->json($lists);
         }
 
-        return view('todolists.index', ['lists' => $lists]);
+        return view('todolists.index');
     }
 
     public function store(Request $request)
