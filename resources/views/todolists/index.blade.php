@@ -16,13 +16,10 @@
     <div class="max-w-3xl mx-auto">
         <!-- Create New List Form -->
         <div class="bg-white p-4 rounded-lg mb-6">
-            <div class="flex space-x-2">
-                <input type="text" id="new-list-title-input" placeholder="Enter new list title..." class="w-3/4 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="add-list-button" class="w-1/4 bg-transparent text-blue-500 font-semibold p-1 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Create New List
+            <div class="flex space-x-2 items-center">
+                <input type="text" id="new-list-title-input" placeholder="Enter new list title..." class="w-3/4 py-1 px-4 border border-gray-300 rounded-md focus:outline-none placeholder-gray-500 placeholder:text-sm">
+                <button id="add-list-button" class="w-1/4 bg-transparent text-sky-600 font-medium text-sm py-1 border border-sky-500 rounded-md hover:bg-sky-50  transition shadow">
+                    &CirclePlus; Create New List
                 </button>
             </div>
         </div>
@@ -105,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
         pillsContainer.innerHTML = '';
         lists.forEach(list => {
             const pill = document.createElement('button');
-            pill.className = `px-3 py-1 rounded-full text-sm transition ${
+            pill.className = `px-3 py-1 rounded text-sm transition ${
                 list.id == activeListId
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -129,10 +126,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const allPrioritiesButton = document.createElement('button');
         allPrioritiesButton.textContent = `All Priorities (${items.length})`;
-        allPrioritiesButton.className = `px-3 py-1 rounded-md text-sm transition ${
+        allPrioritiesButton.className = `px-3 py-1 rounded-md text-xs border border-sky-300 transition ${
             activePriorityFilter === null
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-50 text-gray-700 hover:bg-gray-200'
+                ? 'bg-sky-50 text-sky-600 font-medium'
+                : 'bg-white text-sky-700 hover:bg-sky-50'
         }`;
         allPrioritiesButton.addEventListener('click', () => {
             activePriorityFilter = null;
@@ -145,10 +142,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const count = items.filter(item => item.color === color).length;
             const button = document.createElement('button');
             button.textContent = `Priority ${name} (${count})`;
-            button.className = `px-3 py-1 rounded-md text-sm transition ${
+            button.className = `px-3 py-1 rounded-md text-xs border border-sky-200 transition ${
                 activePriorityFilter === color
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-sky-100 text-sky-700 font-medium border-sky-300'
+                    : 'bg-white text-sky-800 hover:bg-sky-50'
             }`;
             button.addEventListener('click', () => {
                 activePriorityFilter = color;
