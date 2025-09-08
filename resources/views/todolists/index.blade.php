@@ -10,7 +10,7 @@
 {{-- Safelist for Tailwind CSS JIT compiler --}}
 {{--
     bg-gray-100 bg-red-100 bg-yellow-100 bg-green-100 bg-blue-100 bg-indigo-100 bg-purple-100 bg-pink-100
-    bg-gray-500 bg-red-500 bg-yellow-500 bg-green-500 bg-blue-500 bg-indigo-500 bg-purple-500 bg-pink-500
+    bg-gray-400 bg-red-400 bg-yellow-400 bg-green-400 bg-blue-400 bg-indigo-400 bg-purple-400 bg-pink-400
 --}}
 <div id="todo-app-container" class="container mx-auto px-4 py-8" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
     <div class="max-w-3xl mx-auto">
@@ -48,14 +48,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const pillsContainer = document.getElementById('list-pills-container');
 
     const colors = {
-        'gray': 'Gray',
-        'red': 'Red',
-        'yellow': 'Yellow',
-        'green': 'Green',
-        'blue': 'Blue',
-        'indigo': 'Indigo',
-        'purple': 'Purple',
-        'pink': 'Pink'
+        'red': '1',
+        'yellow': '2',
+        'purple': '3',
+        'blue': '4',
+        'indigo': '5',
+        'green': '6',
+        'pink': '7',
+        'gray': '8'
     };
 
     const api = {
@@ -107,6 +107,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
+    const formatDeadline = (deadline) => {
+        if (!deadline) return 'Set a Deadline';
+        const date = new Date(deadline);
+        const options = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+        return date.toLocaleString('en-US', options);
+    };
+
     const renderLists = () => {
         listsContainer.innerHTML = '';
 
@@ -133,14 +140,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     <input type="text" data-list-id="${list.id}" placeholder="Add a new task..." class="new-item-title-input flex-grow px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500">
                     <div class="relative color-picker" data-list-id="${list.id}" data-selected-color="gray">
                         <button type="button" class="color-picker-button flex items-center gap-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 px-3 py-2">
-                            <span class="color-swatch w-4 h-4 rounded-full bg-gray-500"></span>
-                            <span>Gray</span>
+                            <span class="color-swatch w-4 h-4 rounded-full bg-gray-400"></span>
+                            <span>Priority 8</span>
                         </button>
                         <div class="color-palette absolute z-10 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg hidden">
                             ${Object.entries(colors).map(([value, name]) => `
                                 <div class="color-option flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100" data-color="${value}">
-                                    <span class="w-4 h-4 rounded-full bg-${value}-500"></span>
-                                    <span>${name}</span>
+                                    <span class="w-4 h-4 rounded-full bg-${value}-400"></span>
+                                    <span class="text-xs">Priority ${name}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -150,15 +157,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
                 <ul class="space-y-2">
                     ${(list.items || []).map(item => `
-                        <li class="flex items-center justify-between p-2 rounded-md bg-${item.color}-100">
-                            <div class="flex items-center">
-                                <input type="checkbox" data-action="toggle-item" data-item-id="${item.id}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${item.completed ? 'checked' : ''}>
-                                <span class="ml-3 text-gray-800 ${item.completed ? 'line-through text-gray-500' : ''}">${item.title}</span>
-                                ${item.deadline ? `<span class="ml-2 text-xs text-gray-500">${new Date(item.deadline).toLocaleString()}</span>` : ''}
+                        <li class="p-2 rounded-md bg-${item.color}-100" data-item-id="${item.id}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <input type="checkbox" data-action="toggle-item" data-item-id="${item.id}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${item.completed ? 'checked' : ''}>
+                                    <span class="ml-3 text-sm text-gray-800 ${item.completed ? 'line-through text-gray-500' : ''}">${item.title}</span>
+                                </div>
+                                <button data-action="delete-item" data-list-id="${list.id}" data-item-id="${item.id}" class="text-gray-400 hover:text-red-500 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
                             </div>
-                            <button data-action="delete-item" data-list-id="${list.id}" data-item-id="${item.id}" class="text-gray-400 hover:text-red-500 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
+                            <div class="flex items-center gap-4 mt-2 pl-7">
+                                <div class="relative item-color-picker">
+                                    <button type="button" class="w-4 h-4 rounded-full bg-white border border-gray-300 focus:outline-none flex items-center justify-center">
+                                        <span class="w-3 h-3 rounded-full bg-${item.color}-400"></span>
+                                    </button>
+                                    <div class="item-color-palette absolute z-10 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg hidden" style="left: 0;">
+                                        ${Object.entries(colors).map(([value, name]) => `
+                                            <div class="color-option flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100" data-color="${value}">
+                                                <span class="w-4 h-4 rounded-full bg-${value}-400"></span>
+                                                <span class="text-xs">Priority ${name}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500">Priority ${colors[item.color]}</span>
+                                <div class="relative">
+                                    <a href="#" data-action="open-deadline-picker" data-item-id="${item.id}" class="text-blue-500 hover:underline text-xs">${formatDeadline(item.deadline)}</a>
+                                    <input type="datetime-local" data-action="update-deadline" data-item-id="${item.id}" class="item-deadline-input absolute right-0 top-full mt-2 z-10 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500 hidden" value="${item.deadline ? new Date(item.deadline).toISOString().slice(0, 16) : ''}">
+                                </div>
+                            </div>
                         </li>
                     `).join('')}
                 </ul>
@@ -200,22 +228,64 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (e.target.closest('.color-option')) {
+        if (e.target.closest('.color-picker .color-option')) {
             const option = e.target.closest('.color-option');
             const color = option.dataset.color;
             const picker = option.closest('.color-picker');
-            picker.dataset.selectedColor = color;
-            
-            const button = picker.querySelector('.color-picker-button');
-            button.querySelector('.color-swatch').className = `color-swatch w-4 h-4 rounded-full bg-${color}-500`;
-            button.querySelector('span:last-child').textContent = colors[color];
-            
-            picker.querySelector('.color-palette').classList.add('hidden');
+            if (picker) {
+                picker.dataset.selectedColor = color;
+                
+                const button = picker.querySelector('.color-picker-button');
+                button.querySelector('.color-swatch').className = `color-swatch w-4 h-4 rounded-full bg-${color}-400`;
+                button.querySelector('span:last-child').textContent = `Priority ${colors[color]}`;
+                
+                picker.querySelector('.color-palette').classList.add('hidden');
+            }
             return;
         }
 
-        if (!button) return;
+        if (e.target.closest('.item-color-picker > button')) {
+            const pickerButton = e.target.closest('button');
+            if (pickerButton) {
+                const palette = pickerButton.nextElementSibling;
+                palette.classList.toggle('hidden');
+            }
+            return;
+        }
 
+        if (e.target.closest('.item-color-palette .color-option')) {
+            const option = e.target.closest('.color-option');
+            const color = option.dataset.color;
+            const itemLi = option.closest('li');
+            const itemId = itemLi.dataset.itemId;
+
+            try {
+                await api.put(`${baseUrl}/items/${itemId}`, { color });
+                const list = lists.find(l => l.items.some(i => i.id == itemId));
+                if (list) {
+                    const item = list.items.find(i => i.id == itemId);
+                    item.color = color;
+                }
+                renderLists();
+            } catch (error) {
+                console.error('Failed to update item color:', error);
+            }
+            return;
+        }
+
+        const link = e.target.closest('a');
+        if (link && link.dataset.action === 'open-deadline-picker') {
+            e.preventDefault();
+            const deadlineInput = link.nextElementSibling;
+            deadlineInput.classList.toggle('hidden');
+            if (!deadlineInput.classList.contains('hidden')) {
+                deadlineInput.focus();
+            }
+            return;
+        }
+ 
+        if (!button) return;
+ 
         const action = button.dataset.action;
         const listId = button.dataset.listId;
         const itemId = button.dataset.itemId;
@@ -288,6 +358,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+
+    listsContainer.addEventListener('change', async (e) => {
+        if (e.target.dataset.action === 'update-deadline') {
+            const input = e.target;
+            const itemId = input.dataset.itemId;
+            const deadline = input.value;
+            try {
+                await api.put(`${baseUrl}/items/${itemId}`, { deadline });
+                const list = lists.find(l => l.items.some(i => i.id == itemId));
+                if (list) {
+                    const item = list.items.find(i => i.id == itemId);
+                    item.deadline = deadline;
+                }
+                renderLists();
+            } catch (error) {
+                console.error('Failed to update item deadline:', error);
+            }
+        }
+    });
+
+    listsContainer.addEventListener('focusout', (e) => {
+        if (e.target.classList.contains('item-deadline-input')) {
+            e.target.classList.add('hidden');
+        }
+    });
     
     addListButton.addEventListener('click', addList);
     newListTitleInput.addEventListener('keydown', (e) => {
@@ -308,6 +403,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderPills();
     renderLists();
+
+    document.addEventListener('click', (e) => {
+        // Close new item color picker
+        const newItemPicker = document.querySelector('.color-picker');
+        if (newItemPicker && !newItemPicker.contains(e.target)) {
+            newItemPicker.querySelector('.color-palette').classList.add('hidden');
+        }
+
+        // Close existing item color pickers
+        const openItemPalettes = document.querySelectorAll('.item-color-palette:not(.hidden)');
+        openItemPalettes.forEach(palette => {
+            if (!palette.closest('.item-color-picker').contains(e.target)) {
+                palette.classList.add('hidden');
+            }
+        });
+    });
 });
 </script>
 @endpush

@@ -81,8 +81,8 @@ A free to-do list tool with email notifications for deadlines.
 
 ### UI/UX Enhancements:
 
-*   **Task Color Palettes**: Users can assign a color to each task from a visual color palette.
-*   **Task Deadlines**: Users can set a specific date and time as a deadline for each task using a datetime picker.
+*   **Task Color Palettes**: Users can assign a color to each task from a visual color palette. The colors are mapped to priority numbers (1-8).
+*   **Task Deadlines**: Users can set a specific date and time as a deadline for each task using a datetime picker. The deadline is displayed in a readable format (e.g., "9 Sep, 2025 8:05 PM").
 *   **Responsive Design**: The form for adding new tasks is responsive and wraps on smaller screens to prevent overflow.
 *   **Sidebar List Display**: On desktop, a user's to-do lists are displayed in the right sidebar for quick access. On mobile, this list appears at the top.
 *   **Pill-Based Navigation**: Lists are represented as clickable pills/tabs below the creation form, allowing users to easily switch between them.
@@ -90,3 +90,5 @@ A free to-do list tool with email notifications for deadlines.
 *   **Active List Indicator**: The currently active list's pill is highlighted for clear visual feedback.
 *   **Seamless Experience**: Adding or deleting lists happens without page reloads, providing a smoother, single-page application feel.
 *   **Custom Datepicker Placeholder**: The deadline input field shows "Set a deadline" as a placeholder, switching to the native datetime picker only on focus.
+*   **Improved Layout**: Task items have a stacked layout, with the title on the first line and the color picker and deadline on the second.
+*   **Refined Styling**: The color selector circles are smaller, have a white background, and a border. The focus ring has been removed. The text in the color selection dropdown is the smallest size.
