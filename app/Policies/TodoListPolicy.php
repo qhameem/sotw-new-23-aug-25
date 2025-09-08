@@ -13,7 +13,7 @@ class TodoListPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,7 +21,7 @@ class TodoListPolicy
      */
     public function view(User $user, TodoList $todoList): bool
     {
-        return false;
+        return $user->id === $todoList->user_id;
     }
 
     /**
@@ -29,7 +29,7 @@ class TodoListPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**

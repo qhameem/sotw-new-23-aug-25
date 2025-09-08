@@ -17,12 +17,24 @@
                  <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1 @if(request()->routeIs('articles.index') || request()->routeIs('articles.show') || request()->routeIs('articles.category') || request()->routeIs('articles.tag')) font-semibold @else font-normal @endif">Articles</span>
             </a>
 
-           <a href="{{ route('todolists.index') }}" class="flex items-center p-2 text-gray-900 rounded-lg group">
-               <svg class="size-6 group-hover:text-gray-900 @if(request()->routeIs('todolists.index')) text-primary-500 @else text-gray-400 @endif" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-               </svg>
-               <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1 @if(request()->routeIs('todolists.index')) font-semibold @else font-normal @endif">To-Do List</span>
-           </a>
+            <div x-data="{ open: {{ request()->routeIs('todolists.index') ? 'true' : 'false' }} }">
+                <button @click="open = !open" class="flex items-center justify-between w-full p-2 text-gray-900 rounded-lg group">
+                    <div class="flex items-center">
+                        <svg class="size-6 group-hover:text-gray-900 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span class="ml-3">Free Tools</span>
+                    </div>
+                </button>
+                <div x-show="open" class="pl-8">
+                    <a href="{{ route('todolists.index') }}" class="flex items-center p-2 text-gray-900 rounded-lg group">
+                        <svg class="size-6 group-hover:text-gray-900 @if(request()->routeIs('todolists.index')) text-primary-500 @else text-gray-400 @endif" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1 @if(request()->routeIs('todolists.index')) font-semibold @else font-normal @endif">To-Do List</span>
+                    </a>
+                </div>
+            </div>
 
             <a href="{{ route('promote') }}" class="flex items-center p-2 text-gray-900 rounded-lg  group">
                 <svg class="size-6 group-hover:text-gray-900 -rotate-45 @if(request()->routeIs('promote')) text-primary-500 @else text-gray-600 @endif" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.3" stroke="currentColor">

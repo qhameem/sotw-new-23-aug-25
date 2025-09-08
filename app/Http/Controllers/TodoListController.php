@@ -7,6 +7,8 @@ use App\Models\TodoListItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Exports\TodoListExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TodoListController extends Controller
 {
@@ -56,6 +58,13 @@ class TodoListController extends Controller
         $todoList->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    public function export(TodoList $todoList)
+    {
+        $this->authorize('view', $todoList);
+
+        return Excel::download(new TodoListExport($todoList), $todoList->title . '.xlsx');
     }
 
     public function storeItem(Request $request, TodoList $todoList)
