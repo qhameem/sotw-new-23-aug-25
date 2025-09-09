@@ -1,11 +1,13 @@
 <div class="flex flex-col md:flex-row h-screen overflow-hidden">
     <!-- Left Sidebar -->
+    @if(!request()->is('free-todo-list-tool'))
     <div class="hidden md:flex md:flex-col md:w-72 md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-r border-gray-200  flex-shrink-0">
         @include('partials._left-sidebar')
     </div>
+    @endif
 
     <!-- Main Content -->
-    <main class="flex-1 w-full {{ $mainContentMaxWidth }} order-1 md:order-2 overflow-y-auto no-scrollbar">
+    <main class="flex-1 w-full {{ request()->is('free-todo-list-tool') ? 'max-w-full' : $mainContentMaxWidth }} order-1 md:order-2 overflow-y-auto no-scrollbar">
         <x-page-header>
             <x-slot:title>
                 {!! $title !!}

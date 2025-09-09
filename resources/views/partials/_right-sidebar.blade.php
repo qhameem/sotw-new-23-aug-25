@@ -1,4 +1,5 @@
 <div class="h-full flex flex-col md:border-r border-l md:border-gray-200 md:w-sm" x-data="{ searchFocused: false }" @search-focus-changed.window="searchFocused = $event.detail">
+    @if(!request()->is('free-todo-list-tool'))
     <div x-show="!searchFocused">
         @if(isset($isCategoryPage) && $isCategoryPage)
             <div class="p-4">
@@ -104,6 +105,7 @@
             </div>
         @endif
     </div>
+    @endif
     <div x-show="searchFocused" style="display: none;" class="p-4 text-gray-500" x-data="{ results: null }" @search-results.window="results = $event.detail">
         <div x-show="!results" class="text-center">
             Try searching for software products or categories

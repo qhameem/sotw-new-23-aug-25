@@ -4,6 +4,7 @@
             <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
         </a>
     </div>
+    @if(!request()->is('free-todo-list-tool'))
     <div class="hidden md:flex flex-grow p-4 pl-8 ml-8">
         <nav class="flex flex-col space-y-2 text-base">
             <a href="{{ route('home') }}" class="flex items-center p-2 text-gray-900 rounded-lg  group">
@@ -54,6 +55,7 @@
             @endif
         </nav>
     </div>
+    @endif
     <div class="hidden md:block md:w-3/4 p-4 mt-auto flex-shrink-0 ml-auto">
         <div class="text-xs text-gray-500 ">
             <a href="{{ route('promote') }}" class="hover:underline">Pricing</a> •

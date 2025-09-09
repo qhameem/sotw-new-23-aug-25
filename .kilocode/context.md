@@ -54,12 +54,14 @@ The primary feature is the automatic filling of the product submission form base
 
 ## Feature: To-Do List Tool
 
-A free to-do list tool with email notifications for deadlines.
+A free to-do list tool with a minimalist, responsive design.
 
 ### Key Files:
 
 *   **View**: `resources/views/todolists/index.blade.php`
     *   The main view for the to-do list, containing the pure JavaScript implementation for all client-side interactivity.
+*   **Layout**: `resources/views/layouts/todolist.blade.php`
+    *   A dedicated, minimal layout file for the to-do list tool, independent of the main site's three-column design.
 *   **Controller**: `app/Http/Controllers/TodoListController.php`
     *   Handles all CRUD operations for to-do lists and their items, including Excel export.
 *   **Policy**: `app/Policies/TodoListPolicy.php`
@@ -84,17 +86,10 @@ A free to-do list tool with email notifications for deadlines.
 
 ### UI/UX Enhancements:
 
-*   **Task Color Palettes**: Users can assign a color to each task from a visual color palette. The colors are mapped to priority numbers (1-8).
-*   **Task Deadlines**: Users can set a specific date and time as a deadline for each task using a datetime picker. The deadline is displayed in a readable format (e.g., "9 Sep, 2025 8:05 PM").
-*   **Responsive Design**: The form for adding new tasks is responsive and wraps on smaller screens to prevent overflow.
-*   **Sidebar List Display**: On desktop, a user's to-do lists are displayed in the right sidebar for quick access. On mobile, this list appears at the top.
-*   **Pill-Based Navigation**: Lists are represented as clickable pills/tabs below the creation form, allowing users to easily switch between them.
-*   **Priority Filtering**: Users can filter tasks by priority using a set of filter pills. The pills display a count of items for each priority.
-*   **Dynamic List Reordering**: Clicking on a pill brings the corresponding list to the top of the view, while the pills maintain their original order.
-*   **Active List Indicator**: The currently active list's pill is highlighted for clear visual feedback.
-*   **Seamless Experience**: Adding or deleting lists happens without page reloads, providing a smoother, single-page application feel.
-*   **Custom Datepicker Placeholder**: The deadline input field shows "Set a deadline" as a placeholder, switching to the native datetime picker only on focus.
-*   **Improved Layout**: Task items have a stacked layout, with the title on the first line and the color picker and deadline on the second.
-*   **Refined Styling**: The color selector circles are smaller, have a white background, and a border. The focus ring has been removed. The text in the color selection dropdown is the smallest size.
-*   **Delete Confirmation**: A confirmation prompt is shown before a user can delete a to-do list to prevent accidental deletion.
-*   **Sidebar Menu**: The "Free Todo List" link is nested under a "Free Tools" dropdown in the main sidebar.
+*   **Independent Template**: The tool uses a dedicated layout, separate from the main site's three-column design, for a focused, app-like experience.
+*   **Minimalist & Responsive Design**: The UI is clean and simple, inspired by modern to-do applications, and is fully responsive for both desktop and mobile views.
+*   **Task Priorities**: Users can assign a priority to each task using a color-coded system (Red, Orange, Yellow, Green, Gray). The task's background color reflects its priority.
+*   **Task Deadlines**: Users can set a specific date and time as a deadline for each task using a datetime picker.
+*   **Inline Editing**: Task titles can be edited directly in the list by clicking on them.
+*   **Single List Focus**: The design is simplified to focus on a single, primary to-do list ("My To Do List"), which is automatically created for new users.
+*   **Styling**: The "Add new task" input features a clean, bottom-border-only design.

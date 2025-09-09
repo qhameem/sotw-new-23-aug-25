@@ -1,45 +1,31 @@
-@extends('layouts.app')
+@extends('layouts.todolist')
 
-@section('title', 'Free To-Do List Tool')
-
-@section('header-title')
-    Free Todo List Tool (with Email Notifications)
-@endsection
+@section('title', 'Your To Do')
 
 @section('content')
-{{-- Safelist for Tailwind CSS JIT compiler --}}
-{{--
-    bg-gray-100 bg-red-100 bg-yellow-100 bg-green-100 bg-blue-100 bg-indigo-100 bg-purple-100 bg-pink-100
-    bg-gray-400 bg-red-400 bg-yellow-400 bg-green-400 bg-blue-400 bg-indigo-400 bg-purple-400 bg-pink-400
---}}
-<div id="todo-app-container" class="container mx-auto px-4 py-8" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
-    <div class="max-w-3xl mx-auto">
-        <!-- Create New List Form -->
-        <div class="bg-white p-4 rounded-lg mb-6">
-            <div class="flex space-x-2 items-center">
-                <input type="text" id="new-list-title-input" placeholder="Enter new list title..." class="w-3/4 py-1 px-4 border border-gray-300 rounded-md focus:outline-none placeholder-gray-500 placeholder:text-sm">
-                <button id="add-list-button" class="w-1/4 bg-transparent text-sky-600 font-medium text-sm py-1 border border-sky-500 rounded-md hover:bg-sky-50  transition shadow">
-                    &CirclePlus; Create New List
-                </button>
-            </div>
-        </div>
+<div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
+    
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Your To Do</h1>
 
-        <!-- List Pills -->
-        <div id="list-pills-container" class="flex flex-wrap gap-2 mb-4">
-            <!-- Pills will be rendered here -->
-        </div>
+    <!-- Add New Task -->
+    <div class="flex flex-col sm:flex-row gap-2 mb-6">
+        <input type="text" id="new-item-title-input" placeholder="Add new task" class="flex-grow px-1 py-2 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-500">
+        <button id="add-item-button" class="bg-gray-800 text-white font-bold w-full sm:w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-700 transition-colors flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+        </button>
+    </div>
 
-        <!-- Priority Filter Pills -->
-        <div id="priority-filter-container" class="flex flex-wrap gap-2 mb-4">
-            <!-- Priority filters will be rendered here -->
-        </div>
+    <!-- To-Do Lists Container -->
+    <div id="todo-lists-container" class="space-y-2">
+        <!-- Tasks will be rendered here -->
+    </div>
 
-        <!-- To-Do Lists Container -->
-        <div id="todo-lists-container" class="space-y-4">
-            <!-- Lists will be rendered here by JavaScript -->
-        </div>
+    <!-- Footer -->
+    <div class="mt-6 text-center">
+        
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -50,24 +36,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = appContainer.dataset.csrfToken;
     let lists = JSON.parse(appContainer.dataset.lists);
     let activeListId = lists.length > 0 ? lists[0].id : null;
-    let activePriorityFilter = null;
 
-    const newListTitleInput = document.getElementById('new-list-title-input');
-    const addListButton = document.getElementById('add-list-button');
+    const newItemTitleInput = document.getElementById('new-item-title-input');
+    const addItemButton = document.getElementById('add-item-button');
     const listsContainer = document.getElementById('todo-lists-container');
-    const pillsContainer = document.getElementById('list-pills-container');
-    const priorityFilterContainer = document.getElementById('priority-filter-container');
+    const remainingTodosEl = document.getElementById('remaining-todos');
+    const quoteEl = document.getElementById('inspirational-quote');
 
-    const colors = {
-        'red': '1',
-        'yellow': '2',
-        'purple': '3',
-        'blue': '4',
-        'indigo': '5',
-        'green': '6',
-        'pink': '7',
-        'gray': '8'
-    };
+    const quotes = [
+        "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
+        "\"The secret of getting ahead is getting started.\" - Mark Twain",
+        "\"It's not the load that breaks you down, it's the way you carry it.\" - Lou Holtz",
+        "\"The future depends on what you do today.\" - Mahatma Gandhi"
+    ];
 
     const api = {
         async post(url, data) {
@@ -98,227 +79,133 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    const renderPills = () => {
-        pillsContainer.innerHTML = '';
-        lists.forEach(list => {
-            const pill = document.createElement('button');
-            pill.className = `px-3 py-1 rounded text-sm transition ${
-                list.id == activeListId
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`;
-            pill.textContent = list.title;
-            pill.dataset.listId = list.id;
-            pill.addEventListener('click', () => {
-                activeListId = list.id;
-                renderPills();
-                renderLists();
-            });
-            pillsContainer.appendChild(pill);
-        });
-    };
-
-    const renderPriorityFilters = () => {
-        priorityFilterContainer.innerHTML = '';
-
-        const activeList = lists.find(l => l.id == activeListId);
-        const items = activeList ? activeList.items || [] : [];
-
-        const allPrioritiesButton = document.createElement('button');
-        allPrioritiesButton.textContent = `All Priorities (${items.length})`;
-        allPrioritiesButton.className = `px-3 py-1 rounded-md text-xs border border-sky-300 transition ${
-            activePriorityFilter === null
-                ? 'bg-sky-50 text-sky-600 font-medium'
-                : 'bg-white text-sky-700 hover:bg-sky-50'
-        }`;
-        allPrioritiesButton.addEventListener('click', () => {
-            activePriorityFilter = null;
-            renderPriorityFilters();
-            renderLists();
-        });
-        priorityFilterContainer.appendChild(allPrioritiesButton);
-
-        Object.entries(colors).forEach(([color, name]) => {
-            const count = items.filter(item => item.color === color).length;
-            const button = document.createElement('button');
-            button.textContent = `Priority ${name} (${count})`;
-            button.className = `px-3 py-1 rounded-md text-xs border border-sky-200 transition ${
-                activePriorityFilter === color
-                    ? 'bg-sky-100 text-sky-700 font-medium border-sky-300'
-                    : 'bg-white text-sky-800 hover:bg-sky-50'
-            }`;
-            button.addEventListener('click', () => {
-                activePriorityFilter = color;
-                renderPriorityFilters();
-                renderLists();
-            });
-            priorityFilterContainer.appendChild(button);
-        });
-    };
-
-    const formatDate = (dateString) => {
-        const options = { day: 'numeric', month: 'short', year: 'numeric' };
-        return new Date(dateString).toLocaleDateString('en-US', options);
-    };
-
-    const formatDeadline = (deadline) => {
-        if (!deadline) return 'Set a Deadline';
-        const date = new Date(deadline);
-        const options = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
-        return date.toLocaleString('en-US', options);
-    };
-
-    const renderLists = () => {
+    const renderTasks = () => {
         listsContainer.innerHTML = '';
+        if (!activeListId) return;
 
-        let orderedLists = [...lists];
-        if (activeListId) {
-            const activeList = orderedLists.find(l => l.id == activeListId);
-            if (activeList) {
-                orderedLists = [activeList, ...orderedLists.filter(l => l.id != activeListId)];
-            }
-        }
+        const list = lists.find(l => l.id == activeListId);
+        if (!list || !list.items) return;
 
-        orderedLists.forEach(list => {
-            const listElement = document.createElement('div');
-            listElement.className = 'bg-white p-4 rounded-lg border border-dotted border-gray-300';
-            listElement.id = `list-${list.id}`;
-            listElement.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center">
-                        <h2 class="text-xl font-bold text-gray-700">${list.title}</h2>
-                        <span class="ml-3 text-xs text-gray-500">${formatDate(list.created_at)}</span>
-                    </div>
-                    <div class="flex items-center">
-                        <a href="${baseUrl}/${list.id}/export" class="text-gray-400 hover:text-green-500 transition mr-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                        </a>
-                        <button data-action="delete-list" data-list-id="${list.id}" class="text-gray-400 hover:text-red-500 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </div>
+        list.items.forEach(item => {
+            const taskElement = document.createElement('div');
+            const priorityColor = item.color || 'gray';
+            taskElement.className = `p-3 border border-gray-200 rounded-lg bg-${priorityColor}-100`;
+            
+            const deadlineDate = item.deadline ? new Date(item.deadline) : null;
+            const formattedDeadline = deadlineDate ? deadlineDate.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'Set Deadline';
+            const deadlineColorClass = deadlineDate && deadlineDate < new Date() ? 'text-red-500' : 'text-gray-500';
+
+            const priorityColors = {
+                'red': 1, 'orange': 2, 'yellow': 3, 'green': 4, 'gray': 5
+            };
+
+            const colorOptionsHtml = Object.entries(priorityColors).map(([color, priority]) => `
+                <div class="color-option p-1 cursor-pointer" data-color="${color}">
+                    <span class="block w-5 h-5 rounded-full bg-${color}-400 hover:ring-2 hover:ring-offset-1 hover:ring-${color}-500"></span>
                 </div>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <input type="text" data-list-id="${list.id}" placeholder="Add a new task..." class="new-item-title-input flex-grow px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500">
-                    <div class="relative color-picker" data-list-id="${list.id}" data-selected-color="gray">
-                        <button type="button" class="color-picker-button flex items-center gap-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 px-3 py-2">
-                            <span class="color-swatch w-4 h-4 rounded-full bg-gray-400"></span>
-                            <span>Priority 8</span>
-                        </button>
-                        <div class="color-palette absolute z-10 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg hidden">
-                            ${Object.entries(colors).map(([value, name]) => `
-                                <div class="color-option flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100" data-color="${value}">
-                                    <span class="w-4 h-4 rounded-full bg-${value}-400"></span>
-                                    <span class="text-xs">Priority ${name}</span>
-                                </div>
-                            `).join('')}
+            `).join('');
+
+            taskElement.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-grow">
+                        <input type="checkbox" data-action="toggle-item" data-item-id="${item.id}" class="h-5 w-5 rounded border-gray-300 text-gray-800 focus:ring-gray-700" ${item.completed ? 'checked' : ''}>
+                        <div class="ml-3 flex-grow">
+                            <span class="item-title text-sm text-gray-800 cursor-pointer ${item.completed ? 'line-through text-gray-500' : ''}">${item.title}</span>
+                            <input type="text" class="item-title-input text-sm text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full" value="${item.title}" data-item-id="${item.id}">
                         </div>
                     </div>
-                    <input type="text" data-list-id="${list.id}" class="new-item-deadline-input bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500" placeholder="Set a deadline">
-                    <button data-action="add-item" data-list-id="${list.id}" class="bg-gray-200 text-gray-700 font-semibold py-2 px-3 rounded-md hover:bg-gray-300 text-sm transition">Add</button>
+                    <button data-action="delete-item" data-item-id="${item.id}" class="text-gray-400 hover:text-gray-600 ml-2 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
-                <ul class="space-y-2">
-                    ${(list.items || []).filter(item => !activePriorityFilter || item.color === activePriorityFilter).map(item => `
-                        <li class="p-2 rounded-md bg-${item.color}-100" data-item-id="${item.id}">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <input type="checkbox" data-action="toggle-item" data-item-id="${item.id}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${item.completed ? 'checked' : ''}>
-                                    <span class="ml-3 text-sm text-gray-800 ${item.completed ? 'line-through text-gray-500' : ''}">${item.title}</span>
-                                </div>
-                                <button data-action="delete-item" data-list-id="${list.id}" data-item-id="${item.id}" class="text-gray-400 hover:text-red-500 transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
-                            <div class="flex items-center gap-4 mt-2 pl-7">
-                                <div class="relative item-color-picker">
-                                    <a href="#" data-action="open-color-picker" class="text-xs text-gray-500 hover:underline">Priority ${colors[item.color]}</a>
-                                    <div class="item-color-palette absolute z-10 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg hidden" style="left: 0;">
-                                        ${Object.entries(colors).map(([value, name]) => `
-                                            <div class="color-option flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100" data-color="${value}">
-                                                <span class="w-4 h-4 rounded-full bg-${value}-400"></span>
-                                                <span class="text-xs">Priority ${name}</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                                <div class="relative">
-                                    <a href="#" data-action="open-deadline-picker" data-item-id="${item.id}" class="text-blue-500 hover:underline text-xs">${formatDeadline(item.deadline)}</a>
-                                    <input type="datetime-local" data-action="update-deadline" data-item-id="${item.id}" class="item-deadline-input absolute right-0 top-full mt-2 z-10 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-500 hidden" value="${item.deadline ? new Date(item.deadline).toISOString().slice(0, 16) : ''}">
-                                </div>
-                            </div>
-                        </li>
-                    `).join('')}
-                </ul>
+                <div class="flex items-center justify-between pl-8 mt-1">
+                    <div class="relative">
+                        <a href="#" data-action="open-color-picker" class="text-xs text-gray-500 hover:underline">Priority ${priorityColors[priorityColor]}</a>
+                        <div class="item-color-palette absolute z-10 mt-2 p-2 w-auto bg-white border border-gray-200 rounded-md shadow-lg hidden flex gap-1">
+                            ${colorOptionsHtml}
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <a href="#" data-action="open-deadline-picker" data-item-id="${item.id}" class="text-xs ${deadlineColorClass} hover:underline">${formattedDeadline}</a>
+                        <input type="datetime-local" data-action="update-deadline" data-item-id="${item.id}" class="item-deadline-input absolute right-0 top-full mt-2 z-10 bg-white border border-gray-300 rounded-md text-sm focus:outline-none hidden" value="${item.deadline ? new Date(item.deadline).toISOString().slice(0, 16) : ''}">
+                    </div>
+                </div>
             `;
-            listsContainer.appendChild(listElement);
-
-            const deadlineInput = listElement.querySelector('.new-item-deadline-input');
-            deadlineInput.addEventListener('focus', (e) => {
-                e.target.type = 'datetime-local';
-            });
-            deadlineInput.addEventListener('blur', (e) => {
-                if (!e.target.value) {
-                    e.target.type = 'text';
-                }
-            });
+            listsContainer.appendChild(taskElement);
         });
+
+        // updateFooter();
     };
 
-    const addList = async () => {
-        const title = newListTitleInput.value.trim();
-        if (title === '') return;
+    // const updateFooter = () => {
+    //     if (!activeListId) {
+    //         remainingTodosEl.textContent = '';
+    //         quoteEl.textContent = '';
+    //         return;
+    //     }
+    //     const list = lists.find(l => l.id == activeListId);
+    //     const remaining = list ? list.items.filter(i => !i.completed).length : 0;
+    //     remainingTodosEl.textContent = `Your remaining todos: ${remaining}`;
+    //     if (remaining > 0) {
+    //         quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+    //     } else {
+    //         quoteEl.textContent = "\"Well done! You've cleared all your tasks.\"";
+    //     }
+    // };
+
+    const addItem = async () => {
+        const title = newItemTitleInput.value.trim();
+        if (title === '' || !activeListId) return;
+
         try {
-            const newList = await api.post(storeUrl, { title });
-            lists.push(newList);
-            newListTitleInput.value = '';
-            activeListId = newList.id;
-            renderPills();
-            renderLists();
+            const newItem = await api.post(`${baseUrl}/${activeListId}/items`, { title, color: 'gray' });
+            const list = lists.find(l => l.id == activeListId);
+            if (list) {
+                list.items.push(newItem);
+            }
+            newItemTitleInput.value = '';
+            renderTasks();
         } catch (error) {
-            console.error('Failed to add list:', error);
+            console.error('Failed to add item:', error);
+        }
+    };
+
+    const updateItemTitle = async (input) => {
+        const itemId = input.dataset.itemId;
+        const newTitle = input.value.trim();
+        const span = input.previousElementSibling;
+        const originalTitle = span.textContent;
+
+        if (newTitle === '' || newTitle === originalTitle) {
+            input.classList.add('hidden');
+            span.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            await api.put(`${baseUrl}/items/${itemId}`, { title: newTitle });
+            const list = lists.find(l => l.items.some(i => i.id == itemId));
+            if (list) {
+                list.items.find(i => i.id == itemId).title = newTitle;
+            }
+            renderTasks();
+        } catch (error) {
+            console.error('Failed to update item title:', error);
+            renderTasks(); // Re-render to show original state
         }
     };
 
     listsContainer.addEventListener('click', async (e) => {
-        const button = e.target.closest('button');
-        const link = e.target.closest('a');
+        const target = e.target;
+        const button = target.closest('button');
+        const link = target.closest('a');
 
-        if (button && button.dataset.action === 'delete-item') {
-            const listId = button.dataset.listId;
-            const itemId = button.dataset.itemId;
-            try {
-                await api.delete(`${baseUrl}/items/${itemId}`);
-                const list = lists.find(l => l.id == listId);
-                if (list) {
-                    list.items = list.items.filter(item => item.id != itemId);
-                }
-                renderLists();
-            } catch (error) {
-                console.error('Failed to delete item:', error);
-            }
-            return;
-        }
-
-        if (button && button.classList.contains('color-picker-button')) {
-            const palette = button.nextElementSibling;
-            palette.classList.toggle('hidden');
-            return;
-        }
-
-        if (e.target.closest('.color-picker .color-option')) {
-            const option = e.target.closest('.color-option');
-            const color = option.dataset.color;
-            const picker = option.closest('.color-picker');
-            if (picker) {
-                picker.dataset.selectedColor = color;
-                
-                const button = picker.querySelector('.color-picker-button');
-                button.querySelector('.color-swatch').className = `color-swatch w-4 h-4 rounded-full bg-${color}-400`;
-                button.querySelector('span:last-child').textContent = `Priority ${colors[color]}`;
-                
-                picker.querySelector('.color-palette').classList.add('hidden');
+        if (link && link.dataset.action === 'open-deadline-picker') {
+            e.preventDefault();
+            const deadlineInput = link.nextElementSibling;
+            deadlineInput.classList.toggle('hidden');
+            if (!deadlineInput.classList.contains('hidden')) {
+                deadlineInput.focus();
             }
             return;
         }
@@ -330,97 +217,46 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (e.target.closest('.item-color-palette .color-option')) {
-            const option = e.target.closest('.color-option');
+        if (target.closest('.color-option')) {
+            const option = target.closest('.color-option');
             const color = option.dataset.color;
-            const itemLi = option.closest('li');
-            const itemId = itemLi.dataset.itemId;
+            const itemLi = option.closest('.p-3');
+            const itemId = itemLi.querySelector('[data-item-id]').dataset.itemId;
 
             try {
                 await api.put(`${baseUrl}/items/${itemId}`, { color });
                 const list = lists.find(l => l.items.some(i => i.id == itemId));
                 if (list) {
-                    const item = list.items.find(i => i.id == itemId);
-                    item.color = color;
+                    list.items.find(i => i.id == itemId).color = color;
                 }
-                renderLists();
+                renderTasks();
             } catch (error) {
                 console.error('Failed to update item color:', error);
             }
             return;
         }
 
-        if (link && link.dataset.action === 'open-deadline-picker') {
-            e.preventDefault();
-            const deadlineInput = link.nextElementSibling;
-            deadlineInput.classList.toggle('hidden');
-            if (!deadlineInput.classList.contains('hidden')) {
-                deadlineInput.focus();
-            }
+        if (target.classList.contains('item-title')) {
+            const span = target;
+            const input = span.nextElementSibling;
+            span.classList.add('hidden');
+            input.classList.remove('hidden');
+            input.focus();
+            input.select();
             return;
         }
- 
-        if (!button) return;
- 
-        const action = button.dataset.action;
-        const listId = button.dataset.listId;
-        const itemId = button.dataset.itemId;
 
-        if (action === 'delete-list') {
-            if (confirm('Are you sure you want to delete this list?')) {
-                try {
-                    await api.delete(`${baseUrl}/${listId}`);
-                    lists = lists.filter(list => list.id != listId);
-                    if (activeListId == listId) {
-                        activeListId = lists.length > 0 ? lists[0].id : null;
-                    }
-                    renderPills();
-                    renderLists();
-                } catch (error) {
-                    console.error('Failed to delete list:', error);
-                }
-            }
-        }
-
-        if (action === 'add-item') {
-            const input = listsContainer.querySelector(`.new-item-title-input[data-list-id="${listId}"]`);
-            const colorPicker = listsContainer.querySelector(`.color-picker[data-list-id="${listId}"]`);
-            const deadlineInput = listsContainer.querySelector(`.new-item-deadline-input[data-list-id="${listId}"]`);
-            const title = input.value.trim();
-            const color = colorPicker.dataset.selectedColor;
-            const deadline = deadlineInput.value;
-            if (title === '') return;
+        if (button && button.dataset.action === 'delete-item') {
+            const itemId = button.dataset.itemId;
             try {
-                const newItem = await api.post(`${baseUrl}/${listId}/items`, { title, color, deadline });
-                const list = lists.find(l => l.id == listId);
+                await api.delete(`${baseUrl}/items/${itemId}`);
+                const list = lists.find(l => l.id == activeListId);
                 if (list) {
-                    list.items = list.items || [];
-                    list.items.push(newItem);
+                    list.items = list.items.filter(item => item.id != itemId);
                 }
-                renderLists();
+                renderTasks();
             } catch (error) {
-                console.error('Failed to add item:', error);
-            }
-        }
-
-    });
-
-    listsContainer.addEventListener('change', async (e) => {
-        if (e.target.dataset.action === 'toggle-item') {
-            const checkbox = e.target;
-            const itemId = checkbox.dataset.itemId;
-            const completed = checkbox.checked;
-            try {
-                await api.put(`${baseUrl}/items/${itemId}`, { completed });
-                const list = lists.find(l => l.items.some(i => i.id == itemId));
-                if (list) {
-                    const item = list.items.find(i => i.id == itemId);
-                    item.completed = completed;
-                }
-                renderLists();
-            } catch (error) {
-                console.error('Failed to update item:', error);
-                checkbox.checked = !completed; // Revert on failure
+                console.error('Failed to delete item:', error);
             }
         }
     });
@@ -434,59 +270,73 @@ document.addEventListener('DOMContentLoaded', function () {
                 await api.put(`${baseUrl}/items/${itemId}`, { deadline });
                 const list = lists.find(l => l.items.some(i => i.id == itemId));
                 if (list) {
-                    const item = list.items.find(i => i.id == itemId);
-                    item.deadline = deadline;
+                    list.items.find(i => i.id == itemId).deadline = deadline;
                 }
-                renderLists();
+                renderTasks();
             } catch (error) {
                 console.error('Failed to update item deadline:', error);
+            }
+            return;
+        }
+
+        if (e.target.dataset.action === 'toggle-item') {
+            const checkbox = e.target;
+            const itemId = checkbox.dataset.itemId;
+            const completed = checkbox.checked;
+            try {
+                await api.put(`${baseUrl}/items/${itemId}`, { completed });
+                const list = lists.find(l => l.items.some(i => i.id == itemId));
+                if (list) {
+                    list.items.find(i => i.id == itemId).completed = completed;
+                }
+                renderTasks();
+            } catch (error) {
+                console.error('Failed to update item:', error);
+                checkbox.checked = !completed; // Revert on failure
             }
         }
     });
 
     listsContainer.addEventListener('focusout', (e) => {
+        if (e.target.classList.contains('item-title-input')) {
+            updateItemTitle(e.target);
+        }
         if (e.target.classList.contains('item-deadline-input')) {
             e.target.classList.add('hidden');
         }
     });
-    
-    addListButton.addEventListener('click', addList);
-    newListTitleInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            addList();
-        }
-    });
 
     listsContainer.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.classList.contains('new-item-title-input')) {
-            const listId = e.target.dataset.listId;
-            const addButton = listsContainer.querySelector(`button[data-action="add-item"][data-list-id="${listId}"]`);
-            if (addButton) {
-                addButton.click();
-            }
+        if (e.key === 'Enter' && e.target.classList.contains('item-title-input')) {
+            updateItemTitle(e.target);
+        } else if (e.key === 'Escape' && e.target.classList.contains('item-title-input')) {
+            renderTasks(); // Just re-render to cancel
         }
     });
 
-    renderPills();
-    renderPriorityFilters();
-    renderLists();
-
-    document.addEventListener('click', (e) => {
-        // Close new item color picker
-        const newItemPicker = document.querySelector('.color-picker');
-        if (newItemPicker && !newItemPicker.contains(e.target)) {
-            newItemPicker.querySelector('.color-palette').classList.add('hidden');
+    addItemButton.addEventListener('click', addItem);
+    newItemTitleInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            addItem();
         }
-
-        // Close existing item color pickers
-        const openItemPalettes = document.querySelectorAll('.item-color-palette:not(.hidden)');
-        openItemPalettes.forEach(palette => {
-            if (!palette.closest('.item-color-picker').contains(e.target)) {
-                palette.classList.add('hidden');
-            }
-        });
     });
+
+    const initialize = async () => {
+        if (lists.length === 0) {
+            try {
+                const newList = await api.post(storeUrl, { title: 'My To Do List' });
+                lists.push(newList);
+                activeListId = newList.id;
+            } catch (error) {
+                console.error('Failed to create initial list:', error);
+                listsContainer.innerHTML = '<p class="text-red-500 text-center">Could not initialize to-do list.</p>';
+                return;
+            }
+        }
+        renderTasks();
+    };
+
+    initialize();
 });
 </script>
 @endpush
-@endsection
