@@ -100,8 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             const colorOptionsHtml = Object.entries(priorityColors).map(([color, priority]) => `
-                <div class="color-option p-1 cursor-pointer" data-color="${color}">
+                <div class="color-option p-1 cursor-pointer flex items-center gap-2" data-color="${color}">
                     <span class="block w-5 h-5 rounded-full bg-${color}-400 hover:ring-2 hover:ring-offset-1 hover:ring-${color}-500"></span>
+                    <span class="text-xs text-gray-600">${priority}</span>
                 </div>
             `).join('');
 
@@ -121,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="flex items-center justify-between pl-8 mt-1">
                     <div class="relative">
                         <a href="#" data-action="open-color-picker" class="text-xs text-gray-500 hover:underline">Priority ${priorityColors[priorityColor]}</a>
-                        <div class="item-color-palette absolute z-10 mt-2 p-2 w-auto bg-white border border-gray-200 rounded-md shadow-lg hidden flex gap-1">
+                        <div class="item-color-palette absolute z-10 mt-2 p-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg hidden flex flex-col gap-1">
                             ${colorOptionsHtml}
                         </div>
                     </div>
