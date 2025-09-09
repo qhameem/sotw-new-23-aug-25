@@ -1,6 +1,6 @@
 @extends('layouts.todolist')
 
-@section('title', 'Your To Do')
+@section('title', 'Free To Do List Tool - Software on the Web')
 
 @section('content')
 <div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
