@@ -5,7 +5,10 @@
 @section('content')
 <div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
     
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">Your To Do</h1>
+    <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6" data-list-id="">
+        <span id="list-title" class="cursor-pointer"></span>
+        <input type="text" id="list-title-input" class="text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full">
+    </h1>
 
     <!-- Add New Task -->
     <div class="flex flex-col sm:flex-row gap-2 mb-6">
@@ -40,8 +43,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const newItemTitleInput = document.getElementById('new-item-title-input');
     const addItemButton = document.getElementById('add-item-button');
     const listsContainer = document.getElementById('todo-lists-container');
-    const remainingTodosEl = document.getElementById('remaining-todos');
-    const quoteEl = document.getElementById('inspirational-quote');
+    const listTitleContainer = document.getElementById('list-title-container');
+    const listTitle = document.getElementById('list-title');
+    const listTitleInput = document.getElementById('list-title-input');
 
     const quotes = [
         "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
@@ -79,9 +83,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const renderListTitle = () => {
+        if (!activeListId) return;
+        const list = lists.find(l => l.id == activeListId);
+        if (list) {
+            listTitle.textContent = list.title;
+            listTitleInput.value = list.title;
+            listTitleContainer.dataset.listId = activeListId;
+        }
+    };
+
     const renderTasks = () => {
         listsContainer.innerHTML = '';
         if (!activeListId) return;
+
+        renderListTitle();
 
         const list = lists.find(l => l.id == activeListId);
         if (!list || !list.items) return;
@@ -195,6 +211,52 @@ document.addEventListener('DOMContentLoaded', function () {
             renderTasks(); // Re-render to show original state
         }
     };
+
+    const updateListTitle = async () => {
+        const newTitle = listTitleInput.value.trim();
+        const listId = listTitleContainer.dataset.listId;
+        const originalTitle = listTitle.textContent;
+
+        if (newTitle === '' || newTitle === originalTitle) {
+            listTitleInput.classList.add('hidden');
+            listTitle.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            await api.put(`${baseUrl}/${listId}`, { title: newTitle });
+            const list = lists.find(l => l.id == listId);
+            if (list) {
+                list.title = newTitle;
+            }
+            renderListTitle();
+        } catch (error) {
+            console.error('Failed to update list title:', error);
+            renderListTitle(); // Re-render to show original state
+        } finally {
+            listTitleInput.classList.add('hidden');
+            listTitle.classList.remove('hidden');
+        }
+    };
+
+    listTitle.addEventListener('click', () => {
+        listTitle.classList.add('hidden');
+        listTitleInput.classList.remove('hidden');
+        listTitleInput.focus();
+        listTitleInput.select();
+    });
+
+    listTitleInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            updateListTitle();
+        } else if (e.key === 'Escape') {
+            listTitleInput.classList.add('hidden');
+            listTitle.classList.remove('hidden');
+            renderListTitle();
+        }
+    });
+
+    listTitleInput.addEventListener('focusout', updateListTitle);
 
     listsContainer.addEventListener('click', async (e) => {
         const target = e.target;
