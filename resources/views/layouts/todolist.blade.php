@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+    x-data="{
+        open: false,
+    }"
+>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,10 +34,26 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')
 </head>
-<body class="font-sans antialiased bg-gray-100">
+<body class="font-sans antialiased bg-gray-100 pt-16"
+    data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
+    data-login-url="{{ route('login') }}"
+    data-csrf-token="{{ csrf_token() }}">
+    <div class="fixed top-0 right-0 p-4">
+        @include('partials._right-sidebar-usermenu')
+    </div>
     <div class="min-h-screen flex items-center justify-center">
         <div class="w-full max-w-2xl mx-auto p-4">
-            @yield('content')
+            @guest
+            <div class="text-center p-8 bg-white border rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to use the to-do list</h2>
+                <p class="text-gray-600 mb-4 text-sm tracking-tight">Log in to save and access your to-do lists from anywhere.</p>
+                <button @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
+                    Log in or Sign up &rarr;
+                </button>
+            </div>
+            @else
+                @yield('content')
+            @endguest
     
             <footer class="text-center mt-8">
                 <p class="text-xs text-gray-400">
@@ -46,7 +66,17 @@
         </div>
     </div>
 
+    <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
+        @include('auth.partials.login-modal-content')
+    </x-modal>
+
     @livewireScripts
     @stack('scripts')
+    <script>
+        const bodyData = document.body.dataset;
+        window.isAuthenticated = bodyData.isAuthenticated === '1';
+        window.loginUrl = bodyData.loginUrl;
+        window.csrfToken = bodyData.csrfToken;
+    </script>
 </body>
 </html>

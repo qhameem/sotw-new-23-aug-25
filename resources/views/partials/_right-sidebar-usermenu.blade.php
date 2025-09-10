@@ -3,62 +3,10 @@
         <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
     @else
         <div class="flex items-center">
-            @if(!request()->is('free-todo-list-tool'))
-            <div class="relative" x-data="{
-                    searchFocused: false,
-                    query: '',
-                    search() {
-                        if (this.query.length < 2) {
-                            this.$dispatch('search-results', null);
-                            return;
-                        }
-
-                        fetch(`/api/search?query=${this.query}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                this.$dispatch('search-results', data);
-                            });
-                    }
-                }" x-init="$watch('searchFocused', value => $dispatch('search-focus-changed', value))" @click.away="searchFocused = false">
-                <input @input.debounce.300ms="search()" x-model="query" @focus="searchFocused = true" x-ref="searchInput" type="text" placeholder="Search software" class="w-auto pl-8 pr-8 py-1 text-sm text-gray-800 placeholder-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-500 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-gray-600"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                </div>
-                <div x-show="searchFocused" style="display: none;" @click="searchFocused = false; query = ''; $dispatch('search-results', null);" class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-gray-400"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </div>
-            </div>
-            @endif
+            
         </div>
         <div class="flex items-center">
-            @if(!request()->is('free-todo-list-tool'))
-            @if(isset($pendingProducts) && $pendingProducts->count() > 0)
-            <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                <div @click="open = !open" class="mr-2 cursor-pointer border py-1 px-1 rounded-full relative">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-icon lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                </div>
-                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-1" class="absolute right-0 z-50 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="display: none;">
-                    <div class="py-1">
-                        <div class="px-4 py-2 text-sm font-semibold text-gray-900 border-b">
-                            {{ $pendingProducts->count() }} Product(s) waiting for approval
-                        </div>
-                        <div class="py-1">
-                            @foreach($pendingProducts as $product)
-                                <a href="{{ route('admin.products.edit', $product) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{{ $product->name }}</a>
-                            @endforeach
-                        </div>
-                        <div class="border-t border-gray-200 my-1"></div>
-                        <a href="{{ route('admin.product-approvals.index') }}" class="block px-4 py-2 text-sm text-center text-blue-600 hover:underline">View all approvals</a>
-                    </div>
-                </div>
-            </div>
-            @else
-            <div class="mr-2 cursor-pointer border p-2 rounded-full relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-icon lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-            </div>
-            @endif
-            @endif
+            
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open" class="flex items-center text-xs font-medium text-gray-700  hover:text-primary-500  transition ease-in-out duration-150" aria-haspopup="true" :aria-expanded="open.toString()">
                     @if (Auth::user()->google_avatar)
@@ -108,6 +56,7 @@
                         <div class="border-t border-gray-200 my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
+                            <input type="hidden" name="redirect" value="{{ url()->current() }}">
                             <a href="{{ route('logout') }}" onclick="event.preventDefault(); this.closest('form').submit();" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                                 Log Out

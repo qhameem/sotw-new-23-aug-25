@@ -4,7 +4,6 @@
 
 @section('content')
 <div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
-    
     <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6" data-list-id="">
         <span id="list-title" class="cursor-pointer"></span>
         <input type="text" id="list-title-input" class="text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full">

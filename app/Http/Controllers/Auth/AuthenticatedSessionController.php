@@ -18,6 +18,8 @@ class AuthenticatedSessionController extends Controller
     {
         if ($request->has('intended')) {
             $request->session()->put('url.intended', $request->input('intended'));
+        } elseif (url()->previous() === route('todolists.index')) {
+            $request->session()->put('url.intended', route('todolists.index'));
         }
         return view('auth.login');
     }
@@ -31,7 +33,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home', [], false));
+        return redirect()->intended(session()->pull('url.intended', route('home', [], false)));
     }
 
     /**
@@ -45,6 +47,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect($request->input('redirect', '/'));
     }
 }
