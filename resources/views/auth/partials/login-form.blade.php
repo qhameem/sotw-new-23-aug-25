@@ -1,5 +1,6 @@
-<form method="POST" :action="intendedUrl ? '{{ route('login') }}?redirect=' + encodeURIComponent(intendedUrl) : '{{ route('login') }}'" class="space-y-6">
+<form method="POST" action="{{ route('login') }}" class="space-y-6">
     @csrf
+    <input type="hidden" name="intended" x-bind:value="intendedUrl">
     <div>
         <x-input-label for="email_modal_login" :value="__('Email')" />
         <x-text-input id="email_modal_login" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />

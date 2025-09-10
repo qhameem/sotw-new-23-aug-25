@@ -1,6 +1,6 @@
-<form method="POST" :action="'{{ route('register') }}' + (intendedUrl ? '?redirect=' + encodeURIComponent(intendedUrl) : '')" class="space-y-6">
+<form method="POST" action="{{ route('register') }}" class="space-y-6">
     @csrf
-    <input type="hidden" name="intended" :value="intendedUrl">
+    <input type="hidden" name="intended" x-bind:value="intendedUrl">
     <div>
         <x-input-label for="name_modal_register" :value="__('Name')" />
         <x-text-input id="name_modal_register" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />

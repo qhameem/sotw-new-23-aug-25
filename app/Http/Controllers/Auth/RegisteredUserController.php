@@ -19,9 +19,6 @@ class RegisteredUserController extends Controller
      */
     public function create(Request $request): View
     {
-        if (url()->previous() === route('todolists.index')) {
-            $request->session()->put('url.intended', route('todolists.index'));
-        }
         return view('auth.register');
     }
 
@@ -48,6 +45,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect()->intended(session()->pull('url.intended', route('home', absolute: false)));
+        return redirect()->intended(route('home', absolute: false));
     }
 }

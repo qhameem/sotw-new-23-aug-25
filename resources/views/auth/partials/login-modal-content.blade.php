@@ -1,4 +1,4 @@
-<div x-data="{ activeTab: 'login' }" class=" px-10 py-6">
+<div x-data="{ activeTab: 'login', intendedUrl: '' }" x-init="intendedUrl = window.location.href" class=" px-10 py-6">
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-6" aria-label="Tabs">
             <a href="#" @click.prevent="activeTab = 'login'"
