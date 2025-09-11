@@ -46,6 +46,8 @@
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
 
+   @yield('canonical')
+
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">

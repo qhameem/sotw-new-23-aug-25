@@ -7,6 +7,11 @@
         </div>
         <div class="flex items-center">
             
+            @if(!request()->is('free-todo-list-tool'))
+                <div class="mr-2">
+                    <x-notification-bell />
+                </div>
+            @endif
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open" class="flex items-center text-xs font-medium text-gray-700  hover:text-primary-500  transition ease-in-out duration-150" aria-haspopup="true" :aria-expanded="open.toString()">
                     @if (Auth::user()->google_avatar)

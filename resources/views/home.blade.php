@@ -1,5 +1,20 @@
 @extends('layouts.app')
 
+@section('canonical')
+    @if (Route::currentRouteName() == 'home')
+        <link rel="canonical" href="{{ url('/') }}" />
+    @elseif (Route::currentRouteName() == 'products.byDate')
+        <link rel="canonical" href="{{ url()->current() }}" />
+    @endif
+
+    @if ($regularProducts->previousPageUrl())
+        <link rel="prev" href="{{ $regularProducts->previousPageUrl() }}">
+    @endif
+    @if ($regularProducts->nextPageUrl())
+        <link rel="next" href="{{ $regularProducts->nextPageUrl() }}">
+    @endif
+@endsection
+
 @section('actions')
     <div class="md:flex items-center space-x-2">
         @if(!isset($isCategoryPage) || !$isCategoryPage)
