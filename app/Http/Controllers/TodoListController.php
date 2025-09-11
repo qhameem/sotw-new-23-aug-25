@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TodoList;
 use App\Models\TodoListItem;
+use App\Models\SeoSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -22,7 +23,15 @@ class TodoListController extends Controller
             return response()->json($lists);
         }
 
-        return view('todolists.index');
+        $seoSettings = SeoSetting::where('page', 'todo_list_tool')->first();
+        $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
+        $meta_description = $seoSettings->meta_description ?? '';
+        $lists = [];
+        if (Auth::check()) {
+            $lists = TodoList::where('user_id', Auth::id())->with('items')->get();
+        }
+
+        return view('todolists.index', compact('meta_title', 'meta_description', 'lists'));
     }
 
     public function store(Request $request)

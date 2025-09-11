@@ -10,6 +10,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Software on the Web')</title>
+    <meta name="description" content="@yield('meta_description', '')">
 
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
