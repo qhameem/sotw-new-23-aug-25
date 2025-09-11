@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TodoList;
 use App\Models\TodoListItem;
-use App\Models\SeoSetting;
+use App\Models\PageMetaTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -23,7 +23,7 @@ class TodoListController extends Controller
             return response()->json($lists);
         }
 
-        $seoSettings = SeoSetting::where('page', 'todo_list_tool')->first();
+        $seoSettings = PageMetaTag::where('path', '/free-todo-list-tool')->first();
         $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
         $meta_description = $seoSettings->meta_description ?? '';
         $lists = [];
