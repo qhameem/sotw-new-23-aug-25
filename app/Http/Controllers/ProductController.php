@@ -11,8 +11,11 @@ use App\Models\TechStack;
 use App\Models\UserProductUpvote; // Added for upvote checking
 use App\Models\Ad; // Added for Ad model
 use App\Models\AdZone; // Added for AdZone model
+use App\Models\User;
+use App\Notifications\ProductSubmitted;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -358,6 +361,9 @@ class ProductController extends Controller
         }
 
         FetchOgImage::dispatch($product);
+
+        $admins = User::getAdmins();
+        Notification::send($admins, new ProductSubmitted($product));
 
         return redirect()->route('products.submission.success', ['product' => $product->id]);
     }

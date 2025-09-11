@@ -91,4 +91,8 @@ public function articles()
     {
         return $this->hasMany(TodoList::class);
     }
+    public static function getAdmins()
+    {
+        return self::role('admin')->get();
+    }
 }
