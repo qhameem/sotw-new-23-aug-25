@@ -85,14 +85,6 @@
                 @yield('content')
             @endguest
     
-            <footer class="text-center mt-8">
-                <p class="text-xs text-gray-400">
-                    A free Todo list tool by
-                    <a href="{{ route('home') }}" class="underline hover:text-gray-600">
-                        Software on the Web
-                    </a>
-                </p>
-            </footer>
         </div>
     </div>
 
