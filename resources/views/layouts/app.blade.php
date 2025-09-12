@@ -52,6 +52,9 @@
     <meta property="og:site_name" content="Software on the Web">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
+    @if(isset($meta_og_image))
+    <meta property="og:image" content="{{ $meta_og_image }}">
+    @endif
 
 
     @if(config('theme.font_url'))
