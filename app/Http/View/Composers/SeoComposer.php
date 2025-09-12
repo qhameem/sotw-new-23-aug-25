@@ -13,8 +13,14 @@ class SeoComposer
         $routeName = Route::currentRouteName();
         $meta = PageMetaTag::where('page_id', $routeName)->first();
 
-        $view->with('meta_title', $meta->meta_title ?? config('app.name'));
-        $view->with('meta_description', $meta->meta_description ?? '');
-        $view->with('meta_og_image', $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null);
+        if ($meta) {
+            $view->with('meta_title', $meta->meta_title ?? config('app.name'));
+            $view->with('meta_description', $meta->meta_description ?? '');
+            $view->with('meta_og_image', $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null);
+        } else {
+            $view->with('meta_title', config('app.name'));
+            $view->with('meta_description', '');
+            $view->with('meta_og_image', null);
+        }
     }
 }
