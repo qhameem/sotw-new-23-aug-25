@@ -2,7 +2,7 @@
 <div class="pb-24">
 @php
     $regularProductsList = $regularProducts ?? collect();
-    $finalProductList = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator ? $regularProductsList->items() : $regularProductsList->all();
+    $finalProductList = $regularProductsList instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $regularProductsList->items() : ($regularProductsList instanceof \Illuminate\Support\Collection ? $regularProductsList->all() : []);
     $premiumProductsList = $premiumProducts ?? collect();
     $premiumProductIndex = 0;
 

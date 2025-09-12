@@ -7,11 +7,13 @@
         <link rel="canonical" href="{{ url()->current() }}" />
     @endif
 
-    @if ($regularProducts->previousPageUrl())
-        <link rel="prev" href="{{ $regularProducts->previousPageUrl() }}">
-    @endif
-    @if ($regularProducts->nextPageUrl())
-        <link rel="next" href="{{ $regularProducts->nextPageUrl() }}">
+    @if (isset($regularProducts) && $regularProducts instanceof \Illuminate\Contracts\Pagination\Paginator)
+        @if ($regularProducts->previousPageUrl())
+            <link rel="prev" href="{{ $regularProducts->previousPageUrl() }}">
+        @endif
+        @if ($regularProducts->nextPageUrl())
+            <link rel="next" href="{{ $regularProducts->nextPageUrl() }}">
+        @endif
     @endif
 @endsection
 
