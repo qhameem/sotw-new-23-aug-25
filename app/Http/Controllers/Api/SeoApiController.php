@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\PageMetaTag;
 use Illuminate\Support\Facades\Validator;
-use Intervention\Image\Facades\Image;
 
 class SeoApiController extends Controller
 {
@@ -93,14 +92,33 @@ class SeoApiController extends Controller
                 mkdir($directory, 0755, true);
             }
 
-            // Resize and encode the image
-            Image::make($image->getRealPath())
-                ->resize(1200, 630, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                })
-                ->encode('webp', 80)
-                ->save($imagePath);
+            // Create an image resource from the uploaded file
+            $sourceImage = imagecreatefromstring(file_get_contents($image->getRealPath()));
+            $sourceWidth = imagesx($sourceImage);
+            $sourceHeight = imagesy($sourceImage);
+
+            // Set the target dimensions
+            $targetWidth = 1200;
+            $targetHeight = 630;
+
+            // Create a new true color image
+            $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
+
+            // Resize and crop the image to the target dimensions
+            imagecopyresampled(
+                $targetImage,
+                $sourceImage,
+                0, 0, 0, 0,
+                $targetWidth, $targetHeight,
+                $sourceWidth, $sourceHeight
+            );
+
+            // Save the image as a WEBP file
+            imagewebp($targetImage, $imagePath, 80);
+
+            // Free up memory
+            imagedestroy($sourceImage);
+            imagedestroy($targetImage);
 
             $path = 'public/og_images/' . $filename;
             $pageMetaTag->og_image_path = $path;
