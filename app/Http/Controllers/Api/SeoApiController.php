@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\PageMetaTag;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Facades\Image;
 
 class SeoApiController extends Controller
 {
@@ -50,6 +51,7 @@ class SeoApiController extends Controller
         return response()->json([
             'meta_title' => $meta->meta_title,
             'meta_description' => $meta->meta_description,
+            'og_image_path' => $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null,
         ]);
     }
 
@@ -60,6 +62,7 @@ class SeoApiController extends Controller
             'path' => 'required|string|max:255',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
+            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -74,6 +77,35 @@ class SeoApiController extends Controller
                 'meta_description' => $request->meta_description,
             ]
         );
+
+        if ($request->hasFile('og_image')) {
+            // Delete the old image if it exists
+            if ($pageMetaTag->og_image_path) {
+                \Illuminate\Support\Facades\Storage::delete($pageMetaTag->og_image_path);
+            }
+            $image = $request->file('og_image');
+            $filename = uniqid() . '.webp';
+            $imagePath = storage_path('app/public/og_images/' . $filename);
+
+            // Ensure the directory exists
+            $directory = dirname($imagePath);
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            // Resize and encode the image
+            Image::make($image->getRealPath())
+                ->resize(1200, 630, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })
+                ->encode('webp', 80)
+                ->save($imagePath);
+
+            $path = 'public/og_images/' . $filename;
+            $pageMetaTag->og_image_path = $path;
+            $pageMetaTag->save();
+        }
 
         return response()->json(['message' => 'Meta tags saved successfully.', 'data' => $pageMetaTag]);
     }

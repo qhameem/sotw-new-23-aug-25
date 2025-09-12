@@ -13,5 +13,6 @@ class PageMetaTag extends Model
         'path',
         'meta_title',
         'meta_description',
+        'og_image_path',
     ];
 }

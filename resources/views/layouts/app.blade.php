@@ -170,6 +170,7 @@
             @endif
         </x-slot:below_header>
 
+
         <x-slot:right_sidebar_content>
             @hasSection('right_sidebar_content')
                 @yield('right_sidebar_content')
