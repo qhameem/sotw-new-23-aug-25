@@ -9,7 +9,15 @@
             
             @if(!request()->is('free-todo-list-tool'))
                 <div class="w-full">
-                    @livewire('product-search')
+                    <div class="relative">
+                        <input type="text" id="sidebar-search-input" placeholder="Search..." class="w-full shadow-sm px-3 py-1 border border-gray-300 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-600 placeholder:text-sm">
+                        <button id="sidebar-search-clear" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div id="sidebar-search-results" class="absolute right-0 z-50 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="display: none;"></div>
+                    </div>
                 </div>
                 <div class="mr-2">
                     <x-notification-bell />

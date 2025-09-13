@@ -134,7 +134,6 @@
     {{-- End Google Analytics Code Injection --}}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')
 
@@ -306,7 +305,6 @@
         @include('auth.partials.login-modal-content')
         </x-modal>
     
-    @livewireScripts
     <script>
         const bodyData = document.body.dataset;
         window.isAuthenticated = bodyData.isAuthenticated === '1';
@@ -316,71 +314,5 @@
         window.upvoteActiveClass = 'text-[var(--color-primary-500)]';
         window.upvoteInactiveClass = 'text-gray-400 hover:text-gray-600  ';
     </script>
-    <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('upvote', (initialUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
-            isUpvoted: initialUpvoted,
-            votesCount: initialVotesCount,
-            isLoading: false,
-            errorMessage: '',
-            isAuthenticated: isAuthenticated,
-            csrfToken: csrfToken,
-
-            async toggleUpvote() {
-                if (this.isLoading) return;
-
-                console.log('isAuthenticated:', this.isAuthenticated);
-                if (!this.isAuthenticated) {
-                    console.log('User not authenticated, dispatching open-modal event.');
-                    window.dispatchEvent(new CustomEvent('open-modal', { detail: { name: 'login-required-modal' } }));
-                    return;
-                }
-
-                this.isLoading = true;
-                this.errorMessage = '';
-
-                const method = this.isUpvoted ? 'DELETE' : 'POST';
-                const url = `/api/products/${productSlug}/upvote`;
-
-                try {
-                    console.log('Making API call:', method, url);
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': this.csrfToken,
-                            'Accept': 'application/json',
-                        },
-                        credentials: 'include',
-                    });
-                    console.log('API response status:', response.status);
-
-                    const data = await response.json();
-                    console.log('API response data:', data);
-
-                    if (response.ok) {
-                        this.isUpvoted = !this.isUpvoted;
-                        this.votesCount = data.votes_count;
-                    } else {
-                        this.errorMessage = data.message || 'An error occurred.';
-                        // Sync state with server if there's a conflict
-                        if (response.status === 409 || response.status === 404) {
-                            this.votesCount = data.votes_count;
-                            this.isUpvoted = (response.status === 409);
-                        }
-                    }
-                } catch (error) {
-                    this.errorMessage = 'A network error occurred. Please try again.';
-                } finally {
-                    this.isLoading = false;
-                    if (this.errorMessage) {
-                        console.error('Upvote error:', this.errorMessage);
-                        setTimeout(() => this.errorMessage = '', 3000);
-                    }
-                }
-            }
-        }));
-    });
-</script>
 </body>
 </html>

@@ -2,10 +2,12 @@ import './bootstrap';
 import 'flowbite'; // This initializes Flowbite components based on data attributes
 import { Datepicker as FlowbiteDatepicker } from 'flowbite';
 import Alpine from 'alpinejs';
+import upvote from './components/upvote';
 
 // Initialize Alpine before DOMContentLoaded for better reliability
 window.Alpine = Alpine;
-Alpine.start(); // Livewire will handle starting Alpine
+Alpine.data('upvote', upvote);
+Alpine.start();
 
 // Make Datepicker available globally for inline scripts
 if (typeof window.Flowbite === 'undefined') {
@@ -99,4 +101,75 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[app.js] Inline button loader setup complete.');
 
 
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('sidebar-search-input');
+    const searchResults = document.getElementById('sidebar-search-results');
+    const searchClear = document.getElementById('sidebar-search-clear');
+    let timeout = null;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value.length > 0) {
+                searchClear.style.display = 'flex';
+            } else {
+                searchClear.style.display = 'none';
+            }
+
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const query = searchInput.value;
+
+                if (query.length > 2) {
+                    fetch(`/api/sidebar-search?query=${query}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let html = '';
+
+                            if (data.products.length > 0) {
+                                html += '<div class="px-4 py-2 text-xs text-gray-500">Products</div>';
+                                data.products.forEach(product => {
+                                    const logoHtml = product.logo_url
+                                        ? `<img src="${product.logo_url}" alt="${product.name}" class="w-8 h-8 mr-3 rounded-md object-cover">`
+                                        : `<div class="w-8 h-8 mr-3 rounded-md bg-gray-200 flex items-center justify-center"><span class="text-xs font-semibold text-gray-500">${product.name.substring(0, 1)}</span></div>`;
+
+                                    html += `<a href="/product/${product.slug}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                ${logoHtml}
+                                                <span>${product.name}</span>
+                                             </a>`;
+                                });
+                            }
+
+                            if (data.categories.length > 0) {
+                                html += '<div class="px-4 py-2 text-xs text-gray-500">Categories</div>';
+                                data.categories.forEach(category => {
+                                    html += `<a href="/categories/${category.slug}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${category.name}</a>`;
+                                });
+                            }
+
+                            if (html === '') {
+                                html = '<div class="px-4 py-2 text-sm text-gray-500">No results found.</div>';
+                            }
+
+                            searchResults.innerHTML = html;
+                            searchResults.style.display = 'block';
+                        });
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            }, 300);
+        });
+
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchResults.style.display = 'none';
+            searchClear.style.display = 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchResults.contains(e.target) && e.target !== searchInput) {
+                searchResults.style.display = 'none';
+            }
+        });
+    }
 });

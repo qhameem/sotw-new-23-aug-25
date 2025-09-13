@@ -28,4 +28,22 @@ class SearchController extends Controller
             'categories' => $categories,
         ]);
     }
+    public function sidebarSearch(Request $request)
+    {
+        $query = $request->input('query');
+
+        $products = \App\Models\Product::where('name', 'like', '%' . $query . '%')
+            ->orWhere('tagline', 'like', '%' . $query . '%')
+            ->take(5)
+            ->get();
+
+        $categories = \App\Models\Category::where('name', 'like', '%' . $query . '%')
+            ->take(3)
+            ->get();
+
+        return response()->json([
+            'products' => $products,
+            'categories' => $categories,
+        ]);
+    }
 }
