@@ -5,9 +5,12 @@
         <div class="flex items-center">
             
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center w-full justify-between">
             
             @if(!request()->is('free-todo-list-tool'))
+                <div class="w-full">
+                    @livewire('product-search')
+                </div>
                 <div class="mr-2">
                     <x-notification-bell />
                 </div>
