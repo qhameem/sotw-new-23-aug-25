@@ -18,9 +18,9 @@
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open" class="flex items-center text-xs font-medium text-gray-700  hover:text-primary-500  transition ease-in-out duration-150" aria-haspopup="true" :aria-expanded="open.toString()">
                     @if (Auth::user()->google_avatar)
-                        <img src="{{ Auth::user()->google_avatar }}" alt="{{ Auth::user()->name }}" class="h-8 w-8 rounded-full object-cover">
+                        <img src="{{ Auth::user()->google_avatar }}" alt="{{ Auth::user()->name }}" class="h-8 w-8 rounded-full object-cover flex-shrink-0">
                     @else
-                        <span class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-200 text-gray-700 text-xs font-semibold">
+                        <span class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-200 text-gray-700 text-xs font-semibold flex-shrink-0">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </span>
                     @endif
