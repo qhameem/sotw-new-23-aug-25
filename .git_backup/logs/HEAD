@@ -1,0 +1,53 @@
+0000000000000000000000000000000000000000 4e6061e24e3cc39d832083817dee318013b0dae5 Quazi Hameem Mahmud <qhameemb@gmail.com> 1755893268 +0600	clone: from https://github.com/qhameem/sotw.git
+4e6061e24e3cc39d832083817dee318013b0dae5 4a1f27365da4b40eeddb8b757669a402c7cb3905 Quazi Hameem Mahmud <qhameemb@gmail.com> 1755894307 +0600	commit: New Git Push
+4a1f27365da4b40eeddb8b757669a402c7cb3905 684e3123dbd8aa8f538846e1a0d0718624b84ca5 Quazi Hameem Mahmud <qhameemb@gmail.com> 1755895292 +0600	commit: Articles create page dark mode and title
+684e3123dbd8aa8f538846e1a0d0718624b84ca5 fad9c4c74b7e0f6accb90dfc64685bb9f880c200 Quazi Hameem Mahmud <qhameemb@gmail.com> 1755896826 +0600	commit: article create dark mode
+fad9c4c74b7e0f6accb90dfc64685bb9f880c200 e2111d81c1883558160c7827674387a939edf32a Quazi Hameem Mahmud <qhameemb@gmail.com> 1755942812 +0600	commit: Added "Add your Product" button to articles page
+e2111d81c1883558160c7827674387a939edf32a 4bab9f40311934922f52d8115934cf54df2d35be Quazi Hameem Mahmud <qhameemb@gmail.com> 1755943306 +0600	commit: Upvote button UI improvements
+4bab9f40311934922f52d8115934cf54df2d35be 8ffd7e0e1718cdfe83bd066f8f82080e9b213c9e Quazi Hameem Mahmud <qhameemb@gmail.com> 1755956795 +0600	commit: Product add form + adding "add your product" button on product display page
+8ffd7e0e1718cdfe83bd066f8f82080e9b213c9e 1c2689a89c593be334614b1db7124bf7581293d0 Quazi Hameem Mahmud <qhameemb@gmail.com> 1756919259 +0600	commit: Product add form major updates
+1c2689a89c593be334614b1db7124bf7581293d0 7f056547b9e0c0d96abb8161d53a36d3f26dbb61 Quazi Hameem Mahmud <qhameemb@gmail.com> 1756921339 +0600	commit: Data fetching in production issue
+7f056547b9e0c0d96abb8161d53a36d3f26dbb61 eb5ecfad69b0e9e62905478dc314cb528fbc3d0b Quazi Hameem Mahmud <qhameemb@gmail.com> 1756921773 +0600	commit: product data fetch
+eb5ecfad69b0e9e62905478dc314cb528fbc3d0b 872693b840ea65fe91ca5d857288bfb9067a1840 Quazi Hameem Mahmud <qhameemb@gmail.com> 1756952934 +0600	commit: Product add form + logo fetching
+872693b840ea65fe91ca5d857288bfb9067a1840 7ea0256b4ec4e72a6fe5cd4b43c9af187e4637c9 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757053905 +0600	commit: Product add from category
+7ea0256b4ec4e72a6fe5cd4b43c9af187e4637c9 83542efec625eef43a19d1fab243ea6a4ee6c39f Quazi Hameem Mahmud <qhameemb@gmail.com> 1757071206 +0600	commit: Add product form
+83542efec625eef43a19d1fab243ea6a4ee6c39f 726236453b4d683454d88c03804215336e5c4503 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757136482 +0600	commit: Product add form modifications
+726236453b4d683454d88c03804215336e5c4503 6b25b5b6d763e0ed5d2fcdcb1175c1fbdf84ef2d Quazi Hameem Mahmud <qhameemb@gmail.com> 1757138679 +0600	commit: Product add form tech stack fetching
+6b25b5b6d763e0ed5d2fcdcb1175c1fbdf84ef2d ef714b8df403274de485c8eb90d6ecc8fec570bf Quazi Hameem Mahmud <qhameemb@gmail.com> 1757181091 +0600	commit: new free todo list tool + product edit form
+ef714b8df403274de485c8eb90d6ecc8fec570bf 4c6f96230d17d83feb58ded03c29eac0846ab00c Quazi Hameem Mahmud <qhameemb@gmail.com> 1757181486 +0600	commit: edit form logo appearance issue
+4c6f96230d17d83feb58ded03c29eac0846ab00c 21ac45b6965d7698dbddaaac62408b2e95dc27c2 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757182215 +0600	commit: product edit form svg logo issue
+21ac45b6965d7698dbddaaac62408b2e95dc27c2 540ffd290718be277c9d3ccf0923949cbb609c14 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757183699 +0600	commit: SEO title stuff
+540ffd290718be277c9d3ccf0923949cbb609c14 ed3dc7b4018676a52e4291ca5c228d08859720a2 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757216400 +0600	commit: todo list updates
+ed3dc7b4018676a52e4291ca5c228d08859720a2 2430055a4c01e7976187400ac02f674febb29c58 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757226376 +0600	commit: todo list improvements
+2430055a4c01e7976187400ac02f674febb29c58 2a481bcbd9c0c8dd993e6ed6650645cb8774c663 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757253561 +0600	revert: Revert "todo list improvements"
+2a481bcbd9c0c8dd993e6ed6650645cb8774c663 d68ed64e3f072d9f60489ea2835ed0bcf295c7ef Quazi Hameem Mahmud <qhameemb@gmail.com> 1757253790 +0600	commit: tinyadz
+d68ed64e3f072d9f60489ea2835ed0bcf295c7ef e5c184e33ef97a562899d324bc6c992bcf23de8b Quazi Hameem Mahmud <qhameemb@gmail.com> 1757305363 +0600	commit: todo list + context
+e5c184e33ef97a562899d324bc6c992bcf23de8b 48f07bb62f0e5309f4811d64acbe43905a9a11a0 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757321739 +0600	commit: todo list + menu
+48f07bb62f0e5309f4811d64acbe43905a9a11a0 b49b0064d7df2f4b43eb288e54273b211f28689b Quazi Hameem Mahmud <qhameemb@gmail.com> 1757351130 +0600	commit: todo list pill design
+b49b0064d7df2f4b43eb288e54273b211f28689b d50f8c606873a9c1cbfb5986df193d758274fb9f Kilo Code <noreply@example.com> 1757351486 +0600	reset: moving to d50f8c606873a9c1cbfb5986df193d758274fb9f
+d50f8c606873a9c1cbfb5986df193d758274fb9f b49b0064d7df2f4b43eb288e54273b211f28689b Quazi Hameem Mahmud <qhameemb@gmail.com> 1757435355 +0600
+b49b0064d7df2f4b43eb288e54273b211f28689b a5d3cd34f0a2056bf8d6aa65e13f9d878e0b1a79 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757435373 +0600	commit: chore: recover uncommitted changes
+a5d3cd34f0a2056bf8d6aa65e13f9d878e0b1a79 92327e046fe949f6cf2638550c058d7f04e67a24 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757435568 +0600	commit: Priority number in todo list
+92327e046fe949f6cf2638550c058d7f04e67a24 750c1697e36d91f6d3de5bac8558870a20ec713c Quazi Hameem Mahmud <qhameemb@gmail.com> 1757436254 +0600	commit: Meta title of to do list page
+750c1697e36d91f6d3de5bac8558870a20ec713c af04bbf115dbcc4ee1eb79e3ff1f480013172e71 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757436466 +0600	commit: Edit list title
+af04bbf115dbcc4ee1eb79e3ff1f480013172e71 89ab0ce7410f1322b8e5734a236afd6d478360b9 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757481869 +0600	commit: Log in redirection
+89ab0ce7410f1322b8e5734a236afd6d478360b9 1659d185390ceb4761e0e4972e327e9e831729b8 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757482838 +0600	commit: redirection sorted
+1659d185390ceb4761e0e4972e327e9e831729b8 25bc2fffe6e7edb352d2f21ff23bf565dd0d83ca Quazi Hameem Mahmud <qhameemb@gmail.com> 1757563802 +0600	commit: Notification icon + canonical links
+25bc2fffe6e7edb352d2f21ff23bf565dd0d83ca 57eb723d6295b99978237d3c7eb00c14329bac41 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757564205 +0600	commit: admin notification
+57eb723d6295b99978237d3c7eb00c14329bac41 1d84d44c764d39e79108b71a3948badd7703d63f Quazi Hameem Mahmud <qhameemb@gmail.com> 1757569421 +0600	commit: todo meta tags
+1d84d44c764d39e79108b71a3948badd7703d63f 5a31ef6bc6d842c328f7cf0f337d86cacd403596 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757571556 +0600	commit: meta tags
+5a31ef6bc6d842c328f7cf0f337d86cacd403596 eb0159d5abe52292210c1c62a1aadbe40f31a004 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757572000 +0600	commit: todo list page favicon
+eb0159d5abe52292210c1c62a1aadbe40f31a004 9561ea4675553aea49fd44d8ea7e17316ca310c9 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757573539 +0600	commit: todo list content
+9561ea4675553aea49fd44d8ea7e17316ca310c9 a1dd0a237005b4bff3636e97a9a5b0c86a7cc453 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757695068 +0600	commit: categories url error
+a1dd0a237005b4bff3636e97a9a5b0c86a7cc453 5330b86a96d4d6b40015cd20709dce5872e75121 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757697508 +0600	commit: og image
+5330b86a96d4d6b40015cd20709dce5872e75121 0e1a908bd9fcaf7ed33ec120bf8a702015adc450 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757700021 +0600	commit: og image upload issue
+0e1a908bd9fcaf7ed33ec120bf8a702015adc450 78e6280afe422afea2cd670668d4d1f0132f1192 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757700641 +0600	commit: og image
+78e6280afe422afea2cd670668d4d1f0132f1192 ed4a6e26bc68292eea0fae8c4368fb5d65857567 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757700841 +0600	commit: og error
+ed4a6e26bc68292eea0fae8c4368fb5d65857567 ce48e8d73066da0835d2452f261e2b529dbbb861 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757752097 +0600	commit: Return of the search bar that was made to disappear by AI
+ce48e8d73066da0835d2452f261e2b529dbbb861 ffd7ea78f0c944ca191afda037614b6a2c7f9319 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757752418 +0600	commit: Usericon menu circular shape retention
+ffd7ea78f0c944ca191afda037614b6a2c7f9319 e8364637e9d62fbcfab5cfc20ea7abc14543afa6 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757777812 +0600	commit: serch bar
+e8364637e9d62fbcfab5cfc20ea7abc14543afa6 aa8926f85d02df8f6c7a3614121ecf6ee328a378 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757916422 +0600	commit: admin settings changes
+aa8926f85d02df8f6c7a3614121ecf6ee328a378 f1273ecb0d976204a24c46ebb030676c13f5d9c5 Quazi Hameem Mahmud <qhameemb@gmail.com> 1757917318 +0600	commit: admin ad route issue
+f1273ecb0d976204a24c46ebb030676c13f5d9c5 49282a9f675e6724b0df9317dca41f7f289834d9 Kilo Code <noreply@example.com> 1757918720 +0600	reset: moving to 49282a9f675e6724b0df9317dca41f7f289834d9
+49282a9f675e6724b0df9317dca41f7f289834d9 fcf5cfbbbb45a20ad3f5ec481d55206f32b509b7 Kilo Code <noreply@example.com> 1757919633 +0600	reset: moving to fcf5cfbbbb45a20ad3f5ec481d55206f32b509b7
+fcf5cfbbbb45a20ad3f5ec481d55206f32b509b7 d5860bae92124e915e82b71c243b1cc4fc58058a Kilo Code <noreply@example.com> 1757919700 +0600	reset: moving to d5860bae92124e915e82b71c243b1cc4fc58058a
