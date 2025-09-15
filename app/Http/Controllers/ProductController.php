@@ -49,7 +49,7 @@ class ProductController extends Controller
     public function home(Request $request)
     {
         $now = Carbon::now();
-        return redirect()->route('products.byWeek', ['year' => $now->year, 'week' => $now->weekOfYear]);
+        return $this->productsByWeek($request, $now->year, $now->weekOfYear);
 
         $displayDateString = $serverTodayDate->toDateString();
 
@@ -1009,7 +1009,7 @@ class ProductController extends Controller
             ->pluck('week')
             ->toArray();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
