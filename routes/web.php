@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ArticlePostController; // Added
 use App\Http\Controllers\Admin\ArticleCategoryController; // Added
 use App\Http\Controllers\Admin\ArticleTagController; // Added
 use App\Http\Controllers\Admin\AdvertisingController;
+use App\Http\Controllers\Admin\AdZoneController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ChangelogController as AdminChangelogController;
 use App\Http\Controllers\ChangelogController;
@@ -89,7 +90,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
 Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
-    Route::get('advertising', [AdvertisingController::class, 'index'])->name('advertising.index');
+    Route::resource('advertising', AdvertisingController::class);
+    Route::resource('ad-zones', AdZoneController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');

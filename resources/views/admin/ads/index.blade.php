@@ -1,7 +1,7 @@
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-800">Ads</h2>
-        <a href="{{ route('admin.ads.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ route('admin.advertising.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Create New Ad
         </a>
     </div>
