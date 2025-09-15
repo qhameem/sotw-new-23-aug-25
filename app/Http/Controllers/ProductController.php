@@ -29,7 +29,6 @@ use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
-use Intervention\Image\Laravel\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -322,10 +321,12 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = Image::make($image->getRealPath());
-                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
-                $validated['logo'] = $path . $filenameWithExtension;
+                // $img = Image::make($image->getRealPath());
+                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                // Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
+                // $validated['logo'] = $path . $filenameWithExtension;
+                $image->storePubliclyAs($path, $image->getClientOriginalName(), 'public');
+                $validated['logo'] = $path . $image->getClientOriginalName();
             }
         } elseif ($request->filled('logo_url')) {
             $validated['logo'] = $validated['logo_url'];
@@ -486,10 +487,12 @@ class ProductController extends Controller
                 $logoPath .= $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = Image::make($image->getRealPath());
-                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
-                $logoPath .= $filenameWithExtension;
+                // $img = Image::make($image->getRealPath());
+                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                // Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
+                // $logoPath .= $filenameWithExtension;
+                $image->storePubliclyAs($logoPath, $image->getClientOriginalName(), 'public');
+                $logoPath .= $image->getClientOriginalName();
             }
         }
  
