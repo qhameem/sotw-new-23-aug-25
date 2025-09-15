@@ -2,10 +2,12 @@
 
 @section('title', 'Admin Settings')
 
+@section('header-title')
+    Admin Settings
+@endsection
+
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="text-3xl font-bold text-gray-800  mb-8 pt-16">Admin Settings</h1>
-
     @if(session('success'))
         <div class="mb-4 p-4 text-sm text-green-700 bg-green-100 rounded-lg  " role="alert">
             {{ session('success') }}

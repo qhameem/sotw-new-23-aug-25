@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
-@section('content')
-@section('title')
-    <h1 class="text-xl font-semibold text-gray-800">Product Reviews</h1>
+@section('header-title')
+    Product Reviews
 @endsection
+
+@section('content')
 
 @section('actions')
     {{-- No actions needed for this page --}}

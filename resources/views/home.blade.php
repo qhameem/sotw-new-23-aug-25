@@ -30,20 +30,20 @@
     </div>
 @endsection
 
-@section('below_header')
+@section('content')
     @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <div class="bg-white px-4 py-2">
+        <div class="bg-white px-4 py-2 border-b border-gray-200">
             <div class="flex justify-between items-center text-xs" x-data='dailyNavigation(@json($activeDates ?? []))'>
                 <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
                 <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
                     <template x-for="day in days" :key="day.date">
                         <a :href="day.url"
                            :id="'day-' + day.date"
-                           :class="{ 
+                           :class="{
                                'bg-gray-200 text-gray-700 font-bold': day.isSelected,
                                'text-primary-500 font-bold': day.isToday && !day.isSelected,
                                'text-gray-400 cursor-not-allowed': !day.isActive && !day.isFuture,
-                               'hover:bg-gray-100': !day.isSelected && !day.isToday && !day.isFuture 
+                               'hover:bg-gray-100': !day.isSelected && !day.isToday && !day.isFuture
                            }"
                            class="px-2 py-1 rounded whitespace-nowrap"
                            @click.prevent="if(day.isActive || day.isToday) window.location.href = day.url">
@@ -55,9 +55,6 @@
             </div>
         </div>
     @endif
-@endsection
-
-@section('content')
     @if(isset($dayOfYear) && isset($fullDate))
         <x-day-header :day-of-year="$dayOfYear" :full-date="$fullDate" :next-launch-time="$nextLaunchTime" />
     @endif

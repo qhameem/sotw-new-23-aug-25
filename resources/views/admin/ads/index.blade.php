@@ -1,11 +1,6 @@
-@extends('layouts.app')
-
-@section('title', 'Manage Ads')
-
-@section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800 ">Manage Ads</h1>
+        <h2 class="text-xl font-semibold text-gray-800">Ads</h2>
         <a href="{{ route('admin.ads.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Create New Ad
         </a>
@@ -22,9 +17,7 @@
         </div>
     @endif
 
-    {{-- TODO: Add Filtering and Sorting options here --}}
-
-    <div class="bg-white  shadow-md rounded-lg overflow-x-auto">
+    <div class="bg-white shadow-md rounded-lg overflow-x-auto">
         <table class="min-w-full leading-normal">
             <thead>
                 <tr>
@@ -99,4 +92,3 @@
         {{ $ads->links() }}
     </div>
 </div>
-@endsection

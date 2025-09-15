@@ -1,13 +1,19 @@
-<x-app-layout>
-    <x-slot name="header">
-        {{-- Apply lg:pl-16 for desktop alignment with 6xl navbar --}}
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Articles Management') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
+@section('title', 'Articles Management')
+
+@section('header-title')
+    Articles
+@endsection
+
+@section('actions')
+    <x-primary-button onclick="window.location.href='{{ route('admin.articles.posts.create') }}';">
+        {{ __('Create New Post') }}
+    </x-primary-button>
+@endsection
+
+@section('content')
     <div class="py-12">
-        {{-- Apply lg:pl-16 for desktop alignment with 6xl navbar --}}
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
@@ -29,14 +35,6 @@
                                 </a>
                             </li>
                         </ul>
-                    </div>
-
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-medium">{{ __('All Articles') }}</h3>
-                        {{-- Using x-primary-button which should adhere to theme --}}
-                        <x-primary-button onclick="window.location.href='{{ route('admin.articles.posts.create') }}'">
-                            {{ __('Create New Post') }}
-                        </x-primary-button>
                     </div>
 
                     @if (session('success'))
@@ -163,4 +161,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection

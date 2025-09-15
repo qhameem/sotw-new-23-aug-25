@@ -11,8 +11,7 @@ use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ArticlePostController; // Added
 use App\Http\Controllers\Admin\ArticleCategoryController; // Added
 use App\Http\Controllers\Admin\ArticleTagController; // Added
-use App\Http\Controllers\Admin\AdZoneController; // Added for Ad Zones
-use App\Http\Controllers\Admin\AdController; // Added for Ads
+use App\Http\Controllers\Admin\AdvertisingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ChangelogController as AdminChangelogController;
 use App\Http\Controllers\ChangelogController;
@@ -27,6 +26,8 @@ use Carbon\Carbon;
 use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\TodoListController;
+use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
+use App\Http\Controllers\BadgeController;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
@@ -88,8 +89,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
 Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
-    Route::resource('ad-zones', AdZoneController::class); // Ad Zone CRUD
-    Route::resource('ads', AdController::class); // Ad CRUD
+    Route::get('advertising', [AdvertisingController::class, 'index'])->name('advertising.index');
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
@@ -140,7 +140,10 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::patch('product-reviews/{product_review}', [ProductReviewController::class, 'update'])->name('product-reviews.update');
     Route::delete('premium-products/{premium_product}', [\App\Http\Controllers\Admin\PremiumProductController::class, 'destroy'])->name('premium-products.destroy');
     Route::resource('changelogs', AdminChangelogController::class)->except(['show']);
+    Route::resource('badges', AdminBadgeController::class)->except(['show', 'edit', 'update']);
 }); // End of admin prefix group
+
+Route::get('/get-the-badge', [BadgeController::class, 'index'])->name('badges.index');
 
 Route::get('/api/product-meta', ProductMetaController::class);
 Route::get('/check-product-url', [ProductController::class, 'checkUrl']);

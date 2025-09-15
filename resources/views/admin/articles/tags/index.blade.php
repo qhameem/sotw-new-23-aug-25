@@ -1,10 +1,18 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Article Tags Management') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
+@section('title', 'Article Tags Management')
+
+@section('header-title')
+    Article Tags
+@endsection
+
+@section('actions')
+    <a href="{{ route('admin.articles.tags.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+        {{ __('Create New Tag') }}
+    </a>
+@endsection
+
+@section('content')
     <div class="py-12">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -27,13 +35,6 @@
                                 </a>
                             </li>
                         </ul>
-                    </div>
-
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-medium">{{ __('All Article Tags') }}</h3>
-                        <a href="{{ route('admin.articles.tags.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
-                            {{ __('Create New Tag') }}
-                        </a>
                     </div>
 
                     @if (session('success'))
@@ -120,4 +121,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection

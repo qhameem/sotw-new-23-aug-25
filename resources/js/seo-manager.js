@@ -7,9 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     appDiv.innerHTML = `
-        <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">SEO Management</h2>
-
+        <div class="max-w-4xl mx-auto">
             <div class="mb-4">
                 <label for="page-selector" class="block text-sm font-medium text-gray-700">Select Page:</label>
                 <div class="relative">
@@ -61,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div id="response-message" class="mt-4 text-sm text-center"></div>
             </form>
-        </div>
     `;
 
     const pageSearchInput = document.getElementById('page-search');

@@ -1,11 +1,6 @@
-@extends('layouts.app') {{-- Assuming a main app layout --}}
-
-@section('title', 'Manage Ad Zones')
-
-@section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Ad Zones</h1>
+        <h2 class="text-xl font-semibold text-gray-800">Ad Zones</h2>
         <a href="{{ route('admin.ad-zones.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Create New Ad Zone
         </a>
@@ -71,4 +66,3 @@
         {{ $adZones->links() }}
     </div>
 </div>
-@endsection

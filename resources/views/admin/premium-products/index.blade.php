@@ -5,12 +5,8 @@ use Illuminate\Support\Facades\Storage;
 
 @section('title', 'Premium Products')
 
-@section('content')
-@section('title')
-    <h1 class="text-xl font-bold text-gray-800">Premium Products</h1>
-@endsection
-
-@section('actions')
+@section('header-title')
+    Premium Products
 @endsection
 
 @section('content')
@@ -37,5 +33,4 @@ use Illuminate\Support\Facades\Storage;
             @endforelse
         </div>
     </div>
-@endsection
 @endsection

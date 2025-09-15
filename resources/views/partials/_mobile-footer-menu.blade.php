@@ -37,11 +37,21 @@ $navItems = [
             </svg>
         HTML,
     ],
+    [
+        'href' => route('badges.index'),
+        'text' => 'Badge',
+        'activeRoutes' => ['badges.index'],
+        'icon' => <<<'HTML'
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9a9 9 0 1 1 9 0Z" />
+            </svg>
+        HTML,
+    ],
 ];
 @endphp
 
 <div class="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
-    <div class="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
+    <div class="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         @foreach ($navItems as $item)
             <x-mobile-nav-item :href="$item['href']" :text="$item['text']" :active-routes="$item['activeRoutes']">
                 {!! $item['icon'] !!}

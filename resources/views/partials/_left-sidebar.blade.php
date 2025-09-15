@@ -52,6 +52,13 @@
                 </svg>
                 <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1">Add your product</span>
             </a>
+            <a href="{{ route('admin.badges.index') }}"
+               class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-gray-400 group-hover:text-gray-900">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9a9 9 0 1 1 9 0Z" />
+                </svg>
+                <span class="ml-3 transition delay-50 duration-50 group-hover:translate-x-1">Badges</span>
+            </a>
             @endif
         </nav>
     </div>
@@ -64,6 +71,7 @@
             <!-- <a href="{{ route('legal') }}" class="hover:underline">Terms of Use</a> • -->
             <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •
             <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
+            <a href="{{ route('badges.index') }}" class="hover:underline">Badge</a> •
             <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a>
             <!-- <a href="{{ route('promote') }}" class="hover:underline">Advertise</a> -->
             <div class="h-2"></div>

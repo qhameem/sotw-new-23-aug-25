@@ -24,8 +24,8 @@
             @endpush
         </div>
     </div>
-    <hr class="">
     @if (isset($below_header))
         {{ $below_header }}
     @endif
+    <hr class="md:hidden">
 </div>
