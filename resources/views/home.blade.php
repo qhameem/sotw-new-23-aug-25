@@ -33,21 +33,21 @@
 @section('content')
     @if(!isset($isCategoryPage) || !$isCategoryPage)
         <div class="bg-white px-4 py-2 border-b border-gray-200">
-            <div class="flex justify-between items-center text-xs" x-data='dailyNavigation(@json($activeDates ?? []))'>
+            <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
                 <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
                 <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
-                    <template x-for="day in days" :key="day.date">
-                        <a :href="day.url"
-                           :id="'day-' + day.date"
+                    <template x-for="week in weeks" :key="week.week">
+                        <a :href="week.url"
+                           :id="'week-' + week.year + '-' + week.week"
                            :class="{
-                               'bg-gray-200 text-gray-700 font-bold': day.isSelected,
-                               'text-primary-500 font-bold': day.isToday && !day.isSelected,
-                               'text-gray-400 cursor-not-allowed': !day.isActive && !day.isFuture,
-                               'hover:bg-gray-100': !day.isSelected && !day.isToday && !day.isFuture
+                               'bg-gray-200 text-gray-700 font-bold': week.isSelected,
+                               'text-primary-500 font-bold': week.isCurrent && !week.isSelected,
+                               'text-gray-400 cursor-not-allowed': !week.isActive,
+                               'hover:bg-gray-100': !week.isSelected && !week.isCurrent
                            }"
                            class="px-2 py-1 rounded whitespace-nowrap"
-                           @click.prevent="if(day.isActive || day.isToday) window.location.href = day.url">
-                            <span x-text="day.label"></span>
+                           @click.prevent="if(week.isActive) window.location.href = week.url">
+                            <span x-text="week.label"></span>
                         </a>
                     </template>
                 </div>
@@ -55,8 +55,9 @@
             </div>
         </div>
     @endif
-    @if(isset($dayOfYear) && isset($fullDate))
-        <x-day-header :day-of-year="$dayOfYear" :full-date="$fullDate" :next-launch-time="$nextLaunchTime" />
+
+    @if(isset($weekOfYear) && isset($year))
+        <x-week-header :week-of-year="$weekOfYear" :year="$year" />
     @endif
 
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
@@ -89,62 +90,54 @@
 
 @push('scripts')
 <script>
-    function dailyNavigation(activeDates) {
+    function weeklyNavigation(activeWeeks) {
         return {
-            days: [],
-            activeDates: activeDates,
+            weeks: [],
+            activeWeeks: activeWeeks,
             init() {
                 const now = new Date();
-                const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-                const startOfYear = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
-                const urlDate = this.getDateFromUrl();
+                const currentYear = now.getUTCFullYear();
+                const startOfYear = new Date(Date.UTC(currentYear, 0, 1));
+                const urlWeek = this.getWeekFromUrl();
 
-                for (let d = new Date(startOfYear); d <= today; d.setUTCDate(d.getUTCDate() + 1)) {
-                    const year = d.getUTCFullYear();
-                    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-                    const day = String(d.getUTCDate()).padStart(2, '0');
-                    const dateString = `${year}-${month}-${day}`;
-
-                    const startOfYearForDayCalc = new Date(Date.UTC(year, 0, 0));
-                    const dayOfYear = Math.ceil((d - startOfYearForDayCalc) / 86400000);
-
-                    this.days.push({
-                        date: dateString,
-                        url: `/date/${dateString}`,
-                        label: `Day ${dayOfYear}`,
-                        isToday: d.getTime() === today.getTime(),
-                        isFuture: d > today,
-                        isActive: this.activeDates.includes(dateString),
-                        isSelected: urlDate === dateString
+                // Loop through each week of the year
+                for (let i = 1; i <= 52; i++) {
+                    this.weeks.push({
+                        year: currentYear,
+                        week: i,
+                        url: `/week/${currentYear}/${i}`,
+                        label: `Week ${i}`,
+                        isCurrent: this.getWeekNumber(now) === i,
+                        isActive: this.activeWeeks.includes(`${currentYear}-${i}`),
+                        isSelected: urlWeek && urlWeek.year == currentYear && urlWeek.week == i,
                     });
                 }
 
                 this.$nextTick(() => {
-                    const targetDate = urlDate || today.toISOString().split('T')[0];
-                    const targetElement = this.$refs.container.querySelector(`#day-${targetDate}`);
+                    const targetWeek = urlWeek || { year: currentYear, week: this.getWeekNumber(now) };
+                    const targetElement = this.$refs.container.querySelector(`#week-${targetWeek.year}-${targetWeek.week}`);
                     if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-                    } else {
-                        const lastActiveDay = this.days.slice().reverse().find(d => d.isActive);
-                        if(lastActiveDay) {
-                            const lastActiveElement = this.$refs.container.querySelector(`#day-${lastActiveDay.date}`);
-                            if(lastActiveElement) {
-                                lastActiveElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-                            }
-                        }
                     }
                 });
             },
-            getDateFromUrl() {
+            getWeekFromUrl() {
                 const path = window.location.pathname;
-                const match = path.match(/^\/date\/(\d{4}-\d{2}-\d{2})$/);
-                return match ? match[1] : null;
+                const match = path.match(/^\/week\/(\d{4})\/(\d{1,2})$/);
+                return match ? { year: parseInt(match[1]), week: parseInt(match[2]) } : null;
+            },
+            getWeekNumber(d) {
+                d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+                var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+                var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+                return weekNo;
             },
             scroll(direction) {
                 const container = this.$refs.container;
-                const dayElement = container.querySelector('a');
-                if (dayElement) {
-                    const scrollAmount = (dayElement.offsetWidth + 16) * 7;
+                const weekElement = container.querySelector('a');
+                if (weekElement) {
+                    const scrollAmount = (weekElement.offsetWidth + 16) * 7;
                     if (direction === 'left') {
                         container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
                     } else {

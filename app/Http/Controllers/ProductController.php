@@ -28,8 +28,7 @@ use App\Services\SlugService;
 use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use App\Jobs\FetchOgImage;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Laravel\Facades\Image;
 use DOMDocument;
 
 class ProductController extends Controller
@@ -49,27 +48,8 @@ class ProductController extends Controller
 
     public function home(Request $request)
     {
-        $range = $request->input('range', 'daily');
-        $serverTodayDate = Carbon::now('UTC');
-
-        if ($range === 'daily') {
-            $productsToday = Product::where('approved', true)
-                ->where('is_published', true)
-                ->whereDate(DB::raw('COALESCE(published_at, created_at)'), $serverTodayDate->toDateString())
-                ->exists();
-
-            if (!$productsToday) {
-                $latestDateWithProducts = Product::where('approved', true)
-                    ->where('is_published', true)
-                    ->whereDate(DB::raw('COALESCE(published_at, created_at)'), '<=', $serverTodayDate->toDateString())
-                    ->max(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'));
-
-                if ($latestDateWithProducts) {
-                    return redirect()->route('products.byDate', ['date' => $latestDateWithProducts]);
-                }
-            }
-            return $this->productsByDate($request, $serverTodayDate->toDateString(), true);
-        }
+        $now = Carbon::now();
+        return redirect()->route('products.byWeek', ['year' => $now->year, 'week' => $now->weekOfYear]);
 
         $displayDateString = $serverTodayDate->toDateString();
 
@@ -342,8 +322,7 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $manager = new ImageManager(new Driver());
-                $img = $manager->read($image->getRealPath());
+                $img = \Intervention\Image\Laravel\Facades\Image::make($image->getRealPath());
                 $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
                 Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
                 $validated['logo'] = $path . $filenameWithExtension;
@@ -507,8 +486,7 @@ class ProductController extends Controller
                 $logoPath .= $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $manager = new ImageManager(new Driver());
-                $img = $manager->read($image->getRealPath());
+                $img = \Intervention\Image\Laravel\Facades\Image::make($image->getRealPath());
                 $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
                 Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
                 $logoPath .= $filenameWithExtension;
@@ -1023,7 +1001,15 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        $weekOfYear = $week;
+
+        $activeWeeks = Product::where('approved', true)
+            ->where('is_published', true)
+            ->selectRaw('DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 1)) as week')
+            ->pluck('week')
+            ->toArray();
+
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
