@@ -28,8 +28,8 @@ use App\Services\SlugService;
 use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use App\Jobs\FetchOgImage;
-use Intervention\Image\Laravel\Facades\Image;
 use DOMDocument;
+use Intervention\Image\Laravel\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -322,7 +322,7 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = \Intervention\Image\Laravel\Facades\Image::make($image->getRealPath());
+                $img = Image::make($image->getRealPath());
                 $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
                 Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
                 $validated['logo'] = $path . $filenameWithExtension;
@@ -486,7 +486,7 @@ class ProductController extends Controller
                 $logoPath .= $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $img = \Intervention\Image\Laravel\Facades\Image::make($image->getRealPath());
+                $img = Image::make($image->getRealPath());
                 $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
                 Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
                 $logoPath .= $filenameWithExtension;
