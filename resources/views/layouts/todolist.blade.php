@@ -68,10 +68,17 @@
     data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
     data-login-url="{{ route('login') }}"
     data-csrf-token="{{ csrf_token() }}">
-    <div class="fixed top-0 right-0 p-4">
-        @include('partials._right-sidebar-usermenu')
+    <div class="fixed top-5 left-0 right-0 z-10">
+        <div class="sm:max-w-xl md:max-w-[640px] lg:max-w-[640px] xl:max-w-[640px] mx-auto px-8 border bg-white opacity-90 rounded-full">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-3xl font-medium text-gray-800">
+                    Free Todo List App
+                </h1>
+                @include('partials._right-sidebar-usermenu')
+            </div>
+        </div>
     </div>
-    <div class="min-h-screen flex items-center justify-center">
+    <div class="min-h-screen flex items-center justify-center pt-16">
         <div class="w-full max-w-2xl mx-auto p-4">
             @yield('content')
     
