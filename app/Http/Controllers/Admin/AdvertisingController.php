@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Ad;
 use App\Models\AdZone;
+use App\Models\CodeSnippet;
 
 class AdvertisingController extends Controller
 {
@@ -14,7 +15,8 @@ class AdvertisingController extends Controller
     {
         $ads = Ad::with('adZones')->latest()->paginate(10);
         $adZones = AdZone::latest()->paginate(10);
+        $snippets = CodeSnippet::all();
 
-        return view('admin.advertising.index', compact('ads', 'adZones'));
+        return view('admin.advertising.index', compact('ads', 'adZones', 'snippets'));
     }
 }

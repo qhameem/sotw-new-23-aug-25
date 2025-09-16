@@ -92,6 +92,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::resource('advertising', AdvertisingController::class);
     Route::resource('ad-zones', AdZoneController::class);
+    Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');

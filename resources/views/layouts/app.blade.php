@@ -147,12 +147,29 @@
     }
     </script>
     @endverbatim
+    @php
+        $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
+        $page = \Illuminate\Support\Facades\Route::currentRouteName();
+    @endphp
+    @foreach ($headSnippets as $snippet)
+        @if ($snippet->page === 'all' || $snippet->page === $page)
+            {!! $snippet->code !!}
+        @endif
+    @endforeach
 </head>
 
 <body class="font-sans antialiased bg-white"
       data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
       data-login-url="{{ route('login') }}"
       data-csrf-token="{{ csrf_token() }}">
+    @php
+        $bodySnippets = \App\Models\CodeSnippet::where('location', 'body')->get();
+    @endphp
+    @foreach ($bodySnippets as $snippet)
+        @if ($snippet->page === 'all' || $snippet->page === $page)
+            {!! $snippet->code !!}
+        @endif
+    @endforeach
 
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'">
         <x-slot:title>
