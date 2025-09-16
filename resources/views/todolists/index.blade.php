@@ -5,7 +5,19 @@
 
 @section('content')
 <div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists ?? []) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
-    <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6" data-list-id="">
+    <div class="flex justify-between items-center mb-6">
+        <div class="relative">
+            <button id="list-switcher-button" class="text-2xl font-bold text-gray-800 focus:outline-none flex items-center">
+                <span id="active-list-title"></span>
+                <svg class="w-6 h-6 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="list-dropdown" class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 hidden">
+                <!-- List items will be populated here -->
+            </div>
+        </div>
+        <button id="create-new-list-button" class="bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600 transition-colors text-sm font-semibold">New List</button>
+    </div>
+    <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6 hidden" data-list-id="">
         <span id="list-title" class="cursor-pointer"></span>
         <input type="text" id="list-title-input" class="text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full">
     </h1>
@@ -163,6 +175,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const listTitle = document.getElementById('list-title');
     const listTitleInput = document.getElementById('list-title-input');
     const priorityFilterContainer = document.getElementById('priority-filter-container');
+    const createNewListButton = document.getElementById('create-new-list-button');
+    const listSwitcherButton = document.getElementById('list-switcher-button');
+    const activeListTitle = document.getElementById('active-list-title');
+    const listDropdown = document.getElementById('list-dropdown');
 
     const quotes = [
         "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
@@ -204,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!activeListId) return;
         const list = lists.find(l => l.id == activeListId);
         if (list) {
+            activeListTitle.textContent = list.title;
             listTitle.textContent = list.title;
             listTitleInput.value = list.title;
             listTitleContainer.dataset.listId = activeListId;
@@ -235,6 +252,31 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         `).join('');
         priorityFilterContainer.innerHTML = filtersHtml;
+    };
+
+
+    const renderListsDropdown = () => {
+        listDropdown.innerHTML = '';
+        lists.forEach(list => {
+            const listItemWrapper = document.createElement('div');
+            listItemWrapper.className = 'flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
+            
+            const listItem = document.createElement('a');
+            listItem.href = '#';
+            listItem.textContent = list.title;
+            listItem.dataset.listId = list.id;
+            listItem.className = 'flex-grow';
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '<svg class="w-4 h-4 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+            deleteButton.dataset.listId = list.id;
+            deleteButton.dataset.action = 'delete-list';
+            deleteButton.className = 'ml-2';
+
+            listItemWrapper.appendChild(listItem);
+            listItemWrapper.appendChild(deleteButton);
+            listDropdown.appendChild(listItemWrapper);
+        });
     };
 
     const renderTasks = () => {
@@ -481,6 +523,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    listDropdown.addEventListener('click', async (e) => {
+        if (e.target.dataset.action === 'delete-list') {
+            e.stopPropagation();
+            const listId = e.target.dataset.listId;
+            if (confirm('Are you sure you want to delete this list?')) {
+                try {
+                    const response = await api.delete(`${baseUrl}/${listId}`);
+                    lists = response.lists;
+                    if (activeListId == listId) {
+                        activeListId = lists.length > 0 ? lists[0].id : null;
+                    }
+                    if (lists.length === 0) {
+                        await initialize();
+                    } else {
+                        renderTasks();
+                    }
+                    listDropdown.classList.add('hidden');
+                } catch (error) {
+                    console.error('Failed to delete list:', error);
+                }
+            }
+        }
+    });
+
     listsContainer.addEventListener('change', async (e) => {
         if (e.target.dataset.action === 'update-deadline') {
             const input = e.target;
@@ -556,6 +622,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         renderTasks();
+    });
+
+    listSwitcherButton.addEventListener('click', () => {
+        renderListsDropdown();
+        listDropdown.classList.toggle('hidden');
+    });
+
+    listDropdown.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') {
+            e.preventDefault();
+            activeListId = e.target.dataset.listId;
+            listDropdown.classList.add('hidden');
+            renderTasks();
+        }
+    });
+
+    createNewListButton.addEventListener('click', async () => {
+        const newListName = prompt("Enter the name for the new list:", "New List");
+        if (newListName) {
+            try {
+                const newList = await api.post(storeUrl, { title: newListName });
+                lists.push(newList);
+                activeListId = newList.id;
+                renderTasks();
+            } catch (error) {
+                console.error('Failed to create new list:', error);
+            }
+        }
     });
 
     const initialize = async () => {

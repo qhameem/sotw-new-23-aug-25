@@ -82,15 +82,17 @@ class TodoListController extends Controller
         if (Auth::check()) {
             $this->authorize('delete', $todoList);
             $todoList->delete();
+
+            $remainingLists = TodoList::where('user_id', Auth::id())->with('items')->get();
+            return response()->json(['success' => true, 'lists' => $remainingLists]);
         } else {
             $lists = session('todo_lists', []);
-            $lists = array_filter($lists, function ($list) use ($todoList) {
+            $lists = array_values(array_filter($lists, function ($list) use ($todoList) {
                 return $list->id != $todoList->id;
-            });
+            }));
             session(['todo_lists' => $lists]);
+            return response()->json(['success' => true, 'lists' => $lists]);
         }
-
-        return response()->json(['success' => true]);
     }
 
     public function export(TodoList $todoList)
