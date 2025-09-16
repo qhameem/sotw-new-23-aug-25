@@ -10,6 +10,11 @@
         <input type="text" id="list-title-input" class="text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full">
     </h1>
 
+    <!-- Priority Filter Tags -->
+    <div id="priority-filter-container" class="flex items-center gap-2 mb-4">
+        <!-- Tags will be dynamically inserted here -->
+    </div>
+
     <!-- Add New Task -->
     <div class="flex flex-col sm:flex-row gap-2 mb-6">
         <input type="text" id="new-item-title-input" placeholder="Add new task" class="flex-grow px-1 py-2 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-500">
@@ -99,6 +104,48 @@
 @endsection
 
 @push('scripts')
+<style>
+    .priority-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.75rem; /* text-xs */
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        background-color: #f3f4f6; /* gray-100 */
+        color: #4b5563; /* gray-600 */
+    }
+    .priority-tag.active {
+        background-color: #e0f2fe; /* sky-100 */
+        color: #075985; /* sky-800 */
+        border: 1px solid #bae6fd; /* sky-200 */
+        font-weight: 500;
+    }
+    .priority-tag .close-icon {
+        margin-left: 8px;
+        width: 16px;
+        height: 16px;
+        stroke: #9ca3af; /* gray-400 */
+    }
+    .priority-count {
+        margin-left: 8px;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #e5e7eb; /* gray-200 */
+        color: #4b5563; /* gray-600 */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 500;
+    }
+    .priority-tag.active .priority-count {
+        background-color: #bae6fd; /* sky-200 */
+        color: #0c4a6e; /* sky-900 */
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const appContainer = document.getElementById('todo-app-container');
@@ -107,13 +154,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = appContainer.dataset.csrfToken;
     let lists = JSON.parse(appContainer.dataset.lists);
     let activeListId = lists.length > 0 ? lists[0].id : null;
-
+    let activePriorityFilter = null;
+ 
     const newItemTitleInput = document.getElementById('new-item-title-input');
     const addItemButton = document.getElementById('add-item-button');
     const listsContainer = document.getElementById('todo-lists-container');
     const listTitleContainer = document.getElementById('list-title-container');
     const listTitle = document.getElementById('list-title');
     const listTitleInput = document.getElementById('list-title-input');
+    const priorityFilterContainer = document.getElementById('priority-filter-container');
 
     const quotes = [
         "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
@@ -161,16 +210,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const renderPriorityFilters = () => {
+        const list = lists.find(l => l.id == activeListId);
+        if (!list || !list.items) {
+            priorityFilterContainer.innerHTML = '';
+            return;
+        }
+
+        const priorityCounts = list.items.reduce((acc, item) => {
+            const priority = item.color || 'gray';
+            acc[priority] = (acc[priority] || 0) + 1;
+            return acc;
+        }, {});
+
+        const priorities = [...new Set(list.items.map(item => item.color || 'gray'))];
+        const priorityNames = { 'red': 'Priority 1', 'orange': 'Priority 2', 'yellow': 'Priority 3', 'green': 'Priority 4', 'gray': 'Priority 5' };
+
+        let filtersHtml = `<div class="priority-tag ${activePriorityFilter === null ? 'active' : ''}" data-priority="all"><span>All</span><span class="priority-count">${list.items.length}</span></div>`;
+
+        filtersHtml += priorities.map(priority => `
+            <div class="priority-tag ${activePriorityFilter === priority ? 'active' : ''}" data-priority="${priority}">
+                <span>${priorityNames[priority] || priority}</span>
+                <span class="priority-count">${priorityCounts[priority]}</span>
+            </div>
+        `).join('');
+        priorityFilterContainer.innerHTML = filtersHtml;
+    };
+
     const renderTasks = () => {
         listsContainer.innerHTML = '';
         if (!activeListId) return;
-
+ 
         renderListTitle();
-
+        renderPriorityFilters();
+ 
         const list = lists.find(l => l.id == activeListId);
         if (!list || !list.items) return;
+ 
+        const filteredItems = activePriorityFilter
+            ? list.items.filter(item => (item.color || 'gray') === activePriorityFilter)
+            : list.items;
 
-        list.items.forEach(item => {
+        filteredItems.forEach(item => {
             const taskElement = document.createElement('div');
             const priorityColor = item.color || 'gray';
             taskElement.className = `p-3 border border-gray-200 rounded-lg bg-${priorityColor}-100`;
@@ -452,6 +533,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    priorityFilterContainer.addEventListener('click', (e) => {
+        const tag = e.target.closest('.priority-tag');
+        if (!tag) return;
+
+        const priority = tag.dataset.priority;
+
+        if (priority === 'all') {
+            activePriorityFilter = null;
+        } else if (activePriorityFilter === priority) {
+            activePriorityFilter = null; // Deselect if clicking the active filter
+        } else {
+            activePriorityFilter = priority;
+        }
+        
+        renderTasks();
+    });
+
     const initialize = async () => {
         if (lists.length === 0) {
             try {
@@ -466,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         renderTasks();
     };
-
+ 
     initialize();
 });
 </script>
