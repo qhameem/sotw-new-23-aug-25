@@ -574,26 +574,43 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     listDropdown.addEventListener('click', async (e) => {
-        if (e.target.dataset.action === 'delete-list') {
+        const deleteButton = e.target.closest('button[data-action="delete-list"]');
+        const link = e.target.closest('a');
+
+        if (deleteButton) {
             e.stopPropagation();
-            const listId = e.target.dataset.listId;
-            if (confirm('Are you sure you want to delete this list?')) {
+            const listId = deleteButton.dataset.listId;
+            if (confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
                 try {
                     const response = await api.delete(`${baseUrl}/${listId}`);
                     lists = response.lists;
                     if (activeListId == listId) {
                         activeListId = lists.length > 0 ? lists[0].id : null;
                     }
+                    
                     if (lists.length === 0) {
                         await initialize();
                     } else {
+                        renderListsDropdown();
                         renderTasks();
                     }
-                    listDropdown.classList.add('hidden');
+                    
+                    if (lists.length > 0) {
+                        listDropdown.classList.remove('hidden');
+                    } else {
+                        listDropdown.classList.add('hidden');
+                    }
+
                 } catch (error) {
                     console.error('Failed to delete list:', error);
+                    alert('Could not delete the list.');
                 }
             }
+        } else if (link) {
+            e.preventDefault();
+            activeListId = link.dataset.listId;
+            listDropdown.classList.add('hidden');
+            renderTasks();
         }
     });
 
@@ -679,14 +696,6 @@ document.addEventListener('DOMContentLoaded', function () {
         listDropdown.classList.toggle('hidden');
     });
 
-    listDropdown.addEventListener('click', (e) => {
-        if (e.target.tagName === 'A') {
-            e.preventDefault();
-            activeListId = e.target.dataset.listId;
-            listDropdown.classList.add('hidden');
-            renderTasks();
-        }
-    });
 
     const newListContainer = document.getElementById('new-list-container');
 

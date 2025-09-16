@@ -105,7 +105,7 @@
                     this.weeks.push({
                         year: currentYear,
                         week: i,
-                        url: `/weekly/${currentYear}/${i}`,
+                        url: `/week/${currentYear}/${i}`,
                         label: `Week ${i}`,
                         isCurrent: this.getWeekNumber(now) === i,
                         isActive: this.activeWeeks.includes(`${currentYear}-${i}`),
@@ -123,7 +123,7 @@
             },
             getWeekFromUrl() {
                 const path = window.location.pathname;
-                const match = path.match(/^\/weekly\/(\d{4})\/(\d{1,2})$/);
+                const match = path.match(/^\/week\/(\d{4})\/(\d{1,2})$/);
                 return match ? { year: parseInt(match[1]), week: parseInt(match[2]) } : null;
             },
             getWeekNumber(d) {

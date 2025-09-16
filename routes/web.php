@@ -162,8 +162,8 @@ Route::get('/category/{category:slug}', [ProductController::class, 'categoryProd
 Route::get('/products/dates', [ProductController::class, 'getProductDates']);
 Route::get('/date/{date}', [ProductController::class, 'productsByDate'])->where('date', '\d{4}-\d{2}-\d{2}')->name('products.byDate');
 
-Route::get('/weekly', [ProductController::class, 'redirectToCurrentWeek'])->name('products.weekly.redirect');
-Route::get('/weekly/{year}/{week}', [ProductController::class, 'productsByWeek'])->name('products.byWeek');
+Route::get('/week', [ProductController::class, 'redirectToCurrentWeek'])->name('products.weekly.redirect');
+Route::get('/week/{year}/{week}', [ProductController::class, 'productsByWeek'])->name('products.byWeek');
 
 Route::get('/monthly', [ProductController::class, 'redirectToCurrentMonth'])->name('products.monthly.redirect');
 Route::get('/monthly/{year}/{month}', [ProductController::class, 'productsByMonth'])->name('products.byMonth');
