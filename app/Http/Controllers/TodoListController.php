@@ -77,6 +77,26 @@ class TodoListController extends Controller
         }
     }
 
+    public function updateName(Request $request, TodoList $todoList)
+    {
+        if (Auth::check()) {
+            $this->authorize('update', $todoList);
+            $request->validate(['title' => 'required|string|max:255']);
+            $todoList->update(['title' => $request->title]);
+            return response()->json($todoList);
+        } else {
+            $lists = session('todo_lists', []);
+            foreach ($lists as $key => $list) {
+                if ($list->id == $request->route('todoList')) {
+                    $lists[$key]->title = $request->title;
+                    break;
+                }
+            }
+            session(['todo_lists' => $lists]);
+            return response()->json($lists);
+        }
+    }
+
     public function destroy(TodoList $todoList)
     {
         if (Auth::check()) {

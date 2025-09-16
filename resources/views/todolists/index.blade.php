@@ -15,7 +15,9 @@
                 <!-- List items will be populated here -->
             </div>
         </div>
-        <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+        <div id="new-list-container">
+            <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+        </div>
     </div>
     <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6 hidden" data-list-id="">
         <span id="list-title" class="cursor-pointer"></span>
@@ -208,6 +210,15 @@ document.addEventListener('DOMContentLoaded', function () {
         async put(url, data) {
             const response = await fetch(url, {
                 method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        },
+        async patch(url, data) {
+            const response = await fetch(url, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: JSON.stringify(data)
             });
@@ -423,12 +434,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            await api.put(`${baseUrl}/${listId}`, { title: newTitle });
+            await api.patch(`${baseUrl}/${listId}`, { title: newTitle });
             const list = lists.find(l => l.id == listId);
             if (list) {
                 list.title = newTitle;
             }
             renderListTitle();
+            renderListsDropdown();
         } catch (error) {
             console.error('Failed to update list title:', error);
             renderListTitle(); // Re-render to show original state
@@ -438,11 +450,49 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    listTitle.addEventListener('click', () => {
-        listTitle.classList.add('hidden');
-        listTitleInput.classList.remove('hidden');
-        listTitleInput.focus();
-        listTitleInput.select();
+    activeListTitle.addEventListener('click', () => {
+        const listTitleSpan = document.getElementById('active-list-title');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = listTitleSpan.textContent;
+        input.className = 'text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none w-full';
+        
+        listTitleSpan.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const saveTitle = async () => {
+            const newTitle = input.value.trim();
+            const listId = activeListId;
+            const originalTitle = listTitleSpan.textContent;
+
+            if (newTitle !== '' && newTitle !== originalTitle) {
+                try {
+                    await api.patch(`${baseUrl}/${listId}`, { title: newTitle });
+                    const list = lists.find(l => l.id == listId);
+                    if (list) {
+                        list.title = newTitle;
+                    }
+                    listTitleSpan.textContent = newTitle;
+                } catch (error) {
+                    console.error('Failed to update list title:', error);
+                    listTitleSpan.textContent = originalTitle;
+                }
+            } else {
+                listTitleSpan.textContent = originalTitle;
+            }
+            input.replaceWith(listTitleSpan);
+        };
+
+        input.addEventListener('blur', saveTitle);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveTitle();
+            } else if (e.key === 'Escape') {
+                input.value = listTitleSpan.textContent;
+                saveTitle();
+            }
+        });
     });
 
     listTitleInput.addEventListener('keydown', (e) => {
@@ -638,16 +688,52 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    createNewListButton.addEventListener('click', async () => {
-        const newListName = prompt("Enter the name for the new list:", "New List");
-        if (newListName) {
-            try {
-                const newList = await api.post(storeUrl, { title: newListName });
-                lists.push(newList);
-                activeListId = newList.id;
-                renderTasks();
-            } catch (error) {
-                console.error('Failed to create new list:', error);
+    const newListContainer = document.getElementById('new-list-container');
+
+    const showCreateListInput = () => {
+        newListContainer.innerHTML = `
+            <div class="flex items-center gap-2">
+                <input type="text" id="new-list-name-input" placeholder="New list name" class="flex-grow px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm">
+                <button id="save-new-list-button" class="p-2 text-green-500 hover:bg-green-50 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+                <button id="cancel-new-list-button" class="p-2 text-red-500 hover:bg-red-50 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+        document.getElementById('new-list-name-input').focus();
+    };
+
+    const hideCreateListInput = () => {
+        newListContainer.innerHTML = `
+            <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+        `;
+    };
+
+    newListContainer.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        if (target.id === 'create-new-list-button') {
+            showCreateListInput();
+        } else if (target.id === 'cancel-new-list-button') {
+            hideCreateListInput();
+        } else if (target.id === 'save-new-list-button') {
+            const input = document.getElementById('new-list-name-input');
+            const newListName = input.value.trim();
+            if (newListName) {
+                try {
+                    const newList = await api.post(storeUrl, { title: newListName });
+                    lists.push(newList);
+                    activeListId = newList.id;
+                    renderTasks();
+                    renderListsDropdown();
+                    hideCreateListInput();
+                } catch (error) {
+                    console.error('Failed to create new list:', error);
+                    alert('Could not create the new list.');
+                }
             }
         }
     });

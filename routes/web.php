@@ -279,6 +279,7 @@ Route::prefix('free-todo-list-tool')->name('todolists.')->group(function () {
     Route::get('/', [TodoListController::class, 'index'])->name('index');
     Route::post('/', [TodoListController::class, 'store'])->name('store');
     Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');
+    Route::patch('/{todoList}', [TodoListController::class, 'updateName'])->name('update.name');
     Route::delete('/{todoList}', [TodoListController::class, 'destroy'])->name('destroy');
     Route::get('/{todoList}/export', [TodoListController::class, 'export'])->name('export');
 
