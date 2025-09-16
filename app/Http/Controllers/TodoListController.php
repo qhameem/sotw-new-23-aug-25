@@ -18,18 +18,14 @@ class TodoListController extends Controller
     public function index()
     {
         if (request()->wantsJson()) {
-            $user = Auth::user();
-            $lists = $user ? TodoList::where('user_id', $user->id)->with('items')->get() : [];
+            $lists = TodoList::with('items')->get();
             return response()->json($lists);
         }
 
         $seoSettings = PageMetaTag::where('path', '/free-todo-list-tool')->first();
         $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
         $meta_description = $seoSettings->meta_description ?? '';
-        $lists = [];
-        if (Auth::check()) {
-            $lists = TodoList::where('user_id', Auth::id())->with('items')->get();
-        }
+        $lists = TodoList::with('items')->get();
 
         return view('todolists.index', compact('meta_title', 'meta_description', 'lists'));
     }
@@ -40,16 +36,22 @@ class TodoListController extends Controller
             'title' => 'required|string|max:255',
         ]);
 
-        $list = Auth::user()->todoLists()->create([
-            'title' => $request->title,
-        ]);
+        $list = new TodoList(['title' => $request->title]);
+
+        if (Auth::check()) {
+            $list->user_id = Auth::id();
+        }
+
+        $list->save();
 
         return response()->json($list->load('items'));
     }
 
     public function update(Request $request, TodoList $todoList)
     {
-        $this->authorize('update', $todoList);
+        if (Auth::check()) {
+            $this->authorize('update', $todoList);
+        }
 
         $request->validate([
             'title' => 'required|string|max:255',
@@ -62,7 +64,9 @@ class TodoListController extends Controller
 
     public function destroy(TodoList $todoList)
     {
-        $this->authorize('delete', $todoList);
+        if (Auth::check()) {
+            $this->authorize('delete', $todoList);
+        }
 
         $todoList->delete();
 
@@ -71,14 +75,18 @@ class TodoListController extends Controller
 
     public function export(TodoList $todoList)
     {
-        $this->authorize('view', $todoList);
+        if (Auth::check()) {
+            $this->authorize('view', $todoList);
+        }
 
         return Excel::download(new TodoListExport($todoList), $todoList->title . '.xlsx');
     }
 
     public function storeItem(Request $request, TodoList $todoList)
     {
-        $this->authorize('update', $todoList);
+        if (Auth::check()) {
+            $this->authorize('update', $todoList);
+        }
 
         $request->validate([
             'title' => 'required|string|max:255',
@@ -97,7 +105,9 @@ class TodoListController extends Controller
 
     public function updateItem(Request $request, TodoListItem $todoListItem)
     {
-        $this->authorize('update', $todoListItem->todoList);
+        if (Auth::check()) {
+            $this->authorize('update', $todoListItem->todoList);
+        }
 
         $request->validate([
             'title' => 'sometimes|string|max:255',
@@ -113,7 +123,10 @@ class TodoListController extends Controller
 
     public function destroyItem(TodoListItem $todoListItem)
     {
-        $this->authorize('update', $todoListItem->todoList);
+        if (Auth::check()) {
+            $this->authorize('update',
+            $todoListItem->todoList);
+        }
 
         $todoListItem->delete();
 

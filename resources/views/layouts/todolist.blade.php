@@ -73,17 +73,7 @@
     </div>
     <div class="min-h-screen flex items-center justify-center">
         <div class="w-full max-w-2xl mx-auto p-4">
-            @guest
-            <div class="text-center p-8 bg-white border rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to use the to-do list</h2>
-                <p class="text-gray-600 mb-4 text-sm tracking-tight">Log in to save and access your to-do lists from anywhere.</p>
-                <button @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
-                    Log in or Sign up &rarr;
-                </button>
-            </div>
-            @else
-                @yield('content')
-            @endguest
+            @yield('content')
     
         </div>
     </div>
