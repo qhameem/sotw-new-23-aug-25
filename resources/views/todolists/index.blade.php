@@ -15,8 +15,13 @@
                 <!-- List items will be populated here -->
             </div>
         </div>
-        <div id="new-list-container">
-            <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+        <div class="flex items-center gap-4">
+            <a href="#" id="export-list-button" class="text-gray-400 hover:text-sky-500" title="Export to Excel">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </a>
+            <div id="new-list-container">
+                <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+            </div>
         </div>
     </div>
     <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6 hidden" data-list-id="">
@@ -181,6 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const listSwitcherButton = document.getElementById('list-switcher-button');
     const activeListTitle = document.getElementById('active-list-title');
     const listDropdown = document.getElementById('list-dropdown');
+    const exportListButton = document.getElementById('export-list-button');
 
     const quotes = [
         "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
@@ -235,6 +241,15 @@ document.addEventListener('DOMContentLoaded', function () {
             listTitle.textContent = list.title;
             listTitleInput.value = list.title;
             listTitleContainer.dataset.listId = activeListId;
+        }
+    };
+
+    const updateExportLink = () => {
+        if (activeListId) {
+            exportListButton.href = `${baseUrl}/${activeListId}/export`;
+            exportListButton.classList.remove('hidden');
+        } else {
+            exportListButton.classList.add('hidden');
         }
     };
 
@@ -296,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
  
         renderListTitle();
         renderPriorityFilters();
+        updateExportLink();
  
         const list = lists.find(l => l.id == activeListId);
         if (!list || !list.items) return;
