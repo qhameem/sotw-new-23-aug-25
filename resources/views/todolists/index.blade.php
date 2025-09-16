@@ -15,7 +15,7 @@
                 <!-- List items will be populated here -->
             </div>
         </div>
-        <button id="create-new-list-button" class="bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600 transition-colors text-sm font-semibold">New List</button>
+        <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
     </div>
     <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6 hidden" data-list-id="">
         <span id="list-title" class="cursor-pointer"></span>
