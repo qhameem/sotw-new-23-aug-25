@@ -48,7 +48,7 @@ class ProductController extends Controller
     public function home(Request $request)
     {
         $now = Carbon::now();
-        return $this->productsByWeek($request, $now->year, $now->weekOfYear);
+        return $this->productsByWeek($request, $now->year, $now->weekOfYear, true);
 
         $displayDateString = $serverTodayDate->toDateString();
 
@@ -881,8 +881,13 @@ class ProductController extends Controller
         return redirect()->route('products.byYear', ['year' => $now->year]);
     }
 
-    public function productsByWeek(Request $request, $year, $week)
+    public function productsByWeek(Request $request, $year, $week, $isHomepage = false)
     {
+        $now = Carbon::now();
+        if (!$isHomepage && $year == $now->year && $week == $now->weekOfYear) {
+            return redirect()->route('home');
+        }
+
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 

@@ -46,7 +46,11 @@
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
 
-   @yield('canonical')
+   @if(request()->routeIs('products.byWeek'))
+    <link rel="canonical" href="{{ route('products.byWeek', ['year' => request()->route('year'), 'week' => request()->route('week')]) }}" />
+@elseif(request()->routeIs('home'))
+    <link rel="canonical" href="{{ route('home') }}" />
+@endif
 
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
