@@ -969,7 +969,7 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
-        $title = 'This Week'; // For potential in-page display
+        $title = 'Top Products'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | Software on the web'; // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
