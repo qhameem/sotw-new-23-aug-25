@@ -22,7 +22,7 @@ class TodoListController extends Controller
             return response()->json($lists);
         }
 
-        $seoSettings = PageMetaTag::where('path', '/free-todo-list-tool')->first();
+        $seoSettings = PageMetaTag::where('page_id', '/free-todo-list-tool')->first();
         $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
         $meta_description = $seoSettings->meta_description ?? '';
         $lists = [];
