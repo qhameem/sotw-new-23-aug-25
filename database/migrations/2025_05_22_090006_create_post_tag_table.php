@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('blog_post_tag_pivot', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('blog_post_id')->constrained('blog_posts')->onDelete('cascade');
-            $table->foreignId('blog_tag_id')->constrained('blog_tags')->onDelete('cascade');
+            $table->foreignId('blog_post_id')->constrained('blog_posts')->onDelete('cascade')->name('fk_bptp_blog_post_id');
+            $table->foreignId('blog_tag_id')->constrained('blog_tags')->onDelete('cascade')->name('fk_bptp_blog_tag_id');
             $table->timestamps();
         });
     }

@@ -608,7 +608,7 @@ class ProductController extends Controller
                 }
             }]);
         
-        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->paginate(15);
+        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->get();
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
