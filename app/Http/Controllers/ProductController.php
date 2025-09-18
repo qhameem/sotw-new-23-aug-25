@@ -916,10 +916,6 @@ class ProductController extends Controller
 
         $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
-        $perPage = 15;
-        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
-        $offset = ($currentPage - 1) * $perPage;
-
         $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
         $finalProductOrder = [];
         $regularProductIndex = 0;
@@ -935,11 +931,8 @@ class ProductController extends Controller
             }
         }
 
-        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
-
-        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
-        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
-
+        $regularProductIdsOnPage = collect($finalProductOrder)->filter(fn($item) => is_numeric($item))->values();
+        
         $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
@@ -954,7 +947,7 @@ class ProductController extends Controller
         $regularProductsOnPage = $regularProductsOnPageQuery->get();
 
         $combinedProducts = collect();
-        foreach ($currentPageItems as $item) {
+        foreach ($finalProductOrder as $item) {
             if (is_object($item)) {
                 $combinedProducts->push($item);
             } else {
@@ -962,13 +955,7 @@ class ProductController extends Controller
             }
         }
 
-        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
-            $combinedProducts,
-            $totalProductsCount,
-            $perPage,
-            $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
+        $regularProducts = $combinedProducts;
 
         $categories = Category::all();
         $types = Type::with('categories')->get();
