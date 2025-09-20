@@ -340,7 +340,9 @@ class ProductController extends Controller
             $product->techStacks()->sync($validated['tech_stacks']);
         }
 
-        FetchOgImage::dispatch($product);
+        if (!$request->hasFile('media')) {
+            FetchOgImage::dispatch($product);
+        }
 
         $admins = User::getAdmins();
         Notification::send($admins, new ProductSubmitted($product));

@@ -362,6 +362,13 @@
                     <img :src="mediaPreviewUrl" alt="Image Preview" class="rounded-md border w-full object-cover">
                 </div>
 
+                @if(isset($product) && $product->media->isNotEmpty())
+                <div class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Current Image</h3>
+                    <img src="{{ $product->media->first()->url }}" alt="Current Image" class="rounded-md border w-full object-cover">
+                </div>
+                @endif
+
                 <div x-show="fetchedOgImages.length > 0 && !mediaPreviewUrl" class="mt-4">
                     <h3 class="text-xs font-semibold mb-2">Fetched Images (Select up to 2)</h3>
                     <div class="flex flex-wrap gap-2">

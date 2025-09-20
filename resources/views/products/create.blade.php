@@ -472,13 +472,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                     if (this.quill) {
                         this.quill.root.innerHTML = data.description || '';
                     }
-                    this.fetchedOgImage = data.og_image || '';
                     if (data.og_images && data.og_images.length > 0) {
                         this.fetchedOgImages = data.og_images;
                     }
                     if (data.logos && data.logos.length > 0) {
                         this.fetchedLogos = data.logos;
-                        this.selectedLogoUrl = data.logos[0];
+                        //
                     }
                     if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
                         const categoryIds = data.categories.map(id => id.toString());

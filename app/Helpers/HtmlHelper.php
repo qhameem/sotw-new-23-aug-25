@@ -24,4 +24,16 @@ class HtmlHelper
             $html
         );
     }
+
+    /**
+     * Get the last YouTube video ID from a URL.
+     *
+     * @param string $url
+     * @return string|null
+     */
+    public static function getLastYoutubeId(string $url): ?string
+    {
+        preg_match('/(youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $url, $match);
+        return $match[2] ?? null;
+    }
 }

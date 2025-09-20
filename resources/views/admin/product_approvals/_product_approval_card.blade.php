@@ -36,6 +36,28 @@
                 {!! $product->description !!}
             </div>
 
+            {{-- Media --}}
+            @if($product->media->count() > 0)
+                <div class="mt-4">
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Media</h4>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($product->media as $media)
+                            <img src="{{ $media->url }}" alt="{{ $product->name }} media" class="w-32 h-32 object-cover rounded-lg bg-gray-100 border">
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Video --}}
+            @if($product->video_url)
+                <div class="mt-4">
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Video</h4>
+                    <div class="aspect-w-16 aspect-h-9">
+                        <iframe src="{{ 'https://www.youtube.com/embed/' . getLastYoutubeId($product->video_url) }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            @endif
+
             {{-- Categories --}}
             @if($product->categories->count() > 0)
                 <div class="mt-4">
