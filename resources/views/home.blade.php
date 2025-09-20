@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', $meta_title ?? 'Software on the Web')
+
 @section('canonical')
     @if (Route::currentRouteName() == 'home')
         <link rel="canonical" href="{{ url('/') }}" />

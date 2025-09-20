@@ -680,6 +680,7 @@ class ProductController extends Controller
 
         $currentYear = Carbon::now()->year;
         $title = "The Best " . strip_tags($category->name) . " Software Products of " . $currentYear;
+        $meta_title = strip_tags($category->name) . ' - Software on the Web';
         $isCategoryPage = true;
         $metaDescription = $category->meta_description;
 
@@ -701,7 +702,7 @@ class ProductController extends Controller
             'promotedProducts', 'regularProducts', 'premiumProducts', 'alpineProducts',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
-            'title', 'isCategoryPage', 'metaDescription',
+            'title', 'isCategoryPage', 'metaDescription', 'meta_title',
             'nextLaunchTime'
         ));
     }
