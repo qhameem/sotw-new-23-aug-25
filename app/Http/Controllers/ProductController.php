@@ -681,6 +681,7 @@ class ProductController extends Controller
         $currentYear = Carbon::now()->year;
         $title = "The Best " . strip_tags($category->name) . " Software Products of " . $currentYear;
         $isCategoryPage = true;
+        $metaDescription = $category->meta_description;
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -700,7 +701,7 @@ class ProductController extends Controller
             'promotedProducts', 'regularProducts', 'premiumProducts', 'alpineProducts',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
-            'title', 'isCategoryPage',
+            'title', 'isCategoryPage', 'metaDescription',
             'nextLaunchTime'
         ));
     }

@@ -44,7 +44,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
-    <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
+    <meta name="description" content="@yield('meta_description', $metaDescription ?? '')">
 
    @if(request()->routeIs('products.byWeek'))
     <link rel="canonical" href="{{ route('products.byWeek', ['year' => request()->route('year'), 'week' => request()->route('week')]) }}" />
