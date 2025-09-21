@@ -53,7 +53,7 @@
                 <div class="mt-4">
                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Video</h4>
                     <div class="aspect-w-16 aspect-h-9">
-                        <iframe src="{{ 'https://www.youtube.com/embed/' . getLastYoutubeId($product->video_url) }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe src="{{ 'https://www.youtube.com/embed/' . \App\Helpers\HtmlHelper::getLastYoutubeId($product->video_url) }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                 </div>
             @endif
