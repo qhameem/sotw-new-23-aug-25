@@ -36,6 +36,28 @@
                 </div>
             </div>
             </div>
+            
+            <div class="p-4">
+                <h3 class="text-base font-semibold mb-4 text-gray-800">Sponsors</h3>
+                @php
+                    $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
+                    $sponsors = $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(6)->get() : collect();
+                @endphp
+                <ul class="space-y-4">
+                    @foreach($sponsors as $sponsor)
+                        <li>
+                            <a href="{{ $sponsor->target_url }}" target="_blank" class="flex items-center space-x-3">
+                                <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}" class="w-10 h-10 rounded-lg object-cover">
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span class="text-gray-400">↗</span></div>
+                                    <p class="text-sm text-gray-500">{{ $sponsor->tagline }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
             @guest
                 <div class="p-4">
                     @include('partials._what-is-sotw-card')

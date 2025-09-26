@@ -50,6 +50,10 @@
     <link rel="canonical" href="{{ route('products.byWeek', ['year' => request()->route('year'), 'week' => request()->route('week')]) }}" />
 @elseif(request()->routeIs('home'))
     <link rel="canonical" href="{{ route('home') }}" />
+@elseif(request()->routeIs('products.show'))
+    <link rel="canonical" href="{{ route('products.show', ['product' => $product->slug]) }}" />
+@elseif(request()->routeIs('categories.show'))
+    <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
 @endif
 
     <meta name="application-name" content="Software on the Web">
@@ -139,6 +143,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
 
     @verbatim
@@ -320,6 +325,8 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @stack('scripts')
 
     <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
