@@ -14,7 +14,7 @@
             <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover border flex-shrink-0" />
             <div class="flex flex-col space-y-1">
-                <h2 class="text-sm font-semibold flex items-center leading-none">
+                <h2 class="text-base font-semibold flex items-center leading-none">
                     <span class="text-left text-black mt-1">{{ $product->name }}</span>
                 </h2>
                 <p class="text-gray-900 text-sm line-clamp-2">{{ $product->tagline }}</p>

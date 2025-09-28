@@ -10,7 +10,7 @@
         <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
         <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover border flex-shrink-0" />
         <div class="flex flex-col space-y-1">
-            <h2 class="text-sm font-semibold flex items-center leading-none">
+            <h2 class="text-base font-semibold flex items-center leading-none">
                 <span class="text-left text-black mt-1">{{ $product->name }}</span>
                 @if(!$isPromoted)
                     <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
