@@ -1,9 +1,4 @@
 <div class="bg-white flex flex-col md:border-r md:border-gray-200 h-full">
-    <div class="hidden md:flex items-center justify-center h-16 flex-shrink-0">
-        <a href="{{ route('home') }}">
-            <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
-        </a>
-    </div>
     @if(!request()->is('free-todo-list-tool'))
     <div class="hidden md:flex flex-grow p-4 pl-8 ml-8">
         <nav class="flex flex-col space-y-2 text-base">

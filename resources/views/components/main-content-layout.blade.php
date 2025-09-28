@@ -1,3 +1,4 @@
+<x-top-bar />
 <div class="flex flex-col md:flex-row h-screen overflow-hidden">
     <!-- Left Sidebar -->
     @if(!request()->is('free-todo-list-tool'))
@@ -30,7 +31,6 @@
 
     <!-- Right Sidebar -->
     <div class="hidden md:flex md:flex-col md:w-96 md:h-screen md:sticky md:top-0 md:overflow-y-auto no-scrollbar border-l border-gray-200 flex-shrink-0 order-2 md:order-3">
-        <x-right-sidebar-header />
         <div class="flex-grow overflow-y-auto scrollbar-hide">
             @include('partials._right-sidebar')
         </div>
