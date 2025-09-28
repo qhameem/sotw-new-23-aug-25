@@ -22,7 +22,7 @@
 
 @section('content')
     @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <div class="bg-white px-4 py-2 border-b border-gray-200">
+        <div class="bg-white px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
                 <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
                 <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
