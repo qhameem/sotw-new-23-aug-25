@@ -19,18 +19,6 @@
     @endif
 @endsection
 
-@section('actions')
-    <div class="md:flex items-center space-x-2">
-        @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <div class="hidden sm:flex">
-            <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
-                Categories
-            </a>
-        </div>
-        @endif
-       <x-add-product-button />
-    </div>
-@endsection
 
 @section('content')
     @if(!isset($isCategoryPage) || !$isCategoryPage)

@@ -9,6 +9,14 @@
             <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
         @else
             <div class="flex items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="hidden sm:flex">
+                        <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
+                            Categories
+                        </a>
+                    </div>
+                   <x-add-product-button /> <span class=" w-0.5"></span>
+                </div>
                 @if(!request()->is('free-todo-list-tool'))
                     <div class="w-[280px] ml-auto mr-0">
                         <div class="relative">
