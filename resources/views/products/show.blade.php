@@ -15,9 +15,6 @@
     </div>
 @endsection
 
-@section('actions')
-    <x-add-product-button />
-@endsection
 
 @section('content')
 <div class="bg-white rounded-lg p-6 md:p-8">
