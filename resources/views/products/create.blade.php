@@ -599,9 +599,27 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             return Object.keys(this.errors).length === 0;
         },
 
+        showLoader() {
+            const button = document.getElementById('submit-product-button');
+            const content = document.getElementById('button-content');
+            const loaderContainer = document.getElementById('loader-container');
+            
+            if (button && content && loaderContainer) {
+                // Hide text and show loader
+                content.innerHTML = ''; // Clear the button text
+                loaderContainer.innerHTML = `
+                    <div class="loader">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                `;
+                button.disabled = true;
+            }
+        },
+
         submitForm(e) {
             if (!this.validateForm() || this.logoUploadError) {
-                // Scroll to the first error message if it exists
                 this.$nextTick(() => {
                     const firstError = this.$el.querySelector('.text-red-600');
                     if (firstError) {
@@ -611,7 +629,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 return;
             }
             this.clearState();
-            showLoader();
+            this.showLoader();
             this.$nextTick(() => {
                 e.target.submit();
             });
@@ -692,27 +710,5 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
 @push('scripts')
 <script>
-const button = document.getElementById('submit-product-button');
-const content = document.getElementById('button-content');
-const form = button.closest('form');
-
-function showLoader() {
-    // Get current size
-    const width = button.offsetWidth;
-    const height = button.offsetHeight;
-
-    // Lock size to prevent collapsing
-    button.style.width = width + 'px';
-    button.style.minHeight = height + 'px';
-
-    // Replace content with loader
-    content.innerHTML = `
-        <div class="loader">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-    `;
-}
 </script>
 @endpush

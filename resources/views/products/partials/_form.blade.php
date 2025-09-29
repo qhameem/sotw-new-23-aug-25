@@ -432,7 +432,8 @@
                 <button type="submit" id="submit-product-button"
                 class="bg-primary-500 hover:bg-rose-400 text-white text-sm font-semibold py-1.5 px-3 rounded-md transition duration-300 shadow inline-flex items-center justify-center gap-2 relative"
                  x-bind:disabled="!canSubmitForm">
-                    <span id="button-content">{{ isset($product) ? 'Update Product' : 'Submit Product' }}</span>
+                    <span id="button-content" class="flex items-center">{{ isset($product) ? 'Update Product' : 'Submit Product' }}</span>
+                    <span id="loader-container"></span>
                 </button>
             </div>
         </div>
