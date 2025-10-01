@@ -1,20 +1,34 @@
-<div class="h-[3.5rem] border-b border-gray-200 flex-shrink-0 hidden md:block">
-    <div class="flex items-center justify-between h-14 px-4">
-        <div class="flex items-center">
-            <a href="{{ route('home') }}" class="pl-12">
-                <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
-            </a>
+<div class="fixed top-0 w-full z-50 bg-white h-[3.7rem] border-b border-gray-200 flex-shrink-0 hidden md:block">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14">
+            <div class="flex items-center">
+                <a href="{{ route('home') }}">
+                    <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
+                </a>
+            </div>
+        <div class="flex items-center space-x-4">
+            <a href="{{ route('home') }}" class="text-sm  text-gray-900 hover:text-primary-500">Software</a>
+            <a href="{{ route('articles.index') }}" class="text-sm text-gray-900 hover:text-primary-500">Articles</a>
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" class="text-sm text-gray-900 hover:text-primary-500 flex items-center">
+                    <span>Free Tools</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div x-show="open" @click.away="open = false" class="absolute right-0 z-50 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="display: none;">
+                    <div class="py-1">
+                        <a href="{{ route('todolists.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To-Do List</a>
+                    </div>
+                </div>
+            </div>
+            <a href="{{ route('promote') }}" class="text-sm text-gray-900 hover:text-primary-500">Promote</a>
         </div>
         @guest
             <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
         @else
             <div class="flex items-center">
                 <div class="flex items-center space-x-2">
-                    <div class="hidden sm:flex">
-                        <a href="{{ route('categories.index') }}" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-semibold py-1 px-3 rounded-lg">
-                            Categories
-                        </a>
-                    </div>
                    <x-add-product-button /> <span class=" w-0.5"></span>
                 </div>
                 @if(!request()->is('free-todo-list-tool'))
@@ -92,5 +106,6 @@
                 </div>
             </div>
         @endguest
+        </div>
     </div>
 </div>
