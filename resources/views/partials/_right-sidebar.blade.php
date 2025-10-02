@@ -85,7 +85,9 @@
                 @endif
             </div>
         @elseif (View::hasSection('right_sidebar_content'))
-            @yield('right_sidebar_content')
+            <div class="sticky top-6">
+                @yield('right_sidebar_content')
+            </div>
         @endif
         
         @if (isset($scheduledProductsStats) && Route::currentRouteName() == 'admin.product-approvals.index')

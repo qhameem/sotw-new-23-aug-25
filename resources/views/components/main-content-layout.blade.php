@@ -1,8 +1,9 @@
 <x-top-bar />
-<div class="flex flex-col md:flex-row pt-14 max-w-7xl mx-auto">
 
+<div class="flex flex-col md:flex-row max-w-7xl mx-auto">
+    
     <!-- Main Content -->
-    <main class="flex-1 w-full {{ $mainContentMaxWidth ?? '' }} order-1 md:order-2 pl-6">
+    <main class="flex-1 w-full {{ $mainContentMaxWidth ?? '' }} order-1 md:order-2 pl-6 pt-14">
         <x-page-header>
             <x-slot:title>
                 {!! $title !!}
@@ -24,7 +25,7 @@
     </main>
 
     <!-- Right Sidebar -->
-    <div class="hidden md:flex md:flex-col md:w-96 flex-shrink-0 order-2 md:order-3">
+    <div class="hidden md:flex md:flex-col md:w-96 flex-shrink-0 order-2 md:order-3 sticky top-14 h-screen">
         <div class="flex-grow">
             @include('partials._right-sidebar')
         </div>

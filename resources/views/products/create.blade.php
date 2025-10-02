@@ -66,56 +66,80 @@
 @endsection
 
 @section('right_sidebar_content')
-    <div class="md:w-5/6 mx-auto w-full mt-6 p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
-        <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
-        <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
-            <!-- <p>Please ensure your product submission adheres to the following guidelines:</p> -->
-            <p class="text-gray-800 font-medium">
-                <span>Product URL</span>
-            </p>
-            <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                <li>Provide a direct link to your product's main page.</li>
-                <li>Avoid links to articles, blog posts, or press releases unless they are the primary product page.</li>
+    <div class="sticky top-6 space-y-6">
+        <!-- Submission Checklist -->
+        <div x-data="{
+            isUrlProvided: false,
+            isProductIdentityComplete: false,
+            isCategorizationComplete: false,
+            isMediaAndBrandingComplete: false,
+            isDescriptionComplete: false,
+        }" @checklist-update.window="
+            if ($event.detail.isUrlProvided !== undefined) isUrlProvided = $event.detail.isUrlProvided;
+            if ($event.detail.isProductIdentityComplete !== undefined) isProductIdentityComplete = $event.detail.isProductIdentityComplete;
+            if ($event.detail.isCategorizationComplete !== undefined) isCategorizationComplete = $event.detail.isCategorizationComplete;
+            if ($event.detail.isMediaAndBrandingComplete !== undefined) isMediaAndBrandingComplete = $event.detail.isMediaAndBrandingComplete;
+            if ($event.detail.isDescriptionComplete !== undefined) isDescriptionComplete = $event.detail.isDescriptionComplete;
+        " class="md:w-5/6 mx-auto w-full mt-6 p-4 rounded-lg bg-white border">
+            <h2 class="font-semibold text-gray-800 mb-3 text-base">Submission Checklist</h2>
+            <ul class="space-y-2 text-xs">
+                <li class="flex items-center transition-all duration-300" :class="{ 'text-gray-800 font-semibold': isUrlProvided, 'text-gray-400': !isUrlProvided }">
+                    <svg x-show="isUrlProvided" class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <svg x-show="!isUrlProvided" class="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+                    <span>Product URL</span>
+                </li>
+                <li class="flex items-center transition-all duration-300" :class="{ 'text-gray-800 font-semibold': isProductIdentityComplete, 'text-gray-400': !isProductIdentityComplete }">
+                    <svg x-show="isProductIdentityComplete" class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <svg x-show="!isProductIdentityComplete" class="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+                    <span>Product Identity</span>
+                </li>
+                <li class="flex items-center transition-all duration-300" :class="{ 'text-gray-800 font-semibold': isCategorizationComplete, 'text-gray-400': !isCategorizationComplete }">
+                    <svg x-show="isCategorizationComplete" class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <svg x-show="!isCategorizationComplete" class="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+                    <span>Categorization</span>
+                </li>
+                <li class="flex items-center transition-all duration-300" :class="{ 'text-gray-800 font-semibold': isMediaAndBrandingComplete, 'text-gray-400': !isMediaAndBrandingComplete }">
+                    <svg x-show="isMediaAndBrandingComplete" class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <svg x-show="!isMediaAndBrandingComplete" class="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+                    <span>Media and Branding</span>
+                </li>
+                <li class="flex items-center transition-all duration-300" :class="{ 'text-gray-800 font-semibold': isDescriptionComplete, 'text-gray-400': !isDescriptionComplete }">
+                    <svg x-show="isDescriptionComplete" class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <svg x-show="!isDescriptionComplete" class="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+                    <span>Detailed Description</span>
+                </li>
             </ul>
+        </div>
 
-            <p class="text-gray-800 font-medium">
-                <span>Name & Tagline</span>
-            </p>
-            <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                <li>Use the official product name.</li>
-                <li>The tagline should be a concise and compelling summary of your product.</li>
-            </ul>
-
-            <p class="text-gray-800 font-medium">
-                <span>Description</span>
-            </p>
-            <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                <li>Briefly describe your product.</li>
-                <li>Highlight its key features.</li>
-                <li>Clearly state its value proposition.</li>
-                <li>Keep it informative and to the point.</li>
-            </ul>
-
-            <p class="text-gray-800 font-medium">
-                <span>Logo</span>
-            </p>
-            <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                <li>Upload a clear, high-quality logo.</li>
-                <li>A square aspect ratio is preferred.</li>
-                <li>If a favicon is fetched automatically, you can still upload a custom logo to override it.</li>
-            </ul>
-
-            <p class="text-gray-800 font-medium">
-                <span>Categories</span>
-            </p>
-            <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                <li>Select the most relevant categories that accurately describe your product.</li>
-                <li>This helps users discover your product.</li>
-                <li>Please select at least one "Pricing" category.</li>
-                <li>Please also select one "Software Category".</li>
-            </ul>
-            <p>Submissions are reviewed by our team. Approved products will typically appear on the site based on their publish date (if set during approval) or immediately if no specific publish date is chosen by the admin.</p>
-            <p>Thank you for contributing!</p>
+        <!-- Tips Section -->
+        <div class="md:w-5/6 mx-auto w-full p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
+            <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
+            <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
+                <p class="text-gray-800 font-medium"><span>Product URL</span></p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Provide a direct link to your product's main page.</li>
+                    <li>Avoid links to articles, blog posts, or press releases.</li>
+                </ul>
+                <p class="text-gray-800 font-medium"><span>Name & Tagline</span></p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Use the official product name.</li>
+                    <li>The tagline should be a concise summary.</li>
+                </ul>
+                <p class="text-gray-800 font-medium"><span>Description</span></p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Briefly describe your product, its features, and value proposition.</li>
+                </ul>
+                <p class="text-gray-800 font-medium"><span>Logo</span></p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Upload a clear, high-quality logo (square is preferred).</li>
+                </ul>
+                <p class="text-gray-800 font-medium"><span>Categories</span></p>
+                <ul class="list-disc ml-3 space-y-2 text-gray-600">
+                    <li>Select the most relevant categories.</li>
+                    <li>Choose at least one "Pricing" and one "Software Category".</li>
+                </ul>
+                <p>Submissions are reviewed by our team. Thank you for contributing!</p>
+            </div>
         </div>
     </div>
 @endsection
@@ -182,22 +206,14 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
     return {
         isEditMode: !!productData,
         autoSlug: !productData,
-        productSlug: productData?.slug || '',
         quill: null,
-        link: productData?.link || '',
-        name: productData?.name || '',
-        tagline: productData?.tagline || '',
-        product_page_tagline: '',
         name_max_length: 50,
         tagline_max_length: 60,
         product_page_tagline_max_length: 250,
-        description: '',
-        video_url: '',
-        selectedCategories: [],
-        selectedTechStacks: [],
         logoPreviewUrl: '',
         fetchedLogos: [],
         selectedLogoUrl: '',
+        existingLogoUrl: '',
         fetchedOgImage: '',
         fetchedOgImages: [],
         selectedOgImages: [],
@@ -218,13 +234,24 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         fetchError: false,
         fetchingStatusMessage: '',
 
+        // Directly initialize reactive properties from formData
+        link: formData.link || '',
+        name: formData.name || '',
+        productSlug: formData.slug || '',
+        tagline: formData.tagline || '',
+        product_page_tagline: formData.product_page_tagline || '',
+        description: formData.description || '',
+        video_url: productData?.video_url || '',
+        selectedCategories: (Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
+        selectedTechStacks: (Array.isArray(formData.current_tech_stacks) ? formData.current_tech_stacks : []).map(id => id.toString()),
+
         init() {
             this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
             this.allTechStacks = allTechStacksData.map(ts => ({ ...ts, id: ts.id.toString() }));
             this.techStacksList = [...this.allTechStacks].sort((a, b) => a.name.localeCompare(b.name));
-            this.loadState();
 
             this.$nextTick(() => {
+                this.existingLogoUrl = productData?.logo ? (productData.logo.startsWith('http') ? productData.logo : `/storage/${productData.logo}`) : '';
                 this.quill = new Quill('#quill-editor', {
                     modules: {
                         toolbar: [
@@ -246,7 +273,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
                 this.quill.on('text-change', () => {
                     this.description = this.quill.root.innerHTML;
-                    this.saveState();
+                    this.$dispatch('checklist-update', { isDescriptionComplete: this.isDescriptionComplete });
                 });
             });
 
@@ -259,6 +286,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             ).sort((a, b) => a.name.localeCompare(b.name));
             
             this.updateSelectedCategoriesDisplay();
+            this.updateSelectedTechStacksDisplay();
 
             this.$watch('categorySearchTerm', (value) => {
                 const searchTerm = value.toLowerCase().trim();
@@ -276,12 +304,11 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
             this.$watch('selectedCategories', () => {
                 this.updateSelectedCategoriesDisplay();
-                this.saveState();
+                this.$dispatch('checklist-update', { isCategorizationComplete: this.isCategorizationComplete });
             }, { deep: true });
 
             this.$watch('selectedTechStacks', () => {
                 this.updateSelectedTechStacksDisplay();
-                this.saveState();
             }, { deep: true });
 
             this.$watch('techStackSearchTerm', (value) => {
@@ -295,17 +322,11 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 }
             });
 
-            // Watch for changes and save state
-            const fieldsToWatch = ['name', 'tagline', 'product_page_tagline', 'video_url'];
-            fieldsToWatch.forEach(field => {
-                this.$watch(field, () => this.saveState());
-            });
-
             this.$watch('link', (newLink, oldLink) => {
                 if (newLink !== oldLink) {
                     this.resetFormFields();
                 }
-                this.saveState();
+                this.$dispatch('checklist-update', { isUrlProvided: this.isUrlProvided });
             });
 
             this.$watch('name', (val) => {
@@ -313,71 +334,23 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 if (val.length > this.name_max_length) {
                     this.name = val.substring(0, this.name_max_length);
                 }
+                this.$dispatch('checklist-update', { isProductIdentityComplete: this.isProductIdentityComplete });
             });
 
             this.$watch('tagline', (val) => {
                 if (val.length > this.tagline_max_length) {
                     this.tagline = val.substring(0, this.tagline_max_length);
                 }
+                this.$dispatch('checklist-update', { isProductIdentityComplete: this.isProductIdentityComplete });
             });
 
             this.$watch('product_page_tagline', (val) => {
                 if (val.length > this.product_page_tagline_max_length) {
                     this.product_page_tagline = val.substring(0, this.product_page_tagline_max_length);
                 }
+                this.$dispatch('checklist-update', { isProductIdentityComplete: this.isProductIdentityComplete });
             });
         },
-
-        loadState() {
-            const savedState = localStorage.getItem(formId);
-            const initialState = {
-                link: productData?.link || (formData && formData.link) || '',
-                name: productData?.name || (formData && formData.name) || '',
-                productSlug: productData?.slug || (formData && formData.slug) || '',
-                tagline: (formData && formData.tagline !== undefined) ? formData.tagline : '',
-                product_page_tagline: (formData && formData.product_page_tagline !== undefined) ? formData.product_page_tagline : '',
-                description: (formData && formData.description !== undefined) ? formData.description : '',
-                video_url: (formData && formData.video_url !== undefined) ? formData.video_url : '',
-                selectedCategories: (formData && Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
-                selectedTechStacks: (formData && Array.isArray(formData.current_tech_stacks) ? formData.current_tech_stacks : []).map(id => id.toString()),
-            };
-
-            if (savedState) {
-                const parsedState = JSON.parse(savedState);
-                // We merge saved state with initial state, giving precedence to initial state (from controller) if it exists
-                this.link = initialState.link || parsedState.link || '';
-                this.name = initialState.name || parsedState.name || '';
-                this.productSlug = initialState.productSlug || parsedState.productSlug || '';
-                this.tagline = initialState.tagline || parsedState.tagline || '';
-                this.product_page_tagline = initialState.product_page_tagline || parsedState.product_page_tagline || '';
-                this.description = initialState.description || parsedState.description || '';
-                this.video_url = initialState.video_url || parsedState.video_url || '';
-                this.selectedCategories = initialState.selectedCategories.length ? initialState.selectedCategories : (parsedState.selectedCategories || []);
-                this.selectedTechStacks = initialState.selectedTechStacks.length ? initialState.selectedTechStacks : (parsedState.selectedTechStacks || []);
-            } else {
-                Object.assign(this, initialState);
-            }
-        },
-
-        saveState() {
-            const state = {
-                link: this.link,
-                name: this.name,
-                productSlug: this.productSlug,
-                tagline: this.tagline,
-                product_page_tagline: this.product_page_tagline,
-                description: this.description,
-                video_url: this.video_url,
-                selectedCategories: this.selectedCategories,
-                selectedTechStacks: this.selectedTechStacks,
-            };
-            localStorage.setItem(formId, JSON.stringify(state));
-        },
-
-        clearState() {
-            localStorage.removeItem(formId);
-        },
-
 
         resetFormFields() {
             this.name = '';
@@ -417,6 +390,10 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 .sort((a, b) => a.name.localeCompare(b.name));
         },
 
+        get isUrlProvided() {
+            return this.link.trim() !== '' && this.link.startsWith('http');
+        },
+
         get isProductIdentityComplete() {
             return this.name.trim() !== '' && this.tagline.trim() !== '' && this.product_page_tagline.trim() !== '';
         },
@@ -434,11 +411,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         get isMediaAndBrandingComplete() {
-            return this.logoFileSelected || this.selectedLogoUrl || (this.isEditMode && productData.logo);
+            return this.logoFileSelected || this.selectedLogoUrl || (this.isEditMode && this.existingLogoUrl);
         },
 
         get isDescriptionComplete() {
-            return this.description.trim() !== '' && this.description.trim() !== '<p><br></p>';
+            const cleanDescription = this.description.replace(/<[^>]*>/g, '').trim();
+            return cleanDescription.length > 0;
         },
 
         get canSubmitForm() {
@@ -466,29 +444,29 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                     if (data.error) {
                         throw new Error(data.error);
                     }
-                    this.name = data.title || this.name;
-                    this.tagline = data.description || this.tagline;
-                    this.product_page_tagline = data.description || this.product_page_tagline;
-                    if (this.quill) {
-                        this.quill.root.innerHTML = data.description || '';
-                    }
-                    if (data.og_images && data.og_images.length > 0) {
-                        this.fetchedOgImages = data.og_images;
-                    }
-                    if (data.logos && data.logos.length > 0) {
-                        this.fetchedLogos = data.logos;
-                        //
-                    }
-                    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-                        const categoryIds = data.categories.map(id => id.toString());
-                        this.selectedCategories = Array.from(new Set([...this.selectedCategories, ...categoryIds]));
-                    }
-                    if (data.tech_stacks && Array.isArray(data.tech_stacks) && data.tech_stacks.length > 0) {
-                        console.log('Tech Stacks from API:', data.tech_stacks);
-                        const techStackIds = data.tech_stacks.map(id => id.toString());
-                        this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...techStackIds]));
-                    }
-                    this.fetchingStatusMessage = 'Data fetched successfully!';
+                    this.$nextTick(() => {
+                        this.name = data.title || this.name;
+                        this.tagline = data.description || this.tagline;
+                        this.product_page_tagline = data.description || this.product_page_tagline;
+                        if (this.quill) {
+                            this.quill.root.innerHTML = data.description || '';
+                        }
+                        if (data.og_images && data.og_images.length > 0) {
+                            this.fetchedOgImages = data.og_images;
+                        }
+                        if (data.logos && data.logos.length > 0) {
+                            this.fetchedLogos = data.logos;
+                        }
+                        if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
+                            const categoryIds = data.categories.map(id => id.toString());
+                            this.selectedCategories = Array.from(new Set([...this.selectedCategories, ...categoryIds]));
+                        }
+                        if (data.tech_stacks && Array.isArray(data.tech_stacks) && data.tech_stacks.length > 0) {
+                            const techStackIds = data.tech_stacks.map(id => id.toString());
+                            this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...techStackIds]));
+                        }
+                        this.fetchingStatusMessage = 'Data fetched successfully!';
+                    });
                 })
                 .catch(error => {
                     console.error('Error fetching URL data:', error);
@@ -523,6 +501,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             this.logoPreviewUrl = URL.createObjectURL(file);
             this.logoFileSelected = true;
             this.selectedLogoUrl = ''; // Clear fetched logo selection
+            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
         },
 
         removePreviewLogo() {
@@ -534,6 +513,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
         selectLogo(logoUrl) {
             this.selectedLogoUrl = logoUrl;
+            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
             this.logoPreviewUrl = ''; // Clear file preview
             this.logoFileSelected = false;
             document.getElementById('logoInput').value = null;
@@ -628,7 +608,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 });
                 return;
             }
-            this.clearState();
             this.showLoader();
             this.$nextTick(() => {
                 e.target.submit();
@@ -637,7 +616,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
 
         clearForm() {
             if (confirm('Are you sure you want to clear the form? All unsaved changes will be lost.')) {
-                this.clearState();
                 window.location.reload();
             }
         },
