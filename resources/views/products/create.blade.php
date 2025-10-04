@@ -585,14 +585,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             const loaderContainer = document.getElementById('loader-container');
             
             if (button && content && loaderContainer) {
-                // Hide text and show loader
-                content.innerHTML = ''; // Clear the button text
+                content.innerText = ''; // Remove text
                 loaderContainer.innerHTML = `
-                    <div class="loader">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                 `;
                 button.disabled = true;
             }
@@ -644,46 +642,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
     }
 }
 </script>
-@endpush
-
-@push('styles')
-<style>
-.loader {
-    position: relative;
-    width: 60px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.loader .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #ffffff;
-    margin: 0 3px;
-    animation: dotPulse 1.4s infinite ease-in-out;
-}
-.loader .dot:nth-child(1) {
-    animation-delay: -0.32s;
-}
-.loader .dot:nth-child(2) {
-    animation-delay: -0.16s;
-}
-.loader .dot:nth-child(3) {
-    animation-delay: 0s;
-}
-@keyframes dotPulse {
-    0%, 60%, 100% {
-        transform: scale(0.6);
-        opacity: 0.4;
-    }
-    30% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-</style>
 @endpush
 
 @push('scripts')

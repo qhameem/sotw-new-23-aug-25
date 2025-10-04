@@ -7,7 +7,6 @@
 @endsection
 
 @section('actions')
-<x-add-product-button />
 @endsection
 
 @section('content')
