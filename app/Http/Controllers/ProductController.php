@@ -920,6 +920,14 @@ class ProductController extends Controller
 
         $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
+        if ($isHomepage && $shuffledRegularProductIds->isEmpty()) {
+            $previousWeek = $startOfWeek->copy()->subWeek();
+            $year = $previousWeek->year;
+            $week = $previousWeek->weekOfYear;
+
+            return $this->productsByWeek($request, $year, $week, false);
+        }
+
         $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
         $finalProductOrder = [];
         $regularProductIndex = 0;
