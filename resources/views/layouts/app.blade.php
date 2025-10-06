@@ -154,15 +154,7 @@
       "url": "https://www.softwareontheweb.com"
     }
     </script>
-    @php
-        $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
-        $page = \Illuminate\Support\Facades\Route::currentRouteName();
-    @endphp
-    @foreach ($headSnippets as $snippet)
-        @if ($snippet->page === 'all' || $snippet->page === $page)
-            <x-dynamic-blade :template="$snippet->code" />
-        @endif
-    @endforeach
+    @include('partials._structured-data')
 </head>
 
 <body class="font-sans antialiased bg-white"
@@ -174,7 +166,7 @@
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            <x-dynamic-blade :template="$snippet->code" />
+            {!! $snippet->code !!}
         @endif
     @endforeach
 
