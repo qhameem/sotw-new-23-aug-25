@@ -1346,6 +1346,9 @@ class ProductController extends Controller
 
         $product->load('categories.types', 'user', 'userUpvotes');
 
+        // Record impression
+        $product->increment('impressions');
+
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');
         });

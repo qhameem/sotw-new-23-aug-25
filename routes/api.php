@@ -50,3 +50,5 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 Route::get('/get-cached-logos', [\App\Http\Controllers\Api\ProductMetaController::class, 'getCachedLogos']);
 Route::get('/tech-stack/detect', [TechStackController::class, 'detect']);
 Route::get('/sidebar-search', [\App\Http\Controllers\Api\SearchController::class, 'sidebarSearch'])->name('sidebar.search');
+
+Route::post('/impressions', [\App\Http\Controllers\ImpressionController::class, 'store']);
