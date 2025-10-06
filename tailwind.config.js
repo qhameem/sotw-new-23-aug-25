@@ -67,6 +67,7 @@ export default {
 
     plugins: [
         forms,
+        require('@tailwindcss/aspect-ratio'),
         require('flowbite/plugin'), // Add Flowbite plugin
         require('tailwind-scrollbar-hide'),
         function ({ addUtilities }) {
