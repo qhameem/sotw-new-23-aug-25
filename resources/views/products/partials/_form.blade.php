@@ -26,7 +26,7 @@
         </div>
         <div class="md:col-span-3">
             <div class="flex items-center space-x-2">
-                <input type="url" id="product_url" name="link" x-model="link" value="{{ old('link', $product->link ?? '') }}" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
+                <input type="url" id="product_url" name="link" x-model="link" class="flex-grow border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-sm placeholder-gray-400" placeholder="https://" required>
                 <button @click.prevent="fetchUrlData" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-24" :disabled="loadingMeta">
                     <div class="flex items-center justify-center">
                         <template x-if="loadingMeta && !isEditMode">
@@ -57,7 +57,7 @@
             <!-- Name -->
             <div>
                 <label class="block text-xs font-semibold mb-1" for="product_name">Product Name<span class="text-red-500 ml-1">*</span></label>
-                <input type="text" id="product_name" name="name" x-model="name" value="{{ old('name', $product->name ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
+                <input type="text" id="product_name" name="name" x-model="name" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                 <template x-if="errors.name"><p class="text-red-600 text-sm mt-1" x-text="errors.name"></p></template>
                 <div class="flex justify-end">
                     <p class="text-xs text-gray-500 mt-1"><span x-text="name.length"></span> / <span x-text="name_max_length"></span></p>
@@ -69,7 +69,7 @@
                 <!-- Tagline -->
                 <div>
                     <label class="block text-xs font-semibold mb-1" for="tagline">Tagline (List Page)<span class="text-red-500 ml-1">*</span></label>
-                    <input type="text" id="tagline" name="tagline" x-model="tagline" value="{{ old('tagline', $product->tagline ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
+                    <input type="text" id="tagline" name="tagline" x-model="tagline" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                     <template x-if="errors.tagline"><p class="text-red-600 text-sm mt-1" x-text="errors.tagline"></p></template>
                     <div class="flex justify-between">
                         <p class="text-xs text-gray-500 mt-1">Shown on the product list page. Keep it short and punchy.</p>
@@ -80,7 +80,7 @@
                 <!-- Tagline on Product Page -->
                 <div>
                     <label class="block text-xs font-semibold mb-1" for="product_page_tagline">Tagline (Details Page)<span class="text-red-500 ml-1">*</span></label>
-                    <input type="text" id="product_page_tagline" name="product_page_tagline" value="{{ old('product_page_tagline', $product->product_page_tagline ?? '') }}" x-model="product_page_tagline" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
+                    <input type="text" id="product_page_tagline" name="product_page_tagline" x-model="product_page_tagline" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                     <template x-if="errors.product_page_tagline"><p class="text-red-600 text-sm mt-1" x-text="errors.product_page_tagline"></p></template>
                     <div class="flex justify-between">
                         <p class="text-xs text-gray-500 mt-1">Shown on your product's detail page. Use 1-2 sentences to describe your product clearly.</p>
@@ -362,6 +362,13 @@
                     <img :src="mediaPreviewUrl" alt="Image Preview" class="rounded-md border w-full object-cover">
                 </div>
 
+                @if(isset($product) && $product->media->isNotEmpty())
+                <div class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Current Image</h3>
+                    <img src="{{ $product->media->first()->url }}" alt="Current Image" class="rounded-md border w-full object-cover">
+                </div>
+                @endif
+
                 <div x-show="fetchedOgImages.length > 0 && !mediaPreviewUrl" class="mt-4">
                     <h3 class="text-xs font-semibold mb-2">Fetched Images (Select up to 2)</h3>
                     <div class="flex flex-wrap gap-2">
@@ -384,7 +391,7 @@
             <!-- Video URL -->
             <div>
                 <label class="block text-xs font-semibold mb-1" for="video_url">Video URL</label>
-                <input type="url" id="video_url" name="video_url" x-model="video_url" value="{{ old('video_url', $product->video_url ?? '') }}" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
+                <input type="url" id="video_url" name="video_url" x-model="video_url" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
                 <p class="text-xs text-gray-500 mt-1">Enter a YouTube or Vimeo URL to embed a video on the product page.</p>
             </div>
         </div>
@@ -425,7 +432,8 @@
                 <button type="submit" id="submit-product-button"
                 class="bg-primary-500 hover:bg-rose-400 text-white text-sm font-semibold py-1.5 px-3 rounded-md transition duration-300 shadow inline-flex items-center justify-center gap-2 relative"
                  x-bind:disabled="!canSubmitForm">
-                    <span id="button-content">{{ isset($product) ? 'Update Product' : 'Submit Product' }}</span>
+                    <span id="button-content" class="flex items-center">{{ isset($product) ? 'Update Product' : 'Submit Product' }}</span>
+                    <span id="loader-container"></span>
                 </button>
             </div>
         </div>

@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('page_meta_tags', function (Blueprint $table) {
-            $table->string('page_id');
+        Schema::table('ads', function (Blueprint $table) {
+            $table->string('tagline')->nullable()->after('content');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('page_meta_tags', function (Blueprint $table) {
-            $table->dropColumn('page_id');
+        Schema::table('ads', function (Blueprint $table) {
+            $table->dropColumn('tagline');
         });
     }
 };

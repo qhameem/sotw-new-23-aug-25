@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('page_meta_tags', function (Blueprint $table) {
-            $table->string('meta_title')->nullable();
-            $table->text('meta_description')->nullable();
+        Schema::table('todo_list_items', function (Blueprint $table) {
+            $table->boolean('reminder_sent')->default(false);
         });
     }
 
@@ -22,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('page_meta_tags', function (Blueprint $table) {
-            $table->dropColumn(['meta_title', 'meta_description']);
+        Schema::table('todo_list_items', function (Blueprint $table) {
+            $table->dropColumn('reminder_sent');
         });
     }
 };

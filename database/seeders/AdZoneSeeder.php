@@ -2,46 +2,22 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\AdZone;
 
 class AdZoneSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
-    public function run(): void
+    public function run()
     {
-        \App\Models\AdZone::updateOrCreate(
-            ['slug' => 'header-above-calendar'],
-            [
-                'name' => 'Header: Above Calendar',
-                'description' => 'Displayed at the top of the page, above the product calendar on the homepage.'
-            ]
-        );
-
-        \App\Models\AdZone::updateOrCreate(
-            ['slug' => 'sidebar-top'],
-            [
-                'name' => 'Sidebar: Top',
-                'description' => 'Displayed at the top of the sidebar on relevant pages.'
-            ]
-        );
-
-        \App\Models\AdZone::updateOrCreate(
-            ['slug' => 'sidebar-bottom'],
-            [
-                'name' => 'Sidebar: Bottom',
-                'description' => 'Displayed at the bottom of the sidebar on relevant pages.'
-            ]
-        );
-
-        \App\Models\AdZone::updateOrCreate(
-            ['slug' => 'below-product-listing'],
-            [
-                'name' => 'Below Product Listing',
-                'description' => 'Displayed directly below a list of products.'
-            ]
-        );
+        AdZone::create([
+            'name' => 'Sponsors',
+            'slug' => 'sponsors',
+            'description' => 'Sidebar sponsor section',
+        ]);
     }
 }

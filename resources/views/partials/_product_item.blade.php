@@ -4,13 +4,13 @@
     $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
     $isPromoted = $product->is_promoted ?? false;
 @endphp
-<article wire:key="product-{{ $product->id }}" class="p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-gray-50">
+<article wire:key="product-{{ $product->id }}" class="product-card p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-gray-50" data-product-id="{{ $product->id }}">
     <div class="flex items-center gap-3 flex-1">
         <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
         <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
         <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover border flex-shrink-0" />
         <div class="flex flex-col space-y-1">
-            <h2 class="text-sm font-semibold flex items-center leading-none">
+            <h2 class="text-base font-semibold flex items-center leading-none">
                 <span class="text-left text-black mt-1">{{ $product->name }}</span>
                 @if(!$isPromoted)
                     <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
@@ -70,7 +70,8 @@
                         </div>
         </a>
     </div>
-    <div class="flex-shrink-0">
+    <div class="flex-shrink-0 flex items-center gap-2">
+        <x-impression-count :count="$product->impressions" />
         @livewire('product-upvote-button', ['product' => $product], key($product->id))
     </div>
 </article>

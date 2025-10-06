@@ -8,49 +8,55 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class TodoListExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
     protected $todoList;
+    private $rowNumber = 1;
 
     public function __construct(TodoList $todoList)
     {
         $this->todoList = $todoList;
     }
 
+    /**
+    * @return \Illuminate\Support\Collection
+    */
     public function collection()
     {
         return $this->todoList->items;
     }
 
+    /**
+     * @return array
+     */
     public function headings(): array
     {
         return [
-            'Task',
+            'Task Name',
             'Priority',
-            'Status',
             'Deadline',
         ];
     }
 
+    /**
+     * @param mixed $item
+     *
+     * @return array
+     */
     public function map($item): array
     {
-        $colors = [
-            'red' => '1',
-            'yellow' => '2',
-            'purple' => '3',
-            'blue' => '4',
-            'indigo' => '5',
-            'green' => '6',
-            'pink' => '7',
-            'gray' => '8'
+        $priorityNames = [
+            'rose' => 'Priority 1',
+            'orange' => 'Priority 2',
+            'yellow' => 'Priority 3',
+            'green' => 'Priority 4',
+            'gray' => 'Priority 5',
         ];
 
         return [
             $item->title,
-            $colors[$item->color] ?? $item->color,
-            $item->completed ? 'Completed' : 'Pending',
+            $priorityNames[$item->color] ?? $item->color,
             $item->deadline,
         ];
     }
@@ -58,28 +64,26 @@ class TodoListExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         $colorMap = [
-            'red'    => 'FFFFCDCD', // Light Red
-            'yellow' => 'FFFFFF00', // Light Yellow
-            'purple' => 'FFE0B6FF', // Light Purple
-            'blue'   => 'FFBDE6F0', // Light Blue
-            'indigo' => 'FFC5CAE9', // Light Indigo
-            'green'  => 'FFC8E6C9', // Light Green
-            'pink'   => 'FFF8BBD0', // Light Pink
-            'gray'   => 'FFF5F5F5', // Light Gray
+            'rose' => 'FFC7CE',   // Light Red
+            'orange' => 'FFEB9C', // Light Yellow
+            'yellow' => 'FFFF00', // Yellow
+            'green' => 'C6EFCE',  // Light Green
+            'gray' => 'F2F2F2',   // Light Gray
         ];
 
-        foreach ($this->collection() as $index => $item) {
-            $rowNumber = $index + 2; // +2 because Excel is 1-indexed and we have a header row
-            if (isset($colorMap[$item->color])) {
-                $sheet->getStyle('A' . $rowNumber . ':D' . $rowNumber)->getFill()
-                      ->setFillType(Fill::FILL_SOLID)
-                      ->getStartColor()->setARGB($colorMap[$item->color]);
+        foreach ($this->todoList->items as $index => $item) {
+            $rowNumber = $index + 2; // +2 because Excel is 1-based and we have a header row
+            $color = $item->color ?? 'gray';
+
+            if (isset($colorMap[$color])) {
+                $sheet->getStyle("A{$rowNumber}:C{$rowNumber}")->getFill()
+                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB($colorMap[$color]);
             }
         }
 
         return [
-            // Style the first row as bold text.
-            1    => ['font' => ['bold' => true]],
+            1 => ['font' => ['bold' => true]],
         ];
     }
 }

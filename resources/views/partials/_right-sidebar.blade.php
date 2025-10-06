@@ -1,21 +1,7 @@
-<div class="h-full flex flex-col md:border-r border-l md:border-gray-200 md:w-sm" x-data="{ searchFocused: false }" @search-focus-changed.window="searchFocused = $event.detail">
+<div class="h-full flex flex-col md:w-sm" x-data="{ searchFocused: false }" @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->is('free-todo-list-tool'))
     <div x-show="!searchFocused">
-        @if(isset($isCategoryPage) && $isCategoryPage)
-            <div class="p-4">
-                <h3 class="text-base font-semibold mb-4 text-gray-800">Categories</h3>
-                <ul class="space-y-1">
-                    @foreach($categories as $cat)
-                        <li>
-                            <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
-                               class="text-sm text-gray-700 hover:text-gray-800 hover:underline @if(isset($category) && $cat->slug === $category->slug) font-bold text-primary-500 @endif">
-                                {{ $cat->name }}
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @elseif(in_array(Route::currentRouteName(), ['home', 'products.byDate']))
+        @if(in_array(Route::currentRouteName(), ['home', 'products.byDate']))
             <div class="p-4">
             <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
                 <div class="relative group inline-block">
@@ -36,6 +22,29 @@
                 </div>
             </div>
             </div>
+            
+            <div class="p-4">
+                <h3 class="text-base font-semibold mb-4 text-gray-700">Sponsors</h3>
+                @php
+                    $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
+                    $sponsors = $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(6)->get() : collect();
+                @endphp
+                <ul class="space-y-4">
+                    @foreach($sponsors as $sponsor)
+                        <li>
+                            <a href="{{ $sponsor->target_url }}" target="_blank" class="flex items-center space-x-3">
+                                <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}" class="w-10 h-10 rounded-lg object-cover">
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span class="text-gray-400">↗</span></div>
+                                    <p class="text-sm text-gray-500">{{ $sponsor->tagline }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <x-top-categories />
             @guest
                 <div class="p-4">
                     @include('partials._what-is-sotw-card')
@@ -76,7 +85,9 @@
                 @endif
             </div>
         @elseif (View::hasSection('right_sidebar_content'))
-            @yield('right_sidebar_content')
+            <div class="sticky top-6">
+                @yield('right_sidebar_content')
+            </div>
         @endif
         
         @if (isset($scheduledProductsStats) && Route::currentRouteName() == 'admin.product-approvals.index')

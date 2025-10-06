@@ -92,6 +92,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::resource('advertising', AdvertisingController::class);
     Route::resource('ad-zones', AdZoneController::class);
+    Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
@@ -161,8 +162,8 @@ Route::get('/category/{category:slug}', [ProductController::class, 'categoryProd
 Route::get('/products/dates', [ProductController::class, 'getProductDates']);
 Route::get('/date/{date}', [ProductController::class, 'productsByDate'])->where('date', '\d{4}-\d{2}-\d{2}')->name('products.byDate');
 
-Route::get('/weekly', [ProductController::class, 'redirectToCurrentWeek'])->name('products.weekly.redirect');
-Route::get('/weekly/{year}/{week}', [ProductController::class, 'productsByWeek'])->name('products.byWeek');
+Route::get('/week', [ProductController::class, 'redirectToCurrentWeek'])->name('products.weekly.redirect');
+Route::get('/week/{year}/{week}', [ProductController::class, 'productsByWeek'])->name('products.byWeek');
 
 Route::get('/monthly', [ProductController::class, 'redirectToCurrentMonth'])->name('products.monthly.redirect');
 Route::get('/monthly/{year}/{month}', [ProductController::class, 'productsByMonth'])->name('products.byMonth');
@@ -278,6 +279,7 @@ Route::prefix('free-todo-list-tool')->name('todolists.')->group(function () {
     Route::get('/', [TodoListController::class, 'index'])->name('index');
     Route::post('/', [TodoListController::class, 'store'])->name('store');
     Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');
+    Route::patch('/{todoList}', [TodoListController::class, 'updateName'])->name('update.name');
     Route::delete('/{todoList}', [TodoListController::class, 'destroy'])->name('destroy');
     Route::get('/{todoList}/export', [TodoListController::class, 'export'])->name('export');
 

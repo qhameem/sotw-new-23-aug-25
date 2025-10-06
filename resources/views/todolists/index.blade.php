@@ -5,15 +5,39 @@
 
 @section('content')
 <div id="todo-app-container" class="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists ?? []) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
-    <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6" data-list-id="">
+    <div class="flex justify-between items-center mb-6">
+        <div class="relative">
+            <button id="list-switcher-button" class="text-2xl font-bold text-gray-800 focus:outline-none flex items-center">
+                <span id="active-list-title"></span>
+                <svg class="w-6 h-6 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="list-dropdown" class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 hidden">
+                <!-- List items will be populated here -->
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="#" id="export-list-button" class="text-gray-400 hover:text-sky-500" title="Export to Excel">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </a>
+            <div id="new-list-container">
+                <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+            </div>
+        </div>
+    </div>
+    <h1 id="list-title-container" class="text-2xl font-bold text-gray-800 mb-6 hidden" data-list-id="">
         <span id="list-title" class="cursor-pointer"></span>
         <input type="text" id="list-title-input" class="text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none hidden w-full">
     </h1>
 
+    <!-- Priority Filter Tags -->
+    <div id="priority-filter-container" class="flex items-center gap-2 mb-4">
+        <!-- Tags will be dynamically inserted here -->
+    </div>
+
     <!-- Add New Task -->
     <div class="flex flex-col sm:flex-row gap-2 mb-6">
-        <input type="text" id="new-item-title-input" placeholder="Add new task" class="flex-grow px-1 py-2 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-500">
-        <button id="add-item-button" class="bg-gray-800 text-white font-bold w-full sm:w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-700 transition-colors flex-shrink-0">
+        <input type="text" id="new-item-title-input" placeholder="Add new task" class="flex-grow px-1 py-2 bg-transparent border-0 border-b border-sky-300 focus:outline-none focus:ring-0 focus:border-sky-500 placeholder-gray-400 placeholder:text-sm">
+        <button id="add-item-button" class="border border-sky-300 text-sky-500 font-bold w-full sm:w-10 h-10 flex items-center justify-center rounded-lg hover:bg-sky-50 transition-colors flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
         </button>
     </div>
@@ -99,6 +123,48 @@
 @endsection
 
 @push('scripts')
+<style>
+    .priority-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.75rem; /* text-xs */
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        background-color: #f3f4f6; /* gray-100 */
+        color: #4b5563; /* gray-600 */
+    }
+    .priority-tag.active {
+        background-color: #e0f2fe; /* sky-100 */
+        color: #075985; /* sky-800 */
+        border: 1px solid #bae6fd; /* sky-200 */
+        font-weight: 500;
+    }
+    .priority-tag .close-icon {
+        margin-left: 8px;
+        width: 16px;
+        height: 16px;
+        stroke: #9ca3af; /* gray-400 */
+    }
+    .priority-count {
+        margin-left: 8px;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #e5e7eb; /* gray-200 */
+        color: #4b5563; /* gray-600 */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 500;
+    }
+    .priority-tag.active .priority-count {
+        background-color: #bae6fd; /* sky-200 */
+        color: #0c4a6e; /* sky-900 */
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const appContainer = document.getElementById('todo-app-container');
@@ -107,13 +173,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = appContainer.dataset.csrfToken;
     let lists = JSON.parse(appContainer.dataset.lists);
     let activeListId = lists.length > 0 ? lists[0].id : null;
-
+    let activePriorityFilter = null;
+ 
     const newItemTitleInput = document.getElementById('new-item-title-input');
     const addItemButton = document.getElementById('add-item-button');
     const listsContainer = document.getElementById('todo-lists-container');
     const listTitleContainer = document.getElementById('list-title-container');
     const listTitle = document.getElementById('list-title');
     const listTitleInput = document.getElementById('list-title-input');
+    const priorityFilterContainer = document.getElementById('priority-filter-container');
+    const createNewListButton = document.getElementById('create-new-list-button');
+    const listSwitcherButton = document.getElementById('list-switcher-button');
+    const activeListTitle = document.getElementById('active-list-title');
+    const listDropdown = document.getElementById('list-dropdown');
+    const exportListButton = document.getElementById('export-list-button');
 
     const quotes = [
         "\"Doing what you love is the cornerstone of having abundance in your life.\" - Wayne Dyer",
@@ -148,6 +221,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return response.json();
+        },
+        async patch(url, data) {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
         }
     };
 
@@ -155,22 +237,98 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!activeListId) return;
         const list = lists.find(l => l.id == activeListId);
         if (list) {
+            activeListTitle.textContent = list.title;
             listTitle.textContent = list.title;
             listTitleInput.value = list.title;
             listTitleContainer.dataset.listId = activeListId;
         }
     };
 
+    const updateExportLink = () => {
+        if (activeListId) {
+            exportListButton.href = `${baseUrl}/${activeListId}/export`;
+            exportListButton.classList.remove('hidden');
+        } else {
+            exportListButton.classList.add('hidden');
+        }
+    };
+
+    const renderPriorityFilters = () => {
+        const list = lists.find(l => l.id == activeListId);
+        if (!list || !list.items) {
+            priorityFilterContainer.innerHTML = '';
+            return;
+        }
+
+        const priorityCounts = list.items.reduce((acc, item) => {
+            const priority = item.color || 'gray';
+            acc[priority] = (acc[priority] || 0) + 1;
+            return acc;
+        }, {});
+
+        const priorities = [...new Set(list.items.map(item => item.color || 'gray'))];
+        const priorityNames = { 'rose': 'Priority 1', 'orange': 'Priority 2', 'yellow': 'Priority 3', 'green': 'Priority 4', 'gray': 'Priority 5' };
+
+        let filtersHtml = `<div class="priority-tag ${activePriorityFilter === null ? 'active' : ''}" data-priority="all"><span>All</span><span class="priority-count">${list.items.length}</span></div>`;
+
+        filtersHtml += priorities.map(priority => `
+            <div class="priority-tag ${activePriorityFilter === priority ? 'active' : ''}" data-priority="${priority}">
+                <span>${priorityNames[priority] || priority}</span>
+                <span class="priority-count">${priorityCounts[priority]}</span>
+            </div>
+        `).join('');
+        priorityFilterContainer.innerHTML = filtersHtml;
+    };
+
+
+    const renderListsDropdown = () => {
+        listDropdown.innerHTML = '';
+        lists.forEach(list => {
+            const listItemWrapper = document.createElement('div');
+            listItemWrapper.className = 'flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
+            
+            const listItem = document.createElement('a');
+            listItem.href = '#';
+            listItem.textContent = list.title;
+            listItem.dataset.listId = list.id;
+            listItem.className = 'flex-grow';
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '<svg class="w-4 h-4 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+            deleteButton.dataset.listId = list.id;
+            deleteButton.dataset.action = 'delete-list';
+            deleteButton.className = 'ml-2';
+
+            listItemWrapper.appendChild(listItem);
+            listItemWrapper.appendChild(deleteButton);
+            listDropdown.appendChild(listItemWrapper);
+        });
+    };
+
     const renderTasks = () => {
         listsContainer.innerHTML = '';
         if (!activeListId) return;
-
+ 
         renderListTitle();
-
+        renderPriorityFilters();
+        updateExportLink();
+ 
         const list = lists.find(l => l.id == activeListId);
         if (!list || !list.items) return;
+ 
+        const priorityOrder = { 'rose': 1, 'orange': 2, 'yellow': 3, 'green': 4, 'gray': 5 };
 
-        list.items.forEach(item => {
+        const sortedItems = list.items.sort((a, b) => {
+            const priorityA = priorityOrder[a.color || 'gray'] || 99;
+            const priorityB = priorityOrder[b.color || 'gray'] || 99;
+            return priorityA - priorityB;
+        });
+
+        const filteredItems = activePriorityFilter
+            ? sortedItems.filter(item => (item.color || 'gray') === activePriorityFilter)
+            : sortedItems;
+
+        filteredItems.forEach(item => {
             const taskElement = document.createElement('div');
             const priorityColor = item.color || 'gray';
             taskElement.className = `p-3 border border-gray-200 rounded-lg bg-${priorityColor}-100`;
@@ -180,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const deadlineColorClass = deadlineDate && deadlineDate < new Date() ? 'text-red-500' : 'text-gray-500';
 
             const priorityColors = {
-                'red': 1, 'orange': 2, 'yellow': 3, 'green': 4, 'gray': 5
+                'rose': 1, 'orange': 2, 'yellow': 3, 'green': 4, 'gray': 5
             };
 
             const colorOptionsHtml = Object.entries(priorityColors).map(([color, priority]) => `
@@ -292,12 +450,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            await api.put(`${baseUrl}/${listId}`, { title: newTitle });
+            await api.patch(`${baseUrl}/${listId}`, { title: newTitle });
             const list = lists.find(l => l.id == listId);
             if (list) {
                 list.title = newTitle;
             }
             renderListTitle();
+            renderListsDropdown();
         } catch (error) {
             console.error('Failed to update list title:', error);
             renderListTitle(); // Re-render to show original state
@@ -307,11 +466,49 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    listTitle.addEventListener('click', () => {
-        listTitle.classList.add('hidden');
-        listTitleInput.classList.remove('hidden');
-        listTitleInput.focus();
-        listTitleInput.select();
+    activeListTitle.addEventListener('click', () => {
+        const listTitleSpan = document.getElementById('active-list-title');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = listTitleSpan.textContent;
+        input.className = 'text-2xl font-bold text-gray-800 border-b border-gray-300 focus:outline-none w-full';
+        
+        listTitleSpan.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const saveTitle = async () => {
+            const newTitle = input.value.trim();
+            const listId = activeListId;
+            const originalTitle = listTitleSpan.textContent;
+
+            if (newTitle !== '' && newTitle !== originalTitle) {
+                try {
+                    await api.patch(`${baseUrl}/${listId}`, { title: newTitle });
+                    const list = lists.find(l => l.id == listId);
+                    if (list) {
+                        list.title = newTitle;
+                    }
+                    listTitleSpan.textContent = newTitle;
+                } catch (error) {
+                    console.error('Failed to update list title:', error);
+                    listTitleSpan.textContent = originalTitle;
+                }
+            } else {
+                listTitleSpan.textContent = originalTitle;
+            }
+            input.replaceWith(listTitleSpan);
+        };
+
+        input.addEventListener('blur', saveTitle);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveTitle();
+            } else if (e.key === 'Escape') {
+                input.value = listTitleSpan.textContent;
+                saveTitle();
+            }
+        });
     });
 
     listTitleInput.addEventListener('keydown', (e) => {
@@ -392,6 +589,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    listDropdown.addEventListener('click', async (e) => {
+        const deleteButton = e.target.closest('button[data-action="delete-list"]');
+        const link = e.target.closest('a');
+
+        if (deleteButton) {
+            e.stopPropagation();
+            const listId = deleteButton.dataset.listId;
+            if (confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
+                try {
+                    const response = await api.delete(`${baseUrl}/${listId}`);
+                    lists = response.lists;
+                    if (activeListId == listId) {
+                        activeListId = lists.length > 0 ? lists[0].id : null;
+                    }
+                    
+                    if (lists.length === 0) {
+                        await initialize();
+                    } else {
+                        renderListsDropdown();
+                        renderTasks();
+                    }
+                    
+                    if (lists.length > 0) {
+                        listDropdown.classList.remove('hidden');
+                    } else {
+                        listDropdown.classList.add('hidden');
+                    }
+
+                } catch (error) {
+                    console.error('Failed to delete list:', error);
+                    alert('Could not delete the list.');
+                }
+            }
+        } else if (link) {
+            e.preventDefault();
+            activeListId = link.dataset.listId;
+            listDropdown.classList.add('hidden');
+            renderTasks();
+        }
+    });
+
     listsContainer.addEventListener('change', async (e) => {
         if (e.target.dataset.action === 'update-deadline') {
             const input = e.target;
@@ -452,6 +690,79 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    priorityFilterContainer.addEventListener('click', (e) => {
+        const tag = e.target.closest('.priority-tag');
+        if (!tag) return;
+
+        const priority = tag.dataset.priority;
+
+        if (priority === 'all') {
+            activePriorityFilter = null;
+        } else if (activePriorityFilter === priority) {
+            activePriorityFilter = null; // Deselect if clicking the active filter
+        } else {
+            activePriorityFilter = priority;
+        }
+        
+        renderTasks();
+    });
+
+    listSwitcherButton.addEventListener('click', () => {
+        renderListsDropdown();
+        listDropdown.classList.toggle('hidden');
+    });
+
+
+    const newListContainer = document.getElementById('new-list-container');
+
+    const showCreateListInput = () => {
+        newListContainer.innerHTML = `
+            <div class="flex items-center gap-2">
+                <input type="text" id="new-list-name-input" placeholder="New list name" class="flex-grow px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm">
+                <button id="save-new-list-button" class="p-2 text-green-500 hover:bg-green-50 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+                <button id="cancel-new-list-button" class="p-2 text-red-500 hover:bg-red-50 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+        document.getElementById('new-list-name-input').focus();
+    };
+
+    const hideCreateListInput = () => {
+        newListContainer.innerHTML = `
+            <button id="create-new-list-button" class="text-sky-500 px-4 py-2 rounded-lg hover:bg-sky-50 transition-colors text-sm font-medium">&oplus; New List</button>
+        `;
+    };
+
+    newListContainer.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        if (target.id === 'create-new-list-button') {
+            showCreateListInput();
+        } else if (target.id === 'cancel-new-list-button') {
+            hideCreateListInput();
+        } else if (target.id === 'save-new-list-button') {
+            const input = document.getElementById('new-list-name-input');
+            const newListName = input.value.trim();
+            if (newListName) {
+                try {
+                    const newList = await api.post(storeUrl, { title: newListName });
+                    lists.push(newList);
+                    activeListId = newList.id;
+                    renderTasks();
+                    renderListsDropdown();
+                    hideCreateListInput();
+                } catch (error) {
+                    console.error('Failed to create new list:', error);
+                    alert('Could not create the new list.');
+                }
+            }
+        }
+    });
+
     const initialize = async () => {
         if (lists.length === 0) {
             try {
@@ -466,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         renderTasks();
     };
-
+ 
     initialize();
 });
 </script>

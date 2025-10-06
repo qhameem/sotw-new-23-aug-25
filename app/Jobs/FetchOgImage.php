@@ -44,7 +44,9 @@ class FetchOgImage implements ShouldQueue
             }
 
             if ($ogImage) {
-                $this->processImage($ogImage, 'og');
+                if ($ogImage !== $this->product->logo) {
+                    $this->processImage($ogImage, 'og');
+                }
             } else {
                 $this->fallbackToScreenshot();
             }

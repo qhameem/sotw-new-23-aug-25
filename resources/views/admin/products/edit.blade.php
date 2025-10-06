@@ -75,6 +75,7 @@
             selectedLogoUrl: '',
             logoFileSelected: false,
             logoUploadError: '',
+            mediaPreviewUrl: '',
             allCategories: allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] })),
             categorySearchTerm: '',
             softwareCategoriesList: [],
@@ -178,6 +179,20 @@
                 }
             },
 
+            selectLogo(logo) {
+                this.selectedLogoUrl = logo;
+                this.logoPreviewUrl = '';
+                this.logoFileSelected = false;
+                document.getElementById('logoInput').value = null;
+            },
+
+            showMediaPreview(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.mediaPreviewUrl = URL.createObjectURL(file);
+                }
+            },
+
             removePreviewLogo() {
                 this.logoPreviewUrl = '';
                 this.logoFileSelected = false;
@@ -188,6 +203,44 @@
                 if (!this.canSubmitForm) return;
                 document.querySelector('input[name=description]').value = this.quill.root.innerHTML;
                 e.target.submit();
+            },
+
+            fetchUrlData() {
+                if (!this.link) {
+                    this.fetchError = 'Please enter a URL.';
+                    return;
+                }
+                this.fetchingDetails = true;
+                this.fetchingStatusMessage = 'Fetching details...';
+                this.fetchError = '';
+
+                fetch(`/api/fetch-product-meta?url=${encodeURIComponent(this.link)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            this.fetchError = data.error;
+                            return;
+                        }
+                        this.name = data.name || this.name;
+                        this.tagline = data.tagline || this.tagline;
+                        this.product_page_tagline = data.product_page_tagline || this.product_page_tagline;
+                        this.description = data.description || this.description;
+                        if (this.quill) {
+                            this.quill.root.innerHTML = this.description;
+                        }
+                        this.fetchedLogos = data.logos || [];
+                        if (data.favicon && !this.selectedLogoUrl && !this.logoFileSelected) {
+                            this.selectedLogoUrl = data.favicon;
+                        }
+                        this.fetchedOgImages = data.og_images || [];
+                    })
+                    .catch(error => {
+                        this.fetchError = 'Failed to fetch data. Please try again.';
+                    })
+                    .finally(() => {
+                        this.fetchingDetails = false;
+                        this.fetchingStatusMessage = '';
+                    });
             },
 
             checkUrlUnique() {

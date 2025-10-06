@@ -24,6 +24,13 @@
                     Ad Zones
                 </a>
             </li>
+            <li class="mr-2">
+                <a href="#" @click.prevent="activeTab = 'code_snippets'"
+                   class="inline-block p-4 border-b-2 rounded-t-lg"
+                   :class="{ 'text-blue-600 border-blue-600': activeTab === 'code_snippets', 'border-transparent hover:text-gray-600 hover:border-gray-300': activeTab !== 'code_snippets' }">
+                    Code Snippets
+                </a>
+            </li>
         </ul>
     </div>
 
@@ -33,6 +40,10 @@
 
     <div x-show="activeTab === 'ad_zones'">
         @include('admin.ad_zones.index', ['adZones' => $adZones])
+    </div>
+
+    <div x-show="activeTab === 'code_snippets'">
+        @include('admin.advertising.snippets', ['snippets' => $snippets])
     </div>
 </div>
 @endsection

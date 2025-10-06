@@ -15,9 +15,6 @@
     </div>
 @endsection
 
-@section('actions')
-    <x-add-product-button />
-@endsection
 
 @section('content')
 <div class="bg-white rounded-lg p-6 md:p-8">
@@ -80,6 +77,7 @@
                 </div>
             </div>
 
+            @if($product->video_url || $product->media->isNotEmpty())
             <div class="grid grid-cols-1 @if($product->video_url && $product->media->isNotEmpty()) md:grid-cols-2 @endif gap-6 mb-6">
                 @if($product->video_url)
                     <div class="aspect-w-16 aspect-h-9">
@@ -93,8 +91,9 @@
                     </div>
                 @endif
             </div>
+            @endif
 
-            <div class="prose max-w-none text-sm">
+            <div class="prose max-w-none text-sm ql-editor-content">
                 {!! $product->description !!}
             </div>
 

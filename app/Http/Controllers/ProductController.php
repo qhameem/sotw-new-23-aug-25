@@ -28,8 +28,6 @@ use App\Services\SlugService;
 use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use App\Jobs\FetchOgImage;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use DOMDocument;
 
 class ProductController extends Controller
@@ -49,27 +47,8 @@ class ProductController extends Controller
 
     public function home(Request $request)
     {
-        $range = $request->input('range', 'daily');
-        $serverTodayDate = Carbon::now('UTC');
-
-        if ($range === 'daily') {
-            $productsToday = Product::where('approved', true)
-                ->where('is_published', true)
-                ->whereDate(DB::raw('COALESCE(published_at, created_at)'), $serverTodayDate->toDateString())
-                ->exists();
-
-            if (!$productsToday) {
-                $latestDateWithProducts = Product::where('approved', true)
-                    ->where('is_published', true)
-                    ->whereDate(DB::raw('COALESCE(published_at, created_at)'), '<=', $serverTodayDate->toDateString())
-                    ->max(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'));
-
-                if ($latestDateWithProducts) {
-                    return redirect()->route('products.byDate', ['date' => $latestDateWithProducts]);
-                }
-            }
-            return $this->productsByDate($request, $serverTodayDate->toDateString(), true);
-        }
+        $now = Carbon::now();
+        return $this->productsByWeek($request, $now->year, $now->weekOfYear, true);
 
         $displayDateString = $serverTodayDate->toDateString();
 
@@ -342,11 +321,12 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $manager = new ImageManager(new Driver());
-                $img = $manager->read($image->getRealPath());
-                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
-                $validated['logo'] = $path . $filenameWithExtension;
+                // $img = Image::make($image->getRealPath());
+                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                // Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
+                // $validated['logo'] = $path . $filenameWithExtension;
+                $image->storePubliclyAs($path, $image->getClientOriginalName(), 'public');
+                $validated['logo'] = $path . $image->getClientOriginalName();
             }
         } elseif ($request->filled('logo_url')) {
             $validated['logo'] = $validated['logo_url'];
@@ -360,7 +340,9 @@ class ProductController extends Controller
             $product->techStacks()->sync($validated['tech_stacks']);
         }
 
-        FetchOgImage::dispatch($product);
+        if (!$request->hasFile('media')) {
+            FetchOgImage::dispatch($product);
+        }
 
         $admins = User::getAdmins();
         Notification::send($admins, new ProductSubmitted($product));
@@ -507,11 +489,12 @@ class ProductController extends Controller
                 $logoPath .= $filenameWithExtension;
             } else {
                 $filenameWithExtension = $filename . '.webp';
-                $manager = new ImageManager(new Driver());
-                $img = $manager->read($image->getRealPath());
-                $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
-                $logoPath .= $filenameWithExtension;
+                // $img = Image::make($image->getRealPath());
+                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
+                // Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
+                // $logoPath .= $filenameWithExtension;
+                $image->storePubliclyAs($logoPath, $image->getClientOriginalName(), 'public');
+                $logoPath .= $image->getClientOriginalName();
             }
         }
  
@@ -627,7 +610,7 @@ class ProductController extends Controller
                 }
             }]);
         
-        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->paginate(15);
+        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->get();
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
@@ -697,7 +680,9 @@ class ProductController extends Controller
 
         $currentYear = Carbon::now()->year;
         $title = "The Best " . strip_tags($category->name) . " Software Products of " . $currentYear;
+        $meta_title = strip_tags($category->name) . ' - Software on the Web';
         $isCategoryPage = true;
+        $metaDescription = $category->meta_description;
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -717,7 +702,7 @@ class ProductController extends Controller
             'promotedProducts', 'regularProducts', 'premiumProducts', 'alpineProducts',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
-            'title', 'isCategoryPage',
+            'title', 'isCategoryPage', 'metaDescription', 'meta_title',
             'nextLaunchTime'
         ));
     }
@@ -828,7 +813,7 @@ class ProductController extends Controller
         $displayDateString = $date->toDateString();
 
         if ($isHomepage) {
-            $title = 'Top Products';
+            $title = 'Top Products of the Day';
             $pageTitle = 'Top Products - Software on the web';
         } else {
             $title = 'Top Products';
@@ -900,8 +885,13 @@ class ProductController extends Controller
         return redirect()->route('products.byYear', ['year' => $now->year]);
     }
 
-    public function productsByWeek(Request $request, $year, $week)
+    public function productsByWeek(Request $request, $year, $week, $isHomepage = false)
     {
+        $now = Carbon::now();
+        if (!$isHomepage && $year == $now->year && $week == $now->weekOfYear) {
+            return redirect()->route('home');
+        }
+
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
@@ -930,9 +920,13 @@ class ProductController extends Controller
 
         $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
-        $perPage = 15;
-        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
-        $offset = ($currentPage - 1) * $perPage;
+        if ($isHomepage && $shuffledRegularProductIds->isEmpty()) {
+            $previousWeek = $startOfWeek->copy()->subWeek();
+            $year = $previousWeek->year;
+            $week = $previousWeek->weekOfYear;
+
+            return $this->productsByWeek($request, $year, $week, false);
+        }
 
         $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
         $finalProductOrder = [];
@@ -949,11 +943,8 @@ class ProductController extends Controller
             }
         }
 
-        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
-
-        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
-        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
-
+        $regularProductIdsOnPage = collect($finalProductOrder)->filter(fn($item) => is_numeric($item))->values();
+        
         $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
                 $query->where('user_id', Auth::id());
@@ -968,7 +959,7 @@ class ProductController extends Controller
         $regularProductsOnPage = $regularProductsOnPageQuery->get();
 
         $combinedProducts = collect();
-        foreach ($currentPageItems as $item) {
+        foreach ($finalProductOrder as $item) {
             if (is_object($item)) {
                 $combinedProducts->push($item);
             } else {
@@ -976,19 +967,13 @@ class ProductController extends Controller
             }
         }
 
-        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
-            $combinedProducts,
-            $totalProductsCount,
-            $perPage,
-            $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
+        $regularProducts = $combinedProducts;
 
         $categories = Category::all();
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
-        $title = 'This Week'; // For potential in-page display
+        $title = 'Top Products of the Week'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | Software on the web'; // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
@@ -1023,7 +1008,15 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        $weekOfYear = $week;
+
+        $activeWeeks = Product::where('approved', true)
+            ->where('is_published', true)
+            ->selectRaw('DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 1)) as week')
+            ->pluck('week')
+            ->toArray();
+
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1352,6 +1345,9 @@ class ProductController extends Controller
         }
 
         $product->load('categories.types', 'user', 'userUpvotes');
+
+        // Record impression
+        $product->increment('impressions');
 
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');

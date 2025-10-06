@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('todo_list_items', function (Blueprint $table) {
-            $table->timestamp('deadline')->nullable();
+        Schema::table('products', function (Blueprint $table) {
+            $table->unsignedBigInteger('impressions')->default(0);
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('todo_list_items', function (Blueprint $table) {
-            $table->dropColumn('deadline');
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn('impressions');
         });
     }
 };

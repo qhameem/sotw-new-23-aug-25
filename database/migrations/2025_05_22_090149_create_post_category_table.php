@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('blog_post_category_pivot', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('blog_post_id')->constrained('blog_posts')->onDelete('cascade');
-            $table->foreignId('blog_category_id')->constrained('blog_categories')->onDelete('cascade');
+            $table->foreignId('post_id')->constrained('blog_posts')->onDelete('cascade');
+            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->timestamps();
         });
     }
