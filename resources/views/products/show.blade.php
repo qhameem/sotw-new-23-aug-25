@@ -93,7 +93,7 @@
             </div>
             @endif
 
-            <div class="prose max-w-none text-sm">
+            <div class="prose max-w-none text-sm ql-editor-content">
                 {!! $product->description !!}
             </div>
 

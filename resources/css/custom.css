@@ -6,3 +6,14 @@
         vertical-align: middle;
     }
 }
+.ql-editor-content h1 {
+    font-size: 1.5rem; /* 36px */
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.ql-editor-content h2 {
+    font-size: 1.2rem; /* 30px */
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
