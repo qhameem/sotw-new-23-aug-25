@@ -146,7 +146,6 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
 
-    @verbatim
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -155,14 +154,13 @@
       "url": "https://www.softwareontheweb.com"
     }
     </script>
-    @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+            <x-dynamic-blade :template="$snippet->code" />
         @endif
     @endforeach
 </head>
@@ -176,7 +174,7 @@
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+            <x-dynamic-blade :template="$snippet->code" />
         @endif
     @endforeach
 
