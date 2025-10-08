@@ -86,6 +86,14 @@ class Product extends Model implements Sitemapable
         return $this->belongsToMany(Category::class);
     }
 
+    public function softwareCategories()
+    {
+        return $this->belongsToMany(Category::class)
+                    ->whereHas('types', function ($query) {
+                        $query->where('category_types.type_id', 1);
+                    });
+    }
+
     public function proposedCategories()
     {
         return $this->belongsToMany(Category::class, 'product_category_proposed');

@@ -40,7 +40,7 @@
                     </span>
                 @endif
                 @if(!$isPromoted && !$product->is_premium)
-                    @foreach($product->categories as $cat)
+                    @foreach($product->softwareCategories as $cat)
                         <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
                            @click.stop
                            class="hidden sm:block inline-flex items-center text-gray-600 hover:text-gray-800 rounded text-xs @if($isPromoted) opacity-75 @endif">
