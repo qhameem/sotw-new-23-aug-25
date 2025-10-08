@@ -29,10 +29,12 @@ use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\TodoListController;
 use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\VideoController;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
+Route::post('/fetch-videos', [VideoController::class, 'fetch'])->name('fetch-videos');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
 

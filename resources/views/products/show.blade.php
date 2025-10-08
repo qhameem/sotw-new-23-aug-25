@@ -18,7 +18,7 @@
 
 @section('content')
 <div class="bg-white rounded-lg p-6 md:p-8">
-    <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
+    <div class="gap-8">
         <div class="md:col-span-2">
             <div class="flex items-center mb-4">
                 @if($product->logo)
@@ -78,18 +78,54 @@
             </div>
 
             @if($product->video_url || $product->media->isNotEmpty())
-            <div class="grid grid-cols-1 @if($product->video_url && $product->media->isNotEmpty()) md:grid-cols-2 @endif gap-6 mb-6">
-                @if($product->video_url)
-                    <div class="aspect-w-16 aspect-h-9">
-                        <iframe src="{{ $product->getEmbedUrl() }}" class="w-full h-full rounded-lg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
-                @endif
+            <div x-data="{ open: false, mediaUrl: '', isVideo: false }">
+                <div class="flex flex-wrap gap-4 mb-6">
+                    @if($product->video_url)
+                        @php
+                            $embedUrl = $product->getEmbedUrl();
+                            $thumbnailUrl = 'https://img.youtube.com/vi/' . $product->getVideoId() . '/0.jpg';
+                        @endphp
+                        <div class="cursor-pointer" @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
+                            <div class="relative w-[392px] h-[221px] rounded-lg overflow-hidden border">
+                                <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover" loading="lazy">
+                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                    <svg class="w-16 h-16 text-white opacity-75 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
-                @if($product->media->isNotEmpty())
-                    <div class="aspect-w-16 aspect-h-9">
-                        <img src="{{ asset('storage/' . $product->media->first()->path) }}" alt="{{ $product->media->first()->alt_text }}" class="w-full h-full object-cover rounded-lg border">
+                    @foreach($product->media as $media)
+                        <div class="cursor-pointer" @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
+                            <img src="{{ asset('storage/' . $media->path) }}" alt="{{ $media->alt_text }}" class="w-[392px] h-[221px] object-cover rounded-lg border" loading="lazy">
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Modal -->
+                <!-- Modal -->
+                <div x-show="open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" style="display: none;">
+                    <div @click.away="open = false" class="relative max-w-4xl w-full">
+                        <!-- Modal content -->
+                        <div class="relative bg-white rounded-lg max-h-[90vh] overflow-y-auto">
+                            <!-- Media content -->
+                            <div class="p-0">
+                                <template x-if="isVideo">
+                                    <div class="aspect-w-16 aspect-h-9">
+                                        <iframe :src="mediaUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                    </div>
+                                </template>
+                                <template x-if="!isVideo">
+                                    <img :src="mediaUrl" alt="Full size media" class="w-full h-auto rounded-lg">
+                                </template>
+                            </div>
+                        </div>
+                        <!-- Close button -->
+                        <button @click="open = false" class="absolute -top-2 -right-2 text-white bg-gray-800 rounded-full p-1 z-20 hover:bg-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
-                @endif
+                </div>
             </div>
             @endif
 

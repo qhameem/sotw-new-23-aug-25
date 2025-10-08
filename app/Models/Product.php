@@ -43,6 +43,7 @@ class Product extends Model implements Sitemapable
         'is_published' => 'boolean',
         'has_pending_edits' => 'boolean',
         'published_at' => 'datetime',
+        'video_url' => 'array',
     ];
 
     protected static function boot()
@@ -138,6 +139,27 @@ class Product extends Model implements Sitemapable
                 $videoId = $matches[3];
             }
             return 'https://player.vimeo.com/video/' . $videoId;
+        }
+
+        return null;
+    }
+
+    public function getVideoId()
+    {
+        if (!$this->video_url) {
+            return null;
+        }
+
+        if (str_contains($this->video_url, 'youtube.com') || str_contains($this->video_url, 'youtu.be')) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $this->video_url, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        if (str_contains($this->video_url, 'vimeo.com')) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $this->video_url, $matches)) {
+                return $matches[3];
+            }
         }
 
         return null;

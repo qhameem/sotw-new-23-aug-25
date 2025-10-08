@@ -281,7 +281,8 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|url|max:2048',
-            'video_url' => 'nullable|url|max:2048',
+            'video_url' => 'nullable|string|max:2048',
+            'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
         ]);
@@ -340,7 +341,16 @@ class ProductController extends Controller
             $product->techStacks()->sync($validated['tech_stacks']);
         }
 
-        if (!$request->hasFile('media')) {
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $file) {
+                $path = $file->store('product_media', 'public');
+                $product->media()->create([
+                    'path' => $path,
+                    'alt_text' => $product->name . ' media',
+                    'type' => Str::startsWith($file->getMimeType(), 'image') ? 'image' : 'video',
+                ]);
+            }
+        } else {
             FetchOgImage::dispatch($product);
         }
 
@@ -442,7 +452,7 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
-            'video_url' => 'nullable|url|max:2048',
+            'video_url' => 'nullable|string|max:2048',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
         ]);

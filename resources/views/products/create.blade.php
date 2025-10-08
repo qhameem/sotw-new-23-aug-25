@@ -219,7 +219,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         selectedOgImages: [],
         logoFileSelected: false,
         logoUploadError: '',
-        mediaPreviewUrl: '',
+        mediaPreviewUrls: [],
         allCategories: [],
         categorySearchTerm: '',
         techStackSearchTerm: '',
@@ -242,6 +242,10 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         product_page_tagline: formData.product_page_tagline || '',
         description: formData.description || '',
         video_url: productData?.video_url || '',
+        video_url: productData?.video_url || '',
+        fetchedVideo: null,
+        selectedVideo: null,
+        fetchingVideos: false,
         selectedCategories: (Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
         selectedTechStacks: (Array.isArray(formData.current_tech_stacks) ? formData.current_tech_stacks : []).map(id => id.toString()),
 
@@ -374,6 +378,39 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             this.urlExists = false;
             this.fetchError = false;
             this.fetchingStatusMessage = '';
+        },
+
+        fetchVideos() {
+            if (!this.video_url) return;
+            this.fetchingVideos = true;
+            
+            fetch('/fetch-videos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ url: this.video_url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    this.fetchedVideo = data[0];
+                    this.selectedVideo = data[0]; // Auto-select the video
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching videos:', error);
+            })
+            .finally(() => {
+                this.fetchingVideos = false;
+            });
+        },
+
+        deselectVideo() {
+            this.selectedVideo = null;
+            this.fetchedVideo = null;
+            this.video_url = '';
         },
 
         updateSelectedCategoriesDisplay() {
@@ -524,11 +561,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         showMediaPreview(event) {
-            const file = event.target.files[0];
-            if (file) {
-                this.mediaPreviewUrl = URL.createObjectURL(file);
-            } else {
-                this.mediaPreviewUrl = '';
+            this.mediaPreviewUrls = [];
+            for (let i = 0; i < event.target.files.length; i++) {
+                const file = event.target.files[i];
+                if (file) {
+                    this.mediaPreviewUrls.push(URL.createObjectURL(file));
+                }
             }
         },
 

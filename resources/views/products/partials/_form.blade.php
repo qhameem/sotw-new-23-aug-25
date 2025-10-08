@@ -351,15 +351,19 @@
             <div class="mt-4">
                 <label class="block text-xs font-semibold mb-1">Product Image (Optional)</label>
                 <p class="text-xs text-gray-500 mb-2">Add a product image. Recommended: 16:9 aspect ratio (e.g., 800x450px).</p>
-                <input type="file" name="media" id="mediaInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" @change="showMediaPreview(event)">
+                <input type="file" name="media[]" id="mediaInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" @change="showMediaPreview(event)" multiple>
                 <button type="button" @click="document.getElementById('mediaInput').click()" class="inline-flex items-center px-4 py-1 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                     <svg class="w-5 h-5 mr-2 -ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H17C17.93 21 18.395 21 18.7765 20.8978C19.8117 20.6204 20.6204 19.8117 20.8978 18.7765C21 18.395 21 17.93 21 17M19 8V2M16 5H22M10.5 8.5C10.5 9.60457 9.60457 10.5 8.5 10.5C7.39543 10.5 6.5 9.60457 6.5 8.5C6.5 7.39543 7.39543 6.5 8.5 6.5C9.60457 6.5 10.5 7.39543 10.5 8.5ZM14.99 11.9181L6.53115 19.608C6.05536 20.0406 5.81747 20.2568 5.79643 20.4442C5.77819 20.6066 5.84045 20.7676 5.96319 20.8755C6.10478 21 6.42628 21 7.06929 21H16.456C17.8951 21 18.6147 21 19.1799 20.7582C19.8894 20.4547 20.4547 19.8894 20.7582 19.1799C21 18.6147 21 17.8951 21 16.456C21 15.9717 21 15.7296 20.9471 15.5042C20.8805 15.2208 20.753 14.9554 20.5733 14.7264C20.4303 14.5442 20.2412 14.3929 19.8631 14.0905L17.0658 11.8527C16.6874 11.5499 16.4982 11.3985 16.2898 11.3451C16.1061 11.298 15.9129 11.3041 15.7325 11.3627C15.5279 11.4291 15.3486 11.5921 14.99 11.9181Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    Add Product Image
+                    Add Product Images
                 </button>
 
-                <div x-show="mediaPreviewUrl" class="mt-4">
-                    <h3 class="text-xs font-semibold mb-2">Image Preview</h3>
-                    <img :src="mediaPreviewUrl" alt="Image Preview" class="rounded-md border w-full object-cover">
+                <div x-show="mediaPreviewUrls.length > 0" class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Image Previews</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <template x-for="(url, index) in mediaPreviewUrls" :key="index">
+                            <img :src="url" alt="Image Preview" class="rounded-md border w-full object-cover">
+                        </template>
+                    </div>
                 </div>
 
                 @if(isset($product) && $product->media->isNotEmpty())
@@ -386,13 +390,39 @@
                 <template x-for="image in selectedOgImages">
                     <input type="hidden" name="selected_og_images[]" :value="image">
                 </template>
+
+                <input type="hidden" name="video_url" :value="selectedVideo ? JSON.stringify(selectedVideo) : ''">
             </div>
 
             <!-- Video URL -->
             <div>
                 <label class="block text-xs font-semibold mb-1" for="video_url">Video URL</label>
-                <input type="url" id="video_url" name="video_url" x-model="video_url" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
-                <p class="text-xs text-gray-500 mt-1">Enter a YouTube or Vimeo URL to embed a video on the product page.</p>
+                <div class="flex items-start space-x-2">
+                    <input type="url" id="video_url" x-model="video_url" x-ref="videoUrlInput" class="flex-grow w-full text-sm border border-gray-300 rounded-md px-3 py-2" placeholder="Paste a video link from YouTube, Vimeo, etc.">
+                    <button @click.prevent="fetchVideos" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-32" :disabled="fetchingVideos">
+                        <span x-show="!fetchingVideos">Fetch Video</span>
+                        <span x-show="fetchingVideos">
+                            <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Enter a YouTube, Vimeo, TikTok, Facebook, or X (Twitter) URL to embed a video on the product page.</p>
+                
+                <!-- Fetched Videos Preview -->
+                <div x-show="fetchedVideo" class="mt-4">
+                    <h3 class="text-xs font-semibold mb-2">Video Preview</h3>
+                    <div class="relative group w-1/3">
+                        <img :src="fetchedVideo.thumbnail_url" alt="Video Thumbnail" class="w-full h-auto object-cover rounded-md border-2" :class="{'border-sky-500 ring-2 ring-sky-500': selectedVideo, 'border-gray-300': !selectedVideo}">
+                        <div x-show="selectedVideo" class="absolute top-0 right-0 -mt-2 -mr-2">
+                            <button @click.prevent.stop="deselectVideo" type="button" class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
