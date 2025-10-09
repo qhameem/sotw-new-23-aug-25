@@ -168,6 +168,7 @@
 </head>
 
 <body class="font-sans antialiased bg-white"
+      x-data="{ ...articleForm({ categories: [] }), ...productForm(null, []) }"
       data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
       data-login-url="{{ route('login') }}"
       data-csrf-token="{{ csrf_token() }}">
@@ -180,7 +181,7 @@
         @endif
     @endforeach
 
-    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'">
+    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'" :sidebar-sticky="!request()->routeIs('articles.create')">
         <x-slot:title>
             @hasSection('header-title')
                 @yield('header-title')
@@ -328,6 +329,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @stack('scripts')
+    @stack('form-scripts')
 
     <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
         @include('auth.partials.login-modal-content')

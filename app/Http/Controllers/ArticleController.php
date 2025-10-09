@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -16,10 +17,11 @@ class ArticleController extends Controller implements Feedable
 {
     public function create()
     {
-        $categories = ArticleCategory::orderBy('name')->get();
-        $tags = ArticleTag::orderBy('name')->get();
-        $statuses = ['draft' => 'Draft', 'published' => 'Published']; // Users can't schedule
-        return view('articles.create', compact('categories', 'tags', 'statuses'));
+        $categories = Category::join('category_types', 'categories.id', '=', 'category_types.category_id')
+            ->where('category_types.type_id', 1)
+            ->orderBy('name')
+            ->get('categories.*');
+        return view('articles.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -46,14 +48,12 @@ class ArticleController extends Controller implements Feedable
             'twitter_title' => 'nullable|string|max:255',
             'twitter_description' => 'nullable|string|max:65535',
             'featured_image_path' => 'nullable|string|max:255',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:article_categories,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:article_tags,id',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $post = new Article($validatedData);
         $post->user_id = Auth::id();
+        $post->status = $validatedData['status'];
 
         if (empty($validatedData['slug'])) {
             $post->slug = Str::slug($validatedData['title']);
@@ -73,11 +73,8 @@ class ArticleController extends Controller implements Feedable
 
         $post->save();
 
-        if (!empty($validatedData['categories'])) {
-            $post->categories()->sync($validatedData['categories']);
-        }
-        if (!empty($validatedData['tags'])) {
-            $post->tags()->sync($validatedData['tags']);
+        if (!empty($validatedData['category_id'])) {
+            $post->categories()->sync([$validatedData['category_id']]);
         }
 
         return redirect()->route('articles.index')->with('success', 'Article submitted successfully.');
