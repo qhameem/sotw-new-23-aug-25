@@ -67,7 +67,7 @@ class Article extends Model implements Feedable, Sitemapable
      */
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'blog_post_category_pivot', 'post_id', 'category_id')->withTimestamps();
+        return $this->belongsToMany(Category::class, 'article_category_pivot', 'article_id', 'category_id')->withTimestamps();
     }
 
     /**
