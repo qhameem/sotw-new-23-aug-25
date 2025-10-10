@@ -96,6 +96,7 @@
         html, body {
             font-family: var(--font-family-sans);
         }
+        [x-cloak] { display: none !important; }
     </style>
 
     @php
