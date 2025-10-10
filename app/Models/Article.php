@@ -184,16 +184,13 @@ class Article extends Model implements Feedable, Sitemapable
         $links = $dom->getElementsByTagName('a');
 
         foreach ($links as $link) {
-            $rel = $link->getAttribute('rel');
-            if (empty($rel)) {
-                $link->setAttribute('rel', 'nofollow');
-            } else {
-                $rels = explode(' ', $rel);
-                if (!in_array('nofollow', $rels)) {
-                    $rels[] = 'nofollow';
-                }
-                $link->setAttribute('rel', implode(' ', array_unique($rels)));
+            // If the link already has a 'rel' attribute, don't touch it.
+            // This will preserve the "dofollow" set from the editor.
+            if ($link->hasAttribute('rel')) {
+                continue;
             }
+            // If no 'rel' attribute is present, add 'nofollow'.
+            $link->setAttribute('rel', 'nofollow');
         }
 
         $this->attributes['content'] = $dom->saveHTML();

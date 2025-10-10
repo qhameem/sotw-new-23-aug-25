@@ -174,12 +174,47 @@
                 ['clean']
             ];
 
+            const Link = Quill.import('formats/link');
+            class NofollowLink extends Link {
+                static create(value) {
+                    const node = super.create(value);
+                    value = this.sanitize(value);
+                    node.setAttribute('href', value);
+                    node.setAttribute('rel', 'nofollow');
+                    node.setAttribute('target', '_blank');
+                    return node;
+                }
+            }
+            Quill.register(NofollowLink, true);
+
             var quill = new Quill('#quill-editor', {
                 modules: {
                     toolbar: toolbarOptions
                 },
                 theme: 'snow',
                 placeholder: 'Compose your masterpiece...'
+            });
+
+            const toolbar = quill.getModule('toolbar');
+            const originalLinkHandler = toolbar.handlers['link'];
+            toolbar.addHandler('link', function(value) {
+                originalLinkHandler.call(this, value);
+                if (value) {
+                    const tooltip = this.quill.container.querySelector('.ql-tooltip');
+                    const followButton = document.createElement('button');
+                    followButton.innerHTML = 'Toggle Follow';
+                    followButton.style.marginLeft = '10px';
+                    followButton.onclick = () => {
+                        const range = this.quill.getSelection();
+                        const [leaf] = this.quill.getLeaf(range.index);
+                        if (leaf && leaf.parent.domNode.tagName === 'A') {
+                            const link = leaf.parent.domNode;
+                            const currentRel = link.getAttribute('rel');
+                            link.setAttribute('rel', currentRel === 'dofollow' ? 'nofollow' : 'dofollow');
+                        }
+                    };
+                    tooltip.appendChild(followButton);
+                }
             });
 
             var hiddenInput = document.getElementById('content');
@@ -262,9 +297,13 @@
             }
 
             titleInput.addEventListener('input', function () {
+                if (this.value.trim() === '') {
+                    slugInput.value = '';
+                    return;
+                }
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(function() {
-                    if (!manualSlugEdit && slugInput.value === '' || slugInput.value === generateSlug(titleInput.value.slice(0, -1))) {
+                    if (!manualSlugEdit) {
                         slugInput.value = generateSlug(titleInput.value);
                     }
                 }, 300);
