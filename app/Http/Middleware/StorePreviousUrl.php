@@ -27,13 +27,11 @@ class StorePreviousUrl
             'verification.notice',
             'verification.verify',
             'verification.send',
+            'auth.google',
+            'auth.google.callback',
         ];
 
-        if (!$request->isMethod('GET') || in_array($request->route()->getName(), $excludedRoutes) || $request->ajax()) {
-            return $next($request);
-        }
-
-        if (!session()->has('url.intended')) {
+        if ($request->isMethod('GET') && !in_array($request->route()->getName(), $excludedRoutes) && !$request->ajax()) {
             session(['url.intended' => url()->current()]);
             Log::info('Stored intended URL: ' . url()->current());
         }

@@ -9,7 +9,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <form action="{{ route('admin.articles.posts.update', ['post' => $article->id]) }}" method="POST">
+                    <form action="{{ route('admin.articles.posts.update', ['post' => $article->id]) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -48,7 +48,7 @@
                                     {{-- Store the path to the uploaded image --}}
                                     <input type="hidden" name="featured_image_path" id="featured_image_path" value="{{ old('featured_image_path', $article->featured_image_path) }}">
                                     
-                                    <div id="featured_image_preview_container" class="mt-2" style="{{ ($article->featured_image_path || old('featured_image_path')) ? '' : 'display: none;' }}">
+                                    <div id="featured_image_preview_container" class="mt-2" @if(!($article->featured_image_path || old('featured_image_path'))) style="display: none;" @endif>
                                         <img id="featured_image_preview"
                                              src="{{ ($article->featured_image_path || old('featured_image_path')) ? Storage::url(old('featured_image_path', $article->featured_image_path)) : '#' }}"
                                              alt="Featured Image Preview" class="max-h-48 rounded shadow"/>

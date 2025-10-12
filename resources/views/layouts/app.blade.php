@@ -169,7 +169,7 @@
 </head>
 
 <body class="font-sans antialiased bg-white"
-      x-data="{ ...articleForm({ categories: [] }), ...productForm(null, []) }"
+      x-data="{}"
       data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
       data-login-url="{{ route('login') }}"
       data-csrf-token="{{ csrf_token() }}">

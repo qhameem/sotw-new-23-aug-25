@@ -9,7 +9,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <form action="{{ route('admin.articles.posts.store') }}" method="POST">
+                    <form action="{{ route('admin.articles.posts.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <!-- Main Content Section -->
@@ -42,9 +42,9 @@
                                 <div>
                                     <x-input-label for="featured_image_upload" :value="__('Featured Image')" />
                                     <input type="file" id="featured_image_upload" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" aria-describedby="featured_image_help">
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="featured_image_help">JPG, PNG, WEBP or GIF (MAX. 2MB).</p>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="featured_image_help">JPG, PNG, GIF, WEBP, AVIF, SVG (MAX. 2MB).</p>
                                     <x-input-error :messages="$errors->get('featured_image_path')" class="mt-2" />
-                                    <input type="hidden" name="featured_image_path" id="featured_image_path" :value="old('featured_image_path')">
+                                    <input type="hidden" name="featured_image_path" id="featured_image_path" value="{{ old('featured_image_path') }}">
                                     
                                     <div id="featured_image_preview_container" class="mt-2" style="display: none;">
                                         <img id="featured_image_preview" src="#" alt="Featured Image Preview" class="max-h-48 rounded shadow"/>
@@ -329,9 +329,9 @@
                      imageProgressBar.style.width = '0%';
  
                      // Client-side validation (optional, server-side is key)
-                     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/svg+xml'];
                      if (!allowedTypes.includes(file.type)) {
-                         imageUploadError.textContent = 'Invalid file type. Please upload JPG, PNG, GIF, or WEBP.';
+                         imageUploadError.textContent = 'Invalid file type. Please upload JPG, PNG, GIF, WEBP, AVIF, or SVG.';
                          imageUploadError.style.display = 'block';
                          imageUploadProgress.style.display = 'none';
                          imageUploadInput.value = ''; // Clear the input

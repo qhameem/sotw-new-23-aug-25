@@ -7,17 +7,19 @@
 @section('content')
 <div class="bg-white overflow-hidden sm:rounded-lg">
     <div class="p-6 text-gray-900">
-        <form action="{{ route('articles.store') }}" method="POST">
+        <form action="{{ route('articles.store') }}" method="POST" id="article-form">
             @csrf
-            <input type="hidden" name="status" id="status_input" value="published">
+            <input type="hidden" name="status" id="status_input">
+            <input type="hidden" name="category_id" id="category_id_input">
+            <input type="hidden" name="featured_image_path" id="featured_image_path" value="{{ old('featured_image_path', 'sample/image.jpg') }}">
+            <button type="submit" id="hidden-submit" style="display: none;"></button>
 
             <!-- Main Content Section -->
             <div class="mb-6">
-                <!-- <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Main Content') }}</h3> -->
                 <div class="space-y-4">
                     <div>
                         <x-input-label for="title" :value="__('Title')" />
-                        <x-text-input id="title" class="block mt-1 w-full" type="text" name="title" :value="old('title')" required autofocus />
+                        <x-text-input id="title" class="block mt-1 w-full" type="text" name="title" :value="old('title', 'Sample Article Title')" required autofocus />
                         <x-input-error :messages="$errors->get('title')" class="mt-2" />
                     </div>
 
@@ -30,7 +32,7 @@
                     <div>
                         <x-input-label for="content" :value="__('Content')" />
                         <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md">
-                            {!! old('content') !!}
+                            {!! old('content', '<p>This is some sample content for the article.</p>') !!}
                         </div>
                         <input type="hidden" name="content" id="content" value="{{ old('content') }}">
                         <x-input-error :messages="$errors->get('content')" class="mt-2" />
@@ -38,7 +40,7 @@
 
                     <div>
                         <x-input-label for="meta_description" :value="__('Meta Description')" />
-                        <textarea id="meta_description" name="meta_description" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" rows="3" maxlength="160">{{ old('meta_description') }}</textarea>
+                        <textarea id="meta_description" name="meta_description" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" rows="3" maxlength="160" required>{{ old('meta_description', 'This is a sample meta description.') }}</textarea>
                         <div class="text-sm text-gray-500 mt-1">
                             <span id="meta_description_counter">0</span>/160 characters
                         </div>
@@ -54,15 +56,15 @@
 @endsection
 
 @section('right_sidebar_content')
-<div class="space-y-4">
+<div class="space-y-4" x-data="articleForm({ categories: {{ $categories->toJson() }} })">
     <div class="bg-white p-4 rounded-lg">
         <div class="flex items-center justify-end space-x-3">
-            <x-secondary-button onclick="document.getElementById('status_input').value = 'draft'; document.querySelector('form').submit();">
+            <button type="button" @click="submit('draft')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
                 {{ __('Save as Draft') }}
-            </x-secondary-button>
-            <x-primary-button-sky onclick="document.getElementById('status_input').value = 'published'; document.querySelector('form').submit();">
+            </button>
+            <button type="button" @click="submit('published')" class="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600">
                 {{ __('Publish') }}
-            </x-primary-button-sky>
+            </button>
         </div>
     </div>
     <!-- Featured Image Section -->
@@ -81,7 +83,6 @@
                     <img id="featured_image_preview" src="#" alt="Featured Image Preview" class="object-cover w-full h-full rounded-lg"/>
                 </div>
             </label>
-            <input type="hidden" name="featured_image_path" id="featured_image_path" value="{{ old('featured_image_path') }}">
             <button type="button" id="remove_featured_image" class="mt-1 text-xs text-red-600 hover:text-red-800 hidden">Remove Image</button>
             <div id="featured_image_upload_error" class="mt-1 text-xs text-red-600" style="display: none;"></div>
             <div id="featured_image_upload_progress" class="mt-2 w-full bg-gray-200 rounded-full h-2.5" style="display: none;">
@@ -91,12 +92,11 @@
     </div>
 
     <!-- Taxonomy Section -->
-    <div class="bg-white p-4 rounded-lg" x-data="articleForm({ categories: {{ $categories->toJson() }} })">
+    <div class="bg-white p-4 rounded-lg">
         
         <div class="space-y-4">
             <div>
                 <x-input-label for="categories" :value="__('Category')" class="mb-2" />
-                <input type="hidden" name="category_id" x-model="selectedCategory">
                 <div class="relative" @click.away="dropdownOpen = false">
                     <input type="text"
                            x-model="categorySearchTerm"
@@ -106,7 +106,7 @@
                            @keydown.enter.prevent="selectHighlightedCategory()"
                            @keydown.escape.window="dropdownOpen = false"
                            placeholder="Search categories..."
-                           class="block w-full text-sm border-gray-300 focus:border-primary-500 rounded-md placeholder-gray-500 placeholder:text-xs">
+                           class="block w-full text-sm border-gray-300 focus:border-primary-500 rounded-md placeholder-gray-500 placeholder:text-xs" required>
                     <div x-show="dropdownOpen && categorySearchTerm" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                         <ul>
                             <template x-for="(category, index) in filteredCategories" :key="category.id">
@@ -164,6 +164,7 @@
     @push('scripts')
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script>
+        var quill;
         document.addEventListener('DOMContentLoaded', function () {
             var toolbarOptions = [
                 [{ 'header': [2, 3, 4, false] }],
@@ -187,7 +188,7 @@
             }
             Quill.register(NofollowLink, true);
 
-            var quill = new Quill('#quill-editor', {
+            quill = new Quill('#quill-editor', {
                 modules: {
                     toolbar: toolbarOptions
                 },
@@ -456,6 +457,10 @@
              }
          });
 
+        document.getElementById('article-form').addEventListener('submit', function(e) {
+            var content = document.querySelector('input[name=content]');
+            content.value = quill.root.innerHTML;
+        });
     </script>
     @endpush
 
@@ -469,6 +474,10 @@
             dropdownOpen: false,
             highlightedIndex: -1,
             init() {
+                if (this.allCategories.length > 0) {
+                    this.selectedCategory = this.allCategories[0].id;
+                    this.categorySearchTerm = this.allCategories[0].name;
+                }
                 this.$watch('categorySearchTerm', (value) => {
                     if (this.selectedCategory && this.categorySearchTerm !== this.selectedCategoryName) {
                         this.selectedCategory = null;
@@ -513,54 +522,18 @@
                 }
                 const category = this.allCategories.find(cat => cat.id == this.selectedCategory);
                 return category ? category.name : '';
+            },
+            submit(status) {
+                if (!this.selectedCategory) {
+                    alert('Please select a category before publishing.');
+                    return;
+                }
+                document.getElementById('status_input').value = status;
+                document.getElementById('content').value = quill.root.innerHTML;
+                document.getElementById('category_id_input').value = this.selectedCategory;
+                document.getElementById('hidden-submit').click();
             }
         }));
     });
 </script>
 @endpush
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>
-        </div>
-    </div>

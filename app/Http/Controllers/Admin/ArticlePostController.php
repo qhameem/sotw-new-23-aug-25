@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log; // Added Log facade
-use Illuminate\Support\Facades\Storage; // Added Storage facade
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Encoders\WebpEncoder;
 
 class ArticlePostController extends Controller
 {
@@ -86,6 +89,8 @@ class ArticlePostController extends Controller
      */
     public function store(Request $request)
     {
+        Log::info('Article store request data: ', $request->all());
+
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => [
@@ -107,12 +112,14 @@ class ArticlePostController extends Controller
             'twitter_card' => 'nullable|string|max:255',
             'twitter_title' => 'nullable|string|max:255',
             'twitter_description' => 'nullable|string|max:65535',
-            'featured_image_path' => 'nullable|string|max:255', // Later, this could be an image upload
+            'featured_image_path' => 'nullable|string|max:255',
             'categories' => 'nullable|array',
             'categories.*' => 'exists:article_categories,id',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:article_tags,id',
         ]);
+
+        Log::info('Validated featured_image_path: ' . ($validatedData['featured_image_path'] ?? 'Not Present'));
 
         $post = new Article($validatedData);
         $post->user_id = Auth::id();
@@ -211,6 +218,8 @@ class ArticlePostController extends Controller
             return redirect()->route('admin.articles.posts.index')->with('error', "Post with ID '{$postId}' not found for update.");
         }
 
+        Log::info('Article update request data: ', $request->all());
+
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => [
@@ -238,6 +247,8 @@ class ArticlePostController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'exists:article_tags,id',
         ]);
+
+        Log::info('Validated featured_image_path for update: ' . ($validatedData['featured_image_path'] ?? 'Not Present'));
 
         $article->fill($validatedData);
 
@@ -303,24 +314,29 @@ class ArticlePostController extends Controller
     public function uploadFeaturedImage(Request $request)
     {
         $request->validate([
-            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
+            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:2048', // Max 2MB
         ]);
 
         if ($request->hasFile('featured_image')) {
             try {
                 $file = $request->file('featured_image');
-                $directory = 'uploads/featured_images/' . date('Y/m');
-                // Ensure unique filename
-                $filename = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
-                
-                // Store the file in the public disk
-                $path = $file->storeAs($directory, $filename, 'public');
+                $directory = 'articles'; // Simplified directory
+                $filename = uniqid() . '_' . time();
+                $extension = $file->getClientOriginalExtension();
 
-                // The $path will be like 'uploads/featured_images/2023/10/xxxx.jpg'
-                // This path is relative to the 'storage/app/public' directory.
-                // When linking, use asset('storage/' . $path)
+                if ($extension === 'svg') {
+                    // For SVG, just store it directly
+                    $path = $file->storeAs($directory, "{$filename}.svg", 'public');
+                } else {
+                    // For other image types, convert to WebP
+                    $imageManager = new ImageManager(new GdDriver());
+                    $image = $imageManager->read($file);
+                    $webpPath = "{$directory}/{$filename}.webp";
+                    Storage::disk('public')->put($webpPath, (string) $image->encode(new WebpEncoder(80)));
+                    $path = $webpPath;
+                }
                 
-                return response()->json(['success' => true, 'path' => $path, 'url' => Storage::url($path)]); // Use Storage::url() for correct public URL
+                return response()->json(['success' => true, 'path' => $path, 'url' => Storage::url($path)]);
             } catch (\Exception $e) {
                 Log::error('Featured image upload failed: ' . $e->getMessage());
                 return response()->json(['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()], 500);

@@ -204,6 +204,11 @@ class Article extends Model implements Feedable, Sitemapable
         return 'slug';
     }
 
+    public function getExcerptAttribute()
+    {
+        return Str::limit(strip_tags($this->content), 150);
+    }
+
     public function toFeedItem(): FeedItem
     {
         return FeedItem::create()

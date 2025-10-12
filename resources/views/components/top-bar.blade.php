@@ -29,7 +29,21 @@
         @else
             <div class="flex items-center">
                 <div class="flex items-center space-x-2">
-                   <x-add-product-button /> <span class=" w-0.5"></span>
+                   @if(request()->routeIs('articles.index'))
+                       <a href="{{ route('articles.create') }}" class="inline-flex items-center justify-center px-4 py-1 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        <div class="flex items-center space-x-2">
+                        <div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-gray-800 stroke-gray-800" viewBox="0 0 24 24"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" color="currentColor"><path d="M6 22v-8.306c0-1.565 0-2.348.215-3.086c.214-.739.63-1.39 1.465-2.693l2.656-4.15C11.088 2.587 11.465 2 12 2s.912.588 1.664 1.764l2.656 4.151c.834 1.303 1.25 1.954 1.465 2.693c.215.738.215 1.52.215 3.086V22"/><path d="M7 11c.632.323 1.489.973 2.28 1c1.019.032 1.707-.863 2.72-.863s1.701.895 2.72.862c.791-.026 1.649-.676 2.28-.999m-5 1v10M10 5h4"/></g></svg>
+                        </div>
+                        <div>
+                            Write Article
+                        </div>
+                        </div>
+                       </a>
+                   @else
+                       <x-add-product-button />
+                   @endif
+                   <span class=" w-0.5"></span>
                 </div>
                 @if(!request()->is('free-todo-list-tool'))
                     <div class="w-[280px] ml-auto mr-0">

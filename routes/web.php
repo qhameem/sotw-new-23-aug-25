@@ -112,6 +112,7 @@ Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\
         // Admin ArticlePost routes using ID for binding
         Route::get('posts', [ArticlePostController::class, 'index'])->name('posts.index');
         Route::get('posts/create', [ArticlePostController::class, 'create'])->name('posts.create');
+        Route::post('posts', [ArticlePostController::class, 'store'])->name('posts.store');
         Route::get('posts/{post:id}/edit', [ArticlePostController::class, 'edit'])->name('posts.edit'); // Explicitly bind by ID
         Route::put('posts/{post:id}', [ArticlePostController::class, 'update'])->name('posts.update');   // Explicitly bind by ID
         Route::delete('posts/{post:id}', [ArticlePostController::class, 'destroy'])->name('posts.destroy'); // Explicitly bind by ID
@@ -201,7 +202,7 @@ use App\Http\Controllers\Auth\GoogleLoginController; // We will create this cont
 
 // Google OAuth routes
 Route::get('/auth/google', [GoogleLoginController::class, 'redirectToGoogle'])->name('auth.google');
-Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback']);
+Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 require __DIR__ . '/auth.php';
 
 // About Page
@@ -272,6 +273,8 @@ Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController
 Route::middleware('auth')->group(function () {
     Route::get('/my-articles', [App\Http\Controllers\ArticleController::class, 'myArticles'])->name('articles.my');
 });
+
+Route::post('/admin/articles/posts/upload-featured-image', [App\Http\Controllers\Admin\ArticlePostController::class, 'uploadFeaturedImage'])->name('admin.articles.posts.uploadFeaturedImage');
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
