@@ -20,7 +20,7 @@
 @endsection
 
 @section('content')
-<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}', '{{ json_encode($allTechStacksData ?? []) }}')">
+<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}', '{{ json_encode($allTechStacksData ?? []) }}', '{{ json_encode($bestForCategoriesData ?? []) }}')">
     @guest
     <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
         <div class="text-center p-8 bg-white border rounded-lg shadow-md">
@@ -111,36 +111,6 @@
             </ul>
         </div>
 
-        <!-- Tips Section -->
-        <div class="md:w-5/6 mx-auto w-full p-2 rounded flex flex-col bg-gradient-to-tr from-white to-gray-50">
-            <h2 class="font-noto-serif text-lg text-gray-700 font-semibold mb-4">&#10003; Tips</h2>
-            <div class="prose prose-xs text-xs max-w-none text-gray-600 space-y-3">
-                <p class="text-gray-800 font-medium"><span>Product URL</span></p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Provide a direct link to your product's main page.</li>
-                    <li>Avoid links to articles, blog posts, or press releases.</li>
-                </ul>
-                <p class="text-gray-800 font-medium"><span>Name & Tagline</span></p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Use the official product name.</li>
-                    <li>The tagline should be a concise summary.</li>
-                </ul>
-                <p class="text-gray-800 font-medium"><span>Description</span></p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Briefly describe your product, its features, and value proposition.</li>
-                </ul>
-                <p class="text-gray-800 font-medium"><span>Logo</span></p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Upload a clear, high-quality logo (square is preferred).</li>
-                </ul>
-                <p class="text-gray-800 font-medium"><span>Categories</span></p>
-                <ul class="list-disc ml-3 space-y-2 text-gray-600">
-                    <li>Select the most relevant categories.</li>
-                    <li>Choose at least one "Pricing" and one "Software Category".</li>
-                </ul>
-                <p>Submissions are reviewed by our team. Thank you for contributing!</p>
-            </div>
-        </div>
     </div>
 @endsection
 
@@ -195,11 +165,12 @@ function clearForm() {
     }
 }
 
-function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTechStacksDataJson) {
+function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTechStacksDataJson, bestForCategoriesDataJson) {
     const productData = JSON.parse(productDataJson);
     const formData = JSON.parse(formDataJson);
     const allCategoriesData = JSON.parse(allCategoriesDataJson);
     const allTechStacksData = JSON.parse(allTechStacksDataJson);
+    const bestForCategoriesData = JSON.parse(bestForCategoriesDataJson);
     let urlCheckTimeout;
     const formId = productData ? `product_form_${productData.id}` : 'new_product_form';
 
@@ -223,7 +194,9 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         allCategories: [],
         categorySearchTerm: '',
         techStackSearchTerm: '',
+        bestForSearchTerm: '',
         softwareCategoriesList: [],
+        bestForCategoriesList: [],
         techStacksList: [],
         selectedCategoriesDisplay: [],
         selectedTechStacksDisplay: [],
@@ -252,6 +225,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         init() {
             this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
             this.allTechStacks = allTechStacksData.map(ts => ({ ...ts, id: ts.id.toString() }));
+            this.bestForCategoriesList = bestForCategoriesData.map(cat => ({ ...cat, id: cat.id.toString() }));
             this.techStacksList = [...this.allTechStacks].sort((a, b) => a.name.localeCompare(b.name));
 
             this.$nextTick(() => {
@@ -301,6 +275,17 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                     this.softwareCategoriesList = [...nonPricingCategories].sort((a, b) => a.name.localeCompare(b.name));
                 } else {
                     this.softwareCategoriesList = nonPricingCategories.filter(category =>
+                        category.name.toLowerCase().includes(searchTerm)
+                    ).sort((a, b) => a.name.localeCompare(b.name));
+                }
+            });
+
+            this.$watch('bestForSearchTerm', (value) => {
+                const searchTerm = value.toLowerCase().trim();
+                if (!searchTerm) {
+                    this.bestForCategoriesList = [...bestForCategoriesData].sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    this.bestForCategoriesList = bestForCategoriesData.filter(category =>
                         category.name.toLowerCase().includes(searchTerm)
                     ).sort((a, b) => a.name.localeCompare(b.name));
                 }
@@ -414,8 +399,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         updateSelectedCategoriesDisplay() {
+            const allCategorySources = [...this.allCategories, ...this.bestForCategoriesList];
             this.selectedCategoriesDisplay = this.selectedCategories
-                .map(id => this.allCategories.find(cat => cat.id === id.toString()))
+                .map(id => {
+                    const category = allCategorySources.find(cat => cat.id === id.toString());
+                    return category ? { ...category, isBestFor: this.bestForCategoriesList.some(bfc => bfc.id === id.toString()) } : null;
+                })
                 .filter(cat => cat)
                 .sort((a, b) => a.name.localeCompare(b.name));
         },
@@ -444,7 +433,10 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                 const cat = this.allCategories.find(c => c.id === id);
                 return cat && !cat.types.includes('Pricing');
             });
-            return hasPricing && hasSoftware;
+            const hasBestFor = this.selectedCategories.some(id => {
+                return this.bestForCategoriesList.some(bfc => bfc.id === id);
+            });
+            return hasPricing && hasSoftware && hasBestFor;
         },
 
         get isMediaAndBrandingComplete() {

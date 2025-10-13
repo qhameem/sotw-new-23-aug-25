@@ -240,20 +240,36 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $allCategories = Category::with('types')->orderBy('name')->get();
         $allTechStacks = TechStack::orderBy('name')->get();
-        $allCategoriesData = $allCategories->map(function ($category) {
+
+        $bestForCategories = $allCategories->filter(function ($category) {
+            return $category->types->contains('id', 3);
+        });
+
+        $regularCategories = $allCategories->filter(function ($category) {
+            return !$category->types->contains('id', 3);
+        });
+
+        $allCategoriesData = $regularCategories->map(function ($category) {
             return [
                 'id' => $category->id,
                 'name' => $category->name,
                 'types' => $category->types->pluck('name')->toArray(),
             ];
-        });
+        })->values();
+
+        $bestForCategoriesData = $bestForCategories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+            ];
+        })->values();
         $allTechStacksData = $allTechStacks->map(function ($ts) {
             return [
                 'id' => $ts->id,
                 'name' => $ts->name,
             ];
         });
-        $categories = $allCategories;
+        $categories = $regularCategories;
         $oldInput = session()->getOldInput();
         $displayData = [
             'name' => $oldInput['name'] ?? '',
@@ -266,7 +282,7 @@ class ProductController extends Controller
             'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
         ];
 
-        return view('products.create', compact('categories', 'types', 'allCategoriesData', 'displayData', 'allTechStacksData'));
+        return view('products.create', compact('categories', 'types', 'allCategoriesData', 'displayData', 'allTechStacksData', 'bestForCategoriesData'));
     }
 
     public function store(Request $request)
@@ -295,15 +311,20 @@ class ProductController extends Controller
 
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
         $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
+        $bestForType = Type::where('id', 3)->with('categories')->first();
         $selected = collect($request->input('categories', []))->map(fn($id) => (int)$id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
+        $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
+        }
+        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
+            return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
         }
 
         $validated['user_id'] = Auth::id();
@@ -462,15 +483,20 @@ class ProductController extends Controller
         // For simplicity, we'll assume it applies.
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
         $softwareType = Type::where('name', 'Software Categories')->with('categories')->first(); // Assuming this type name
+        $bestForType = Type::where('id', 3)->with('categories')->first();
         $selected = collect($request->input('categories', []))->map(fn($id) => (int)$id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
+        $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int)$id) : collect();
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
+        }
+        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
+            return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
         }
 
         // Prepare data for update
