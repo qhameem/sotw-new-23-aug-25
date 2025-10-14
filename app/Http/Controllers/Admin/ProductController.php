@@ -83,23 +83,27 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $categories = Category::orderBy('name')->get();
+        $product->load('media', 'categories.types');
+        $allCategories = Category::with('types')->orderBy('name')->get();
         $types = \App\Models\Type::with('categories')->get();
-        $product->load('categories');
 
-        $displayData = [
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'link' => $product->link,
-            'tagline' => $product->tagline,
-            'product_page_tagline' => $product->product_page_tagline,
-            'description' => $product->description,
-            'current_categories' => $product->categories->pluck('id')->toArray(),
-            'logo' => $product->logo,
-            'logo_url' => $product->logo_url,
-        ];
+        $bestForCategories = $allCategories->filter(function ($category) {
+            return $category->types->contains('id', 3);
+        });
 
-        return view('admin.products.edit', compact('product', 'categories', 'types', 'displayData'));
+        $pricingCategories = $allCategories->filter(function ($category) {
+            return $category->types->contains(function ($type) {
+                return $type->name === 'Pricing';
+            });
+        });
+
+        $regularCategories = $allCategories->filter(function ($category) {
+            return !$category->types->contains('id', 3) && !$category->types->contains(function ($type) {
+                return $type->name === 'Pricing';
+            });
+        });
+
+        return view('admin.products.edit', compact('product', 'allCategories', 'regularCategories', 'types', 'bestForCategories', 'pricingCategories'));
     }
 
     /**

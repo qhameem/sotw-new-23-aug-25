@@ -123,7 +123,7 @@
                 <div class="mb-4">
                     <div class="mb-2 relative" @click.away="isCategoryDropdownOpen = false">
                         <div class="w-full text-sm text-gray-700 border-gray-300 rounded-md p-2 placeholder-gray-400 pr-8 flex flex-wrap gap-2 items-center border" @click="isCategoryDropdownOpen = true; $refs.categorySearchInput.focus()">
-                            <template x-for="category in selectedCategoriesDisplay.filter(c => !c.isBestFor)" :key="category.id">
+                            <template x-for="category in selectedCategoriesDisplay.filter(c => !c.types.includes('Best For') && !c.types.includes('Pricing'))" :key="category.id">
                                 <span class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full group hover:bg-gray-200">
                                     <span x-text="category.name" class="truncate max-w-[180px]" :title="category.name"></span>
                                     <button @click.prevent.stop="deselectCategory(category.id)" type="button" class="ml-1.5 -mr-1 flex-shrink-0 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:bg-gray-300" :aria-label="'Remove ' + category.name">
@@ -195,7 +195,7 @@
                 <div class="mb-4">
                     <div class="mb-2 relative" @click.away="isBestForDropdownOpen = false">
                         <div class="w-full text-sm text-gray-700 border-gray-300 rounded-md p-2 placeholder-gray-400 pr-8 flex flex-wrap gap-2 items-center border" @click="isBestForDropdownOpen = true; $refs.bestForSearchInput.focus()">
-                            <template x-for="category in selectedCategoriesDisplay.filter(c => c.isBestFor)" :key="category.id">
+                            <template x-for="category in selectedCategoriesDisplay.filter(c => c.types.includes('Best For'))" :key="category.id">
                                 <span class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full group hover:bg-gray-200">
                                     <span x-text="category.name" class="truncate max-w-[180px]" :title="category.name"></span>
                                     <button @click.prevent.stop="deselectCategory(category.id)" type="button" class="ml-1.5 -mr-1 flex-shrink-0 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:bg-gray-300" :aria-label="'Remove ' + category.name">
@@ -440,8 +440,12 @@
 
                 @if(isset($product) && $product->media->isNotEmpty())
                 <div class="mt-4">
-                    <h3 class="text-xs font-semibold mb-2">Current Image</h3>
-                    <img src="{{ $product->media->first()->url }}" alt="Current Image" class="rounded-md border w-full object-cover">
+                    <h3 class="text-xs font-semibold mb-2">Current Image(s)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @foreach($product->media as $media)
+                            <img src="{{ asset('storage/' . $media->path) }}" alt="Current Image" class="rounded-md border w-full object-cover">
+                        @endforeach
+                    </div>
                 </div>
                 @endif
 
