@@ -17,7 +17,7 @@
 
 
 @section('content')
-<div class="bg-white rounded-lg p-6 md:p-8">
+<div class="bg-white rounded-lg p-6 md:p-8 mt-4">
     <div class="gap-8">
         <div class="md:col-span-2">
             <div class="flex items-center mb-4">

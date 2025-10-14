@@ -47,10 +47,19 @@ class CategoryController extends Controller
             'category_types.*' => 'exists:types,id', // Ensure selected types exist
         ]);
         $category = Category::create($validated);
-        if (isset($validated['category_types'])) {
-            $category->types()->sync($validated['category_types']);
+        $category->types()->sync($validated['category_types'] ?? []);
+
+        // Eager load the types to get their names
+        $category->load('types');
+        $typeNames = $category->types->pluck('name')->join(', ');
+
+        $message = "Category '{$category->name}'";
+        if (!empty($typeNames)) {
+            $message .= " in \"{$typeNames}\"";
         }
-        return redirect()->route('admin.categories.index')->with('success', 'Category created successfully.');
+        $message .= " has been created successfully.";
+
+        return redirect()->route('admin.categories.index')->with('success', $message);
     }
 
     /**

@@ -1,4 +1,17 @@
 <div class="space-y-6 p-6 mt-4">
+    @if($bestForCategories->isNotEmpty())
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800 mb-2">Best for</h3>
+            <div class="flex flex-wrap gap-2">
+                @foreach($bestForCategories as $category)
+                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-200">
+                        {{ $category->name }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if($pricingCategory)
         <div>
             <h3 class="text-sm font-semibold text-gray-800 mb-2">Pricing Model</h3>

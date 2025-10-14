@@ -1389,6 +1389,10 @@ class ProductController extends Controller
             return $category->types->contains('name', 'Pricing');
         });
 
+        $bestForCategories = $product->categories->filter(function ($category) {
+            return $category->types->contains('name', 'Best for');
+        });
+
         $categoryIds = $product->categories->pluck('id');
 
         $similarProducts = Product::where('id', '!=', $product->id)
@@ -1408,7 +1412,7 @@ class ProductController extends Controller
         $description = strip_tags($product->description);
         $metaDescription = Str::limit($description, 160);
 
-        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription'));
+        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription', 'bestForCategories'));
     }
 
     /**
