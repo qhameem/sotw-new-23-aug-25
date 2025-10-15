@@ -237,39 +237,22 @@ class ProductController extends Controller
 
     public function create()
     {
-        $types = Type::with('categories')->get();
-        $allCategories = Category::with('types')->orderBy('name')->get();
         $allTechStacks = TechStack::orderBy('name')->get();
-
-        $bestForCategories = $allCategories->filter(function ($category) {
-            return $category->types->contains('id', 3);
-        });
-
-        $regularCategories = $allCategories->filter(function ($category) {
-            return !$category->types->contains('id', 3);
-        });
-
-        $allCategoriesData = $regularCategories->map(function ($category) {
-            return [
-                'id' => $category->id,
-                'name' => $category->name,
-                'types' => $category->types->pluck('name')->toArray(),
-            ];
-        })->values();
-
-        $bestForCategoriesData = $bestForCategories->map(function ($category) {
-            return [
-                'id' => $category->id,
-                'name' => $category->name,
-            ];
-        })->values();
-        $allTechStacksData = $allTechStacks->map(function ($ts) {
-            return [
-                'id' => $ts->id,
-                'name' => $ts->name,
-            ];
-        });
-        $categories = $regularCategories;
+        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+    
+        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
+        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+    
+        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+    
+        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
+        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
+        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+    
         $oldInput = session()->getOldInput();
         $displayData = [
             'name' => $oldInput['name'] ?? '',
@@ -282,7 +265,15 @@ class ProductController extends Controller
             'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
         ];
 
-        return view('products.create', compact('categories', 'types', 'allCategoriesData', 'displayData', 'allTechStacksData', 'bestForCategoriesData'));
+        $types = Type::with('categories')->get();
+        return view('products.create', compact(
+            'displayData',
+            'regularCategories',
+            'bestForCategories',
+            'pricingCategories',
+            'allTechStacksData',
+            'types'
+        ));
     }
 
     public function store(Request $request)
@@ -330,6 +321,7 @@ class ProductController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 0;
         $validated['approved'] = false;
+        $validated['description'] = $request->input('description');
         
         if ($request->hasFile('logo')) {
             $image = $request->file('logo');
@@ -355,7 +347,6 @@ class ProductController extends Controller
         }
         unset($validated['logo_url']);
 
-        $validated['description'] = $this->addNofollowToLinks($validated['description']);
         $product = Product::create($validated);
         $product->categories()->sync($validated['categories']);
         if (isset($validated['tech_stacks'])) {
@@ -409,32 +400,30 @@ class ProductController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $allCategories = Category::with('types')->orderBy('name')->get();
         $allTechStacks = TechStack::orderBy('name')->get();
-        $allCategoriesData = $allCategories->map(function ($category) {
-            return [
-                'id' => $category->id,
-                'name' => $category->name,
-                'types' => $category->types->pluck('name')->toArray(),
-            ];
-        });
-        $allTechStacksData = $allTechStacks->map(function ($ts) {
-            return [
-                'id' => $ts->id,
-                'name' => $ts->name,
-            ];
-        });
-        $categories = $allCategories;
-        $types = Type::with('categories')->get();
-        $product->load(['categories', 'proposedCategories', 'techStacks']); // Eager load proposed categories as well
+        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+    
+        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
+        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+    
+        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+    
+        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
+        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
+        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+        
+        $product->load(['categories', 'proposedCategories', 'techStacks']);
 
-        // Prepare data for the view, prioritizing proposed edits if they exist and product is approved
         $oldInput = session()->getOldInput();
         $displayData = [
             'name' => $oldInput['name'] ?? $product->name,
             'slug' => $oldInput['slug'] ?? $product->slug,
             'link' => $oldInput['link'] ?? $product->link,
-            'logo' => $product->logo, // Current live logo
+            'logo' => $product->logo,
             'tagline' => $oldInput['tagline'] ?? $product->tagline,
             'description' => $oldInput['description'] ?? $product->description,
             'current_categories' => $oldInput['categories'] ?? $product->categories->pluck('id')->toArray(),
@@ -445,12 +434,19 @@ class ProductController extends Controller
             $displayData['logo'] = $product->proposed_logo_path ?? $product->logo;
             $displayData['tagline'] = $product->proposed_tagline ?? $product->tagline;
             $displayData['description'] = $product->proposed_description ?? $product->description;
-            $displayData['current_categories'] = $product->proposedCategories->pluck('id')->toArray(); // Use proposed categories for form prefill
+            $displayData['current_categories'] = $product->proposedCategories->pluck('id')->toArray();
         }
-        
-        // The view 'products.create' is used for both create and edit.
-        // We pass $product for existing product context, and $displayData for form fields.
-        return view('products.create', compact('product', 'categories', 'types', 'displayData', 'allCategoriesData', 'allTechStacksData'));
+
+        $types = Type::with('categories')->get();
+        return view('products.create', compact(
+            'product',
+            'displayData',
+            'regularCategories',
+            'bestForCategories',
+            'pricingCategories',
+            'allTechStacksData',
+            'types'
+        ));
     }
 
     public function update(Request $request, Product $product)

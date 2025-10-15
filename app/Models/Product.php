@@ -51,7 +51,9 @@ class Product extends Model implements Sitemapable
         parent::boot();
 
         static::saving(function ($product) {
-            $product->description = HtmlHelper::addNofollowToLinks($product->description);
+            if ($product->description) {
+                $product->description = HtmlHelper::addNofollowToLinks($product->description);
+            }
         });
     }
 

@@ -13,7 +13,8 @@
      data-product='@json($product)'
      data-all-categories='@json($allCategoriesMapped)'
      data-best-for-categories='@json($bestForCategoriesMapped)'
-     data-pricing-categories='@json($pricingCategoriesMapped)'>
+     data-pricing-categories='@json($pricingCategoriesMapped)'
+     data-selected-best-for-categories='@json($selectedBestForCategories ?? [])'>
     <h1 class="font-noto-serif text-2xl font-semibold text-gray-700 mb-4">
         Edit Product: {{ $product->name }}
     </h1>
@@ -98,6 +99,58 @@
                 fetchingDetails: false,
                 loadingMeta: false,
                 checkingUrl: false,
+                fetchError: '',
+                fetchingStatusMessage: '',
+                urlExists: false,
+                errors: {},
+                name_max_length: 60,
+                tagline_max_length: 80,
+                product_page_tagline_max_length: 160,
+                selectedTechStacks: [],
+                selectedTechStacksDisplay: [],
+                techStackSearchTerm: '',
+                techStacksList: [],
+                fetchedLogos: [],
+                fetchedOgImages: [],
+                selectedOgImages: [],
+                mediaPreviewUrl: '',
+                selectedVideo: null,
+                fetchedVideo: null,
+                fetchingVideos: false,
+
+                get isDescriptionComplete() {
+                    return this.description && this.description.replace(/<(.|\n)*?>/g, '').trim().length > 50;
+                },
+
+                get isProductIdentityComplete() {
+                    return this.name.length > 0 && this.tagline.length > 0 && this.product_page_tagline.length > 0;
+                },
+
+                get isCategorizationComplete() {
+                    const softwareCategory = this.selectedCategories.some(id => {
+                        const category = this.allCategories.find(cat => cat.id === id.toString());
+                        return category && !category.types.includes('Best For') && !category.types.includes('Pricing');
+                    });
+                    const bestForCategory = this.selectedCategories.some(id => {
+                        const category = this.allCategories.find(cat => cat.id === id.toString());
+                        return category && category.types.includes('Best For');
+                    });
+                    const pricingCategory = this.selectedCategories.some(id => {
+                        const category = this.allCategories.find(cat => cat.id === id.toString());
+                        return category && category.types.includes('Pricing');
+                    });
+                    return softwareCategory && bestForCategory && pricingCategory;
+                },
+
+                get isMediaAndBrandingComplete() {
+                    return this.logoFileSelected || this.existingLogoUrl || this.selectedLogoUrl;
+                },
+
+                deselectVideo() {
+                    this.selectedVideo = null;
+                    this.fetchedVideo = null;
+                    this.video_url = '';
+                },
  
                 init() {
                     this.productSlug = this.productData.slug || '';
@@ -108,7 +161,8 @@
                     this.description = this.productData.description || '';
                     this.video_url = this.productData.video_url || '';
                     this.existingLogoUrl = this.productData.logo_url || '';
-                    this.selectedCategories = this.productData.categories.map(cat => cat.id.toString()) || [];
+                    this.selectedCategories = (this.productData.categories || []).map(cat => cat.id.toString()).filter(catId => !this.selectedBestForCategories.includes(catId)) || [];
+                    this.selectedBestForCategories = JSON.parse(this.$el.dataset.selectedBestForCategories || '[]');
                     this.allCategories = this.allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
                     this.bestForCategoriesList = this.bestForCategoriesData.map(cat => ({ ...cat, id: cat.id.toString() }));
                     this.pricingCategoriesList = this.pricingCategoriesData.map(cat => ({ ...cat, id: cat.id.toString() }));
@@ -139,7 +193,7 @@
                     });
 
                     this.softwareCategoriesList = this.allCategories.filter(category =>
-                        !category.types.includes('Best For') && !category.types.includes('Pricing')
+                        Array.isArray(category.types) && !category.types.includes('Best For') && !category.types.includes('Pricing')
                     ).sort((a, b) => a.name.localeCompare(b.name));
 
                     this.updateSelectedCategoriesDisplay();

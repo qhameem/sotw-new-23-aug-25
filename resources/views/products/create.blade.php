@@ -20,7 +20,7 @@
 @endsection
 
 @section('content')
-<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allCategoriesData ?? []) }}', '{{ json_encode($allTechStacksData ?? []) }}', '{{ json_encode($bestForCategoriesData ?? []) }}')">
+<div class="relative" x-data="productForm('{{ json_encode($product ?? null) }}', '{{ json_encode($displayData ?? []) }}', '{{ json_encode($allTechStacksData ?? []) }}')" @category-change.window="handleCategoryChange($event.detail)">
     @guest
     <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
         <div class="text-center p-8 bg-white border rounded-lg shadow-md">
@@ -57,7 +57,7 @@
         <div class="flex flex-col md:flex-row gap-6">
             <div class="md:w-full">
             <form action="{{ isset($product) ? route('products.update', $product) : route('products.store') }}" method="POST" enctype="multipart/form-data" class="text-sm p-0 rounded md:px-2 w-full" @submit.prevent="submitForm">
-                @include('products.partials._form', ['types' => $types])
+                @include('products.partials._form')
             </form>
            </div>
        </div>
@@ -165,12 +165,10 @@ function clearForm() {
     }
 }
 
-function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTechStacksDataJson, bestForCategoriesDataJson) {
+function productForm(productDataJson, formDataJson, allTechStacksDataJson) {
     const productData = JSON.parse(productDataJson);
     const formData = JSON.parse(formDataJson);
-    const allCategoriesData = JSON.parse(allCategoriesDataJson);
     const allTechStacksData = JSON.parse(allTechStacksDataJson);
-    const bestForCategoriesData = JSON.parse(bestForCategoriesDataJson);
     let urlCheckTimeout;
     const formId = productData ? `product_form_${productData.id}` : 'new_product_form';
 
@@ -197,6 +195,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         bestForSearchTerm: '',
         softwareCategoriesList: [],
         bestForCategoriesList: [],
+        pricingCategoriesList: [],
         techStacksList: [],
         selectedCategoriesDisplay: [],
         selectedTechStacksDisplay: [],
@@ -207,7 +206,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         fetchError: false,
         fetchingStatusMessage: '',
 
-        // Directly initialize reactive properties from formData
         link: formData.link || '',
         name: formData.name || '',
         productSlug: formData.slug || '',
@@ -215,17 +213,16 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         product_page_tagline: formData.product_page_tagline || '',
         description: formData.description || '',
         video_url: productData?.video_url || '',
-        video_url: productData?.video_url || '',
         fetchedVideo: null,
         selectedVideo: null,
         fetchingVideos: false,
-        selectedCategories: (Array.isArray(formData.current_categories) ? formData.current_categories : []).map(id => id.toString()),
+        selectedSoftwareCategories: (Array.isArray(formData.current_categories) ? formData.current_categories.filter(c => c.type_id !== 3 && c.type_id !== 2) : []).map(id => id.toString()),
+        selectedBestForCategories: (Array.isArray(formData.current_categories) ? formData.current_categories.filter(c => c.type_id === 3) : []).map(id => id.toString()),
+        selectedPricingCategories: (Array.isArray(formData.current_categories) ? formData.current_categories.filter(c => c.type_id === 2) : []).map(id => id.toString()),
         selectedTechStacks: (Array.isArray(formData.current_tech_stacks) ? formData.current_tech_stacks : []).map(id => id.toString()),
 
         init() {
-            this.allCategories = allCategoriesData.map(cat => ({ ...cat, id: cat.id.toString(), types: Array.isArray(cat.types) ? cat.types : [] }));
             this.allTechStacks = allTechStacksData.map(ts => ({ ...ts, id: ts.id.toString() }));
-            this.bestForCategoriesList = bestForCategoriesData.map(cat => ({ ...cat, id: cat.id.toString() }));
             this.techStacksList = [...this.allTechStacks].sort((a, b) => a.name.localeCompare(b.name));
 
             this.$nextTick(() => {
@@ -254,47 +251,8 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
                     this.$dispatch('checklist-update', { isDescriptionComplete: this.isDescriptionComplete });
                 });
             });
-
-            this.pricingCategoriesList = this.allCategories.filter(category =>
-                category.types && category.types.includes('Pricing')
-            ).sort((a, b) => a.name.localeCompare(b.name));
-
-            this.softwareCategoriesList = this.allCategories.filter(category =>
-                !category.types || !category.types.includes('Pricing')
-            ).sort((a, b) => a.name.localeCompare(b.name));
             
-            this.updateSelectedCategoriesDisplay();
             this.updateSelectedTechStacksDisplay();
-
-            this.$watch('categorySearchTerm', (value) => {
-                const searchTerm = value.toLowerCase().trim();
-                const nonPricingCategories = this.allCategories.filter(category =>
-                    !category.types || !category.types.includes('Pricing')
-                );
-                if (!searchTerm) {
-                    this.softwareCategoriesList = [...nonPricingCategories].sort((a, b) => a.name.localeCompare(b.name));
-                } else {
-                    this.softwareCategoriesList = nonPricingCategories.filter(category =>
-                        category.name.toLowerCase().includes(searchTerm)
-                    ).sort((a, b) => a.name.localeCompare(b.name));
-                }
-            });
-
-            this.$watch('bestForSearchTerm', (value) => {
-                const searchTerm = value.toLowerCase().trim();
-                if (!searchTerm) {
-                    this.bestForCategoriesList = [...bestForCategoriesData].sort((a, b) => a.name.localeCompare(b.name));
-                } else {
-                    this.bestForCategoriesList = bestForCategoriesData.filter(category =>
-                        category.name.toLowerCase().includes(searchTerm)
-                    ).sort((a, b) => a.name.localeCompare(b.name));
-                }
-            });
-
-            this.$watch('selectedCategories', () => {
-                this.updateSelectedCategoriesDisplay();
-                this.$dispatch('checklist-update', { isCategorizationComplete: this.isCategorizationComplete });
-            }, { deep: true });
 
             this.$watch('selectedTechStacks', () => {
                 this.updateSelectedTechStacksDisplay();
@@ -341,6 +299,25 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             });
         },
 
+        handleCategoryChange(detail) {
+            switch(detail.type) {
+                case 'software':
+                    this.selectedSoftwareCategories = detail.selected;
+                    break;
+                case 'best-for':
+                    this.selectedBestForCategories = detail.selected;
+                    break;
+                case 'pricing':
+                    this.selectedPricingCategories = detail.selected;
+                    break;
+            }
+            this.updateCategorizationStatus();
+        },
+
+        updateCategorizationStatus() {
+            this.$dispatch('checklist-update', { isCategorizationComplete: this.isCategorizationComplete });
+        },
+
         resetFormFields() {
             this.name = '';
             this.tagline = '';
@@ -350,7 +327,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             }
             this.description = '';
             this.video_url = '';
-            this.selectedCategories = [];
             this.selectedTechStacks = [];
             this.logoPreviewUrl = '';
             this.fetchedLogos = [];
@@ -381,7 +357,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             .then(data => {
                 if (data && data.length > 0) {
                     this.fetchedVideo = data[0];
-                    this.selectedVideo = data[0]; // Auto-select the video
+                    this.selectedVideo = data[0];
                 }
             })
             .catch(error => {
@@ -396,17 +372,6 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             this.selectedVideo = null;
             this.fetchedVideo = null;
             this.video_url = '';
-        },
-
-        updateSelectedCategoriesDisplay() {
-            const allCategorySources = [...this.allCategories, ...this.bestForCategoriesList];
-            this.selectedCategoriesDisplay = this.selectedCategories
-                .map(id => {
-                    const category = allCategorySources.find(cat => cat.id === id.toString());
-                    return category ? { ...category, isBestFor: this.bestForCategoriesList.some(bfc => bfc.id === id.toString()) } : null;
-                })
-                .filter(cat => cat)
-                .sort((a, b) => a.name.localeCompare(b.name));
         },
 
         updateSelectedTechStacksDisplay() {
@@ -425,18 +390,7 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         get isCategorizationComplete() {
-            const hasPricing = this.selectedCategories.some(id => {
-                const cat = this.allCategories.find(c => c.id === id);
-                return cat && cat.types.includes('Pricing');
-            });
-            const hasSoftware = this.selectedCategories.some(id => {
-                const cat = this.allCategories.find(c => c.id === id);
-                return cat && !cat.types.includes('Pricing');
-            });
-            const hasBestFor = this.selectedCategories.some(id => {
-                return this.bestForCategoriesList.some(bfc => bfc.id === id);
-            });
-            return hasPricing && hasSoftware && hasBestFor;
+            return this.selectedPricingCategories.length > 0 && this.selectedSoftwareCategories.length > 0 && this.selectedBestForCategories.length > 0;
         },
 
         get isMediaAndBrandingComplete() {
@@ -449,12 +403,12 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         get canSubmitForm() {
+            const totalSelectedCategories = this.selectedSoftwareCategories.length + this.selectedBestForCategories.length + this.selectedPricingCategories.length;
             if (!this.isEditMode) {
-                return !this.urlExists && !this.checkingUrl && this.link.length > 0 && this.name.length > 0 && this.tagline.length > 0 && this.selectedCategories.length > 0;
+                return !this.urlExists && !this.checkingUrl && this.link.length > 0 && this.name.length > 0 && this.tagline.length > 0 && totalSelectedCategories > 0;
             }
-            return this.tagline.length > 0 && this.selectedCategories.length > 0;
+            return this.tagline.length > 0 && totalSelectedCategories > 0;
         },
-
 
         fetchUrlData() {
             if (!this.link || this.isEditMode) return;
@@ -463,39 +417,18 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             this.fetchingStatusMessage = 'Fetching data from URL...';
 
             fetch(`/fetch-url-data?url=${encodeURIComponent(this.link)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    if (data.error) {
-                        throw new Error(data.error);
+                    this.name = data.title || this.name;
+                    this.tagline = data.description || this.tagline;
+                    this.product_page_tagline = data.description || this.product_page_tagline;
+                    if (this.quill) {
+                        this.quill.root.innerHTML = data.description || '';
                     }
-                    this.$nextTick(() => {
-                        this.name = data.title || this.name;
-                        this.tagline = data.description || this.tagline;
-                        this.product_page_tagline = data.description || this.product_page_tagline;
-                        if (this.quill) {
-                            this.quill.root.innerHTML = data.description || '';
-                        }
-                        if (data.og_images && data.og_images.length > 0) {
-                            this.fetchedOgImages = data.og_images;
-                        }
-                        if (data.logos && data.logos.length > 0) {
-                            this.fetchedLogos = data.logos;
-                        }
-                        if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-                            const categoryIds = data.categories.map(id => id.toString());
-                            this.selectedCategories = Array.from(new Set([...this.selectedCategories, ...categoryIds]));
-                        }
-                        if (data.tech_stacks && Array.isArray(data.tech_stacks) && data.tech_stacks.length > 0) {
-                            const techStackIds = data.tech_stacks.map(id => id.toString());
-                            this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...techStackIds]));
-                        }
-                        this.fetchingStatusMessage = 'Data fetched successfully!';
-                    });
+                    this.fetchedOgImages = data.og_images || [];
+                    this.fetchedLogos = data.logos || [];
+                    this.selectedTechStacks = Array.from(new Set([...this.selectedTechStacks, ...(data.tech_stacks || []).map(String)]));
+                    this.fetchingStatusMessage = 'Data fetched successfully!';
                 })
                 .catch(error => {
                     console.error('Error fetching URL data:', error);
@@ -512,145 +445,83 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
             if (!file) return;
 
             const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp', 'image/avif'];
-            const maxFileSize = 2048 * 1024; // 2MB
+            const maxFileSize = 2048 * 1024;
 
             if (!allowedTypes.includes(file.type)) {
-                this.logoUploadError = 'Unsupported file type. Please upload a PNG, JPG, GIF, SVG, WEBP, or AVIF image.';
-                this.removePreviewLogo();
+                this.logoUploadError = 'Unsupported file type.';
                 return;
             }
 
             if (file.size > maxFileSize) {
-                this.logoUploadError = 'File is too large. Please upload an image smaller than 2MB.';
-                this.removePreviewLogo();
+                this.logoUploadError = 'File is too large.';
                 return;
             }
 
             this.logoUploadError = '';
             this.logoPreviewUrl = URL.createObjectURL(file);
             this.logoFileSelected = true;
-            this.selectedLogoUrl = ''; // Clear fetched logo selection
+            this.selectedLogoUrl = '';
             this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
         },
 
         removePreviewLogo() {
             this.logoPreviewUrl = '';
             this.logoFileSelected = false;
-            this.selectedLogoUrl = '';
             document.getElementById('logoInput').value = null;
+            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
         },
 
         selectLogo(logoUrl) {
             this.selectedLogoUrl = logoUrl;
-            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
-            this.logoPreviewUrl = ''; // Clear file preview
-            this.logoFileSelected = false;
-            document.getElementById('logoInput').value = null;
-        },
-
-        removeFetchedOgImage() {
-            this.fetchedOgImage = '';
-        },
-
-        showMediaPreview(event) {
-            this.mediaPreviewUrls = [];
-            for (let i = 0; i < event.target.files.length; i++) {
-                const file = event.target.files[i];
-                if (file) {
-                    this.mediaPreviewUrls.push(URL.createObjectURL(file));
-                }
-            }
-        },
-
-        selectFetchedImage(imageUrl) {
-            this.selectedLogoUrl = imageUrl;
             this.logoPreviewUrl = '';
             this.logoFileSelected = false;
             document.getElementById('logoInput').value = null;
+            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
+        },
+
+        showMediaPreview(event) {
+            this.mediaPreviewUrls = Array.from(event.target.files).map(file => URL.createObjectURL(file));
+            this.$dispatch('checklist-update', { isMediaAndBrandingComplete: this.isMediaAndBrandingComplete });
         },
 
         toggleOgImage(imageUrl) {
             const index = this.selectedOgImages.indexOf(imageUrl);
             if (index > -1) {
                 this.selectedOgImages.splice(index, 1);
-            } else {
-                if (this.selectedOgImages.length < 2) {
-                    this.selectedOgImages.push(imageUrl);
-                }
+            } else if (this.selectedOgImages.length < 2) {
+                this.selectedOgImages.push(imageUrl);
             }
         },
 
         validateForm() {
             this.errors = {};
-            if (!this.name) {
-                this.errors.name = 'Product Name is required.';
-            }
-            if (!this.tagline) {
-                this.errors.tagline = 'Tagline (List Page) is required.';
-            }
-            if (!this.product_page_tagline) {
-                this.errors.product_page_tagline = 'Tagline (Details Page) is required.';
-            }
-
-            const hasPricingCategory = this.selectedCategories.some(id => {
-                const cat = this.allCategories.find(c => c.id === id);
-                return cat && cat.types.includes('Pricing');
-            });
-
-            const hasSoftwareCategory = this.selectedCategories.some(id => {
-                const cat = this.allCategories.find(c => c.id === id);
-                return cat && !cat.types.includes('Pricing');
-            });
-
-            if (!hasPricingCategory || !hasSoftwareCategory) {
-                this.errors.categories = 'At least one Software and one Pricing category are required.';
-            }
-
+            if (!this.name) this.errors.name = 'Product Name is required.';
+            if (!this.tagline) this.errors.tagline = 'Tagline (List Page) is required.';
+            if (!this.product_page_tagline) this.errors.product_page_tagline = 'Tagline (Details Page) is required.';
+            if (!this.isCategorizationComplete) this.errors.categories = 'At least one category from each group is required.';
             return Object.keys(this.errors).length === 0;
         },
 
         showLoader() {
             const button = document.getElementById('submit-product-button');
-            const content = document.getElementById('button-content');
-            const loaderContainer = document.getElementById('loader-container');
-            
-            if (button && content && loaderContainer) {
-                content.innerText = ''; // Remove text
-                loaderContainer.innerHTML = `
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                `;
-                button.disabled = true;
-            }
+            button.querySelector('#button-content').innerText = '';
+            button.querySelector('#loader-container').innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            button.disabled = true;
         },
 
         submitForm(e) {
-            if (!this.validateForm() || this.logoUploadError) {
+            if (!this.validateForm()) {
                 this.$nextTick(() => {
                     const firstError = this.$el.querySelector('.text-red-600');
-                    if (firstError) {
-                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
+                    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
                 return;
             }
             this.showLoader();
+            document.getElementById('description').value = this.quill.root.innerHTML;
             this.$nextTick(() => {
                 e.target.submit();
             });
-        },
-
-        clearForm() {
-            if (confirm('Are you sure you want to clear the form? All unsaved changes will be lost.')) {
-                window.location.reload();
-            }
-        },
-        
-        deselectCategory(categoryId) {
-            const catIdStr = categoryId.toString();
-            this.selectedCategories = this.selectedCategories.filter(id => id !== catIdStr);
         },
 
         deselectTechStack(techStackId) {
@@ -659,22 +530,9 @@ function productForm(productDataJson, formDataJson, allCategoriesDataJson, allTe
         },
 
         generateSlug(text) {
-            return text
-                .toString()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase()
-                .trim()
-                .replace(/\s+/g, '-')
-                .replace(/[^\w-]+/g, '')
-                .replace(/--+/g, '-');
+            return text.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
         }
     }
 }
-</script>
-@endpush
-
-@push('scripts')
-<script>
 </script>
 @endpush

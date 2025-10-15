@@ -102,8 +102,16 @@ class ProductController extends Controller
                 return $type->name === 'Pricing';
             });
         });
+        
 
-        return view('admin.products.edit', compact('product', 'allCategories', 'regularCategories', 'types', 'bestForCategories', 'pricingCategories'));
+        $selectedBestForCategories = $product->categories()
+            ->whereHas('types', function ($query) {
+                $query->where('types.id', 3);
+            })
+            ->pluck('categories.id')
+            ->map(fn($id) => (string)$id)
+            ->toArray();
+        return view('admin.products.edit', compact('product', 'allCategories', 'regularCategories', 'types', 'bestForCategories', 'pricingCategories', 'selectedBestForCategories'));
     }
 
     /**

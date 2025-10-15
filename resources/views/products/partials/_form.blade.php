@@ -100,166 +100,13 @@
             </template>
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <!-- Categories Section -->
-            <div x-data="{
-                    highlightedCategoryIndex: -1,
-                    isCategoryDropdownOpen: false,
-                    toggleCategory(categoryId) {
-                        const index = this.selectedCategories.indexOf(categoryId);
-                        if (index === -1) {
-                            this.selectedCategories.push(categoryId);
-                        } else {
-                            this.selectedCategories.splice(index, 1);
-                        }
-                    }
-                 }"
-                 x-init="$watch('selectedCategories', () => { categorySearchTerm = ''; }); $watch('highlightedCategoryIndex', (value) => { if(value > -1) { const el = $refs.categoryDropdown.children[value]; el.scrollIntoView({ block: 'nearest' }); } })">
-                <div class="flex justify-between items-center">
-                    <label class="block text-xs font-semibold md:text-left md:pr-4 mb-1">Category<span class="text-red-500 ml-1">*</span></label>
-                    <span class="text-xs text-gray-600">Select at least 1 and upto 3</span>
-                </div>
-                @error('categories')<div class="text-red-600 text-sm mb-2">{{ $message }}</div>@enderror
-                <template x-if="errors.categories"><p class="text-red-600 text-sm mb-2" x-text="errors.categories"></p></template>
-                <div class="mb-4">
-                    <div class="mb-2 relative" @click.away="isCategoryDropdownOpen = false">
-                        <div class="w-full text-sm text-gray-700 border-gray-300 rounded-md p-2 placeholder-gray-400 pr-8 flex flex-wrap gap-2 items-center border" @click="isCategoryDropdownOpen = true; $refs.categorySearchInput.focus()">
-                            <template x-for="category in selectedCategoriesDisplay.filter(c => !c.types.includes('Best For') && !c.types.includes('Pricing'))" :key="category.id">
-                                <span class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full group hover:bg-gray-200">
-                                    <span x-text="category.name" class="truncate max-w-[180px]" :title="category.name"></span>
-                                    <button @click.prevent.stop="deselectCategory(category.id)" type="button" class="ml-1.5 -mr-1 flex-shrink-0 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:bg-gray-300" :aria-label="'Remove ' + category.name">
-                                        <span class="sr-only" x-text="'Remove ' + category.name"></span>
-                                        <svg class="h-2.5 w-2.5" stroke="currentColor" fill="none" viewBox="0 0 8 8">
-                                            <path stroke-linecap="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" />
-                                        </svg>
-                                    </button>
-                                </span>
-                            </template>
-                            <input type="text"
-                                   x-model="categorySearchTerm"
-                                   x-ref="categorySearchInput"
-                                   :placeholder="selectedCategories.length > 0 ? 'Click here to see more categories' : 'Search software categories...'"
-                                   class="flex-grow border-none focus:ring-0 p-0 text-sm placeholder-gray-400 placeholder:text-xs focus:outline-none"
-                                   @keydown.arrow-down.prevent="highlightedCategoryIndex = Math.min(highlightedCategoryIndex + 1, softwareCategoriesList.length - 1)"
-                                   @keydown.arrow-up.prevent="highlightedCategoryIndex = Math.max(highlightedCategoryIndex - 1, -1)"
-                                   @keydown.enter.prevent="if (highlightedCategoryIndex > -1) { toggleCategory(softwareCategoriesList[highlightedCategoryIndex].id); highlightedCategoryIndex = -1; }"
-                                   @focus="isCategoryDropdownOpen = true">
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-2" @click.stop="isCategoryDropdownOpen = !isCategoryDropdownOpen">
-                                 <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </div>
-                        
-                        <div x-show="isCategoryDropdownOpen" x-transition class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" x-ref="categoryDropdown">
-                            <template x-for="(category, index) in softwareCategoriesList" :key="category.id">
-                                <div @click="toggleCategory(category.id)"
-                                     class="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-gray-100"
-                                     :class="{ 'bg-gray-200': highlightedCategoryIndex === index }">
-                                    <span x-text="category.name" class="font-normal block truncate"></span>
-                                </div>
-                            </template>
-                            <template x-if="softwareCategoriesList.length === 0 && categorySearchTerm !== ''">
-                                <p class="text-center text-xs text-gray-500 py-2">No matching software categories found.</p>
-                            </template>
-                            <template x-if="softwareCategoriesList.length === 0 && categorySearchTerm === ''">
-                                <p class="text-center text-xs text-gray-500 py-2">No software categories available.</p>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-                
-                <template x-for="selectedCatId in selectedCategories">
-                    <input type="hidden" name="categories[]" :value="selectedCatId">
-                </template>
-            </div>
-
-            <!-- Best For Section -->
-            <div x-data="{
-                    highlightedBestForIndex: -1,
-                    isBestForDropdownOpen: false,
-                    toggleBestFor(categoryId) {
-                        const index = this.selectedCategories.indexOf(categoryId);
-                        if (index === -1) {
-                            this.selectedCategories.push(categoryId);
-                        } else {
-                            this.selectedCategories.splice(index, 1);
-                        }
-                    }
-                 }"
-                 x-init="$watch('selectedCategories', () => { bestForSearchTerm = ''; }); $watch('highlightedBestForIndex', (value) => { if(value > -1) { const el = $refs.bestForDropdown.children[value]; el.scrollIntoView({ block: 'nearest' }); } })">
-                <div class="flex justify-between items-center">
-                    <label class="block text-xs font-semibold md:text-left md:pr-4 mb-1">Best for<span class="text-red-500 ml-1">*</span></label>
-                    <span class="text-xs text-gray-600">Select at least 1</span>
-                </div>
-               
-                <div class="mb-4">
-                    <div class="mb-2 relative" @click.away="isBestForDropdownOpen = false">
-                        <div class="w-full text-sm text-gray-700 border-gray-300 rounded-md p-2 placeholder-gray-400 pr-8 flex flex-wrap gap-2 items-center border" @click="isBestForDropdownOpen = true; $refs.bestForSearchInput.focus()">
-                            <template x-for="category in selectedCategoriesDisplay.filter(c => c.types.includes('Best For'))" :key="category.id">
-                                <span class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full group hover:bg-gray-200">
-                                    <span x-text="category.name" class="truncate max-w-[180px]" :title="category.name"></span>
-                                    <button @click.prevent.stop="deselectCategory(category.id)" type="button" class="ml-1.5 -mr-1 flex-shrink-0 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:bg-gray-300" :aria-label="'Remove ' + category.name">
-                                        <span class="sr-only" x-text="'Remove ' + category.name"></span>
-                                        <svg class="h-2.5 w-2.5" stroke="currentColor" fill="none" viewBox="0 0 8 8">
-                                            <path stroke-linecap="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" />
-                                        </svg>
-                                    </button>
-                                </span>
-                            </template>
-                            <input type="text"
-                                   x-model="bestForSearchTerm"
-                                   x-ref="bestForSearchInput"
-                                   placeholder="Search 'best for' categories..."
-                                   class="flex-grow border-none focus:ring-0 p-0 text-sm placeholder-gray-400 placeholder:text-xs focus:outline-none"
-                                   @keydown.arrow-down.prevent="highlightedBestForIndex = Math.min(highlightedBestForIndex + 1, bestForCategoriesList.length - 1)"
-                                   @keydown.arrow-up.prevent="highlightedBestForIndex = Math.max(highlightedBestForIndex - 1, -1)"
-                                   @keydown.enter.prevent="if (highlightedBestForIndex > -1) { toggleBestFor(bestForCategoriesList[highlightedBestForIndex].id); highlightedBestForIndex = -1; }"
-                                   @focus="isBestForDropdownOpen = true">
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-2" @click.stop="isBestForDropdownOpen = !isBestForDropdownOpen">
-                                 <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </div>
-                        
-                        <div x-show="isBestForDropdownOpen" x-transition class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" x-ref="bestForDropdown">
-                            <template x-for="(category, index) in bestForCategoriesList" :key="category.id">
-                                <div @click="toggleBestFor(category.id)"
-                                     class="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-gray-100"
-                                     :class="{ 'bg-gray-200': highlightedBestForIndex === index }">
-                                    <span x-text="category.name" class="font-normal block truncate"></span>
-                                </div>
-                            </template>
-                            <template x-if="bestForCategoriesList.length === 0 && bestForSearchTerm !== ''">
-                                <p class="text-center text-xs text-gray-500 py-2">No matching 'best for' categories found.</p>
-                            </template>
-                            <template x-if="bestForCategoriesList.length === 0 && bestForSearchTerm === ''">
-                                <p class="text-center text-xs text-gray-500 py-2">No 'best for' categories available.</p>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pricing Model -->
-            <div class="mb-4">
-                   <div class="flex justify-between items-center">
-                    <label class="block text-xs font-semibold md:text-left md:pr-4 mb-1">Pricing Model<span class="text-red-500 ml-1">*</span></label>
-                    <span class="text-xs text-gray-600">Select at least 1</span>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-y-1 border rounded-md p-3">
-                    <template x-for="category in pricingCategoriesList" :key="category.id">
-                        <label class="flex items-center py-1 text-xs cursor-pointer hover:bg-gray-50 px-1 rounded">
-                            <input type="checkbox" name="categories[]" :value="category.id" x-model="selectedCategories" class="mr-2 rounded border-gray-300 text-primary-600 shadow-sm">
-                            <span x-text="category.name" class="text-gray-700"></span>
-                        </label>
-                    </template>
-                    <template x-if="pricingCategoriesList.length === 0">
-                        <p class="col-span-full text-center text-xs text-gray-500 py-2">No pricing categories available.</p>
-                    </template>
-                </div>
-            </div>
+            @php
+                $currentCategories = $displayData['current_categories'] ?? [];
+            @endphp
+            
+            <x-products.components.category-selection :categories="$regularCategories" :selected="$currentCategories" type="software" />
+            <x-products.components.best-for-selection :categories="$bestForCategories" :selected="$currentCategories" type="best-for" />
+            <x-products.components.pricing-model-selection :categories="$pricingCategories" :selected="$currentCategories" type="pricing" />
         </div>
     </div>
 
@@ -449,7 +296,7 @@
                 </div>
                 @endif
 
-                <div x-show="fetchedOgImages.length > 0 && !mediaPreviewUrl" class="mt-4">
+                <div x-show="fetchedOgImages.length > 0 && mediaPreviewUrls.length === 0" class="mt-4">
                     <h3 class="text-xs font-semibold mb-2">Fetched Images (Select up to 2)</h3>
                     <div class="flex flex-wrap gap-2">
                         <template x-for="(image, index) in fetchedOgImages.slice(0, 3)" :key="index">
@@ -488,17 +335,19 @@
                 <p class="text-xs text-gray-500 mt-1">Enter a YouTube, Vimeo, TikTok, Facebook, or X (Twitter) URL to embed a video on the product page.</p>
                 
                 <!-- Fetched Videos Preview -->
-                <div x-show="fetchedVideo" class="mt-4">
-                    <h3 class="text-xs font-semibold mb-2">Video Preview</h3>
-                    <div class="relative group w-1/3">
-                        <img :src="fetchedVideo.thumbnail_url" alt="Video Thumbnail" class="w-full h-auto object-cover rounded-md border-2" :class="{'border-sky-500 ring-2 ring-sky-500': selectedVideo, 'border-gray-300': !selectedVideo}">
-                        <div x-show="selectedVideo" class="absolute top-0 right-0 -mt-2 -mr-2">
-                            <button @click.prevent.stop="deselectVideo" type="button" class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                            </button>
+                <template x-if="fetchedVideo">
+                    <div class="mt-4">
+                        <h3 class="text-xs font-semibold mb-2">Video Preview</h3>
+                        <div class="relative group w-1/3">
+                            <img :src="fetchedVideo.thumbnail_url" alt="Video Thumbnail" class="w-full h-auto object-cover rounded-md border-2" :class="{'border-sky-500 ring-2 ring-sky-500': selectedVideo, 'border-gray-300': !selectedVideo}">
+                            <div x-show="selectedVideo" class="absolute top-0 right-0 -mt-2 -mr-2">
+                                <button @click.prevent.stop="deselectVideo" type="button" class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
         </div>
     </div>
@@ -514,8 +363,10 @@
         <!-- Description -->
         <div class="grid md:grid-cols-1 gap-4 items-start">
             <div class="md:col-span-1">
-                <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md"></div>
-                <input type="hidden" name="description" id="description" x-model="description">
+                <div id="quill-editor" style="height: 300px;" class="mt-1 bg-white text-gray-900 border border-gray-300 rounded-md">
+                    {!! $displayData['description'] ?? '' !!}
+                </div>
+                <input type="hidden" name="description" id="description">
             </div>
         </div>
     </div>
@@ -526,13 +377,7 @@
     <div class="grid md:grid-cols-4 gap-4 mt-6">
         <div class="md:col-start-2 md:col-span-3 flex justify-between items-center">
             <div class="text-xs text-gray-500">
-                Selected: <span x-text="selectedCategories.length"></span>.
-                @php
-                    $pricingTypeFromLoop = $types->firstWhere('name', 'Pricing');
-                    $softwareTypeFromLoop = $types->firstWhere('name', 'Software Categories');
-                @endphp
-                @if($pricingTypeFromLoop) <span class="text-red-500"><span class="text-red-500 ml-1">*</span>Min 1 from {{ $pricingTypeFromLoop->name }}</span>@endif
-                @if($softwareTypeFromLoop) <span class="text-red-500 ml-1"><span class="text-red-500 ml-1">*</span>Min 1 from {{ $softwareTypeFromLoop->name }}</span>@endif
+                Please select at least one category from each group.
             </div>
             <div>
                 <button type="submit" id="submit-product-button"
