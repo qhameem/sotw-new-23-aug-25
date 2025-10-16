@@ -8,4 +8,15 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            ignored: [
+                '**/.git/**',
+                '**/node_modules/**',
+                '**/vendor/**',
+                '**/public/logos/**',
+                '**/storage/**',
+            ],
+        },
+    },
 });
