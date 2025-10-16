@@ -75,7 +75,22 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        return view('admin.products.show', compact('product'));
+        $productController = new \App\Http\Controllers\ProductController(
+            app(\App\Services\FaviconExtractorService::class),
+            app(\App\Services\SlugService::class),
+            app(\App\Services\CategoryClassifier::class),
+            app(\App\Services\TechStackDetectorService::class)
+        );
+
+        $productController = new \App\Http\Controllers\ProductController(
+            app(\App\Services\FaviconExtractorService::class),
+            app(\App\Services\SlugService::class),
+            app(\App\Services\CategoryClassifier::class),
+            app(\App\Services\TechStackDetectorService::class)
+        );
+
+        $view = $productController->showProductPage($product);
+        return $view->with('isAdminView', true);
     }
 
     /**
