@@ -6,7 +6,7 @@
 
 <div class="space-y-6">
     <!-- Product URL -->
-    <div class="grid md:grid-cols-3 gap-1 items-start rounded-2xl border-2 border-dashed border-sky-300 p-4 bg-gradient-to-t from-white to-stone-100">
+    <div class="grid md:grid-cols-3 gap-1 items-start rounded-2xl border-2 border-dashed border-stone-300 p-4 bg-stone-50">
         
         <div class="md:col-span-2 px-1">
             <div class="font-semibold">Autofill details</div>
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Section: Basic Information -->
-    <div class="p-4 border rounded-lg">
+    <div class="p-6 border border-stone-300 rounded-lg">
         <h2 class="text-sm font-semibold mb-4 text-gray-600 flex items-center">
             <span class="bg-gray-100 text-gray-600 rounded-md h-5 px-2 flex items-center justify-center text-xs mr-2">1 of 5</span> Product Identity
             <template x-if="isProductIdentityComplete">
@@ -59,7 +59,8 @@
                 <label class="block text-xs font-semibold mb-1" for="product_name">Product Name<span class="text-red-500 ml-1">*</span></label>
                 <input type="text" id="product_name" name="name" x-model="name" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" required>
                 <template x-if="errors.name"><p class="text-red-600 text-sm mt-1" x-text="errors.name"></p></template>
-                <div class="flex justify-end">
+                <div class="flex justify-between">
+                    <p class="text-xs text-gray-500 mt-1">Use the official product name.</p>
                     <p class="text-xs text-gray-500 mt-1"><span x-text="name.length"></span> / <span x-text="name_max_length"></span></p>
                 </div>
             </div>
@@ -92,7 +93,7 @@
     </div>
 
     <!-- Section: Categorization -->
-    <div class="p-4 border rounded-lg">
+    <div class="p-6 border border-stone-300 rounded-lg">
         <h2 class="text-sm font-semibold mb-4 text-gray-600 flex items-center">
             <span class="bg-gray-100 text-gray-600 rounded-md h-5 px-2 flex items-center justify-center text-xs mr-2">2 of 5</span> Categorization
             <template x-if="isCategorizationComplete">
@@ -111,7 +112,7 @@
     </div>
 
     <!-- Section: Categorization -->
-    <div class="p-4 border rounded-lg">
+    <div class="p-6 border border-stone-300 rounded-lg">
         <h2 class="text-sm font-semibold mb-4 text-gray-600 flex items-center">
             <span class="bg-gray-100 text-gray-600 rounded-md h-5 px-2 flex items-center justify-center text-xs mr-2">3 of 5</span> Tech Stack
         </h2>
@@ -187,7 +188,7 @@
     </div>
 
     <!-- Section: Media and Branding -->
-    <div class="p-4 border rounded-lg">
+    <div class="p-6 border border-stone-300 rounded-lg">
         <h2 class="text-sm font-semibold mb-4 text-gray-600 flex items-center">
             <span class="bg-gray-100 text-gray-600 rounded-md h-5 px-2 flex items-center justify-center text-xs mr-2">4 of 5</span> Media and Branding
             <template x-if="isMediaAndBrandingComplete">
@@ -321,7 +322,7 @@
             <div>
                 <label class="block text-xs font-semibold mb-1" for="video_url">Video URL</label>
                 <div class="flex items-start space-x-2">
-                    <input type="url" id="video_url" x-model="video_url" x-ref="videoUrlInput" class="flex-grow w-full text-sm border border-gray-300 rounded-md px-3 py-2" placeholder="Paste a video link from YouTube, Vimeo, etc.">
+                    <input type="url" id="video_url" x-model="video_url" x-ref="videoUrlInput" class="flex-grow w-full text-sm border border-gray-300 rounded-md px-3 py-2 placeholder-gray-400 placeholder:text-xs" placeholder="e.g., https://youtu.be/SqTdHCTWqks?si=yftUQPrwTHy8_7sQ">
                     <button @click.prevent="fetchVideos" type="button" class="inline-flex items-center justify-center px-4 py-2 border border-sky-500 text-xs font-medium rounded-md text-sky-600 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 w-32" :disabled="fetchingVideos">
                         <span x-show="!fetchingVideos">Fetch Video</span>
                         <span x-show="fetchingVideos">
@@ -353,7 +354,7 @@
     </div>
 
     <!-- Section: Detailed Description -->
-    <div class="p-4 border rounded-lg">
+    <div class="p-6 border border-stone-300 rounded-lg">
         <h2 class="text-sm font-semibold mb-4 text-gray-600 flex items-center">
             <span class="bg-gray-100 text-gray-600 rounded-md h-5 px-2 flex items-center justify-center text-xs mr-2">5 of 5</span> Detailed Description <span class="text-red-500 ml-1">*</span>
             <template x-if="isDescriptionComplete">
