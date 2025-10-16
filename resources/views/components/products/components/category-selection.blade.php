@@ -23,7 +23,7 @@
             </div>
             <div x-show="isCategoryDropdownOpen" x-transition class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" x-ref="categoryDropdown">
                 <template x-for="(category, index) in filteredCategories" :key="category.id">
-                    <div @click="toggleCategory(category.id)" class="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-gray-100" :class="{ 'bg-gray-200': highlightedCategoryIndex === index }">
+                    <div @click="toggleCategory(category.id)" class="cursor-pointer select-none relative py-2 pl-3 pr-9 text-xs text-gray-700 hover:bg-gray-100" :class="{ 'bg-gray-200': highlightedCategoryIndex === index }">
                         <span x-text="category.name" class="font-normal block truncate"></span>
                     </div>
                 </template>
