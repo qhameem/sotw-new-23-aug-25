@@ -7,7 +7,8 @@
             <h2 class="text-2xl font-semibold leading-tight">{{ $product->name }}</h2>
         </div>
         <div class="my-5">
-            <p class="text-gray-600">{{ $product->tagline }}</p>
+            <p class="text-gray-600"><strong>Tagline:</strong> {{ $product->tagline }}</p>
+            <p class="text-gray-600"><strong>Product Page Tagline:</strong> {{ $product->product_page_tagline }}</p>
         </div>
         <div class="prose max-w-none">
             {!! $product->description !!}

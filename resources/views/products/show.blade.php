@@ -28,7 +28,8 @@
                 @endif
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
-                    <p class="text-gray-800 text-base">{{ $product->product_page_tagline }}</p>
+                    <p class="text-gray-800 text-base"><strong>Tagline:</strong> {{ $product->tagline }}</p>
+                    <p class="text-gray-800 text-base"><strong>Product Page Tagline:</strong> {{ $product->product_page_tagline }}</p>
                     <div class="flex flex-wrap items-center mt-1">
                         @php
                             $generalCategories = $product->categories->filter(function ($cat) {
