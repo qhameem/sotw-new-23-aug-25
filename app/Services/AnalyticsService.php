@@ -10,6 +10,11 @@ class AnalyticsService
 {
     public function getStatsForCurrentYear()
     {
+        $credentialsPath = config('analytics.service_account_credentials_json');
+        if (empty(config('analytics.property_id')) || empty($credentialsPath) || !file_exists($credentialsPath)) {
+            return ['error' => 'Google Analytics is not configured correctly.'];
+        }
+
         $startDate = Carbon::now()->startOfYear();
         $endDate = Carbon::now();
 

@@ -5,6 +5,26 @@
         open: false, // For mobile navigation
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
+        searchResults: null,
+        searchTerm: '',
+        performSearch: async function(term) {
+            if (term.length < 2) {
+                this.searchResults = null;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+                if (response.ok) {
+                    this.searchResults = await response.json();
+                } else {
+                    this.searchResults = { products: [], categories: [] };
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                this.searchResults = { products: [], categories: [] };
+            }
+        }
     }"
     x-init="() => {
         window.addEventListener('popstate', handlePopState.bind($data));
@@ -68,10 +88,14 @@
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="{{ config('theme.font_url') }}" rel="stylesheet">
+    @elseif($fontFamily === 'Inter')
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     @endif
 
     @php
-        $fontFamily = config('theme.font_family', 'Roboto'); 
+        $fontFamily = config('theme.font_family', 'Inter');
         $primaryHexColor = config('theme.primary_color', '#3b82f6');
 
         // Determine intelligent default for button text color
@@ -97,6 +121,7 @@
             font-family: var(--font-family-sans);
         }
         [x-cloak] { display: none !important; }
+        [v-cloak] { display: none; }
     </style>
 
     @php
@@ -185,7 +210,7 @@
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'" :sidebar-sticky="!request()->routeIs('articles.create')">
         <x-slot:title>
             @hasSection('header-title')
-                @yield('header-title')
+                    @yield('header-title')
             @else
                 {!! $title ?? '' !!}
             @endif
@@ -236,11 +261,11 @@
                     </svg>
                 </button>
             </div>
-            <div class="relative mb-4" x-data="{ searchTerm: '' }" @click.stop>
-                <input type="text" x-model="searchTerm" @input.debounce.300ms="performSearch(searchTerm)"
+            <div class="relative mb-4" @click.stop>
+                <input type="text" x-model="searchTerm" @input.debounce.30ms="performSearch(searchTerm)"
                     x-ref="searchInput" id="globalSearchInput"
                     placeholder="Search by name, tagline, or description..."
-                    class="w-full px-4 py-2 border border-gray-300  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500  focus:border-transparent   placeholder-gray-400  placeholder:text-sm">
+                    class="w-full px-4 py-2 border border-gray-300  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent   placeholder-gray-400  placeholder:text-sm">
                 <button x-show="searchTerm.length > 0" @click="searchTerm = ''; performSearch('')"
                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600  ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -255,78 +280,7 @@
                     typing to search for products.</p>
             </div>
         </div>
-    </div>
-    <script>
-        let searchResults = [];
-        let searchTimeout = null;
-
-        function performSearch(term) {
-            const container = document.getElementById('searchResultsContainer');
-            const searchTerm = term.trim();
-
-            if (!searchTerm) {
-                searchResults = [];
-                container.innerHTML = '<p class="text-gray-500 text-center py-4">Start typing to search for products.</p>';
-                return;
-            }
-            container.innerHTML = '<p class="text-gray-500 text-center py-4">Loading results...</p>';
-            clearTimeout(searchTimeout); 
-            searchTimeout = setTimeout(() => {
-                fetch(`/products/search?term=${encodeURIComponent(searchTerm)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        searchResults = data; // Keep the raw data accessible
-                        if (searchResults.length === 0) {
-                            container.innerHTML =
-                                '<p class="text-gray-500 text-center py-4">No products found matching your search.</p>';
-                        } else {
-                            container.innerHTML = ''; // Clear previous results
-                            searchResults.forEach((product, index) => {
-                                const article = document.createElement('article');
-                                article.className = 'p-4 flex gap-3 transition border-b border-gray-200 last:border-b-0 hover:bg-gray-50 cursor-pointer';
-                                article.setAttribute('itemscope', '');
-                                article.setAttribute('itemtype', 'https://schema.org/Product');
-                                article.setAttribute('wire:navigate', '');
-                                article.onclick = (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('Search result clicked:', product);
-                                    const fullProductData = searchResults.find(p => p.id === product.id);
-                                    console.log('Found product data:', fullProductData);
-                                    if(fullProductData && fullProductData.slug) {
-                                        window.location.href = `/product/${fullProductData.slug}`;
-                                    } else {
-                                        console.error('Could not find full product data or slug for:', product, fullProductData);
-                                    }
-                                };
-
-                                const categoriesHtml = product.categories.map(cat => `<span class="inline-block bg-gray-100 px-2 py-0.5 text-gray-600 rounded text-xs">${cat.name}</span>`).join('');
-
-                                article.innerHTML = `
-                                    <img src="${product.logo || product.favicon}" alt="${product.name} logo" class="size-9 rounded object-cover flex-shrink-0" loading="lazy" itemprop="image" />
-                                    <div class="flex-1">
-                                        <h2 class="text-lg font-bold leading-tight mb-0.5" itemprop="name">
-                                            ${product.name}
-                                        </h2>
-                                        <p class="text-gray-700 text-sm mt-0.5 mb-1 line-clamp-2" itemprop="description">${product.tagline}</p>
-                                        <div class="flex flex-wrap gap-2 mt-1">
-                                            ${categoriesHtml}
-                                        </div>
-                                    </div>
-                                `;
-                                container.appendChild(article);
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Search error:', error);
-                        container.innerHTML =
-                            '<p class="text-red-500 text-center py-4">An error occurred while searching. Please try again.</p>';
-                    });
-            }, 300); 
-        }
-    </script>
-    <script rel="stylesheet" src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></script>
+        </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @stack('scripts')
@@ -342,8 +296,6 @@
         window.loginUrl = bodyData.loginUrl;
         window.csrfToken = bodyData.csrfToken;
         window.primaryColorCssVar = 'var(--color-primary-500)';
-        window.upvoteActiveClass = 'text-[var(--color-primary-500)]';
-        window.upvoteInactiveClass = 'text-gray-400 hover:text-gray-600  ';
     </script>
 </body>
 </html>

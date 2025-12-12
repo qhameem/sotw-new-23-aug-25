@@ -13,9 +13,9 @@ return [
     |
     */
 
-    'font_url' => env('THEME_FONT_URL', 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap'),
+    'font_url' => env('THEME_FONT_URL', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap'),
 
-    'font_family' => env('THEME_FONT_FAMILY', 'Roboto'),
+    'font_family' => env('THEME_FONT_FAMILY', 'Inter'),
 
     'primary_color' => env('THEME_PRIMARY_COLOR', 'blue-500'), // Default to a Tailwind blue
 

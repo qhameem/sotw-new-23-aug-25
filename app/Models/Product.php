@@ -22,6 +22,10 @@ class Product extends Model implements Sitemapable
         'product_page_tagline',
         'description',
         'link',
+        'maker_links',
+        'sell_product',
+        'asking_price',
+        'x_account',
         'logo',
         'user_id',
         'votes_count',
@@ -44,6 +48,9 @@ class Product extends Model implements Sitemapable
         'has_pending_edits' => 'boolean',
         'published_at' => 'datetime',
         'video_url' => 'array',
+        'maker_links' => 'array',
+        'sell_product' => 'boolean',
+        'asking_price' => 'decimal:2',
     ];
 
     protected static function boot()

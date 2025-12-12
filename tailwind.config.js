@@ -1,5 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
+import aspectRatio from '@tailwindcss/aspect-ratio';
+import scrollbarHide from 'tailwind-scrollbar-hide';
 import theme from './tailwind-theme.json';
 
 const fontFamilies = {};
@@ -16,7 +18,8 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
-        './node_modules/flowbite/**/*.js' // Add Flowbite path
+        './resources/js/**/*.vue',
+        './resources/js/**/*.js',
     ],
 
     safelist: [
@@ -67,9 +70,8 @@ export default {
 
     plugins: [
         forms,
-        require('@tailwindcss/aspect-ratio'),
-        require('flowbite/plugin'), // Add Flowbite plugin
-        require('tailwind-scrollbar-hide'),
+        aspectRatio,
+        scrollbarHide,
         function ({ addUtilities }) {
             addUtilities({
               '.custom-dots-loader-bg': {

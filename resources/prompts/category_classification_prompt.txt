@@ -1,0 +1,26 @@
+Analyze the following website content and determine the most relevant "Category" and "Best for" tags for the product described.
+
+**Available Categories:**
+{available_categories}
+
+**Available "Best for" Tags:**
+{available_best_for_tags}
+
+**Available Pricing Models:**
+{available_pricing_models}
+
+**Website Content:**
+{website_content}
+
+**Instructions:**
+1.  From the "Available Categories" list, identify up to 3 that best describe the product.
+2.  From the "Available 'Best for' Tags" list, identify up to 3 that best describe the target audience or use case for the product.
+3.  From the "Available Pricing Models" list, identify up to 2 that best describe the product's pricing model.
+4.  Return the results in JSON format, with the keys "categories", "best_for", and "pricing".
+
+**Example Output:**
+{
+  "categories": ["Project Management", "Task Management"],
+  "best_for": ["Small businesses", "Remote teams"],
+  "pricing": ["Freemium", "Subscription"]
+}

@@ -10,8 +10,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="font-sans antialiased bg-gray-100">
-    <div class="min-h-screen bg-gray-100">
+<body class="font-sans antialiased bg-gray-100"
+      data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
+      data-login-url="{{ route('login') }}"
+      data-csrf-token="{{ csrf_token() }}">
+    <div class="min-h-screen bg-gray-100" id="app">
         {{-- @include('layouts.navigation') --}}
 
         <!-- Page Heading -->
@@ -29,5 +32,11 @@
         </main>
     </div>
     @stack('scripts')
+    <script>
+        const bodyData = document.body.dataset;
+        window.isAuthenticated = bodyData.isAuthenticated === '1';
+        window.loginUrl = bodyData.loginUrl;
+        window.csrfToken = bodyData.csrfToken;
+    </script>
 </body>
 </html>

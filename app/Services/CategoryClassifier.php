@@ -5,47 +5,66 @@ namespace App\Services;
 use App\Models\Category;
 use Illuminate\Support\Str;
 
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
 class CategoryClassifier
 {
-    public function classify(string $text, int $topN = 3, string $type = 'Software'): array
+    public function classify(string $text): array
     {
-        $text = $this->preprocess($text);
-        $tokens = $this->tokenize($text);
+        try {
+            $categories = Category::whereHas('types', fn($q) => $q->where('name', 'Category'))->pluck('name')->implode(', ');
+            $bestFor = Category::whereHas('types', fn($q) => $q->where('name', 'Best for'))->pluck('name')->implode(', ');
+            $pricing = Category::whereHas('types', fn($q) => $q->where('name', 'Pricing'))->pluck('name')->implode(', ');
 
-        $categories = Category::whereHas('types', function ($query) use ($type) {
-            $query->where('name', $type);
-        })->whereNotNull('keywords')->get();
-        
-        $categoryScores = [];
+            $promptTemplate = file_get_contents(resource_path('prompts/category_classification_prompt.txt'));
+            $prompt = str_replace(
+                ['{available_categories}', '{available_best_for_tags}', '{available_pricing_models}', '{website_content}'],
+                [$categories, $bestFor, $pricing, $text],
+                $promptTemplate
+            );
 
-        foreach ($categories as $category) {
-            $keywords = json_decode($category->keywords, true);
-            if (empty($keywords)) {
-                continue;
+            $apiKey = config('services.google.api_key');
+            if (!$apiKey) {
+                return ['categories' => [], 'best_for' => [], 'pricing' => []];
             }
 
-            $matches = count(array_intersect($keywords, $tokens));
-            $score = $matches / count($keywords);
+            $response = Http::withHeaders([
+                'X-goog-api-key' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent", [
+                'contents' => [['parts' => [['text' => $prompt]]]]
+            ]);
 
-            if ($score > 0) {
-                $categoryScores[$category->name] = $score;
+            if ($response->failed()) {
+                return ['categories' => [], 'best_for' => [], 'pricing' => []];
             }
+
+            $responseText = $response->json('candidates.0.content.parts.0.text', '');
+            
+            // Clean the response text
+            $cleanedText = str_replace(['```json', '```'], '', $responseText);
+            $jsonResponse = json_decode(trim($cleanedText), true);
+
+            Log::info('Category Classification Response', [
+                'raw_response' => $responseText,
+                'cleaned_text' => $cleanedText,
+                'json_decoded' => $jsonResponse
+            ]);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Failed to decode JSON from category classifier.', ['error' => json_last_error_msg(), 'response' => $responseText]);
+                return ['categories' => [], 'best_for' => [], 'pricing' => []];
+            }
+
+            return [
+                'categories' => $jsonResponse['categories'] ?? [],
+                'best_for' => $jsonResponse['best_for'] ?? [],
+                'pricing' => $jsonResponse['pricing'] ?? [],
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to classify categories.', ['error' => $e->getMessage()]);
+            return ['categories' => [], 'best_for' => [], 'pricing' => []];
         }
-
-        arsort($categoryScores);
-
-        return array_slice($categoryScores, 0, $topN, true);
-    }
-
-    private function preprocess(string $text): string
-    {
-        $text = strtolower($text);
-        $text = preg_replace('/[^a-z0-9\s]/', '', $text);
-        return $text;
-    }
-
-    private function tokenize(string $text): array
-    {
-        return explode(' ', $text);
     }
 }

@@ -75,7 +75,7 @@
                     <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
                        target="_blank" rel="noopener nofollow"
                        @click.stop
-                       class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200  rounded-full hover:bg-gray-100 "
+                       class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200  rounded-full hover:bg-gray-10 "
                        aria-label="Open product link in new tab">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-600 " fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -87,7 +87,7 @@
             </h2>
             <p class="text-gray-700 text-xs md:text-sm mt-0.5 mb-1 line-clamp-2" itemprop="description">{{ $product->tagline }}</p>
             
-            <div class="mt-1.5 flex flex-wrap gap-2 items-center">
+            <div class="mt-1.5 flex-wrap gap-2 items-center">
                 @if($isPromoted)
                     <span class="inline-flex items-center bg-gray-100 text-gray-800 rounded text-xs">
                         <span class="px-2 py-1 font-semibold">Promoted</span>
@@ -97,7 +97,7 @@
                 @foreach($product->categories as $cat)
                     <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
                        @click.stop
-                       class="inline-flex items-center bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 rounded text-xs @if($isPromoted) opacity-75 @endif">
+                       class="inline-flex items-center bg-gray-100 hover:bg-gray-20 text-gray-600 hover:text-gray-800 rounded text-xs @if($isPromoted) opacity-75 @endif">
                         <span class="px-2 py-1 hover:underline">{{ $cat->name }}</span>
                         @if(isset($cat->products_count))
                         <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full bg-gray-200 hover:bg-gray-300 text-gray-500 hover:text-gray-600 text-xs font-semibold flex items-center justify-center leading-none antialiased">
@@ -138,14 +138,31 @@
             </div> -->
         </div>
 
-        <div x-data="upvote({{ $product->isUpvotedByCurrentUser ? 'true' : 'false' }}, {{ $product->votes_count }}, {{ $product->id }}, '{{ $product->slug }}', {{ Auth::check() ? 'true' : 'false' }}, '{{ csrf_token() }}')" class="upvote-control-wrapper flex flex-col items-center justify-start pt-1 ml-1 md:ml-2 w-10 flex-shrink-0">
+        <div x-data="upvote(
+            {{ $product->isUpvotedByCurrentUser ? 'true' : 'false' }},
+            {{ $product->votes_count }},
+            {{ $product->id }},
+            '{{ $product->slug }}',
+            {{ Auth::check() ? 'true' : 'false' }},
+            '{{ csrf_token() }}'
+        )" class="upvote-control-wrapper flex flex-col items-center justify-start pt-1 ml-1 md:ml-2 w-10 flex-shrink-0">
             <button type="button"
-                    @click.stop="toggleUpvote"
-                    :class="{ 'text-[var(--color-primary-500)]': isUpvoted, 'text-gray-400 hover:text-gray-600': !isUpvoted, 'opacity-50': isLoading }"
+                    @click="toggleUpvote"
+                    :class="{
+                        'text-[var(--color-primary-500)]': isUpvoted,
+                        'text-gray-400 hover:text-gray-600': !isUpvoted,
+                        'opacity-50': isLoading
+                    }"
                     class="p-1 rounded-md outline-none"
                     :disabled="isLoading"
                     aria-label="Upvote {{ $product->name }}">
-                <svg width="20px" height="20px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="none"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path fill="currentColor" d="M8 1.25a2.101 2.101 0 00-1.785.996l.64.392-.642-.388-5.675 9.373-.006.01a2.065 2.065 0 00.751 2.832c.314.183.67.281 1.034.285h11.366a2.101 2.101 0 001.791-1.045 2.064 2.064 0 00-.006-2.072L9.788 2.25l-.003-.004A2.084 2.084 0 008 1.25z"></path></g></svg>
+                <svg width="20px" height="20px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path fill="currentColor" d="M8 1.25a2.101 2.101 0 00-1.785.996l.64.392-.642-.388-5.675 9.373-.006.01a2.065 2.065 0 00.751 2.832c.314.183.67.281 1.034.285h11.366a2.101 2.101 0 001.791-1.045 2.064 2.064 0 00-.006-2.072L9.788 2.25l-.003-.004A2.084 2.084 0 008 1.25z"></path>
+                    </g>
+                </svg>
             </button>
             <span x-text="votesCount" class="text-xs text-gray-600 mt-0.5"></span>
             <span x-show="errorMessage" x-text="errorMessage" class="text-red-500 text-xs mt-1"></span>
@@ -159,7 +176,7 @@
 @empty
     {{-- This case is handled by the check before the loop if products are empty --}}
     @if(!$adDisplayed && $productCountForAd === 0) {{-- Check if ad was displayed when list was empty --}}
-      <div class="text-gray-400 text-center py-12">No products found.</div>
+      <div class="text-gray-40 text-center py-12">No products found.</div>
     @endif
 @endforelse
 

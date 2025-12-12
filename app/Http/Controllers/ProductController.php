@@ -25,8 +25,9 @@ use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
 use App\Services\FaviconExtractorService;
 use App\Services\SlugService;
-use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
+use App\Services\NameExtractorService;
+use App\Services\LogoExtractorService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
 
@@ -34,205 +35,23 @@ class ProductController extends Controller
 {
     protected FaviconExtractorService $faviconExtractor;
     protected SlugService $slugService;
-    protected CategoryClassifier $categoryClassifier;
     protected TechStackDetectorService $techStackDetector;
+    protected NameExtractorService $nameExtractor;
+    protected LogoExtractorService $logoExtractor;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, CategoryClassifier $categoryClassifier, TechStackDetectorService $techStackDetector)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
-        $this->categoryClassifier = $categoryClassifier;
         $this->techStackDetector = $techStackDetector;
+        $this->nameExtractor = $nameExtractor;
+        $this->logoExtractor = $logoExtractor;
     }
 
     public function home(Request $request)
     {
         $now = Carbon::now();
         return $this->productsByWeek($request, $now->year, $now->weekOfYear, true);
-
-        $displayDateString = $serverTodayDate->toDateString();
-
-        $categories = Category::withCount(['products' => function ($query) {
-            $query->where('approved', true)
-                ->where('is_published', true);
-        }])->orderByDesc('products_count')->orderBy('name')->get();
-
-        $allTypes = Type::with(['categories' => function ($query) {
-            $query->withCount(['products' => function ($subQuery) {
-                $subQuery->where('approved', true)
-                    ->where('is_published', true);
-            }])->orderByDesc('products_count')->orderBy('name');
-        }])->orderBy('name')->get();
-
-        $softwareTypes = $allTypes->filter(fn($type) => $type->name === 'Software Categories');
-        $pricingTypes = $allTypes->filter(fn($type) => $type->name === 'Pricing');
-        $otherTypes = $allTypes->filter(fn($type) => !in_array($type->name, ['Software Categories', 'Pricing']));
-        $types = $softwareTypes->concat($otherTypes)->concat($pricingTypes);
-
-        $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
-            if (Auth::check()) {
-                $query->where('user_id', Auth::id());
-            }
-        }])
-            ->where('approved', true)
-            ->where('is_promoted', true)
-            ->whereNotNull('promoted_position')
-            ->where('is_published', true)
-            ->orderBy('promoted_position', 'asc')
-            ->get()
-            ->keyBy('promoted_position'); // Key by position for easy lookup
-
-        $baseRegularProductsQuery = Product::where('approved', true)
-            ->where('is_promoted', false)
-            ->where('is_published', true);
-
-        // Apply date range filters to the base query for regular products
-        switch ($range) {
-            case 'weekly':
-                $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY)->toDateString();
-                $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY)->toDateString();
-                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek, $endOfWeek]);
-                break;
-            case 'monthly':
-                $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
-                $today = Carbon::now()->toDateString();
-                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth, $today]);
-                break;
-            case 'yearly':
-                $startOfYear = Carbon::now()->startOfYear()->toDateString();
-                $today = Carbon::now()->toDateString();
-                $baseRegularProductsQuery->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear, $today]);
-                break;
-        }
-
-        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'home_' . $range);
-
-        $perPage = 15;
-        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
-        $offset = ($currentPage - 1) * $perPage;
-
-        $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
-        $paginatedRegularProductIds = [];
-        $finalProductOrder = [];
-        $regularProductIndex = 0;
-
-        for ($i = 1; $i <= $totalProductsCount; $i++) {
-            if ($promotedProducts->has($i)) {
-                $finalProductOrder[] = $promotedProducts->get($i);
-            } else {
-                if (isset($shuffledRegularProductIds[$regularProductIndex])) {
-                    $finalProductOrder[] = $shuffledRegularProductIds[$regularProductIndex];
-                    $regularProductIndex++;
-                }
-            }
-        }
-
-        // Manually paginate the final product order (which contains mixed Product objects and IDs)
-        $currentPageItems = array_slice($finalProductOrder, $offset, $perPage);
-
-        // Separate IDs from Product objects to fetch full details for regular products
-        $regularProductIdsOnPage = collect($currentPageItems)->filter(fn($item) => is_numeric($item))->values();
-        $promotedProductsOnPage = collect($currentPageItems)->filter(fn($item) => is_object($item))->values();
-
-        $regularProductsOnPageQuery = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
-            if (Auth::check()) {
-                $query->where('user_id', Auth::id());
-            }
-        }])
-        ->whereIn('id', $regularProductIdsOnPage);
-
-        if ($regularProductIdsOnPage->isNotEmpty()) {
-            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
-            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
-        }
-        $regularProductsOnPage = $regularProductsOnPageQuery->get();
-
-        // Merge and re-sort to maintain the exact order
-        $combinedProducts = collect();
-        foreach ($currentPageItems as $item) {
-            if (is_object($item)) { // It's a promoted product object
-                $combinedProducts->push($item);
-            } else { // It's a regular product ID
-                $combinedProducts->push($regularProductsOnPage->firstWhere('id', $item));
-            }
-        }
-
-        // Create a LengthAwarePaginator manually
-        $regularProducts = new \Illuminate\Pagination\LengthAwarePaginator(
-            $combinedProducts,
-            $totalProductsCount,
-            $perPage,
-            $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
-
-        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(fn($type) => ['name' => $type->name])->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
-
-        $headerAd = Ad::whereHas('adZones', fn($q) => $q->where('slug', 'header-above-calendar'))->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-        $sidebarTopAd = Ad::whereHas('adZones', fn($q) => $q->where('slug', 'sidebar-top'))->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-        $belowProductListingAdZone = AdZone::where('slug', 'below-product-listing')->first();
-        $belowProductListingAd = null;
-        $belowProductListingAdPosition = null;
-        if ($belowProductListingAdZone) {
-            $belowProductListingAd = $belowProductListingAdZone->ads()->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-            if ($belowProductListingAd) {
-                $belowProductListingAdPosition = $belowProductListingAdZone->display_after_nth_product;
-            }
-        }
-
-        $activeDates = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw('DISTINCT DATE(COALESCE(published_at, created_at)) as date')
-            ->pluck('date')
-            ->toArray();
-        
-        $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
-            ->where('expires_at', '>', now())
-            ->get()
-            ->pluck('product')
-            ->shuffle();
-
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
-
-        return view('home', compact(
-            'categories', 'types',
-            'regularProducts',
-            'premiumProducts',
-            'alpineProducts',
-            'serverTodayDateString', 'displayDateString',
-            'headerAd', 'sidebarTopAd',
-            'belowProductListingAd', 'belowProductListingAdPosition',
-            'activeDates',
-            'nextLaunchTime'
-        ));
     }
 
     public function create()
@@ -261,6 +80,8 @@ class ProductController extends Controller
             'tagline' => $oldInput['tagline'] ?? '',
             'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
             'description' => $oldInput['description'] ?? '',
+            'logo' => null,
+            'video_url' => null,
             'current_categories' => $oldInput['categories'] ?? [],
             'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
         ];
@@ -276,6 +97,48 @@ class ProductController extends Controller
         ));
     }
 
+    public function createSubmission()
+    {
+        $allTechStacks = TechStack::orderBy('name')->get();
+        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+    
+        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
+        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+    
+        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+    
+        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
+        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
+        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+    
+        $oldInput = session()->getOldInput();
+        $displayData = [
+            'name' => $oldInput['name'] ?? '',
+            'slug' => $oldInput['slug'] ?? '',
+            'link' => $oldInput['link'] ?? '',
+            'tagline' => $oldInput['tagline'] ?? '',
+            'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
+            'description' => $oldInput['description'] ?? '',
+            'logo' => null,
+            'video_url' => null,
+            'current_categories' => $oldInput['categories'] ?? [],
+            'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
+        ];
+
+        $types = Type::with('categories')->get();
+        return view('products.create', compact(
+            'displayData',
+            'regularCategories',
+            'bestForCategories',
+            'pricingCategories',
+            'allTechStacksData',
+            'types'
+        ));
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -284,6 +147,11 @@ class ProductController extends Controller
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
             'link' => 'required|url|max:255',
+            'maker_links' => 'nullable|array',
+            'maker_links.*' => 'url|max:2048',
+            'sell_product' => 'nullable|boolean',
+            'asking_price' => 'nullable|numeric|min:0|max:999999.99',
+            'x_account' => 'nullable|string|max:255',
             'categories' => 'required|array',
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
@@ -322,6 +190,12 @@ class ProductController extends Controller
         $validated['votes_count'] = 0;
         $validated['approved'] = false;
         $validated['description'] = $request->input('description');
+        
+        // Handle optional fields
+        $validated['maker_links'] = $request->input('maker_links', []);
+        $validated['sell_product'] = $request->boolean('sell_product', false);
+        $validated['asking_price'] = $request->input('asking_price');
+        $validated['x_account'] = $request->input('x_account');
         
         if ($request->hasFile('logo')) {
             $image = $request->file('logo');
@@ -368,6 +242,16 @@ class ProductController extends Controller
 
         $admins = User::getAdmins();
         Notification::send($admins, new ProductSubmitted($product));
+
+        // Return JSON response for API calls, redirect for regular form submissions
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product submitted successfully',
+                'product_id' => $product->id,
+                'redirect_url' => route('products.submission.success', ['product' => $product->id])
+            ]);
+        }
 
         return redirect()->route('products.submission.success', ['product' => $product->id]);
     }
@@ -596,20 +480,24 @@ class ProductController extends Controller
 
     public function checkUrl(Request $request)
     {
-        $url = $request->query('url');
+        $url = $request->input('url');
         if (!$url) {
             return response()->json(['exists' => false]);
         }
-        $parsed = parse_url($url);
-        $base = $parsed['scheme'] . '://' . $parsed['host'];
-        if (isset($parsed['path'])) {
-            $base .= rtrim($parsed['path'], '/');
+
+        $product = Product::where('link', $url)->first();
+
+        if ($product) {
+            return response()->json([
+                'exists' => true,
+                'product' => [
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                ],
+            ]);
         }
-        $baseWithSlash = $base . '/';
-        $exists = Product::where(function ($q) use ($base, $baseWithSlash) {
-            $q->where('link', $base)->orWhere('link', $baseWithSlash);
-        })->exists();
-        return response()->json(['exists' => $exists]);
+
+        return response()->json(['exists' => false]);
     }
 
     public function categoryProducts(Category $category)
@@ -642,7 +530,7 @@ class ProductController extends Controller
                 }
             }]);
         
-        $regularProducts = $regularProductsQuery->orderByDesc('votes_count')->orderBy('name', 'asc')->get();
+        $regularProducts = $regularProductsQuery->orderByRaw('(votes_count + impressions) DESC')->orderBy('name', 'asc')->get();
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
@@ -768,7 +656,8 @@ class ProductController extends Controller
             ->where('is_published', true)
             ->where(function ($query) use ($date) {
                 $query->whereDate('published_at', $date->toDateString());
-            });
+            })
+            ->orderByRaw('(votes_count + impressions) DESC');
 
         $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
@@ -935,7 +824,8 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek->toDateString(), $endOfWeek->toDateString()]);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->orderByRaw('(votes_count + impressions) DESC');
 
         $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
@@ -952,12 +842,17 @@ class ProductController extends Controller
 
         $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
-        if ($isHomepage && $shuffledRegularProductIds->isEmpty()) {
-            $previousWeek = $startOfWeek->copy()->subWeek();
-            $year = $previousWeek->year;
-            $week = $previousWeek->weekOfYear;
-
-            return $this->productsByWeek($request, $year, $week, false);
+        if ($shuffledRegularProductIds->isEmpty()) {
+            // Find the last available week with products when no products exist for the requested week
+            $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
+            
+            if ($lastAvailableWeek) {
+                $year = $lastAvailableWeek->year;
+                $week = $lastAvailableWeek->weekOfYear;
+                
+                // Redirect to the last available week with products
+                return $this->productsByWeek($request, $year, $week, false);
+            }
         }
 
         $totalProductsCount = $shuffledRegularProductIds->count() + $promotedProducts->count();
@@ -1044,7 +939,7 @@ class ProductController extends Controller
 
         $activeWeeks = Product::where('approved', true)
             ->where('is_published', true)
-            ->selectRaw('DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 1)) as week')
+            ->selectRaw(DB::connection()->getDriverName() === 'mysql' ? 'DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 1)) as week' : "DISTINCT strftime('%Y-%W', COALESCE(published_at, created_at)) as week")
             ->pluck('week')
             ->toArray();
 
@@ -1064,7 +959,8 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth->toDateString(), $endOfMonth->toDateString()]);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->orderByRaw('(votes_count + impressions) DESC');
 
         $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
@@ -1190,7 +1086,8 @@ class ProductController extends Controller
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear->toDateString(), $endOfYear->toDateString()]);
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfYear->toDateString(), $endOfYear->toDateString()])
+            ->orderByRaw('(votes_count + impressions) DESC');
 
         $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
             if (Auth::check()) {
@@ -1318,7 +1215,7 @@ class ProductController extends Controller
                     ->orWhere('description', 'LIKE', "%{$term}%");
             })
             ->with('categories') // Eager load categories
-            ->orderBy('votes_count', 'desc')
+            ->orderByRaw('(votes_count + impressions) DESC')
             ->take(10)
             ->get();
 
@@ -1397,7 +1294,7 @@ class ProductController extends Controller
             ->whereHas('categories', function ($query) use ($categoryIds) {
                 $query->whereIn('categories.id', $categoryIds);
             })
-            ->orderByDesc('votes_count')
+            ->orderByRaw('(votes_count + impressions) DESC')
             ->orderByDesc('created_at')
             ->take(3)
             ->get();
@@ -1408,7 +1305,8 @@ class ProductController extends Controller
         $description = strip_tags($product->description);
         $metaDescription = Str::limit($description, 160);
 
-        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription', 'bestForCategories'));
+        $allCategories = Category::orderBy('name')->get();
+        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription', 'bestForCategories', 'allCategories'));
     }
 
     /**
@@ -1429,11 +1327,28 @@ class ProductController extends Controller
 
         // Try to retrieve from cache first
         $shuffledIds = cache()->remember($cacheKey, Carbon::tomorrow()->diffInMinutes(), function () use ($query, $seed) {
-            $allProductIds = $query->pluck('id'); // Get all IDs first
+            // First get products with combined score > 0 ordered by score, then randomize products with score = 0
+            $orderedProducts = $query->orderByRaw('(votes_count + impressions) DESC')->get(['id', 'votes_count', 'impressions']);
             
-            // Convert to array, shuffle with seed, then convert back to collection
-            $shuffledArray = $allProductIds->shuffle($seed)->all();
-            return collect($shuffledArray);
+            $highScoreIds = collect();
+            $zeroScoreIds = collect();
+            
+            foreach ($orderedProducts as $product) {
+                $combinedScore = $product->votes_count + $product->impressions;
+                if ($combinedScore > 0) {
+                    $highScoreIds->push($product->id);
+                } else {
+                    $zeroScoreIds->push($product->id);
+                }
+            }
+            
+            // Shuffle only the zero-score products to randomize them
+            $shuffledZeroScoreIds = $zeroScoreIds->shuffle($seed);
+            
+            // Combine the high-score products (maintaining order) with shuffled zero-score products
+            $result = $highScoreIds->concat($shuffledZeroScoreIds);
+            
+            return $result;
         });
 
         return $shuffledIds;
@@ -1455,6 +1370,44 @@ class ProductController extends Controller
 
         return $dom->saveHTML();
     }
+    
+    /**
+     * Find the last available week with products before the given date
+     *
+     * @param Carbon $startDate The date to start searching backwards from
+     * @return Carbon|null The start of the week with products, or null if none found
+     */
+    private function findLastAvailableWeekWithProducts(Carbon $startDate)
+    {
+        $searchDate = $startDate->copy();
+        
+        // Search backwards up to 52 weeks (1 year) to find a week with products
+        for ($i = 0; $i < 52; $i++) {
+            $startOfWeek = $searchDate->copy()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+            
+            // Check if there are any products in this week
+            $hasProducts = Product::where('approved', true)
+                ->where('is_promoted', false)
+                ->where('is_published', true)
+                ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
+                    $startOfWeek->toDateString(),
+                    $endOfWeek->toDateString()
+                ])
+                ->exists();
+            
+            if ($hasProducts) {
+                return $startOfWeek;
+            }
+            
+            // Move to the previous week
+            $searchDate = $searchDate->subWeek();
+        }
+        
+        // If no week with products was found, return null
+        return null;
+    }
+    
     public function fetchUrlData(Request $request)
     {
         $url = $request->input('url');
@@ -1529,9 +1482,11 @@ class ProductController extends Controller
             $logos = $this->rankAndSelectLogos($logos);
 
 
-            $categoryNames = array_keys($this->categoryClassifier->classify($html));
-            $categoryIds = \App\Models\Category::whereIn('name', $categoryNames)->pluck('id')->toArray();
-            Log::info('Classified Categories:', ['url' => $url, 'categories' => $categoryIds]);
+            // Category classification has been removed as part of AI functionality removal
+            // $categoryNames = array_keys($this->categoryClassifier->classify($html));
+            // $categoryIds = \App\Models\Category::whereIn('name', $categoryNames)->pluck('id')->toArray();
+            // Log::info('Classified Categories:', ['url' => $url, 'categories' => $categoryIds]);
+            $categoryIds = [];
 
             $techStackNames = $this->techStackDetector->detect($url);
             $techStackIds = \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray();
@@ -1543,7 +1498,6 @@ class ProductController extends Controller
                 'og_image' => $ogImage,
                 'logos' => array_values($logos),
                 'og_images' => array_values(array_unique($ogImages)),
-                'categories' => $categoryIds,
                 'tech_stacks' => $techStackIds,
             ]);
 
@@ -1601,4 +1555,232 @@ class ProductController extends Controller
 
         return array_slice(array_column($scoredLogos, 'url'), 0, 6);
     }
+    public function fetchProductData(Request $request)
+    {
+        $url = $request->input('url');
+
+        if (!$url) {
+            return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $response = Http::get($url);
+            $html = $response->body();
+
+            $doc = new DOMDocument();
+            @$doc->loadHTML($html);
+
+            $titleNode = $doc->getElementsByTagName('title')->item(0);
+            $title = $titleNode ? $titleNode->nodeValue : '';
+
+            $description = '';
+            $metas = $doc->getElementsByTagName('meta');
+            for ($i = 0; $i < $metas->length; $i++) {
+                $meta = $metas->item($i);
+                if (strtolower($meta->getAttribute('name')) == 'description') {
+                    $description = $meta->getAttribute('content');
+                }
+            }
+
+            return response()->json([
+                'name' => trim($title),
+                'tagline' => trim($description),
+                'product_page_tagline' => trim($description),
+                'description' => '',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch data.'], 500);
+        }
+    }
+    public function fetchMetadata(Request $request)
+    {
+        $url = $request->input('url');
+
+        if (!$url) {
+            return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $response = Http::get($url);
+            $html = $response->body();
+
+            $doc = new DOMDocument();
+            @$doc->loadHTML($html);
+
+            $titleNode = $doc->getElementsByTagName('title')->item(0);
+            $title = $titleNode ? $titleNode->nodeValue : '';
+
+            $description = '';
+            $metas = $doc->getElementsByTagName('meta');
+            for ($i = 0; $i < $metas->length; $i++) {
+                $meta = $metas->item($i);
+                if (strtolower($meta->getAttribute('name')) == 'description') {
+                    $description = $meta->getAttribute('content');
+                }
+            
+            }
+
+            $faviconUrl = 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($url);
+
+            return response()->json([
+                'name' => $this->nameExtractor->extract(trim($title)),
+                'tagline' => trim($description),
+                'description' => '',
+                'favicon' => $faviconUrl,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch data.'], 500);
+        }
+    }
+
+    public function getCategories()
+    {
+        try {
+            $categoryTypes = json_decode(Storage::disk('local')->get('category_types.json'), true);
+            if (!$categoryTypes) {
+                // Fallback or error if the JSON file is missing or invalid
+                $categoryTypes = [
+                    ['type_id' => 1, 'type_name' => 'Category'],
+                    ['type_id' => 2, 'type_name' => 'Pricing'],
+                    ['type_id' => 3, 'type_name' => 'Best for'],
+                ];
+            }
+
+            $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+            $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+            $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+
+            $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+            $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+            $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+
+            $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get(['id', 'name']);
+            $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get(['id', 'name']);
+            $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get(['id', 'name']);
+
+            return response()->json([
+                'categories' => $regularCategories,
+                'bestFor' => $bestForCategories,
+                'pricing' => $pricingCategories,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch categories for API: ' . $e->getMessage());
+            return response()->json(['error' => 'Could not retrieve categories.'], 500);
+        }
+    }
+
+    public function phpinfo()
+    {
+        phpinfo();
+    }
+    public function fetchInitialMetadata(Request $request)
+    {
+        $url = $request->input('url');
+        if (!$url) {
+            return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        $metadataResponse = $this->fetchMetadata($request);
+        if ($metadataResponse->getStatusCode() !== 200) {
+            return $metadataResponse;
+        }
+        $metadata = json_decode($metadataResponse->getContent(), true);
+
+        $responseData = [
+            'name' => $metadata['name'],
+            'tagline' => $metadata['tagline'],
+            'favicon' => $metadata['favicon'],
+        ];
+
+        Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
+        return response()->json($responseData);
+    }
+
+    public function processUrl(Request $request)
+    {
+        $url = $request->input('url');
+        if (!$url) {
+            return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        $name = $request->input('name');
+        $tagline = $request->input('tagline');
+
+        $fetchContent = $request->input('fetch_content', true);
+
+        $description = '';
+
+        if ($fetchContent) {
+            // 2. Generate Description - AI functionality removed
+            // Original implementation would call $this->generateDescription($name, $tagline)
+            // Now returns empty string since AI functionality has been removed
+            $description = '';
+        }
+
+        // 3. Fetch HTML for Logos
+        $htmlResponse = Http::get($url);
+        $htmlContent = $htmlResponse->body();
+
+        // Extract Logos
+        $logos = $this->logoExtractor->extract($url, $htmlContent);
+
+        $responseData = [
+            'description' => $description,
+            'logos' => $logos,
+            'tagline' => $tagline,
+            'tagline_detailed' => '',
+        ];
+
+        Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
+        return response()->json($responseData);
+    }
+
+
+    public function getTechStacks()
+    {
+        try {
+            $techStacks = TechStack::orderBy('name')->get(['id', 'name']);
+            return response()->json($techStacks);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch tech stacks for API: ' . $e->getMessage());
+            return response()->json(['error' => 'Could not retrieve tech stacks.'], 500);
+        }
+    }
+
+    public function upvote(Request $request, Product $product)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'message' => 'You must be logged in to upvote products.'
+            ], 401);
+        }
+
+        $user = Auth::user();
+
+        // Check if user has already upvoted this product
+        $existingUpvote = UserProductUpvote::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->first();
+
+        if ($existingUpvote) {
+            // Remove the upvote (toggle off)
+            $existingUpvote->delete();
+            $product->decrement('votes_count');
+            $isUpvoted = false;
+        } else {
+            // Add the upvote (toggle on)
+            UserProductUpvote::create([
+                'user_id' => $user->id,
+                'product_id' => $product->id
+            ]);
+            $product->increment('votes_count');
+            $isUpvoted = true;
+        }
+
+        return response()->json([
+            'is_upvoted' => $isUpvoted,
+            'votes_count' => $product->fresh()->votes_count
+        ]);
+    }
+
 }

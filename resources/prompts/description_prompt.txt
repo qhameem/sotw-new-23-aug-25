@@ -1,0 +1,30 @@
+Generate a detailed and engaging product description based on the following details:
+
+Product Name: {product_name}
+Website Content: {website_content}
+
+The description must be structured as follows and adhere to all rules:
+
+### Rules:
+1.  **Overall Tone:** Write in a clear, confident, and compelling tone. The description should be informative but also exciting, making the reader feel like they understand the product's value.
+2.  **Total Length:** The entire description must be under 500 characters.
+3.  **No Extra Text:** Return only the HTML for the description. Do not include any extra formatting, labels, or introductory text like "Here is the description:".
+
+### Structure:
+
+**Paragraph 1: Introduction**
+*   **Content:** Start with a strong opening sentence that clearly explains what the product does and who it's for. Mention the product's name naturally within this paragraph.
+*   **Formatting:** Enclose the product's name in `<b>` tags.
+
+**Paragraph 2: Key Features**
+*   **Content:** List 2-3 key features of the product. For each feature, write a short sentence that explains its primary **benefit** to the user. Focus on the value the feature provides, not just what it is.
+*   **Formatting:**
+    *   Start this section with the heading `<h3><b>Key Features:</b></h3>`.
+    *   Use an unordered list (`<ul>`) for the features.
+    *   Each list item (`<li>`) should be a single, concise sentence.
+
+**Paragraph 3: Best For**
+*   **Content:** Briefly describe the ideal user for this product. This helps with targeting and relevance.
+*   **Formatting:**
+    *   Start this section with the heading `<h3><b>Best For:</b></h3>`.
+    *   Write a short, single paragraph for this section.

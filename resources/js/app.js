@@ -1,19 +1,121 @@
-import './bootstrap';
-import 'flowbite'; // This initializes Flowbite components based on data attributes
-import { Datepicker as FlowbiteDatepicker } from 'flowbite';
+import { createApp } from 'vue';
 import Alpine from 'alpinejs';
-import upvote from './components/upvote';
+import ProductSubmit from './components/ProductSubmit.vue';
+import NotificationBell from './components/NotificationBell.vue';
+import UserDropdown from './components/UserDropdown.vue';
+import DynamicChecklist from './components/DynamicChecklist.vue';
+import TodoList from './components/TodoList.vue';
+import axios from 'axios';
 
-// Initialize Alpine before DOMContentLoaded for better reliability
+// Add this line to set the CSRF token for all Axios requests
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Initialize Alpine.js
 window.Alpine = Alpine;
-Alpine.data('upvote', upvote);
+
+// Define the upvote component
+Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
+    isUpvoted: isUpvoted,
+    votesCount: initialVotesCount,
+    errorMessage: '',
+
+    async toggleUpvote() {
+        if (!isAuthenticated) {
+            // Redirect to login if not authenticated
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/products/${productId}/upvote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.isUpvoted = data.is_upvoted;
+                this.votesCount = data.votes_count;
+                this.errorMessage = '';
+            } else {
+                const errorData = await response.json();
+                this.errorMessage = errorData.message || 'An error occurred while processing your request';
+            }
+        } catch (error) {
+            console.error('Error toggling upvote:', error);
+            this.errorMessage = 'Network error occurred. Please try again.';
+        }
+    }
+}));
+
+// Handle checklist visibility based on current step
+document.addEventListener('DOMContentLoaded', () => {
+    // Initially hide checklist if we're on the URL input step
+    const productSubmitApp = document.getElementById('product-submit-app');
+    if (productSubmitApp) {
+        // Initially assume step 1 (URL input) and hide checklist
+        const checklistContainer = document.getElementById('checklist-container');
+        if (checklistContainer) {
+            checklistContainer.style.display = 'none';
+        }
+    }
+});
+
+// Listen for custom events to show/hide checklist
+document.addEventListener('step-changed', (event) => {
+    const checklistContainer = document.getElementById('checklist-container');
+    if (checklistContainer) {
+        // Show checklist when step is 2 (form sections), hide when step is 1 (URL input)
+        checklistContainer.style.display = event.detail.step === 2 ? 'block' : 'none';
+    }
+});
+
 Alpine.start();
 
-// Make Datepicker available globally for inline scripts
-if (typeof window.Flowbite === 'undefined') {
-    window.Flowbite = {};
+if (document.getElementById('notification-bell-app')) {
+    const notificationApp = createApp({});
+    notificationApp.component('notification-bell', NotificationBell);
+    notificationApp.mount('#notification-bell-app');
 }
-window.Flowbite.Datepicker = FlowbiteDatepicker;
+
+if (document.getElementById('product-submit-app')) {
+    const app = createApp(ProductSubmit);
+    app.mount('#product-submit-app');
+}
+
+if (document.getElementById('user-dropdown-app')) {
+    const el = document.getElementById('user-dropdown-app');
+    const userDropdownApp = createApp(UserDropdown, {
+        user: JSON.parse(el.dataset.user),
+        isAdmin: el.dataset.isAdmin === 'true',
+    });
+    userDropdownApp.mount('#user-dropdown-app');
+}
+
+// Register the TodoList component globally
+if (document.getElementById('todo-app-container')) {
+    const todoApp = createApp({
+        components: {
+            TodoList
+        }
+    });
+    todoApp.mount('#todo-app-container');
+}
+
+// Mount the DynamicChecklist component to the checklist container
+if (document.getElementById('checklist-container')) {
+    const checklistApp = createApp(DynamicChecklist);
+    checklistApp.mount('#checklist-container');
+}
+
+// Make Datepicker available globally for inline scripts
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[app.js] DOMContentLoaded: Flowbite, Alpine initialized. Main script logic follows.');
@@ -102,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 });
+
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('sidebar-search-input');
     const searchResults = document.getElementById('sidebar-search-results');
@@ -131,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 data.products.forEach(product => {
                                     const logoHtml = product.logo_url
                                         ? `<img src="${product.logo_url}" alt="${product.name}" class="w-8 h-8 mr-3 rounded-md object-cover">`
-                                        : `<div class="w-8 h-8 mr-3 rounded-md bg-gray-200 flex items-center justify-center"><span class="text-xs font-semibold text-gray-500">${product.name.substring(0, 1)}</span></div>`;
+                                        : `<div class="w-8 h-8 mr-3 rounded-md bg-gray-20 flex items-center justify-center"><span class="text-xs font-semibold text-gray-500">${product.name.substring(0, 1)}</span></div>`;
 
                                     html += `<a href="/product/${product.slug}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 ${logoHtml}

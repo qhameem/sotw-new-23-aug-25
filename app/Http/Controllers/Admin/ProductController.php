@@ -59,7 +59,36 @@ class ProductController extends Controller
      */
     public function create()
     {
-        //
+        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
+        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+    
+        $regularCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+        $pricingCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+        $bestForCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+    
+        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
+        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
+        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+    
+        $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
+        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+
+        $displayData = [
+            'name' => old('name'),
+            'slug' => old('slug'),
+            'link' => old('link'),
+            'logo' => null,
+            'tagline' => old('tagline'),
+            'product_page_tagline' => old('product_page_tagline'),
+            'description' => old('description'),
+            'current_categories' => old('categories', []),
+            'current_tech_stacks' => old('tech_stacks', []),
+            'video_url' => old('video_url'),
+        ];
+
+        return view('admin.products.create', compact('displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'allTechStacksData'));
     }
 
     /**
@@ -67,7 +96,30 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:products,slug',
+            'tagline' => 'required|string|max:255',
+            'product_page_tagline' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'link' => 'required|url|max:255',
+            'categories' => 'sometimes|array',
+            'categories.*' => 'exists:categories,id',
+            'logo' => 'nullable|image|max:1024',
+            'video_url' => 'nullable|url',
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+        }
+
+        $product = Product::create($validated);
+
+        if ($request->has('categories')) {
+            $product->categories()->sync($validated['categories']);
+        }
+
+        return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
     }
 
     /**
@@ -98,27 +150,39 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load('media', 'categories.types');
+        $product->load('media', 'categories.types', 'techStacks');
+    
+        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
+        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
+        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
+        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
+    
+        $regularCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
+        $pricingCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
+        $bestForCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
+    
+        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
+        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
+        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+    
+        $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
+        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+
+        $displayData = [
+            'name' => old('name', $product->name),
+            'slug' => old('slug', $product->slug),
+            'link' => old('link', $product->link),
+            'logo' => $product->logo,
+            'tagline' => old('tagline', $product->tagline),
+            'product_page_tagline' => old('product_page_tagline', $product->product_page_tagline),
+            'description' => old('description', $product->description),
+            'current_categories' => old('categories', $product->categories->pluck('id')->toArray()),
+            'current_tech_stacks' => old('tech_stacks', $product->techStacks->pluck('id')->toArray()),
+            'video_url' => old('video_url', $product->video_url),
+        ];
+
         $allCategories = Category::with('types')->orderBy('name')->get();
         $types = \App\Models\Type::with('categories')->get();
-
-        $bestForCategories = $allCategories->filter(function ($category) {
-            return $category->types->contains('id', 3);
-        });
-
-        $pricingCategories = $allCategories->filter(function ($category) {
-            return $category->types->contains(function ($type) {
-                return $type->name === 'Pricing';
-            });
-        });
-
-        $regularCategories = $allCategories->filter(function ($category) {
-            return !$category->types->contains('id', 3) && !$category->types->contains(function ($type) {
-                return $type->name === 'Pricing';
-            });
-        });
-        
-
         $selectedBestForCategories = $product->categories()
             ->whereHas('types', function ($query) {
                 $query->where('types.id', 3);
@@ -126,7 +190,8 @@ class ProductController extends Controller
             ->pluck('categories.id')
             ->map(fn($id) => (string)$id)
             ->toArray();
-        return view('admin.products.edit', compact('product', 'allCategories', 'regularCategories', 'types', 'bestForCategories', 'pricingCategories', 'selectedBestForCategories'));
+
+        return view('admin.products.edit', compact('product', 'displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'allTechStacksData', 'allCategories', 'types', 'selectedBestForCategories'));
     }
 
     /**
@@ -143,8 +208,10 @@ class ProductController extends Controller
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
             'link' => 'required|url|max:255',
-            'categories' => 'required|array',
+            'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
+            'logo' => 'nullable|image|max:1024',
+            'video_url' => 'nullable|url',
         ]);
 
         // Handle logo removal
@@ -163,7 +230,10 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
-        $product->categories()->sync($validated['categories']);
+        
+        if ($request->has('categories')) {
+            $product->categories()->sync($validated['categories']);
+        }
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
 

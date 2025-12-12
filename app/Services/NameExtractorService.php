@@ -4,25 +4,41 @@ namespace App\Services;
 
 class NameExtractorService
 {
-    public function extract(string $title, string $url): string
+    /**
+     * Extracts the most likely product name from a page title.
+     *
+     * @param string $title The full title from the page's <title> tag.
+     * @return string The extracted name.
+     */
+    public function extract(string $title): string
     {
-        $separators = ['|', '-', '–', '—', ':', '•'];
-        $parts = preg_split('/(' . implode('|', array_map('preg_quote', $separators)) . ')/', $title);
-
-        if (count($parts) > 1) {
-            // When a title is split by a separator, the brand name is usually the shortest part.
-            $shortestPart = null;
-            foreach ($parts as $part) {
-                $trimmedPart = trim($part);
-                if (!empty($trimmedPart)) {
-                    if ($shortestPart === null || strlen($trimmedPart) < strlen($shortestPart)) {
-                        $shortestPart = $trimmedPart;
-                    }
-                }
-            }
-            return $shortestPart ?? $title;
+        // Return early if the title is empty
+        if (trim($title) === '') {
+            return '';
         }
 
-        return $title;
+        // Split the title by common separators (hyphen, em dash, en dash, pipe)
+        $parts = preg_split('/[|–—–-]/u', $title);
+
+        // Trim whitespace from each part and remove any empty parts
+        $parts = array_filter(array_map('trim', $parts));
+
+        // If splitting results in no valid parts, return the original title
+        if (empty($parts)) {
+            return $title;
+        }
+
+        // Find the shortest part, assuming it's the most likely name
+        $shortestPart = '';
+        $minLength = PHP_INT_MAX;
+
+        foreach ($parts as $part) {
+            if (strlen($part) < $minLength) {
+                $shortestPart = $part;
+                $minLength = strlen($part);
+            }
+        }
+
+        return $shortestPart;
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeoApiController;
 use App\Http\Controllers\Api\TechStackController;
+use App\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,3 +53,14 @@ Route::get('/tech-stack/detect', [TechStackController::class, 'detect']);
 Route::get('/sidebar-search', [\App\Http\Controllers\Api\SearchController::class, 'sidebarSearch'])->name('sidebar.search');
 
 Route::post('/impressions', [\App\Http\Controllers\ImpressionController::class, 'store']);
+
+Route::post('/fetch-product-data', [ProductController::class, 'fetchProductData']);
+Route::post('/fetch-metadata', [\App\Http\Controllers\ProductController::class, 'fetchMetadata']);
+Route::post('/fetch-initial-metadata', [\App\Http\Controllers\ProductController::class, 'fetchInitialMetadata']);
+Route::post('/process-url', [\App\Http\Controllers\ProductController::class, 'processUrl']);
+Route::post('/check-product-url', [ProductController::class, 'checkUrl']);
+Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate']);
+Route::get('/categories', [ProductController::class, 'getCategories']);
+Route::get('/tech-stacks', [ProductController::class, 'getTechStacks']);
+Route::post('/generate-ai-content', [ProductController::class, 'generateAiContent']);
+Route::post('/detect-categories', [ProductController::class, 'detectCategories']);

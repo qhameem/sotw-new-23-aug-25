@@ -19,9 +19,11 @@
                         <div id="sidebar-search-results" class="absolute right-0 z-50 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="display: none;"></div>
                     </div>
                 </div>
+                @auth
                 <div class="mr-2">
                     <x-notification-bell />
                 </div>
+                @endauth
             @endif
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open" class="flex items-center text-xs font-medium text-gray-700  hover:text-primary-500  transition ease-in-out duration-150" aria-haspopup="true" :aria-expanded="open.toString()">
