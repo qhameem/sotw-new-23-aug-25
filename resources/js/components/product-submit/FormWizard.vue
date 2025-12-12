@@ -156,20 +156,20 @@ function debounce(func, wait) {
 
 // Debounced function form updates
 const debouncedFormUpdate = debounce((newForm) => {
-  saveFormData();
+ saveFormData();
   
   // Emit form update event for the checklist
  const formForChecklist = {
-   link: newForm.link,
-   name: newForm.name,
-   tagline: newForm.tagline,
-   tagline_detailed: newForm.tagline_detailed,
-   description: newForm.description,
-   logo: logoPreview || (newForm.logos && newForm.logos.length > 0) ? true : null,
-   selectedPricing: newForm.pricing || [],
-};
+    link: newForm.link,
+    name: newForm.name,
+    tagline: newForm.tagline,
+    tagline_detailed: newForm.tagline_detailed,
+    description: newForm.description,
+    logo: (logoPreview || (newForm.logos && newForm.logos.length > 0)) ? true : null,
+    selectedPricing: newForm.pricing || [],
+ };
  emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
-}, 300); // 300ms debounce delay
+}, 100); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for form changes and trigger debounced update
 watch(form, (newForm) => {
@@ -183,17 +183,17 @@ watch(form, (newForm) => {
 // Debounced function for logo preview updates
 const debouncedLogoUpdate = debounce((newLogoPreview) => {
  // Emit form update event for the checklist when logo changes
-const formForChecklist = {
-   link: form.link,
-   name: form.name,
-   tagline: form.tagline,
-   tagline_detailed: form.tagline_detailed,
-   description: form.description,
-   logo: newLogoPreview || (form.logos && form.logos.length > 0) ? true : null,
-   selectedPricing: form.pricing || [],
- };
+ const formForChecklist = {
+    link: form.link,
+    name: form.name,
+    tagline: form.tagline,
+    tagline_detailed: form.tagline_detailed,
+    description: form.description,
+    logo: (newLogoPreview || (form.logos && form.logos.length > 0)) ? true : null,
+    selectedPricing: form.pricing || [],
+  };
 emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
-}, 300); // 300ms debounce delay
+}, 100); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for logo preview changes and trigger debounced update
 watch(logoPreview, (newLogoPreview) => {
@@ -221,19 +221,20 @@ watch(() => form.link, (newLink, oldLink) => {
   }
 });
 
-watch(step, (newStep) => {
- if (newStep.value === 2) {
-   // Check if we need to fetch remaining data after restoration
-   const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
-   if (shouldFetchCategoriesAndBestFor) {
-     fetchRemainingData();
-   }
+// Watch for step changes to update checklist visibility
+watch(() => step.value, (newStep) => {
+  if (newStep === 2) {
+    // Check if we need to fetch remaining data after restoration
+    const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
+    if (shouldFetchCategoriesAndBestFor) {
+      fetchRemainingData();
+    }
  }
- 
- // Emit a custom event when step changes to update checklist visibility
- document.dispatchEvent(new CustomEvent('step-changed', {
-   detail: { step: newStep.value }
- }));
+  
+  // Emit a custom event when step changes to update checklist visibility
+  document.dispatchEvent(new CustomEvent('step-changed', {
+    detail: { step: newStep }
+  }));
 });
 
 watch(isRestored, (restored) => {
@@ -265,7 +266,7 @@ onMounted(async () => {
     
     // Emit initial step change event to set checklist visibility
     document.dispatchEvent(new CustomEvent('step-changed', {
-      detail: { step: step.value }
+      detail: { step: step.value }  // Keep .value here as step is a ref
     }));
   });
 });

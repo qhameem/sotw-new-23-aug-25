@@ -59,11 +59,16 @@ export function useProductForm() {
   const getStarted = async () => {
     state.step = 2;
     
+    // Dispatch step change event to update checklist visibility
+    document.dispatchEvent(new CustomEvent('step-changed', {
+      detail: { step: state.step }
+    }));
+    
     // Fetch initial data for the entered URL
     if (state.form.link && !state.form.name) {
       await fetchInitialData();
     }
- };
+  };
 
   const clearUrlInput = () => {
     state.showErrorMessage = false;
@@ -75,6 +80,11 @@ export function useProductForm() {
   const goBack = () => {
     state.showErrorMessage = false;
     state.step = 1;
+    
+    // Dispatch step change event to update checklist visibility
+    document.dispatchEvent(new CustomEvent('step-changed', {
+      detail: { step: state.step }
+    }));
     
     // Clear form data when going back to URL input to ensure clean state for new URL
     state.form.name = '';
