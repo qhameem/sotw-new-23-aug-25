@@ -28,6 +28,7 @@
         "@tiptap/vue-3": "^3.7.2",
         "flatpickr": "^4.6.13",
         "mitt": "^3.0.1",
+        "prosemirror-state": "^1.4.4",
         "tailwind-scrollbar-hide": "^4.0.0",
         "vue-multiselect": "^3.0.0-beta.3"
     }

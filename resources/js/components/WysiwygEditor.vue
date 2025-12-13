@@ -26,7 +26,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
       </button>
     </div>
-    <editor-content :editor="editor" />
+    <editor-content :editor="editor" v-if="editor" />
     <div v-if="editor" class="flex justify-end p-2 text-sm text-gray-500">
       {{ editor.storage.characterCount.characters() }}/{{ maxLength }}
     </div>
@@ -67,6 +67,12 @@ const editor = useEditor({
     attributes: {
       class: 'prose prose-sm max-w-none p-4 focus:outline-none min-h-[200px]',
     },
+    // Explicitly allow paste operations
+    handlePaste: (view, event, slice) => {
+      return false; // Allow default behavior
+    },
+    transformPastedHTML: (html) => html,
+    transformPastedText: (text) => text,
   },
 });
 
