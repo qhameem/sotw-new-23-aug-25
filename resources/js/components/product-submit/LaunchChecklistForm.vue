@@ -57,6 +57,7 @@
             name="pricing-option"
             value="free"
             :modelValue="selectedPricingOption"
+            :isAllRequiredFilled="isAllRequiredFilled"
             @update:modelValue="selectedPricingOption = $event"
             title="Free Submission"
             price="$0"
@@ -70,6 +71,7 @@
             name="pricing-option"
             value="paid"
             :modelValue="selectedPricingOption"
+            :isAllRequiredFilled="isAllRequiredFilled"
             @update:modelValue="selectedPricingOption = $event"
             title="Paid Submission"
             price="$29"
@@ -104,6 +106,8 @@ const emit = defineEmits(['update:modelValue', 'back', 'submit']);
 
 // Initialize selected pricing option with default value 'free'
 const selectedPricingOption = ref('free');
+const freeSubmissionOptionRef = ref(null);
+const paidSubmissionOptionRef = ref(null);
 
 // Watch for changes in selectedPricingOption and update modelValue accordingly
 // Note: We should NOT overwrite the actual pricing categories with submission option
@@ -115,6 +119,27 @@ watch(selectedPricingOption, (newValue) => {
   });
 }, { immediate: true });
 
+// Check if all required fields are filled
+const isAllRequiredFilled = computed(() => {
+  const { link, name, tagline, tagline_detailed, description, categories, bestFor, pricing, logo, logos } = props.modelValue;
+  
+  // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
+  const actualPricingCategories = (pricing || []).filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
+  
+  const requiredFields = [
+    link,
+    name,
+    tagline,
+    tagline_detailed,
+    description,
+    categories && Array.isArray(categories) && categories.length > 0,
+    bestFor && Array.isArray(bestFor) && bestFor.length > 0,
+    actualPricingCategories.length > 0, // Only count actual pricing categories, not submission options
+    logo || (logos && Array.isArray(logos) && logos.length > 0) || props.logoPreview // Check for logo preview as well
+ ];
+  
+  return requiredFields.every(field => field);
+});
 
 // Define optional fields
 const optionalFields = computed(() => [
@@ -140,7 +165,7 @@ const paidLaunchFeatures = [
 
 // Handle pricing option submit (when user clicks the button in either option)
 const handlePricingOptionSubmit = (optionValue) => {
-  // Update the selected pricing option when user submits from either option
+ // Update the selected pricing option when user submits from either option
   selectedPricingOption.value = optionValue;
   // Update the model value to include the submission option separately
   emit('update:modelValue', {
@@ -150,12 +175,27 @@ const handlePricingOptionSubmit = (optionValue) => {
   
   // Then call the original submit logic
   emit('submit');
+  
+  // Reset loading state after submission is complete
+  // Note: This will be called immediately, but the actual reset happens in the parent component
+  // after the submission process is complete
+  if (freeSubmissionOptionRef.value && typeof freeSubmissionOptionRef.value.submissionComplete === 'function') {
+    setTimeout(() => {
+      freeSubmissionOptionRef.value.submissionComplete();
+    }, 0);
+  }
+  
+  if (paidSubmissionOptionRef.value && typeof paidSubmissionOptionRef.value.submissionComplete === 'function') {
+    setTimeout(() => {
+      paidSubmissionOptionRef.value.submissionComplete();
+    }, 0);
+  }
 };
 
 
 // Handle field click - navigate to the corresponding form field
 const handleFieldClick = (fieldKey) => {
-  // Add a small delay to ensure the tab switch happens before scrolling
+ // Add a small delay to ensure the tab switch happens before scrolling
  setTimeout(() => {
     // Try to focus the corresponding input field if it exists
     const fieldElement = document.querySelector(`[data-field="${fieldKey}"]`);

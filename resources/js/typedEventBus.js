@@ -21,7 +21,7 @@ function validateEventPayload(eventType, payload) {
         actualType = 'array';
       }
       
-      if (actualType !== expectedType) {
+      if (expectedType !== 'any' && actualType !== expectedType) {
         console.warn(`Event validation warning: Field '${fieldName}' expected type '${expectedType}', got '${actualType}' for event '${eventType}'`);
       }
     }

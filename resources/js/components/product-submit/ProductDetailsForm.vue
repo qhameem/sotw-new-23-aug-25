@@ -127,7 +127,7 @@
           <label for="description" class="block text-sm font-semibold text-gray-700">Description</label>
           <Tooltip content="Provide a detailed description of your product. This will appear on the product page and help users understand what your product does." />
         </div>
-        <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" :maxLength="500" />
+        <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" :maxLength="1200" />
       </div>
       
       <hr class="border-t border-gray-200 my-6">

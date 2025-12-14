@@ -138,6 +138,7 @@ export function useProductForm() {
     }
     
     try {
+      // Set loading state to show the loader
       state.isLoading = true;
       
       // Prepare form data for submission
@@ -251,6 +252,7 @@ export function useProductForm() {
       state.errorMessage = error.response?.data?.message || 'Failed to submit product. Please try again.';
       return false;
     } finally {
+      // Always reset loading state after submission
       state.isLoading = false;
       state.showPreviewModal = false;
     }
@@ -363,6 +365,13 @@ export function useProductForm() {
     const shouldFetchContent = !state.form.tagline && !state.form.tagline_detailed && !state.form.description;
     const shouldFetchCategoriesAndBestFor = !state.form.categories || state.form.categories.length === 0 || !state.form.bestFor || state.form.bestFor.length === 0;
 
+    // Only proceed if we have a valid link and name
+    if (!state.form.link || !state.form.name) {
+      Object.keys(state.loadingStates).forEach(k => state.loadingStates[k] = false);
+      state.isLoading = false;
+      return;
+    }
+
     if (shouldFetchContent) {
       state.loadingStates.description = true;
     }
@@ -390,8 +399,12 @@ export function useProductForm() {
       state.form.bestFor = data.bestFor || [];
     } catch (error) {
       console.error('Error fetching remaining data:', error);
-      state.showErrorMessage = true;
-      state.errorMessage = 'Failed to fetch additional product data. Please check the URL and try again.';
+      // Only show error message if this is during active form filling, not during restoration
+      if (shouldFetchContent || shouldFetchCategoriesAndBestFor) {
+        state.showErrorMessage = true;
+        state.errorMessage = 'Failed to fetch additional product data. You can continue filling the form manually.';
+      }
+      // Still allow the form to continue working even if data fetching fails
     } finally {
       Object.keys(state.loadingStates).forEach(k => state.loadingStates[k] = false);
       state.isLoading = false;

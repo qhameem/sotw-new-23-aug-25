@@ -19,21 +19,28 @@
     <div class="mt-auto pt-4">
       <button
         @click="handleSubmit"
-        :disabled="!isAllRequiredFilled"
+        :disabled="!isAllRequiredFilled || isLoading"
         :class="{
-          'opacity-50 cursor-not-allowed': !isAllRequiredFilled,
-          'hover:bg-rose-600': isAllRequiredFilled
+          'opacity-50 cursor-not-allowed': !isAllRequiredFilled || isLoading,
+          'hover:bg-rose-600': isAllRequiredFilled && !isLoading
         }"
         class="w-full flex justify-center py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rose-500 opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-50"
       >
-        Submit for Free
+        <span v-if="!isLoading">Submit for Free</span>
+        <span v-else class="flex items-center">
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Processing...
+        </span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
   id: {
@@ -47,7 +54,7 @@ const props = defineProps({
   value: {
     type: String,
     required: true
- },
+  },
   modelValue: {
     type: String,
     required: true
@@ -59,7 +66,7 @@ const props = defineProps({
   description: {
     type: String,
     required: true
-  },
+ },
   price: {
     type: String,
     required: false,
@@ -78,17 +85,32 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'submit']);
 
+const isLoading = ref(false);
+
 const handleSubmit = () => {
-  // Update the selected option when the button is clicked
+ // Update the selected option when the button is clicked
   emit('update:modelValue', props.value);
   
   if (props.isAllRequiredFilled) {
+    // Set loading state to true
+    isLoading.value = true;
     // Set the pricing to 'free' before submitting
     emit('submit', props.value);
   } else {
-    console.warn('Please fill out all required fields before submitting.');
+    // Show error message if not all required fields are filled
+    alert('Please fill out all required fields before submitting.');
   }
 };
+
+// Function to be called when submission is complete
+const submissionComplete = () => {
+  isLoading.value = false;
+};
+
+// Expose the submissionComplete function to parent components
+defineExpose({
+  submissionComplete
+});
 
 const optionClass = computed(() => ({
   'border-gray-200': true,

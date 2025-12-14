@@ -38,7 +38,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     tagline: 'string',
     tagline_detailed: 'string',
     description: 'string',
-    logo: 'any',
+    logo: 'any', // Accept any type including objects (File objects) and strings (URLs)
     selectedPricing: 'array'
   },
   

@@ -159,16 +159,16 @@ const debouncedFormUpdate = debounce((newForm) => {
  saveFormData();
   
   // Emit form update event for the checklist
- const formForChecklist = {
-    link: newForm.link,
-    name: newForm.name,
-    tagline: newForm.tagline,
-    tagline_detailed: newForm.tagline_detailed,
-    description: newForm.description,
-    logo: (logoPreview || (newForm.logos && newForm.logos.length > 0)) ? true : null,
-    selectedPricing: newForm.pricing || [],
- };
- emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
+  const formForChecklist = {
+     link: newForm.link,
+     name: newForm.name,
+     tagline: newForm.tagline,
+     tagline_detailed: newForm.tagline_detailed,
+     description: newForm.description,
+     logo: (logoPreview || (newForm.logos && newForm.logos.length > 0)) ? logoPreview || newForm.logos[0] : null, // Pass actual logo value instead of boolean
+     selectedPricing: newForm.pricing || [],
+  };
+  emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
 }, 100); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for form changes and trigger debounced update
@@ -183,13 +183,13 @@ watch(form, (newForm) => {
 // Debounced function for logo preview updates
 const debouncedLogoUpdate = debounce((newLogoPreview) => {
  // Emit form update event for the checklist when logo changes
- const formForChecklist = {
+const formForChecklist = {
     link: form.link,
     name: form.name,
     tagline: form.tagline,
     tagline_detailed: form.tagline_detailed,
     description: form.description,
-    logo: (newLogoPreview || (form.logos && form.logos.length > 0)) ? true : null,
+    logo: (newLogoPreview || (form.logos && form.logos.length > 0)) ? newLogoPreview || form.logos[0] : null, // Pass actual logo value instead of boolean
     selectedPricing: form.pricing || [],
   };
 emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
