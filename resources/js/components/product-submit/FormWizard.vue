@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Error message display -->
-    <div v-if="showErrorMessage" class="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
+    <div v-if="showErrorMessage && !urlExistsError" class="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
       {{ errorMessage }}
       <button @click="showErrorMessage = false" class="ml-4 text-white font-bold">&times;</button>
     </div>
@@ -173,8 +173,10 @@ const debouncedFormUpdate = debounce((newForm) => {
 
 // Watch for form changes and trigger debounced update
 watch(form, (newForm) => {
- // Clear error message when form is updated
- showErrorMessage.value = false;
+ // Clear error message when form is updated, but not if it's a URL exists error
+ if (!urlExistsError.value) {
+   showErrorMessage.value = false;
+ }
  
  // Call the debounced function
  debouncedFormUpdate(newForm);
@@ -197,8 +199,10 @@ emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
 
 // Watch for logo preview changes and trigger debounced update
 watch(logoPreview, (newLogoPreview) => {
- // Clear error message when logo preview changes
- showErrorMessage.value = false;
+ // Clear error message when logo preview changes, but not if it's a URL exists error
+ if (!urlExistsError.value) {
+   showErrorMessage.value = false;
+ }
  
  // Call the debounced function
  debouncedLogoUpdate(newLogoPreview);

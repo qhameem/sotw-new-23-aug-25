@@ -32,7 +32,37 @@ export function useProductForm() {
   // Computed properties
   const isUrlInvalid = computed(() => {
     return productFormService.isUrlInvalid(state.form.link);
- });
+  });
+
+  const checkUrlExists = async () => {
+    console.log('checkUrlExists called with URL:', state.form.link);
+    if (!state.form.link) {
+      state.urlExistsError = false;
+      state.existingProduct = null;
+      return;
+    }
+
+    try {
+      const response = await productFormService.checkUrlExists(state.form.link);
+      console.log('checkUrlExists response:', response);
+      if (response.exists) {
+        state.urlExistsError = true;
+        state.existingProduct = response.product;
+        // Don't show the general error message since it's now handled in the ProductURLInput component
+        state.showErrorMessage = false;
+        state.errorMessage = `This URL already exists as "${response.product.name}". You cannot add the same product twice.`;
+      } else {
+        state.urlExistsError = false;
+        state.existingProduct = null;
+        state.showErrorMessage = false;
+      }
+      console.log('Updated state - urlExistsError:', state.urlExistsError, 'existingProduct:', state.existingProduct);
+    } catch (error) {
+      console.error('Error checking URL existence:', error);
+      state.urlExistsError = false;
+      state.existingProduct = null;
+    }
+  };
 
   const completionPercentage = computed(() => {
     // Calculate completion based on required fields
@@ -57,6 +87,22 @@ export function useProductForm() {
 
   // Actions
   const getStarted = async () => {
+    console.log('getStarted called, form link:', state.form.link, 'urlExistsError:', state.urlExistsError);
+    // First check if URL already exists
+    if (state.form.link) {
+      await checkUrlExists();
+      
+      // If URL exists, don't proceed
+      if (state.urlExistsError) {
+        console.log('URL exists, preventing progression');
+        // Don't show the general error message since it's now handled in the ProductURLInput component
+        state.showErrorMessage = false;
+        state.errorMessage = `This URL already exists as "${state.existingProduct.name}". You cannot add the same product twice.`;
+        return false;
+      }
+    }
+    
+    console.log('Proceeding to step 2');
     state.step = 2;
     
     // Dispatch step change event to update checklist visibility
@@ -68,6 +114,8 @@ export function useProductForm() {
     if (state.form.link && !state.form.name) {
       await fetchInitialData();
     }
+    
+    return true;
   };
 
   const clearUrlInput = () => {
@@ -75,6 +123,8 @@ export function useProductForm() {
     state.form.link = '';
     state.urlExistsError = false;
     state.existingProduct = null;
+    // Also reset any URL-related validation state
+    state.errorMessage = '';
   };
 
   const goBack = () => {
@@ -237,6 +287,14 @@ export function useProductForm() {
       // Clear form data after successful submission
       productFormService.clearFormData();
       
+      // Dispatch an event to notify other components of successful submission
+      document.dispatchEvent(new CustomEvent('product-submitted', {
+        detail: {
+          productId: response.data.product_id,
+          message: 'Product submitted successfully'
+        }
+      }));
+      
       // Redirect to success page
       if (response.data && response.data.redirect_url) {
         window.location.href = response.data.redirect_url;
@@ -266,6 +324,14 @@ export function useProductForm() {
     if (!state.form.link) {
       state.showErrorMessage = true;
       state.errorMessage = 'Product URL is required.';
+      return false;
+    }
+
+    // Check if URL already exists before allowing submission
+    if (state.urlExistsError) {
+      // Don't show the general error message since it's now handled in the ProductURLInput component
+      state.showErrorMessage = false;
+      state.errorMessage = `This URL already exists as "${state.existingProduct.name}". You cannot add the same product twice.`;
       return false;
     }
 
@@ -411,20 +477,36 @@ export function useProductForm() {
     }
   };
 
-  const updateForm = (field, value) => {
+  const updateForm = async (field, value) => {
+    console.log('updateForm called for field:', field, 'with value:', value);
     state.form[field] = value;
-  };
+    
+    // Check URL existence when the link field is updated
+    if (field === 'link') {
+      console.log('Link field updated, calling checkUrlExists');
+      await checkUrlExists();
+    }
+ };
 
-  const updateFormMultiple = (updates) => {
+  const updateFormMultiple = async (updates) => {
     Object.keys(updates).forEach(key => {
       state.form[key] = updates[key];
     });
- };
+    
+    // Check URL existence if the link field was updated
+    if (updates.link !== undefined) {
+      await checkUrlExists();
+    }
+  };
 
   const resetForm = () => {
     state.form = { ...createProductFormState().form };
     state.logoPreview = null;
     state.galleryPreviews = Array(3).fill(null);
+    // Reset URL validation state when form is reset
+    state.urlExistsError = false;
+    state.existingProduct = null;
+    state.showErrorMessage = false;
   };
 
   // Initialize form data
@@ -434,7 +516,7 @@ export function useProductForm() {
         axios.get('/api/categories'),
         axios.get('/api/tech-stacks')
       ]);
-
+      
       state.allCategories = categoriesResponse.data.categories;
       state.allBestFor = categoriesResponse.data.bestFor;
       state.allPricing = categoriesResponse.data.pricing;
@@ -444,19 +526,24 @@ export function useProductForm() {
       state.showErrorMessage = true;
       state.errorMessage = 'Failed to load form options. Some features may not work properly.';
     }
+    
+    // Load saved data after initializing form options
+    await loadSavedData();
   };
 
   // Load saved data from session storage
-  const loadSavedData = () => {
+  const loadSavedData = async () => {
     const savedData = productFormService.loadFormData();
     if (savedData) {
       if (savedData.link) {
-        updateFormMultiple(savedData);
+        await updateFormMultiple(savedData);
         state.logoPreview = savedData.logoPreview || null;
         state.galleryPreviews = savedData.galleryPreviews || Array(3).fill(null);
         if (savedData.name) {
           state.step = 2;
         }
+        // Check for URL existence when loading saved data with a link
+        await checkUrlExists();
       }
     }
   };
@@ -485,6 +572,7 @@ export function useProductForm() {
     resetForm,
     initializeFormData,
     loadSavedData,
-    saveFormData
+    saveFormData,
+    checkUrlExists
   };
 }

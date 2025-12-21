@@ -13,9 +13,9 @@ use App\Models\Ad; // Added for Ad model
 use App\Models\AdZone; // Added for AdZone model
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -150,7 +150,7 @@ class ProductController extends Controller
             'maker_links' => 'nullable|array',
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
-            'asking_price' => 'nullable|numeric|min:0|max:999999.99',
+            'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'x_account' => 'nullable|string|max:255',
             'categories' => 'required|array',
             'categories.*' => 'exists:categories,id',
@@ -161,6 +161,12 @@ class ProductController extends Controller
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
         ]);
+
+        // Check if a product with this URL already exists
+        $existingProduct = Product::where('link', $validated['link'])->first();
+        if ($existingProduct) {
+            return back()->withErrors(['link' => 'A product with this URL already exists. You cannot add the same product twice.'])->withInput();
+        }
 
         $existsCheck = function ($slug) {
             return Product::where('slug', $slug)->exists();
@@ -242,6 +248,12 @@ class ProductController extends Controller
 
         $admins = User::getAdmins();
         Notification::send($admins, new ProductSubmitted($product));
+        
+        // Send notification to the user who submitted the product
+        $user = User::find($product->user_id);
+        if ($user) {
+            $user->notify(new \App\Notifications\ProductSubmissionConfirmation($product));
+        }
 
         // Return JSON response for API calls, redirect for regular form submissions
         if ($request->wantsJson() || $request->ajax()) {
@@ -481,13 +493,17 @@ class ProductController extends Controller
     public function checkUrl(Request $request)
     {
         $url = $request->input('url');
+        \Log::info('Checking URL for existence: ' . $url);
         if (!$url) {
+            \Log::info('URL is empty, returning false');
             return response()->json(['exists' => false]);
         }
 
-        $product = Product::where('link', $url)->first();
+        $product = Product::where('link', $url)->first(); // Check all products, not just approved ones
+        \Log::info('Product found for URL: ' . $url . ', exists: ' . ($product ? 'true' : 'false'));
 
         if ($product) {
+            \Log::info('URL exists, product name: ' . $product->name);
             return response()->json([
                 'exists' => true,
                 'product' => [
@@ -497,6 +513,7 @@ class ProductController extends Controller
             ]);
         }
 
+        \Log::info('URL does not exist in database');
         return response()->json(['exists' => false]);
     }
 

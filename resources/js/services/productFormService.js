@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * Service for managing product form state
  */
@@ -217,7 +219,24 @@ export const productFormService = {
       console.error('Failed to fetch initial form data:', error);
       throw error;
     }
- }
+  },
+
+  /**
+   * Check if URL already exists
+   */
+  async checkUrlExists(url) {
+    console.log('Checking URL existence:', url);
+    try {
+      const response = await axios.get('/check-product-url', {
+        params: { url: url }
+      });
+      console.log('URL check response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking URL:', error);
+      throw error;
+    }
+  }
 };
 
 export const isTabCompleted = (step, form, logoPreview) => {

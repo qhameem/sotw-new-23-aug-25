@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
 export default {
@@ -67,7 +67,9 @@ export default {
             else loadingMore.value = true;
 
             try {
-                const response = await axios.get(`/api/notifications?page=${page.value}`);
+                const response = await axios.get(`/api/notifications?page=${page.value}`, {
+                    withCredentials: true
+                });
                 const data = response.data;
                 notifications.value = page.value === 1 ? data.notifications.data : [...notifications.value, ...data.notifications.data];
                 unreadCount.value = data.unread_count;
@@ -98,7 +100,9 @@ export default {
         const markAsRead = async (notification) => {
             if (!notification.read_at) {
                 try {
-                    await axios.put(`/api/notifications/${notification.id}/read`);
+                    await axios.put(`/api/notifications/${notification.id}/read`, {}, {
+                        withCredentials: true
+                    });
                     notification.read_at = new Date().toISOString();
                     unreadCount.value = Math.max(0, unreadCount.value - 1);
                 } catch (error) {
@@ -110,7 +114,9 @@ export default {
 
         const markAllAsRead = async () => {
             try {
-                await axios.put('/api/notifications/read-all');
+                await axios.put('/api/notifications/read-all', {}, {
+                    withCredentials: true
+                });
                 notifications.value.forEach(n => n.read_at = new Date().toISOString());
                 unreadCount.value = 0;
             } catch (error) {
@@ -128,6 +134,21 @@ export default {
                         unreadCount.value++;
                     });
             }
+            
+            // Listen for product submission event to refresh notifications
+            document.addEventListener('product-submitted', handleProductSubmitted);
+        });
+
+        const handleProductSubmitted = () => {
+            // Refresh notifications after a short delay to allow the server to process the notification
+            setTimeout(() => {
+                page.value = 1; // Reset to first page
+                fetchNotifications(); // Fetch latest notifications
+            }, 1000); // 1 second delay to ensure notification is processed
+        };
+
+        onUnmounted(() => {
+            document.removeEventListener('product-submitted', handleProductSubmitted);
         });
 
         return {

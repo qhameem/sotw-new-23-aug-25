@@ -11,14 +11,6 @@
         <div class="rounded-md shadow-sm">
           <div>
             <label for="product-url" class="sr-only">Link to the product</label>
-            <div class="h-10 mb-2">
-              <transition name="fade">
-                <p v-if="urlExistsError" class="text-sm text-gray-700">
-                  <a :href="`/product/${existingProduct.slug}`" target="_blank" class="underline font-semibold">{{ existingProduct.name }}</a>
-                  already exists with this URL.
-                </p>
-              </transition>
-            </div>
             <div class="relative group">
               <input id="product-url" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)" type="url" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-rose-500 focus:border-rose-500 focus:z-10 sm:text-sm" placeholder="https://softwareontheweb.com">
               <button v-if="modelValue" @click="$emit('clear')" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -28,7 +20,7 @@
           </div>
         </div>
         <div class="flex items-center">
-          <button @click="$emit('getStarted')" :disabled="isLoading || isUrlInvalid" class="group relative w-1/2 flex justify-center py-1.5 px-4 text-base
+          <button @click="$emit('getStarted')" :disabled="isLoading || isUrlInvalid || urlExistsError" class="group relative w-1/2 flex justify-center py-1.5 px-4 text-base
    font-semibold rounded-lg text-white bg-rose-500
              hover:bg-rose-600 hover:shadow-sm
              transition-colors duration-300
@@ -36,6 +28,16 @@
             <span>Get started</span>
           </button>
           <span v-if="isLoading" class="ml-4 text-sm text-gray-600">{{ loadingMessage }}<span class="dot-one">.</span><span class="dot-two">.</span><span class="dot-three">.</span></span>
+        </div>
+        
+        <div class="mt-2">
+          <transition name="fade">
+            <p v-if="urlExistsError" class="text-sm text-gray-700">
+              This URL already exists as
+              <a :href="`/product/${existingProduct.slug}`" target="_blank" class="underline font-semibold">"{{ existingProduct.name }}"</a>
+              . You cannot add the same product twice.
+            </p>
+          </transition>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ProductSubmitted extends Notification
+class ProductSubmissionConfirmation extends Notification
 {
 
     public $product;
@@ -39,8 +39,8 @@ class ProductSubmitted extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => 'New product submitted by ' . $this->product->user->name . ': ' . $this->product->name,
-            'link' => route('admin.product-approvals.index'),
+            'message' => 'Your product "' . $this->product->name . '" has been submitted for approval',
+            'link' => route('products.my'),
             'product_id' => $this->product->id,
         ];
     }
@@ -51,8 +51,8 @@ class ProductSubmitted extends Notification
     public function toBroadcast(object $notifiable): array
     {
         return [
-            'message' => 'New product submitted by ' . $this->product->user->name . ': ' . $this->product->name,
-            'link' => route('admin.product-approvals.index'),
+            'message' => 'Your product "' . $this->product->name . '" has been submitted for approval',
+            'link' => route('products.my'),
             'product_id' => $this->product->id,
             'created_at' => now()->toISOString(),
         ];
