@@ -12,16 +12,7 @@
         <p class="text-gray-800 text-sm md:text-sm mt-0.5 line-clamp-2">{{ $product->tagline }}</p>
         
         <div class="mt-1 flex flex-wrap gap-2 items-center">
-            @foreach($product->categories as $cat)
-            <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
-                   @click.stop
-                   class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-xs">
-                    <span class="px-0 py-0 hover:underline">{{ $cat->name }}</span>
-                </a>
-             @if(!$loop->last)
-                <span class="text-gray-400">•</span>
-            @endif
-            @endforeach
+            <x-product-category-tags :categories="$product->categories" />
         </div>
     </div>
     <div class="flex-shrink-0">

@@ -75,10 +75,10 @@
                                 @foreach($product->categories as $cat)
                                 <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
                                        @click.stop
-                                       class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-xs">
+                                       class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-[0.65rem]">
                                         <span class="px-0 py-0 hover:underline">{{ $cat->name }}</span>
                                         @if(isset($cat->products_count))
-                                        <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full bg-gray-200 hover:bg-gray-300 text-gray-500 hover:text-gray-600 text-xs font-semibold flex items-center justify-center leading-none antialiased">
+                                        <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full text-gray-500 hover:text-gray-600 text-[0.65rem] font-semibold flex items-center justify-center leading-none antialiased">
                                             {{ $cat->products_count > 99 ? '99+' : $cat->products_count }}
                                         </span>
                                         @endif

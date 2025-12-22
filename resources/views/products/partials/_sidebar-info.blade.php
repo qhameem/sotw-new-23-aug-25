@@ -4,7 +4,7 @@
             <h3 class="text-sm font-semibold text-gray-800 mb-2">Best for</h3>
             <div class="flex flex-wrap gap-2">
                 @foreach($bestForCategories as $category)
-                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-200">
+                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="inline-flex items-center px-2.5 py-1 text-gray-700 text-[0.65rem] font-medium rounded-full hover:bg-gray-200">
                         {{ $category->name }}
                     </a>
                 @endforeach

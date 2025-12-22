@@ -188,7 +188,15 @@
     @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+            <script>
+            (function() {
+                try {
+                    {!! $snippet->code !!}
+                } catch(e) {
+                    console.error('Error injected code snippet:', e);
+                }
+            })();
+            </script>
         @endif
     @endforeach
 </head>
@@ -200,10 +208,19 @@
       data-csrf-token="{{ csrf_token() }}">
     @php
         $bodySnippets = \App\Models\CodeSnippet::where('location', 'body')->get();
+        $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+            <script>
+            (function() {
+                try {
+                    {!! $snippet->code !!}
+                } catch(e) {
+                    console.error('Error in injected code snippet:', e);
+                }
+            })();
+            </script>
         @endif
     @endforeach
 

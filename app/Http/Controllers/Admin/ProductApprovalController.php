@@ -133,6 +133,20 @@ class ProductApprovalController extends Controller
 
         $product->save();
 
+        // Clear homepage-related caches when a product is approved and published
+        if ($product->is_published && $product->published_at) {
+            // Clear the specific cache keys that would be affected by a new product
+            \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
+            \Illuminate\Support\Facades\Cache::forget('all_categories_homepage');
+            \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
+            \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
+            \Illuminate\Support\Facades\Cache::forget('all_categories');
+            
+            // Clear the general product list cache for this week and date to ensure new products appear
+            $generalProductListCacheKey = 'product_list_week_' . $product->published_at->year . '_' . $product->published_at->weekOfYear . '_' . now()->toDateString();
+            \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
+        }
+
         if ($product->user) {
             Log::info("ProductApprovalController: Approving product ID {$product->id} for user ID {$product->user->id}. Dispatching ProductApproved event.");
             event(new ProductApproved($product, $product->user));
@@ -157,6 +171,8 @@ class ProductApprovalController extends Controller
 
         if (!empty($productIds)) {
             $approvedCount = 0;
+            $weeksToClear = []; // Track weeks that need cache clearing
+            
             foreach ($productIds as $id) {
                 $product = Product::find($id);
                 if ($product) {
@@ -176,6 +192,12 @@ class ProductApprovalController extends Controller
                     }
                     $product->save();
 
+                    // Collect weeks that need cache clearing
+                    if ($product->is_published && $product->published_at) {
+                        $weekKey = $product->published_at->year . '_' . $product->published_at->weekOfYear;
+                        $weeksToClear[$weekKey] = true;
+                    }
+
                     // Dispatch event
                     if ($product->user) { // Ensure product has an associated user
                         Log::info("ProductApprovalController (Bulk): Approving product ID {$product->id} for user ID {$product->user->id}. Dispatching ProductApproved event.");
@@ -186,6 +208,22 @@ class ProductApprovalController extends Controller
                     $approvedCount++;
                 }
             }
+            
+            // Clear caches for affected weeks after all products are processed
+            if (!empty($weeksToClear)) {
+                \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
+                \Illuminate\Support\Facades\Cache::forget('all_categories_homepage');
+                \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
+                \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
+                \Illuminate\Support\Facades\Cache::forget('all_categories');
+                
+                // Clear the general product list cache for each affected week
+                foreach (array_keys($weeksToClear) as $weekKey) {
+                    $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+                    \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
+                }
+            }
+            
             if ($approvedCount > 0) {
                 return back()->with('success', $approvedCount . ' product(s) approved.');
             }

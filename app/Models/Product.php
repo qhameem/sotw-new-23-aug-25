@@ -10,6 +10,8 @@ use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
 use App\Helpers\HtmlHelper;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class Product extends Model implements Sitemapable
 {
@@ -207,5 +209,43 @@ class Product extends Model implements Sitemapable
             ->setLastModificationDate(Carbon::parse($this->updated_at))
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
             ->setPriority(0.8);
+    }
+    
+    /**
+     * Scope to get only approved and published products
+     */
+    public function scopeApprovedAndPublished(Builder $query): Builder
+    {
+        return $query->where('approved', true)
+                     ->where('is_published', true);
+    }
+    
+    /**
+     * Scope to get products by week
+     */
+    public function scopeByWeek(Builder $query, Carbon $startOfWeek, Carbon $endOfWeek): Builder
+    {
+        return $query->whereBetween(DB::raw('COALESCE(published_at, created_at)'), [
+            $startOfWeek->toDateString(),
+            $endOfWeek->toDateString()
+        ]);
+    }
+    
+    /**
+     * Scope to get promoted products only
+     */
+    public function scopePromoted(Builder $query): Builder
+    {
+        return $query->where('is_promoted', true)
+                     ->whereNotNull('promoted_position')
+                     ->orderBy('promoted_position', 'asc');
+    }
+    
+    /**
+     * Scope to get non-promoted products
+     */
+    public function scopeNonPromoted(Builder $query): Builder
+    {
+        return $query->where('is_promoted', false);
     }
 }

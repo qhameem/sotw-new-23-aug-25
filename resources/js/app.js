@@ -1,5 +1,4 @@
 import { createApp } from 'vue';
-import Alpine from 'alpinejs';
 import ProductSubmit from './components/ProductSubmit.vue';
 import NotificationBell from './components/NotificationBell.vue';
 import UserDropdown from './components/UserDropdown.vue';
@@ -10,74 +9,98 @@ import axios from 'axios';
 // Add this line to set the CSRF token for all Axios requests
 axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-// Initialize Alpine.js
-window.Alpine = Alpine;
+// Check if Alpine is already loaded (e.g., by Livewire) to avoid multiple instances
+if (!window.Alpine) {
+    import('alpinejs').then(Alpine => {
+        window.Alpine = Alpine.default;
+        
+        // Define the upvote component
+        window.Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
+            isUpvoted: isUpvoted,
+            votesCount: initialVotesCount,
+            errorMessage: '',
 
-// Define the upvote component
-Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
-    isUpvoted: isUpvoted,
-    votesCount: initialVotesCount,
-    errorMessage: '',
+            async toggleUpvote() {
+                if (!isAuthenticated) {
+                    // Redirect to login if not authenticated
+                    window.location.href = '/login';
+                    return;
+                }
 
-    async toggleUpvote() {
-        if (!isAuthenticated) {
-            // Redirect to login if not authenticated
-            window.location.href = '/login';
-            return;
-        }
+                try {
+                    const response = await fetch(`/products/${productId}/upvote`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            product_id: productId,
+                        }),
+                    });
 
-        try {
-            const response = await fetch(`/products/${productId}/upvote`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.isUpvoted = data.is_upvoted;
-                this.votesCount = data.votes_count;
-                this.errorMessage = '';
-            } else {
-                const errorData = await response.json();
-                this.errorMessage = errorData.message || 'An error occurred while processing your request';
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.isUpvoted = data.is_upvoted;
+                        this.votesCount = data.votes_count;
+                        this.errorMessage = '';
+                    } else {
+                        const errorData = await response.json();
+                        this.errorMessage = errorData.message || 'An error occurred while processing your request';
+                    }
+                } catch (error) {
+                    console.error('Error toggling upvote:', error);
+                    this.errorMessage = 'Network error occurred. Please try again.';
+                }
             }
-        } catch (error) {
-            console.error('Error toggling upvote:', error);
-            this.errorMessage = 'Network error occurred. Please try again.';
+        }));
+
+        window.Alpine.start();
+    });
+} else {
+    // Alpine is already loaded, just define the upvote component
+    window.Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
+        isUpvoted: isUpvoted,
+        votesCount: initialVotesCount,
+        errorMessage: '',
+
+        async toggleUpvote() {
+            if (!isAuthenticated) {
+                // Redirect to login if not authenticated
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/products/${productId}/upvote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.isUpvoted = data.is_upvoted;
+                    this.votesCount = data.votes_count;
+                    this.errorMessage = '';
+                } else {
+                    const errorData = await response.json();
+                    this.errorMessage = errorData.message || 'An error occurred while processing your request';
+                }
+            } catch (error) {
+                console.error('Error toggling upvote:', error);
+                this.errorMessage = 'Network error occurred. Please try again.';
+            }
         }
-    }
-}));
-
-// Handle checklist visibility based on current step
-document.addEventListener('DOMContentLoaded', () => {
-    // Initially hide checklist if we're on the URL input step
-    const productSubmitApp = document.getElementById('product-submit-app');
-    if (productSubmitApp) {
-        // Initially assume step 1 (URL input) and hide checklist
-        const checklistContainer = document.getElementById('checklist-container');
-        if (checklistContainer) {
-            checklistContainer.style.display = 'none';
-        }
-    }
-});
-
-// Listen for custom events to show/hide checklist
-document.addEventListener('step-changed', (event) => {
-    const checklistContainer = document.getElementById('checklist-container');
-    if (checklistContainer) {
-        // Show checklist when step is 2 (form sections), hide when step is 1 (URL input)
-        checklistContainer.style.display = event.detail.step === 2 ? 'block' : 'none';
-    }
-});
-
-Alpine.start();
+    }));
+}
 
 if (document.getElementById('notification-bell-app')) {
     const notificationApp = createApp({});
@@ -120,59 +143,59 @@ if (document.getElementById('checklist-container')) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[app.js] DOMContentLoaded: Flowbite, Alpine initialized. Main script logic follows.');
 
-    // Inline loader logic for "Add your product" buttons
+    // Inline loader logic for "Add your product" buttons (only run if buttons exist)
     const addProductButtons = [
         document.getElementById('addProductBtnDesktop'),
         document.getElementById('addProductBtnMobile')
     ].filter(btn => btn !== null); // Filter out nulls if a button isn't found
     console.log('[app.js] addProductButtons found:', addProductButtons);
 
-    function showButtonLoader(buttonElement) {
-        console.log('[app.js] showButtonLoader called for button:', buttonElement);
-        const textElement = buttonElement.querySelector('.button-text');
-        const loaderElement = buttonElement.querySelector('.button-loader');
-        console.log('[app.js] textElement:', textElement);
-        console.log('[app.js] loaderElement:', loaderElement);
-
-        if (textElement && loaderElement) {
-            // Get current dimensions before hiding text
-            const currentWidth = buttonElement.offsetWidth;
-            const currentHeight = buttonElement.offsetHeight;
-            console.log(`[app.js] Button current dimensions: ${currentWidth}x${currentHeight}`);
-
-            // Apply fixed dimensions
-            buttonElement.style.width = `${currentWidth}px`;
-            buttonElement.style.height = `${currentHeight}px`;
-            
-            textElement.classList.add('hidden');
-            loaderElement.classList.remove('hidden');
-            console.log('[app.js] Loader shown, text hidden for button:', buttonElement.id);
-            // buttonElement.disabled = true; // Optionally disable button
-        } else {
-            console.warn('[app.js] Could not find text or loader element inside button:', buttonElement.id);
-        }
-    }
-
-    function resetButtonState(buttonElement) {
-        console.log('[app.js] resetButtonState called for button:', buttonElement);
-        const textElement = buttonElement.querySelector('.button-text');
-        const loaderElement = buttonElement.querySelector('.button-loader');
-
-        if (textElement && loaderElement) {
-            textElement.classList.remove('hidden');
-            loaderElement.classList.add('hidden');
-            
-            // Clear fixed dimensions
-            buttonElement.style.width = '';
-            buttonElement.style.height = '';
-            console.log('[app.js] Button state reset for:', buttonElement.id);
-            // buttonElement.disabled = false; // Re-enable if disabled
-        } else {
-            console.warn('[app.js] Could not find text or loader element to reset state for button:', buttonElement.id);
-        }
-    }
-
     if (addProductButtons.length > 0) {
+        function showButtonLoader(buttonElement) {
+            console.log('[app.js] showButtonLoader called for button:', buttonElement);
+            const textElement = buttonElement.querySelector('.button-text');
+            const loaderElement = buttonElement.querySelector('.button-loader');
+            console.log('[app.js] textElement:', textElement);
+            console.log('[app.js] loaderElement:', loaderElement);
+
+            if (textElement && loaderElement) {
+                // Get current dimensions before hiding text
+                const currentWidth = buttonElement.offsetWidth;
+                const currentHeight = buttonElement.offsetHeight;
+                console.log(`[app.js] Button current dimensions: ${currentWidth}x${currentHeight}`);
+
+                // Apply fixed dimensions
+                buttonElement.style.width = `${currentWidth}px`;
+                buttonElement.style.height = `${currentHeight}px`;
+                
+                textElement.classList.add('hidden');
+                loaderElement.classList.remove('hidden');
+                console.log('[app.js] Loader shown, text hidden for button:', buttonElement.id);
+                // buttonElement.disabled = true; // Optionally disable button
+            } else {
+                console.warn('[app.js] Could not find text or loader element inside button:', buttonElement.id);
+            }
+        }
+
+        function resetButtonState(buttonElement) {
+            console.log('[app.js] resetButtonState called for button:', buttonElement);
+            const textElement = buttonElement.querySelector('.button-text');
+            const loaderElement = buttonElement.querySelector('.button-loader');
+
+            if (textElement && loaderElement) {
+                textElement.classList.remove('hidden');
+                loaderElement.classList.add('hidden');
+                
+                // Clear fixed dimensions
+                buttonElement.style.width = '';
+                buttonElement.style.height = '';
+                console.log('[app.js] Button state reset for:', buttonElement.id);
+                // buttonElement.disabled = false; // Re-enable if disabled
+            } else {
+                console.warn('[app.js] Could not find text or loader element to reset state for button:', buttonElement.id);
+            }
+        }
+
         addProductButtons.forEach(button => {
             console.log('[app.js] Attaching click listener to button:', button.id);
             button.addEventListener('click', function(event) {
@@ -183,14 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If this were an AJAX action, you'd call resetButtonState in the callback.
             });
         });
-    } else {
-        console.warn('[app.js] No "Add Product" buttons found to attach listeners.');
-    }
 
-    // Reset button states on page show (e.g., after back navigation)
-    window.addEventListener('pageshow', function(event) {
-        console.log('[app.js] pageshow event triggered.');
-        if (addProductButtons.length > 0) {
+        // Reset button states on page show (e.g., after back navigation)
+        window.addEventListener('pageshow', function(event) {
+            console.log('[app.js] pageshow event triggered.');
             addProductButtons.forEach(button => {
                 // Add a small delay to ensure the reset doesn't interfere with
                 // the loader showing if the navigation was extremely fast.
@@ -198,8 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     resetButtonState(button);
                 }, 50);
             });
-        }
-    });
+        });
+    } else {
+        console.log('[app.js] No "Add Product" buttons found to attach listeners. This is expected on some pages.');
+    }
     console.log('[app.js] Inline button loader setup complete.');
 
 

@@ -24,10 +24,12 @@
             </div>
             
             <div class="p-4">
-                <h3 class="text-base font-semibold mb-4 text-gray-700">Sponsors</h3>
+                <h3 class="text-base font-semibold mb-4 text-gray-70">Sponsors</h3>
                 @php
-                    $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
-                    $sponsors = $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(6)->get() : collect();
+                    $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
+                        $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
+                        return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
+                    });
                 @endphp
                 <ul class="space-y-4">
                     @foreach($sponsors as $sponsor)
@@ -36,7 +38,7 @@
                                 <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}" class="w-10 h-10 rounded-lg object-cover">
                                 <div>
                                     <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span class="text-gray-400">↗</span></div>
-                                    <p class="text-sm text-gray-500">{{ $sponsor->tagline }}</p>
+                                    <p class="text-sm text-gray-50">{{ $sponsor->tagline }}</p>
                                 </div>
                             </a>
                         </li>

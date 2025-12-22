@@ -528,19 +528,16 @@ class ProductController extends Controller
                     $query->where('user_id', Auth::id());
                 }
             }])
-            ->where('approved', true)
-            ->where('is_promoted', true)
-            ->whereNotNull('promoted_position')
-            ->where('is_published', true)
+            ->approvedAndPublished()
+            ->promoted()
             ->orderBy('promoted_position', 'asc');
         
         $promotedProducts = $promotedProductsQuery->get();
 
         // 2. Fetch Regular (non-promoted) Products for the current category
         $regularProductsQuery = $category->products()
-            ->where('approved', true)
-            ->where('is_promoted', false) // Exclude promoted products
-            ->where('is_published', true)
+            ->approvedAndPublished()
+            ->nonPromoted()
             ->with(['categories.types', 'user', 'userUpvotes' => function ($query) {
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
@@ -551,31 +548,6 @@ class ProductController extends Controller
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(function ($type) {
-                            return ['name' => $type->name];
-                        })->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
 
         // Fetch all types with their categories and product counts
         $allTypesCollection = Type::with(['categories' => function($query) {
@@ -636,7 +608,7 @@ class ProductController extends Controller
 
         return view('home', compact(
             'category', 'categories', 'types',
-            'promotedProducts', 'regularProducts', 'premiumProducts', 'alpineProducts',
+            'promotedProducts', 'regularProducts', 'premiumProducts',
             'headerAd', 'sidebarTopAd',
             'belowProductListingAd', 'belowProductListingAdPosition',
             'title', 'isCategoryPage', 'metaDescription', 'meta_title',
@@ -769,29 +741,6 @@ class ProductController extends Controller
         }
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(fn($type) => ['name' => $type->name])->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
 
         $dayOfYear = $date->dayOfYear;
         $fullDate = $date->format('d F, Y');
@@ -803,7 +752,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'alpineProducts', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
     }
     public function redirectToCurrentWeek()
     {
@@ -921,29 +870,6 @@ class ProductController extends Controller
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | Software on the web'; // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(fn($type) => ['name' => $type->name])->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
 
         $now = Carbon::now('UTC');
         $nextLaunchTime = Carbon::today('UTC')->setHour(7);
@@ -960,7 +886,7 @@ class ProductController extends Controller
             ->pluck('week')
             ->toArray();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1056,29 +982,6 @@ class ProductController extends Controller
         $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | Software on the web'; // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(fn($type) => ['name' => $type->name])->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
 
         $now = Carbon::now('UTC');
         $nextLaunchTime = Carbon::today('UTC')->setHour(7);
@@ -1087,7 +990,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime'));
     }
 
     public function productsByYear(Request $request, $year)
@@ -1183,29 +1086,6 @@ class ProductController extends Controller
         $pageTitle = 'Best of ' . $year . ' | Software on the web'; // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-        $alpineProducts = $allProducts->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'is_upvoted_by_current_user' => $product->isUpvotedByCurrentUser ?? false,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'tagline' => $product->tagline,
-                'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link),
-                'link' => $product->link,
-                'categories' => $product->categories->map(function ($cat) {
-                    return [
-                        'id' => $cat->id,
-                        'name' => $cat->name,
-                        'types' => $cat->types->map(fn($type) => ['name' => $type->name])->values()
-                    ];
-                })->values(),
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'pricing_type' => $product->pricing_type ?? null,
-                'price' => $product->price ?? null,
-            ];
-        })->values();
 
         $now = Carbon::now('UTC');
         $nextLaunchTime = Carbon::today('UTC')->setHour(7);
@@ -1214,7 +1094,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'alpineProducts', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime'));
     }
 
     public function search(Request $request)

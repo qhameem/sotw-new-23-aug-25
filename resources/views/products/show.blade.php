@@ -68,9 +68,9 @@
                     <div @click="editingLogo = true">
                         <template x-if="!editingLogo">
                             @if($product->logo)
-                                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-20 object-contain rounded-lg mr-3">
+                                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-14 object-contain rounded-lg mr-3">
                             @elseif($product->link)
-                                <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-20 object-contain rounded-lg mr-3">
+                                <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-lg mr-3">
                             @endif
                         </template>
                         <template x-if="editingLogo">
@@ -83,9 +83,9 @@
                     </div>
                 @else
                     @if($product->logo)
-                        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-20 object-contain rounded-lg mr-3">
+                        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-14 object-contain rounded-lg mr-3">
                     @elseif($product->link)
-                        <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-20 object-contain rounded-lg mr-3">
+                        <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-lg mr-3">
                     @endif
                 @endif
                 <div>
@@ -122,7 +122,7 @@
                             });
                         @endphp
                         @foreach($generalCategories as $category)
-                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="text-xs text-gray-500 hover:underline">{{ $category->name }}</a>
+                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}" class="text-[0.65rem] text-gray-500 hover:underline">{{ $category->name }}</a>
                             @if(!$loop->last)
                                 <span class="text-gray-400 mx-2">&middot;</span>
                             @endif

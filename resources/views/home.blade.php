@@ -58,8 +58,9 @@
 
     <div class="bg-white md:space-y-1">
 
-        @include('partials.products_list_with_pagination', [
-            'regularProducts' => $regularProducts,
+        @include('partials.products_list', [
+            'regularProducts' => $regularProducts ?? collect(),
+            'promotedProducts' => $promotedProducts ?? collect(),
             'belowProductListingAd' => $belowProductListingAd ?? null,
             'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
         ])
@@ -137,33 +138,5 @@
             }
         }
     }
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const products = document.querySelectorAll('.product-card');
-        let impressedProducts = new Set();
-
-        const observer = new IntersectionObserver((entries, observer) => {
-            let productsInView = [];
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const productId = entry.target.dataset.productId;
-                    if (!impressedProducts.has(productId)) {
-                        impressedProducts.add(productId);
-                        productsInView.push(productId);
-                        observer.unobserve(entry.target);
-                    }
-                }
-            });
-
-            if (productsInView.length > 0) {
-                navigator.sendBeacon('/api/impressions', JSON.stringify({ products: productsInView }));
-            }
-        }, { threshold: 0.1 });
-
-        products.forEach(product => {
-            observer.observe(product);
-        });
-    });
 </script>
 @endpush

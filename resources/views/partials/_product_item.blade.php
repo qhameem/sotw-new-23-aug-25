@@ -8,7 +8,7 @@
     <div class="flex items-center gap-3 flex-1">
         <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
         <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
-        <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-16 rounded-xl object-cover flex-shrink-0" />
+        <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-14 rounded-xl object-cover flex-shrink-0" />
         <div class="flex flex-col space-y-1">
             <h2 class="text-base font-semibold flex items-center leading-none">
                 <span class="text-left text-black mt-1">{{ $product->name }}</span>
@@ -40,21 +40,7 @@
                     </span>
                 @endif
                 @if(!$isPromoted && !$product->is_premium)
-                    @foreach($product->softwareCategories as $cat)
-                        <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
-                           @click.stop
-                           class="hidden sm:block inline-flex items-center text-gray-600 hover:text-gray-800 rounded text-xs @if($isPromoted) opacity-75 @endif">
-                            <span class="hover:underline">{{ $cat->name }}</span>
-                            @if(isset($cat->products_count))
-                            <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full bg-gray-200 hover:bg-gray-300 text-gray-500 hover:text-gray-600 text-xs font-semibold flex items-center justify-center leading-none antialiased">
-                                {{ $cat->products_count > 99 ? '99+' : $cat->products_count }}
-                            </span>
-                            @endif
-                        </a>
-                        @if(!$loop->last)
-                        <span class="hidden sm:inline text-gray-400">•</span>
-                        @endif
-                    @endforeach
+                    <x-product-category-tags :categories="$product->softwareCategories" :withCounts="true" />
                 @endif
 
             </div>
