@@ -67,7 +67,7 @@
                 @click="window.location.href = '{{ route('products.show', $product->slug) }}'"
              @endif
     >
-        <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="size-14 rounded object-cover flex-shrink-0" loading="lazy" itemprop="image" />
+        <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="w-[65px] h-[65px] rounded object-cover flex-shrink-0" loading="lazy" itemprop="image" />
         <div class="flex-1">
             <h2 class="text-md font-semibold leading-tight mb-0.5 flex items-center">
                 @if(!$isPromoted)
@@ -85,9 +85,9 @@
                     <span itemprop="name" class="text-left">{{ $product->name }}</span>
                 @endif
             </h2>
-            <p class="text-gray-700 text-xs md:text-sm mt-0.5 mb-1 line-clamp-2" itemprop="description">{{ $product->tagline }}</p>
+            <p class="text-gray-700 text-xs md:text-sm mt-0.5 mb-0 line-clamp-2" itemprop="description">{{ $product->tagline }}</p>
             
-            <div class="mt-1.5 flex-wrap gap-2 items-center">
+            <div class="mt-0.5 flex-wrap gap-2 items-center">
                 @if($isPromoted)
                     <span class="inline-flex items-center bg-gray-100 text-gray-800 rounded text-xs">
                         <span class="px-2 py-1 font-semibold">Promoted</span>

@@ -2,7 +2,7 @@
 
 <article class="p-4 flex items-center gap-3 md:gap-3 transition relative group">
     <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" class="product-checkbox rounded">
-    <img src="{{ $product->logo_url ?? 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} logo" class="size-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+    <img src="{{ $product->logo_url ?? 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} logo" class="w-[65px] h-[65px] rounded-lg object-cover flex-shrink-0" loading="lazy" />
     <div class="flex-1">
         <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
             <a href="{{ route('admin.products.show', $product) }}" class="text-left text-blue-600 hover:underline">{{ $product->name }}</a>

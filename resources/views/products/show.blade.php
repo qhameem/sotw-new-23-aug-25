@@ -68,7 +68,7 @@
                     <div @click="editingLogo = true">
                         <template x-if="!editingLogo">
                             @if($product->logo)
-                                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-14 object-contain rounded-lg mr-3">
+                                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="w-[65px] h-[65px] object-contain rounded-lg mr-3">
                             @elseif($product->link)
                                 <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-lg mr-3">
                             @endif
@@ -83,7 +83,7 @@
                     </div>
                 @else
                     @if($product->logo)
-                        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="size-14 object-contain rounded-lg mr-3">
+                        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}" alt="{{ $product->name }} logo" class="w-[65px] h-[65px] object-contain rounded-lg mr-3">
                     @elseif($product->link)
                         <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-lg mr-3">
                     @endif

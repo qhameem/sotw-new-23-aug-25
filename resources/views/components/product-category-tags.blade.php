@@ -17,7 +17,12 @@
 @endphp
 
 <div class="flex flex-wrap gap-2 items-center">
-    @forelse($categories as $category)
+    @php
+        $generalCategories = $categories->filter(function ($cat) {
+            return !$cat->types->contains('name', 'Pricing') && !$cat->types->contains('name', 'Best for');
+        });
+    @endphp
+    @forelse($generalCategories as $category)
         <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
            @click.stop
            class="{{ $mobileDisplay }}block inline-flex items-center text-gray-600 hover:text-gray-800 rounded {{ $sizeClasses }}">

@@ -16,7 +16,7 @@
             )">
                 {{-- START: Different design (customize this part later) --}}
                 <button type="button"
-                        @click="toggleUpvote"
+                        @click.stop="toggleUpvote"
                         class="flex flex-row items-center bg-primary-500 rounded-lg px-4 py-1.5 text-white text-sm font-semibold hover:bg-rose-600">
 
                         <span class="pr-2">
@@ -44,7 +44,7 @@
             )" class="">
             
                 <button type="button"
-                        @click="toggleUpvote"
+                        @click.stop="toggleUpvote"
                         :class="votesCount > 0 ? 'justify-between' : 'justify-center'"
                         class="flex flex-col items-center w-12 h-16 py-2.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs text-gray-500 focus:outline-none">
 
