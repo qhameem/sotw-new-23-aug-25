@@ -32,12 +32,24 @@
       </div>
 
       <!-- Suggested Logos -->
-      <div v-if="modelValue.logos && modelValue.logos.length > 0">
+      <div>
         <label class="block text-sm font-semibold text-gray-700">Suggested Logos</label>
-        <div class="mt-2 grid grid-cols-3 gap-4">
-          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border border-gray-200 hover:border-rose-500 rounded-md">
+        <div v-if="loadingStates && loadingStates.logos" class="mt-2 flex items-center">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-rose-50 mr-2"></div>
+          <span class="text-sm text-gray-600">{{ logoExtractionStatusMessage }}</span>
+        </div>
+        <div v-else-if="modelValue.logos && modelValue.logos.length > 0" class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border-gray-200 hover:border-rose-500 rounded-md">
             <img :src="logo" class="h-20 w-20 object-contain rounded-md">
           </div>
+        </div>
+        <div v-else-if="!loadingStates || !loadingStates.logos" class="mt-2">
+          <button
+            @click="extractLogos"
+            class="text-sm text-rose-500 hover:underline font-medium"
+          >
+            Extract Logos
+          </button>
         </div>
       </div>
 
@@ -101,11 +113,33 @@ import { ref, computed } from 'vue';
 
 const props = defineProps({
   modelValue: Object,
-  logoPreview: String,
+ logoPreview: String,
   galleryPreviews: Array,
+ loadingStates: Object,
 });
 
-const emit = defineEmits(['update:modelValue', 'update:logoPreview', 'update:galleryPreviews', 'back', 'next']);
+const emit = defineEmits(['update:modelValue', 'update:logoPreview', 'update:galleryPreviews', 'back', 'next', 'extractLogos']);
+
+// Computed property for dynamic logo extraction status message
+const logoExtractionStatusMessage = computed(() => {
+  const messages = [
+    "Extracting possible logo images...",
+    "Scanning for logos...",
+    "Found one logo...",
+    "Looking for more logos...",
+    "Processing logos..."
+  ];
+  
+  // Use a simple timer to cycle through messages every 2 seconds
+  const messageIndex = Math.floor(Date.now() / 2000) % messages.length;
+  return messages[messageIndex];
+});
+
+// Function to trigger logo extraction
+function extractLogos() {
+  // Emit an event to trigger logo extraction in the parent component
+  emit('extractLogos');
+}
 
 const galleryInputs = ref([]);
 const largePreview = ref(null);

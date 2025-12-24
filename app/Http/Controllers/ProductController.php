@@ -38,14 +38,16 @@ class ProductController extends Controller
     protected TechStackDetectorService $techStackDetector;
     protected NameExtractorService $nameExtractor;
     protected LogoExtractorService $logoExtractor;
+    protected \App\Services\CategoryClassifier $categoryClassifier;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
         $this->techStackDetector = $techStackDetector;
         $this->nameExtractor = $nameExtractor;
         $this->logoExtractor = $logoExtractor;
+        $this->categoryClassifier = $categoryClassifier;
     }
 
     public function home(Request $request)
@@ -1614,18 +1616,43 @@ class ProductController extends Controller
             $description = '';
         }
 
-        // 3. Fetch HTML for Logos
+        // 3. Fetch HTML for Logos and Category Classification
         $htmlResponse = Http::get($url);
         $htmlContent = $htmlResponse->body();
 
         // Extract Logos
         $logos = $this->logoExtractor->extract($url, $htmlContent);
+        
+        // Classify categories and bestFor from the HTML content
+        $classificationResult = $this->categoryClassifier->classify($htmlContent);
+        $categories = $classificationResult['categories'] ?? [];
+        $bestFor = $classificationResult['best_for'] ?? [];
+        $pricing = $classificationResult['pricing'] ?? [];
+        
+        // Convert category names to IDs
+        $categoryIds = [];
+        if (!empty($categories)) {
+            $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
+        }
+        
+        $bestForIds = [];
+        if (!empty($bestFor)) {
+            $bestForIds = Category::whereIn('name', $bestFor)->pluck('id')->toArray();
+        }
+        
+        $pricingIds = [];
+        if (!empty($pricing)) {
+            $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
+        }
 
         $responseData = [
             'description' => $description,
             'logos' => $logos,
             'tagline' => $tagline,
             'tagline_detailed' => '',
+            'categories' => $categoryIds,
+            'bestFor' => $bestForIds,
+            'pricing' => $pricingIds,
         ];
 
         Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);

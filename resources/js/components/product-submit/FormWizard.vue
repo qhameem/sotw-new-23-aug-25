@@ -59,8 +59,10 @@
           v-model="form"
           v-model:logoPreview="logoPreview"
           v-model:galleryPreviews="galleryPreviews"
+          :loadingStates="loadingStates"
           @back="currentTab = 'mainInfo'"
           @next="goToNextStep('extras')"
+          @extractLogos="extractLogosFromUrl"
         />
 
         <ProductMakersForm
@@ -214,13 +216,20 @@ watch(() => form.link, (newLink, oldLink) => {
     form.tagline = '';
     form.tagline_detailed = '';
     form.description = '';
-    form.favicon = '';
+    // Don't reset favicon as it will be fetched automatically with initial data
     form.logos = [];
     logoPreview.value = null;
     
     // Fetch initial data for the new URL
     if (newLink) {
       fetchInitialData();
+      // Also fetch remaining data (including logos) when the link is entered
+      // This ensures logos are available as soon as the user enters a URL
+      setTimeout(() => {
+        if (form.name) { // Only fetch remaining data if we have a name
+          fetchRemainingData();
+        }
+      }, 500); // Small delay to ensure fetchInitialData completes first
     }
   }
 });
@@ -228,12 +237,9 @@ watch(() => form.link, (newLink, oldLink) => {
 // Watch for step changes to update checklist visibility
 watch(() => step.value, (newStep) => {
   if (newStep === 2) {
-    // Check if we need to fetch remaining data after restoration
-    const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
-    if (shouldFetchCategoriesAndBestFor) {
-      fetchRemainingData();
-    }
- }
+    // Always fetch remaining data when entering step 2 to ensure logos are available
+    fetchRemainingData();
+  }
   
   // Emit a custom event when step changes to update checklist visibility
   document.dispatchEvent(new CustomEvent('step-changed', {
@@ -243,18 +249,8 @@ watch(() => step.value, (newStep) => {
 
 watch(isRestored, (restored) => {
  if (restored && step.value === 2) {
-   const savedData = JSON.parse(sessionStorage.getItem('productFormData'));
-   if (savedData) {
-     const shouldFetchCategoriesAndBestFor = !savedData.categories || savedData.categories.length === 0 || !savedData.bestFor || savedData.bestFor.length === 0;
-     if (!savedData.tagline && !savedData.description) {
-       fetchRemainingData();
-     } else if (shouldFetchCategoriesAndBestFor) {
-       fetchRemainingData();
-     }
-   } else {
-     fetchRemainingData();
-   }
-}
+    fetchRemainingData();
+  }
 });
 
 onMounted(async () => {
@@ -295,4 +291,28 @@ onMounted(() => {
 onUnmounted(() => {
     emitter.off('switch-tab', switchTab);
 });
+
+// Function to extract logos when the button is clicked
+async function extractLogosFromUrl() {
+  try {
+    // Immediately set the loading state for logos to show the loader immediately
+    loadingStates.value.logos = true;
+    
+    // Call fetchRemainingData to extract logos based on the current URL
+    if (form.link && form.name) {
+      await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
+    } else if (form.link) {
+      // If we don't have the name yet, fetch initial data first, then remaining data
+      await fetchInitialData();
+      // Small delay to ensure initial data is fetched before remaining data
+      setTimeout(async () => {
+        await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Error during logo extraction:', error);
+    // Make sure to reset the loading state even if there's an error
+    loadingStates.value.logos = false;
+ }
+}
 </script>
