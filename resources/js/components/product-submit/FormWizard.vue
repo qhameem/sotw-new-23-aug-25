@@ -294,25 +294,66 @@ onUnmounted(() => {
 
 // Function to extract logos when the button is clicked
 async function extractLogosFromUrl() {
+ console.log('extractLogosFromUrl called', {
+    form: form,
+    link: form?.link,
+    name: form?.name,
+    linkType: typeof form?.link,
+    linkTruthy: !!form?.link
+ });
+  
   try {
     // Immediately set the loading state for logos to show the loader immediately
-    loadingStates.value.logos = true;
+    loadingStates.logos = true;
+    console.log('Loading state set to true');
     
-    // Call fetchRemainingData to extract logos based on the current URL
-    if (form.link && form.name) {
-      await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
-    } else if (form.link) {
-      // If we don't have the name yet, fetch initial data first, then remaining data
-      await fetchInitialData();
-      // Small delay to ensure initial data is fetched before remaining data
-      setTimeout(async () => {
-        await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
-      }, 500);
+    // Use the reactive form from the composable - access the values directly
+    console.log('Full form object:', JSON.stringify(form, null, 2));
+    
+    // Check if we have a link - if not, show an appropriate message
+    // Using the actual form data from the composable which should be reactive
+    const linkValue = form?.link;
+    console.log('Link value being checked:', linkValue, 'Type:', typeof linkValue, 'Truthy:', !!linkValue);
+    
+    if (!linkValue || linkValue.trim() === '') {
+      console.log('No link available, prompting user to enter a product URL first');
+      // Show an error message to the user
+      showErrorMessage.value = true;
+      errorMessage.value = 'Please enter a product URL first before extracting logos.';
+      return;
     }
-  } catch (error) {
+    
+    // If we have a link but no name, fetch the initial data first
+    if (linkValue && !form.name) {
+      console.log('Link exists but name is missing, fetching initial data first', { link: linkValue });
+      await fetchInitialData();
+      // Wait a bit to ensure initial data is fetched before remaining data
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Now that we have both link and name (or have attempted to fetch them), proceed with logo extraction
+    if (linkValue && form.name) {
+      console.log('Calling fetchRemainingData with link and name', { link: linkValue, name: form.name });
+      await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
+    } else {
+      console.log('Cannot extract logos - missing required data after attempting to fetch initial data', {
+        link: linkValue,
+        name: form?.name
+      });
+      showErrorMessage.value = true;
+      errorMessage.value = 'Unable to extract logos. Please make sure the product URL is valid and try again.';
+    }
+ } catch (error) {
     console.error('Error during logo extraction:', error);
     // Make sure to reset the loading state even if there's an error
-    loadingStates.value.logos = false;
+    loadingStates.logos = false;
+    // Show error message to user
+    showErrorMessage.value = true;
+    errorMessage.value = 'Error extracting logos: ' + (error.message || 'Unknown error occurred');
+ } finally {
+    console.log('Resetting loading state to false in finally block');
+    // Ensure loading state is reset in all cases
+    loadingStates.logos = false;
  }
 }
 </script>

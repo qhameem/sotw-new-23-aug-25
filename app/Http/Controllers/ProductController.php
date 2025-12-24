@@ -1616,47 +1616,77 @@ class ProductController extends Controller
             $description = '';
         }
 
-        // 3. Fetch HTML for Logos and Category Classification
-        $htmlResponse = Http::get($url);
-        $htmlContent = $htmlResponse->body();
+        try {
+            // 3. Fetch HTML for Logos and Category Classification with timeout
+            $htmlResponse = Http::timeout(15)->get($url);
+            if (!$htmlResponse->successful()) {
+                return response()->json([
+                    'description' => $description,
+                    'logos' => [],
+                    'tagline' => $tagline,
+                    'tagline_detailed' => '',
+                    'categories' => [],
+                    'bestFor' => [],
+                    'pricing' => [],
+                ]);
+            }
+            $htmlContent = $htmlResponse->body();
 
-        // Extract Logos
-        $logos = $this->logoExtractor->extract($url, $htmlContent);
-        
-        // Classify categories and bestFor from the HTML content
-        $classificationResult = $this->categoryClassifier->classify($htmlContent);
-        $categories = $classificationResult['categories'] ?? [];
-        $bestFor = $classificationResult['best_for'] ?? [];
-        $pricing = $classificationResult['pricing'] ?? [];
-        
-        // Convert category names to IDs
-        $categoryIds = [];
-        if (!empty($categories)) {
-            $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
-        }
-        
-        $bestForIds = [];
-        if (!empty($bestFor)) {
-            $bestForIds = Category::whereIn('name', $bestFor)->pluck('id')->toArray();
-        }
-        
-        $pricingIds = [];
-        if (!empty($pricing)) {
-            $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
-        }
+            // Extract Logos
+            $logos = $this->logoExtractor->extract($url, $htmlContent);
+            
+            // Classify categories and bestFor from the HTML content
+            $classificationResult = $this->categoryClassifier->classify($htmlContent);
+            $categories = $classificationResult['categories'] ?? [];
+            $bestFor = $classificationResult['best_for'] ?? [];
+            $pricing = $classificationResult['pricing'] ?? [];
+            
+            // Convert category names to IDs
+            $categoryIds = [];
+            if (!empty($categories)) {
+                $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
+            }
+            
+            $bestForIds = [];
+            if (!empty($bestFor)) {
+                $bestForIds = Category::whereIn('name', $bestFor)->pluck('id')->toArray();
+            }
+            
+            $pricingIds = [];
+            if (!empty($pricing)) {
+                $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
+            }
 
-        $responseData = [
-            'description' => $description,
-            'logos' => $logos,
-            'tagline' => $tagline,
-            'tagline_detailed' => '',
-            'categories' => $categoryIds,
-            'bestFor' => $bestForIds,
-            'pricing' => $pricingIds,
-        ];
+            $responseData = [
+                'description' => $description,
+                'logos' => $logos,
+                'tagline' => $tagline,
+                'tagline_detailed' => '',
+                'categories' => $categoryIds,
+                'bestFor' => $bestForIds,
+                'pricing' => $pricingIds,
+            ];
 
-        Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
-        return response()->json($responseData);
+            Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
+            return response()->json($responseData);
+        } catch (\Exception $e) {
+            Log::error('Error in processUrl: ' . $e->getMessage(), [
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return a response with empty logos but maintain the structure to prevent frontend errors
+            return response()->json([
+                'description' => $description,
+                'logos' => [],
+                'tagline' => $tagline,
+                'tagline_detailed' => '',
+                'categories' => [],
+                'bestFor' => [],
+                'pricing' => [],
+            ]);
+        }
     }
 
 

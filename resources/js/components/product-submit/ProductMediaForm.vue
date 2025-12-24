@@ -39,7 +39,7 @@
           <span class="text-sm text-gray-600">{{ logoExtractionStatusMessage }}</span>
         </div>
         <div v-else-if="modelValue.logos && modelValue.logos.length > 0" class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border-gray-200 hover:border-rose-500 rounded-md">
+          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border-gray-200 hover:border-rose-500 rounded-md p-1">
             <img :src="logo" class="h-20 w-20 object-contain rounded-md">
           </div>
         </div>

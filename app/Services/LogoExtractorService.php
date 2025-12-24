@@ -30,7 +30,7 @@ class LogoExtractorService
             if (strtolower($link->getAttribute('rel')) === 'manifest') {
                 $manifestUrl = $this->resolveUrl($url, $link->getAttribute('href'));
                 try {
-                    $manifestContent = Http::get($manifestUrl)->json();
+                    $manifestContent = Http::timeout(5)->get($manifestUrl)->json();
                     if (!empty($manifestContent['icons'])) {
                         foreach ($manifestContent['icons'] as $icon) {
                             $logos[] = $this->resolveUrl($url, $icon['src']);
@@ -123,46 +123,19 @@ class LogoExtractorService
         $validLogos = [];
         foreach ($logos as $logo) {
             try {
-                // Check if URL is valid and accessible
-                $headers = get_headers($logo, 1);
-                if (!$headers || (isset($headers[0]) && strpos($headers[0], '200') === false)) {
-                    continue;
-                }
-                
-                // Verify it's an image by checking content type or file extension
-                $contentType = null;
-                if (isset($headers['Content-Type'])) {
-                    $contentType = is_array($headers['Content-Type']) ? $headers['Content-Type'][0] : $headers['Content-Type'];
-                }
-                
-                $isImage = false;
-                if ($contentType && strpos($contentType, 'image/') !== false) {
-                    $isImage = true;
-                } else {
-                    // Fallback: check file extension
-                    $pathInfo = pathinfo(parse_url($logo, PHP_URL_PATH));
-                    $extension = strtolower($pathInfo['extension'] ?? '');
-                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'bmp']);
-                }
+                // Verify it's an image by checking file extension only (faster approach)
+                $pathInfo = pathinfo(parse_url($logo, PHP_URL_PATH));
+                $extension = strtolower($pathInfo['extension'] ?? '');
+                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'bmp']);
                 
                 if (!$isImage) {
                     continue;
                 }
                 
-                // Check image dimensions if possible
-                $size = @getimagesize($logo);
-                if ($size) {
-                    // Accept images that are at least 100x100 (more lenient than 240x240)
-                    // but prefer larger images
-                    if ($size[0] >= 100 && $size[1] >= 100) {
-                        $validLogos[] = $logo;
-                    }
-                } else {
-                    // If we can't get dimensions, still include the image if it's accessible
-                    $validLogos[] = $logo;
-                }
+                // Just add the logo if it has a valid image extension
+                $validLogos[] = $logo;
             } catch (\Exception $e) {
-                // Ignore images that can't be accessed or sized
+                // Ignore images that can't be processed
             }
         }
 
@@ -179,14 +152,7 @@ class LogoExtractorService
             if (stripos($logo, '.svg') !== false) $score += 3;
             if (stripos($logo, '.png') !== false) $score += 2;
             if (stripos($logo, '.jpg') !== false || stripos($logo, '.jpeg') !== false) $score += 1;
-            // Prioritize by size if we can determine it
-            try {
-                $size = @getimagesize($logo);
-                if ($size && $size[0] >= 240 && $size[1] >= 240) $score += 2;
-                if ($size && $size[0] >= 400 && $size[1] >= 400) $score += 1;
-            } catch (\Exception $e) {
-                // If we can't determine size, continue without penalty
-            }
+            // Skip size checking to avoid hanging on getimagesize() calls
             
             $scoredLogos[] = ['url' => $logo, 'score' => $score];
         }

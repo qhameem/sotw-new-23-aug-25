@@ -16,7 +16,7 @@ export function useProductForm() {
     urlExistsError: globalFormState.urlExistsError,
     existingProduct: globalFormState.existingProduct,
     showPreviewModal: globalFormState.showPreviewModal,
-    loadingStates: { ...globalFormState.loadingStates },
+    loadingStates: reactive({ ...globalFormState.loadingStates }),
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: [...globalFormState.galleryPreviews],
     allCategories: globalFormState.allCategories,
@@ -404,14 +404,22 @@ export function useProductForm() {
   };
 
   const fetchInitialData = async () => {
-    if (!state.form.link) return;
+    const linkValue = state.form.link;
+    console.log('fetchInitialData called with link:', linkValue);
+    
+    if (!linkValue || linkValue.trim() === '') {
+      console.log('No link provided to fetchInitialData, returning early');
+      return;
+    }
 
     state.loadingStates.name = true;
     state.isLoading = true;
 
     try {
-      const response = await axios.post('/api/fetch-initial-metadata', { url: state.form.link });
+      const response = await axios.post('/api/fetch-initial-metadata', { url: linkValue });
       const data = response.data;
+      
+      console.log('fetchInitialData response:', data);
 
       state.form.name = data.name;
       state.form.tagline_detailed = data.tagline;
@@ -428,41 +436,69 @@ export function useProductForm() {
  };
 
   const fetchRemainingData = async (explicitLogoExtraction = false) => {
-    const shouldFetchContent = !state.form.tagline && !state.form.tagline_detailed && !state.form.description;
-    const shouldFetchCategoriesAndBestFor = !state.form.categories || state.form.categories.length === 0 || !state.form.bestFor || state.form.bestFor.length === 0;
-  
-    // Always fetch logos if we have a link and name, regardless of other content
-    // If explicitLogoExtraction is true, always attempt to fetch logos even if they exist
-    const shouldFetchLogos = state.form.link && state.form.name && (explicitLogoExtraction || (!state.form.logos || state.form.logos.length === 0));
-  
-    // Only proceed if we have a valid link and name
-    if (!state.form.link || !state.form.name) {
-      Object.keys(state.loadingStates).forEach(k => state.loadingStates[k] = false);
-      state.isLoading = false;
-      return;
-    }
+     console.log('fetchRemainingData called', {
+       explicitLogoExtraction,
+       link: state.form.link,
+       linkType: typeof state.form.link,
+       linkTruthy: !!state.form.link,
+       name: state.form.name
+     });
+     
+     const shouldFetchContent = !state.form.tagline && !state.form.tagline_detailed && !state.form.description;
+     const shouldFetchCategoriesAndBestFor = !state.form.categories || state.form.categories.length === 0 || !state.form.bestFor || state.form.bestFor.length === 0;
+   
+     // Always fetch logos if we have a link and name, regardless of other content
+     // If explicitLogoExtraction is true, always attempt to fetch logos even if they exist
+     const shouldFetchLogos = state.form.link && (explicitLogoExtraction || (!state.form.logos || state.form.logos.length === 0));
+     
+     console.log('Should fetch checks:', { shouldFetchContent, shouldFetchCategoriesAndBestFor, shouldFetchLogos });
+   
+     // Only proceed if we have a valid link (name is not strictly required for explicit logo extraction)
+     const linkValue = state.form.link;
+     if (!linkValue || linkValue.trim() === '') {
+       console.log('No link provided or link is empty, returning early');
+       Object.keys(state.loadingStates).forEach(k => state.loadingStates[k] = false);
+       state.isLoading = false;
+       return;
+     }
   
     if (shouldFetchContent) {
       state.loadingStates.description = true;
+      console.log('Setting description loading state to true');
     }
     if (shouldFetchCategoriesAndBestFor) {
       state.loadingStates.categories = true;
       state.loadingStates.bestFor = true;
+      console.log('Setting categories and bestFor loading states to true');
     }
     if (shouldFetchLogos) {
       state.loadingStates.logos = true;
+      console.log('Setting logos loading state to true');
     }
   
     try {
+      const linkValue = state.form.link;
+      const nameValue = state.form.name || '';
+      const taglineValue = state.form.tagline || '';
+      
+      console.log('Making API call to /api/process-url with:', {
+        url: linkValue,
+        name: nameValue,
+        tagline: taglineValue,
+        fetch_content: shouldFetchContent
+      });
+      
       // Make the API call with a timeout
       const response = await axios.post('/api/process-url', {
-        url: state.form.link,
-        name: state.form.name,
-        tagline: state.form.tagline,
+        url: linkValue,
+        name: nameValue,  // Pass empty string if name is not available
+        tagline: taglineValue, // Pass empty string if tagline is not available
         fetch_content: shouldFetchContent,
       }, {
         timeout: 30000 // 30 second timeout
       });
+      console.log('API response received:', response.data);
+      
       const data = response.data;
 
       if (shouldFetchContent) {
@@ -471,6 +507,7 @@ export function useProductForm() {
       }
       // Always update logos if we received them, regardless of whether we explicitly requested them
       if (data.logos && Array.isArray(data.logos)) {
+        console.log('Updating logos with data:', data.logos);
         state.form.logos = data.logos;
       }
       if (shouldFetchCategoriesAndBestFor) {
@@ -498,20 +535,30 @@ export function useProductForm() {
         console.error('Error during logo extraction:', error.message || error);
       }
     } finally {
+      console.log('In finally block, resetting loading states');
       // Always reset the specific loading states that were requested
       // This ensures that even if the API call fails, the loading state is properly reset
       if (shouldFetchContent) {
         state.loadingStates.description = false;
+        console.log('Resetting description loading state to false');
       }
       if (shouldFetchCategoriesAndBestFor) {
         state.loadingStates.categories = false;
         state.loadingStates.bestFor = false;
+        console.log('Resetting categories and bestFor loading states to false');
       }
       if (shouldFetchLogos || explicitLogoExtraction) {
         // Always reset the logos loading state if we attempted to fetch logos
         state.loadingStates.logos = false;
+        console.log('Resetting logos loading state to false');
       }
-      state.isLoading = false;
+      // Only set the general isLoading to false if no other loading operations are in progress
+      // Check if any other loading states are still active
+      const anyLoadingActive = Object.values(state.loadingStates).some(loading => loading === true);
+      if (!anyLoadingActive) {
+        state.isLoading = false;
+        console.log('Resetting general isLoading to false');
+      }
     }
   };
 
