@@ -1585,9 +1585,63 @@ class ProductController extends Controller
         }
         $metadata = json_decode($metadataResponse->getContent(), true);
 
+        // Extract additional information from the URL content
+        $taglineDetailed = '';
+        try {
+            $response = Http::get($url);
+            $html = $response->body();
+
+            $doc = new DOMDocument();
+            @$doc->loadHTML($html);
+
+            // Extract potential detailed tagline from h1, h2, h3 tags or specific classes
+            $potentialTaglines = [];
+            $headings = $doc->getElementsByTagName('h1');
+            foreach ($headings as $heading) {
+                $potentialTaglines[] = $heading->nodeValue;
+            }
+            $headings = $doc->getElementsByTagName('h2');
+            foreach ($headings as $heading) {
+                $potentialTaglines[] = $heading->nodeValue;
+            }
+            $headings = $doc->getElementsByTagName('h3');
+            foreach ($headings as $heading) {
+                $potentialTaglines[] = $heading->nodeValue;
+            }
+
+            // Look for specific classes that might contain taglines
+            $xpath = new \DOMXPath($doc);
+            $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
+            foreach ($elements as $element) {
+                $potentialTaglines[] = $element->nodeValue;
+            }
+
+            // Use the first potential tagline that's not empty and not too long
+            foreach ($potentialTaglines as $potential) {
+                $potential = trim($potential);
+                if (!empty($potential) && strlen($potential) < 200) {
+                    $taglineDetailed = $potential;
+                    break;
+                }
+            }
+
+            // Fallback to the meta description if no detailed tagline was found
+            if (empty($taglineDetailed)) {
+                $taglineDetailed = $metadata['tagline'] ?? '';
+            }
+
+            // Limit the length of the detailed tagline
+            $taglineDetailed = Str::limit($taglineDetailed, 160, '...');
+        } catch (\Exception $e) {
+            Log::error('Error extracting detailed tagline from URL: ' . $e->getMessage(), ['url' => $url]);
+            // Use the regular tagline as fallback
+            $taglineDetailed = $metadata['tagline'] ?? '';
+        }
+
         $responseData = [
             'name' => $metadata['name'],
             'tagline' => $metadata['tagline'],
+            'tagline_detailed' => $taglineDetailed,
             'favicon' => $metadata['favicon'],
         ];
 
@@ -1608,16 +1662,11 @@ class ProductController extends Controller
         $fetchContent = $request->input('fetch_content', true);
 
         $description = '';
-
-        if ($fetchContent) {
-            // 2. Generate Description - AI functionality removed
-            // Original implementation would call $this->generateDescription($name, $tagline)
-            // Now returns empty string since AI functionality has been removed
-            $description = '';
-        }
+        $extractedTagline = '';
+        $extractedTaglineDetailed = '';
 
         try {
-            // 3. Fetch HTML for Logos and Category Classification with timeout
+            // 3. Fetch HTML for content extraction with timeout
             $htmlResponse = Http::timeout(15)->get($url);
             if (!$htmlResponse->successful()) {
                 return response()->json([
@@ -1631,6 +1680,106 @@ class ProductController extends Controller
                 ]);
             }
             $htmlContent = $htmlResponse->body();
+
+            if ($fetchContent) {
+                // Extract content from HTML
+                $doc = new DOMDocument();
+                @$doc->loadHTML($htmlContent);
+
+                // Extract title
+                $titleNode = $doc->getElementsByTagName('title')->item(0);
+                $title = $titleNode ? $titleNode->nodeValue : '';
+
+                // Extract meta description
+                $descriptionContent = '';
+                $metas = $doc->getElementsByTagName('meta');
+                for ($i = 0; $i < $metas->length; $i++) {
+                    $meta = $metas->item($i);
+                    if (strtolower($meta->getAttribute('name')) == 'description') {
+                        $descriptionContent = $meta->getAttribute('content');
+                        break;
+                    }
+                }
+
+                // Extract potential taglines from h1, h2, h3 tags or specific classes
+                $potentialTaglines = [];
+                $headings = $doc->getElementsByTagName('h1');
+                foreach ($headings as $heading) {
+                    $potentialTaglines[] = $heading->nodeValue;
+                }
+                $headings = $doc->getElementsByTagName('h2');
+                foreach ($headings as $heading) {
+                    $potentialTaglines[] = $heading->nodeValue;
+                }
+                $headings = $doc->getElementsByTagName('h3');
+                foreach ($headings as $heading) {
+                    $potentialTaglines[] = $heading->nodeValue;
+                }
+
+                // Look for specific classes that might contain taglines
+                $xpath = new \DOMXPath($doc);
+                $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
+                foreach ($elements as $element) {
+                    $potentialTaglines[] = $element->nodeValue;
+                }
+
+                // Use the extracted content
+                $extractedTagline = $descriptionContent ?: trim($title);
+                $extractedTaglineDetailed = trim($title) ?: $descriptionContent;
+                $description = $descriptionContent;
+
+                // If we still don't have a good tagline, try from potential taglines
+                if (empty($extractedTagline) && !empty($potentialTaglines)) {
+                    foreach ($potentialTaglines as $potential) {
+                        $potential = trim($potential);
+                        if (strlen($potential) > 0 && strlen($potential) < 120) { // Reasonable tagline length
+                            $extractedTagline = $potential;
+                            break;
+                        }
+                    }
+                }
+
+                // If we still don't have a detailed tagline, try from potential taglines
+                if (empty($extractedTaglineDetailed) && !empty($potentialTaglines)) {
+                    foreach ($potentialTaglines as $potential) {
+                        $potential = trim($potential);
+                        if (strlen($potential) > 0 && strlen($potential) < 200) { // Reasonable detailed tagline length
+                            $extractedTaglineDetailed = $potential;
+                            break;
+                        }
+                    }
+                }
+
+                // Fallback to the first non-empty potential tagline if still empty
+                if (empty($extractedTagline) && !empty($potentialTaglines)) {
+                    foreach ($potentialTaglines as $potential) {
+                        $potential = trim($potential);
+                        if (!empty($potential)) {
+                            $extractedTagline = $potential;
+                            break;
+                        }
+                    }
+                }
+
+                if (empty($extractedTaglineDetailed) && !empty($potentialTaglines)) {
+                    foreach ($potentialTaglines as $potential) {
+                        $potential = trim($potential);
+                        if (!empty($potential)) {
+                            $extractedTaglineDetailed = $potential;
+                            break;
+                        }
+                    }
+                }
+
+                // Limit the length of taglines to fit form requirements
+                $extractedTagline = Str::limit($extractedTagline, 60, '...');
+                $extractedTaglineDetailed = Str::limit($extractedTaglineDetailed, 160, '...');
+
+                // If we have a name and tagline is still empty, try to enhance it
+                if (empty($extractedTagline) && !empty($name)) {
+                    $extractedTagline = $name;
+                }
+            }
 
             // Extract Logos
             $logos = $this->logoExtractor->extract($url, $htmlContent);
@@ -1660,8 +1809,8 @@ class ProductController extends Controller
             $responseData = [
                 'description' => $description,
                 'logos' => $logos,
-                'tagline' => $tagline,
-                'tagline_detailed' => '',
+                'tagline' => $extractedTagline ?: $tagline, // Use extracted tagline, fallback to provided tagline
+                'tagline_detailed' => $extractedTaglineDetailed, // Use extracted detailed tagline
                 'categories' => $categoryIds,
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,

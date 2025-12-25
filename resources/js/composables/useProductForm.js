@@ -422,7 +422,8 @@ export function useProductForm() {
       console.log('fetchInitialData response:', data);
 
       state.form.name = data.name;
-      state.form.tagline_detailed = data.tagline;
+      state.form.tagline = data.tagline;
+      state.form.tagline_detailed = data.tagline_detailed || data.tagline;  // Use tagline_detailed if provided, otherwise fallback to tagline
       state.form.favicon = data.favicon;
 
       state.loadingStates.name = false;
@@ -502,8 +503,9 @@ export function useProductForm() {
       const data = response.data;
 
       if (shouldFetchContent) {
-        state.form.tagline_detailed = data.tagline_detailed;
-        state.form.description = data.description;
+        state.form.tagline = data.tagline || state.form.tagline; // Only update if we received a new value
+        state.form.tagline_detailed = data.tagline_detailed || state.form.tagline_detailed; // Only update if we received a new value
+        state.form.description = data.description || state.form.description; // Only update if we received a new value
       }
       // Always update logos if we received them, regardless of whether we explicitly requested them
       if (data.logos && Array.isArray(data.logos)) {

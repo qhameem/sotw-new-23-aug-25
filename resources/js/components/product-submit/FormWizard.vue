@@ -38,8 +38,13 @@
                 :class="['py-1 my-2 cursor-pointer font-medium text-gray-400 text-sm relative', { 'text-rose-500 font-medium': currentTab === step.id }]">
               <a href="#" class="flex flex-col items-center relative">
                 <div class="flex items-center space-x-1">
-                  <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold text-white', currentTab === step.id ? 'bg-rose-500' : 'bg-gray-300']">
-                    {{ index + 1 }}
+                  <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold text-white', isStepCompleted(step.id) ? 'bg-green-500' : (currentTab === step.id ? 'bg-rose-500' : 'bg-gray-300')]">
+                    <template v-if="isStepCompleted(step.id)">
+                      ✓
+                    </template>
+                    <template v-else>
+                      {{ index + 1 }}
+                    </template>
                   </span>
                   <component :is="step.icon" />
                   <span class="">{{ step.name }}</span>
@@ -104,8 +109,6 @@
 
 <script setup>
 import { watch, onMounted, onUnmounted, nextTick } from 'vue';
-import emitter from '../../eventBus';
-import { EVENT_TYPES } from '../../eventTypes';
 import { useProductForm } from '../../composables/useProductForm';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
@@ -168,18 +171,11 @@ function debounce(func, wait) {
 // Debounced function form updates
 const debouncedFormUpdate = debounce((newForm) => {
  saveFormData();
-  
-  // Emit form update event for the checklist
-  const formForChecklist = {
-     link: newForm.link,
-     name: newForm.name,
-     tagline: newForm.tagline,
-     tagline_detailed: newForm.tagline_detailed,
-     description: newForm.description,
-     logo: (logoPreview || (newForm.logos && newForm.logos.length > 0)) ? logoPreview || newForm.logos[0] : null, // Pass actual logo value instead of boolean
-     selectedPricing: newForm.pricing || [],
-  };
-  emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
+}, 100); // 100ms debounce delay - reduced for more responsive updates
+
+
+// Debounced function for logo preview updates
+const debouncedLogoUpdate = debounce((newLogoPreview) => {
 }, 100); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for form changes and trigger debounced update
@@ -192,21 +188,6 @@ watch(form, (newForm) => {
  // Call the debounced function
  debouncedFormUpdate(newForm);
 }, { deep: true });
-
-// Debounced function for logo preview updates
-const debouncedLogoUpdate = debounce((newLogoPreview) => {
- // Emit form update event for the checklist when logo changes
-const formForChecklist = {
-    link: form.link,
-    name: form.name,
-    tagline: form.tagline,
-    tagline_detailed: form.tagline_detailed,
-    description: form.description,
-    logo: (newLogoPreview || (form.logos && form.logos.length > 0)) ? newLogoPreview || form.logos[0] : null, // Pass actual logo value instead of boolean
-    selectedPricing: form.pricing || [],
-  };
-emitter.emit(EVENT_TYPES.FORM_UPDATED, formForChecklist);
-}, 100); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for logo preview changes and trigger debounced update
 watch(logoPreview, (newLogoPreview) => {
@@ -243,14 +224,14 @@ watch(() => form.link, (newLink, oldLink) => {
   }
 });
 
-// Watch for step changes to update checklist visibility
+// Watch for step changes
 watch(() => step.value, (newStep) => {
   if (newStep === 2) {
     // Always fetch remaining data when entering step 2 to ensure logos are available
     fetchRemainingData();
   }
   
-  // Emit a custom event when step changes to update checklist visibility
+  // Emit a custom event when step changes
   document.dispatchEvent(new CustomEvent('step-changed', {
     detail: { step: newStep }
   }));
@@ -273,33 +254,14 @@ onMounted(async () => {
     isRestored.value = true;
     isMounted.value = true;
     
-    // Emit initial step change event to set checklist visibility
+    // Emit initial step change event
     document.dispatchEvent(new CustomEvent('step-changed', {
       detail: { step: step.value }  // Keep .value here as step is a ref
     }));
   });
 });
 
-// Function to switch to a specific tab
-const switchTab = (payload) => {
-  // Handle both old format (string) and new format (object with tabName)
-  const tabName = typeof payload === 'string' ? payload : payload.tabName;
-  
-  // Ensure we're in step 2 (form view) before switching tabs
-  if (step.value !== 2) {
-    step.value = 2;
-  }
-  currentTab.value = tabName;
-};
 
-// Listen for the switch-tab event from the DynamicChecklist component
-onMounted(() => {
-    emitter.on(EVENT_TYPES.SWITCH_TAB, switchTab);
-});
-
-onUnmounted(() => {
-    emitter.off('switch-tab', switchTab);
-});
 
 // Function to extract logos when the button is clicked
 async function extractLogosFromUrl() {
@@ -363,6 +325,30 @@ async function extractLogosFromUrl() {
     console.log('Resetting loading state to false in finally block');
     // Ensure loading state is reset in all cases
     loadingStates.logos = false;
+ }
+}
+
+// Function to check if a step is completed based on required fields
+const isStepCompleted = (stepId) => {
+ switch (stepId) {
+   case 'mainInfo':
+     return form.name && form.tagline && form.tagline_detailed && form.description &&
+            form.categories && form.categories.length > 0 &&
+            form.bestFor && form.bestFor.length > 0 &&
+            form.pricing && form.pricing.length > 0;
+   case 'imagesAndMedia':
+     return (logoPreview || (form.logos && form.logos.length > 0)) &&
+            form.gallery && form.gallery.some(galleryItem => galleryItem !== null);
+   case 'extras':
+     // For extras tab, check if at least one maker link is provided or if tech stack is selected
+     return (form.maker_links && form.maker_links.length > 0) ||
+            (form.tech_stack && form.tech_stack.length > 0);
+   case 'launchChecklist':
+     // For launch checklist, we'll consider it completed when the form is submitted
+     // For now, this tab will only show a checkmark when the form is actually submitted
+     return false; // This tab should not show a checkmark until form is submitted
+   default:
+     return false;
  }
 }
 </script>

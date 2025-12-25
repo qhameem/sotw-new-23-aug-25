@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TaglineController extends Controller
 {
@@ -30,7 +31,7 @@ class TaglineController extends Controller
                     [
                         'parts' => [
                             [
-                                'text' => "Based on the product description \"{$request->input('description')}\", generate two taglines in JSON format: a 'short' one (max 60 chars, Product Hunt style) and a 'detailed' one (max 120 chars). Return only the JSON object with keys 'short' and 'detailed'."
+                                'text' => "Based on the product description \"{$request->input('description')}\", generate two taglines in JSON format: a 'short' one (max 60 chars, Product Hunt style) and a 'detailed' one (max 160 chars). Return only the JSON object with keys 'short' and 'detailed'."
                             ]
                         ]
                     ]
@@ -87,7 +88,7 @@ class TaglineController extends Controller
 
             return response()->json([
                 'tagline' => Str::limit(trim($title), 60),
-                'tagline_detailed' => Str::limit(trim($description), 120)
+                'tagline_detailed' => Str::limit(trim($description), 160)
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch metadata for tagline fallback.', ['url' => $url, 'error' => $e->getMessage()]);

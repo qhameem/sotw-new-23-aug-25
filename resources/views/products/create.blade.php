@@ -8,11 +8,6 @@
     </div>
 @endsection
 
-@section('right_sidebar_content')
-    <div class="pt-16">
-        <div id="checklist-container"></div>
-    </div>
-@endsection
 
 @section('content')
 <div class="relative">
