@@ -19,7 +19,7 @@
 
     <div v-if="step === 2">
       <div class="w-full p-1">
-        <div class="w-full p-1 mb-4 bg-white rounded-lg shadow-sm sticky top-16 z-10">
+        <div class="w-full p-1 mb-4 bg-white sticky top-16 z-10">
           <div class="flex mb-4 items-center">
             <img
               v-if="form.favicon"
@@ -28,20 +28,29 @@
               class="h-12 w-12 mr-2"
             >
             <div>
-              <h2 class="text-lg font-semibold text-gray-700">{{ form.name || 'Product Details' }}</h2>
-              <p class="text-sm text-gray-500">In progress</p>
+              <h2 class="text-lg font-bold text-gray-700">{{ form.name || 'Product Details' }}</h2>
+              <p class="text-xs text-gray-500">In progress</p>
             </div>
           </div>
-          <ul class="flex flex-wrap justify-between items-center gap-4">
+          <ul class="flex flex-wrap rounded-md justify-between items-center gap-4">
             <li v-for="(step, index) in sidebarSteps" :key="index"
                 @click="currentTab = step.id"
-                :class="['p-2 rounded-lg cursor-pointer font-normal text-gray-400 text-sm relative', { 'text-gray-700 font-semibold': currentTab === step.id }]">
-              <a href="#" class="flex items-center space-x-1">
-                <component :is="step.icon" />
-                <span class="">{{ step.name }}</span>
+                :class="['py-1 my-2 cursor-pointer font-medium text-gray-400 text-sm relative', { 'text-rose-500 font-medium': currentTab === step.id }]">
+              <a href="#" class="flex flex-col items-center relative">
+                <div class="flex items-center space-x-1">
+                  <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold text-white', currentTab === step.id ? 'bg-rose-500' : 'bg-gray-300']">
+                    {{ index + 1 }}
+                  </span>
+                  <component :is="step.icon" />
+                  <span class="">{{ step.name }}</span>
+                </div>
+                <!-- <svg v-if="currentTab === step.id" class="w-5 h-5 text-gray-500 absolute top-full mt-1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.178 19.569a.998.998 0 0 0 1.644 0l9-13A.999.999 0 0 0 21 5H3a1.002 1.002 0 0-.822 1.569l9 13z" fill="currentColor"></path>
+                </svg> -->
               </a>
             </li>
           </ul>
+          <hr class="border-t border-gray-200 mt-2">
         </div>
         
         <ProductDetailsForm
