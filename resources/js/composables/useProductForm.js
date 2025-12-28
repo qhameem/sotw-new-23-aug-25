@@ -576,8 +576,15 @@ export function useProductForm() {
  };
 
   const updateFormMultiple = async (updates) => {
+    // Update each field individually to ensure reactivity
     Object.keys(updates).forEach(key => {
-      state.form[key] = updates[key];
+      if (state.form.hasOwnProperty(key)) {
+        if (Array.isArray(updates[key])) {
+          state.form[key] = [...updates[key]]; // Create a new array to ensure reactivity
+        } else {
+          state.form[key] = updates[key];
+        }
+      }
     });
     
     // Check URL existence if the link field was updated
@@ -614,12 +621,204 @@ export function useProductForm() {
       state.errorMessage = 'Failed to load form options. Some features may not work properly.';
     }
     
-    // Load saved data after initializing form options
-    await loadSavedData();
-  };
+  // Load initial data from the HTML element attributes first (for editing existing products)
+ // This ensures that if we're editing an existing product, we load that data first
+  loadInitialDataFromElement();
+  
+  // Then load saved data (from session storage) which might override initial data
+  // Only load saved data if we're not editing an existing product (to prevent override)
+  const element = document.getElementById('product-submit-app');
+  if (element) {
+    const displayData = element.getAttribute('data-display-data');
+    const isAdmin = element.getAttribute('data-is-admin');
+    // If we're an admin editing an existing product, don't load saved data as it may override the loaded product data
+    if (!(isAdmin === 'true' && displayData)) {
+      await loadSavedData();
+    }
+  } else {
+    // If element is not available yet, try loading saved data after a short delay
+    setTimeout(async () => {
+      await loadSavedData();
+    }, 100);
+  }
+};
+
+// Load initial data from HTML element attributes (for editing existing products)
+const loadInitialDataFromElement = () => {
+  // Try to load immediately
+  tryLoadInitialData();
+  
+  // If element is not found, set up a MutationObserver to wait for it to be added to the DOM
+ if (!document.getElementById('product-submit-app')) {
+    const observer = new MutationObserver((mutationsList) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          const element = document.getElementById('product-submit-app');
+          if (element) {
+            observer.disconnect(); // Stop observing once we find the element
+            tryLoadInitialData();
+            return;
+          }
+        }
+      }
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+ }
+};
+
+// Helper function to try loading initial data
+const tryLoadInitialData = () => {
+  const element = document.getElementById('product-submit-app');
+  if (element) {
+    console.log('Found product-submit-app element, attempting to load initial data');
+    
+    // Get data attributes from the element
+    const displayData = element.getAttribute('data-display-data');
+    const isAdmin = element.getAttribute('data-is-admin');
+    const allPricing = element.getAttribute('data-pricing-categories');
+    const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+    
+    console.log('Data attributes:', { displayData, isAdmin, allPricing, selectedBestForCategories });
+    
+    if (displayData) {
+      try {
+        const initialData = JSON.parse(displayData);
+        console.log('Parsed initial data:', initialData);
+        
+        // For admin users, always load the original product data regardless of pending edits
+        if (isAdmin === 'true') {
+          console.log('Loading data for admin user');
+          
+          // Load the original product data
+          // The current_categories from the controller contains all categories (regular, pricing, bestFor)
+          // We need to separate them based on their types
+          let allCategoryIds = initialData.current_categories || [];
+          let pricingCategoryIds = [];
+          let regularCategoryIds = [];
+          
+          if (allCategoryIds.length > 0 && allPricing) {
+            try {
+              const pricingCats = JSON.parse(allPricing);
+              const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+              
+              // Separate pricing and regular categories
+              pricingCategoryIds = allCategoryIds.filter(catId =>
+                pricingCatIds.includes(parseInt(catId))
+              );
+              regularCategoryIds = allCategoryIds.filter(catId =>
+                !pricingCatIds.includes(parseInt(catId))
+              );
+            } catch (e) {
+              console.error('Error parsing pricing categories:', e);
+              // If parsing fails, treat all as regular categories
+              regularCategoryIds = allCategoryIds;
+            }
+          } else {
+            // If no pricing categories are available, assume all are regular categories
+            regularCategoryIds = allCategoryIds;
+          }
+          
+          console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds);
+          
+          updateFormMultiple({
+            name: initialData.name,
+            tagline: initialData.tagline,
+            tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
+            description: initialData.description,
+            link: initialData.link,
+            categories: regularCategoryIds,
+            bestFor: JSON.parse(selectedBestForCategories || '[]'),
+            pricing: pricingCategoryIds,
+            tech_stack: initialData.current_tech_stacks || [],
+            video_url: initialData.video_url,
+          });
+          
+          console.log('Updated form with initial data for admin');
+          
+          // Set step to 2 to show the form
+          state.step = 2;
+        } else {
+          console.log('Loading data for regular user');
+          
+          // For regular users, load data as appropriate
+          updateFormMultiple({
+            name: initialData.name,
+            tagline: initialData.tagline,
+            tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
+            description: initialData.description,
+            link: initialData.link,
+            categories: initialData.current_categories || [],
+            bestFor: JSON.parse(selectedBestForCategories || '[]'),
+            pricing: initialData.current_categories ? [] : [], // This might need to be handled differently
+            tech_stack: initialData.current_tech_stacks || [],
+            video_url: initialData.video_url,
+          });
+          
+          // Set step to 2 to show the form
+          state.step = 2;
+        }
+      } catch (error) {
+        console.error('Error parsing initial data from element:', error);
+        // Fallback: try to initialize with basic data
+        const element = document.getElementById('product-submit-app');
+        if (element) {
+          const displayData = element.getAttribute('data-display-data');
+          const isAdmin = element.getAttribute('data-is-admin');
+          const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+          
+          if (displayData) {
+            try {
+              const initialData = JSON.parse(displayData);
+              if (isAdmin === 'true') {
+                updateFormMultiple({
+                  name: initialData.name || '',
+                  tagline: initialData.tagline || '',
+                  tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+                  description: initialData.description || '',
+                  link: initialData.link || '',
+                  categories: initialData.current_categories || [],
+                  bestFor: JSON.parse(selectedBestForCategories || '[]'),
+                  pricing: [],
+                  tech_stack: initialData.current_tech_stacks || [],
+                  video_url: initialData.video_url || '',
+                });
+                
+                state.step = 2;
+              }
+            } catch (innerError) {
+              console.error('Error in fallback parsing:', innerError);
+            }
+          }
+        }
+      }
+    } else {
+      console.log('No displayData found in element attributes');
+    }
+  } else {
+    console.log('product-submit-app element not found');
+  }
+};
 
   // Load saved data from session storage
   const loadSavedData = async () => {
+    // Don't load saved data if we're currently editing an existing product (to prevent override)
+    const element = document.getElementById('product-submit-app');
+    if (element) {
+      const displayData = element.getAttribute('data-display-data');
+      const isAdmin = element.getAttribute('data-is-admin');
+      
+      // If we're an admin editing an existing product, skip loading saved data
+      if (isAdmin === 'true' && displayData) {
+        console.log('Skipping loading saved data because we are editing an existing product as admin');
+        return;
+      }
+    }
+    
     const savedData = productFormService.loadFormData();
     if (savedData) {
       if (savedData.link) {

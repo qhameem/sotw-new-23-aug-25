@@ -168,15 +168,16 @@ class ProductController extends Controller
         $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
+        // For admin editing, always show the original product data, not proposed changes
         $displayData = [
             'name' => old('name', $product->name),
             'slug' => old('slug', $product->slug),
             'link' => old('link', $product->link),
-            'logo' => $product->logo,
-            'tagline' => old('tagline', $product->tagline),
+            'logo' => $product->logo, // Use original logo
+            'tagline' => old('tagline', $product->tagline), // Use original tagline
             'product_page_tagline' => old('product_page_tagline', $product->product_page_tagline),
-            'description' => old('description', $product->description),
-            'current_categories' => old('categories', $product->categories->pluck('id')->toArray()),
+            'description' => old('description', $product->description), // Use original description
+            'current_categories' => old('categories', $product->categories->pluck('id')->toArray()), // Use original categories
             'current_tech_stacks' => old('tech_stacks', $product->techStacks->pluck('id')->toArray()),
             'video_url' => old('video_url', $product->video_url),
         ];
