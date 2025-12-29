@@ -8,7 +8,7 @@
     <div class="relative">
       <div class="flex items-center px-2 py-1 border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400">
         <div :class="[selectedItems.length > 2 ? 'flex flex-wrap' : 'flex', 'gap-2']">
-          <div v-for="item in selectedItems" :key="item.id" class="flex items-center bg-sky-100 text-sky-700 text-sm font-light px-2 py-1 rounded-lg">
+          <div v-for="item in selectedItems" :key="item.id" class="flex items-center bg-sky-100 text-sky-700 text-xs font-light px-2 py-1 rounded-lg">
             <span class="whitespace-nowrap">{{ item.name }}</span>
             <button @click="removeItem(item)" class="ml-2 text-gray-500 hover:text-gray-700 focus:outline-none">
               <svg class="h-3 w-3 text-sky-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>

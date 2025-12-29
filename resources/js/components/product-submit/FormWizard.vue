@@ -50,7 +50,7 @@
                   <span class="">{{ step.name }}</span>
                 </div>
                 <!-- <svg v-if="currentTab === step.id" class="w-5 h-5 text-gray-500 absolute top-full mt-1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11.178 19.569a.998.998 0 0 0 1.644 0l9-13A.999.999 0 0 0 21 5H3a1.002 1.002 0 0-.822 1.569l9 13z" fill="currentColor"></path>
+                  <path d="M11.178 19.569a.998.998 0 0 0 1.644 0l9-13A.999 0 0 0 21 5H3a1.002 1.002 0 0-.822 1.569l9 13z" fill="currentColor"></path>
                 </svg> -->
               </a>
             </li>
@@ -110,6 +110,7 @@
 <script setup>
 import { watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useProductForm } from '../../composables/useProductForm';
+import { isTabCompleted } from '../../services/productFormService';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
@@ -127,12 +128,12 @@ const {
   isRestored,
   isMounted,
   isLoading,
-  urlExistsError,
+ urlExistsError,
   existingProduct,
   showPreviewModal,
   loadingStates,
   logoPreview,
-  galleryPreviews,
+ galleryPreviews,
   allCategories,
   allBestFor,
   allPricing,
@@ -148,10 +149,10 @@ const {
  confirmSubmit,
   closeModal,
   validateForm,
-  fetchInitialData,
+ fetchInitialData,
   fetchRemainingData,
   initializeFormData,
-  loadSavedData,
+ loadSavedData,
   saveFormData
 } = useProductForm();
 
@@ -165,7 +166,7 @@ function debounce(func, wait) {
     };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-  };
+ };
 }
 
 // Debounced function form updates
@@ -176,7 +177,7 @@ const debouncedFormUpdate = debounce((newForm) => {
 
 // Debounced function for logo preview updates
 const debouncedLogoUpdate = debounce((newLogoPreview) => {
-}, 100); // 100ms debounce delay - reduced for more responsive updates
+}, 10); // 100ms debounce delay - reduced for more responsive updates
 
 // Watch for form changes and trigger debounced update
 watch(form, (newForm) => {
@@ -191,13 +192,13 @@ watch(form, (newForm) => {
 
 // Watch for logo preview changes and trigger debounced update
 watch(logoPreview, (newLogoPreview) => {
- // Clear error message when logo preview changes, but not if it's a URL exists error
- if (!urlExistsError.value) {
-   showErrorMessage.value = false;
- }
- 
- // Call the debounced function
- debouncedLogoUpdate(newLogoPreview);
+  // Clear error message when logo preview changes, but not if it's a URL exists error
+  if (!urlExistsError.value) {
+    showErrorMessage.value = false;
+  }
+  
+  // Call the debounced function
+  debouncedLogoUpdate(newLogoPreview);
 });
 
 watch(() => form.link, (newLink, oldLink) => {
@@ -243,6 +244,22 @@ watch(isRestored, (restored) => {
   }
 });
 
+// Watch for form changes to trigger UI updates for step completion
+watch(() => [
+  form.name,
+  form.tagline,
+  form.tagline_detailed,
+  form.description,
+  form.categories,
+  form.bestFor,
+  form.pricing,
+  logoPreview,
+  form.logos
+], () => {
+  // This forces the UI to update when form data changes
+  // The isStepCompleted function will be re-evaluated when these values change
+}, { deep: true });
+
 onMounted(async () => {
   // Initialize form options
   await initializeFormData();
@@ -256,7 +273,7 @@ onMounted(async () => {
     
     // Emit initial step change event
     document.dispatchEvent(new CustomEvent('step-changed', {
-      detail: { step: step.value }  // Keep .value here as step is a ref
+      detail: { step: step }
     }));
   });
 });
@@ -330,25 +347,19 @@ async function extractLogosFromUrl() {
 
 // Function to check if a step is completed based on required fields
 const isStepCompleted = (stepId) => {
- switch (stepId) {
-   case 'mainInfo':
-     return form.name && form.tagline && form.tagline_detailed && form.description &&
-            form.categories && form.categories.length > 0 &&
-            form.bestFor && form.bestFor.length > 0 &&
-            form.pricing && form.pricing.length > 0;
-   case 'imagesAndMedia':
-     return (logoPreview || (form.logos && form.logos.length > 0)) &&
-            form.gallery && form.gallery.some(galleryItem => galleryItem !== null);
-   case 'extras':
-     // For extras tab, check if at least one maker link is provided or if tech stack is selected
-     return (form.maker_links && form.maker_links.length > 0) ||
-            (form.tech_stack && form.tech_stack.length > 0);
-   case 'launchChecklist':
-     // For launch checklist, we'll consider it completed when the form is submitted
-     // For now, this tab will only show a checkmark when the form is actually submitted
-     return false; // This tab should not show a checkmark until form is submitted
-   default:
-     return false;
- }
+  // Find the step in sidebarSteps
+  const step = sidebarSteps.find(s => s.id === stepId);
+  if (!step) return false;
+  
+  // Use the service function to check if the tab is completed
+ const completed = isTabCompleted(step, form, logoPreview);
+  
+  // For launch checklist, we'll consider it completed when the form is submitted
+  // For now, this tab will only show a checkmark when the form is actually submitted
+ if (stepId === 'launchChecklist') {
+    return false; // This tab should not show a checkmark until form is submitted
+  }
+  
+  return completed;
 }
 </script>

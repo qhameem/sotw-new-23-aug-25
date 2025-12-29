@@ -105,7 +105,22 @@
                 }
 
                 this.$nextTick(() => {
-                    const targetWeek = urlWeek || { year: currentYear, week: this.getWeekNumber(now) };
+                    // Check if we have specific week/year from backend (for homepage when not in week URL)
+                    const backendWeek = @json(isset($weekOfYear) ? $weekOfYear : null);
+                    const backendYear = @json(isset($year) ? $year : null);
+                    
+                    let targetWeek;
+                    if (urlWeek) {
+                        // If there's a URL week (e.g., /week/2023/15), use that
+                        targetWeek = urlWeek;
+                    } else if (backendWeek && backendYear) {
+                        // If we're on homepage and backend provided week info, use that
+                        targetWeek = { year: backendYear, week: backendWeek };
+                    } else {
+                        // Otherwise, default to current week
+                        targetWeek = { year: currentYear, week: this.getWeekNumber(now) };
+                    }
+                    
                     const targetElement = this.$refs.container.querySelector(`#week-${targetWeek.year}-${targetWeek.week}`);
                     if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
@@ -118,10 +133,15 @@
                 return match ? { year: parseInt(match[1]), week: parseInt(match[2]) } : null;
             },
             getWeekNumber(d) {
-                d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-                d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-                var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-                var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+                // Use ISO 8601 standard for week calculation
+                var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                // Thursday in current week decides the year.
+                date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+                // January 4 is always in week 1.
+                var yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,4));
+                // Adjust to Monday in week 1 considering if the day was January 4 was a Sunday
+                yearStart.setUTCDate(yearStart.getUTCDate() - (yearStart.getUTCDay()||7) + 1);
+                var weekNo = Math.ceil((((date - yearStart) / 86400000) + 1)/7);
                 return weekNo;
             },
             scroll(direction) {

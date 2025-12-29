@@ -53,7 +53,25 @@ class ProductController extends Controller
     public function home(Request $request)
     {
         $now = Carbon::now();
-        return $this->productsByWeek($request, $now->year, $now->weekOfYear, true);
+        
+        // Find the last available week with products (most recent week with approved products)
+        // Use the current date to determine the current week properly
+        $startOfWeek = $now->copy()->startOfWeek(Carbon::MONDAY);
+        $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
+        
+        if ($lastAvailableWeek) {
+            $year = $lastAvailableWeek->year;
+            $week = $lastAvailableWeek->weekOfYear;
+            // Debug: Log which week was found
+            \Log::info("Home page: Found week {$week} of year {$year} as the most recent week with products");
+        } else {
+            // If no weeks with products are found, default to current week
+            $year = $now->year;
+            $week = $now->weekOfYear;
+            \Log::info("Home page: No weeks with products found, defaulting to current week {$week} of year {$year}");
+        }
+        
+        return $this->productsByWeek($request, $year, $week, true);
     }
 
     public function create()
@@ -810,16 +828,30 @@ class ProductController extends Controller
 
         $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
-        if ($shuffledRegularProductIds->isEmpty()) {
-            // Find the last available week with products when no products exist for the requested week
-            $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
+        // Only check for missing products if this is not called from the home page
+        // This prevents double redirects when home() method already handled the redirect
+        if ($shuffledRegularProductIds->isEmpty() && !$isHomepage) {
+            // Check if there are promoted products for this week - if so, we don't need to redirect
+            // Only redirect if there are no products at all (regular or promoted)
+            $hasAnyProductsThisWeek = Product::where('approved', true)
+                ->where('is_published', true)
+                ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
+                    $startOfWeek->toDateString(),
+                    $endOfWeek->toDateString()
+                ])
+                ->exists();
             
-            if ($lastAvailableWeek) {
-                $year = $lastAvailableWeek->year;
-                $week = $lastAvailableWeek->weekOfYear;
+            if (!$hasAnyProductsThisWeek) {
+                // Find the last available week with products when no products exist for the requested week
+                $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
                 
-                // Redirect to the last available week with products
-                return $this->productsByWeek($request, $year, $week, false);
+                if ($lastAvailableWeek) {
+                    $year = $lastAvailableWeek->year;
+                    $week = $lastAvailableWeek->weekOfYear;
+                    
+                    // Redirect to the last available week with products
+                    return $this->productsByWeek($request, $year, $week, false);
+                }
             }
         }
 
@@ -882,11 +914,20 @@ class ProductController extends Controller
 
         $weekOfYear = $week;
 
-        $activeWeeks = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw(DB::connection()->getDriverName() === 'mysql' ? 'DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 1)) as week' : "DISTINCT strftime('%Y-%W', COALESCE(published_at, created_at)) as week")
-            ->pluck('week')
-            ->toArray();
+        // For MySQL, we need to use mode 3 to get ISO 8601 week numbers (week starting Monday, week 1 has Jan 4)
+        if (DB::connection()->getDriverName() === 'mysql') {
+            $activeWeeks = Product::where('approved', true)
+                ->where('is_published', true)
+                ->selectRaw('DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 3)) as week')
+                ->pluck('week')
+                ->toArray();
+        } else {
+            $activeWeeks = Product::where('approved', true)
+                ->where('is_published', true)
+                ->selectRaw("DISTINCT strftime('%Y-%W', COALESCE(published_at, created_at)) as week")
+                ->pluck('week')
+                ->toArray();
+        }
 
         return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
     }
@@ -1279,15 +1320,21 @@ class ProductController extends Controller
     private function findLastAvailableWeekWithProducts(Carbon $startDate)
     {
         $searchDate = $startDate->copy();
+        $initialWeek = $searchDate->weekOfYear;
+        $initialYear = $searchDate->year;
+        \Log::info("findLastAvailableWeekWithProducts: Starting search from week {$initialWeek} of year {$initialYear} (Date: {$searchDate->toDateString()})");
         
         // Search backwards up to 52 weeks (1 year) to find a week with products
         for ($i = 0; $i < 52; $i++) {
             $startOfWeek = $searchDate->copy()->startOfWeek(Carbon::MONDAY);
             $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+            $currentWeek = $startOfWeek->weekOfYear;
+            $currentYear = $startOfWeek->year;
             
-            // Check if there are any products in this week
+            \Log::info("findLastAvailableWeekWithProducts: Checking week {$currentWeek} of year {$currentYear} (Date range: {$startOfWeek->toDateString()} to {$endOfWeek->toDateString()})");
+            
+            // Check if there are any products in this week (promoted or non-promoted)
             $hasProducts = Product::where('approved', true)
-                ->where('is_promoted', false)
                 ->where('is_published', true)
                 ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
                     $startOfWeek->toDateString(),
@@ -1296,6 +1343,7 @@ class ProductController extends Controller
                 ->exists();
             
             if ($hasProducts) {
+                \Log::info("findLastAvailableWeekWithProducts: Found products in week {$currentWeek} of year {$currentYear}");
                 return $startOfWeek;
             }
             
@@ -1303,6 +1351,7 @@ class ProductController extends Controller
             $searchDate = $searchDate->subWeek();
         }
         
+        \Log::info("findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks");
         // If no week with products was found, return null
         return null;
     }

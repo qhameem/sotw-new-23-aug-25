@@ -16,13 +16,12 @@
         <div class="text-center p-8 bg-white border rounded-lg shadow-md">
             <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to add your product</h2>
             <p class="text-gray-600 mb-4 text-sm tracking-tight">Join our community and showcase your product to a wider audience.</p>
-            <button @click.prevent="$dispatch('open-login-modal')" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
+            <button @click.prevent="$dispatch('open-login-modal')" class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-60 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
                 Log in or Sign up &rarr;
             </button>
         </div>
-    </div>
     @endguest
-    <div class="mx-auto px-4 sm:px-6 lg:px-2 py-6 pb-24 @guest blur-sm pointer-events-none @endguest">
+    <div class="w-full py-6 pb-24 @guest blur-sm pointer-events-none @endguest">
         @if(isset($product))
             <div class="mb-4 p-3 rounded-md bg-blue-50 border border-blue-300 text-blue-700 text-sm">
                 <strong>Note:</strong> Product Name, URL, and Slug cannot be changed through this form. To request changes to these fields, please contact support (support system to be implemented).
@@ -45,8 +44,20 @@
             </div>
         @endif
         <div class="flex flex-col md:flex-row gap-6">
-            <div class="md:w-full">
-                <div id="product-submit-app" x-ignore></div>
+            <div class="w-full">
+                <div id="product-submit-app"
+                     x-ignore
+                     @if(isset($displayData))
+                     :data-display-data="@js($displayData)"
+                     @endif
+                     data-is-admin="{{ (isset($product) && Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
+                     @if(isset($pricingCategories))
+                     :data-pricing-categories="@js($pricingCategories->toArray())"
+                     @endif
+                     @if(isset($bestForCategories))
+                     :data-selected-best-for-categories="@js($bestForCategories->toArray())"
+                     @endif
+                     ></div>
             </div>
         </div>
    </div>

@@ -1,4 +1,4 @@
-import { reactive, toRefs, computed } from 'vue';
+import { reactive, computed, ref, toRefs } from 'vue';
 import { productFormService, createProductFormState } from '../services/productFormService';
 import axios from 'axios';
 
@@ -6,79 +6,65 @@ import axios from 'axios';
 const globalFormState = createProductFormState();
 
 export function useProductForm() {
-  // Create reactive state
-  const state = reactive({
-    step: globalFormState.step,
-    currentTab: globalFormState.currentTab,
-    isRestored: globalFormState.isRestored,
-    isMounted: globalFormState.isMounted,
-    isLoading: globalFormState.isLoading,
-    urlExistsError: globalFormState.urlExistsError,
-    existingProduct: globalFormState.existingProduct,
-    showPreviewModal: globalFormState.showPreviewModal,
-    loadingStates: reactive({ ...globalFormState.loadingStates }),
-    logoPreview: globalFormState.logoPreview,
-    galleryPreviews: [...globalFormState.galleryPreviews],
-    allCategories: globalFormState.allCategories,
-    allBestFor: globalFormState.allBestFor,
-    allPricing: globalFormState.allPricing,
-    allTechStacks: globalFormState.allTechStacks,
-    form: { ...globalFormState.form },
-    sidebarSteps: [...globalFormState.sidebarSteps],
-    errorMessage: '',
-    showErrorMessage: false,
-  });
+  // Use global state directly to avoid ref conflicts
+  const form = reactive({ ...globalFormState.form });
+  const loadingStates = { ...globalFormState.loadingStates };
+  const sidebarSteps = [...globalFormState.sidebarSteps];
+  
+  // Create local refs for form-specific error messages to avoid conflicts
+  const errorMessage = ref('');
+  const showErrorMessage = ref(false);
 
   // Computed properties
   const isUrlInvalid = computed(() => {
-    return productFormService.isUrlInvalid(state.form.link);
+    return productFormService.isUrlInvalid(form.link);
   });
 
   const checkUrlExists = async () => {
-    console.log('checkUrlExists called with URL:', state.form.link);
-    if (!state.form.link) {
-      state.urlExistsError = false;
-      state.existingProduct = null;
+    console.log('checkUrlExists called with URL:', form.link);
+    if (!form.link) {
+      globalFormState.urlExistsError.value = false;
+      globalFormState.existingProduct.value = null;
       return;
     }
 
     try {
-      const response = await productFormService.checkUrlExists(state.form.link);
+      const response = await productFormService.checkUrlExists(form.link);
       console.log('checkUrlExists response:', response);
       if (response.exists) {
-        state.urlExistsError = true;
-        state.existingProduct = response.product;
+        globalFormState.urlExistsError.value = true;
+        globalFormState.existingProduct.value = response.product;
         // Don't show the general error message since it's now handled in the ProductURLInput component
-        state.showErrorMessage = false;
-        state.errorMessage = `This URL already exists as "${response.product.name}". You cannot add the same product twice.`;
+        showErrorMessage.value = false;
+        errorMessage.value = `This URL already exists as "${response.product.name}". You cannot add the same product twice.`;
       } else {
-        state.urlExistsError = false;
-        state.existingProduct = null;
-        state.showErrorMessage = false;
+        globalFormState.urlExistsError.value = false;
+        globalFormState.existingProduct.value = null;
+        showErrorMessage.value = false;
       }
-      console.log('Updated state - urlExistsError:', state.urlExistsError, 'existingProduct:', state.existingProduct);
+      console.log('Updated state - urlExistsError:', globalFormState.urlExistsError.value, 'existingProduct:', globalFormState.existingProduct.value);
     } catch (error) {
       console.error('Error checking URL existence:', error);
-      state.urlExistsError = false;
-      state.existingProduct = null;
+      globalFormState.urlExistsError.value = false;
+      globalFormState.existingProduct.value = null;
     }
   };
 
   const completionPercentage = computed(() => {
     // Calculate completion based on required fields
     // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
-    const actualPricingCategories = (state.form.pricing || []).filter(id => !isNaN(id));
+    const actualPricingCategories = (form.pricing || []).filter(id => !isNaN(id));
     
     const requiredFields = [
-      state.form.link,
-      state.form.name,
-      state.form.tagline,
-      state.form.tagline_detailed,
-      state.form.description,
-      state.form.categories && state.form.categories.length > 0,
-      state.form.bestFor && state.form.bestFor.length > 0,
+      form.link,
+      form.name,
+      form.tagline,
+      form.tagline_detailed,
+      form.description,
+      form.categories && form.categories.length > 0,
+      form.bestFor && form.bestFor.length > 0,
       actualPricingCategories.length > 0, // Only count actual pricing categories, not submission options
-      state.logoPreview || (state.form.logos && state.form.logos.length > 0)
+      globalFormState.logoPreview.value || (form.logos && form.logos.length > 0)
     ];
     
     const completedFields = requiredFields.filter(field => field).length;
@@ -87,31 +73,31 @@ export function useProductForm() {
 
   // Actions
   const getStarted = async () => {
-    console.log('getStarted called, form link:', state.form.link, 'urlExistsError:', state.urlExistsError);
+    console.log('getStarted called, form link:', form.link, 'urlExistsError:', globalFormState.urlExistsError.value);
     // First check if URL already exists
-    if (state.form.link) {
+    if (form.link) {
       await checkUrlExists();
       
       // If URL exists, don't proceed
-      if (state.urlExistsError) {
+      if (globalFormState.urlExistsError.value) {
         console.log('URL exists, preventing progression');
         // Don't show the general error message since it's now handled in the ProductURLInput component
-        state.showErrorMessage = false;
-        state.errorMessage = `This URL already exists as "${state.existingProduct.name}". You cannot add the same product twice.`;
+        showErrorMessage.value = false;
+        errorMessage.value = `This URL already exists as "${globalFormState.existingProduct.value.name}". You cannot add the same product twice.`;
         return false;
       }
     }
     
     console.log('Proceeding to step 2');
-    state.step = 2;
+    globalFormState.step.value = 2;
     
     // Dispatch step change event to update checklist visibility
     document.dispatchEvent(new CustomEvent('step-changed', {
-      detail: { step: state.step }
+      detail: { step: globalFormState.step.value }
     }));
     
     // Fetch initial data for the entered URL
-    if (state.form.link && !state.form.name) {
+    if (form.link && !form.name) {
       await fetchInitialData();
     }
     
@@ -119,49 +105,49 @@ export function useProductForm() {
   };
 
   const clearUrlInput = () => {
-    state.showErrorMessage = false;
-    state.form.link = '';
-    state.urlExistsError = false;
-    state.existingProduct = null;
+    showErrorMessage.value = false;
+    form.link = '';
+    globalFormState.urlExistsError.value = false;
+    globalFormState.existingProduct.value = null;
     // Also reset any URL-related validation state
-    state.errorMessage = '';
+    errorMessage.value = '';
   };
 
   const goBack = () => {
-    state.showErrorMessage = false;
-    state.step = 1;
+    showErrorMessage.value = false;
+    globalFormState.step.value = 1;
     
     // Dispatch step change event to update checklist visibility
     document.dispatchEvent(new CustomEvent('step-changed', {
-      detail: { step: state.step }
+      detail: { step: globalFormState.step.value }
     }));
     
     // Clear form data when going back to URL input to ensure clean state for new URL
-    state.form.name = '';
-    state.form.tagline = '';
-    state.form.tagline_detailed = '';
-    state.form.description = '';
-    state.form.favicon = '';
-    state.form.logos = [];
-    state.form.categories = [];
-    state.form.bestFor = [];
-    state.form.pricing = [];
-    state.form.tech_stack = [];
-    state.form.logo = null;
-    state.form.gallery = Array(3).fill(null);
-    state.form.video_url = '';
-    state.form.maker_links = [];
-    state.form.sell_product = false;
-    state.form.asking_price = null;
-    state.form.x_account = '';
-    state.form.submissionOption = null;
-    state.logoPreview = null;
-    state.galleryPreviews = Array(3).fill(null);
+    form.name = '';
+    form.tagline = '';
+    form.tagline_detailed = '';
+    form.description = '';
+    form.favicon = '';
+    form.logos = [];
+    form.categories = [];
+    form.bestFor = [];
+    form.pricing = [];
+    form.tech_stack = [];
+    form.logo = null;
+    form.gallery = Array(3).fill(null);
+    form.video_url = '';
+    form.maker_links = [];
+    form.sell_product = false;
+    form.asking_price = null;
+    form.x_account = '';
+    form.submissionOption = null;
+    globalFormState.logoPreview.value = null;
+    globalFormState.galleryPreviews.value = Array(3).fill(null);
   };
 
   const goToNextStep = (tabId) => {
-    state.showErrorMessage = false;
-    state.currentTab = tabId;
+    showErrorMessage.value = false;
+    globalFormState.currentTab.value = tabId;
   };
 
   const submitProduct = () => {
@@ -171,13 +157,13 @@ export function useProductForm() {
     
     // Check if the selected submission option is 'free' to bypass the modal
     // If submission option is set to 'free', submit directly without showing modal
-    if (state.form.submissionOption === 'free') {
+    if (form.submissionOption === 'free') {
       // Directly submit the product without showing modal
       confirmSubmit();
       return true;
     } else {
       // Show the preview modal for other submission options (like paid)
-      state.showPreviewModal = true;
+      globalFormState.showPreviewModal.value = true;
       return true;
     }
   };
@@ -189,38 +175,38 @@ export function useProductForm() {
     
     try {
       // Set loading state to show the loader
-      state.isLoading = true;
+      globalFormState.isLoading.value = true;
       
       // Prepare form data for submission
       const formData = new FormData();
       
       // Add basic fields
-      formData.append('name', state.form.name);
-      formData.append('tagline', state.form.tagline);
-      formData.append('product_page_tagline', state.form.tagline_detailed);
-      formData.append('description', state.form.description);
-      formData.append('link', state.form.link);
+      formData.append('name', form.name);
+      formData.append('tagline', form.tagline);
+      formData.append('product_page_tagline', form.tagline_detailed);
+      formData.append('description', form.description);
+      formData.append('link', form.link);
       // User ID is automatically set by the backend based on the authenticated user
       
       // Add categories - combine all category types (regular, bestFor, and pricing) into one array as expected by backend
       const allCategories = [];
       
       // Add regular categories
-      if (state.form.categories && state.form.categories.length > 0) {
-        const validCategories = state.form.categories.filter(id => id !== null && id !== undefined && id !== '');
+      if (form.categories && form.categories.length > 0) {
+        const validCategories = form.categories.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validCategories);
       }
       
       // Add bestFor categories
-      if (state.form.bestFor && state.form.bestFor.length > 0) {
-        const validBestFor = state.form.bestFor.filter(id => id !== null && id !== undefined && id !== '');
+      if (form.bestFor && form.bestFor.length > 0) {
+        const validBestFor = form.bestFor.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validBestFor);
       }
       
       // Add pricing categories - these should be valid category IDs (not submission options like 'free' or 'paid')
-      if (state.form.pricing && state.form.pricing.length > 0) {
+      if (form.pricing && form.pricing.length > 0) {
         // Filter out non-numeric values like 'free' or 'paid' which are submission options, not category IDs
-        const validPricing = state.form.pricing.filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
+        const validPricing = form.pricing.filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
         allCategories.push(...validPricing);
       }
       
@@ -230,25 +216,24 @@ export function useProductForm() {
       });
       
       // Add tech stacks
-      if (state.form.tech_stack && state.form.tech_stack.length > 0) {
-        state.form.tech_stack.forEach((techStackId, index) => {
+      if (form.tech_stack && form.tech_stack.length > 0) {
+        form.tech_stack.forEach((techStackId, index) => {
           formData.append(`tech_stacks[${index}]`, techStackId);
         });
       }
       
-      
       // Add logo if available as file
-      if (state.form.logo) {
-        formData.append('logo', state.form.logo);
-      } else if (state.logoPreview) {
+      if (form.logo) {
+        formData.append('logo', form.logo);
+      } else if (globalFormState.logoPreview.value) {
         // If we have a logo preview URL, we might need to handle it differently
         // For now, we'll try to fetch it as a blob if it's a local file
-        formData.append('logo_url', state.logoPreview);
+        formData.append('logo_url', globalFormState.logoPreview.value);
       }
       
       // Add gallery images if available
-      if (state.form.gallery && state.form.gallery.length > 0) {
-        state.form.gallery.forEach((galleryImage, index) => {
+      if (form.gallery && form.gallery.length > 0) {
+        form.gallery.forEach((galleryImage, index) => {
           if (galleryImage) {
             formData.append(`media[${index}]`, galleryImage);
           }
@@ -256,16 +241,16 @@ export function useProductForm() {
       }
       
       // Add video URL if available
-      if (state.form.video_url) {
-        formData.append('video_url', state.form.video_url);
+      if (form.video_url) {
+        formData.append('video_url', form.video_url);
       }
       
       // Add selling product info - ensure boolean value is sent in Laravel-accepted format
-      if (state.form.sell_product !== undefined && state.form.sell_product !== null) {
-        const sellProductValue = state.form.sell_product ? '1' : '0';
+      if (form.sell_product !== undefined && form.sell_product !== null) {
+        const sellProductValue = form.sell_product ? '1' : '0';
         formData.append('sell_product', sellProductValue);
-        if (state.form.asking_price && state.form.sell_product) {
-          formData.append('asking_price', state.form.asking_price);
+        if (form.asking_price && form.sell_product) {
+          formData.append('asking_price', form.asking_price);
         }
       } else {
         // If sell_product is undefined or null, default to '0' (false)
@@ -273,8 +258,8 @@ export function useProductForm() {
       }
       
       // Add X account if available
-      if (state.form.x_account) {
-        formData.append('x_account', state.form.x_account);
+      if (form.x_account) {
+        formData.append('x_account', form.x_account);
       }
       
       // Submit the form
@@ -306,105 +291,105 @@ export function useProductForm() {
       return true;
     } catch (error) {
       console.error('Error submitting product:', error);
-      state.showErrorMessage = true;
-      state.errorMessage = error.response?.data?.message || 'Failed to submit product. Please try again.';
+      showErrorMessage.value = true;
+      errorMessage.value = error.response?.data?.message || 'Failed to submit product. Please try again.';
       return false;
     } finally {
       // Always reset loading state after submission
-      state.isLoading = false;
-      state.showPreviewModal = false;
+      globalFormState.isLoading.value = false;
+      globalFormState.showPreviewModal.value = false;
     }
   };
 
   const closeModal = () => {
-    state.showPreviewModal = false;
+    globalFormState.showPreviewModal.value = false;
   };
 
   const validateForm = () => {
-    if (!state.form.link) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Product URL is required.';
+    if (!form.link) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Product URL is required.';
       return false;
     }
 
     // Check if URL already exists before allowing submission
-    if (state.urlExistsError) {
+    if (globalFormState.urlExistsError.value) {
       // Don't show the general error message since it's now handled in the ProductURLInput component
-      state.showErrorMessage = false;
-      state.errorMessage = `This URL already exists as "${state.existingProduct.name}". You cannot add the same product twice.`;
+      showErrorMessage.value = false;
+      errorMessage.value = `This URL already exists as "${globalFormState.existingProduct.value.name}". You cannot add the same product twice.`;
       return false;
     }
 
-    if (!state.form.name) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Product name is required.';
+    if (!form.name) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Product name is required.';
       return false;
     }
 
-    if (!state.form.tagline) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Tagline is required.';
+    if (!form.tagline) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Tagline is required.';
       return false;
     }
 
-    if (!state.form.tagline_detailed) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Product details page tagline is required.';
+    if (!form.tagline_detailed) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Product details page tagline is required.';
       return false;
     }
 
-    if (!state.form.description) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Description is required.';
+    if (!form.description) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Description is required.';
       return false;
     }
 
     // Validate categories: minimum 1, maximum 3
-    const validCategories = (state.form.categories || []).filter(id => id !== null && id !== undefined && id !== '');
+    const validCategories = (form.categories || []).filter(id => id !== null && id !== undefined && id !== '');
     if (validCategories.length === 0) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'At least one category is required.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'At least one category is required.';
       return false;
     }
     if (validCategories.length > 3) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Maximum 3 categories allowed.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'Maximum 3 categories allowed.';
       return false;
     }
 
     // Validate bestFor: minimum 1, maximum 3
-    const validBestFor = (state.form.bestFor || []).filter(id => id !== null && id !== undefined && id !== '');
+    const validBestFor = (form.bestFor || []).filter(id => id !== null && id !== undefined && id !== '');
     if (validBestFor.length === 0) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'At least one "best for" option is required.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'At least one "best for" option is required.';
       return false;
     }
     if (validBestFor.length > 3) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'Maximum 3 "best for" options allowed.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'Maximum 3 "best for" options allowed.';
       return false;
     }
 
     // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
-    const actualPricingCategories = (state.form.pricing || []).filter(id => !isNaN(id));
+    const actualPricingCategories = (form.pricing || []).filter(id => !isNaN(id));
     if (actualPricingCategories.length === 0) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'At least one pricing model is required.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'At least one pricing model is required.';
       return false;
     }
 
-    if (!state.logoPreview && (!state.form.logos || state.form.logos.length === 0)) {
-      state.showErrorMessage = true;
-      state.errorMessage = 'A logo is required.';
+    if (!globalFormState.logoPreview.value && (!form.logos || form.logos.length === 0)) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'A logo is required.';
       return false;
     }
 
-    state.showErrorMessage = false;
+    showErrorMessage.value = false;
     return true;
   };
 
   const fetchInitialData = async () => {
-    const linkValue = state.form.link;
+    const linkValue = form.link;
     console.log('fetchInitialData called with link:', linkValue);
     
     if (!linkValue || linkValue.trim() === '') {
@@ -412,8 +397,8 @@ export function useProductForm() {
       return;
     }
 
-    state.loadingStates.name = true;
-    state.isLoading = true;
+    loadingStates.name = true;
+    globalFormState.isLoading.value = true;
 
     try {
       const response = await axios.post('/api/fetch-initial-metadata', { url: linkValue });
@@ -421,66 +406,66 @@ export function useProductForm() {
       
       console.log('fetchInitialData response:', data);
 
-      state.form.name = data.name;
-      state.form.tagline = data.tagline;
-      state.form.tagline_detailed = data.tagline_detailed || data.tagline;  // Use tagline_detailed if provided, otherwise fallback to tagline
-      state.form.favicon = data.favicon;
+      form.name = data.name;
+      form.tagline = data.tagline;
+      form.tagline_detailed = data.tagline_detailed || data.tagline; // Use tagline_detailed if provided, otherwise fallback to tagline
+      form.favicon = data.favicon;
 
-      state.loadingStates.name = false;
+      loadingStates.name = false;
     } catch (error) {
       console.error('Error fetching initial metadata:', error);
-      state.loadingStates.name = false;
-      state.showErrorMessage = true;
-      state.errorMessage = 'Failed to fetch product metadata. Please check the URL and try again.';
-      state.isLoading = false;
+      loadingStates.name = false;
+      showErrorMessage.value = true;
+      errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
+      globalFormState.isLoading.value = false;
     }
- };
+  };
 
   const fetchRemainingData = async (explicitLogoExtraction = false) => {
      console.log('fetchRemainingData called', {
        explicitLogoExtraction,
-       link: state.form.link,
-       linkType: typeof state.form.link,
-       linkTruthy: !!state.form.link,
-       name: state.form.name
+       link: form.link,
+       linkType: typeof form.link,
+       linkTruthy: !!form.link,
+       name: form.name
      });
      
-     const shouldFetchContent = !state.form.tagline && !state.form.tagline_detailed && !state.form.description;
-     const shouldFetchCategoriesAndBestFor = !state.form.categories || state.form.categories.length === 0 || !state.form.bestFor || state.form.bestFor.length === 0;
-   
+     const shouldFetchContent = !form.tagline && !form.tagline_detailed && !form.description;
+     const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
+
      // Always fetch logos if we have a link and name, regardless of other content
      // If explicitLogoExtraction is true, always attempt to fetch logos even if they exist
-     const shouldFetchLogos = state.form.link && (explicitLogoExtraction || (!state.form.logos || state.form.logos.length === 0));
+     const shouldFetchLogos = form.link && (explicitLogoExtraction || (!form.logos || form.logos.length === 0));
      
      console.log('Should fetch checks:', { shouldFetchContent, shouldFetchCategoriesAndBestFor, shouldFetchLogos });
-   
+
      // Only proceed if we have a valid link (name is not strictly required for explicit logo extraction)
-     const linkValue = state.form.link;
+     const linkValue = form.link;
      if (!linkValue || linkValue.trim() === '') {
        console.log('No link provided or link is empty, returning early');
-       Object.keys(state.loadingStates).forEach(k => state.loadingStates[k] = false);
-       state.isLoading = false;
+       Object.keys(loadingStates).forEach(k => loadingStates[k] = false);
+       globalFormState.isLoading.value = false;
        return;
      }
-  
+
     if (shouldFetchContent) {
-      state.loadingStates.description = true;
+      loadingStates.description = true;
       console.log('Setting description loading state to true');
     }
     if (shouldFetchCategoriesAndBestFor) {
-      state.loadingStates.categories = true;
-      state.loadingStates.bestFor = true;
+      loadingStates.categories = true;
+      loadingStates.bestFor = true;
       console.log('Setting categories and bestFor loading states to true');
     }
     if (shouldFetchLogos) {
-      state.loadingStates.logos = true;
+      loadingStates.logos = true;
       console.log('Setting logos loading state to true');
     }
-  
+
     try {
-      const linkValue = state.form.link;
-      const nameValue = state.form.name || '';
-      const taglineValue = state.form.tagline || '';
+      const linkValue = form.link;
+      const nameValue = form.name || '';
+      const taglineValue = form.tagline || '';
       
       console.log('Making API call to /api/process-url with:', {
         url: linkValue,
@@ -492,7 +477,7 @@ export function useProductForm() {
       // Make the API call with a timeout
       const response = await axios.post('/api/process-url', {
         url: linkValue,
-        name: nameValue,  // Pass empty string if name is not available
+        name: nameValue, // Pass empty string if name is not available
         tagline: taglineValue, // Pass empty string if tagline is not available
         fetch_content: shouldFetchContent,
       }, {
@@ -503,19 +488,19 @@ export function useProductForm() {
       const data = response.data;
 
       if (shouldFetchContent) {
-        state.form.tagline = data.tagline || state.form.tagline; // Only update if we received a new value
-        state.form.tagline_detailed = data.tagline_detailed || state.form.tagline_detailed; // Only update if we received a new value
-        state.form.description = data.description || state.form.description; // Only update if we received a new value
+        form.tagline = data.tagline || form.tagline; // Only update if we received a new value
+        form.tagline_detailed = data.tagline_detailed || form.tagline_detailed; // Only update if we received a new value
+        form.description = data.description || form.description; // Only update if we received a new value
       }
       // Always update logos if we received them, regardless of whether we explicitly requested them
       if (data.logos && Array.isArray(data.logos)) {
         console.log('Updating logos with data:', data.logos);
-        state.form.logos = data.logos;
+        form.logos = data.logos;
       }
       if (shouldFetchCategoriesAndBestFor) {
-        state.form.categories = data.categories || [];
-        state.form.bestFor = data.bestFor || [];
-        state.form.pricing = data.pricing || [];
+        form.categories = data.categories || [];
+        form.bestFor = data.bestFor || [];
+        form.pricing = data.pricing || [];
       }
     } catch (error) {
       console.error('Error fetching remaining data:', error);
@@ -524,11 +509,11 @@ export function useProductForm() {
       
       // Only show error message if this is during active form filling, not during restoration
       if (shouldFetchContent || shouldFetchCategoriesAndBestFor) {
-        state.showErrorMessage = true;
+        showErrorMessage.value = true;
         if (isTimeoutError) {
-          state.errorMessage = 'Logo extraction timed out. Please try again later.';
+          errorMessage.value = 'Logo extraction timed out. Please try again later.';
         } else {
-          state.errorMessage = 'Failed to fetch additional product data. You can continue filling the form manually.';
+          errorMessage.value = 'Failed to fetch additional product data. You can continue filling the form manually.';
         }
       }
       // Still allow the form to continue working even if data fetching fails
@@ -541,32 +526,32 @@ export function useProductForm() {
       // Always reset the specific loading states that were requested
       // This ensures that even if the API call fails, the loading state is properly reset
       if (shouldFetchContent) {
-        state.loadingStates.description = false;
+        loadingStates.description = false;
         console.log('Resetting description loading state to false');
       }
       if (shouldFetchCategoriesAndBestFor) {
-        state.loadingStates.categories = false;
-        state.loadingStates.bestFor = false;
+        loadingStates.categories = false;
+        loadingStates.bestFor = false;
         console.log('Resetting categories and bestFor loading states to false');
       }
       if (shouldFetchLogos || explicitLogoExtraction) {
         // Always reset the logos loading state if we attempted to fetch logos
-        state.loadingStates.logos = false;
+        loadingStates.logos = false;
         console.log('Resetting logos loading state to false');
       }
       // Only set the general isLoading to false if no other loading operations are in progress
       // Check if any other loading states are still active
-      const anyLoadingActive = Object.values(state.loadingStates).some(loading => loading === true);
+      const anyLoadingActive = Object.values(loadingStates).some(loading => loading === true);
       if (!anyLoadingActive) {
-        state.isLoading = false;
+        globalFormState.isLoading.value = false;
         console.log('Resetting general isLoading to false');
       }
     }
-  };
+ };
 
   const updateForm = async (field, value) => {
     console.log('updateForm called for field:', field, 'with value:', value);
-    state.form[field] = value;
+    form[field] = value;
     
     // Check URL existence when the link field is updated
     if (field === 'link') {
@@ -578,11 +563,11 @@ export function useProductForm() {
   const updateFormMultiple = async (updates) => {
     // Update each field individually to ensure reactivity
     Object.keys(updates).forEach(key => {
-      if (state.form.hasOwnProperty(key)) {
+      if (form.hasOwnProperty(key)) {
         if (Array.isArray(updates[key])) {
-          state.form[key] = [...updates[key]]; // Create a new array to ensure reactivity
+          form[key] = [...updates[key]]; // Create a new array to ensure reactivity
         } else {
-          state.form[key] = updates[key];
+          form[key] = updates[key];
         }
       }
     });
@@ -591,16 +576,16 @@ export function useProductForm() {
     if (updates.link !== undefined) {
       await checkUrlExists();
     }
-  };
+ };
 
   const resetForm = () => {
-    state.form = { ...createProductFormState().form };
-    state.logoPreview = null;
-    state.galleryPreviews = Array(3).fill(null);
+    Object.assign(form, { ...createProductFormState().form });
+    globalFormState.logoPreview.value = null;
+    globalFormState.galleryPreviews.value = Array(3).fill(null);
     // Reset URL validation state when form is reset
-    state.urlExistsError = false;
-    state.existingProduct = null;
-    state.showErrorMessage = false;
+    globalFormState.urlExistsError.value = false;
+    globalFormState.existingProduct.value = null;
+    showErrorMessage.value = false;
   };
 
   // Initialize form data
@@ -611,14 +596,14 @@ export function useProductForm() {
         axios.get('/api/tech-stacks')
       ]);
       
-      state.allCategories = categoriesResponse.data.categories;
-      state.allBestFor = categoriesResponse.data.bestFor;
-      state.allPricing = categoriesResponse.data.pricing;
-      state.allTechStacks = techStackResponse.data;
+      globalFormState.allCategories.value = categoriesResponse.data.categories;
+      globalFormState.allBestFor.value = categoriesResponse.data.bestFor;
+      globalFormState.allPricing.value = categoriesResponse.data.pricing;
+      globalFormState.allTechStacks.value = techStackResponse.data;
     } catch (error) {
       console.error('Failed to fetch initial form data:', error);
-      state.showErrorMessage = true;
-      state.errorMessage = 'Failed to load form options. Some features may not work properly.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'Failed to load form options. Some features may not work properly.';
     }
     
   // Load initial data from the HTML element attributes first (for editing existing products)
@@ -626,7 +611,7 @@ export function useProductForm() {
   loadInitialDataFromElement();
   
   // Then load saved data (from session storage) which might override initial data
-  // Only load saved data if we're not editing an existing product (to prevent override)
+ // Only load saved data if we're not editing an existing product (to prevent override)
   const element = document.getElementById('product-submit-app');
   if (element) {
     const displayData = element.getAttribute('data-display-data');
@@ -643,166 +628,166 @@ export function useProductForm() {
   }
 };
 
-// Load initial data from HTML element attributes (for editing existing products)
-const loadInitialDataFromElement = () => {
-  // Try to load immediately
-  tryLoadInitialData();
-  
-  // If element is not found, set up a MutationObserver to wait for it to be added to the DOM
- if (!document.getElementById('product-submit-app')) {
-    const observer = new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        if (mutation.type === 'childList') {
-          const element = document.getElementById('product-submit-app');
-          if (element) {
-            observer.disconnect(); // Stop observing once we find the element
-            tryLoadInitialData();
-            return;
+  // Load initial data from HTML element attributes (for editing existing products)
+  const loadInitialDataFromElement = () => {
+    // Try to load immediately
+    tryLoadInitialData();
+    
+    // If element is not found, set up a MutationObserver to wait for it to be added to the DOM
+   if (!document.getElementById('product-submit-app')) {
+      const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'childList') {
+            const element = document.getElementById('product-submit-app');
+            if (element) {
+              observer.disconnect(); // Stop observing once we find the element
+              tryLoadInitialData();
+              return;
+            }
           }
         }
-      }
-    });
-    
-    // Start observing
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
- }
-};
+      });
+      
+      // Start observing
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+   }
+  };
 
-// Helper function to try loading initial data
-const tryLoadInitialData = () => {
-  const element = document.getElementById('product-submit-app');
-  if (element) {
-    console.log('Found product-submit-app element, attempting to load initial data');
-    
-    // Get data attributes from the element
-    const displayData = element.getAttribute('data-display-data');
-    const isAdmin = element.getAttribute('data-is-admin');
-    const allPricing = element.getAttribute('data-pricing-categories');
-    const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
-    
-    console.log('Data attributes:', { displayData, isAdmin, allPricing, selectedBestForCategories });
-    
-    if (displayData) {
-      try {
-        const initialData = JSON.parse(displayData);
-        console.log('Parsed initial data:', initialData);
-        
-        // For admin users, always load the original product data regardless of pending edits
-        if (isAdmin === 'true') {
-          console.log('Loading data for admin user');
+  // Helper function to try loading initial data
+ const tryLoadInitialData = () => {
+    const element = document.getElementById('product-submit-app');
+    if (element) {
+      console.log('Found product-submit-app element, attempting to load initial data');
+      
+      // Get data attributes from the element
+      const displayData = element.getAttribute('data-display-data');
+      const isAdmin = element.getAttribute('data-is-admin');
+      const allPricing = element.getAttribute('data-pricing-categories');
+      const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+      
+      console.log('Data attributes:', { displayData, isAdmin, allPricing, selectedBestForCategories });
+      
+      if (displayData) {
+        try {
+          const initialData = JSON.parse(displayData);
+          console.log('Parsed initial data:', initialData);
           
-          // Load the original product data
-          // The current_categories from the controller contains all categories (regular, pricing, bestFor)
-          // We need to separate them based on their types
-          let allCategoryIds = initialData.current_categories || [];
-          let pricingCategoryIds = [];
-          let regularCategoryIds = [];
-          
-          if (allCategoryIds.length > 0 && allPricing) {
-            try {
-              const pricingCats = JSON.parse(allPricing);
-              const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-              
-              // Separate pricing and regular categories
-              pricingCategoryIds = allCategoryIds.filter(catId =>
-                pricingCatIds.includes(parseInt(catId))
-              );
-              regularCategoryIds = allCategoryIds.filter(catId =>
-                !pricingCatIds.includes(parseInt(catId))
-              );
-            } catch (e) {
-              console.error('Error parsing pricing categories:', e);
-              // If parsing fails, treat all as regular categories
+          // For admin users, always load the original product data regardless of pending edits
+          if (isAdmin === 'true') {
+            console.log('Loading data for admin user');
+            
+            // Load the original product data
+            // The current_categories from the controller contains all categories (regular, pricing, bestFor)
+            // We need to separate them based on their types
+            let allCategoryIds = initialData.current_categories || [];
+            let pricingCategoryIds = [];
+            let regularCategoryIds = [];
+            
+            if (allCategoryIds.length > 0 && allPricing) {
+              try {
+                const pricingCats = JSON.parse(allPricing);
+                const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+                
+                // Separate pricing and regular categories
+                pricingCategoryIds = allCategoryIds.filter(catId =>
+                  pricingCatIds.includes(parseInt(catId))
+                );
+                regularCategoryIds = allCategoryIds.filter(catId =>
+                  !pricingCatIds.includes(parseInt(catId))
+                );
+              } catch (e) {
+                console.error('Error parsing pricing categories:', e);
+                // If parsing fails, treat all as regular categories
+                regularCategoryIds = allCategoryIds;
+              }
+            } else {
+              // If no pricing categories are available, assume all are regular categories
               regularCategoryIds = allCategoryIds;
             }
+            
+            console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds);
+            
+            updateFormMultiple({
+              name: initialData.name,
+              tagline: initialData.tagline,
+              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
+              description: initialData.description,
+              link: initialData.link,
+              categories: regularCategoryIds,
+              bestFor: JSON.parse(selectedBestForCategories || '[]'),
+              pricing: pricingCategoryIds,
+              tech_stack: initialData.current_tech_stacks || [],
+              video_url: initialData.video_url,
+            });
+            
+            console.log('Updated form with initial data for admin');
+            
+            // Set step to 2 to show the form
+            globalFormState.step.value = 2;
           } else {
-            // If no pricing categories are available, assume all are regular categories
-            regularCategoryIds = allCategoryIds;
+            console.log('Loading data for regular user');
+            
+            // For regular users, load data as appropriate
+            updateFormMultiple({
+              name: initialData.name,
+              tagline: initialData.tagline,
+              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
+              description: initialData.description,
+              link: initialData.link,
+              categories: initialData.current_categories || [],
+              bestFor: JSON.parse(selectedBestForCategories || '[]'),
+              pricing: initialData.current_categories ? [] : [], // This might need to be handled differently
+              tech_stack: initialData.current_tech_stacks || [],
+              video_url: initialData.video_url,
+            });
+            
+            // Set step to 2 to show the form
+            globalFormState.step.value = 2;
           }
-          
-          console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds);
-          
-          updateFormMultiple({
-            name: initialData.name,
-            tagline: initialData.tagline,
-            tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
-            description: initialData.description,
-            link: initialData.link,
-            categories: regularCategoryIds,
-            bestFor: JSON.parse(selectedBestForCategories || '[]'),
-            pricing: pricingCategoryIds,
-            tech_stack: initialData.current_tech_stacks || [],
-            video_url: initialData.video_url,
-          });
-          
-          console.log('Updated form with initial data for admin');
-          
-          // Set step to 2 to show the form
-          state.step = 2;
-        } else {
-          console.log('Loading data for regular user');
-          
-          // For regular users, load data as appropriate
-          updateFormMultiple({
-            name: initialData.name,
-            tagline: initialData.tagline,
-            tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
-            description: initialData.description,
-            link: initialData.link,
-            categories: initialData.current_categories || [],
-            bestFor: JSON.parse(selectedBestForCategories || '[]'),
-            pricing: initialData.current_categories ? [] : [], // This might need to be handled differently
-            tech_stack: initialData.current_tech_stacks || [],
-            video_url: initialData.video_url,
-          });
-          
-          // Set step to 2 to show the form
-          state.step = 2;
-        }
-      } catch (error) {
-        console.error('Error parsing initial data from element:', error);
-        // Fallback: try to initialize with basic data
-        const element = document.getElementById('product-submit-app');
-        if (element) {
-          const displayData = element.getAttribute('data-display-data');
-          const isAdmin = element.getAttribute('data-is-admin');
-          const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
-          
-          if (displayData) {
-            try {
-              const initialData = JSON.parse(displayData);
-              if (isAdmin === 'true') {
-                updateFormMultiple({
-                  name: initialData.name || '',
-                  tagline: initialData.tagline || '',
-                  tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
-                  description: initialData.description || '',
-                  link: initialData.link || '',
-                  categories: initialData.current_categories || [],
-                  bestFor: JSON.parse(selectedBestForCategories || '[]'),
-                  pricing: [],
-                  tech_stack: initialData.current_tech_stacks || [],
-                  video_url: initialData.video_url || '',
-                });
-                
-                state.step = 2;
+        } catch (error) {
+          console.error('Error parsing initial data from element:', error);
+          // Fallback: try to initialize with basic data
+          const element = document.getElementById('product-submit-app');
+          if (element) {
+            const displayData = element.getAttribute('data-display-data');
+            const isAdmin = element.getAttribute('data-is-admin');
+            const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+            
+            if (displayData) {
+              try {
+                const initialData = JSON.parse(displayData);
+                if (isAdmin === 'true') {
+                  updateFormMultiple({
+                    name: initialData.name || '',
+                    tagline: initialData.tagline || '',
+                    tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+                    description: initialData.description || '',
+                    link: initialData.link || '',
+                    categories: initialData.current_categories || [],
+                    bestFor: JSON.parse(selectedBestForCategories || '[]'),
+                    pricing: [],
+                    tech_stack: initialData.current_tech_stacks || [],
+                    video_url: initialData.video_url || '',
+                  });
+                  
+                  globalFormState.step.value = 2;
+                }
+              } catch (innerError) {
+                console.error('Error in fallback parsing:', innerError);
               }
-            } catch (innerError) {
-              console.error('Error in fallback parsing:', innerError);
             }
           }
         }
+      } else {
+        console.log('No displayData found in element attributes');
       }
     } else {
-      console.log('No displayData found in element attributes');
+      console.log('product-submit-app element not found');
     }
-  } else {
-    console.log('product-submit-app element not found');
-  }
-};
+  };
 
   // Load saved data from session storage
   const loadSavedData = async () => {
@@ -823,10 +808,10 @@ const tryLoadInitialData = () => {
     if (savedData) {
       if (savedData.link) {
         await updateFormMultiple(savedData);
-        state.logoPreview = savedData.logoPreview || null;
-        state.galleryPreviews = savedData.galleryPreviews || Array(3).fill(null);
+        globalFormState.logoPreview.value = savedData.logoPreview || null;
+        globalFormState.galleryPreviews.value = savedData.galleryPreviews || Array(3).fill(null);
         if (savedData.name) {
-          state.step = 2;
+          globalFormState.step.value = 2;
         }
         // Check for URL existence when loading saved data with a link
         await checkUrlExists();
@@ -836,11 +821,29 @@ const tryLoadInitialData = () => {
 
   // Save form data to session storage
   const saveFormData = () => {
-    productFormService.saveFormData(state.form, state.logoPreview, state.galleryPreviews);
-  };
+    productFormService.saveFormData(form, globalFormState.logoPreview.value, globalFormState.galleryPreviews.value);
+ };
 
   return {
-    ...toRefs(state),
+    step: globalFormState.step,
+    currentTab: globalFormState.currentTab,
+    isRestored: globalFormState.isRestored,
+    isMounted: globalFormState.isMounted,
+    isLoading: globalFormState.isLoading,
+    urlExistsError: globalFormState.urlExistsError,
+    existingProduct: globalFormState.existingProduct,
+    showPreviewModal: globalFormState.showPreviewModal,
+    loadingStates,
+    logoPreview: globalFormState.logoPreview,
+    galleryPreviews: globalFormState.galleryPreviews,
+    allCategories: globalFormState.allCategories,
+    allBestFor: globalFormState.allBestFor,
+    allPricing: globalFormState.allPricing,
+    allTechStacks: globalFormState.allTechStacks,
+    form,
+    sidebarSteps,
+    errorMessage,
+    showErrorMessage,
     isUrlInvalid,
     completionPercentage,
     getStarted,

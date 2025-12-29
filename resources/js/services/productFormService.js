@@ -1,3 +1,4 @@
+import { ref } from 'vue';
 import axios from 'axios';
 
 /**
@@ -9,7 +10,7 @@ const initialFormState = {
   link: '',
   name: '',
   tagline: '',
-  tagline_detailed: '',
+ tagline_detailed: '',
   description: '',
   categories: [],
   bestFor: [],
@@ -17,10 +18,10 @@ const initialFormState = {
   tech_stack: [],
   favicon: '',
   logo: null,
-  gallery: Array(3).fill(null),
-  video_url: '',
+ gallery: Array(3).fill(null),
+ video_url: '',
   logos: [],
-  maker_links: [],
+ maker_links: [],
   sell_product: false,
   asking_price: null,
   additionalLinks: [],
@@ -30,7 +31,7 @@ const initialFormState = {
 // Define loading states
 const initialLoadingStates = {
   name: false,
-  tagline: false,
+ tagline: false,
   description: false,
   categories: false,
   bestFor: false,
@@ -48,21 +49,21 @@ const sidebarSteps = [
 
 export const createProductFormState = () => {
   return {
-    step: 1,
-    currentTab: 'mainInfo',
-    isRestored: false,
-    isMounted: false,
-    isLoading: false,
-    urlExistsError: false,
-    existingProduct: null,
-    showPreviewModal: false,
+    step: ref(1),
+    currentTab: ref('mainInfo'),
+    isRestored: ref(false),
+    isMounted: ref(false),
+    isLoading: ref(false),
+    urlExistsError: ref(false),
+    existingProduct: ref(null),
+    showPreviewModal: ref(false),
     loadingStates: { ...initialLoadingStates },
-    logoPreview: null,
-    galleryPreviews: Array(3).fill(null),
-    allCategories: [],
-    allBestFor: [],
-    allPricing: [],
-    allTechStacks: [],
+    logoPreview: ref(null),
+    galleryPreviews: ref(Array(3).fill(null)),
+    allCategories: ref([]),
+    allBestFor: ref([]),
+    allPricing: ref([]),
+    allTechStacks: ref([]),
     form: { ...initialFormState },
     sidebarSteps: [...sidebarSteps],
   };

@@ -7,27 +7,37 @@
       </button>
     </div>
     <div class="space-y-6 mt-8">
-      <!-- Logo Upload -->
-      <div>
-        <label class="block text-sm font-semibold text-gray-700">Logo</label>
-        <p class="text-xs text-gray-500 mb-2">Recommended size: 240x240. JPG, PNG, GIF, SVG, WEBP, AVIF allowed.</p>
-        <div class="mt-1">
-          <div class="relative w-32 h-32">
-            <div class="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-md">
-              <input type="file" @change="onLogoChange" accept="image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif" class="hidden" ref="logoInput">
-              <div v-if="logoPreview" class="w-full h-full">
-                <img :src="logoPreview" class="h-full w-full object-cover rounded-md">
-                <button @click="removeLogo" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
+      <!-- Logo Upload and Video URL side by side on desktop -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700">Logo</label>
+          <p class="text-xs text-gray-500 mb-2">Recommended size: 240x240. JPG, PNG, GIF, SVG, WEBP, AVIF allowed.</p>
+          <div class="mt-1">
+            <div class="relative w-32 h-32">
+              <div class="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-30 rounded-md">
+                <input type="file" @change="onLogoChange" accept="image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif" class="hidden" ref="logoInput">
+                <div v-if="logoPreview" class="w-full h-full">
+                  <img :src="logoPreview" class="h-full w-full object-cover rounded-md">
+                  <button @click="removeLogo" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
+                </div>
+                <button v-else @click="$refs.logoInput.click()" class="text-gray-500 hover:text-gray-600">
+                  <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <span class="mt-2 block text-sm font-medium">Upload logo</span>
+                </button>
               </div>
-              <button v-else @click="$refs.logoInput.click()" class="text-gray-500 hover:text-gray-600">
-                <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                <span class="mt-2 block text-sm font-medium">Upload logo</span>
-              </button>
             </div>
           </div>
+          <div v-if="!logoPreview && modelValue.favicon" class="mt-2">
+            <button @click="setFaviconAsLogo" class="text-sm text-rose-500 hover:underline">Set favicon as the logo</button>
+          </div>
         </div>
-        <div v-if="!logoPreview && modelValue.favicon" class="mt-2">
-          <button @click="setFaviconAsLogo" class="text-sm text-rose-500 hover:underline">Set favicon as the logo</button>
+        <!-- Video URL section in second column -->
+        <div>
+          <label for="video-url" class="block text-sm font-semibold text-gray-70">Video URL</label>
+          <input type="url" id="video-url" :value="modelValue.video_url" @input="updateField('video_url', $event.target.value)" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
+          <div v-if="videoThumbnailUrl" class="mt-4">
+            <img :src="videoThumbnailUrl" class="w-full h-auto object-contain rounded-md">
+          </div>
         </div>
       </div>
 
