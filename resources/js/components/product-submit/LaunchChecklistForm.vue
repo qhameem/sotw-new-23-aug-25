@@ -3,11 +3,105 @@
     <div class="space-y-6">
       <!-- Back button at top -->
       <div class="flex justify-between items-center mb-2">
-        <h1 class="text-2xl font-bold text-gray-80">Launch</h1>
+        <h1 class="text-2xl font-bold text-gray-800">Launch</h1>
         <button @click="$emit('back')" class="text-sm font-medium text-gray-600 hover:text-gray-90">
-          ← Back to Extras
+          ← Back to Images and Media
         </button>
       </div>
+      
+      <!-- Makers & Extras Section -->
+      <section>
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers & Extras</h3>
+        
+        <div class="space-y-6">
+          <!-- Makers' Links Section -->
+          <div>
+            <h4 class="text-md font-medium text-gray-700 mb-3">Makers' Links</h4>
+            
+            <!-- Dynamic maker links -->
+            <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center mb-3">
+              <input
+                type="url"
+                :id="`maker-link-${index}`"
+                :value="link"
+                @input="updateMakerLink(index, $event.target.value)"
+                :placeholder="`Link to maker ${index + 1} (e.g., https://twitter.com/username)`"
+                class="flex-1 px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+              >
+              <button
+                v-if="makerLinks.length > 1"
+                type="button"
+                @click="removeMakerLink(index)"
+                class="ml-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            
+            <!-- Add more links button (visible if less than 10 links) -->
+            <div v-if="makerLinks.length < 10">
+              <button
+                type="button"
+                @click="addMakerLink"
+                class="mt-2 text-sm font-medium text-sky-600 hover:text-sky-800 flex items-center"
+              >
+                <span>+ Add more links</span>
+              </button>
+              <p v-if="makerLinks.length >= 9" class="text-xs text-gray-500 mt-1">Maximum 10 links allowed</p>
+            </div>
+          
+          </div>
+          
+          <!-- Tech Stack Section -->
+          <div>
+            <h4 class="text-md font-medium text-gray-700 mb-3">Tech Stack</h4>
+            <SearchableDropdown
+              :items="allTechStacks"
+              :modelValue="modelValue.tech_stack"
+              @update:modelValue="updateField('tech_stack', $event)"
+              placeholder="Select technologies..."
+              :max="5"
+            >
+              <template #description>
+                <p class="text-xs text-gray-400 mt-1">Select the technologies that were used to develop the product.</p>
+              </template>
+            </SearchableDropdown>
+          </div>
+          
+          <!-- Sell Product Option -->
+          <div>
+            <h4 class="text-md font-medium text-gray-700 mb-3">Product Sale</h4>
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="sell-product"
+                :checked="modelValue.sell_product || false"
+                @change="updateField('sell_product', $event.target.checked)"
+                class="h-4 w-4 text-rose-60 border-gray-30 rounded focus:ring-sky-400"
+              >
+              <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product</label>
+            </div>
+            
+            <!-- Asking Price Input (shown only if sell_product is true) -->
+            <div v-if="modelValue.sell_product" class="mt-3 ml-6">
+              <label for="asking-price" class="block text-sm font-semibold text-gray-700 mb-2">Asking Price (USD)</label>
+              <input
+                type="number"
+                id="asking-price"
+                :value="modelValue.asking_price || ''"
+                @input="updateField('asking_price', $event.target.value)"
+                placeholder="Enter price in USD"
+                min="0"
+                step="0.01"
+                class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Horizontal separator -->
+      <hr class="border-t border-gray-200 my-6">
       
       <!-- Optional fields section -->
       <section>
@@ -46,7 +140,6 @@
       
       <!-- Horizontal separator -->
       <hr class="border-t border-gray-200 my-6">
-      
       
       <!-- Pricing Options -->
       <section>
@@ -90,6 +183,7 @@
 import { computed, ref, watch } from 'vue';
 import FreeSubmissionOption from './FreeSubmissionOption.vue';
 import PaidSubmissionOption from './PaidSubmissionOption.vue';
+import SearchableDropdown from '../SearchableDropdown.vue';
 
 const props = defineProps({
   modelValue: {
@@ -99,10 +193,42 @@ const props = defineProps({
   logoPreview: {
     type: String,
     default: null
- },
+  },
+  allTechStacks: Array,
 });
 
 const emit = defineEmits(['update:modelValue', 'back', 'submit']);
+
+// Initialize maker links from modelValue or start with one empty field
+const makerLinks = ref(props.modelValue.maker_links || ['']);
+
+// Watch for changes to makerLinks and update the modelValue
+watch(makerLinks, (newLinks) => {
+  emit('update:modelValue', {
+    ...props.modelValue,
+    maker_links: newLinks.filter(link => link.trim() !== '') // Only include non-empty links
+  });
+}, { deep: true });
+
+function addMakerLink() {
+  if (makerLinks.value.length < 10) {
+    makerLinks.value.push('');
+  }
+}
+
+function removeMakerLink(index) {
+  if (makerLinks.value.length > 1) {
+    makerLinks.value.splice(index, 1);
+  }
+}
+
+function updateMakerLink(index, value) {
+  makerLinks.value[index] = value;
+}
+
+function updateField(field, value) {
+  emit('update:modelValue', { ...props.modelValue, [field]: value });
+}
 
 // Initialize selected pricing option with default value 'free'
 const selectedPricingOption = ref('free');
@@ -116,7 +242,7 @@ watch(selectedPricingOption, (newValue) => {
   emit('update:modelValue', {
     ...props.modelValue,
     submissionOption: newValue // Add submission option as separate field
-  });
+ });
 }, { immediate: true });
 
 // Check if all required fields are filled
@@ -151,7 +277,7 @@ const optionalFields = computed(() => [
 // Define pricing option features
 const freeLaunchFeatures = [
  'Free submission',
-  'Badge required on your site',
+ 'Badge required on your site',
   'Potential waiting period for approval'
 ];
 
@@ -214,5 +340,4 @@ const formatCurrency = (amount) => {
     minimumFractionDigits: 2
   }).format(parseFloat(amount));
 };
-
 </script>

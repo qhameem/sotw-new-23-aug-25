@@ -43,7 +43,6 @@ const initialLoadingStates = {
 const sidebarSteps = [
   { id: 'mainInfo', name: 'Main info', icon: 'MainInfoIcon' },
   { id: 'imagesAndMedia', name: 'Images and media', icon: 'ImagesMediaIcon' },
-  { id: 'extras', name: 'Extras', icon: 'ExtrasIcon' },
   { id: 'launchChecklist', name: 'Launch', icon: 'LaunchChecklistIcon' },
 ];
 
@@ -141,10 +140,6 @@ export const productFormService = {
       case 'imagesAndMedia':
         // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
         isCompleted = !!(logoPreview);
-        break;
-      case 'extras':
-        // Extras tab has no required fields, so it's always considered complete if reached
-        isCompleted = true;
         break;
       case 'launchChecklist':
         // Launch checklist requires all the main required fields
@@ -259,10 +254,6 @@ export const isTabCompleted = (step, form, logoPreview) => {
     case 'imagesAndMedia':
       // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
       isCompleted = !!(logoPreview);
-      break;
-    case 'extras':
-      // Extras tab has no required fields, so it's always considered complete if reached
-      isCompleted = true;
       break;
     case 'launchChecklist':
       // Launch checklist requires all the main required fields

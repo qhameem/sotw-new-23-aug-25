@@ -3,6 +3,12 @@
 ## Current State
 The product submission form on the `/add-product` page currently uses a single-column layout where all fields are stacked vertically. This requires significant scrolling on desktop views, especially in the Product Details step which contains many fields.
 
+## Updated Structure
+The form now has 3 tabs instead of 4:
+- Main info
+- Images and media
+- Launch (which now includes all content from the former "Extras" tab)
+
 ## Proposed Changes
 To minimize scrolling on desktop views while maintaining mobile responsiveness, I propose the following layout optimizations:
 
@@ -41,10 +47,15 @@ Currently, the Product Details form has fields like:
 - Keep gallery and video in right column
 - Maintain preview section as full-width
 
-#### ProductMakersForm.vue
+#### LaunchChecklistForm.vue (formerly combined from ProductMakersForm.vue)
+- Now contains makers' links section (dynamic links)
+- Now contains tech stack dropdown
+- Now contains sell product section
+- Maintains pricing options section
 - Keep makers' links full-width (as they're dynamic)
 - Keep tech stack as full-width for better dropdown experience
 - Keep sell product section compact
+- Keep pricing options layout as before
 
 ## Responsive Behavior
 - Mobile: Single column layout (current behavior maintained)
@@ -61,8 +72,10 @@ Currently, the Product Details form has fields like:
 - `resources/views/products/create.blade.php`
 - `resources/js/components/product-submit/ProductDetailsForm.vue`
 - `resources/js/components/product-submit/ProductMediaForm.vue`
-- `resources/js/components/product-submit/ProductMakersForm.vue`
-- `resources/js/components/product-submit/LaunchChecklistForm.vue`
+- `resources/js/components/product-submit/ProductMakersForm.vue` (removed)
+- `resources/js/components/product-submit/LaunchChecklistForm.vue` (enhanced with content from ProductMakersForm.vue)
+- `resources/js/components/product-submit/FormWizard.vue` (updated to remove extras tab)
+- `resources/js/services/productFormService.js` (updated sidebar steps and tab completion logic)
 
 ## Benefits
 - Reduced vertical scrolling on desktop views
@@ -75,7 +88,6 @@ Currently, the Product Details form has fields like:
 - Shows ✓ (checkmark) instead of step numbers when all required fields in a tab are completed
 - Main Info tab: Requires name, tagline, detailed tagline, description, categories (at least 1), bestFor (at least 1), and pricing (at least 1)
 - Images and Media tab: Requires a logo to be uploaded/selected
-- Extras tab: Always shows as completed since no fields are required
 - Launch Checklist tab: Does not show a checkmark until form is submitted
 
 ## Required Field Indicators

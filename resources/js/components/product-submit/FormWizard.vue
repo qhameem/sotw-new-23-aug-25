@@ -75,23 +75,16 @@
           v-model:galleryPreviews="galleryPreviews"
           :loadingStates="loadingStates"
           @back="currentTab = 'mainInfo'"
-          @next="goToNextStep('extras')"
-          @extractLogos="extractLogosFromUrl"
-        />
-
-        <ProductMakersForm
-          v-if="currentTab === 'extras'"
-          v-model="form"
-          :allTechStacks="allTechStacks"
-          @back="currentTab = 'imagesAndMedia'"
           @next="goToNextStep('launchChecklist')"
+          @extractLogos="extractLogosFromUrl"
         />
 
         <LaunchChecklistForm
           v-if="currentTab === 'launchChecklist'"
           v-model="form"
           :logoPreview="logoPreview"
-          @back="currentTab = 'extras'"
+          :allTechStacks="allTechStacks"
+          @back="currentTab = 'imagesAndMedia'"
           @submit="submitProduct"
         />
       </div>
@@ -114,10 +107,9 @@ import { isTabCompleted } from '../../services/productFormService';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
-import ProductMakersForm from './ProductMakersForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewModal from './ProductPreviewModal.vue';
-import { MainInfoIcon, ImagesMediaIcon, ExtrasIcon, LaunchChecklistIcon } from '../icons';
+import { MainInfoIcon, ImagesMediaIcon, LaunchChecklistIcon } from '../icons';
 
 // Use the product form composable
 const {
