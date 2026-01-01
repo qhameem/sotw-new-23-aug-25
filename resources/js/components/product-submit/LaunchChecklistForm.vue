@@ -10,7 +10,7 @@
       </div>
       
       <!-- Makers & Extras Section -->
-      <section>
+      <section class="max-w-4xl">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers & Extras</h3>
         
         <div class="space-y-6">
@@ -104,7 +104,7 @@
       <hr class="border-t border-gray-200 my-6">
       
       <!-- Optional fields section -->
-      <section>
+      <section class="max-w-4xl">
         <h3 class="text-lg font-semibold text-gray-700">Optional</h3>
         <div class="flex flex-wrap gap-4 mt-4">
           <div
@@ -142,7 +142,7 @@
       <hr class="border-t border-gray-200 my-6">
       
       <!-- Pricing Options -->
-      <section>
+      <section class="max-w-4xl">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Pricing Options</h3>
         <div class="flex flex-wrap gap-6 items-stretch">
           <FreeSubmissionOption

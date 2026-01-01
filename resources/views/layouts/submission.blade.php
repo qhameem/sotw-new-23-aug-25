@@ -51,7 +51,7 @@
 <head>
     <script>
         function handlePopState(event) {
-            // This is a placeholder function to prevent the "handlePopState is not defined" error.
+            // This is a placeholder function to prevent the handlePopState is not defined error.
             // You can add your own logic here to handle popstate events if needed.
             console.log('popstate event:', event);
         }
@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "Software on the Web",
-          "url": "https://www.softwareontheweb.com"
-        }
-        </script>
+                {
+                  "@context": "https://schema.org",
+                  "@type": "WebSite",
+                  "name": "Software on the Web",
+                  "url": "https://www.softwareontheweb.com"
+                }
+                </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
@@ -237,44 +237,23 @@
         @endif
     @endforeach
 
-    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'"
-        :sidebar-sticky="!request()->routeIs('articles.create')"
-        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'">
-        <x-slot:title>
-            @hasSection('header-title')
-                @yield('header-title')
-            @else
-                {!! $title ?? '' !!}
-            @endif
-        </x-slot:title>
-        <x-slot:actions>
-            @yield('actions')
-        </x-slot:actions>
+    <div class="min-h-screen bg-white overflow-x-auto">
+        <x-top-bar />
+        <!-- Main Content with 150% Width on Desktop, Full Width on Mobile -->
+        <main class="w-full md:w-[150%] px-4 pt-14 mx-auto pb-12">
+            <x-page-header>
+                <x-slot:title>
+                    @hasSection('header-title')
+                        @yield('header-title')
+                    @else
+                        {!! $title ?? '' !!}
+                    @endif
+                </x-slot:title>
+            </x-page-header>
 
-        <x-slot:below_header>
-            @hasSection('below_header')
-                @yield('below_header')
-            @endif
-        </x-slot:below_header>
-
-
-        <x-slot:right_sidebar_content>
-            @hasSection('right_sidebar_content')
-                @yield('right_sidebar_content')
-            @else
-                {{ $right_sidebar_content ?? '' }}
-                @if(Request::is('free-todo-list-tool'))
-                    @include('todolists._lists')
-                @endif
-            @endif
-        </x-slot:right_sidebar_content>
-
-        @if (isset($slot))
-            {{ $slot }}
-        @else
             @yield('content')
-        @endif
-    </x-main-content-layout>
+        </main>
+    </div>
 
     <div x-show="searchModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"

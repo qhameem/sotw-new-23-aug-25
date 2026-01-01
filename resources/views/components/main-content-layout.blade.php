@@ -1,9 +1,9 @@
-@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true])
+@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl'])
 
 <x-top-bar />
 
-<div class="flex flex-col md:flex-row max-w-7xl mx-auto">
-    
+<div class="flex flex-col md:flex-row {{ $containerMaxWidth }} mx-auto">
+
     <!-- Main Content -->
     <main class="flex-1 w-full {{ $mainContentMaxWidth }} order-1 md:order-2 pl-6 pt-14">
         <x-page-header>

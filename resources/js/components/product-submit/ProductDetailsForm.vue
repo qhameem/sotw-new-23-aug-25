@@ -6,8 +6,8 @@
         &larr; Back
       </button>
     </div>
-    <p class="mb-8 text-gray-600 text-base">We'll need its name, tagline, links, launch tags, and description.</p>
-    <div class="space-y-6">
+    <p class="mb-8 text-gray-600 text-base max-w-4xl">We'll need its name, tagline, links, launch tags, and description.</p>
+    <div class="space-y-6 max-w-4xl">
       <!-- Basic Information Section -->
       <div>
         <div class="mb-6">
@@ -162,13 +162,13 @@
           </div>
         </div>
       </div>
-      <div class="pt-4">
-        <button @click="$emit('next')" class="group relative w-3/4 flex justify-center items-center py-2 border border-transparent text-base font-medium rounded-md text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"> 
+    </div>
+    <div class="pt-4 max-w-4xl">
+        <button @click="$emit('next')" class="group relative w-full flex justify-center items-center py-2 border border-transparent text-base font-medium rounded-md text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"> 
           Next Step: Images and media &nbsp; &#8594;
 
         </button>
       </div>
-    </div>
   </div>
 </template>
 

@@ -18,75 +18,82 @@
     />
 
     <div v-if="step === 2">
-      <div class="w-full p-1">
-        <div class="w-full p-1 mb-4 bg-white sticky top-16 z-10">
-          <div class="flex mb-4 items-center">
-            <img
-              v-if="form.favicon"
-              :src="form.favicon"
-              alt="Favicon"
-              class="h-12 w-12 mr-2"
-            >
-            <div>
-              <h2 class="text-lg font-bold text-gray-700">{{ form.name || 'Product Details' }}</h2>
-              <p class="text-xs text-gray-500">In progress</p>
+      <div class="w-full md:p-6">
+        <div class="flex flex-col md:flex-row gap-8">
+          <!-- Sidebar Navigation -->
+          <div class="w-full md:w-64 shrink-0 transition-all duration-300 ease-in-out md:sticky md:left-0 z-20">
+            <div class="md:sticky md:top-24 bg-white rounded-lg p-4 md:shadow-sm border border-gray-100">
+              <div class="flex mb-6 items-center border-b pb-4">
+                <img
+                  v-if="form.favicon"
+                  :src="form.favicon"
+                  alt="Favicon"
+                  class="h-10 w-10 mr-3 rounded-md shadow-sm"
+                >
+                <div class="overflow-hidden">
+                  <h2 class="text-base font-bold text-gray-800 truncate">{{ form.name || 'Product Details' }}</h2>
+                  <p class="text-xs text-rose-500 font-medium bg-rose-50 inline-block px-1.5 py-0.5 rounded mt-1">In progress</p>
+                </div>
+              </div>
+              
+              <ul class="flex flex-row md:flex-col overflow-x-auto md:overflow-visible gap-2 md:gap-1 pb-2 md:pb-0 no-scrollbar">
+                <li v-for="(step, index) in sidebarSteps" :key="index"
+                    @click="currentTab = step.id"
+                    :class="['cursor-pointer rounded-md transition-all duration-200 whitespace-nowrap', 
+                      currentTab === step.id ? 'bg-rose-50' : 'hover:bg-gray-50']">
+                  <a href="#" class="flex items-center px-3 py-2.5 relative group">
+                    <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
+                      isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-rose-500 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
+                      <template v-if="isStepCompleted(step.id)">
+                        ✓
+                      </template>
+                      <template v-else>
+                        {{ index + 1 }}
+                      </template>
+                    </span>
+                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-rose-700' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
+                    
+                    <!-- Arrow for active state on desktop -->
+                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-rose-50 rotate-45 border-t border-r border-transparent"></div>
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
-          <ul class="flex flex-wrap rounded-md justify-between items-center gap-4">
-            <li v-for="(step, index) in sidebarSteps" :key="index"
-                @click="currentTab = step.id"
-                :class="['py-1 my-2 cursor-pointer font-medium text-gray-400 text-sm relative', { 'text-rose-500 font-medium': currentTab === step.id }]">
-              <a href="#" class="flex flex-col items-center relative">
-                <div class="flex items-center space-x-1">
-                  <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold text-white', isStepCompleted(step.id) ? 'bg-green-500' : (currentTab === step.id ? 'bg-rose-500' : 'bg-gray-300')]">
-                    <template v-if="isStepCompleted(step.id)">
-                      ✓
-                    </template>
-                    <template v-else>
-                      {{ index + 1 }}
-                    </template>
-                  </span>
-                  <component :is="step.icon" />
-                  <span class="">{{ step.name }}</span>
-                </div>
-                <!-- <svg v-if="currentTab === step.id" class="w-5 h-5 text-gray-500 absolute top-full mt-1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11.178 19.569a.998.998 0 0 0 1.644 0l9-13A.999 0 0 0 21 5H3a1.002 1.002 0 0-.822 1.569l9 13z" fill="currentColor"></path>
-                </svg> -->
-              </a>
-            </li>
-          </ul>
-          <hr class="border-t border-gray-200 mt-2">
+          
+          <!-- Main Content Area -->
+          <div class="flex-1 min-w-0 bg-white rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6">
+            <ProductDetailsForm
+              v-if="currentTab === 'mainInfo'"
+              v-model="form"
+              :allCategories="allCategories"
+              :allBestFor="allBestFor"
+              :allPricing="allPricing"
+              @next="goToNextStep('imagesAndMedia')"
+              @back="goBack"
+            />
+
+            <ProductMediaForm
+              v-if="currentTab === 'imagesAndMedia'"
+              v-model="form"
+              v-model:logoPreview="logoPreview"
+              v-model:galleryPreviews="galleryPreviews"
+              :loadingStates="loadingStates"
+              @back="currentTab = 'mainInfo'"
+              @next="goToNextStep('launchChecklist')"
+              @extractLogos="extractLogosFromUrl"
+            />
+
+            <LaunchChecklistForm
+              v-if="currentTab === 'launchChecklist'"
+              v-model="form"
+              :logoPreview="logoPreview"
+              :allTechStacks="allTechStacks"
+              @back="currentTab = 'imagesAndMedia'"
+              @submit="submitProduct"
+            />
+          </div>
         </div>
-        
-        <ProductDetailsForm
-          v-if="currentTab === 'mainInfo'"
-          v-model="form"
-          :allCategories="allCategories"
-          :allBestFor="allBestFor"
-          :allPricing="allPricing"
-          @next="goToNextStep('imagesAndMedia')"
-          @back="goBack"
-        />
-
-        <ProductMediaForm
-          v-if="currentTab === 'imagesAndMedia'"
-          v-model="form"
-          v-model:logoPreview="logoPreview"
-          v-model:galleryPreviews="galleryPreviews"
-          :loadingStates="loadingStates"
-          @back="currentTab = 'mainInfo'"
-          @next="goToNextStep('launchChecklist')"
-          @extractLogos="extractLogosFromUrl"
-        />
-
-        <LaunchChecklistForm
-          v-if="currentTab === 'launchChecklist'"
-          v-model="form"
-          :logoPreview="logoPreview"
-          :allTechStacks="allTechStacks"
-          @back="currentTab = 'imagesAndMedia'"
-          @submit="submitProduct"
-        />
       </div>
     </div>
   </div>
@@ -97,7 +104,9 @@
     :allPricing="allPricing"
     @close="closeModal"
     @confirm="confirmSubmit"
- />
+  />
+  
+  <ScrollIndicator />
 </template>
 
 <script setup>
@@ -109,7 +118,7 @@ import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewModal from './ProductPreviewModal.vue';
-import { MainInfoIcon, ImagesMediaIcon, LaunchChecklistIcon } from '../icons';
+import ScrollIndicator from './ScrollIndicator.vue';
 
 // Use the product form composable
 const {
