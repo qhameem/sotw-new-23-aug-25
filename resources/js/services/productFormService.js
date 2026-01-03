@@ -10,7 +10,7 @@ const initialFormState = {
   link: '',
   name: '',
   tagline: '',
- tagline_detailed: '',
+  tagline_detailed: '',
   description: '',
   categories: [],
   bestFor: [],
@@ -18,20 +18,20 @@ const initialFormState = {
   tech_stack: [],
   favicon: '',
   logo: null,
- gallery: Array(3).fill(null),
- video_url: '',
+  gallery: Array(3).fill(null),
+  video_url: '',
   logos: [],
- maker_links: [],
+  maker_links: [],
   sell_product: false,
   asking_price: null,
   additionalLinks: [],
- x_account: '',
+  x_account: '',
 };
 
 // Define loading states
 const initialLoadingStates = {
   name: false,
- tagline: false,
+  tagline: false,
   description: false,
   categories: false,
   bestFor: false,
@@ -87,7 +87,7 @@ export const productFormService = {
   /**
    * Load form data from session storage
    */
- loadFormData() {
+  loadFormData() {
     const savedData = sessionStorage.getItem('productFormData');
     return savedData ? JSON.parse(savedData) : null;
   },
@@ -124,7 +124,7 @@ export const productFormService = {
   isTabCompleted(step, form, logoPreview) {
     let isCompleted = false;
 
-    switch(step.id) {
+    switch (step.id) {
       case 'mainInfo':
         // Main info tab requires: name, tagline, tagline_detailed, description, categories, bestFor, pricing
         isCompleted = !!(
@@ -138,8 +138,8 @@ export const productFormService = {
         );
         break;
       case 'imagesAndMedia':
-        // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
-        isCompleted = !!(logoPreview);
+        // Images and media tab requires: at least one logo AND at least one gallery image
+        isCompleted = !!(logoPreview && form.gallery && form.gallery.some(img => img));
         break;
       case 'launchChecklist':
         // Launch checklist requires all the main required fields
@@ -238,7 +238,7 @@ export const productFormService = {
 export const isTabCompleted = (step, form, logoPreview) => {
   let isCompleted = false;
 
-  switch(step.id) {
+  switch (step.id) {
     case 'mainInfo':
       // Main info tab requires: name, tagline, tagline_detailed, description, categories, bestFor, pricing
       isCompleted = !!(
@@ -252,8 +252,8 @@ export const isTabCompleted = (step, form, logoPreview) => {
       );
       break;
     case 'imagesAndMedia':
-      // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
-      isCompleted = !!(logoPreview);
+      // Images and media tab requires: at least one logo AND at least one gallery image
+      isCompleted = !!(logoPreview && form.gallery && form.gallery.some(img => img));
       break;
     case 'launchChecklist':
       // Launch checklist requires all the main required fields

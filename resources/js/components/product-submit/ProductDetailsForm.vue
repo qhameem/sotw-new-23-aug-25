@@ -19,7 +19,7 @@
             <span class="text-sm text-gray-400">{{ modelValue.name.length }}/40</span>
           </div>
           <div class="relative">
-            <input type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-40 sm:text-sm">
+            <input ref="nameInput" type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-40 sm:text-sm">
           </div>
           <!-- URL slug displayed directly below the name field -->
           <div class="group relative mt-2 text-xs text-gray-600 inline-block">
@@ -176,7 +176,7 @@
 import SearchableDropdown from '../SearchableDropdown.vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
 import Tooltip from '../Tooltip.vue';
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 const props = defineProps({
   modelValue: Object,
@@ -186,6 +186,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'next', 'back']);
+
+const nameInput = ref(null);
+
+onMounted(() => {
+  nameInput.value?.focus();
+});
 
 // Function to generate slug from product name
 function generateSlug(name) {

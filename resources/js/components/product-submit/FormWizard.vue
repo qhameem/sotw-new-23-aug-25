@@ -17,7 +17,7 @@
       @clear="clearUrlInput"
     />
 
-    <div v-if="step === 2">
+    <div v-if="step === 2" class="w-full md:w-[150%] px-4 pt-28 mx-auto pb-12">
       <div class="w-full md:p-6">
         <div class="flex flex-col md:flex-row gap-8">
           <!-- Sidebar Navigation -->
@@ -44,12 +44,7 @@
                   <a href="#" class="flex items-center px-3 py-2.5 relative group">
                     <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
                       isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
-                      <template v-if="isStepCompleted(step.id)">
-                        ✓
-                      </template>
-                      <template v-else>
-                        {{ index + 1 }}
-                      </template>
+                      {{ index + 1 }}
                     </span>
                     <span :class="['text-sm font-medium', currentTab === step.id ? 'text-blue-700' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
                     
