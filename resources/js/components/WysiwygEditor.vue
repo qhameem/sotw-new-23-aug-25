@@ -1,5 +1,5 @@
 <template>
-  <div class="border border-gray-300 rounded-md focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400">
+  <div class="bg-white border border-gray-300 rounded-md focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400">
     <div v-if="editor" class="flex items-center p-1 border-b border-gray-300 gap-1 bg-gray-50">
       <button @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()" class="p-1 rounded hover:bg-gray-200 disabled:opacity-50">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13v-2a4 4 0 0 0-4-4H8L12 3"></path><path d="M7 7l-5 5 5 5"></path></svg>

@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-                {
-                  "@context": "https://schema.org",
-                  "@type": "WebSite",
-                  "name": "Software on the Web",
-                  "url": "https://www.softwareontheweb.com"
-                }
-                </script>
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "WebSite",
+                      "name": "Software on the Web",
+                      "url": "https://www.softwareontheweb.com"
+                    }
+                    </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
