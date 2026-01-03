@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-                        {
-                          "@context": "https://schema.org",
-                          "@type": "WebSite",
-                          "name": "Software on the Web",
-                          "url": "https://www.softwareontheweb.com"
-                        }
-                        </script>
+                                    {
+                                      "@context": "https://schema.org",
+                                      "@type": "WebSite",
+                                      "name": "Software on the Web",
+                                      "url": "https://www.softwareontheweb.com"
+                                    }
+                                    </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
@@ -237,14 +237,15 @@
         @endif
     @endforeach
 
-    <div class="min-h-screen bg-white overflow-x-auto">
+    <div class="flex flex-col min-h-screen bg-white">
         <x-top-bar />
-        <!-- Main Content with 150% Width on Desktop, Full Width on Mobile -->
-        <main class="w-full md:w-[150%] px-4 pt-14 mx-auto pb-12">
-
-
-            @yield('content')
-        </main>
+        <!-- Main Content Wrapper -->
+        <div class="flex-1 w-full flex flex-col relative">
+            <main class="w-full flex-1 flex flex-col">
+                @yield('content')
+            </main>
+        </div>
+        <x-footer />
     </div>
 
     <div x-show="searchModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"

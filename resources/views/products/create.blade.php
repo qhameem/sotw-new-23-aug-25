@@ -10,7 +10,7 @@
 
 
 @section('content')
-    <div class="relative">
+    <div class="relative flex-1 flex flex-col h-full">
         @guest
             <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
                 <div class="text-center p-8 bg-white border rounded-lg shadow-md">
@@ -23,7 +23,7 @@
                     </button>
                 </div>
         @endguest
-            <div class="w-full py-6 pb-24 @guest blur-sm pointer-events-none @endguest">
+            <div class="w-full flex-1 flex flex-col h-full @guest blur-sm pointer-events-none @endguest">
                 @if(isset($product))
                     <div class="mb-4 p-3 rounded-md bg-blue-50 border border-blue-300 text-blue-700 text-sm">
                         <strong>Note:</strong> Product Name, URL, and Slug cannot be changed through this form. To request
@@ -48,16 +48,14 @@
                         </ul>
                     </div>
                 @endif
-                <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full">
-                        <div id="product-submit-app" x-ignore @if(isset($displayData))
-                        :data-display-data="@js($displayData)" @endif
-                            data-is-admin="{{ (isset($product) && Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
-                            @if(isset($pricingCategories)) :data-pricing-categories="@js($pricingCategories->toArray())"
-                            @endif @if(isset($bestForCategories))
-                            :data-selected-best-for-categories="@js($bestForCategories->toArray())" @endif></div>
-                    </div>
-                </div>
+                
+                <!-- Simplified Container: Direct flex child, full height/width -->
+                <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore @if(isset($displayData))
+                :data-display-data="@js($displayData)" @endif
+                    data-is-admin="{{ (isset($product) && Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
+                    @if(isset($pricingCategories)) :data-pricing-categories="@js($pricingCategories->toArray())"
+                    @endif @if(isset($bestForCategories))
+                    :data-selected-best-for-categories="@js($bestForCategories->toArray())" @endif></div>
             </div>
         </div>
 @endsection
