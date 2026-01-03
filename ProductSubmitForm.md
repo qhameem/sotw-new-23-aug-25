@@ -22,8 +22,8 @@ The form has 3 tabs:
 - Group related fields together in columns on desktop.
 - **Readability**: Fields are constrained to `max-w-4xl`.
 
-### 3. Scroll Indicator
-- A floating badge that appears when the user can scroll down to see more content.
+### 3. Native Scrolling
+- The floating "Scroll for more" indicator has been removed in favor of standard browser scrollbars for a cleaner, less intrusive experience.
 
 ### 4. Dedicated Responsive Layout
 - **New Layout File**: `resources/views/layouts/submission.blade.php`
@@ -36,7 +36,6 @@ The form has 3 tabs:
 - `resources/views/products/create.blade.php`: Extends `layouts.submission`.
 - `resources/js/components/product-submit/FormWizard.vue`: Handles the layout logic (Sidebar vs Top tabs).
 - `resources/js/components/product-submit/ProductDetailsForm.vue`: Form fields for step 1.
-- `resources/js/components/product-submit/ScrollIndicator.vue`: The floating scroll helper.
 
 ## Benefits
 - **Zero Conflicts**: Dedicated layout ensures the 150% width doesn't break other pages.

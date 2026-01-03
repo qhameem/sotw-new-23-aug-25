@@ -32,7 +32,7 @@
                 >
                 <div class="overflow-hidden">
                   <h2 class="text-base font-bold text-gray-800 truncate">{{ form.name || 'Product Details' }}</h2>
-                  <p class="text-xs text-rose-500 font-medium bg-rose-50 inline-block px-1.5 py-0.5 rounded mt-1">In progress</p>
+                  <p class="text-xs text-blue-600 font-medium bg-blue-50 inline-block px-1.5 py-0.5 rounded mt-1">In progress</p>
                 </div>
               </div>
               
@@ -40,10 +40,10 @@
                 <li v-for="(step, index) in sidebarSteps" :key="index"
                     @click="currentTab = step.id"
                     :class="['cursor-pointer rounded-md transition-all duration-200 whitespace-nowrap', 
-                      currentTab === step.id ? 'bg-rose-50' : 'hover:bg-gray-50']">
+                      currentTab === step.id ? 'bg-blue-50' : 'hover:bg-gray-50']">
                   <a href="#" class="flex items-center px-3 py-2.5 relative group">
                     <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
-                      isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-rose-500 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
+                      isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
                       <template v-if="isStepCompleted(step.id)">
                         ✓
                       </template>
@@ -51,10 +51,10 @@
                         {{ index + 1 }}
                       </template>
                     </span>
-                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-rose-700' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
+                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-blue-700' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
                     
                     <!-- Arrow for active state on desktop -->
-                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-rose-50 rotate-45 border-t border-r border-transparent"></div>
+                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-blue-50 rotate-45 border-t border-r border-transparent"></div>
                   </a>
                 </li>
               </ul>
@@ -106,7 +106,7 @@
     @confirm="confirmSubmit"
   />
   
-  <ScrollIndicator />
+
 </template>
 
 <script setup>
@@ -118,7 +118,6 @@ import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewModal from './ProductPreviewModal.vue';
-import ScrollIndicator from './ScrollIndicator.vue';
 
 // Use the product form composable
 const {
