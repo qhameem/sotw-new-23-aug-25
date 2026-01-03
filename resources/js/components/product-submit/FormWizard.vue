@@ -62,7 +62,7 @@
           </div>
           
           <!-- Main Content Area -->
-          <div class="flex-1 min-w-0 bg-white rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6">
+          <div class="flex-1 min-w-0 bg-white rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6 max-w-4xl">
             <ProductDetailsForm
               v-if="currentTab === 'mainInfo'"
               v-model="form"
