@@ -16,9 +16,21 @@
             <div class="relative w-32 h-32">
               <div class="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-30 rounded-md">
                 <input type="file" @change="onLogoChange" accept="image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif" class="hidden" ref="logoInput">
-                <div v-if="logoPreview" class="w-full h-full">
-                  <img :src="logoPreview" class="h-full w-full object-cover rounded-md">
-                  <button @click="removeLogo" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
+                <div v-if="logoPreview" class="w-full h-full relative group">
+                  <img :src="logoPreview" class="h-full w-full object-contain rounded-md p-2 bg-gray-50">
+                  <!-- Hover overlay with actions -->
+                  <div class="absolute inset-0 bg-black/50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button @click.stop="showLargePreview(logoPreview)" class="p-1.5 bg-white text-gray-700 rounded-full hover:bg-gray-100 shadow-sm" title="View bigger">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    </button>
+                    <button @click.stop="removeLogo" class="p-1.5 bg-white text-rose-500 rounded-full hover:bg-rose-50 shadow-sm" title="Remove logo">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <button v-else @click="$refs.logoInput.click()" class="text-gray-500 hover:text-gray-600">
                   <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -49,17 +61,34 @@
           <span class="text-sm text-gray-600">{{ logoExtractionStatusMessage }}</span>
         </div>
         <div v-else-if="modelValue.logos && modelValue.logos.length > 0" class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border-gray-200 hover:border-rose-500 rounded-md p-1">
-            <img :src="logo" class="h-20 w-20 object-contain rounded-md">
+          <div v-for="logo in modelValue.logos" :key="logo" @click="setLogo(logo)" class="cursor-pointer border border-gray-200 hover:border-rose-500 rounded-md p-2 flex items-center justify-center h-24 bg-white">
+            <img :src="logo" class="max-h-full max-w-full object-contain">
+          </div>
+          <!-- New Option: Upload a logo -->
+          <div @click="$refs.logoInput.click()" class="cursor-pointer border border-dashed border-gray-300 hover:border-rose-500 hover:bg-gray-50 rounded-md p-2 flex flex-col items-center justify-center h-24 text-gray-500 hover:text-rose-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span class="text-xs font-medium">Upload Logo</span>
           </div>
         </div>
-        <div v-else-if="!loadingStates || !loadingStates.logos" class="mt-2">
-          <button
-            @click="extractLogos"
-            class="text-sm text-rose-500 hover:underline font-medium"
-          >
-            Extract Logos
-          </button>
+        <div v-else-if="!loadingStates || !loadingStates.logos" class="mt-2 text-center py-4 border border-dashed border-gray-200 rounded-lg">
+          <p class="text-sm text-gray-500 mb-2">No logos found or extracted yet.</p>
+          <div class="flex items-center justify-center gap-4">
+            <button
+              @click="extractLogos"
+              class="text-sm text-rose-500 hover:underline font-medium"
+            >
+              Extract Logos
+            </button>
+            <span class="text-gray-300">|</span>
+            <button
+              @click="$refs.logoInput.click()"
+              class="text-sm text-gray-600 hover:text-gray-900 font-medium"
+            >
+              Upload Manually
+            </button>
+          </div>
         </div>
       </div>
 

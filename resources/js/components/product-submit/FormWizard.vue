@@ -211,17 +211,14 @@ watch(() => form.link, (newLink, oldLink) => {
     form.logos = [];
     logoPreview.value = null;
     
-    // Fetch initial data for the new URL
+     
+    // We do NOT fetch initial data here anymore.
+    // Fetching happens only when the user clicks "Get Started" to prevent UI blocking loops during typing.
+    /* 
     if (newLink) {
       fetchInitialData();
-      // Also fetch remaining data (including logos) when the link is entered
-      // This ensures logos are available as soon as the user enters a URL
-      setTimeout(() => {
-        if (form.name) { // Only fetch remaining data if we have a name
-          fetchRemainingData();
-        }
-      }, 500); // Small delay to ensure fetchInitialData completes first
     }
+    */
   }
 });
 

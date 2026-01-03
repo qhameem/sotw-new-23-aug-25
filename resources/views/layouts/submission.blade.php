@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-                    {
-                      "@context": "https://schema.org",
-                      "@type": "WebSite",
-                      "name": "Software on the Web",
-                      "url": "https://www.softwareontheweb.com"
-                    }
-                    </script>
+                        {
+                          "@context": "https://schema.org",
+                          "@type": "WebSite",
+                          "name": "Software on the Web",
+                          "url": "https://www.softwareontheweb.com"
+                        }
+                        </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
@@ -241,15 +241,7 @@
         <x-top-bar />
         <!-- Main Content with 150% Width on Desktop, Full Width on Mobile -->
         <main class="w-full md:w-[150%] px-4 pt-14 mx-auto pb-12">
-            <x-page-header>
-                <x-slot:title>
-                    @hasSection('header-title')
-                        @yield('header-title')
-                    @else
-                        {!! $title ?? '' !!}
-                    @endif
-                </x-slot:title>
-            </x-page-header>
+
 
             @yield('content')
         </main>
