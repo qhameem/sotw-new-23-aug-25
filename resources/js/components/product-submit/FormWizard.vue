@@ -22,7 +22,7 @@
         <div class="flex flex-col md:flex-row gap-8">
           <!-- Sidebar Navigation -->
           <div class="w-full md:w-64 shrink-0 transition-all duration-300 ease-in-out md:sticky md:left-0 z-20">
-            <div class="md:sticky md:top-24 bg-white rounded-lg p-4 md:shadow-sm border border-gray-100">
+            <div class="md:sticky md:top-24 bg-gray-100 rounded-lg p-4 md:shadow-sm border border-gray-100">
               <div class="flex mb-6 items-center border-b pb-4">
                 <img
                   v-if="form.favicon"
@@ -40,16 +40,16 @@
                 <li v-for="(step, index) in sidebarSteps" :key="index"
                     @click="currentTab = step.id"
                     :class="['cursor-pointer rounded-md transition-all duration-200 whitespace-nowrap', 
-                      currentTab === step.id ? 'bg-blue-50' : 'hover:bg-gray-50']">
+                      currentTab === step.id ? 'bg-white shadow-sm' : 'hover:bg-gray-50']">
                   <a href="#" class="flex items-center px-3 py-2.5 relative group">
                     <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
                       isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
                       {{ index + 1 }}
                     </span>
-                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-blue-700' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
+                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-gray-900 font-bold' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
                     
                     <!-- Arrow for active state on desktop -->
-                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-blue-50 rotate-45 border-t border-r border-transparent"></div>
+                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-r border-transparent"></div>
                   </a>
                 </li>
               </ul>
