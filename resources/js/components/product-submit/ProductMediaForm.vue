@@ -10,7 +10,7 @@
       <!-- Logo Upload and Video URL side by side on desktop -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-semibold text-gray-700">Logo</label>
+          <label class="block text-sm font-semibold text-gray-700">Logo <span class="text-red-500">*</span></label>
           <p class="text-xs text-gray-500 mb-2">Recommended size: 240x240. JPG, PNG, GIF, SVG, WEBP, AVIF allowed.</p>
           <div class="mt-1">
             <div class="relative w-32 h-32">
@@ -139,8 +139,26 @@
         </div>
       </div>
       <div class="pt-4">
-        <button @click="$emit('next')" class="group relative w-1/2 flex justify-center py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500">
-          Next Step: Makers &rarr;
+        <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-2 transition-all duration-300">
+          {{ progress.completed }} of {{ progress.total }} required fields filled
+        </div>
+        <div v-else class="text-xs font-bold text-green-600 mb-2 flex items-center transition-all duration-300 animate-bounce">
+          <span class="mr-1">✓</span> All required media ready!
+        </div>
+
+        <button 
+          @click="$emit('next')" 
+          :class="['group relative w-1/2 flex justify-center py-2 border border-transparent text-sm font-medium rounded-md text-white transition-all duration-300',
+            progress.completed === progress.total 
+              ? 'bg-rose-600 hover:bg-rose-700 shadow-[0_0_15px_rgba(225,29,72,0.4)] scale-[1.02]' 
+              : 'bg-rose-500 hover:bg-rose-600']"
+        >
+          <span v-if="progress.completed === progress.total" class="flex items-center">
+            Ready for Next Step! &nbsp; &#8594;
+          </span>
+          <span v-else>
+            Next Step: Launch &nbsp; &#8594;
+          </span>
         </button>
       </div>
     </div>
@@ -148,7 +166,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: Object,
@@ -158,6 +177,15 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'update:logoPreview', 'update:galleryPreviews', 'back', 'next', 'extractLogos']);
+
+const progress = computed(() => getTabProgress('imagesAndMedia', props.modelValue, props.logoPreview));
+
+onMounted(() => {
+  // If no logo is currently set, and a favicon exists, set the favicon as the default logo
+  if (!props.logoPreview && !props.modelValue.logo && props.modelValue.favicon) {
+    setFaviconAsLogo();
+  }
+});
 
 // Computed property for dynamic logo extraction status message
 const logoExtractionStatusMessage = computed(() => {

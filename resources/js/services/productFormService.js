@@ -138,8 +138,8 @@ export const productFormService = {
         );
         break;
       case 'imagesAndMedia':
-        // Images and media tab requires: at least one logo AND at least one gallery image
-        isCompleted = !!(logoPreview && form.gallery && form.gallery.some(img => img));
+        // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
+        isCompleted = !!(logoPreview);
         break;
       case 'launchChecklist':
         // Launch checklist requires all the main required fields
@@ -252,8 +252,8 @@ export const isTabCompleted = (step, form, logoPreview) => {
       );
       break;
     case 'imagesAndMedia':
-      // Images and media tab requires: at least one logo AND at least one gallery image
-      isCompleted = !!(logoPreview && form.gallery && form.gallery.some(img => img));
+      // Images and media tab requires: at least one logo (either uploaded logo or selected from suggested logos)
+      isCompleted = !!(logoPreview);
       break;
     case 'launchChecklist':
       // Launch checklist requires all the main required fields
@@ -274,4 +274,43 @@ export const isTabCompleted = (step, form, logoPreview) => {
   }
 
   return isCompleted;
+};
+
+/**
+ * Get progress of a tab (completed vs total required fields)
+ */
+export const getTabProgress = (stepId, form, logoPreview) => {
+  let completed = 0;
+  let total = 0;
+
+  switch (stepId) {
+    case 'mainInfo':
+      total = 7;
+      if (form.name) completed++;
+      if (form.tagline) completed++;
+      if (form.tagline_detailed) completed++;
+      if (form.description) completed++;
+      if (form.categories && form.categories.length > 0) completed++;
+      if (form.bestFor && form.bestFor.length > 0) completed++;
+      if (form.pricing && form.pricing.length > 0) completed++;
+      break;
+    case 'imagesAndMedia':
+      total = 1;
+      if (logoPreview) completed++;
+      break;
+    case 'launchChecklist':
+      total = 8; // 7 from mainInfo + logo
+      if (form.link) completed++;
+      if (form.name) completed++;
+      if (form.tagline) completed++;
+      if (form.tagline_detailed) completed++;
+      if (form.description) completed++;
+      if (form.categories && form.categories.length > 0) completed++;
+      if (form.bestFor && form.bestFor.length > 0) completed++;
+      if (form.pricing && form.pricing.length > 0) completed++;
+      if (logoPreview || (form.logos && form.logos.length > 0)) completed++;
+      break;
+  }
+
+  return { completed, total };
 };

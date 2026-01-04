@@ -143,7 +143,13 @@
       
       <!-- Pricing Options -->
       <section class="max-w-4xl">
-        <h3 class="text-lg font-semibold text-gray-700 mb-4">Pricing Options</h3>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">Pricing Options</h3>
+        <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
+          {{ progress.completed }} of {{ progress.total }} total required fields filled
+        </div>
+        <div v-else class="text-xs font-bold text-green-600 mb-4 flex items-center transition-all duration-300 animate-bounce">
+          <span class="mr-1">✓</span> All requirements met! You are ready to launch.
+        </div>
         <div class="flex flex-wrap gap-6 items-stretch">
           <FreeSubmissionOption
             id="free-option"
@@ -184,6 +190,7 @@ import { computed, ref, watch } from 'vue';
 import FreeSubmissionOption from './FreeSubmissionOption.vue';
 import PaidSubmissionOption from './PaidSubmissionOption.vue';
 import SearchableDropdown from '../SearchableDropdown.vue';
+import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: {
@@ -198,6 +205,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'back', 'submit']);
+
+const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
 
 // Initialize maker links from modelValue or start with one empty field
 const makerLinks = ref(props.modelValue.maker_links || ['']);

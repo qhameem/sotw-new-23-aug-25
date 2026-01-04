@@ -60,7 +60,8 @@
           <div class="flex-1 min-w-0 bg-gray-50 rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6 max-w-4xl">
             <ProductDetailsForm
               v-if="currentTab === 'mainInfo'"
-              v-model="form"
+              :modelValue="form"
+              @update:modelValue="Object.assign(form, $event)"
               :allCategories="allCategories"
               :allBestFor="allBestFor"
               :allPricing="allPricing"
@@ -70,7 +71,8 @@
 
             <ProductMediaForm
               v-if="currentTab === 'imagesAndMedia'"
-              v-model="form"
+              :modelValue="form"
+              @update:modelValue="Object.assign(form, $event)"
               v-model:logoPreview="logoPreview"
               v-model:galleryPreviews="galleryPreviews"
               :loadingStates="loadingStates"
@@ -81,7 +83,8 @@
 
             <LaunchChecklistForm
               v-if="currentTab === 'launchChecklist'"
-              v-model="form"
+              :modelValue="form"
+              @update:modelValue="Object.assign(form, $event)"
               :logoPreview="logoPreview"
               :allTechStacks="allTechStacks"
               @back="currentTab = 'imagesAndMedia'"

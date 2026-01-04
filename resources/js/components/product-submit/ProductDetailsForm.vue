@@ -164,9 +164,26 @@
       </div>
     </div>
     <div class="pt-4 max-w-4xl">
-        <button @click="$emit('next')" class="group relative w-full flex justify-center items-center py-2 border border-transparent text-base font-medium rounded-md text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"> 
-          Next Step: Images and media &nbsp; &#8594;
-
+        <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-2 transition-all duration-300">
+          {{ progress.completed }} of {{ progress.total }} required fields filled
+        </div>
+        <div v-else class="text-xs font-bold text-green-600 mb-2 flex items-center transition-all duration-300 animate-bounce">
+          <span class="mr-1">✓</span> All required fields filled!
+        </div>
+        
+        <button 
+          @click="$emit('next')" 
+          :class="['group relative w-1/2 flex justify-center items-center py-2 border border-transparent text-base font-medium rounded-md text-white transition-all duration-300',
+            progress.completed === progress.total 
+              ? 'bg-rose-600 hover:bg-rose-700 shadow-[0_0_15px_rgba(225,29,72,0.4)] scale-[1.02]' 
+              : 'bg-rose-500 hover:bg-rose-600']"
+        > 
+          <span v-if="progress.completed === progress.total" class="flex items-center">
+            Ready for Next Step! &nbsp; &#8594;
+          </span>
+          <span v-else>
+            Next Step: Images and media &nbsp; &#8594;
+          </span>
         </button>
       </div>
   </div>
@@ -177,6 +194,7 @@ import SearchableDropdown from '../SearchableDropdown.vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
 import Tooltip from '../Tooltip.vue';
 import { computed, onMounted, ref } from 'vue';
+import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: Object,
@@ -192,6 +210,8 @@ const nameInput = ref(null);
 onMounted(() => {
   nameInput.value?.focus();
 });
+
+const progress = computed(() => getTabProgress('mainInfo', props.modelValue, null));
 
 // Function to generate slug from product name
 function generateSlug(name) {
