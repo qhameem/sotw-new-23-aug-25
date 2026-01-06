@@ -11,7 +11,9 @@
         @if($post->featured_image_path)
             <div class="ml-8 flex-shrink-0">
                 <a href="{{ route('articles.show', $post->slug) }}">
-                    <img class="h-32 w-56 object-cover rounded-lg" src="{{ (Str::startsWith($post->featured_image_path, ['http://', 'https://']) || Str::startsWith($post->featured_image_path, '/storage')) ? $post->featured_image_path : asset('storage/' . $post->featured_image_path) }}" alt="{{ $post->title }}">
+                    <img class="h-32 w-56 object-cover rounded-xl"
+                        src="{{ (Str::startsWith($post->featured_image_path, ['http://', 'https://']) || Str::startsWith($post->featured_image_path, '/storage')) ? $post->featured_image_path : asset('storage/' . $post->featured_image_path) }}"
+                        alt="{{ $post->title }}">
                 </a>
             </div>
         @endif

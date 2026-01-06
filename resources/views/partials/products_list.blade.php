@@ -68,7 +68,7 @@
                 @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com&utm_medium=promoted_listing_card', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
-                class="w-[65px] h-[65px] rounded object-cover flex-shrink-0" loading="lazy" itemprop="image" />
+                class="w-[65px] h-[65px] rounded-xl object-cover flex-shrink-0" loading="lazy" itemprop="image" />
             <div class="flex-1">
                 <h2 class="text-md font-semibold leading-tight mb-0.5 flex items-center">
                     @if(!$isPromoted)
@@ -87,7 +87,7 @@
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="text-gray-700 text-xs md:text-sm mt-0.5 mb-0 line-clamp-2" itemprop="description">
+                <p class="text-gray-700 text-base mt-0.5 mb-0 line-clamp-2" itemprop="description">
                     {{ $product->tagline }}
                 </p>
 
@@ -111,8 +111,8 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-600  mt-1" itemprop="brand" itemscope itemtype="https://schema.org/Organization">
-                        By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
-                    </div> -->
+                                By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
+                            </div> -->
 
                 <div class="text-xs text-gray-600  mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
@@ -128,17 +128,17 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-60  mt-1" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
-                        <meta itemprop="worstRating" content="0">
-                        <meta itemprop="bestRating" content="5">
-                        @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
-                            <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
-                            Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
-                            (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
-                        @else
-                            <meta itemprop="ratingValue" content="0">
-                            Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
-                        @endif
-                    </div> -->
+                                <meta itemprop="worstRating" content="0">
+                                <meta itemprop="bestRating" content="5">
+                                @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
+                                    <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
+                                    Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
+                                    (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
+                                @else
+                                    <meta itemprop="ratingValue" content="0">
+                                    Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
+                                @endif
+                            </div> -->
             </div>
 
             <div class="flex items-center gap-2">
