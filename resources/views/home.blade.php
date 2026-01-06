@@ -87,41 +87,34 @@
             activeWeeks: activeWeeks,
             init() {
                 const now = new Date();
-                const currentYear = now.getUTCFullYear();
-                const startOfYear = new Date(Date.UTC(currentYear, 0, 1));
                 const urlWeek = this.getWeekFromUrl();
+                
+                // Get backend data
+                const backendWeek = @json(isset($weekOfYear) ? $weekOfYear : null);
+                const backendYear = @json(isset($year) ? $year : null);
+                
+                // Determine which year and week to display/select
+                const displayYear = urlWeek ? urlWeek.year : (backendYear || now.getUTCFullYear());
+                const selectedWeek = urlWeek ? urlWeek.week : backendWeek;
 
                 // Loop through each week of the year
                 for (let i = 1; i <= 52; i++) {
+                    const isSelected = (i === selectedWeek);
+                    
                     this.weeks.push({
-                        year: currentYear,
+                        year: displayYear,
                         week: i,
-                        url: `/week/${currentYear}/${i}`,
+                        url: `/week/${displayYear}/${i}`,
                         label: `Week ${i}`,
-                        isCurrent: this.getWeekNumber(now) === i,
-                        isActive: this.activeWeeks.includes(`${currentYear}-${i}`),
-                        isSelected: urlWeek && urlWeek.year == currentYear && urlWeek.week == i,
+                        isCurrent: this.getWeekNumber(now) === i && now.getUTCFullYear() === displayYear,
+                        isActive: this.activeWeeks.includes(`${displayYear}-${i}`) || 
+                                  this.activeWeeks.includes(`${displayYear}-${String(i).padStart(2, '0')}`),
+                        isSelected: isSelected,
                     });
                 }
 
                 this.$nextTick(() => {
-                    // Check if we have specific week/year from backend (for homepage when not in week URL)
-                    const backendWeek = @json(isset($weekOfYear) ? $weekOfYear : null);
-                    const backendYear = @json(isset($year) ? $year : null);
-                    
-                    let targetWeek;
-                    if (urlWeek) {
-                        // If there's a URL week (e.g., /week/2023/15), use that
-                        targetWeek = urlWeek;
-                    } else if (backendWeek && backendYear) {
-                        // If we're on homepage and backend provided week info, use that
-                        targetWeek = { year: backendYear, week: backendWeek };
-                    } else {
-                        // Otherwise, default to current week
-                        targetWeek = { year: currentYear, week: this.getWeekNumber(now) };
-                    }
-                    
-                    const targetElement = this.$refs.container.querySelector(`#week-${targetWeek.year}-${targetWeek.week}`);
+                    const targetElement = this.$refs.container.querySelector(`#week-${displayYear}-${selectedWeek}`);
                     if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
                     }

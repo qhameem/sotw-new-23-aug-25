@@ -43,7 +43,7 @@
                       currentTab === step.id ? 'bg-white shadow-sm' : 'hover:bg-gray-50']">
                   <a href="#" class="flex items-center px-3 py-2.5 relative group">
                     <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
-                      isStepCompleted(step.id) ? 'bg-green-500 text-white' : (currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300')]">
+                      currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300']">
                       {{ index + 1 }}
                     </span>
                     <span :class="['text-sm font-medium', currentTab === step.id ? 'text-gray-900 font-bold' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
