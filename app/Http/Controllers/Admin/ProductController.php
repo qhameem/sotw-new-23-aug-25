@@ -25,10 +25,10 @@ class ProductController extends Controller
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', "%{$searchTerm}%")
-                  // ->orWhere('sku', 'LIKE', "%{$searchTerm}%") // SKU field does not exist
-                  ->orWhereHas('categories', function ($cq) use ($searchTerm) {
-                      $cq->where('name', 'LIKE', "%{$searchTerm}%");
-                  });
+                    // ->orWhere('sku', 'LIKE', "%{$searchTerm}%") // SKU field does not exist
+                    ->orWhereHas('categories', function ($cq) use ($searchTerm) {
+                        $cq->where('name', 'LIKE', "%{$searchTerm}%");
+                    });
             });
         }
 
@@ -48,7 +48,7 @@ class ProductController extends Controller
                 $query->orderBy($sortBy, $sortDir);
             }
         }
-        
+
         $products = $query->paginate(15)->withQueryString(); // withQueryString appends sort/search params to pagination links
 
         return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir'));
@@ -63,15 +63,15 @@ class ProductController extends Controller
         $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
         $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
         $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-    
+
         $regularCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
         $pricingCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
         $bestForCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-    
+
         $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
         $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
         $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
-    
+
         $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
@@ -151,20 +151,20 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $product->load('media', 'categories.types', 'techStacks');
-    
+
         $categoryTypes = json_decode(Storage::get('category_types.json'), true);
         $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
         $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
         $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-    
+
         $regularCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
         $pricingCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
         $bestForCategoryIds = \Illuminate\Support\Facades\DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-    
+
         $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
         $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
         $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
-    
+
         $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
@@ -180,6 +180,10 @@ class ProductController extends Controller
             'current_categories' => old('categories', $product->categories->pluck('id')->toArray()), // Use original categories
             'current_tech_stacks' => old('tech_stacks', $product->techStacks->pluck('id')->toArray()),
             'video_url' => old('video_url', $product->video_url),
+            'maker_links' => old('maker_links', is_array($product->maker_links) ? $product->maker_links : []),
+            'sell_product' => old('sell_product', $product->sell_product),
+            'asking_price' => old('asking_price', $product->asking_price),
+            'x_account' => old('x_account', $product->x_account),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -189,7 +193,7 @@ class ProductController extends Controller
                 $query->where('types.id', 3);
             })
             ->pluck('categories.id')
-            ->map(fn($id) => (string)$id)
+            ->map(fn($id) => (string) $id)
             ->toArray();
 
         return view('admin.products.edit', compact('product', 'displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'allTechStacksData', 'allCategories', 'types', 'selectedBestForCategories'));
@@ -213,15 +217,24 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|image|max:1024',
             'video_url' => 'nullable|url',
+            'maker_links' => 'nullable|array',
+            'maker_links.*' => 'url|max:2048',
+            'sell_product' => 'nullable|boolean',
+            'asking_price' => 'nullable|numeric|min:0|max:99999.99',
+            'x_account' => 'nullable|string|max:255',
+            'tech_stacks' => 'nullable|array',
+            'tech_stacks.*' => 'exists:tech_stacks,id',
+            'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
         ]);
 
         // Handle logo removal
-        if ($request->has('remove_logo') && $product->logo) {
+        if (($request->has('remove_logo') || $request->input('logo') === null) && $product->logo) {
             if (!Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
-            $validated['logo'] = null;
+            $product->logo = null;
         }
+
         // Handle new logo upload
         if ($request->hasFile('logo')) {
             if ($product->logo && !Str::startsWith($product->logo, 'http')) {
@@ -231,10 +244,35 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
-        
+
         if ($request->has('categories')) {
             $product->categories()->sync($validated['categories']);
         }
+
+        if ($request->has('tech_stacks')) {
+            $product->techStacks()->sync($validated['tech_stacks']);
+        }
+
+        // Handle gallery images
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $file) {
+                $path = $file->store('product_media', 'public');
+                $product->media()->create([
+                    'path' => $path,
+                    'alt_text' => $product->name . ' media',
+                    'type' => \Illuminate\Support\Str::startsWith($file->getMimeType(), 'image') ? 'image' : 'video',
+                ]);
+            }
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product updated successfully.',
+                'redirect_url' => route('admin.products.index')
+            ]);
+        }
+
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
 
@@ -258,7 +296,7 @@ class ProductController extends Controller
         ]);
 
         $productIds = $request->input('product_ids');
-        
+
         // Delete associated logos from storage if they are not external URLs
         $productsToDelete = Product::whereIn('id', $productIds)->get();
         foreach ($productsToDelete as $product) {
@@ -292,9 +330,9 @@ class ProductController extends Controller
         if ($request->has('is_promoted') && $request->filled('promoted_position')) {
             // Check uniqueness for promoted_position manually if is_promoted is true
             $positionTaken = Product::where('id', '!=', $product->id)
-                                     ->where('is_promoted', true)
-                                     ->where('promoted_position', $request->input('promoted_position'))
-                                     ->exists();
+                ->where('is_promoted', true)
+                ->where('promoted_position', $request->input('promoted_position'))
+                ->exists();
             if ($positionTaken) {
                 return back()->withErrors(['promoted_position' => 'This promotion position is already taken.'])->withInput()->with('error_product_id', $product->id);
             }

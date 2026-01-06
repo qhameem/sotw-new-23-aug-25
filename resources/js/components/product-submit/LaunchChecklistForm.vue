@@ -4,7 +4,7 @@
       <!-- Back button at top -->
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-2xl font-bold text-gray-800">Launch</h1>
-        <button @click="$emit('back')" class="text-sm font-medium text-gray-600 hover:text-gray-90">
+        <button @click="$emit('back')" class="text-sm font-medium text-gray-600 hover:text-gray-900">
           ← Back to Images and Media
         </button>
       </div>
@@ -77,7 +77,7 @@
                 id="sell-product"
                 :checked="modelValue.sell_product || false"
                 @change="updateField('sell_product', $event.target.checked)"
-                class="h-4 w-4 text-rose-60 border-gray-30 rounded focus:ring-sky-400"
+                class="h-4 w-4 text-rose-600 border-gray-300 rounded focus:ring-sky-400"
               >
               <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product</label>
             </div>
@@ -141,45 +141,62 @@
       <!-- Horizontal separator -->
       <hr class="border-t border-gray-200 my-6">
       
-      <!-- Pricing Options -->
+      <!-- Pricing Options / Save Button -->
       <section class="max-w-4xl">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Pricing Options</h3>
-        <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
-          {{ progress.completed }} of {{ progress.total }} total required fields filled
+        <div v-if="!isAdmin">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Pricing Options</h3>
+          <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
+            {{ progress.completed }} of {{ progress.total }} total required fields filled
+          </div>
+          <div v-else class="text-xs font-bold text-green-600 mb-4 flex items-center transition-all duration-300 animate-bounce">
+            <span class="mr-1">✓</span> All requirements met! You are ready to launch.
+          </div>
+          <div class="flex flex-wrap gap-6 items-stretch">
+            <FreeSubmissionOption
+              id="free-option"
+              name="pricing-option"
+              value="free"
+              :modelValue="selectedPricingOption"
+              :isAllRequiredFilled="isAllRequiredFilled"
+              @update:modelValue="selectedPricingOption = $event"
+              title="Free Submission"
+              price="$0"
+              description="Launch your product for free with a badge"
+              :features="freeLaunchFeatures"
+              @submit="handlePricingOptionSubmit"
+            />
+            
+            <PaidSubmissionOption
+              id="paid-option"
+              name="pricing-option"
+              value="paid"
+              :modelValue="selectedPricingOption"
+              :isAllRequiredFilled="isAllRequiredFilled"
+              @update:modelValue="selectedPricingOption = $event"
+              title="Paid Submission"
+              price="$29"
+              description="Launch immediately without any requirements"
+              :features="paidLaunchFeatures"
+              @submit="handlePricingOptionSubmit"
+            />
+          </div>
         </div>
-        <div v-else class="text-xs font-bold text-green-600 mb-4 flex items-center transition-all duration-300 animate-bounce">
-          <span class="mr-1">✓</span> All requirements met! You are ready to launch.
+        <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
+          <p class="text-sm text-gray-600 mb-6">As an admin, you can save your edits directly without selecting a pricing option.</p>
+          <div class="flex flex-col items-start gap-4">
+            <div v-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
+              Note: Some required fields are missing, but you can still save as admin.
+            </div>
+            <button
+              @click="$emit('submit')"
+              class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+            >
+              Save All Changes
+            </button>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-6 items-stretch">
-          <FreeSubmissionOption
-            id="free-option"
-            name="pricing-option"
-            value="free"
-            :modelValue="selectedPricingOption"
-            :isAllRequiredFilled="isAllRequiredFilled"
-            @update:modelValue="selectedPricingOption = $event"
-            title="Free Submission"
-            price="$0"
-            description="Launch your product for free with a badge"
-            :features="freeLaunchFeatures"
-            @submit="handlePricingOptionSubmit"
-          />
-          
-          <PaidSubmissionOption
-            id="paid-option"
-            name="pricing-option"
-            value="paid"
-            :modelValue="selectedPricingOption"
-            :isAllRequiredFilled="isAllRequiredFilled"
-            @update:modelValue="selectedPricingOption = $event"
-            title="Paid Submission"
-            price="$29"
-            description="Launch immediately without any requirements"
-            :features="paidLaunchFeatures"
-            @submit="handlePricingOptionSubmit"
-          />
-        </div>
-      </section> <!-- End Pricing Options -->
+      </section> <!-- End Pricing Options / Save Button -->
       
     </div>
   </div>
@@ -202,6 +219,7 @@ const props = defineProps({
     default: null
   },
   allTechStacks: Array,
+  isAdmin: Boolean,
 });
 
 const emit = defineEmits(['update:modelValue', 'back', 'submit']);

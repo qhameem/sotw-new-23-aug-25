@@ -13,13 +13,13 @@
         <div class="mb-6">
           <div class="flex justify-between">
             <div class="flex items-center">
-              <label for="name" class="block text-sm font-semibold text-gray-70">Name of the product <span class="text-red-500">*</span></label>
+              <label for="name" class="block text-sm font-semibold text-gray-700">Name of the product <span class="text-red-500">*</span></label>
               <Tooltip content="Enter the official name of your product. This will be displayed prominently on the product page." />
             </div>
-            <span class="text-sm text-gray-400">{{ modelValue.name.length }}/40</span>
+            <span class="text-sm text-gray-400">{{ (modelValue.name || '').length }}/40</span>
           </div>
           <div class="relative">
-            <input ref="nameInput" type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-40 sm:text-sm">
+            <input ref="nameInput" type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm">
           </div>
           <!-- URL slug displayed directly below the name field -->
           <div class="group relative mt-2 text-xs text-gray-600 inline-block">
@@ -31,35 +31,35 @@
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+        <div class="relative z-10">
           <div class="flex justify-between">
             <div class="flex items-center">
-                <label for="tagline" class="block text-sm font-semibold text-gray-70">Tagline <span class="text-red-500">*</span></label>
+                <label for="tagline" class="block text-sm font-semibold text-gray-700">Tagline <span class="text-red-500">*</span></label>
                 <Tooltip content="Enter a short, memorable phrase that describes your product. This appears on the main listing page." />
               </div>
-              <span class="text-sm text-gray-400">{{ modelValue.tagline.length }}/60</span>
+              <span class="text-sm text-gray-400">{{ (modelValue.tagline || '').length }}/60</span>
           </div>
           <div class="relative">
             <textarea id="tagline" :value="modelValue.tagline" @input="updateField('tagline', $event.target.value)" maxlength="60" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[5em]"></textarea>
           </div>
         </div>
-        <div>
+        <div class="relative z-10">
           <div class="flex justify-between items-center">
             <div class="flex items-center">
               <label for="tagline_detailed" class="block text-sm font-semibold text-gray-700">Tagline for product details page <span class="text-red-500">*</span></label>
               <Tooltip content="A more detailed tagline that appears on the product's detail page. This should expand on the main tagline." />
             </div>
-            <span class="text-sm text-gray-400">{{ modelValue.tagline_detailed.length }}/160</span>
+            <span class="text-sm text-gray-400">{{ (modelValue.tagline_detailed || '').length }}/160</span>
           </div>
           <div class="relative">
-            <textarea id="tagline_detailed" :value="modelValue.tagline_detailed" @input="updateField('tagline_detailed', $event.target.value)" maxlength="160" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border text-gray-600 border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[6em]"></textarea>
+            <textarea id="tagline_detailed" data-field="tagline_detailed" :value="modelValue.tagline_detailed" @input="updateField('tagline_detailed', $event.target.value)" maxlength="160" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[6em]"></textarea>
           </div>
         </div>
       </div>
       
-      <div class="relative shadow-sm focus-within:outline-sky-40">
+      <div class="relative shadow-sm focus-within:ring-1 focus-within:ring-sky-400 focus-within:ring-offset-0 rounded-md">
         <div class="flex items-center">
-          <label for="description" class="block text-sm font-semibold text-gray-70">Description <span class="text-red-500">*</span></label>
+          <label for="description" class="block text-sm font-semibold text-gray-700">Description <span class="text-red-500">*</span></label>
           <Tooltip content="Provide a detailed description of your product. This will appear on the product page and help users understand what your product does." />
         </div>
         <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" :maxLength="1200" />
@@ -143,7 +143,7 @@
         <div class="relative">
           <div class="flex justify-between items-center mb-1">
             <div class="flex items-center">
-              <label class="block text-sm font-semibold text-gray-70">Best for <span class="text-red-500">*</span></label>
+              <label class="block text-sm font-semibold text-gray-700">Best for <span class="text-red-500">*</span></label>
               <Tooltip content="Select the groups or individuals who would benefit most from your product. This helps with targeting." />
             </div>
           </div>
@@ -157,7 +157,7 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div v-for="price in allPricing" :key="price.id" class="flex items-center">
-            <input :id="`price-${price.id}`" type="checkbox" :value="price.id" :checked="modelValue.pricing.includes(price.id)" @change="updatePricing" class="h-4 w-4 text-rose-600 border-gray-30 rounded focus:ring-sky-40">
+            <input :id="`price-${price.id}`" type="checkbox" :value="price.id" :checked="modelValue.pricing.includes(price.id)" @change="updatePricing" class="h-4 w-4 text-rose-600 border-gray-300 rounded focus:ring-sky-400">
             <label :for="`price-${price.id}`" class="ml-2 block text-sm text-gray-900">{{ price.name }}</label>
           </div>
         </div>
@@ -193,19 +193,25 @@
 import SearchableDropdown from '../SearchableDropdown.vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
 import Tooltip from '../Tooltip.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: Object,
  allCategories: Array,
-  allBestFor: Array,
+ allBestFor: Array,
   allPricing: Array,
 });
 
 const emit = defineEmits(['update:modelValue', 'next', 'back']);
 
 const nameInput = ref(null);
+
+
+
+
+
+
 
 onMounted(() => {
   nameInput.value?.focus();
@@ -241,7 +247,10 @@ function updateProductName(value) {
 }
 
 function updateField(field, value) {
-  emit('update:modelValue', { ...props.modelValue, [field]: value });
+  console.log('[ProductDetailsForm] updateField called:', { field, value, currentValue: props.modelValue[field] });
+  const updatedModel = { ...props.modelValue, [field]: value };
+  console.log('[ProductDetailsForm] Emitting update:', updatedModel);
+  emit('update:modelValue', updatedModel);
 }
 
 function updatePricing(event) {

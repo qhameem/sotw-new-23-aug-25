@@ -7,6 +7,7 @@ import axios from 'axios';
 
 // Define initial form state
 const initialFormState = {
+  id: null,
   link: '',
   name: '',
   tagline: '',
@@ -63,6 +64,7 @@ export const createProductFormState = () => {
     allBestFor: ref([]),
     allPricing: ref([]),
     allTechStacks: ref([]),
+    isAdmin: ref(false),
     form: { ...initialFormState },
     sidebarSteps: [...sidebarSteps],
   };

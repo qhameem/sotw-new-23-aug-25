@@ -5,10 +5,13 @@ import axios from 'axios';
 // Create a global state for the product form
 const globalFormState = createProductFormState();
 
+// Create shared reactive objects to ensure consistency across all components
+const sharedForm = reactive({ ...globalFormState.form });
+const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
+
 export function useProductForm() {
-  // Use global state directly to avoid ref conflicts
-  const form = reactive({ ...globalFormState.form });
-  const loadingStates = { ...globalFormState.loadingStates };
+  const form = sharedForm;
+  const loadingStates = sharedLoadingStates;
   const sidebarSteps = [...globalFormState.sidebarSteps];
 
   // Create local refs for form-specific error messages to avoid conflicts
@@ -156,8 +159,7 @@ export function useProductForm() {
     }
 
     // Check if the selected submission option is 'free' to bypass the modal
-    // If submission option is set to 'free', submit directly without showing modal
-    if (form.submissionOption === 'free') {
+    if (form.submissionOption === 'free' || globalFormState.isAdmin.value) {
       // Directly submit the product without showing modal
       confirmSubmit();
       return true;
@@ -179,6 +181,11 @@ export function useProductForm() {
 
       // Prepare form data for submission
       const formData = new FormData();
+
+      // If we're updating an existing product, spoof the PUT method for Laravel
+      if (form.id) {
+        formData.append('_method', 'PUT');
+      }
 
       // Add basic fields
       formData.append('name', form.name);
@@ -262,8 +269,13 @@ export function useProductForm() {
         formData.append('x_account', form.x_account);
       }
 
+      // Determine submission URL
+      const url = form.id && globalFormState.isAdmin.value
+        ? `/admin/products/${form.id}`
+        : '/products';
+
       // Submit the form
-      const response = await axios.post('/products', formData, {
+      const response = await axios.post(url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -493,9 +505,16 @@ export function useProductForm() {
       const data = response.data;
 
       if (shouldFetchContent) {
-        form.tagline = data.tagline || form.tagline; // Only update if we received a new value
-        form.tagline_detailed = data.tagline_detailed || form.tagline_detailed; // Only update if we received a new value
-        form.description = data.description || form.description; // Only update if we received a new value
+        // Only update if the field is currently empty to avoid overwriting user input or existing data
+        if (!form.tagline || form.tagline.trim() === '') {
+          form.tagline = data.tagline || form.tagline;
+        }
+        if (!form.tagline_detailed || form.tagline_detailed.trim() === '') {
+          form.tagline_detailed = data.tagline_detailed || form.tagline_detailed;
+        }
+        if (!form.description || form.description.trim() === '' || form.description === '<p></p>') {
+          form.description = data.description || form.description;
+        }
       }
       // Always update logos if we received them, regardless of whether we explicitly requested them
       if (data.logos && Array.isArray(data.logos)) {
@@ -605,6 +624,12 @@ export function useProductForm() {
       globalFormState.allBestFor.value = categoriesResponse.data.bestFor;
       globalFormState.allPricing.value = categoriesResponse.data.pricing;
       globalFormState.allTechStacks.value = techStackResponse.data;
+
+      // Initialize isAdmin state
+      const element = document.getElementById('product-submit-app');
+      if (element) {
+        globalFormState.isAdmin.value = element.getAttribute('data-is-admin') === 'true';
+      }
     } catch (error) {
       console.error('Failed to fetch initial form data:', error);
       showErrorMessage.value = true;
@@ -715,18 +740,33 @@ export function useProductForm() {
 
             console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds);
 
+            // Format the logo preview URL if it's a relative path
+            let logoUrl = initialData.logo;
+            if (logoUrl && !logoUrl.startsWith('http')) {
+              logoUrl = `/storage/${logoUrl}`;
+            }
+
             updateFormMultiple({
-              name: initialData.name,
-              tagline: initialData.tagline,
-              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
-              description: initialData.description,
-              link: initialData.link,
-              categories: regularCategoryIds,
-              bestFor: JSON.parse(selectedBestForCategories || '[]'),
-              pricing: pricingCategoryIds,
-              tech_stack: initialData.current_tech_stacks || [],
+              name: initialData.name || '',
+              tagline: initialData.tagline || '',
+              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+              description: initialData.description || '',
+              link: initialData.link || '',
+              categories: regularCategoryIds.map(id => parseInt(id)),
+              bestFor: JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id)),
+              pricing: pricingCategoryIds.map(id => parseInt(id)),
+              tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: initialData.video_url,
+              id: initialData.id, // Set the product ID
+              maker_links: initialData.maker_links || [],
+              sell_product: !!initialData.sell_product,
+              asking_price: initialData.asking_price,
+              x_account: initialData.x_account,
             });
+
+            if (logoUrl) {
+              globalFormState.logoPreview.value = logoUrl;
+            }
 
             console.log('Updated form with initial data for admin');
 
@@ -737,15 +777,15 @@ export function useProductForm() {
 
             // For regular users, load data as appropriate
             updateFormMultiple({
-              name: initialData.name,
-              tagline: initialData.tagline,
-              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed,
-              description: initialData.description,
-              link: initialData.link,
-              categories: initialData.current_categories || [],
-              bestFor: JSON.parse(selectedBestForCategories || '[]'),
-              pricing: initialData.current_categories ? [] : [], // This might need to be handled differently
-              tech_stack: initialData.current_tech_stacks || [],
+              name: initialData.name || '',
+              tagline: initialData.tagline || '',
+              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+              description: initialData.description || '',
+              link: initialData.link || '',
+              categories: (initialData.current_categories || []).map(id => parseInt(id)),
+              bestFor: JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id)),
+              pricing: [], // This might need to be handled differently
+              tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: initialData.video_url,
             });
 
@@ -845,6 +885,7 @@ export function useProductForm() {
     allBestFor: globalFormState.allBestFor,
     allPricing: globalFormState.allPricing,
     allTechStacks: globalFormState.allTechStacks,
+    isAdmin: globalFormState.isAdmin,
     form,
     sidebarSteps,
     errorMessage,

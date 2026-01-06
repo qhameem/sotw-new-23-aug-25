@@ -87,6 +87,7 @@
               @update:modelValue="Object.assign(form, $event)"
               :logoPreview="logoPreview"
               :allTechStacks="allTechStacks"
+              :isAdmin="isAdmin"
               @back="currentTab = 'imagesAndMedia'"
               @submit="submitProduct"
             />
@@ -136,6 +137,7 @@ const {
   allBestFor,
   allPricing,
   allTechStacks,
+  isAdmin,
   form,
   sidebarSteps,
   isUrlInvalid,
@@ -153,6 +155,9 @@ const {
  loadSavedData,
   saveFormData
 } = useProductForm();
+
+// Track if we've loaded initial data to avoid clearing fields when loading existing product
+let initialDataLoaded = false;
 
 // Debounce function
 function debounce(func, wait) {
@@ -199,8 +204,34 @@ watch(logoPreview, (newLogoPreview) => {
   debouncedLogoUpdate(newLogoPreview);
 });
 
+
+
+
+// Set flag when initial data is loaded
+const markInitialDataLoaded = () => {
+  initialDataLoaded = true;
+};
+
+// Watch for when initial data is loaded via the composable
+watch(() => form.id, (newId) => {
+ // When a product ID is set, it means we're loading an existing product
+ if (newId && !initialDataLoaded) {
+    markInitialDataLoaded();
+  }
+});
+
 watch(() => form.link, (newLink, oldLink) => {
-  if (isMounted.value && newLink !== oldLink) {
+  // If we haven't loaded initial data yet, just mark it as processed
+  if (!initialDataLoaded) {
+    // Check if this looks like initial data loading (oldLink is empty/falsy)
+    if (!oldLink && newLink) {
+      // This appears to be initial data loading, don't clear fields
+      markInitialDataLoaded();
+      return;
+    }
+  }
+  // Only clear fields if component is mounted, initial data has been loaded, and the link actually changed
+  else if (isMounted.value && newLink !== oldLink) {
     form.name = '';
     form.tagline = '';
     form.tagline_detailed = '';
@@ -212,7 +243,7 @@ watch(() => form.link, (newLink, oldLink) => {
      
     // We do NOT fetch initial data here anymore.
     // Fetching happens only when the user clicks "Get Started" to prevent UI blocking loops during typing.
-    /* 
+    /*
     if (newLink) {
       fetchInitialData();
     }
