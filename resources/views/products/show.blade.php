@@ -95,18 +95,6 @@
                             @endif
                         </h1>
                         <p class="text-gray-800 text-base">
-                            <strong>Tagline:</strong>
-                            @if(isset($isAdminView) && $isAdminView)
-                                <span x-show="!editingTagline" @click="editingTagline = true" x-text="tagline"></span>
-                                <input x-show="editingTagline" x-model="tagline"
-                                    @keydown.enter="updateProduct(); editingTagline = false"
-                                    @keydown.escape="editingTagline = false" class="form-input">
-                            @else
-                                {{ $product->tagline }}
-                            @endif
-                        </p>
-                        <p class="text-gray-800 text-base">
-                            <strong>Product Page Tagline:</strong>
                             @if(isset($isAdminView) && $isAdminView)
                                 <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                                     x-text="product_page_tagline"></span>
