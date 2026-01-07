@@ -24,7 +24,7 @@
                   <div>
                     <label for="product-url" class="sr-only">Link to the product</label>
                     <div class="relative group">
-                      <input id="product-url" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)" type="url" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-rose-500 focus:border-rose-500 focus:z-10 sm:text-sm" placeholder="https://softwareontheweb.com">
+                      <input id="product-url" ref="inputRef" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)" type="url" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-rose-500 focus:border-rose-500 focus:z-10 sm:text-sm" placeholder="https://softwareontheweb.com">
                       <button v-if="modelValue" @click="$emit('clear')" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                       </button>
@@ -60,12 +60,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 
 const props = defineProps({
   modelValue: String,
-  isLoading: Boolean,
-  isUrlInvalid: Boolean,
+ isLoading: Boolean,
+ isUrlInvalid: Boolean,
   urlExistsError: Boolean,
   existingProduct: Object,
 });
@@ -96,6 +96,17 @@ watch(() => props.isLoading, (newValue) => {
     clearInterval(messageInterval);
     loadingMessage.value = loadingMessages[0];
   }
+});
+
+// Focus the input when component is mounted
+const inputRef = ref(null);
+onMounted(() => {
+  // Use nextTick to ensure the DOM is fully rendered
+ setTimeout(() => {
+    if (inputRef.value) {
+      inputRef.value.focus();
+    }
+ }, 100);
 });
 </script>
 
