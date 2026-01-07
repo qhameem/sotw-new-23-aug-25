@@ -24,7 +24,7 @@ export function useProductForm() {
   });
 
   const checkUrlExists = async () => {
-    console.log('checkUrlExists called with URL:', form.link);
+    console.log('checkUrlExists called with URL:', form.link, 'and ID:', form.id);
     if (!form.link) {
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
@@ -32,7 +32,7 @@ export function useProductForm() {
     }
 
     try {
-      const response = await productFormService.checkUrlExists(form.link);
+      const response = await productFormService.checkUrlExists(form.link, form.id);
       console.log('checkUrlExists response:', response);
       if (response.exists) {
         globalFormState.urlExistsError.value = true;
@@ -189,6 +189,9 @@ export function useProductForm() {
 
       // Add basic fields
       formData.append('name', form.name);
+      if (form.slug) {
+        formData.append('slug', form.slug);
+      }
       formData.append('tagline', form.tagline);
       formData.append('product_page_tagline', form.tagline_detailed);
       formData.append('description', form.description);
@@ -748,6 +751,7 @@ export function useProductForm() {
 
             updateFormMultiple({
               name: initialData.name || '',
+              slug: initialData.slug || '',
               tagline: initialData.tagline || '',
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',
@@ -778,6 +782,7 @@ export function useProductForm() {
             // For regular users, load data as appropriate
             updateFormMultiple({
               name: initialData.name || '',
+              slug: initialData.slug || '',
               tagline: initialData.tagline || '',
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',

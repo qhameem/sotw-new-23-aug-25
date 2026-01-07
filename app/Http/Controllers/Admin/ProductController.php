@@ -184,6 +184,7 @@ class ProductController extends Controller
             'sell_product' => old('sell_product', $product->sell_product),
             'asking_price' => old('asking_price', $product->asking_price),
             'x_account' => old('x_account', $product->x_account),
+            'id' => $product->id,
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -228,7 +229,7 @@ class ProductController extends Controller
         ]);
 
         // Handle logo removal
-        if (($request->has('remove_logo') || $request->input('logo') === null) && $product->logo) {
+        if (($request->has('remove_logo') || $request->input('logo') === 'null') && $product->logo) {
             if (!Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }

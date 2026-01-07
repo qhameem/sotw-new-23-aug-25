@@ -513,13 +513,18 @@ class ProductController extends Controller
     public function checkUrl(Request $request)
     {
         $url = $request->input('url');
-        \Log::info('Checking URL for existence: ' . $url);
+        $excludeId = $request->input('exclude_id');
+        \Log::info('Checking URL for existence: ' . $url . ($excludeId ? ' (excluding ID: ' . $excludeId . ')' : ''));
         if (!$url) {
             \Log::info('URL is empty, returning false');
             return response()->json(['exists' => false]);
         }
 
-        $product = Product::where('link', $url)->first(); // Check all products, not just approved ones
+        $query = Product::where('link', $url);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+        $product = $query->first(); // Check all products, not just approved ones
         \Log::info('Product found for URL: ' . $url . ', exists: ' . ($product ? 'true' : 'false'));
 
         if ($product) {

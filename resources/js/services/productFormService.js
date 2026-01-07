@@ -10,6 +10,7 @@ const initialFormState = {
   id: null,
   link: '',
   name: '',
+  slug: '',
   tagline: '',
   tagline_detailed: '',
   description: '',
@@ -222,11 +223,14 @@ export const productFormService = {
   /**
    * Check if URL already exists
    */
-  async checkUrlExists(url) {
-    console.log('Checking URL existence:', url);
+  async checkUrlExists(url, excludeId = null) {
+    console.log('Checking URL existence:', url, excludeId ? `(excluding ${excludeId})` : '');
     try {
       const response = await axios.get('/check-product-url', {
-        params: { url: url }
+        params: {
+          url: url,
+          exclude_id: excludeId
+        }
       });
       console.log('URL check response:', response.data);
       return response.data;
