@@ -1,0 +1,50 @@
+# Scrolling Behavior Implementation
+
+## Problem
+On the home page, when users scrolled down the product list, everything else scrolled too (except the top menubar). The requirement was to ensure that when scrolling, only the product list scrolls while the title ("Top product of the week"), the calendar selection bar below that, and the content on the right sidebar stay static.
+
+## Solution Implemented
+
+### 1. Updated Main Content Layout (`resources/views/components/main-content-layout.blade.php`)
+- Modified the layout to handle overflow differently for home-related routes
+- For routes that match 'home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search', the content area now uses `md:overflow-y-auto` instead of `md:overflow-hidden`
+- This allows the main content area to scroll independently while keeping headers and sidebars fixed
+
+### 2. Updated Home Page (`resources/views/home.blade.php`)
+- Restructured the product list container to work with the new scrolling mechanism
+- Removed redundant overflow classes from the product list container since scrolling is now handled at the parent level
+- Ensured the product list takes up the remaining space properly
+
+### 3. CSS/HTML Structure
+- The top menubar (in top-bar component) remains fixed at the top
+- The header area with title and calendar selection remains static
+- The right sidebar remains fixed/sticky
+- Only the product list area scrolls independently
+
+## Technical Details
+
+The solution leverages the `lockHeight` parameter in the main-content-layout component:
+- When `lockHeight=true` (for home routes), the main layout has `md:h-screen md:overflow-hidden` 
+- The main content area now has conditional overflow handling for home-related routes
+- This creates a layout where the header and sidebar remain static while only the product list scrolls
+
+## Files Modified
+1. `resources/views/components/main-content-layout.blade.php`
+2. `resources/views/home.blade.php`
+
+## Result
+- Only the product list scrolls when users scroll on the home page
+- Title, calendar selection bar, and right sidebar remain static
+- Top menubar remains fixed as before
+- No other functionality is broken
+
+## Additional Fix: Mobile Menu Overlay Issue
+- Identified that the user dropdown menu on mobile was pushing content down instead of appearing as an overlay
+- Fixed by removing responsive prefixes from the dropdown positioning classes
+- Changed from `md:absolute md:top-full md:right-0 md:mt-2` to `absolute top-full right-0 mt-2`
+- This ensures the menu appears as an overlay on all screen sizes without shifting content
+
+## Files Modified
+1. `resources/views/components/main-content-layout.blade.php`
+2. `resources/views/home.blade.php`
+3. `resources/views/components/user-dropdown.blade.php`

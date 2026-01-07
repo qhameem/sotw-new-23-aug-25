@@ -25,7 +25,7 @@
 
     <!-- Sliding drawer-style dropdown -->
     <div id="userDropdownMenu"
-         class="hidden md:absolute md:top-full md:right-0 md:mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+         class="hidden absolute top-full right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
          role="menu" aria-orientation="vertical" aria-labelledby="userDropdownTrigger" tabindex="-1">
 
         <div class="py-1">

@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "Software on the Web",
-          "url": "https://www.softwareontheweb.com"
-        }
-        </script>
+                {
+                  "@context": "https://schema.org",
+                  "@type": "WebSite",
+                  "name": "Software on the Web",
+                  "url": "https://www.softwareontheweb.com"
+                }
+                </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
@@ -204,15 +204,7 @@
     @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            <script>
-                (function () {
-                    try {
-                        {!! $snippet->code !!}
-                    } catch (e) {
-                        console.error('Error injected code snippet:', e);
-                    }
-                })();
-            </script>
+            {!! $snippet->code !!}
         @endif
     @endforeach
 </head>
@@ -225,20 +217,13 @@
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            <script>
-                (function () {
-                    try {
-                        {!! $snippet->code !!}
-                    } catch (e) {
-                        console.error('Error in injected code snippet:', e);
-                    }
-                })();
-            </script>
+            {!! $snippet->code !!}
         @endif
     @endforeach
 
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'"
         :sidebar-sticky="!request()->routeIs('articles.create')"
+        :lock-height="request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')"
         :container-max-width="$containerMaxWidth ?? 'max-w-7xl'">
         <x-slot:title>
             @hasSection('header-title')

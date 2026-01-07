@@ -21,6 +21,7 @@
 
 
 @section('content')
+    <div class="flex-shrink-0 bg-white shadow-sm z-10 relative">
     @if(!isset($isCategoryPage) || !$isCategoryPage)
         <div class="bg-white px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
@@ -55,15 +56,18 @@
             <p class="text-sm text-gray-700">{{ $category->description }}</p>
         </div>
     @endif
+    </div>
 
-    <div class="bg-white md:space-y-1">
-
-        @include('partials.products_list', [
-            'regularProducts' => $regularProducts ?? collect(),
-            'promotedProducts' => $promotedProducts ?? collect(),
-            'belowProductListingAd' => $belowProductListingAd ?? null,
-            'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
-        ])
+    <!-- Product List Container -->
+    <div class="bg-white flex-1">
+        <div class="md:space-y-1">
+            @include('partials.products_list', [
+                'regularProducts' => $regularProducts ?? collect(),
+                'promotedProducts' => $promotedProducts ?? collect(),
+                'belowProductListingAd' => $belowProductListingAd ?? null,
+                'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
+            ])
+        </div>
     </div>
 @endsection
 
