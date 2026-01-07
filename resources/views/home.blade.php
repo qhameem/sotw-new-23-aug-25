@@ -21,7 +21,7 @@
 
 
 @section('content')
-    <div class="flex-shrink-0 bg-white shadow-sm z-10 relative">
+    <div class="flex-shrink-0 bg-white z-10 relative">
     @if(!isset($isCategoryPage) || !$isCategoryPage)
         <div class="bg-white px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
@@ -45,6 +45,7 @@
                 <button @click="scroll('right')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800">></button>
             </div>
         </div>
+        <div class="shadow-sm border-t border-gray-100"></div>
     @endif
 
     @if(isset($weekOfYear) && isset($year))
