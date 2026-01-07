@@ -27,7 +27,7 @@
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
                 <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
                 <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
-                    <template x-for="week in weeks" :key="week.week">
+                    <template x-for="week in weeks" :key="week.year + '-' + week.week">
                         <a :href="week.url"
                            :id="'week-' + week.year + '-' + week.week"
                            :class="{
@@ -102,21 +102,29 @@
                 const displayYear = urlWeek ? urlWeek.year : (backendYear || now.getUTCFullYear());
                 const selectedWeek = urlWeek ? urlWeek.week : backendWeek;
 
-                // Loop through each week of the year
-                for (let i = 1; i <= 52; i++) {
-                    const isSelected = (i === selectedWeek);
-                    
-                    this.weeks.push({
-                        year: displayYear,
-                        week: i,
-                        url: `/week/${displayYear}/${i}`,
-                        label: `Week ${i}`,
-                        isCurrent: this.getWeekNumber(now) === i && now.getUTCFullYear() === displayYear,
-                        isActive: this.activeWeeks.includes(`${displayYear}-${i}`) || 
-                                  this.activeWeeks.includes(`${displayYear}-${String(i).padStart(2, '0')}`),
-                        isSelected: isSelected,
-                    });
-                }
+                // Loop through previous, current, and next year to allow scrolling
+                const years = [displayYear - 1, displayYear, displayYear + 1];
+
+                years.forEach(year => {
+                    const weeksInYear = this.getWeeksInYear(year);
+                    for (let i = 1; i <= weeksInYear; i++) {
+                        const isSelected = (year === displayYear && i === selectedWeek);
+                        // Backend activeWeeks are in format "YYYY-W" or "YYYY-WW" (padded or unpadded)
+                        // Adjust isActive check to handle unpadded week numbers from DB if necessary
+                        const weekKey = `${year}-${i}`; 
+                        const weekKeyPadded = `${year}-${String(i).padStart(2, '0')}`;
+                        
+                        this.weeks.push({
+                            year: year,
+                            week: i,
+                            url: `/week/${year}/${i}`,
+                            label: `Week ${i}`,
+                            isCurrent: this.getWeekNumber(now) === i && now.getUTCFullYear() === year,
+                            isActive: this.activeWeeks.includes(weekKey) || this.activeWeeks.includes(weekKeyPadded),
+                            isSelected: isSelected,
+                        });
+                    }
+                });
 
                 this.$nextTick(() => {
                     const targetElement = this.$refs.container.querySelector(`#week-${displayYear}-${selectedWeek}`);
@@ -124,6 +132,11 @@
                         targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
                     }
                 });
+            },
+            getWeeksInYear(year) {
+                const d = new Date(year, 11, 31);
+                const week = this.getWeekNumber(d);
+                return week === 1 ? 52 : week;
             },
             getWeekFromUrl() {
                 const path = window.location.pathname;
