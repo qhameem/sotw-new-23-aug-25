@@ -26,7 +26,7 @@
         <div class="bg-white px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
                 <button @click="scroll('left')" class="px-2 cursor-pointer text-gray-600 hover:text-gray-800"><</button>
-                <div class="flex space-x-4 overflow-x-auto scrollbar-hide" x-ref="container">
+                <div class="flex-1 flex overflow-x-auto scrollbar-hide mx-4" x-ref="container">
                     <template x-for="week in weeks" :key="week.year + '-' + week.week">
                         <a :href="week.url"
                            :id="'week-' + week.year + '-' + week.week"
@@ -36,7 +36,7 @@
                                'text-gray-400 cursor-not-allowed': !week.isActive,
                                'hover:bg-gray-100': !week.isSelected && !week.isCurrent
                            }"
-                           class="px-2 py-1 rounded whitespace-nowrap"
+                           class="flex-shrink-0 w-[14.2857%] py-1 rounded text-center"
                            @click.prevent="if(week.isActive) window.location.href = week.url">
                             <span x-text="week.label"></span>
                         </a>
@@ -157,14 +157,11 @@
             },
             scroll(direction) {
                 const container = this.$refs.container;
-                const weekElement = container.querySelector('a');
-                if (weekElement) {
-                    const scrollAmount = (weekElement.offsetWidth + 16) * 7;
-                    if (direction === 'left') {
-                        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                    } else {
-                        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                    }
+                const scrollAmount = container.clientWidth; // Scroll exactly one view width (7 items)
+                if (direction === 'left') {
+                    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                } else {
+                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 }
             }
         }
