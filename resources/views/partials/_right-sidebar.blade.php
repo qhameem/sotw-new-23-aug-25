@@ -51,6 +51,7 @@
                 </div>
 
                 <x-top-categories />
+                <x-pricing-categories />
                 @guest
                     <div class="p-4">
                         @include('partials._what-is-sotw-card')
