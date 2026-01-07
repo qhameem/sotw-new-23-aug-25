@@ -416,7 +416,7 @@ class ProductController extends Controller
             'tagline' => $validated['tagline'],
             'product_page_tagline' => $validated['product_page_tagline'],
             'description' => $this->addNofollowToLinks($validated['description']),
-            'video_url' => $validated['video_url'],
+            'video_url' => $validated['video_url'] ?? null,
         ];
         $newCategories = $validated['categories'];
         $newTechStacks = $validated['tech_stacks'] ?? [];

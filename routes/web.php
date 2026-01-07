@@ -58,7 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
     Route::get('/my-products', [ProductController::class, 'myProducts'])->name('products.my');
-    Route::get('/products/submission-success/{product}', [ProductController::class, 'showSubmissionSuccess'])->name('products.submission.success');
+    Route::get('/submission-success/{product}', [ProductController::class, 'showSubmissionSuccess'])->name('products.submission.success');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::get('/subscribe', [SubscriptionController::class, 'create'])->name('subscribe');
@@ -84,7 +84,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('categories', CategoryController::class);
     // Define specific product routes BEFORE the resource controller for products
     // Test route for debugging 404
-    Route::get('products/test-pending-edits', function () { return 'Test route for pending edits is working.'; })->name('products.test-pending-edits');
+    Route::get('products/test-pending-edits', function () {
+        return 'Test route for pending edits is working.'; })->name('products.test-pending-edits');
     // Routes for managing edits to approved products
     Route::get('products/pending-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'pendingEditsIndex'])->name('products.pending-edits.index');
     Route::get('products/{product}/review-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'showEditDiff'])->name('products.review-edits');
@@ -92,7 +93,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('products/{product}/reject-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'rejectEdits'])->name('products.reject-edits');
 
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
-Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
+    Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::resource('advertising', AdvertisingController::class);
     Route::resource('ad-zones', AdZoneController::class);

@@ -183,9 +183,9 @@ export function useProductForm() {
       const formData = new FormData();
 
       // If we're updating an existing product, spoof the PUT method for Laravel
-      if (form.id) {
-        formData.append('_method', 'PUT');
-      }
+      // Logic moved effectively to url determination block to ensure consistency
+      // Keeping this comment for clarity that method spoofing is handled below based on URL 
+
 
       // Add basic fields
       formData.append('name', form.name);
@@ -232,12 +232,14 @@ export function useProductForm() {
         });
       }
 
-      // Add logo if available as file
-      if (form.logo) {
+      // Add logo if available as file or URL
+      if (form.logo instanceof File) {
         formData.append('logo', form.logo);
+      } else if (typeof form.logo === 'string' && form.logo) {
+        // If logo is a string (e.g. from suggested logos), send it as logo_url
+        formData.append('logo_url', form.logo);
       } else if (globalFormState.logoPreview.value) {
-        // If we have a logo preview URL, we might need to handle it differently
-        // For now, we'll try to fetch it as a blob if it's a local file
+        // If we have a logo preview URL but no form.logo set, use that
         formData.append('logo_url', globalFormState.logoPreview.value);
       }
 
@@ -273,9 +275,44 @@ export function useProductForm() {
       }
 
       // Determine submission URL
-      const url = form.id && globalFormState.isAdmin.value
-        ? `/admin/products/${form.id}`
-        : '/products';
+      // Determine submission URL and method logic
+      let url;
+      let isUpdate = false;
+
+      if (form.id) {
+        if (globalFormState.isAdmin.value) {
+          url = `/admin/products/${form.id}`;
+          isUpdate = true;
+        } else {
+          // For regular users potentially updating their own product
+          // We should maintain the RESTful convention if existing ID is valid for update
+          // check if we are on an edit page or just have a stale ID
+          // For now, assuming if we are NOT admin, we might be creating. 
+          // But if we truly have an ID and intend to update, we should trust form.id?
+          // Actually, the error happens because URL is forced to /products.
+          // If we really want to update, it should be /products/{id}.
+          // Let's assume if we have an ID we should try to update at /products/{id}
+          url = `/products/${form.id}`;
+          isUpdate = true;
+        }
+      } else {
+        url = '/products';
+      }
+
+      // Safety check: if we are sending to the create endpoint, do NOT spoof PUT
+      // This handles cases where form.id might be stale or incorrect for the current action
+      if (url === '/products' || url.endsWith('/products')) {
+        isUpdate = false;
+        if (form.id) {
+          console.warn('Form has ID but URL is /products. Ignoring ID for submission method.');
+          // Only spoof PUT if we are NOT targeting the create endpoint
+        }
+      }
+
+      // If we're updating an existing product, spoof the PUT method for Laravel
+      if (isUpdate) {
+        formData.append('_method', 'PUT');
+      }
 
       // Submit the form
       const response = await axios.post(url, formData, {
@@ -656,6 +693,19 @@ export function useProductForm() {
     } else {
       // If element is not available yet, try loading saved data after a short delay
       setTimeout(async () => {
+        // If we are on the create page (no display data attributes found even after delay), 
+        // we should probably NOT restore the ID to prevent switching to "edit" mode inadvertently.
+        // However, verifying absence of attributes entirely via getElementById again is safer.
+        const el = document.getElementById('product-submit-app');
+        if (el && !el.getAttribute('data-display-data')) {
+          // We are likely adding a product. Ensure we don't restore a stale ID.
+          const saved = productFormService.loadFormData();
+          if (saved && saved.id) {
+            console.log('Clearing stale ID from saved data for new submission');
+            saved.id = null;
+            sessionStorage.setItem('productFormData', JSON.stringify(saved));
+          }
+        }
         await loadSavedData();
       }, 100);
     }
