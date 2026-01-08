@@ -2,7 +2,7 @@
     @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->is('free-todo-list-tool'))
         <div x-show="!searchFocused">
-            @if(in_array(Route::currentRouteName(), ['home', 'products.byDate']))
+            @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
                 <div class="p-4">
                     <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
                         <div class="relative group inline-block">
@@ -25,16 +25,14 @@
                     </div>
                 </div>
 
-                @php
-                    $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
-                        $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
-                        return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
-                    });
-                @endphp
-                
-                @if($sponsors->isNotEmpty())
                 <div class="p-4">
-                    <h3 class="text-base font-semibold mb-4 text-gray-70">Our Partners</h3>
+                    <h3 class="text-base font-semibold mb-4 text-gray-70">Sponsors</h3>
+                    @php
+                        $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
+                            $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
+                            return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
+                        });
+                    @endphp
                     <ul class="space-y-4">
                         @foreach($sponsors as $sponsor)
                             <li>
@@ -51,9 +49,9 @@
                         @endforeach
                     </ul>
                 </div>
-                @endif
 
                 <x-top-categories />
+                <x-pricing-categories />
                 @guest
                     <div class="p-4">
                         @include('partials._what-is-sotw-card')

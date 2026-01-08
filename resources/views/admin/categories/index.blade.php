@@ -67,8 +67,36 @@
         </div>
 
         {{-- Categories Section --}}
-        <div x-data="{ searchTerm: '', categories: {{ Js::from($categories) }} }">
+        <div x-data="{ searchTerm: '', selectedType: '{{ $selectedType }}', sortByType: '{{ $sortByType }}', categories: {{ Js::from($categories) }} }">
             <h2 class="text-xl font-bold mb-4">Categories</h2>
+
+            <!-- Filter and Sort Controls -->
+            <div class="flex flex-wrap gap-4 mb-4">
+                <!-- Type Filter -->
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Type</label>
+                    <select x-model="selectedType"
+                            class="w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            @change="window.location = '?type=' + selectedType + '&sort_by_type=' + sortByType">
+                        <option value="">All Types</option>
+                        @foreach($categoryTypes as $type)
+                        <option value="{{ $type->id }}">{{ $type->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Sort by Type -->
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sort by Type</label>
+                    <select x-model="sortByType"
+                            class="w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            @change="window.location = '?type=' + selectedType + '&sort_by_type=' + sortByType">
+                        <option value="">None</option>
+                        <option value="asc">Type A-Z</option>
+                        <option value="desc">Type Z-A</option>
+                    </select>
+                </div>
+            </div>
 
             <!-- Search Bar -->
             <div class="mb-4">

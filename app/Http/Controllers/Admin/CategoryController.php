@@ -18,11 +18,37 @@ class CategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::with('types')->orderBy('name')->get(); // Eager load types for categories
+        $query = Category::with('types');
+
+        // Handle filtering by type
+        if ($request->has('type') && !empty($request->type)) {
+            $query->whereHas('types', function ($q) use ($request) {
+                $q->where('types.id', $request->type);
+            });
+        }
+
+        // Handle sorting by type
+        if ($request->has('sort_by_type') && $request->sort_by_type === 'asc') {
+            $query->whereHas('types')
+                  ->withAggregate('types', 'name')
+                  ->orderBy('types_name');
+        } elseif ($request->has('sort_by_type') && $request->sort_by_type === 'desc') {
+            $query->whereHas('types')
+                  ->withAggregate('types', 'name')
+                  ->orderBy('types_name', 'desc');
+        } else {
+            // Default sorting by category name
+            $query->orderBy('name');
+        }
+
+        $categories = $query->get();
         $categoryTypes = Type::orderBy('name')->get(); // Fetch all category types
-        return view('admin.categories.index', compact('categories', 'categoryTypes'));
+        $selectedType = $request->type ?? '';
+        $sortByType = $request->sort_by_type ?? '';
+
+        return view('admin.categories.index', compact('categories', 'categoryTypes', 'selectedType', 'sortByType'));
     }
 
     /**
