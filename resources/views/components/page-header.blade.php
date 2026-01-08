@@ -1,5 +1,5 @@
 <div
-    class="fixed top-0 left-0 right-0 w-full md:w-auto md:static md:sticky md:top-0 z-50 bg-white border-b border-gray-200 shadow-sm md:shadow-none md:border-none">
+    class="fixed top-0 left-0 right-0 w-full md:w-auto md:static md:sticky md:top-0 z-50 bg-white border-b border-gray-200 shadow-[0_1px_1px_rgba(0,0,0,0.03)] md:shadow-none md:border-none">
     <div class="flex justify-between items-center px-4 py-[0.78rem]">
         <div>
             <div class="flex items-center">
