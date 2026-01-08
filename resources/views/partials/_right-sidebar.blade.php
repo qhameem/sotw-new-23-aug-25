@@ -25,14 +25,16 @@
                     </div>
                 </div>
 
+                @php
+                    $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
+                        $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
+                        return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
+                    });
+                @endphp
+                
+                @if($sponsors->isNotEmpty())
                 <div class="p-4">
-                    <h3 class="text-base font-semibold mb-4 text-gray-70">Sponsors</h3>
-                    @php
-                        $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
-                            $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
-                            return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
-                        });
-                    @endphp
+                    <h3 class="text-base font-semibold mb-4 text-gray-70">Our Partners</h3>
                     <ul class="space-y-4">
                         @foreach($sponsors as $sponsor)
                             <li>
@@ -49,9 +51,9 @@
                         @endforeach
                     </ul>
                 </div>
+                @endif
 
                 <x-top-categories />
-                <x-pricing-categories />
                 @guest
                     <div class="p-4">
                         @include('partials._what-is-sotw-card')
