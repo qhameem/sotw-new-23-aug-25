@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col md:w-sm" x-data="{ searchFocused: false }"
+<div class="flex flex-col md:w-sm" x-data="{ searchFocused: false }"
     @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->is('free-todo-list-tool'))
         <div x-show="!searchFocused">

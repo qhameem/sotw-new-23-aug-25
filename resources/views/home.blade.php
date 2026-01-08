@@ -38,7 +38,7 @@
                                'text-gray-400 cursor-not-allowed': !week.isActive,
                                'hover:bg-gray-100': !week.isSelected && !week.isCurrent
                            }"
-                           class="flex-shrink-0 w-[14.2857%] py-1 rounded text-center"
+                           class="flex-shrink-0 w-[25%] md:w-[14.2857%] py-1 rounded text-center"
                            @click.prevent="if(week.isActive) window.location.href = week.url">
                             <span x-text="week.label"></span>
                         </a>
