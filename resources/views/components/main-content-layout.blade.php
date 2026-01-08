@@ -15,6 +15,7 @@
                 'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')
             ])>
                 <div class="flex-shrink-0">
+                    <div class="h-[65px] md:hidden w-full"></div>
                     <x-page-header>
                         <x-slot:title>
                             {!! $title !!}
