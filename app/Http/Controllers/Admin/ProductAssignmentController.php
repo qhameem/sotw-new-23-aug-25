@@ -31,7 +31,7 @@ class ProductAssignmentController extends Controller
 
         $products = Product::where('name', 'like', "%{$query}%")
             ->limit(10)
-            ->get(['id', 'name', 'tagline', 'logo']);
+            ->get(['id', 'name', 'tagline', 'logo', 'link']); // Include 'link' for favicon fallback
 
         return response()->json($products->map(function ($product) {
             return [
@@ -54,17 +54,18 @@ class ProductAssignmentController extends Controller
             return response()->json([]);
         }
 
-        $users = User::where('name', 'like', "%{$query}%")
-            ->orWhere('username', 'like', "%{$query}%")
-            ->orWhere('email', 'like', "%{$query}%")
+        $users = User::where(function ($q) use ($query) {
+            $q->where('name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%");
+        })
             ->limit(10)
-            ->get(['id', 'name', 'username', 'email', 'google_avatar']);
+            ->get(['id', 'name', 'email', 'google_avatar']);
 
         return response()->json($users->map(function ($user) {
             return [
                 'id' => $user->id,
                 'name' => $user->name,
-                'username' => $user->username,
+                'username' => null, // Username column doesn't exist in users table
                 'email' => $user->email,
                 'avatar' => $user->google_avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name),
             ];

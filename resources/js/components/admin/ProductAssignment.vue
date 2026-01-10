@@ -26,18 +26,23 @@
                     </div>
 
                     <!-- Product Results -->
-                    <div v-if="productResults.length > 0 && productSearch.length > 0" class="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                        <div 
-                            v-for="product in productResults" 
-                            :key="product.id"
-                            @click="selectProduct(product)"
-                            class="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-0"
-                        >
-                            <img :src="product.logo_url" class="w-10 h-10 rounded-lg object-cover mr-3 bg-gray-100">
-                            <div>
-                                <div class="font-bold text-gray-900">{{ product.name }}</div>
-                                <div class="text-xs text-gray-500 line-clamp-1">{{ product.tagline }}</div>
+                    <div v-if="productSearch.length >= 2 && !selectedProduct" class="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                        <div v-if="productResults.length > 0">
+                            <div 
+                                v-for="product in productResults" 
+                                :key="product.id"
+                                @click="selectProduct(product)"
+                                class="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-0"
+                            >
+                                <img :src="product.logo_url" class="w-10 h-10 rounded-lg object-cover mr-3 bg-gray-100">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ product.name }}</div>
+                                    <div class="text-xs text-gray-500 line-clamp-1">{{ product.tagline }}</div>
+                                </div>
                             </div>
+                        </div>
+                        <div v-else-if="!isProductSearching && productSearch.length >= 2" class="p-4 text-center text-sm text-gray-500">
+                            No products found matching "{{ productSearch }}"
                         </div>
                     </div>
                 </div>
@@ -75,18 +80,23 @@
                     </div>
 
                     <!-- User Results -->
-                    <div v-if="userResults.length > 0 && userSearch.length > 0" class="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                        <div 
-                            v-for="user in userResults" 
-                            :key="user.id"
-                            @click="selectUser(user)"
-                            class="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-0"
-                        >
-                            <img :src="user.avatar" class="w-10 h-10 rounded-full object-cover mr-3 bg-gray-100">
-                            <div>
-                                <div class="font-bold text-gray-900">{{ user.name }} <span class="text-xs font-normal text-gray-400">@{{ user.username }}</span></div>
-                                <div class="text-xs text-gray-500">{{ user.email }}</div>
+                    <div v-if="userSearch.length >= 2 && !selectedUser" class="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                        <div v-if="userResults.length > 0">
+                            <div 
+                                v-for="user in userResults" 
+                                :key="user.id"
+                                @click="selectUser(user)"
+                                class="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-0"
+                            >
+                                <img :src="user.avatar" class="w-10 h-10 rounded-full object-cover mr-3 bg-gray-100">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ user.name }} <span class="text-xs font-normal text-gray-400" v-if="user.username">@{{ user.username }}</span></div>
+                                    <div class="text-xs text-gray-500">{{ user.email }}</div>
+                                </div>
                             </div>
+                        </div>
+                        <div v-else-if="!isUserSearching && userSearch.length >= 2" class="p-4 text-center text-sm text-gray-500">
+                            No users found matching "{{ userSearch }}"
                         </div>
                     </div>
                 </div>
