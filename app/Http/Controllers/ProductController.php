@@ -335,25 +335,64 @@ class ProductController extends Controller
         $product->load(['categories', 'proposedCategories', 'techStacks']);
 
         $oldInput = session()->getOldInput();
-        $displayData = [
-            'name' => $oldInput['name'] ?? $product->name,
-            'slug' => $oldInput['slug'] ?? $product->slug,
-            'link' => $oldInput['link'] ?? $product->link,
-            'logo' => $product->logo,
-            'tagline' => $oldInput['tagline'] ?? $product->tagline,
-            'description' => $oldInput['description'] ?? $product->description,
-            'current_categories' => $oldInput['categories'] ?? $product->categories->pluck('id')->toArray(),
-            'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
-        ];
-
+        
         if ($product->approved && $product->has_pending_edits) {
-            $displayData['logo'] = $product->proposed_logo_path ?? $product->logo;
-            $displayData['tagline'] = $product->proposed_tagline ?? $product->tagline;
-            $displayData['description'] = $product->proposed_description ?? $product->description;
-            $displayData['current_categories'] = $product->proposedCategories->pluck('id')->toArray();
+            // When there are pending edits, use proposed values
+            $displayData = [
+                'name' => $oldInput['name'] ?? $product->name,
+                'slug' => $oldInput['slug'] ?? $product->slug,
+                'link' => $oldInput['link'] ?? $product->link,
+                'logo' => $product->proposed_logo_path ?? $product->logo,
+                'tagline' => $product->proposed_tagline ?? $product->tagline,
+                'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->product_page_tagline,
+                'description' => $product->proposed_description ?? $product->description,
+                'current_categories' => $product->proposedCategories->pluck('id')->toArray(),
+                'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
+                'maker_links' => $oldInput['maker_links'] ?? $product->maker_links,
+                'sell_product' => $oldInput['sell_product'] ?? $product->sell_product,
+                'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
+                'x_account' => $oldInput['x_account'] ?? $product->x_account,
+                'id' => $product->id,
+            ];
+        } else {
+            // When no pending edits, use original values
+            $displayData = [
+                'name' => $oldInput['name'] ?? $product->name,
+                'slug' => $oldInput['slug'] ?? $product->slug,
+                'link' => $oldInput['link'] ?? $product->link,
+                'logo' => $product->logo,
+                'tagline' => $oldInput['tagline'] ?? $product->tagline,
+                'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->product_page_tagline,
+                'description' => $oldInput['description'] ?? $product->description,
+                'current_categories' => $oldInput['categories'] ?? $product->categories->pluck('id')->toArray(),
+                'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
+                'maker_links' => $oldInput['maker_links'] ?? $product->maker_links,
+                'sell_product' => $oldInput['sell_product'] ?? $product->sell_product,
+                'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
+                'x_account' => $oldInput['x_account'] ?? $product->x_account,
+                'id' => $product->id,
+            ];
         }
 
         $types = Type::with('categories')->get();
+        
+        // Get the selected bestFor categories to pass to the JavaScript component
+        $selectedBestForCategories = $product->categories()
+            ->whereHas('types', function ($query) {
+                $query->where('types.id', 3); // Best for type ID
+            })
+            ->pluck('categories.id')
+            ->map(fn($id) => (string) $id)
+            ->toArray();
+
+        // Debug: Log the display data to see what's being passed
+        \Log::info('Product edit displayData', [
+            'product_id' => $product->id,
+            'display_data' => $displayData,
+            'selected_best_for_categories' => $selectedBestForCategories,
+            'categories_count' => count($displayData['current_categories'] ?? [])
+        ]);
+
         return view('products.create', compact(
             'product',
             'displayData',
@@ -361,7 +400,8 @@ class ProductController extends Controller
             'bestForCategories',
             'pricingCategories',
             'allTechStacksData',
-            'types'
+            'types',
+            'selectedBestForCategories'
         ));
     }
 

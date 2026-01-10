@@ -50,12 +50,11 @@
                 @endif
                 
                 <!-- Simplified Container: Direct flex child, full height/width -->
-                <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore @if(isset($displayData))
-                :data-display-data="@js($displayData)" @endif
+                <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore
+                    data-display-data="{{ json_encode($displayData ?? []) }}"
                     data-is-admin="{{ (isset($product) && Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
-                    @if(isset($pricingCategories)) :data-pricing-categories="@js($pricingCategories->toArray())"
-                    @endif @if(isset($bestForCategories))
-                    :data-selected-best-for-categories="@js($bestForCategories->toArray())" @endif></div>
+                    data-pricing-categories="{{ json_encode($pricingCategories->toArray() ?? []) }}"
+                    data-selected-best-for-categories="{{ json_encode($selectedBestForCategories ?? []) }}"></div>
             </div>
         </div>
 @endsection
