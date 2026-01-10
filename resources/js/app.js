@@ -4,6 +4,7 @@ import NotificationBell from './components/NotificationBell.vue';
 import UserDropdown from './components/UserDropdown.vue';
 import DynamicChecklist from './components/DynamicChecklist.vue';
 import TodoList from './components/TodoList.vue';
+import ProductAssignment from './components/admin/ProductAssignment.vue';
 import axios from 'axios';
 
 // Add this line to set the CSRF token for all Axios requests
@@ -13,7 +14,7 @@ axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[nam
 if (!window.Alpine) {
     import('alpinejs').then(Alpine => {
         window.Alpine = Alpine.default;
-        
+
         // Define the upvote component
         window.Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
             isUpvoted: isUpvoted,
@@ -138,6 +139,12 @@ if (document.getElementById('checklist-container')) {
     checklistApp.mount('#checklist-container');
 }
 
+// Mount the ProductAssignment component for admin
+if (document.getElementById('product-assignment-app')) {
+    const assignmentApp = createApp(ProductAssignment);
+    assignmentApp.mount('#product-assignment-app');
+}
+
 // Make Datepicker available globally for inline scripts
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -167,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Apply fixed dimensions
                 buttonElement.style.width = `${currentWidth}px`;
                 buttonElement.style.height = `${currentHeight}px`;
-                
+
                 textElement.classList.add('hidden');
                 loaderElement.classList.remove('hidden');
                 console.log('[app.js] Loader shown, text hidden for button:', buttonElement.id);
@@ -185,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (textElement && loaderElement) {
                 textElement.classList.remove('hidden');
                 loaderElement.classList.add('hidden');
-                
+
                 // Clear fixed dimensions
                 buttonElement.style.width = '';
                 buttonElement.style.height = '';
@@ -198,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addProductButtons.forEach(button => {
             console.log('[app.js] Attaching click listener to button:', button.id);
-            button.addEventListener('click', function(event) {
+            button.addEventListener('click', function (event) {
                 console.log('[app.js] Clicked button:', this.id);
                 // Don't prevent default if it's a link, let it navigate.
                 // The loader will show during the brief period before navigation.
@@ -208,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Reset button states on page show (e.g., after back navigation)
-        window.addEventListener('pageshow', function(event) {
+        window.addEventListener('pageshow', function (event) {
             console.log('[app.js] pageshow event triggered.');
             addProductButtons.forEach(button => {
                 // Add a small delay to ensure the reset doesn't interfere with

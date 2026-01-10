@@ -85,12 +85,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Define specific product routes BEFORE the resource controller for products
     // Test route for debugging 404
     Route::get('products/test-pending-edits', function () {
-        return 'Test route for pending edits is working.'; })->name('products.test-pending-edits');
+        return 'Test route for pending edits is working.';
+    })->name('products.test-pending-edits');
     // Routes for managing edits to approved products
     Route::get('products/pending-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'pendingEditsIndex'])->name('products.pending-edits.index');
     Route::get('products/{product}/review-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'showEditDiff'])->name('products.review-edits');
     Route::post('products/{product}/approve-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approveEdits'])->name('products.approve-edits');
     Route::post('products/{product}/reject-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'rejectEdits'])->name('products.reject-edits');
+
+    // Product Assignment (Must come BEFORE products resource)
+    Route::get('products/assign', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'index'])->name('products.assign.index');
+    Route::post('products/assign', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'assign'])->name('products.assign.store');
+    Route::get('products-search-ajax', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'searchProducts'])->name('products.search.ajax');
+    Route::get('users-search-ajax', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'searchUsers'])->name('users.search.ajax');
 
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
     Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
