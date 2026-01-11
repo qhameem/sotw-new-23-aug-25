@@ -6,7 +6,8 @@
         <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •
         <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
         <a href="{{ route('badges.index') }}" class="hover:underline">Badge</a> •
-        <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a>
+        <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a> •
+        Contact us: <a href="mailto:hello@softwareontheweb.com" target="_blank" class="hover:underline">hello@softwareontheweb.com</a>
         <div class="h-2"></div>
         <span class="text-gray-400 " x-data="{ time: new Date() }" x-init="setInterval(() => time = new Date(), 1000)">
             <span x-text="time.toLocaleString('en-GB', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })"></span> UTC
