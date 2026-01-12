@@ -135,7 +135,14 @@
                                     <p class="text-xs font-semibold text-gray-500">Media</p>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mt-2">
                                         @foreach($product->media as $media)
-                                            @if($media->type === 'image')
+                                            @if($media->type === 'video')
+                                                <div class="relative">
+                                                    <video controls class="w-full h-20 object-cover rounded border">
+                                                        <source src="{{ asset('storage/' . $media->path) }}" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                </div>
+                                            @else
                                                 <div class="relative">
                                                     <a href="{{ asset('storage/' . $media->path) }}" target="_blank" rel="noopener nofollow">
                                                         <img src="{{ asset('storage/' . $media->path) }}"
@@ -143,13 +150,6 @@
                                                              class="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
                                                              loading="lazy">
                                                     </a>
-                                                </div>
-                                            @elseif($media->type === 'video')
-                                                <div class="relative">
-                                                    <video controls class="w-full h-20 object-cover rounded border">
-                                                        <source src="{{ asset('storage/' . $media->path) }}" type="video/mp4">
-                                                        Your browser does not support the video tag.
-                                                    </video>
                                                 </div>
                                             @endif
                                         @endforeach
