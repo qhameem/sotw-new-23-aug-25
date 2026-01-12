@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    <h1 class="text-xl font-bold text-gray-800">{{ __('Profile') }}</h1>
+    {{ __('Profile') }}
 @endsection
 
 @section('actions')

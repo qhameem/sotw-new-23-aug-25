@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    <h1 class="text-lg md:text-base pt-1.5 font-semibold tracking-tight">Premium Spot Details</h1>
+    Premium Spot Details
 @endsection
 
 @section('content')

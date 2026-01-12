@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    <h1 class="text-xl font-bold text-gray-800">My Submitted Products</h1>
+    My Submitted Products
 @endsection
 
 @section('actions')

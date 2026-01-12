@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-<h2 class="text-base font-semibold py-[3px] hidden md:block">Premium Spot</h2>
+Premium Spot
 @endsection
 
 @section('content')

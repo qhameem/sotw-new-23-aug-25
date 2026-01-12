@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-<h2 class="text-base font-semibold py-[3px] hidden md:block">Software Review</h2>
+Software Review
 @endsection
 
 @section('content')

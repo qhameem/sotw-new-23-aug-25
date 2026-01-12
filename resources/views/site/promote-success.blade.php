@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    <h1 class="text-lg md:text-base pt-4 font-semibold tracking-tight">Payment Successful!</h1>
+    Payment Successful!
 @endsection
 
 @section('content')
