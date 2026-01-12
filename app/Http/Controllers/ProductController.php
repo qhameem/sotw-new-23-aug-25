@@ -1353,7 +1353,8 @@ class ProductController extends Controller
             $perPage = 15;
         }
 
-        $myProducts = Product::where('user_id', $user->id)
+        $myProducts = Product::with(['categories', 'media', 'techStacks'])
+            ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage)
             ->withQueryString();

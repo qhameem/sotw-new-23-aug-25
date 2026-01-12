@@ -34,67 +34,176 @@
                         $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
                         $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
                     @endphp
-                    <article class="bg-white p-4 md:p-4 border rounded-lg flex gap-4 md:gap-6 items-start" itemscope itemtype="https://schema.org/Product">
-                        <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="w-8 h-8 md:w-10 md:h-10 rounded object-cover flex-shrink-0" loading="lazy" itemprop="image" />
+                    <article class="bg-white p-4 md:p-4 border rounded-lg flex flex-col md:flex-row gap-4 md:gap-6" itemscope itemtype="https://schema.org/Product">
+                        <!-- Logo Section -->
+                        <div class="flex-shrink-0">
+                            <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo" class="w-16 h-16 md:w-20 md:h-20 rounded object-cover" loading="lazy" itemprop="image" />
+                        </div>
+                        
+                        <!-- Main Content Section -->
                         <div class="flex-1">
                             <h2 class="text-base md:text-lg font-bold leading-tight mb-1" itemprop="name">
                                 <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url">{{ $product->name }}</a>
                             </h2>
+                            
                             <div class="mt-2 space-y-3">
+                                <!-- Tagline -->
                                 <div>
                                     <p class="text-xs font-semibold text-gray-500">Tagline</p>
                                     <p class="text-gray-700 text-sm" itemprop="tagline">{{ $product->tagline }}</p>
                                 </div>
+                                
+                                <!-- Product Page Tagline -->
                                 @if($product->product_page_tagline)
                                 <div>
                                     <p class="text-xs font-semibold text-gray-500">Product Page Tagline</p>
                                     <p class="text-gray-700 text-sm">{{ $product->product_page_tagline }}</p>
                                 </div>
                                 @endif
+                                
+                                <!-- Description -->
                                 <div>
                                     <p class="text-xs font-semibold text-gray-500">Description</p>
                                     <div class="prose prose-sm text-sm max-w-none text-gray-600" itemprop="description">
                                         {!! $product->description !!}
                                     </div>
                                 </div>
-                            </div>
-                            <div class="text-xs text-gray-500 mb-2 mt-2">
-                                Submitted: {{ $product->created_at->format('M d, Y') }}
-                            </div>
-                            <div class="mb-3">
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                    @if($product->approved)
-                                        bg-green-100 text-green-700
-                                    @else
-                                        bg-yellow-100 text-yellow-700
-                                    @endif">
-                                    {{ $product->approved ? 'Approved' : 'Pending Approval' }}
-                                </span>
-                            </div>
-                            <div class="mt-1 flex flex-wrap gap-2 items-center">
-                                @foreach($product->categories as $cat)
-                                <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
-                                       @click.stop
-                                       class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-[0.65rem]">
-                                        <span class="px-0 py-0 hover:underline">{{ $cat->name }}</span>
-                                        @if(isset($cat->products_count))
-                                        <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full text-gray-500 hover:text-gray-600 text-[0.65rem] font-semibold flex items-center justify-center leading-none antialiased">
-                                            {{ $cat->products_count > 99 ? '99+' : $cat->products_count }}
-                                        </span>
-                                        @endif
-                                    </a>
-                                 @if(!$loop->last)
-                                    <span class="text-gray-400">•</span>
-                                @endif
-                                @endforeach
-                            </div>
-                            @if(Auth::id() == $product->user_id)
-                                <div class="mt-3">
-                                    <a href="{{ route('products.edit', $product->id) }}" class="text-sm text-blue-600 hover:underline font-medium">
-                                        Edit Product
-                                    </a>
+                                
+                                <!-- Link -->
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Link</p>
+                                    <p class="text-sm text-blue-600 break-all">
+                                        <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow">{{ $product->link }}</a>
+                                    </p>
                                 </div>
-                            @endif
+                                
+                                <!-- Maker Links -->
+                                @if($product->maker_links && count($product->maker_links) > 0)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Maker Links</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($product->maker_links as $link)
+                                            <a href="{{ $link }}" target="_blank" rel="noopener nofollow" class="text-sm text-blue-600 hover:underline break-all">
+                                                {{ $link }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                <!-- X Account -->
+                                @if($product->x_account)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">X Account</p>
+                                    <p class="text-sm text-gray-700">
+                                        <a href="https://x.com/{{ $product->x_account }}" target="_blank" rel="noopener nofollow" class="text-blue-600 hover:underline">@{{ $product->x_account }}</a>
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <!-- Selling Info -->
+                                @if($product->sell_product)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Selling Product</p>
+                                    <p class="text-sm text-gray-700">
+                                        Yes @if($product->asking_price) - Asking Price: ${{ number_format($product->asking_price, 2) }} @endif
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <!-- Tech Stacks -->
+                                @if($product->techStacks && count($product->techStacks) > 0)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Tech Stacks</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($product->techStacks as $tech)
+                                            <span class="inline-block px-2 py-1 text-xs bg-gray-100 rounded">{{ $tech->name }}</span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                <!-- Video URL -->
+                                @if($product->video_url)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Video</p>
+                                    <p class="text-sm text-blue-600 break-all">
+                                        <a href="{{ is_array($product->video_url) ? $product->video_url[0] : $product->video_url }}" target="_blank" rel="noopener nofollow">{{ is_array($product->video_url) ? $product->video_url[0] : $product->video_url }}</a>
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <!-- Media -->
+                                @if($product->media && count($product->media) > 0)
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-500">Media</p>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mt-2">
+                                        @foreach($product->media as $media)
+                                            @if($media->type === 'image')
+                                                <div class="relative">
+                                                    <a href="{{ asset('storage/' . $media->path) }}" target="_blank" rel="noopener nofollow">
+                                                        <img src="{{ asset('storage/' . $media->path) }}"
+                                                             alt="{{ $media->alt_text ?: $product->name . ' media' }}"
+                                                             class="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
+                                                             loading="lazy">
+                                                    </a>
+                                                </div>
+                                            @elseif($media->type === 'video')
+                                                <div class="relative">
+                                                    <video controls class="w-full h-20 object-cover rounded border">
+                                                        <source src="{{ asset('storage/' . $media->path) }}" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                                
+                                <!-- Submission and Status Info -->
+                                <div class="mt-2 pt-2 border-t border-gray-100">
+                                    <div class="text-xs text-gray-500 mb-2">
+                                        Submitted: {{ $product->created_at->format('M d, Y') }}
+                                        @if($product->updated_at != $product->created_at)
+                                            | Updated: {{ $product->updated_at->format('M d, Y') }}
+                                        @endif
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                            @if($product->approved)
+                                                bg-green-100 text-green-700
+                                            @else
+                                                bg-yellow-100 text-yellow-700
+                                            @endif">
+                                            {{ $product->approved ? 'Approved' : 'Pending Approval' }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-1 flex flex-wrap gap-2 items-center">
+                                        @foreach($product->categories as $cat)
+                                        <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
+                                               @click.stop
+                                               class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-[0.65rem]">
+                                                <span class="px-0 py-0 hover:underline">{{ $cat->name }}</span>
+                                                @if(isset($cat->products_count))
+                                                <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full text-gray-500 hover:text-gray-600 text-[0.65rem] font-semibold flex items-center justify-center leading-none antialiased">
+                                                    {{ $cat->products_count > 99 ? '99+' : $cat->products_count }}
+                                                </span>
+                                                @endif
+                                            </a>
+                                         @if(!$loop->last)
+                                            <span class="text-gray-400">•</span>
+                                        @endif
+                                        @endforeach
+                                    </div>
+                                    @if(Auth::id() == $product->user_id)
+                                        <div class="mt-3">
+                                            <a href="{{ route('products.edit', $product->id) }}" class="text-sm text-blue-600 hover:underline font-medium">
+                                                Edit Product
+                                            </a>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </article>
                 @endforeach
