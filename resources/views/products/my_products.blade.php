@@ -4,10 +4,6 @@
     My Submitted Products
 @endsection
 
-@section('actions')
-    <x-add-product-button />
-@endsection
-
 @section('content')
     <div class="p-4">
         <div class="flex justify-end mb-4">
