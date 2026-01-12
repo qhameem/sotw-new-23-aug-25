@@ -46,21 +46,23 @@
                         </div>
 
                         <!-- Logo Section -->
-                        <div class="flex-shrink-0 relative">
+                        <div class="flex-shrink-0 relative group">
                             <img :src="logoUrl || '{{ $logo ?? $favicon }}'" alt="{{ $product->name }} logo" class="w-16 h-16 md:w-20 md:h-20 rounded object-cover" loading="lazy" itemprop="image" />
-                            <label class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity rounded text-white text-xs font-bold">
-                                Edit
+                            <label class="absolute -bottom-2 -right-2 bg-white border shadow-sm p-1 rounded-full cursor-pointer hover:bg-gray-50 text-blue-600 transition-colors z-10">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                 <input type="file" class="hidden" @change="uploadLogo">
                             </label>
                         </div>
                         
                         <!-- Main Content Section -->
                         <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h2 x-show="editingField !== 'name'" class="text-base md:text-lg font-bold leading-tight" itemprop="name">
-                                    <a :href="product.link" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url" x-text="product.name"></a>
-                                </h2>
-                                <button x-show="editingField !== 'name'" @click="startEdit('name', product.name)" class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-blue-600 transition-opacity">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-2">
+                                    <h2 x-show="editingField !== 'name'" class="text-base md:text-lg font-bold leading-tight" itemprop="name">
+                                        <a :href="product.link" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url" x-text="product.name"></a>
+                                    </h2>
+                                </div>
+                                <button x-show="editingField !== 'name'" @click="startEdit('name', product.name)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                 </button>
                                 
@@ -74,10 +76,10 @@
                             <div class="mt-2 space-y-4">
                                 <!-- Tagline -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Tagline</p>
-                                        <button x-show="editingField !== 'tagline'" @click="startEdit('tagline', product.tagline)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tagline</p>
+                                        <button x-show="editingField !== 'tagline'" @click="startEdit('tagline', product.tagline)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'tagline'">
@@ -92,10 +94,10 @@
                                 
                                 <!-- Product Page Tagline -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Product Page Tagline</p>
-                                        <button x-show="editingField !== 'product_page_tagline'" @click="startEdit('product_page_tagline', product.product_page_tagline)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Product Page Tagline</p>
+                                        <button x-show="editingField !== 'product_page_tagline'" @click="startEdit('product_page_tagline', product.product_page_tagline)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'product_page_tagline'">
@@ -110,10 +112,10 @@
                                 
                                 <!-- Description -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Description</p>
-                                        <button x-show="editingField !== 'description'" @click="startEdit('description', product.description)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</p>
+                                        <button x-show="editingField !== 'description'" @click="startEdit('description', product.description)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'description'" class="prose prose-sm text-sm max-w-none text-gray-600" itemprop="description" x-html="product.description"></div>
@@ -128,10 +130,10 @@
                                 
                                 <!-- Video URL -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Video URL</p>
-                                        <button x-show="editingField !== 'video_url'" @click="startEdit('video_url', product.video_url)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Video URL</p>
+                                        <button x-show="editingField !== 'video_url'" @click="startEdit('video_url', product.video_url)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'video_url'" class="text-sm text-blue-600 break-all">
@@ -151,10 +153,10 @@
 
                                 <!-- Link -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Link</p>
-                                        <button x-show="editingField !== 'link'" @click="startEdit('link', product.link)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Link</p>
+                                        <button x-show="editingField !== 'link'" @click="startEdit('link', product.link)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'link'" class="text-sm text-blue-600 break-all">
@@ -169,10 +171,10 @@
                                 
                                 <!-- Maker Links -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Maker Links</p>
-                                        <button x-show="editingField !== 'maker_links'" @click="startEdit('maker_links', product.maker_links || [])" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Maker Links</p>
+                                        <button x-show="editingField !== 'maker_links'" @click="startEdit('maker_links', product.maker_links || [])" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'maker_links'" class="flex flex-wrap gap-2">
@@ -202,10 +204,10 @@
                                 
                                 <!-- X Account -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">X Account</p>
-                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_account)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">X Account</p>
+                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_account)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'x_account'" class="text-sm text-gray-700">
@@ -224,10 +226,10 @@
                                 
                                 <!-- Selling Info -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Selling Info</p>
-                                        <button x-show="editingField !== 'selling'" @click="editingField = 'selling'; tempValue = {sell_product: product.sell_product, asking_price: product.asking_price}" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Selling Info</p>
+                                        <button x-show="editingField !== 'selling'" @click="editingField = 'selling'; tempValue = {sell_product: product.sell_product, asking_price: product.asking_price}" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'selling'">
@@ -256,10 +258,10 @@
                                 
                                 <!-- Tech Stacks -->
                                 <div>
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-500">Tech Stacks</p>
-                                        <button x-show="editingField !== 'tech_stacks'" @click="startEdit('tech_stacks', techStacks)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tech Stacks</p>
+                                        <button x-show="editingField !== 'tech_stacks'" @click="startEdit('tech_stacks', techStacks)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'tech_stacks'" class="flex flex-wrap gap-2 mt-1">
@@ -288,10 +290,10 @@
                                 
                                 <!-- Categories Section -->
                                 <div class="mt-4 pt-4 border-t border-gray-100">
-                                    <div class="flex items-center justify-between group/field">
-                                        <p class="text-xs font-semibold text-gray-700">Manage Categories</p>
-                                        <button x-show="editingField !== 'categories'" @click="startEdit('categories', categories)" class="opacity-0 group-hover/field:opacity-100 p-1 text-gray-400 hover:text-blue-600">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Manage Categories</p>
+                                        <button x-show="editingField !== 'categories'" @click="startEdit('categories', categories)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                     </div>
                                     
@@ -346,7 +348,35 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Video and Media (Edit usually happens via main form for now, but we show buttons) -->
+                                <!-- Media Gallery -->
+                                <div class="mt-4 pt-4 border-t border-gray-100">
+                                    <p class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Media Gallery</p>
+                                    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                        <template x-for="item in media" :key="item.id">
+                                            <div class="relative group/media aspect-square bg-gray-100 rounded border overflow-hidden">
+                                                <template x-if="item.type === 'video'">
+                                                    <div class="w-full h-full flex items-center justify-center bg-gray-900">
+                                                        <svg class="w-8 h-8 text-white/50" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.333-5.89a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg>
+                                                    </div>
+                                                </template>
+                                                <template x-if="item.type !== 'video'">
+                                                    <img :src="item.path.startsWith('http') ? item.path : '/storage/' + item.path" :alt="item.alt_text" class="w-full h-full object-cover">
+                                                </template>
+                                                <button @click="removeMedia(item.id)" class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        
+                                        <!-- Add Media Tool -->
+                                        <label class="relative aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-colors group/add">
+                                            <svg class="w-6 h-6 text-gray-300 group-hover/add:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <span class="text-[0.6rem] text-gray-400 mt-1 uppercase">Add</span>
+                                            <input type="file" class="hidden" @change="addMedia">
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div class="pt-4 border-t border-gray-100 flex justify-between items-center">
                                     <div class="text-xs text-gray-500">
                                         <span class="px-2 py-0.5 rounded" :class="product.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" x-text="product.approved ? 'Approved' : 'Pending Approval'"></span>
