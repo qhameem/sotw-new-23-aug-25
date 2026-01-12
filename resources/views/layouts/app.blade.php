@@ -190,13 +190,13 @@
 
     @verbatim
         <script type="application/ld+json">
-                {
-                  "@context": "https://schema.org",
-                  "@type": "WebSite",
-                  "name": "Software on the Web",
-                  "url": "https://www.softwareontheweb.com"
-                }
-                </script>
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "WebSite",
+                      "name": "Software on the Web",
+                      "url": "https://www.softwareontheweb.com"
+                    }
+                    </script>
     @endverbatim
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
@@ -224,7 +224,7 @@
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'"
         :sidebar-sticky="!request()->routeIs('articles.create')"
         :lock-height="request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')"
-        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'">
+        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'" :header-padding="$headerPadding ?? 'px-4'">
         <x-slot:title>
             @hasSection('header-title')
                 @yield('header-title')

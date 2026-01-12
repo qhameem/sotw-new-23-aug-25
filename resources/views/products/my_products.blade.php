@@ -1,11 +1,15 @@
-@extends('layouts.app')
+@extends('layouts.app', ['headerPadding' => 'px-0'])
 
 @section('title')
     My Submitted Products
 @endsection
 
+@section('header-title')
+    My Products
+@endsection
+
 @section('content')
-    <div class="p-4">
+    <div class="py-4 px-0">
         <div class="flex justify-end mb-4">
             <div class="flex items-center space-x-2">
                 <label for="per_page" class="text-sm text-gray-600">Show:</label>
@@ -31,11 +35,11 @@
                         $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
                     @endphp
                     <article x-data="productEditor({ 
-                        product: {{ $product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url']) ? json_encode($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url'])) : 'null' }},
+                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url']), ['logo_url' => $product->logo_url])) }},
                         categories: {{ $product->categories->pluck('id')->toJson() }},
                         tech_stacks: {{ $product->techStacks->pluck('id')->toJson() }},
                         media: {{ $product->media->map->only(['id', 'path', 'type', 'alt_text'])->toJson() }}
-                    })" class="bg-white p-4 md:p-4 border rounded-lg flex flex-col md:flex-row gap-4 md:gap-6 relative group" itemscope itemtype="https://schema.org/Product">
+                    })" @description-updated.window="if($event.detail.id === product.id) tempValue = $event.detail.content" class="bg-white p-4 md:p-4 border rounded-lg flex flex-col md:flex-row gap-4 md:gap-6 relative group" itemscope itemtype="https://schema.org/Product">
                         
                         <!-- Overlay Loading -->
                         <div x-show="loading" class="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
@@ -45,41 +49,50 @@
                             </svg>
                         </div>
 
-                        <!-- Logo Section -->
-                        <div class="flex-shrink-0 relative group">
-                            <img :src="logoUrl || '{{ $logo ?? $favicon }}'" alt="{{ $product->name }} logo" class="w-16 h-16 md:w-20 md:h-20 rounded object-cover" loading="lazy" itemprop="image" />
-                            <label class="absolute -bottom-2 -right-2 bg-white border shadow-sm p-1 rounded-full cursor-pointer hover:bg-gray-50 text-blue-600 transition-colors z-10">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                <input type="file" class="hidden" @change="uploadLogo">
-                            </label>
-                        </div>
-                        
-                        <!-- Main Content Section -->
                         <div class="flex-1">
-                            <div class="flex items-center justify-between mb-1">
-                                <div class="flex items-center gap-2">
-                                    <h2 x-show="editingField !== 'name'" class="text-base md:text-lg font-bold leading-tight" itemprop="name">
-                                        <a :href="product.link" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url" x-text="product.name"></a>
-                                    </h2>
+                            <div class="flex items-stretch gap-4 flex-col md:flex-row mb-4">
+                                <!-- Logo Card -->
+                                <div class="flex flex-col items-center justify-center border border-gray-100 rounded-lg p-3 bg-white shadow-sm min-w-[120px]">
+                                    <div class="relative group mb-2">
+                                        <img :src="product.logo_url" alt="" class="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-gray-50" itemprop="image">
+                                    </div>
+                                    <label class="text-blue-600 hover:text-blue-800 text-[0.65rem] font-bold uppercase tracking-wider cursor-pointer">
+                                        Replace
+                                        <input type="file" class="hidden" @change="uploadLogo">
+                                    </label>
                                 </div>
-                                <button x-show="editingField !== 'name'" @click="startEdit('name', product.name)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                </button>
                                 
-                                <div x-show="editingField === 'name'" class="flex items-center gap-2 w-full">
-                                    <input type="text" x-model="tempValue" class="text-base md:text-lg font-bold border-gray-300 rounded px-2 py-1 w-full focus:ring-blue-500 focus:border-blue-500">
-                                    <button @click="save('name')" class="p-1 text-green-600 hover:bg-green-50 rounded"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                    <button @click="cancelEdit()" class="p-1 text-red-600 hover:bg-red-50 rounded"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                <!-- Name Card -->
+                                <div class="flex-1 flex items-center justify-between border border-gray-100 rounded-lg p-4 bg-gray-50/30 shadow-sm relative">
+                                    <div class="flex flex-col">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider mb-1">Product Name</p>
+                                        <div class="flex items-center gap-2">
+                                            <h2 x-show="editingField !== 'name'" class="text-lg md:text-xl font-bold leading-tight" itemprop="name">
+                                                <a :href="product.link" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url" x-text="product.name"></a>
+                                            </h2>
+                                        </div>
+                                    </div>
+                                    <button x-show="editingField !== 'name'" @click="startEdit('name', product.name)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                        Edit
+                                    </button>
+                                    
+                                    <div x-show="editingField === 'name'" class="flex items-center gap-2 w-full">
+                                        <input type="text" x-model="tempValue" class="text-base md:text-lg font-bold border-gray-300 rounded px-2 py-1 w-full focus:ring-blue-500 focus:border-blue-500">
+                                        <div class="flex gap-1">
+                                            <button @click="save('name')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">Save</button>
+                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="mt-2 space-y-4">
+                            <div class="grid grid-cols-1 gap-4">
                                 <!-- Tagline -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tagline</p>
-                                        <button x-show="editingField !== 'tagline'" @click="startEdit('tagline', product.tagline)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Tagline</p>
+                                        <button x-show="editingField !== 'tagline'" @click="startEdit('tagline', product.tagline)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'tagline'">
@@ -87,17 +100,17 @@
                                     </div>
                                     <div x-show="editingField === 'tagline'" class="flex items-center gap-2 mt-1">
                                         <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full">
-                                        <button @click="save('tagline')" class="text-green-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                        <button @click="cancelEdit()" class="text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                        <button @click="save('tagline')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
+                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
                                 </div>
                                 
                                 <!-- Product Page Tagline -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Product Page Tagline</p>
-                                        <button x-show="editingField !== 'product_page_tagline'" @click="startEdit('product_page_tagline', product.product_page_tagline)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Product Page Tagline</p>
+                                        <button x-show="editingField !== 'product_page_tagline'" @click="startEdit('product_page_tagline', product.product_page_tagline)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'product_page_tagline'">
@@ -105,35 +118,59 @@
                                     </div>
                                     <div x-show="editingField === 'product_page_tagline'" class="flex items-center gap-2 mt-1">
                                         <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="Enter product page tagline">
-                                        <button @click="save('product_page_tagline')" class="text-green-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                        <button @click="cancelEdit()" class="text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                        <button @click="save('product_page_tagline')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
+                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
                                 </div>
                                 
                                 <!-- Description -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</p>
-                                        <button x-show="editingField !== 'description'" @click="startEdit('description', product.description)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="md:col-span-2 border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Description</p>
+                                        <button x-show="editingField !== 'description'" @click="startEdit('description', product.description)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'description'" class="prose prose-sm text-sm max-w-none text-gray-600" itemprop="description" x-html="product.description"></div>
-                                    <div x-show="editingField === 'description'" class="mt-1">
-                                        <textarea x-model="tempValue" rows="4" class="text-sm border-gray-300 rounded px-2 py-1 w-full focus:ring-blue-500 focus:border-blue-500"></textarea>
-                                        <div class="flex justify-end gap-2 mt-1">
-                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
-                                            <button @click="save('description')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">Save Description</button>
+                                    <div x-show="editingField === 'description'" class="mt-1"
+                                        x-init="$watch('editingField', value => { 
+                                            if (value === 'description') {
+                                                $nextTick(() => {
+                                                    const editorId = 'editor-' + product.id;
+                                                    if (window.Quill) {
+                                                        const quill = new Quill('#' + editorId, {
+                                                            theme: 'snow',
+                                                            modules: { 
+                                                                toolbar: [
+                                                                    [{ 'header': [2, 3, false] }],
+                                                                    ['bold', 'italic', 'underline'],
+                                                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                                    ['link', 'clean']
+                                                                ] 
+                                                            }
+                                                        });
+                                                        quill.root.innerHTML = tempValue;
+                                                        quill.on('text-change', () => {
+                                                            $dispatch('description-updated', { id: product.id, content: quill.root.innerHTML });
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                        })">
+                                        <div :id="'editor-' + product.id" class="bg-white" style="height: 200px;"></div>
+                                        <div class="flex justify-end gap-2 mt-2">
+                                            <button @click="cancelEdit()" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
+                                            <button @click="save('description')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">Save Changes</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Video URL -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Video URL</p>
-                                        <button x-show="editingField !== 'video_url'" @click="startEdit('video_url', product.video_url)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Video URL</p>
+                                        <button x-show="editingField !== 'video_url'" @click="startEdit('video_url', product.video_url)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'video_url'" class="text-sm text-blue-600 break-all">
@@ -146,17 +183,17 @@
                                     </p>
                                     <div x-show="editingField === 'video_url'" class="flex items-center gap-2 mt-1">
                                         <input type="url" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="https://youtube.com/...">
-                                        <button @click="save('video_url')" class="text-green-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                        <button @click="cancelEdit()" class="text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                        <button @click="save('video_url')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
+                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
                                 </div>
-
+                                
                                 <!-- Link -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Link</p>
-                                        <button x-show="editingField !== 'link'" @click="startEdit('link', product.link)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Link</p>
+                                        <button x-show="editingField !== 'link'" @click="startEdit('link', product.link)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'link'" class="text-sm text-blue-600 break-all">
@@ -164,17 +201,17 @@
                                     </p>
                                     <div x-show="editingField === 'link'" class="flex items-center gap-2 mt-1">
                                         <input type="url" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full">
-                                        <button @click="save('link')" class="text-green-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                        <button @click="cancelEdit()" class="text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                        <button @click="save('link')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
+                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
                                 </div>
                                 
                                 <!-- Maker Links -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Maker Links</p>
-                                        <button x-show="editingField !== 'maker_links'" @click="startEdit('maker_links', product.maker_links || [])" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Maker Links</p>
+                                        <button x-show="editingField !== 'maker_links'" @click="startEdit('maker_links', product.maker_links || [])" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'maker_links'" class="flex flex-wrap gap-2">
@@ -195,19 +232,19 @@
                                         <div class="flex justify-between items-center">
                                             <button @click="tempValue.push('')" class="text-xs font-medium text-blue-600 hover:underline">+ Add link</button>
                                             <div class="flex gap-2">
-                                                <button @click="cancelEdit()" class="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                                <button @click="save('maker_links')" class="px-2 py-0.5 text-xs text-white bg-blue-600 rounded">Save</button>
+                                                <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
+                                                <button @click="save('maker_links')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- X Account -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">X Account</p>
-                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_account)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">X Account</p>
+                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_account)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'x_account'" class="text-sm text-gray-700">
@@ -219,17 +256,17 @@
                                             <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
                                             <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded pl-6 pr-2 py-1 w-full" placeholder="username">
                                         </div>
-                                        <button @click="save('x_account')" class="text-green-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
-                                        <button @click="cancelEdit()" class="text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                        <button @click="save('x_account')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
+                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
                                 </div>
                                 
                                 <!-- Selling Info -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Selling Info</p>
-                                        <button x-show="editingField !== 'selling'" @click="editingField = 'selling'; tempValue = {sell_product: product.sell_product, asking_price: product.asking_price}" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Selling Info</p>
+                                        <button x-show="editingField !== 'selling'" @click="editingField = 'selling'; tempValue = {sell_product: product.sell_product, asking_price: product.asking_price}" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'selling'">
@@ -250,18 +287,18 @@
                                             <input type="number" x-model="tempValue.asking_price" step="0.01" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="Asking price">
                                         </div>
                                         <div class="flex justify-end gap-2">
-                                            <button @click="cancelEdit()" class="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                            <button @click="saveSelling()" class="px-2 py-0.5 text-xs text-white bg-blue-600 rounded">Save</button>
+                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
+                                            <button @click="saveSelling()" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Tech Stacks -->
-                                <div>
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tech Stacks</p>
-                                        <button x-show="editingField !== 'tech_stacks'" @click="startEdit('tech_stacks', techStacks)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Tech Stacks</p>
+                                        <button x-show="editingField !== 'tech_stacks'" @click="startEdit('tech_stacks', techStacks)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     <div x-show="editingField !== 'tech_stacks'" class="flex flex-wrap gap-2 mt-1">
@@ -282,18 +319,18 @@
                                             @endforeach
                                         </div>
                                         <div class="flex justify-end gap-2 mt-2">
-                                            <button @click="cancelEdit()" class="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                            <button @click="save('tech_stacks')" class="px-2 py-0.5 text-xs text-white bg-blue-600 rounded">Save</button>
+                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
+                                            <button @click="save('tech_stacks')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Categories Section -->
-                                <div class="mt-4 pt-4 border-t border-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Manage Categories</p>
-                                        <button x-show="editingField !== 'categories'" @click="startEdit('categories', categories)" class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <div class="md:col-span-2 mt-2 border border-blue-50 bg-blue-50/10 rounded-lg p-4 shadow-sm">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-[0.7rem] font-bold text-blue-800 uppercase tracking-wider">Manage Categories</p>
+                                        <button x-show="editingField !== 'categories'" @click="startEdit('categories', categories)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Edit
                                         </button>
                                     </div>
                                     
@@ -349,9 +386,9 @@
                                 </div>
                                 
                                 <!-- Media Gallery -->
-                                <div class="mt-4 pt-4 border-t border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Media Gallery</p>
-                                    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                <div class="md:col-span-2 border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
+                                    <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider mb-3">Media Gallery</p>
+                                    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                                         <template x-for="item in media" :key="item.id">
                                             <div class="relative group/media aspect-square bg-gray-100 rounded border overflow-hidden">
                                                 <template x-if="item.type === 'video'">
@@ -376,9 +413,10 @@
                                         </label>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="pt-4 border-t border-gray-100 flex justify-between items-center">
-                                    <div class="text-xs text-gray-500">
+                            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
+                                <div class="flex items-center gap-3">
                                         <span class="px-2 py-0.5 rounded" :class="product.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" x-text="product.approved ? 'Approved' : 'Pending Approval'"></span>
                                     </div>
                                     <a :href="'/products/' + product.id + '/edit'" class="text-xs text-blue-600 hover:underline font-bold">Standard Edit Form &rarr;</a>
@@ -528,7 +566,7 @@
 
                         const data = await response.json();
                         if (data.success) {
-                            this.logoUrl = data.logo_url;
+                            this.product.logo_url = data.logo_url;
                             if (data.message.includes('review')) alert(data.message);
                         } else {
                             alert(data.message || 'Upload failed');
@@ -597,4 +635,15 @@
             };
         }
     </script>
+@push('styles')
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        .ql-toolbar.ql-snow { border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; background: #f9fafb; border-color: #d1d5db; }
+        .ql-container.ql-snow { border-bottom-left-radius: 0.375rem; border-bottom-right-radius: 0.375rem; border-color: #d1d5db; }
+    </style>
+@endpush
+
+@push('scripts')
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+@endpush
 @endsection

@@ -1,4 +1,4 @@
-@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false])
+@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false, 'headerPadding' => 'px-4'])
 
 <x-top-bar />
 
@@ -16,7 +16,7 @@
             ])>
                 <div class="flex-shrink-0">
                     <div class="h-[75px] md:hidden w-full"></div>
-                    <x-page-header>
+                    <x-page-header :padding="$headerPadding">
                         <x-slot:title>
                             {!! $title !!}
                         </x-slot:title>
