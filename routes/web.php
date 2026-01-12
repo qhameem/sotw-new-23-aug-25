@@ -28,6 +28,7 @@ use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\TodoListController;
 use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
+use App\Http\Controllers\ProductInlineUpdateController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\VideoController;
 
@@ -58,6 +59,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
     Route::get('/my-products', [ProductController::class, 'myProducts'])->name('products.my');
+    Route::patch('/products/{product}/inline-update', [ProductInlineUpdateController::class, 'update'])->name('products.inline-update');
+    Route::post('/products/{product}/inline-update-logo', [ProductInlineUpdateController::class, 'updateLogo'])->name('products.inline-update-logo');
+    Route::post('/products/{product}/add-media', [ProductInlineUpdateController::class, 'addMedia'])->name('products.add-media');
+    Route::delete('/products/{product}/remove-media/{media}', [ProductInlineUpdateController::class, 'removeMedia'])->name('products.remove-media');
     Route::get('/submission-success/{product}', [ProductController::class, 'showSubmissionSuccess'])->name('products.submission.success');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');

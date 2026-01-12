@@ -335,7 +335,7 @@ class ProductController extends Controller
         $product->load(['categories', 'proposedCategories', 'techStacks']);
 
         $oldInput = session()->getOldInput();
-        
+
         if ($product->approved && $product->has_pending_edits) {
             // When there are pending edits, use proposed values
             $displayData = [
@@ -375,7 +375,7 @@ class ProductController extends Controller
         }
 
         $types = Type::with('categories')->get();
-        
+
         // Get the selected bestFor categories to pass to the JavaScript component
         $selectedBestForCategories = $product->categories()
             ->whereHas('types', function ($query) {
@@ -1363,6 +1363,8 @@ class ProductController extends Controller
             'products' => $myProducts,
             'perPage' => $perPage,
             'allowedPerPages' => $allowedPerPages,
+            'allCategories' => Category::orderBy('name')->get(),
+            'allTechStacks' => TechStack::orderBy('name')->get(),
         ]);
     }
 
