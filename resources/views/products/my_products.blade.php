@@ -174,23 +174,62 @@
                                             {{ $product->approved ? 'Approved' : 'Pending Approval' }}
                                         </span>
                                     </div>
-                                    <div class="mt-1 flex flex-wrap gap-2 items-center">
-                                        @foreach($product->categories as $cat)
-                                        <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
-                                               @click.stop
-                                               class="hidden sm:block inline-flex items-center text-gray-600  hover:text-gray-800 rounded text-[0.65rem]">
-                                                <span class="px-0 py-0 hover:underline">{{ $cat->name }}</span>
-                                                @if(isset($cat->products_count))
-                                                <span class="ml-1.5 mr-2 h-5 w-5 min-w-[1.25rem] rounded-full text-gray-500 hover:text-gray-600 text-[0.65rem] font-semibold flex items-center justify-center leading-none antialiased">
-                                                    {{ $cat->products_count > 99 ? '99+' : $cat->products_count }}
-                                                </span>
-                                                @endif
-                                            </a>
-                                         @if(!$loop->last)
-                                            <span class="text-gray-400">•</span>
-                                        @endif
-                                        @endforeach
+                                    @php
+                                        $pricingCats = $product->categories->filter(fn($cat) => $cat->types->contains('name', 'Pricing'));
+                                        $bestForCats = $product->categories->filter(fn($cat) => $cat->types->contains('name', 'Best for'));
+                                        $softwareCats = $product->categories->filter(fn($cat) => 
+                                            $cat->types->contains('name', 'Software Categories') || 
+                                            (!$cat->types->contains('name', 'Pricing') && !$cat->types->contains('name', 'Best for'))
+                                        );
+                                    @endphp
+
+                                    @if($softwareCats->isNotEmpty())
+                                    <div class="mt-3">
+                                        <p class="text-xs font-semibold text-gray-500">Category</p>
+                                        <div class="mt-1 flex flex-wrap gap-2 items-center">
+                                            @foreach($softwareCats as $cat)
+                                                <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
+                                                   @click.stop
+                                                   class="text-gray-600 hover:text-gray-800 rounded text-[0.65rem] hover:underline">
+                                                    {{ $cat->name }}
+                                                </a>
+                                                @if(!$loop->last) <span class="text-gray-400">•</span> @endif
+                                            @endforeach
+                                        </div>
                                     </div>
+                                    @endif
+
+                                    @if($pricingCats->isNotEmpty())
+                                    <div class="mt-3">
+                                        <p class="text-xs font-semibold text-gray-500">Pricing Category</p>
+                                        <div class="mt-1 flex flex-wrap gap-2 items-center">
+                                            @foreach($pricingCats as $cat)
+                                                <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
+                                                   @click.stop
+                                                   class="text-gray-600 hover:text-gray-800 rounded text-[0.65rem] hover:underline">
+                                                    {{ $cat->name }}
+                                                </a>
+                                                @if(!$loop->last) <span class="text-gray-400">•</span> @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if($bestForCats->isNotEmpty())
+                                    <div class="mt-3">
+                                        <p class="text-xs font-semibold text-gray-500">Best for</p>
+                                        <div class="mt-1 flex flex-wrap gap-2 items-center">
+                                            @foreach($bestForCats as $cat)
+                                                <a href="{{ route('categories.show', ['category' => $cat->slug]) }}"
+                                                   @click.stop
+                                                   class="text-gray-600 hover:text-gray-800 rounded text-[0.65rem] hover:underline">
+                                                    {{ $cat->name }}
+                                                </a>
+                                                @if(!$loop->last) <span class="text-gray-400">•</span> @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
                                     @if(Auth::id() == $product->user_id)
                                         <div class="mt-3">
                                             <a href="{{ route('products.edit', $product->id) }}" class="text-sm text-blue-600 hover:underline font-medium">
