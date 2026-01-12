@@ -1,4 +1,4 @@
-@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false, 'headerPadding' => 'px-4'])
+@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false, 'headerPadding' => 'px-4', 'mainPadding' => 'pl-6'])
 
 <x-top-bar />
 
@@ -9,7 +9,8 @@
         <div @class(['flex flex-col md:flex-row flex-1 md:overflow-hidden w-full mx-auto', $containerMaxWidth])>
             <!-- Main Content -->
             <main @class([
-                'flex-1 w-full order-1 md:order-2 pl-6 md:pt-14 min-h-0',
+                'flex-1 w-full order-1 md:order-2 md:pt-14 min-h-0',
+                $mainPadding,
                 $mainContentMaxWidth,
                 'md:flex md:flex-col md:h-full' => $lockHeight,
                 'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')

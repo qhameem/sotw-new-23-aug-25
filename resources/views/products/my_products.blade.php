@@ -1,4 +1,4 @@
-@extends('layouts.app', ['headerPadding' => 'px-0'])
+@extends('layouts.app', ['headerPadding' => 'px-0', 'mainPadding' => 'pl-0'])
 
 @section('title')
     My Submitted Products
@@ -86,7 +86,7 @@
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-1 gap-4">
+                            <div class="flex flex-col gap-4">
                                 <!-- Tagline -->
                                 <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
                                     <div class="flex items-center justify-between mb-2">
