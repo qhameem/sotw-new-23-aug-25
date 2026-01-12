@@ -32,7 +32,7 @@
         }"
         class="w-full flex justify-center py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-50"
       >
-        <span v-if="!isLoading">Schedule Priority Launch – $29</span>
+        <span v-if="!isLoading">{{ isEditMode ? 'Save changes' : 'Schedule Priority Launch – $29' }}</span>
         <span v-else class="flex items-center">
           <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -86,6 +86,10 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true
+  },
+  isEditMode: {
+    type: Boolean,
+    default: false
   }
 });
 

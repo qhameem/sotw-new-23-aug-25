@@ -143,7 +143,25 @@
       
       <!-- Pricing Options / Save Button -->
       <section class="max-w-4xl">
-        <div v-if="!isAdmin">
+        <!-- Show save button only when editing an existing product (has ID) -->
+        <div v-if="!!modelValue.id && !isAdmin" class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
+          <p class="text-sm text-gray-600 mb-6">You can save your edits directly without selecting a pricing option.</p>
+          <div class="flex flex-col items-start gap-4">
+            <div v-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
+              Note: Some required fields are missing, but you can still save.
+            </div>
+            <button
+              @click="$emit('submit')"
+              class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+            >
+              Save All Changes
+            </button>
+          </div>
+        </div>
+        
+        <!-- Show pricing options only when creating a new product (no ID) -->
+        <div v-else-if="!isAdmin">
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Pricing Options</h3>
           <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
             {{ progress.completed }} of {{ progress.total }} total required fields filled
@@ -158,6 +176,7 @@
               value="free"
               :modelValue="selectedPricingOption"
               :isAllRequiredFilled="isAllRequiredFilled"
+              :isEditMode="!!modelValue.id"
               @update:modelValue="selectedPricingOption = $event"
               title="Free Submission"
               price="$0"
@@ -172,6 +191,7 @@
               value="paid"
               :modelValue="selectedPricingOption"
               :isAllRequiredFilled="isAllRequiredFilled"
+              :isEditMode="!!modelValue.id"
               @update:modelValue="selectedPricingOption = $event"
               title="Paid Submission"
               price="$29"
@@ -181,6 +201,7 @@
             />
           </div>
         </div>
+        
         <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
           <p class="text-sm text-gray-600 mb-6">As an admin, you can save your edits directly without selecting a pricing option.</p>

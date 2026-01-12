@@ -442,12 +442,36 @@ class ProductController extends Controller
         $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
+            // Return JSON response for API calls
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one category from the Pricing group.',
+                    'errors' => ['categories' => ['Please select at least one category from the Pricing group.']]
+                ], 422);
+            }
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
+            // Return JSON response for API calls
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one category from the Software Categories group.',
+                    'errors' => ['categories' => ['Please select at least one category from the Software Categories group.']]
+                ], 422);
+            }
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
         if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
+            // Return JSON response for API calls
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one category from the Best for group.',
+                    'errors' => ['categories' => ['Please select at least one category from the Best for group.']]
+                ], 422);
+            }
             return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
         }
 
@@ -512,6 +536,16 @@ class ProductController extends Controller
             $product->has_pending_edits = true;
             $product->save(); // Save these specific fields and the flag
 
+            // Return JSON response for API calls
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Your proposed edits have been submitted for review.',
+                    'product_id' => $product->id,
+                    'redirect_url' => route('products.my')
+                ]);
+            }
+
             return redirect()->route('products.my')->with('success', 'Your proposed edits have been submitted for review.');
 
         } else {
@@ -545,6 +579,16 @@ class ProductController extends Controller
             $product->categories()->sync($newCategories);
             $product->techStacks()->sync($newTechStacks);
             // 'approved' status remains false as it's handled by admin
+
+            // Return JSON response for API calls
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product updated successfully. It is awaiting approval.',
+                    'product_id' => $product->id,
+                    'redirect_url' => route('products.my')
+                ]);
+            }
 
             return redirect()->route('products.my')->with('success', 'Product updated successfully. It is awaiting approval.');
         }

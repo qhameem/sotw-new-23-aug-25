@@ -164,3 +164,110 @@ After applying the fix:
 4. Test with products that don't have pending edits
 5. Verify form submission still works properly
 6. Confirm consistent behavior between user and admin edit flows
+
+## Additional Issue Found
+
+The "Launch" tab button should show "Save changes" instead of "Submit for Free" when users land on the product edit form. The submit buttons are only for creating or adding a new product.
+
+## Solution Applied
+
+Modified the FreeSubmissionOption and PaidSubmissionOption components to accept an `isEditMode` prop and conditionally display the appropriate text:
+
+1. Added `isEditMode` prop to both FreeSubmissionOption.vue and PaidSubmissionOption.vue components
+2. Updated the button text to show "Save changes" when in edit mode, and the original text when in create mode
+3. Updated LaunchChecklistForm.vue to pass the `isEditMode` prop based on whether the form has an ID (indicating edit mode)
+
+## Changes Made
+
+```javascript
+// FreeSubmissionOption.vue - Updated button text to conditionally show appropriate text
+<span v-if="!isLoading">{{ isEditMode ? 'Save changes' : 'Submit for Free' }}</span>
+
+// PaidSubmissionOption.vue - Updated button text to conditionally show appropriate text
+<span v-if="!isLoading">{{ isEditMode ? 'Save changes' : 'Schedule Priority Launch – $29' }}</span>
+
+// LaunchChecklistForm.vue - Pass isEditMode prop based on form ID
+:isEditMode="!!modelValue.id"
+```
+
+## Impact
+
+- When users are on the product edit form (form has an ID), the buttons now show "Save changes" instead of "Submit for Free" or "Schedule Priority Launch – $29"
+- When users are creating a new product (form has no ID), the buttons show the original text
+- Maintains consistent behavior between user and admin edit flows
+- Improves user experience by using appropriate terminology for edit vs create actions
+
+## Additional Issue Found (Second Round)
+
+1. The "Save Changes" button was not appearing as expected in some cases
+2. The pricing options section was still visible during product edits when it should be hidden
+
+## Solution Applied (Second Round)
+
+1. Restructured the LaunchChecklistForm.vue component to conditionally show different content based on the form state:
+   - When editing an existing product (form has an ID) and user is not admin: Show only the "Save Changes" button without pricing options
+   - When creating a new product (form has no ID) and user is not admin: Show the pricing options as before
+   - When user is admin: Show the admin-specific save functionality as before
+
+## Changes Made (Second Round)
+
+```javascript
+// LaunchChecklistForm.vue - Restructured the conditional rendering
+// Show save button only when editing an existing product (has ID) and not admin
+<div v-if="!!modelValue.id && !isAdmin" class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+  <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
+  <p class="text-sm text-gray-600 mb-6">You can save your edits directly without selecting a pricing option.</p>
+  <div class="flex flex-col items-start gap-4">
+    <div v-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
+      Note: Some required fields are missing, but you can still save.
+    </div>
+    <button
+      @click="$emit('submit')"
+      class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+    >
+      Save All Changes
+    </button>
+  </div>
+</div>
+
+// Hide pricing options when editing (only show when creating new product)
+<div v-else-if="!isAdmin">
+  <!-- Original pricing options content -->
+</div>
+```
+
+## Impact (Second Round)
+
+- When users are editing an existing product, only the "Save Changes" button is shown without pricing options
+- When users are creating a new product, the pricing options are shown as before
+- The save button is always enabled for edit mode, allowing users to save their changes regardless of form completeness
+- Maintains admin functionality as before
+
+## Additional Issue Found (Third Round)
+
+After implementing the changes, clicking the Save All Changes button resulted in a "Method Not Allowed" error, with the GET method not being supported for route products/submission-success.
+
+## Solution Applied (Third Round)
+
+Fixed the redirect logic by updating the ProductController's update method to properly handle API requests. The update method now returns JSON responses with redirect URLs when called via AJAX, similar to the store method.
+
+## Changes Made (Third Round)
+
+```php
+// Added API response handling to the update method in ProductController
+if ($request->wantsJson() || $request->ajax()) {
+    return response()->json([
+        'success' => true,
+        'message' => 'Your proposed edits have been submitted for review.',
+        'product_id' => $product->id,
+        'redirect_url' => route('products.my')
+    ]);
+}
+```
+
+## Impact (Third Round)
+
+- When users save changes to an existing product, the API request now properly returns JSON with redirect information
+- The JavaScript code can now properly redirect to the user's products page after a successful update
+- This prevents the "Method Not Allowed" error by ensuring proper handling of AJAX requests
+- The fix maintains consistency between create and update operations
