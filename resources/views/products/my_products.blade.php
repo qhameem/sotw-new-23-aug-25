@@ -1,15 +1,13 @@
-@extends('layouts.app', ['headerPadding' => 'px-0', 'mainPadding' => 'pl-0'])
+@extends('layouts.app')
 
-@section('title')
-    My Submitted Products
-@endsection
+@section('title', 'My Products | Software on the Web')
 
 @section('header-title')
-    My Products
+<h2 class="text-base font-semibold py-[3px] hidden md:block">My Products</h2>
 @endsection
 
 @section('content')
-    <div class="py-4 px-0">
+    <div class="p-4">
         <div class="flex justify-end mb-4">
             <div class="flex items-center space-x-2">
                 <label for="per_page" class="text-sm text-gray-600">Show:</label>
@@ -56,7 +54,7 @@
                                     <div class="relative group mb-2">
                                         <img :src="product.logo_url" alt="" class="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-gray-50" itemprop="image">
                                     </div>
-                                    <label class="text-blue-600 hover:text-blue-800 text-[0.65rem] font-bold uppercase tracking-wider cursor-pointer">
+                                    <label class="text-blue-600 hover:text-blue-800 text-[0.65rem] font-bold tracking-wider cursor-pointer text-center">
                                         Replace
                                         <input type="file" class="hidden" @change="uploadLogo">
                                     </label>
@@ -86,7 +84,7 @@
                                 </div>
                             </div>
                             
-                            <div class="flex flex-col gap-4">
+                            <div class="flex flex-col gap-4 w-full">
                                 <!-- Tagline -->
                                 <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
                                     <div class="flex items-center justify-between mb-2">
@@ -422,7 +420,6 @@
                                     <a :href="'/products/' + product.id + '/edit'" class="text-xs text-blue-600 hover:underline font-bold">Standard Edit Form &rarr;</a>
                                 </div>
                             </div>
-                        </div>
                     </article>
                 @endforeach
             </div>
