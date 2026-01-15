@@ -12,6 +12,7 @@ const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
 export function useProductForm() {
   const isAdmin = globalFormState.isAdmin;
   const submissionBgUrl = globalFormState.submissionBgUrl;
+  const extractionErrors = globalFormState.extractionErrors;
   const form = sharedForm;
   const loadingStates = sharedLoadingStates;
   const sidebarSteps = [...globalFormState.sidebarSteps];
@@ -452,6 +453,7 @@ export function useProductForm() {
     }
 
     loadingStates.name = true;
+    extractionErrors.name = '';
     globalFormState.isLoading.value = true;
 
     try {
@@ -474,6 +476,7 @@ export function useProductForm() {
     } catch (error) {
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
+      extractionErrors.name = 'Failed to extract name and taglines.';
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
       globalFormState.isLoading.value = false;
@@ -509,15 +512,20 @@ export function useProductForm() {
 
     if (shouldFetchContent) {
       loadingStates.description = true;
+      extractionErrors.tagline = '';
+      extractionErrors.description = '';
       console.log('Setting description loading state to true');
     }
     if (shouldFetchCategoriesAndBestFor) {
       loadingStates.categories = true;
       loadingStates.bestFor = true;
+      extractionErrors.categories = '';
+      extractionErrors.bestFor = '';
       console.log('Setting categories and bestFor loading states to true');
     }
     if (shouldFetchLogos) {
       loadingStates.logos = true;
+      extractionErrors.logos = '';
       console.log('Setting logos loading state to true');
     }
 
@@ -574,6 +582,15 @@ export function useProductForm() {
       const isTimeoutError = error.code === 'ECONNABORTED' || (error.response && error.response.status === 408);
 
       // Only show error message if this is during active form filling, not during restoration
+      if (shouldFetchContent) {
+        extractionErrors.tagline = 'Failed to extract taglines.';
+        extractionErrors.description = 'Failed to extract description.';
+      }
+      if (shouldFetchCategoriesAndBestFor) {
+        extractionErrors.categories = 'Failed to extract categories.';
+        extractionErrors.bestFor = 'Failed to extract "best for" labels.';
+      }
+
       if (shouldFetchContent || shouldFetchCategoriesAndBestFor) {
         showErrorMessage.value = true;
         if (isTimeoutError) {
@@ -585,6 +602,7 @@ export function useProductForm() {
       // Still allow the form to continue working even if data fetching fails
       // Make sure to log any specific error for logo extraction to help with debugging
       if (shouldFetchLogos) {
+        extractionErrors.logos = 'Failed to extract logos.';
         console.error('Error during logo extraction:', error.message || error);
       }
     } finally {
@@ -1051,6 +1069,7 @@ export function useProductForm() {
     existingProduct: globalFormState.existingProduct,
     showPreviewModal: globalFormState.showPreviewModal,
     submissionBgUrl: globalFormState.submissionBgUrl,
+    extractionErrors: globalFormState.extractionErrors,
     loadingStates,
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,

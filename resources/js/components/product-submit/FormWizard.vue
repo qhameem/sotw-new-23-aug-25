@@ -66,6 +66,8 @@
               :allCategories="allCategories"
               :allBestFor="allBestFor"
               :allPricing="allPricing"
+              :loadingStates="loadingStates"
+              :extractionErrors="extractionErrors"
               @next="goToNextStep('imagesAndMedia')"
               @back="goBack"
             />

@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import axios from 'axios';
 
 /**
@@ -59,6 +59,14 @@ export const createProductFormState = () => {
     existingProduct: ref(null),
     showPreviewModal: ref(false),
     submissionBgUrl: ref(''),
+    extractionErrors: reactive({
+      name: '',
+      tagline: '',
+      description: '',
+      categories: '',
+      bestFor: '',
+      logos: '',
+    }),
     loadingStates: { ...initialLoadingStates },
     logoPreview: ref(null),
     galleryPreviews: ref(Array(3).fill(null)),

@@ -19,8 +19,15 @@
             <span class="text-sm text-gray-400">{{ (modelValue.name || '').length }}/40</span>
           </div>
           <div class="relative">
-            <input ref="nameInput" type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm">
+            <input ref="nameInput" type="text" id="name" :value="modelValue.name" @input="updateProductName($event.target.value)" maxlength="40" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm" :class="{'opacity-50 pointer-events-none': loadingStates.name}">
+            <div v-if="loadingStates.name" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
           </div>
+          <p v-if="extractionErrors.name" class="mt-1 text-xs text-red-500">{{ extractionErrors.name }}</p>
           <!-- URL slug displayed directly below the name field -->
           <div class="group relative mt-2 text-xs text-gray-600 inline-block">
             softwareontheweb.com/{{ generatedSlug }}
@@ -40,8 +47,15 @@
               <span class="text-sm text-gray-400">{{ (modelValue.tagline || '').length }}/60</span>
           </div>
           <div class="relative">
-            <textarea id="tagline" :value="modelValue.tagline" @input="updateField('tagline', $event.target.value)" maxlength="60" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[5em]"></textarea>
+            <textarea id="tagline" :value="modelValue.tagline" @input="updateField('tagline', $event.target.value)" maxlength="60" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[5em]" :class="{'opacity-50 pointer-events-none': loadingStates.name}"></textarea>
+            <div v-if="loadingStates.name" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
           </div>
+          <p v-if="extractionErrors.tagline" class="mt-1 text-xs text-red-500">{{ extractionErrors.tagline }}</p>
         </div>
         <div class="relative z-10">
           <div class="flex justify-between items-center">
@@ -52,17 +66,29 @@
             <span class="text-sm text-gray-400">{{ (modelValue.tagline_detailed || '').length }}/160</span>
           </div>
           <div class="relative">
-            <textarea id="tagline_detailed" data-field="tagline_detailed" :value="modelValue.tagline_detailed" @input="updateField('tagline_detailed', $event.target.value)" maxlength="160" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[6em]"></textarea>
+            <textarea id="tagline_detailed" data-field="tagline_detailed" :value="modelValue.tagline_detailed" @input="updateField('tagline_detailed', $event.target.value)" maxlength="160" rows="3" class="mt-1 block w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm min-h-[6em]" :class="{'opacity-50 pointer-events-none': loadingStates.name}"></textarea>
+            <div v-if="loadingStates.name" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
           </div>
+          <p v-if="extractionErrors.tagline" class="mt-1 text-xs text-red-500">{{ extractionErrors.tagline }}</p>
         </div>
       </div>
       
-      <div class="relative shadow-sm focus-within:ring-1 focus-within:ring-sky-400 focus-within:ring-offset-0 rounded-md">
+      <div class="relative shadow-sm focus-within:ring-1 focus-within:ring-sky-400 focus-within:ring-offset-0 rounded-md" :class="{'opacity-50 pointer-events-none': loadingStates.description}">
         <div class="flex items-center">
           <label for="description" class="block text-sm font-semibold text-gray-700">Description <span class="text-red-500">*</span></label>
           <Tooltip content="Provide a detailed description of your product. This will appear on the product page and help users understand what your product does." />
+          <svg v-if="loadingStates.description" class="animate-spin h-4 w-4 text-sky-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
         </div>
         <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" :maxLength="1200" />
+        <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
       </div>
       
       <hr class="border-t border-gray-200 my-6">
@@ -133,21 +159,31 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="relative">
           <div class="flex justify-between items-center mb-1">
-            <div class="flex items-center">
+           <div class="flex items-center">
               <label class="block text-sm font-semibold text-gray-700">Category <span class="text-red-500">*</span></label>
               <Tooltip content="Select the main categories that best describe your product. This helps users find your product through filtering." />
+              <svg v-if="loadingStates.categories" class="animate-spin h-4 w-4 text-sky-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
             </div>
           </div>
-          <SearchableDropdown :items="allCategories" :modelValue="modelValue.categories" @update:modelValue="updateField('categories', $event)" placeholder="Select categories..." :min="1" :max="3" />
+          <SearchableDropdown :items="allCategories" :modelValue="modelValue.categories" @update:modelValue="updateField('categories', $event)" placeholder="Select categories..." :min="1" :max="3" :disabled="loadingStates.categories" />
+          <p v-if="extractionErrors.categories" class="mt-1 text-xs text-red-500">{{ extractionErrors.categories }}</p>
         </div>
         <div class="relative">
           <div class="flex justify-between items-center mb-1">
             <div class="flex items-center">
               <label class="block text-sm font-semibold text-gray-700">Best for <span class="text-red-500">*</span></label>
               <Tooltip content="Select the groups or individuals who would benefit most from your product. This helps with targeting." />
+              <svg v-if="loadingStates.bestFor" class="animate-spin h-4 w-4 text-sky-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
             </div>
           </div>
-          <SearchableDropdown :items="allBestFor" :modelValue="modelValue.bestFor" @update:modelValue="updateField('bestFor', $event)" placeholder="Select who this is best for..." :min="1" :max="3" />
+          <SearchableDropdown :items="allBestFor" :modelValue="modelValue.bestFor" @update:modelValue="updateField('bestFor', $event)" placeholder="Select who this is best for..." :min="1" :max="3" :disabled="loadingStates.bestFor" />
+          <p v-if="extractionErrors.bestFor" class="mt-1 text-xs text-red-500">{{ extractionErrors.bestFor }}</p>
         </div>
       </div>
       <div>
@@ -201,6 +237,14 @@ const props = defineProps({
  allCategories: Array,
  allBestFor: Array,
   allPricing: Array,
+  loadingStates: {
+    type: Object,
+    default: () => ({})
+  },
+  extractionErrors: {
+    type: Object,
+    default: () => ({})
+  }
 });
 
 const emit = defineEmits(['update:modelValue', 'next', 'back']);
