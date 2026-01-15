@@ -66,7 +66,7 @@
     </div>
 
     <!-- Footer Container (Outside Body) -->
-    <div class="flex-shrink-0 relative bg-white w-full z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <div class="flex-shrink-0 relative bg-white w-full z-20">
         <x-footer />
     </div>
 </div>
