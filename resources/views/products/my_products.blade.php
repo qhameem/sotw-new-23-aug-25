@@ -415,10 +415,9 @@
 
                             <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
                                 <div class="flex items-center gap-3">
-                                        <span class="px-2 py-0.5 rounded" :class="product.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" x-text="product.approved ? 'Approved' : 'Pending Approval'"></span>
-                                    </div>
-                                    <a :href="'/products/' + product.id + '/edit'" class="text-xs text-blue-600 hover:underline font-bold">Standard Edit Form &rarr;</a>
+                                    <span class="px-2 py-0.5 rounded" :class="product.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" x-text="product.approved ? 'Approved' : 'Pending Approval'"></span>
                                 </div>
+                            </div>
                             </div>
                     </article>
                 @endforeach
