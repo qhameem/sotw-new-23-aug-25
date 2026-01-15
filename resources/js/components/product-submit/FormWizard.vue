@@ -18,7 +18,7 @@
       @clear="clearUrlInput"
     />
 
-    <div v-if="step === 2" class="w-full md:w-[150%] px-4 pt-28 mx-auto pb-12">
+    <div v-if="step === 2" class="w-full max-w-6xl px-4 pt-28 mx-auto pb-12">
       <div class="w-full md:p-6">
         <div class="flex flex-col md:flex-row gap-8">
           <!-- Sidebar Navigation -->
