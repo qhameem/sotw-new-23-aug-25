@@ -833,98 +833,99 @@ export function useProductForm() {
             globalFormState.isMounted.value = true;
             console.log('Set step to 2 for admin user editing');
           } else {
-              console.log('Loading data for regular user');
-              console.log('Initial data:', initialData);
-              console.log('All pricing categories (raw):', allPricing);
-              console.log('Selected best for categories (raw):', selectedBestForCategories);
+            console.log('Loading data for regular user');
+            console.log('Initial data:', initialData);
+            console.log('All pricing categories (raw):', allPricing);
+            console.log('Selected best for categories (raw):', selectedBestForCategories);
 
-              // Format the logo preview URL if it's a relative path
-              let logoUrl = initialData.logo;
-              if (logoUrl && !logoUrl.startsWith('http')) {
-                  logoUrl = `/storage/${logoUrl}`;
-              }
+            // Format the logo preview URL if it's a relative path
+            let logoUrl = initialData.logo;
+            if (logoUrl && !logoUrl.startsWith('http')) {
+              logoUrl = `/storage/${logoUrl}`;
+            }
 
-              // For regular users, load data as appropriate
-              // Need to separate categories like we do for admin users
-              let allCategoryIds = initialData.current_categories || [];
-              let pricingCategoryIds = [];
-              let regularCategoryIds = [];
+            // For regular users, load data as appropriate
+            // Need to separate categories like we do for admin users
+            let allCategoryIds = initialData.current_categories || [];
+            let pricingCategoryIds = [];
+            let regularCategoryIds = [];
 
-              console.log('All category IDs:', allCategoryIds);
+            console.log('All category IDs:', allCategoryIds);
 
-              if (allCategoryIds.length > 0 && allPricing) {
-                  try {
-                      const pricingCats = JSON.parse(allPricing);
-                      console.log('Parsed pricing categories:', pricingCats);
-                      const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-
-                      // Separate pricing and regular categories
-                      pricingCategoryIds = allCategoryIds.filter(catId =>
-                          pricingCatIds.includes(parseInt(catId))
-                      );
-                      regularCategoryIds = allCategoryIds.filter(catId =>
-                          !pricingCatIds.includes(parseInt(catId))
-                      );
-                      
-                      console.log('Pricing category IDs:', pricingCategoryIds);
-                      console.log('Regular category IDs:', regularCategoryIds);
-                  } catch (e) {
-                      console.error('Error parsing pricing categories for regular user:', e);
-                      // If parsing fails, treat all as regular categories
-                      regularCategoryIds = allCategoryIds;
-                  }
-              } else {
-                  // If no pricing categories are available, assume all are regular categories
-                  regularCategoryIds = allCategoryIds;
-                  console.log('Using all categories as regular categories');
-              }
-
-              // Parse selectedBestForCategories safely
-              let parsedBestFor = [];
+            if (allCategoryIds.length > 0 && allPricing) {
               try {
-                  parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                  console.log('Parsed best for categories:', parsedBestFor);
+                const pricingCats = JSON.parse(allPricing);
+                console.log('Parsed pricing categories:', pricingCats);
+                const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+
+                // Separate pricing and regular categories
+                pricingCategoryIds = allCategoryIds.filter(catId =>
+                  pricingCatIds.includes(parseInt(catId))
+                );
+                regularCategoryIds = allCategoryIds.filter(catId =>
+                  !pricingCatIds.includes(parseInt(catId))
+                );
+
+                console.log('Pricing category IDs:', pricingCategoryIds);
+                console.log('Regular category IDs:', regularCategoryIds);
               } catch (e) {
-                  console.error('Error parsing selectedBestForCategories:', e);
-                  parsedBestFor = [];
+                console.error('Error parsing pricing categories for regular user:', e);
+                // If parsing fails, treat all as regular categories
+                regularCategoryIds = allCategoryIds;
               }
+            } else {
+              // If no pricing categories are available, assume all are regular categories
+              regularCategoryIds = allCategoryIds;
+              console.log('Using all categories as regular categories');
+            }
 
-              const formUpdates = {
-                  name: initialData.name || '',
-                  slug: initialData.slug || '',
-                  tagline: initialData.tagline || '',
-                  tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
-                  description: initialData.description || '',
-                  link: initialData.link || '',
-                  categories: regularCategoryIds.map(id => parseInt(id)),
-                  bestFor: parsedBestFor,
-                  pricing: pricingCategoryIds.map(id => parseInt(id)),
-                  tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
-                  video_url: initialData.video_url,
-                  id: initialData.id, // Set the product ID
-                  maker_links: initialData.maker_links || [],
-                  sell_product: !!initialData.sell_product,
-                  asking_price: initialData.asking_price,
-                  x_account: initialData.x_account,
-              };
+            // Parse selectedBestForCategories safely
+            let parsedBestFor = [];
+            try {
+              parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+              console.log('Parsed best for categories:', parsedBestFor);
+            } catch (e) {
+              console.error('Error parsing selectedBestForCategories:', e);
+              parsedBestFor = [];
+            }
 
-              console.log('Form updates:', formUpdates);
+            const formUpdates = {
+              name: initialData.name || '',
+              slug: initialData.slug || '',
+              tagline: initialData.tagline || '',
+              tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+              description: initialData.description || '',
+              link: initialData.link || '',
+              categories: regularCategoryIds.map(id => parseInt(id)),
+              bestFor: parsedBestFor,
+              pricing: pricingCategoryIds.map(id => parseInt(id)),
+              tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
+              video_url: initialData.video_url,
+              id: initialData.id, // Set the product ID
+              maker_links: initialData.maker_links || [],
+              sell_product: !!initialData.sell_product,
+              asking_price: initialData.asking_price,
+              x_account: initialData.x_account,
+            };
 
-              try {
-                  updateFormMultiple(formUpdates);
-              } catch (e) {
-                  console.error('Error updating form with initial data:', e);
-              }
+            console.log('Form updates:', formUpdates);
 
-              if (logoUrl) {
-                  globalFormState.logoPreview.value = logoUrl;
-              }
+            try {
+              updateFormMultiple(formUpdates);
+            } catch (e) {
+              console.error('Error updating form with initial data:', e);
+            }
 
-              // Set step to 2 to show the form
+            if (logoUrl) {
+              globalFormState.logoPreview.value = logoUrl;
+            }
+
+            // Set step to 2 to show the form ONLY if we have a link (meaning we're editing or restoring)
+            if (initialData.link) {
               globalFormState.step.value = 2;
-              globalFormState.isRestored.value = true;
-              globalFormState.isMounted.value = true;
-              console.log('Set step to 2 for regular user editing');
+            }
+            globalFormState.isRestored.value = true;
+            globalFormState.isMounted.value = true;
           }
         } catch (error) {
           console.error('Error parsing initial data from element:', error);
@@ -1002,7 +1003,7 @@ export function useProductForm() {
     sessionStorage.removeItem('productFormData');
     console.log('Cleared saved form data from session storage');
   };
-  
+
   // Load saved data from session storage
   const loadSavedData = async () => {
     // Don't load saved data if we're currently editing an existing product (to prevent override)
