@@ -10,6 +10,8 @@ const sharedForm = reactive({ ...globalFormState.form });
 const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
 
 export function useProductForm() {
+  const isAdmin = globalFormState.isAdmin;
+  const submissionBgUrl = globalFormState.submissionBgUrl;
   const form = sharedForm;
   const loadingStates = sharedLoadingStates;
   const sidebarSteps = [...globalFormState.sidebarSteps];
@@ -669,6 +671,7 @@ export function useProductForm() {
       const element = document.getElementById('product-submit-app');
       if (element) {
         globalFormState.isAdmin.value = element.getAttribute('data-is-admin') === 'true';
+        globalFormState.submissionBgUrl.value = element.getAttribute('data-submission-bg-url') || '';
       }
     } catch (error) {
       console.error('Failed to fetch initial form data:', error);
@@ -1047,6 +1050,7 @@ export function useProductForm() {
     urlExistsError: globalFormState.urlExistsError,
     existingProduct: globalFormState.existingProduct,
     showPreviewModal: globalFormState.showPreviewModal,
+    submissionBgUrl: globalFormState.submissionBgUrl,
     loadingStates,
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,

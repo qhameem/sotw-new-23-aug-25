@@ -150,13 +150,16 @@ class ProductController extends Controller
         ];
 
         $types = Type::with('categories')->get();
+        $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+
         return view('products.create', compact(
             'displayData',
             'regularCategories',
             'bestForCategories',
             'pricingCategories',
             'allTechStacksData',
-            'types'
+            'types',
+            'submissionBgUrl'
         ));
     }
     public function store(Request $request)

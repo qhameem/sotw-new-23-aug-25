@@ -13,6 +13,7 @@
       :isUrlInvalid="isUrlInvalid"
       :urlExistsError="urlExistsError"
       :existingProduct="existingProduct"
+      :submissionBgUrl="submissionBgUrl"
       @getStarted="getStarted"
       @clear="clearUrlInput"
     />
@@ -149,7 +150,8 @@ const {
  confirmSubmit,
   closeModal,
   validateForm,
- fetchInitialData,
+  submissionBgUrl,
+  fetchInitialMetadata,
   fetchRemainingData,
   initializeFormData,
  loadSavedData,

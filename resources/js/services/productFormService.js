@@ -58,6 +58,7 @@ export const createProductFormState = () => {
     urlExistsError: ref(false),
     existingProduct: ref(null),
     showPreviewModal: ref(false),
+    submissionBgUrl: ref(''),
     loadingStates: { ...initialLoadingStates },
     logoPreview: ref(null),
     galleryPreviews: ref(Array(3).fill(null)),

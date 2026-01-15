@@ -94,6 +94,9 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['primary_button_text_color'])) { // Can be null
                     Config::set('theme.primary_button_text_color', $settings['primary_button_text_color']);
                 }
+                if (isset($settings['submission_bg_url'])) { // Can be null
+                    Config::set('theme.submission_bg_url', $settings['submission_bg_url']);
+                }
             }
         }
     }

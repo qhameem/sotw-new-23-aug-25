@@ -35,10 +35,12 @@ class ThemeController extends Controller
         $currentLogoAltText = $settings['logo_alt_text'] ?? '';
         $currentFaviconUrl = isset($settings['favicon_url']) && $settings['favicon_url'] ? Storage::url($settings['favicon_url']) : null;
         $currentPrimaryButtonTextColor = $settings['primary_button_text_color'] ?? null;
+        $currentSubmissionBgUrl = isset($settings['submission_bg_url']) && $settings['submission_bg_url'] ? Storage::url($settings['submission_bg_url']) : null;
 
         // Define default/placeholder URLs if needed, e.g., for the view's x-data
         $defaultLogoUrl = ''; // e.g., asset('images/default-logo.png');
         $defaultFaviconUrl = ''; // e.g., asset('images/default-favicon.ico');
+        $defaultSubmissionBgUrl = asset('images/submission-pattern.png');
 
         return view('admin.theme.edit', compact(
             'currentFontUrl',
@@ -50,7 +52,9 @@ class ThemeController extends Controller
             'currentFaviconUrl',
             'defaultLogoUrl',
             'defaultFaviconUrl',
-            'currentPrimaryButtonTextColor'
+            'currentPrimaryButtonTextColor',
+            'currentSubmissionBgUrl',
+            'defaultSubmissionBgUrl'
         ));
     }
 
@@ -78,7 +82,7 @@ class ThemeController extends Controller
                     if (preg_match('/^[a-z]+-[0-9]{2,3}$/', $value)) {
                         return;
                     }
-                    $fail('The '.$attribute.' must be a valid hex color or a Tailwind CSS color class (e.g., blue-500).');
+                    $fail('The ' . $attribute . ' must be a valid hex color or a Tailwind CSS color class (e.g., blue-500).');
                 },
             ],
             // Removed 'image' rule to better support SVG. Mimes rule will handle type.
@@ -92,6 +96,8 @@ class ThemeController extends Controller
                 'string',
                 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'
             ],
+            'submission_bg' => 'nullable|file|mimes:svg,png,jpg,jpeg,webp|max:5120', // Max 5MB
+            'remove_submission_bg' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -170,6 +176,15 @@ class ThemeController extends Controller
             }
         }
 
+        // Submission Page Background Management
+        if ($request->input('remove_submission_bg')) {
+            $this->deleteStoredFile($settings['submission_bg_url'] ?? null);
+            $settings['submission_bg_url'] = null;
+        } elseif ($request->hasFile('submission_bg')) {
+            $this->deleteStoredFile($settings['submission_bg_url'] ?? null);
+            $settings['submission_bg_url'] = $this->storeUploadedFile($request->file('submission_bg'), 'submission_bg', 'theme/backgrounds');
+        }
+
         try {
             File::put($this->settingsPath, json_encode($settings, JSON_PRETTY_PRINT));
 
@@ -201,6 +216,7 @@ class ThemeController extends Controller
                 'logo_url' => null,
                 'logo_alt_text' => null,
                 'favicon_url' => null,
+                'submission_bg_url' => null,
             ];
         }
 
@@ -246,7 +262,7 @@ class ThemeController extends Controller
             if (str_starts_with($param, 'family=')) {
                 $family = substr($param, 7); // Remove 'family='
                 $fontFamilyName = urldecode(explode(':', $family)[0]); // Decode URL-encoded characters like '+'
-                
+
                 // Basic validation for font name
                 if (preg_match('/^[a-zA-Z0-9\s\-]+$/', $fontFamilyName)) {
                     $fontFamilies[] = trim($fontFamilyName);
@@ -306,7 +322,7 @@ class ThemeController extends Controller
     {
         $tailwindThemePath = base_path('tailwind-theme.json');
         $themeConfig = ['fontFamilies' => $fontFamilies];
-        
+
         try {
             File::put($tailwindThemePath, json_encode($themeConfig, JSON_PRETTY_PRINT));
         } catch (\Exception $e) {

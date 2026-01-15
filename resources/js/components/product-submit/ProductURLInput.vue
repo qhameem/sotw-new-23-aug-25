@@ -4,7 +4,7 @@
     
     <!-- Right side background pattern - 50% width, absolute full height of this container -->
     <div class="absolute inset-y-0 right-0 w-1/2 hidden md:block">
-      <img src="/images/submission-pattern.png" alt="Background Pattern" class="w-full h-full object-cover">
+      <img :src="submissionBgUrl || '/images/submission-pattern.png'" alt="Background Pattern" class="w-full h-full object-cover">
     </div>
 
     <!-- Content Wrapper: Fills height, centers vertically -->
@@ -68,6 +68,7 @@ const props = defineProps({
  isUrlInvalid: Boolean,
   urlExistsError: Boolean,
   existingProduct: Object,
+  submissionBgUrl: String,
 });
 
 defineEmits(['update:modelValue', 'getStarted', 'clear']);
