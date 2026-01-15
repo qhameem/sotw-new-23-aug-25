@@ -461,8 +461,8 @@ export function useProductForm() {
       console.log('fetchInitialData response:', data);
 
       form.name = data.name;
-      form.tagline = data.tagline;
-      form.tagline_detailed = data.tagline_detailed || data.tagline; // Use tagline_detailed if provided, otherwise fallback to tagline
+      form.tagline = data.tagline_detailed || data.tagline;
+      form.tagline_detailed = data.tagline || data.tagline_detailed;
       form.favicon = data.favicon;
 
       // Auto-set favicon as logo if available
@@ -549,10 +549,10 @@ export function useProductForm() {
       if (shouldFetchContent) {
         // Only update if the field is currently empty to avoid overwriting user input or existing data
         if (!form.tagline || form.tagline.trim() === '') {
-          form.tagline = data.tagline || form.tagline;
+          form.tagline = data.tagline_detailed || data.tagline || form.tagline;
         }
         if (!form.tagline_detailed || form.tagline_detailed.trim() === '') {
-          form.tagline_detailed = data.tagline_detailed || form.tagline_detailed;
+          form.tagline_detailed = data.tagline || data.tagline_detailed || form.tagline_detailed;
         }
         if (!form.description || form.description.trim() === '' || form.description === '<p></p>') {
           form.description = data.description || form.description;
