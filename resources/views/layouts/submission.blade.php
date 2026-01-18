@@ -187,12 +187,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
-
     
-    @php
-        $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
-        $page = \Illuminate\Support\Facades\Route::currentRouteName();
-    @endphp
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -202,7 +197,11 @@
       "url": "https://softwareontheweb.com"
     }
     </script>
-
+    
+    @php
+        $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
+        $page = \Illuminate\Support\Facades\Route::currentRouteName();
+    @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
             <script>
