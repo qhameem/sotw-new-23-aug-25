@@ -188,7 +188,7 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
 
-    <script type="application/ld+json">
+    <!-- <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -196,7 +196,7 @@
       "alternateName": ["Softwareontheweb"],
       "url": "https://softwareontheweb.com"
     }
-    </script>
+    </script> -->
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
