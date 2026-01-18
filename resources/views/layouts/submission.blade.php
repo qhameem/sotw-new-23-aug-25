@@ -189,6 +189,7 @@
     @stack('styles')
     
     <!-- Schema markup -->
+    @verbatim
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -198,6 +199,8 @@
       "url": "https://softwareontheweb.com"
     }
     </script>
+    @endverbatim
+
     
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
