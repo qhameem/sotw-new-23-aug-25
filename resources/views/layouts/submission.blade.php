@@ -193,6 +193,16 @@
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Software on the Web",
+      "alternateName": ["Softwareontheweb"],
+      "url": "https://softwareontheweb.com"
+    }
+    </script>
+
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
             <script>
