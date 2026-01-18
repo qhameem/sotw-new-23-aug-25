@@ -33,7 +33,7 @@
                         $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
                     @endphp
                     <article x-data="productEditor({ 
-                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url']), ['logo_url' => $product->logo_url])) }},
+                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url', 'slug']), ['logo_url' => $product->logo_url])) }},
                         categories: {{ $product->categories->pluck('id')->toJson() }},
                         tech_stacks: {{ $product->techStacks->pluck('id')->toJson() }},
                         media: {{ $product->media->map->only(['id', 'path', 'type', 'alt_text'])->toJson() }}
@@ -202,7 +202,15 @@
                                         <button @click="save('link')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
                                         <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
                                     </div>
-                                </div>
+                                     <!-- Slug display below Link field -->
+                                     <div class="mt-2 text-[0.7rem] text-gray-500">
+                                         <span class="font-bold uppercase tracking-wider text-gray-400">Software on the Web URL:</span>
+                                         <div class="mt-0.5 flex items-center gap-1">
+                                             <span class="text-gray-400">softwareontheweb.com/</span>
+                                             <span class="font-semibold text-blue-600" x-text="editingField === 'link' || editingField === 'name' ? generateSlug(tempValue || product.name) : product.slug"></span>
+                                         </div>
+                                     </div>
+                                 </div>
                                 
                                 <!-- Maker Links -->
                                 <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
@@ -450,6 +458,25 @@
                     this.tempValue = Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : value;
                 },
 
+                generateSlug(text) {
+                    if (!text) return '';
+                    
+                    // If it's a URL, try to extract something meaningful
+                    if (text.includes('://')) {
+                        try {
+                            const url = new URL(text);
+                            text = url.hostname.replace('www.', '').split('.')[0];
+                        } catch (e) {}
+                    }
+
+                    return text
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                },
+
                 cancelEdit() {
                     this.editingField = null;
                     this.tempValue = null;
@@ -488,7 +515,13 @@
                             if (field === 'categories') this.categories = JSON.parse(JSON.stringify(this.tempValue));
                             else if (field === 'tech_stacks') this.techStacks = JSON.parse(JSON.stringify(this.tempValue));
                             else if (field === 'maker_links') this.product.maker_links = JSON.parse(JSON.stringify(this.tempValue));
-                            else this.product[field] = this.tempValue;
+                            else {
+                                this.product[field] = this.tempValue;
+                                // Update slug if name or link changed
+                                if (field === 'name' || field === 'link') {
+                                    this.product.slug = data.product.slug;
+                                }
+                            }
 
                             this.editingField = null;
                             if (data.message.includes('review')) {

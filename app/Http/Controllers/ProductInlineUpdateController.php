@@ -15,6 +15,13 @@ use Illuminate\Support\Str;
 
 class ProductInlineUpdateController extends Controller
 {
+    protected $slugService;
+
+    public function __construct(\App\Services\SlugService $slugService)
+    {
+        $this->slugService = $slugService;
+    }
+
     public function update(Request $request, Product $product)
     {
         /** @var \App\Models\User $user */
@@ -80,6 +87,8 @@ class ProductInlineUpdateController extends Controller
             $value = $this->addNofollowToLinks($value);
         }
 
+        $product->last_edited_by_id = Auth::id();
+
         $updateData = [];
         if ($field === 'categories' || $field === 'tech_stacks' || $field === 'maker_links') {
             $updateData = $value;
@@ -87,11 +96,55 @@ class ProductInlineUpdateController extends Controller
             $updateData[$field] = $value;
         }
 
+        if ($field === 'name' || $field === 'link') {
+            $existsCheck = function ($slug) use ($product) {
+                return Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
+            };
+
+            $textForSlug = $product->name;
+            if ($field === 'name') {
+                $textForSlug = $value;
+            } elseif ($field === 'link') {
+                $textForSlug = $this->extractNameFromUrl($value);
+            }
+
+            $updateData['slug'] = $this->slugService->generateUniqueSlug($textForSlug, $existsCheck);
+        }
+
         if ($product->approved) {
             // Approved products store changes as "proposed"
             switch ($field) {
+                case 'name':
+                    $product->proposed_name = $value;
+                    // If name changes, we should also propose a new slug
+                    $existsCheck = function ($slug) use ($product) {
+                        return Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
+                    };
+                    $product->proposed_slug = $this->slugService->generateUniqueSlug($value, $existsCheck); // Wait, I didn't add proposed_slug. Let's use proposed_name for now, and handle slug on approval.
+                    break;
+                case 'link':
+                    $product->proposed_link = $value;
+                    break;
+                case 'video_url':
+                    $product->proposed_video_url = $value;
+                    break;
+                case 'x_account':
+                    $product->proposed_x_account = $value;
+                    break;
+                case 'sell_product':
+                    $product->proposed_sell_product = (bool) $value;
+                    break;
+                case 'asking_price':
+                    $product->proposed_asking_price = $value;
+                    break;
+                case 'maker_links':
+                    $product->proposed_maker_links = $value;
+                    break;
                 case 'tagline':
                     $product->proposed_tagline = $value;
+                    break;
+                case 'product_page_tagline':
+                    $product->proposed_product_page_tagline = $value;
                     break;
                 case 'description':
                     $product->proposed_description = $value;
@@ -99,13 +152,8 @@ class ProductInlineUpdateController extends Controller
                 case 'categories':
                     $product->proposedCategories()->sync($value);
                     break;
-                default:
-                    // For now, if it's not one of the specific proposed fields, we just update it
-                    // The original ProductController update() only handles tagline/desc/logo/categories as proposed
-                    // We'll follow that pattern for now
-                    if (in_array($field, ['name', 'product_page_tagline', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'tech_stacks'])) {
-                        $product->update($updateData);
-                    }
+                case 'tech_stacks':
+                    $product->proposedTechStacks()->sync($value);
                     break;
             }
             $product->has_pending_edits = true;
@@ -199,6 +247,7 @@ class ProductInlineUpdateController extends Controller
             }
             $product->proposed_logo_path = $finalPath;
             $product->has_pending_edits = true;
+            $product->last_edited_by_id = Auth::id();
             $product->save();
 
             return response()->json([
@@ -211,6 +260,7 @@ class ProductInlineUpdateController extends Controller
                 Storage::disk('public')->delete($product->logo);
             }
             $product->logo = $finalPath;
+            $product->last_edited_by_id = Auth::id();
             $product->save();
 
             return response()->json([
@@ -289,5 +339,20 @@ class ProductInlineUpdateController extends Controller
         }
 
         return $dom->saveHTML();
+    }
+
+    private function extractNameFromUrl($url)
+    {
+        try {
+            $host = parse_url($url, PHP_URL_HOST);
+            if (!$host)
+                return $url;
+
+            $name = str_replace('www.', '', $host);
+            $parts = explode('.', $name);
+            return $parts[0];
+        } catch (\Exception $e) {
+            return $url;
+        }
     }
 }

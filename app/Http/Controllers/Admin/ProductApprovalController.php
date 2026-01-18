@@ -35,10 +35,10 @@ class ProductApprovalController extends Controller
             ->where('approved', true)
             ->where(function ($query) {
                 $query->where('is_published', true)
-                      ->orWhere(function ($query) {
-                          $query->where('is_published', false)
-                                ->whereNotNull('published_at');
-                      });
+                    ->orWhere(function ($query) {
+                        $query->where('is_published', false)
+                            ->whereNotNull('published_at');
+                    });
             });
 
         // Handle cases where published_at might be null for sorting
@@ -50,7 +50,7 @@ class ProductApprovalController extends Controller
         } else {
             $approvedProductsQuery->orderBy($sortBy, $sortDirection);
         }
-        
+
         $approvedProducts = $approvedProductsQuery->paginate($perPage)->withQueryString();
 
         $settings = ['product_publish_time' => '07:00']; // Default value
@@ -141,7 +141,7 @@ class ProductApprovalController extends Controller
             \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
             \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
             \Illuminate\Support\Facades\Cache::forget('all_categories');
-            
+
             // Clear the general product list cache for this week and date to ensure new products appear
             $generalProductListCacheKey = 'product_list_week_' . $product->published_at->year . '_' . $product->published_at->weekOfYear . '_' . now()->toDateString();
             \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
@@ -172,7 +172,7 @@ class ProductApprovalController extends Controller
         if (!empty($productIds)) {
             $approvedCount = 0;
             $weeksToClear = []; // Track weeks that need cache clearing
-            
+
             foreach ($productIds as $id) {
                 $product = Product::find($id);
                 if ($product) {
@@ -208,7 +208,7 @@ class ProductApprovalController extends Controller
                     $approvedCount++;
                 }
             }
-            
+
             // Clear caches for affected weeks after all products are processed
             if (!empty($weeksToClear)) {
                 \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
@@ -216,14 +216,14 @@ class ProductApprovalController extends Controller
                 \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
                 \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
                 \Illuminate\Support\Facades\Cache::forget('all_categories');
-                
+
                 // Clear the general product list cache for each affected week
                 foreach (array_keys($weeksToClear) as $weekKey) {
                     $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
                     \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
                 }
             }
-            
+
             if ($approvedCount > 0) {
                 return back()->with('success', $approvedCount . ' product(s) approved.');
             }
@@ -249,7 +249,7 @@ class ProductApprovalController extends Controller
             return redirect()->route('admin.products.pending-edits.index')->with('error', 'Product does not have pending edits or is not approved.');
         }
 
-        $product->load(['user', 'categories', 'proposedCategories']);
+        $product->load(['user', 'categories', 'proposedCategories', 'lastEditor', 'techStacks', 'proposedTechStacks', 'media']);
         return view('admin.product_approvals.show_edit_diff', compact('product'));
     }
 
@@ -266,47 +266,63 @@ class ProductApprovalController extends Controller
                 Storage::disk('public')->delete($product->logo);
             }
             $product->logo = $product->proposed_logo_path;
-        } // If proposed_logo_path is null, it means user proposed to remove logo or didn't change it.
-          // If they proposed removal, proposed_logo_path would be null. If they didn't touch it, it's also null.
-          // If product->logo was set and proposed_logo_path is null (due to remove_logo in user form), this means the live logo should be cleared.
-          // This logic assumes that if proposed_logo_path is null, the intention is to use no logo or keep existing if no change was proposed.
-          // A more explicit "remove_live_logo_on_edit_approval" flag might be better if complex scenarios arise.
-          // For now, if proposed_logo_path is null, we assume the user wants to remove the logo if one was there, or didn't propose a new one.
-          // If `remove_logo` was checked, `proposed_logo_path` should have been set to null by the user update logic.
-        
-        // If proposed_logo_path is explicitly null (meaning user wanted to remove it or didn't propose one)
-        // and there was a live logo, clear it.
-        if (is_null($product->proposed_logo_path) && $product->logo && !Str::startsWith($product->logo, 'http')) {
-             // This case handles if user explicitly removed a proposed logo, or if they submitted edits without touching the logo but had one.
-             // If the user form had "remove_logo" checked, proposed_logo_path should be null.
-             // If they want to remove the live logo, proposed_logo_path should be null.
-             // If proposed_logo_path is null, it means no new logo was proposed.
-             // If the user wants to remove the logo, the `proposed_logo_path` should be set to an empty string or a special marker,
-             // or the `ProductController` update logic should set `proposed_logo_path = null` if `remove_logo` was checked.
-             // Assuming `proposed_logo_path = null` means "remove current logo if one exists, or no new logo proposed".
-            if ($product->logo && !Str::startsWith($product->logo, 'http')) {
-                 Storage::disk('public')->delete($product->logo);
-            }
+        } elseif (isset($product->proposed_logo_path) && is_null($product->proposed_logo_path) && $product->logo && !Str::startsWith($product->logo, 'http')) {
+            // Handle explicit removal
+            Storage::disk('public')->delete($product->logo);
             $product->logo = null;
         }
 
 
-        $product->tagline = $product->proposed_tagline ?? $product->tagline; // Fallback to current if somehow proposed is null
-        $product->description = $product->proposed_description ?? $product->description; // Fallback
+        // Handle Name/Link changes and Slug regeneration
+        if ($product->proposed_name || $product->proposed_link) {
+            $nameForSlug = $product->proposed_name ?? $product->name;
+            $linkForSlug = $product->proposed_link ?? $product->link;
 
-        // Sync categories from proposed categories
-        // Explicitly select categories.id to avoid ambiguity
-        $product->categories()->sync($product->proposedCategories()->pluck('categories.id')->toArray());
+            $product->name = $product->proposed_name ?? $product->name;
+            $product->link = $product->proposed_link ?? $product->link;
 
-        // Clear proposed data
-        if ($product->proposed_logo_path && $product->proposed_logo_path !== $product->logo) { // Only delete if it was a distinct proposed file that is now live
-             // This check is a bit tricky. If proposed_logo_path became the new product->logo, we don't delete it.
-             // The proposed_logo_path field itself will be nulled out. The file itself is now the main logo.
+            $existsCheck = function ($slug) use ($product) {
+                return Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
+            };
+
+            // If name changed, regenerate slug from name. If only link changed, maybe regenerate from link?
+            // Let's stick to the logic used in InlineUpdateController: Name takes precedence.
+            $textForSlug = $nameForSlug;
+            if ($product->proposed_link && !$product->proposed_name) {
+                $textForSlug = $this->extractNameFromUrl($linkForSlug);
+            }
+
+            $product->slug = $this->slugService->generateUniqueSlug($textForSlug, $existsCheck);
         }
+
+        $product->tagline = $product->proposed_tagline ?? $product->tagline;
+        $product->product_page_tagline = $product->proposed_product_page_tagline ?? $product->product_page_tagline;
+        $product->description = $product->proposed_description ?? $product->description;
+        $product->video_url = $product->proposed_video_url ?? $product->video_url;
+        $product->x_account = $product->proposed_x_account ?? $product->x_account;
+        $product->sell_product = !is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product;
+        $product->asking_price = !is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
+        $product->maker_links = $product->proposed_maker_links ?? $product->maker_links;
+
+        // Sync categories and tech stacks
+        $product->categories()->sync($product->proposedCategories()->pluck('categories.id')->toArray());
+        $product->techStacks()->sync($product->proposedTechStacks()->pluck('tech_stacks.id')->toArray());
+
+        // Clear all proposed data
         $product->proposed_logo_path = null;
         $product->proposed_tagline = null;
         $product->proposed_description = null;
+        $product->proposed_name = null;
+        $product->proposed_link = null;
+        $product->proposed_video_url = null;
+        $product->proposed_x_account = null;
+        $product->proposed_sell_product = null;
+        $product->proposed_asking_price = null;
+        $product->proposed_maker_links = null;
+        $product->proposed_product_page_tagline = null;
+
         $product->proposedCategories()->detach();
+        $product->proposedTechStacks()->detach();
         $product->has_pending_edits = false;
 
         $product->save();
@@ -325,15 +341,47 @@ class ProductApprovalController extends Controller
             Storage::disk('public')->delete($product->proposed_logo_path);
         }
 
-        // Clear proposed data
+        // Clear all proposed data
         $product->proposed_logo_path = null;
         $product->proposed_tagline = null;
         $product->proposed_description = null;
+        $product->proposed_name = null;
+        $product->proposed_link = null;
+        $product->proposed_video_url = null;
+        $product->proposed_x_account = null;
+        $product->proposed_sell_product = null;
+        $product->proposed_asking_price = null;
+        $product->proposed_maker_links = null;
+        $product->proposed_product_page_tagline = null;
+
         $product->proposedCategories()->detach();
+        $product->proposedTechStacks()->detach();
         $product->has_pending_edits = false;
 
         $product->save();
 
         return redirect()->route('admin.products.pending-edits.index')->with('success', 'Proposed product edits rejected.');
+    }
+
+    protected $slugService;
+
+    public function __construct(\App\Services\SlugService $slugService)
+    {
+        $this->slugService = $slugService;
+    }
+
+    private function extractNameFromUrl($url)
+    {
+        try {
+            $host = parse_url($url, PHP_URL_HOST);
+            if (!$host)
+                return $url;
+
+            $name = str_replace('www.', '', $host);
+            $parts = explode('.', $name);
+            return $parts[0];
+        } catch (\Exception $e) {
+            return $url;
+        }
     }
 }

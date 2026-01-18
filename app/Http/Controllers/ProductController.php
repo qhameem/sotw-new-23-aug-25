@@ -513,6 +513,8 @@ class ProductController extends Controller
             }
         }
 
+        $product->last_edited_by_id = Auth::id();
+
         if ($product->approved) {
             // Product is approved, store edits as proposed changes
             if ($request->boolean('remove_logo')) {
@@ -532,12 +534,13 @@ class ProductController extends Controller
             // If no new logo and not removed, proposed_logo_path remains unchanged (or null if never set).
 
             $product->proposed_tagline = $updateData['tagline'];
-            $product->product_page_tagline = $updateData['product_page_tagline'];
+            $product->proposed_product_page_tagline = $updateData['product_page_tagline'];
             $product->proposed_description = $updateData['description'];
+            $product->proposed_video_url = $updateData['video_url'] ?? null;
             $product->proposedCategories()->sync($newCategories);
-            $product->techStacks()->sync($newTechStacks);
+            $product->proposedTechStacks()->sync($newTechStacks);
             $product->has_pending_edits = true;
-            $product->save(); // Save these specific fields and the flag
+            $product->save();
 
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
@@ -574,8 +577,17 @@ class ProductController extends Controller
             $product->proposed_logo_path = null;
             $product->proposed_tagline = null;
             $product->proposed_description = null;
-            $product->proposedCategories()->detach(); // Clear proposed categories
-            $product->has_pending_edits = false; // Ensure this is false
+            $product->proposed_name = null;
+            $product->proposed_link = null;
+            $product->proposed_video_url = null;
+            $product->proposed_x_account = null;
+            $product->proposed_sell_product = null;
+            $product->proposed_asking_price = null;
+            $product->proposed_maker_links = null;
+            $product->proposed_product_page_tagline = null;
+            $product->proposedCategories()->detach();
+            $product->proposedTechStacks()->detach();
+            $product->has_pending_edits = false;
 
             // Update main product fields
             $product->update($updateData);
