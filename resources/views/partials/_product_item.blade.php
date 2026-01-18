@@ -13,7 +13,7 @@
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
                 class="w-[65px] h-[65px] rounded-xl object-cover flex-shrink-0" />
             <div class="flex flex-col space-y-0">
-                <h2 class="text-base font-semibold flex items-center leading-none">
+                <h2 class="text-sm font-semibold flex items-center leading-none">
                     <span class="text-left text-black mt-1">{{ $product->name }}</span>
                     @if(!$isPromoted)
                         <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
@@ -29,7 +29,7 @@
                     @endif
                 </h2>
 
-                <p class="text-gray-900 text-base line-clamp-2">{{ $product->tagline }}</p>
+                <p class="text-gray-900 text-sm line-clamp-2">{{ $product->tagline }}</p>
 
                 <div class="flex flex-wrap gap-2 items-center">
                     <div class="flex flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2">

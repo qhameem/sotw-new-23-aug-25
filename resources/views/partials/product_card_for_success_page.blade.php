@@ -10,7 +10,7 @@
         <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
             <span class="text-left">{{ $product->name }}</span>
         </h2>
-        <p class="text-gray-800 text-base mt-0.5 mb-0 line-clamp-2">{{ $product->tagline }}</p>
+        <p class="text-gray-800 text-sm mt-0.5 mb-0 line-clamp-2">{{ $product->tagline }}</p>
 
         <div class="mt-0.25 flex flex-wrap gap-2 items-center">
             <x-product-category-tags :categories="$product->categories" />

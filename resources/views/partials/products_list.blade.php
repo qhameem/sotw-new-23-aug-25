@@ -70,7 +70,7 @@
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
                 class="w-[65px] h-[65px] rounded-xl object-cover flex-shrink-0" loading="lazy" itemprop="image" />
             <div class="flex-1">
-                <h2 class="text-md font-semibold leading-tight mb-0.5 flex items-center">
+                <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
                     @if(!$isPromoted)
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
                         <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
@@ -87,7 +87,7 @@
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="text-gray-700 text-base mt-0.5 mb-0 line-clamp-2" itemprop="description">
+                <p class="text-gray-700 text-sm mt-0.5 mb-0 line-clamp-2" itemprop="description">
                     {{ $product->tagline }}
                 </p>
 
