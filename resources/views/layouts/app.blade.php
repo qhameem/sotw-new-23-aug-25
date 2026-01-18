@@ -187,6 +187,18 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
+    <!-- Schema markup -->
+    @verbatim
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Software on the Web",
+      "alternateName": ["Softwareontheweb"],
+      "url": "https://softwareontheweb.com"
+    }
+    </script>
+    @endverbatim
 
 
     @php
