@@ -68,17 +68,17 @@
                 @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com&utm_medium=promoted_listing_card', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
-                class="w-[65px] h-[65px] rounded-xl object-cover flex-shrink-0" loading="lazy" itemprop="image" />
+                class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy" itemprop="image" />
             <div class="flex-1">
-                <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
+                <h2 class="text-sm font-semibold leading-tight flex items-center">
                     @if(!$isPromoted)
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
                         <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
                             target="_blank" rel="noopener nofollow" @click.stop
-                            class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200  rounded-full hover:bg-gray-10 "
+                            class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
                             aria-label="Open product link in new tab">
-                            <svg xmlns="http://www.w3.org/200/svg" class="h-3.5 w-3.5 text-gray-600 " fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
@@ -87,7 +87,7 @@
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="text-gray-700 text-sm mt-0.5 mb-0 line-clamp-2" itemprop="description">
+                <p class="text-gray-700 text-sm mb-0 line-clamp-2" itemprop="description">
                     {{ $product->tagline }}
                 </p>
 
@@ -111,8 +111,8 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-600  mt-1" itemprop="brand" itemscope itemtype="https://schema.org/Organization">
-                                By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
-                            </div> -->
+                                        By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
+                                    </div> -->
 
                 <div class="text-xs text-gray-600  mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
@@ -128,17 +128,17 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-60  mt-1" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
-                                <meta itemprop="worstRating" content="0">
-                                <meta itemprop="bestRating" content="5">
-                                @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
-                                    <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
-                                    Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
-                                    (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
-                                @else
-                                    <meta itemprop="ratingValue" content="0">
-                                    Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
-                                @endif
-                            </div> -->
+                                        <meta itemprop="worstRating" content="0">
+                                        <meta itemprop="bestRating" content="5">
+                                        @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
+                                            <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
+                                            Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
+                                            (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
+                                        @else
+                                            <meta itemprop="ratingValue" content="0">
+                                            Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
+                                        @endif
+                                    </div> -->
             </div>
 
             <div class="flex items-center gap-2">

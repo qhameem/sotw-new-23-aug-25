@@ -3,23 +3,23 @@
 <article class="p-4 flex items-center gap-3 md:gap-3 transition relative group">
     <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" class="product-checkbox rounded">
     <img src="{{ $product->logo_url ?? 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-        alt="{{ $product->name }} logo" class="w-[65px] h-[65px] rounded-xl object-cover flex-shrink-0"
+        alt="{{ $product->name }} logo" class="w-12 h-12 rounded-xl object-cover flex-shrink-0"
         loading="lazy" />
     <div class="flex-1">
-        <h2 class="text-sm font-semibold leading-tight mb-0.5 flex items-center">
+        <h2 class="text-sm font-semibold leading-tight flex items-center">
             <a href="{{ route('admin.products.show', $product) }}"
                 class="text-left text-blue-600 hover:underline">{{ $product->name }}</a>
             <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow"
-                class="ml-2 p-1 opacity-50 group-hover:opacity-100 transition-opacity duration-200 rounded-full hover:bg-gray-100"
+                class="ml-2 p-1 opacity-50 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
                 aria-label="Open product link in new tab">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-600" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
             </a>
         </h2>
-        <p class="text-gray-800 text-sm mt-0.5 line-clamp-2">{{ $product->tagline }}</p>
+        <p class="text-gray-800 text-sm line-clamp-2">{{ $product->tagline }}</p>
         <div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
             <span>Submitted by: {{ $product->user->name ?? 'N/A' }}</span>
             <span>
