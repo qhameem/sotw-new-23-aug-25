@@ -10,7 +10,7 @@
       </div>
       
       <!-- Makers & Extras Section -->
-      <section class="max-w-4xl">
+      <section>
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers & Extras</h3>
         
         <div class="space-y-6">
@@ -104,7 +104,7 @@
       <hr class="border-t border-gray-200 my-6">
       
       <!-- Optional fields section -->
-      <section class="max-w-4xl">
+      <section>
         <h3 class="text-lg font-semibold text-gray-700">Optional</h3>
         <div class="flex flex-wrap gap-4 mt-4">
           <div
@@ -142,7 +142,7 @@
       <hr class="border-t border-gray-200 my-6">
       
       <!-- Pricing Options / Save Button -->
-      <section class="max-w-4xl">
+      <section>
         <!-- Show save button only when editing an existing product (has ID) -->
         <div v-if="!!modelValue.id && !isAdmin" class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>

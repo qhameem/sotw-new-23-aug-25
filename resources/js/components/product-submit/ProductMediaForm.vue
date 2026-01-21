@@ -6,7 +6,7 @@
         &larr; Back to Main Info
       </button>
     </div>
-    <div class="space-y-6 mt-8 max-w-4xl">
+    <div class="space-y-6 mt-8">
       <!-- Logo Upload and Video URL side by side on desktop -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>

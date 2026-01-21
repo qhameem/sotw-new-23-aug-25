@@ -6,8 +6,8 @@
         &larr; Back
       </button>
     </div>
-    <p class="mb-8 text-gray-600 text-base max-w-4xl">We'll need its name, tagline, links, launch tags, and description.</p>
-    <div class="space-y-6 max-w-4xl">
+    <p class="mb-8 text-gray-600 text-base">We'll need its name, tagline, links, launch tags, and description.</p>
+    <div class="space-y-6">
       <!-- Basic Information Section -->
       <div>
         <div class="mb-6">
@@ -199,7 +199,7 @@
         </div>
       </div>
     </div>
-    <div class="pt-4 max-w-4xl">
+    <div class="pt-4">
         <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-2 transition-all duration-300">
           {{ progress.completed }} of {{ progress.total }} required fields filled
         </div>

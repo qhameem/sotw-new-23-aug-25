@@ -18,7 +18,7 @@
       @clear="clearUrlInput"
     />
 
-    <div v-if="step === 2" class="w-full max-w-6xl px-4 pt-28 mx-auto pb-12">
+    <div v-if="step === 2" :class="['w-full px-4 pt-28 mx-auto pb-12', isAdmin ? 'max-w-full' : 'max-w-6xl']">
       <div class="w-full md:p-6">
         <div class="flex flex-col md:flex-row gap-8">
           <!-- Sidebar Navigation -->
@@ -58,7 +58,7 @@
           </div>
           
           <!-- Main Content Area -->
-          <div class="flex-1 min-w-0 bg-gray-50 rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6 max-w-4xl">
+          <div :class="['flex-1 min-w-0 bg-gray-50 rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6', isAdmin ? 'max-w-full' : 'max-w-4xl']">
             <ProductDetailsForm
               v-if="currentTab === 'mainInfo'"
               :modelValue="form"
