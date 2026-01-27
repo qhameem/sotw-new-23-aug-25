@@ -47,7 +47,7 @@
                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Media</h4>
                     <div class="flex flex-wrap gap-2">
                         @foreach($product->media as $media)
-                            <img src="{{ $media->url }}" alt="{{ $product->name }} media"
+                            <img src="{{ Str::startsWith($media->path, 'http') ? $media->path : asset('storage/' . $media->path) }}" alt="{{ $product->name }} media"
                                 class="w-32 h-32 object-cover rounded-xl bg-gray-100 border">
                         @endforeach
                     </div>
