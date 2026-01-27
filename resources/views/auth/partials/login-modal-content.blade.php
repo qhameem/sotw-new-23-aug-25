@@ -1,6 +1,6 @@
 <div x-data="{ activeTab: 'login', intendedUrl: '' }" x-init="intendedUrl = window.location.href" class="px-10 py-6">
     <div class="flex justify-center mb-6">
-        <img src="{{ asset('storage/theme/branding/logo_68a8d1f5c0d39.svg') }}" alt="Site Logo" class="h-9 w-auto">
+        <x-application-logo class="h-9 w-auto" />
     </div>
     
     <div class="">
