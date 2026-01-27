@@ -159,43 +159,67 @@ class Product extends Model implements Sitemapable
 
     public function getEmbedUrl()
     {
-        if (!$this->video_url) {
+        $videoUrl = $this->video_url;
+
+        if (!$videoUrl) {
             return null;
         }
 
-        if (str_contains($this->video_url, 'youtube.com') || str_contains($this->video_url, 'youtu.be')) {
+        // Handle JSON encoded video_url
+        if (Str::startsWith($videoUrl, ['{', '"'])) {
+            try {
+                // If it starts with a quote, it might be double-encoded JSON
+                if (Str::startsWith($videoUrl, '"')) {
+                    $videoUrl = json_decode($videoUrl);
+                }
+
+                $decoded = is_string($videoUrl) ? json_decode($videoUrl, true) : $videoUrl;
+
+                if (is_array($decoded) && isset($decoded['embed_url'])) {
+                    $videoUrl = $decoded['embed_url'];
+                } elseif (is_array($decoded) && isset($decoded['url'])) {
+                    $videoUrl = $decoded['url'];
+                }
+            } catch (\Exception $e) {
+                // Fallback to original string if decoding fails
+            }
+        }
+
+        if (str_contains($videoUrl, 'youtube.com') || str_contains($videoUrl, 'youtu.be')) {
             $videoId = '';
-            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $this->video_url, $matches)) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $matches)) {
                 $videoId = $matches[1];
             }
             return 'https://www.youtube.com/embed/' . $videoId;
         }
 
-        if (str_contains($this->video_url, 'vimeo.com')) {
+        if (str_contains($videoUrl, 'vimeo.com')) {
             $videoId = '';
-            if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $this->video_url, $matches)) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $videoUrl, $matches)) {
                 $videoId = $matches[3];
             }
             return 'https://player.vimeo.com/video/' . $videoId;
         }
 
-        return null;
+        return $videoUrl; // Return as is if already a valid URL or not recognized
     }
 
     public function getVideoId()
     {
-        if (!$this->video_url) {
+        $videoUrl = $this->getEmbedUrl();
+
+        if (!$videoUrl) {
             return null;
         }
 
-        if (str_contains($this->video_url, 'youtube.com') || str_contains($this->video_url, 'youtu.be')) {
-            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $this->video_url, $matches)) {
+        if (str_contains($videoUrl, 'youtube.com') || str_contains($videoUrl, 'youtu.be') || str_contains($videoUrl, 'youtube.com/embed/')) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $matches)) {
                 return $matches[1];
             }
         }
 
-        if (str_contains($this->video_url, 'vimeo.com')) {
-            if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $this->video_url, $matches)) {
+        if (str_contains($videoUrl, 'vimeo.com') || str_contains($videoUrl, 'player.vimeo.com/video/')) {
+            if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:vimeo\.com|player\.vimeo\.com\/video)\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $videoUrl, $matches)) {
                 return $matches[3];
             }
         }

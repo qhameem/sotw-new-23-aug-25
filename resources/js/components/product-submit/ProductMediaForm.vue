@@ -46,7 +46,7 @@
         <!-- Video URL section in second column -->
         <div>
           <label for="video-url" class="block text-sm font-semibold text-gray-70">Video URL</label>
-          <input type="url" id="video-url" :value="modelValue.video_url" @input="updateField('video_url', $event.target.value)" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
+          <input type="url" id="video-url" :value="getDisplayVideoUrl" @input="updateField('video_url', $event.target.value)" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
           <div v-if="videoThumbnailUrl" class="mt-4">
             <img :src="videoThumbnailUrl" class="w-full h-auto object-contain rounded-md">
           </div>
@@ -130,14 +130,6 @@
         </div>
       </div>
 
-      <!-- Video URL -->
-      <div>
-        <label for="video-url" class="block text-sm font-semibold text-gray-700">Video URL</label>
-        <input type="url" id="video-url" :value="modelValue.video_url" @input="updateField('video_url', $event.target.value)" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
-        <div v-if="videoThumbnailUrl" class="mt-4">
-          <img :src="videoThumbnailUrl" class="w-full h-auto object-contain rounded-md">
-        </div>
-      </div>
       <div class="pt-4">
         <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-2 transition-all duration-300">
           {{ progress.completed }} of {{ progress.total }} required fields filled
@@ -212,21 +204,55 @@ const galleryInputs = ref([]);
 const largePreview = ref(null);
 
 const videoThumbnailUrl = computed(() => {
-  const url = props.modelValue.video_url;
-  if (!url) return '';
+  // Get the display URL using our helper function
+  const displayUrl = getDisplayVideoUrl.value;
+  if (!displayUrl) return '';
 
   let videoId;
-  if (url.includes('youtube.com/watch')) {
-    const params = new URLSearchParams(url.split('?')[1]);
+  if (displayUrl.includes('youtube.com/watch')) {
+    const params = new URLSearchParams(displayUrl.split('?')[1]);
     videoId = params.get('v');
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
+  } else if (displayUrl.includes('youtu.be/')) {
+    videoId = displayUrl.split('youtu.be/')[1].split('?')[0];
   }
 
   if (videoId) {
     return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   }
   return '';
+});
+
+const getDisplayVideoUrl = computed(() => {
+  let url = props.modelValue.video_url;
+  if (!url) return '';
+
+  // Handle JSON encoded video_url
+  if (typeof url === 'string' && (url.startsWith('{') || url.startsWith('"'))) {
+    try {
+      // If it starts with a quote, it might be double-encoded JSON
+      if (url.startsWith('"')) {
+        url = JSON.parse(url);
+      }
+      
+      const parsed = typeof url === 'string' ? JSON.parse(url) : url;
+      
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.embed_url) {
+          return parsed.embed_url;
+        } else if (parsed.url) {
+          return parsed.url;
+        }
+      }
+      return url; // Return parsed string or original if no specific field found
+    } catch (e) {
+      // If parsing fails, return the original value
+      console.error('Error parsing video URL JSON:', e);
+      return url;
+    }
+  }
+
+  // If it's not a JSON string, return as is
+  return url;
 });
 
 function updateField(field, value) {

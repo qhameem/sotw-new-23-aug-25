@@ -866,6 +866,22 @@ export function useProductForm() {
               logoUrl = `/storage/${logoUrl}`;
             }
 
+            // Parse video URL if it's in JSON format
+            let parsedVideoUrl = initialData.video_url;
+            if (typeof initialData.video_url === 'string' &&
+                initialData.video_url.startsWith('{') &&
+                initialData.video_url.endsWith('}')) {
+              try {
+                const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
+                if (parsed.embed_url) {
+                  parsedVideoUrl = parsed.embed_url;
+                }
+              } catch (e) {
+                console.error('Error parsing video URL JSON:', e);
+                parsedVideoUrl = initialData.video_url;
+              }
+            }
+
             updateFormMultiple({
               name: initialData.name || '',
               slug: initialData.slug || '',
@@ -877,7 +893,7 @@ export function useProductForm() {
               bestFor: JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id)),
               pricing: pricingCategoryIds.map(id => parseInt(id)),
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
-              video_url: initialData.video_url,
+              video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
               maker_links: initialData.maker_links || [],
               sell_product: !!initialData.sell_product,
@@ -1001,6 +1017,22 @@ export function useProductForm() {
               }
             }
 
+            // Parse video URL if it's in JSON format
+            let parsedVideoUrl = initialData.video_url;
+            if (typeof initialData.video_url === 'string' &&
+                initialData.video_url.startsWith('{') &&
+                initialData.video_url.endsWith('}')) {
+              try {
+                const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
+                if (parsed.embed_url) {
+                  parsedVideoUrl = parsed.embed_url;
+                }
+              } catch (e) {
+                console.error('Error parsing video URL JSON:', e);
+                parsedVideoUrl = initialData.video_url;
+              }
+            }
+
             const formUpdates = {
               name: initialData.name || '',
               slug: initialData.slug || '',
@@ -1012,7 +1044,7 @@ export function useProductForm() {
               bestFor: bestForCategoryIds.map(id => parseInt(id)),
               pricing: pricingCategoryIds.map(id => parseInt(id)),
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
-              video_url: initialData.video_url,
+              video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
               maker_links: initialData.maker_links || [],
               sell_product: !!initialData.sell_product,
@@ -1109,6 +1141,22 @@ export function useProductForm() {
                     regularCategoryIds = allCategoryIds;
                   }
 
+                  // Parse video URL if it's in JSON format
+                  let parsedVideoUrl = initialData.video_url || '';
+                  if (typeof initialData.video_url === 'string' &&
+                      initialData.video_url.startsWith('{') &&
+                      initialData.video_url.endsWith('}')) {
+                    try {
+                      const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
+                      if (parsed.embed_url) {
+                        parsedVideoUrl = parsed.embed_url;
+                      }
+                    } catch (e) {
+                      console.error('Error parsing video URL JSON in fallback:', e);
+                      parsedVideoUrl = initialData.video_url || '';
+                    }
+                  }
+
                   updateFormMultiple({
                     name: initialData.name || '',
                     tagline: initialData.tagline || '',
@@ -1119,7 +1167,7 @@ export function useProductForm() {
                     bestFor: bestForCategoryIds,
                     pricing: pricingCategoryIds,
                     tech_stack: initialData.current_tech_stacks || [],
-                    video_url: initialData.video_url || '',
+                    video_url: parsedVideoUrl,
                   });
                 } else {
                   // Also handle regular users in fallback
