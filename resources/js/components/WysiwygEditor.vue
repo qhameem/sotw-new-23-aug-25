@@ -28,7 +28,8 @@
     </div>
     <editor-content :editor="editor" v-if="editor" />
     <div v-if="editor" class="flex justify-end p-2 text-sm text-gray-500">
-      {{ editor.storage.characterCount.characters() }}/{{ maxLength }}
+      <span v-if="maxLength !== null && maxLength !== undefined">{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }}/{{ maxLength }}</span>
+      <span v-else>{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }} characters</span>
     </div>
   </div>
 </template>
@@ -46,7 +47,7 @@ const props = defineProps({
   },
   maxLength: {
     type: Number,
-    default: 1200,
+    default: null, // Set to null to indicate no limit
   },
 });
 
@@ -56,24 +57,30 @@ const editor = useEditor({
   content: props.modelValue,
   extensions: [
     StarterKit,
-    CharacterCount.configure({
-      limit: props.maxLength,
-    }),
+    ...(props.maxLength ? [
+      CharacterCount.configure({
+        limit: props.maxLength,
+      })
+    ] : []),
   ],
   onUpdate: ({ editor }) => {
-    // Truncate content if it exceeds the limit
     const html = editor.getHTML();
-    const textContent = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
     
-    if (textContent.length > props.maxLength) {
-      // Get the content truncated to the max length
-      const truncatedContent = textContent.substring(0, props.maxLength);
-      // Convert back to HTML (simple approach, keeping existing HTML structure)
-      const truncatedHtml = `<p>${truncatedContent}</p>`;
-      emit('update:modelValue', truncatedHtml);
-    } else {
-      emit('update:modelValue', html);
+    // Only truncate content if maxLength is specified
+    if (props.maxLength !== null && props.maxLength !== undefined) {
+      const textContent = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+      
+      if (textContent.length > props.maxLength) {
+        // Get the content truncated to the max length
+        const truncatedContent = textContent.substring(0, props.maxLength);
+        // Convert back to HTML (simple approach, keeping existing HTML structure)
+        const truncatedHtml = `<p>${truncatedContent}</p>`;
+        emit('update:modelValue', truncatedHtml);
+        return;
+      }
     }
+    
+    emit('update:modelValue', html);
   },
   editorProps: {
     attributes: {
@@ -81,21 +88,23 @@ const editor = useEditor({
     },
     // Explicitly allow paste operations
     handlePaste: (view, event, slice) => {
-      // Truncate the pasted content if it exceeds the limit
-      const currentText = view.state.doc.textContent;
-      const pastedText = slice.content.size ? slice.content.textContent : '';
-      const totalLength = currentText.length + pastedText.length;
-      
-      if (totalLength > props.maxLength) {
-        // Truncate the slice to fit within the limit
-        const availableSpace = props.maxLength - currentText.length;
-        if (availableSpace > 0) {
-          // This is a simplified approach - in practice, we let the paste happen
-          // and then the onUpdate will truncate the content
-        } else {
-          // Prevent paste if no space available
-          event.preventDefault();
-          return true; // Indicate that we handled the event
+      // Only check length limit if maxLength is specified
+      if (props.maxLength !== null && props.maxLength !== undefined) {
+        const currentText = view.state.doc.textContent;
+        const pastedText = slice.content.size ? slice.content.textContent : '';
+        const totalLength = currentText.length + pastedText.length;
+        
+        if (totalLength > props.maxLength) {
+          // Truncate the slice to fit within the limit
+          const availableSpace = props.maxLength - currentText.length;
+          if (availableSpace > 0) {
+            // This is a simplified approach - in practice, we let the paste happen
+            // and then the onUpdate will truncate the content
+          } else {
+            // Prevent paste if no space available
+            event.preventDefault();
+            return true; // Indicate that we handled the event
+          }
         }
       }
       return false; // Allow default behavior
