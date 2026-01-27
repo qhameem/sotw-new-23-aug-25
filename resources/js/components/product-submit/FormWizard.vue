@@ -26,10 +26,10 @@
             <div class="md:sticky md:top-24 bg-gray-100 rounded-lg p-4 md:shadow-sm border border-gray-100">
               <div class="flex mb-6 items-center border-b pb-4">
                 <img
-                  v-if="form.favicon"
-                  :src="form.favicon"
-                  alt="Favicon"
-                  class="h-10 w-10 mr-3 rounded-md shadow-sm"
+                  v-if="logoPreview || form.favicon"
+                  :src="logoPreview || form.favicon"
+                  alt="Logo"
+                  class="h-10 w-10 mr-3 rounded-md shadow-sm object-contain bg-white"
                 >
                 <div class="overflow-hidden">
                   <h2 class="text-base font-bold text-gray-800 truncate">{{ form.name || 'Product Details' }}</h2>
@@ -382,7 +382,7 @@ const isStepCompleted = (stepId) => {
   if (!step) return false;
   
   // Use the service function to check if the tab is completed
- const completed = isTabCompleted(step, form, logoPreview);
+  const completed = isTabCompleted(step, form, logoPreview.value);
   
   // For launch checklist, we'll consider it completed when the form is submitted
   // For now, this tab will only show a checkmark when the form is actually submitted

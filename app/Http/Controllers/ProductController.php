@@ -218,7 +218,7 @@ class ProductController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 0;
         $validated['approved'] = false;
-        $validated['description'] = $request->input('description');
+        $validated['description'] = $this->ensureProperParagraphStructure($this->addNofollowToLinks($request->input('description')));
 
         // Handle optional fields
         $validated['maker_links'] = $request->input('maker_links', []);
@@ -346,8 +346,9 @@ class ProductController extends Controller
                 'slug' => $oldInput['slug'] ?? $product->slug,
                 'link' => $oldInput['link'] ?? $product->link,
                 'logo' => $product->proposed_logo_path ?? $product->logo,
+                'logo_url' => ($product->proposed_logo_path ? \Illuminate\Support\Facades\Storage::url($product->proposed_logo_path) : $product->logo_url),
                 'tagline' => $product->proposed_tagline ?? $product->tagline,
-                'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->product_page_tagline,
+                'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->proposed_product_page_tagline ?? $product->product_page_tagline,
                 'description' => $product->proposed_description ?? $product->description,
                 'current_categories' => $product->proposedCategories->pluck('id')->toArray(),
                 'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
@@ -356,6 +357,7 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
+                'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         } else {
             // When no pending edits, use original values
@@ -364,6 +366,7 @@ class ProductController extends Controller
                 'slug' => $oldInput['slug'] ?? $product->slug,
                 'link' => $oldInput['link'] ?? $product->link,
                 'logo' => $product->logo,
+                'logo_url' => $product->logo_url,
                 'tagline' => $oldInput['tagline'] ?? $product->tagline,
                 'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->product_page_tagline,
                 'description' => $oldInput['description'] ?? $product->description,
@@ -374,6 +377,7 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
+                'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         }
 
@@ -482,7 +486,7 @@ class ProductController extends Controller
         $updateData = [
             'tagline' => $validated['tagline'],
             'product_page_tagline' => $validated['product_page_tagline'],
-            'description' => $this->addNofollowToLinks($validated['description']),
+            'description' => $this->ensureProperParagraphStructure($this->addNofollowToLinks($validated['description'])),
             'video_url' => $validated['video_url'] ?? null,
         ];
         $newCategories = $validated['categories'];
@@ -535,7 +539,7 @@ class ProductController extends Controller
 
             $product->proposed_tagline = $updateData['tagline'];
             $product->proposed_product_page_tagline = $updateData['product_page_tagline'];
-            $product->proposed_description = $updateData['description'];
+            $product->proposed_description = $this->ensureProperParagraphStructure($updateData['description']);
             $product->proposed_video_url = $updateData['video_url'] ?? null;
             $product->proposedCategories()->sync($newCategories);
             $product->proposedTechStacks()->sync($newTechStacks);
@@ -1469,7 +1473,34 @@ class ProductController extends Controller
 
         return $shuffledIds;
     }
-    private function addNofollowToLinks($html)
+    // Ensure content has proper paragraph structure
+    public function ensureProperParagraphStructure($html)
+    {
+        if (empty($html)) {
+            return $html;
+        }
+
+        // Check if content has any block-level elements
+        // If not, wrap the content in paragraph tags
+        if (!preg_match('/<(p|div|h[1-6]|ul|ol|blockquote|pre|hr)/i', $html)) {
+            // Split by newlines and wrap each line in a paragraph
+            $paragraphs = array_filter(explode("\n", $html));
+            if (count($paragraphs) > 1) {
+                $wrappedParagraphs = array_map(function ($p) {
+                    $p = trim($p);
+                    return $p ? "<p>{$p}</p>" : '';
+                }, $paragraphs);
+                $html = implode('', $wrappedParagraphs);
+            } else {
+                // If it's a single block of text, wrap in one paragraph
+                $html = "<p>" . trim(strip_tags($html)) . "</p>";
+            }
+        }
+
+        return $html;
+    }
+
+    public function addNofollowToLinks($html)
     {
         if (empty($html)) {
             return $html;

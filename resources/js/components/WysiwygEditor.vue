@@ -56,7 +56,25 @@ const emit = defineEmits(['update:modelValue']);
 const editor = useEditor({
   content: props.modelValue,
   extensions: [
-    StarterKit,
+    StarterKit.configure({
+      // Ensure paragraphs are properly handled
+      paragraph: {
+        HTMLAttributes: {
+          class: 'mb-4',
+        },
+      },
+      // Configure other nodes as needed
+      heading: {
+        HTMLAttributes: {
+          class: 'mb-3',
+        },
+      },
+      listItem: {
+        HTMLAttributes: {
+          class: 'mb-1',
+        },
+      },
+    }),
     ...(props.maxLength ? [
       CharacterCount.configure({
         limit: props.maxLength,

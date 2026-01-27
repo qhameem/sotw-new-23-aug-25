@@ -326,7 +326,7 @@ export function useProductForm() {
         // Use the fromSource that was captured during initialization
         formData.append('from', form.fromSource);
       }
-      
+
       // Submit the form
       const response = await axios.post(url, formData, {
         headers: {
@@ -433,7 +433,8 @@ export function useProductForm() {
       return false;
     }
 
-    if (!globalFormState.logoPreview.value && (!form.logos || form.logos.length === 0)) {
+    const hasLogo = !!globalFormState.logoPreview.value || !!form.logo || (form.logos && form.logos.length > 0);
+    if (!hasLogo) {
       showErrorMessage.value = true;
       errorMessage.value = 'A logo is required.';
       return false;
@@ -653,7 +654,7 @@ export function useProductForm() {
   const updateFormMultiple = async (updates) => {
     // Preserve the fromSource field if it exists in the current form
     const preservedFromSource = form.fromSource;
-    
+
     // Update each field individually to ensure reactivity
     Object.keys(updates).forEach(key => {
       if (form.hasOwnProperty(key)) {
@@ -669,7 +670,7 @@ export function useProductForm() {
     if (preservedFromSource) {
       form.fromSource = preservedFromSource;
     }
-    
+
     // Check URL existence if the link field was updated
     if (updates.link !== undefined) {
       await checkUrlExists();
@@ -716,7 +717,7 @@ export function useProductForm() {
 
     // Load initial data from the HTML element attributes first (for editing existing products)
     // This ensures that if we're editing an existing product, we load that data first
-    loadInitialDataFromElement();
+    await loadInitialDataFromElement();
 
     // Then load saved data (from session storage) which might override initial data
     // Only load saved data if we're not editing an existing product (to prevent override)
@@ -750,7 +751,7 @@ export function useProductForm() {
         await loadSavedData();
       }, 10);
     }
-    
+
     // Capture query parameters from URL and store them in form data if applicable
     const urlParams = new URLSearchParams(window.location.search);
     const fromParam = urlParams.get('from');
@@ -760,19 +761,19 @@ export function useProductForm() {
   };
 
   // Load initial data from HTML element attributes (for editing existing products)
-  const loadInitialDataFromElement = () => {
+  const loadInitialDataFromElement = async () => {
     // Try to load immediately
-    tryLoadInitialData();
+    await tryLoadInitialData();
 
     // If element is not found, set up a MutationObserver to wait for it to be added to the DOM
     if (!document.getElementById('product-submit-app')) {
-      const observer = new MutationObserver((mutationsList) => {
+      const observer = new MutationObserver(async (mutationsList) => {
         for (const mutation of mutationsList) {
           if (mutation.type === 'childList') {
             const element = document.getElementById('product-submit-app');
             if (element) {
               observer.disconnect(); // Stop observing once we find the element
-              tryLoadInitialData();
+              await tryLoadInitialData();
               return;
             }
           }
@@ -788,7 +789,7 @@ export function useProductForm() {
   };
 
   // Helper function to try loading initial data
-  const tryLoadInitialData = () => {
+  const tryLoadInitialData = async () => {
     const element = document.getElementById('product-submit-app');
     if (element) {
       console.log('Found product-submit-app element, attempting to load initial data');
@@ -878,7 +879,7 @@ export function useProductForm() {
             console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds, 'BestFor:', bestForCategoryIds);
 
             // Format the logo preview URL if it's a relative path
-            let logoUrl = initialData.logo;
+            let logoUrl = initialData.logo_url || initialData.logo;
             if (logoUrl && !logoUrl.startsWith('http')) {
               logoUrl = `/storage/${logoUrl}`;
             }
@@ -907,8 +908,10 @@ export function useProductForm() {
             // Capture the from parameter if present in URL
             const urlParams = new URLSearchParams(window.location.search);
             const fromParam = urlParams.get('from');
-            
-            updateFormMultiple({
+
+            console.log('Admin logo path:', initialData.logo, 'Preview URL:', logoUrl);
+
+            await updateFormMultiple({
               name: initialData.name || '',
               slug: initialData.slug || '',
               tagline: initialData.tagline || '',
@@ -926,10 +929,13 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
               fromSource: fromParam || null,
+              logo: initialData.logo || null,
+              favicon: initialData.logo_url || logoUrl || null,
             });
 
             if (logoUrl) {
               globalFormState.logoPreview.value = logoUrl;
+              console.log('Set logoPreview to:', globalFormState.logoPreview.value);
             }
 
             console.log('Updated form with initial data for admin');
@@ -946,7 +952,7 @@ export function useProductForm() {
             console.log('Selected best for categories (raw):', selectedBestForCategories);
 
             // Format the logo preview URL if it's a relative path
-            let logoUrl = initialData.logo;
+            let logoUrl = initialData.logo_url || initialData.logo;
             if (logoUrl && !logoUrl.startsWith('http')) {
               logoUrl = `/storage/${logoUrl}`;
             }
@@ -1068,7 +1074,7 @@ export function useProductForm() {
             // Capture the from parameter if present in URL
             const urlParams = new URLSearchParams(window.location.search);
             const fromParam = urlParams.get('from');
-            
+
             const formUpdates = {
               name: initialData.name || '',
               slug: initialData.slug || '',
@@ -1087,12 +1093,14 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
               fromSource: fromParam || null,
+              logo: initialData.logo || null,
+              favicon: initialData.logo_url || logoUrl || null,
             };
 
             console.log('Form updates:', formUpdates);
 
             try {
-              updateFormMultiple(formUpdates);
+              await updateFormMultiple(formUpdates);
             } catch (e) {
               console.error('Error updating form with initial data:', e);
             }
@@ -1201,8 +1209,8 @@ export function useProductForm() {
                   // Capture the from parameter if present in URL
                   const urlParams = new URLSearchParams(window.location.search);
                   const fromParam = urlParams.get('from');
-                  
-                  updateFormMultiple({
+
+                  await updateFormMultiple({
                     name: initialData.name || '',
                     tagline: initialData.tagline || '',
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
@@ -1277,8 +1285,8 @@ export function useProductForm() {
                   // Capture the from parameter if present in URL
                   const urlParams = new URLSearchParams(window.location.search);
                   const fromParam = urlParams.get('from');
-                  
-                  updateFormMultiple({
+
+                  await updateFormMultiple({
                     name: initialData.name || '',
                     tagline: initialData.tagline || '',
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
@@ -1295,6 +1303,8 @@ export function useProductForm() {
                     asking_price: initialData.asking_price,
                     x_account: initialData.x_account,
                     fromSource: fromParam || null,
+                    logo: initialData.logo || null,
+                    favicon: initialData.logo_url || null,
                   });
                 }
                 globalFormState.step.value = 2;

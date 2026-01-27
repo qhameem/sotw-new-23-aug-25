@@ -130,15 +130,10 @@ class ProductController extends Controller
         $productController = new \App\Http\Controllers\ProductController(
             app(\App\Services\FaviconExtractorService::class),
             app(\App\Services\SlugService::class),
-            app(\App\Services\CategoryClassifier::class),
-            app(\App\Services\TechStackDetectorService::class)
-        );
-
-        $productController = new \App\Http\Controllers\ProductController(
-            app(\App\Services\FaviconExtractorService::class),
-            app(\App\Services\SlugService::class),
-            app(\App\Services\CategoryClassifier::class),
-            app(\App\Services\TechStackDetectorService::class)
+            app(\App\Services\TechStackDetectorService::class),
+            app(\App\Services\NameExtractorService::class),
+            app(\App\Services\LogoExtractorService::class),
+            app(\App\Services\CategoryClassifier::class)
         );
 
         $view = $productController->showProductPage($product);
@@ -174,6 +169,7 @@ class ProductController extends Controller
             'slug' => old('slug', $product->slug),
             'link' => old('link', $product->link),
             'logo' => $product->logo, // Use original logo
+            'logo_url' => $product->logo_url, // Full URL for preview
             'tagline' => old('tagline', $product->tagline), // Use original tagline
             'product_page_tagline' => old('product_page_tagline', $product->product_page_tagline),
             'description' => old('description', $product->description), // Use original description
@@ -185,6 +181,7 @@ class ProductController extends Controller
             'asking_price' => old('asking_price', $product->asking_price),
             'x_account' => old('x_account', $product->x_account),
             'id' => $product->id,
+            'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -244,6 +241,22 @@ class ProductController extends Controller
             $validated['logo'] = $request->file('logo')->store('logos', 'public');
         }
 
+        // Process description to ensure proper paragraph structure
+        if (isset($validated['description'])) {
+            $productController = new \App\Http\Controllers\ProductController(
+                app(\App\Services\FaviconExtractorService::class),
+                app(\App\Services\SlugService::class),
+                app(\App\Services\TechStackDetectorService::class),
+                app(\App\Services\NameExtractorService::class),
+                app(\App\Services\LogoExtractorService::class),
+                app(\App\Services\CategoryClassifier::class)
+            );
+
+            $validated['description'] = $productController->ensureProperParagraphStructure(
+                $productController->addNofollowToLinks($validated['description'])
+            );
+        }
+
         $product->update($validated);
 
         if ($request->has('categories')) {
@@ -268,7 +281,7 @@ class ProductController extends Controller
 
         // Check if the user came from the product approvals page
         $fromApprovals = $request->input('from') === 'approvals';
-        
+
         if ($request->wantsJson() || $request->ajax()) {
             $redirectUrl = $fromApprovals ? route('admin.product-approvals.index') : route('admin.products.index');
             return response()->json([
