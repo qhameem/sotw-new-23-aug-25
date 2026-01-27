@@ -100,13 +100,27 @@
         <!-- Link to the product (disabled input) -->
         <div class="mb-4">
           <label for="product-link" class="block text-sm font-semibold text-gray-700 mb-2">Link to the product</label>
-          <input
-            type="url"
-            id="product-link"
-            :value="modelValue.link"
-            disabled
-            class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
-          >
+          <div class="relative">
+            <input
+              type="url"
+              id="product-link"
+              ref="productLinkRef"
+              :value="modelValue.link"
+              disabled
+              class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm pr-10"
+            >
+            <button
+              type="button"
+              @click="copyToClipboard(modelValue.link)"
+              ref="copyButtonRef"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+              title="Copy link to clipboard"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>
         </div>
         
         <!-- Additional links section -->
@@ -250,6 +264,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'next', 'back']);
 
 const nameInput = ref(null);
+const productLinkRef = ref(null);
+const copyButtonRef = ref(null);
 
 
 
@@ -331,4 +347,29 @@ const updateAdditionalLink = (index, value) => {
   newLinks[index] = value;
   updateField('additionalLinks', newLinks);
 };
+
+// Function to copy text to clipboard
+function copyToClipboard(text) {
+  if (text) {
+    navigator.clipboard.writeText(text).then(() => {
+      // Optional: Show a temporary success indicator
+      const button = copyButtonRef.value;
+      if (button) {
+        const originalHTML = button.innerHTML;
+        button.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
+        
+        // Revert back to original icon after 2 seconds
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  }
+}
 </script>
