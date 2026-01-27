@@ -90,7 +90,7 @@
             </a>
 
             <x-primary-button class="ms-4">
-                {{ __('Create Account') }}
+                {{ __('Create Account') }} 
             </x-primary-button>
         </div>
     </form>

@@ -7,31 +7,39 @@
         <x-input-error :messages="$errors->get('email')" class="mt-2" />
     </div>
     <div class="mt-4">
-        <x-input-label for="password_modal_login" :value="__('Password')" />
+        <!-- <x-input-label for="password_modal_login" :value="__('Password')" /> -->
+        <div class="flex items-center justify-between">
+            <x-input-label for="password_modal_login" :value="__('Password')" />
+
+            @if (Route::has('password.request'))
+                <a
+                    href="{{ route('password.request') }}"
+                    class="text-xs text-gray-400 hover:text-gray-600 hover:underline"
+                >
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+        </div>
+
         <x-text-input id="password_modal_login" class="block mt-1 w-full"
                         type="password"
                         name="password"
                         required autocomplete="current-password" />
         <x-input-error :messages="$errors->get('password')" class="mt-2" />
     </div>
-    <div class="block mt-4">
+    <div class="flex flex-row justify-between content-center mt-4">
+        <div>
         <label for="remember_me_modal_login" class="inline-flex items-center">
             <input id="remember_me_modal_login" type="checkbox" class="rounded border-gray-300 text-rose-600 shadow-sm focus:ring-rose-500" name="remember">
             <span class="ms-2 text-xs text-gray-600">{{ __('Remember me') }}</span>
         </label>
-    </div>
-    <div class="flex items-center justify-end mt-4">
-        @if (Route::has('password.request'))
-            <a class="text-xs text-gray-400 hover:text-gray-600 hover:underline rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                {{ __('Forgot your password?') }}
-            </a>
-        @endif
-        <!-- <x-primary-button class="ms-3">
-            {{ __('Log in') }}
-        </x-primary-button> -->
-           <span class="ms-3 text-sm text-gray-500 border border-gray-400 rounded-md px-4 py-1 
+        </div>
+        <div>
+        <button class="text-sm bg-white text-gray-700 border border-gray-300 rounded-md px-8 py-1 
            hover:cursor-pointer hover:text-white hover:bg-gray-800">
-            {{ __('Log in') }}
-        </span>
+            {{ __('Log In ->') }}
+            </button>
+        </div>
     </div>
+    
 </form>
