@@ -38,10 +38,10 @@
 
     <div class="flex flex-col items-center justify-center mt-4">
         <div class="text-xl text-gray-700 font-semibold">Welcome!</div>
-        <div class="text-sm text-gray-500" x-text="activeTab === 'login' ? 'Please enter your details to login.' : 'Please enter your details to sign up.'"></div>
+        <div class="text-sm text-gray-500 w-64 text-center" x-text="activeTab === 'login' ? 'Please enter your details to login.' : 'Please enter your details to sign up.'"></div>
     </div>
 
-    <div x-show="activeTab === 'login'" class="mt-8 mb-6">
+    <div x-show="activeTab === 'login'" class="mt-8 mb-6 min-h-[420px]">
         @include('auth.partials.google-login-button')
         <div class="mt-6 flex items-center">
             <div class="flex-grow border-t border-gray-300"></div>
@@ -51,7 +51,7 @@
         @include('auth.partials.login-form')
     </div>
 
-    <div x-show="activeTab === 'register'" class="mt-8 mb-6" style="display: none;">
+    <div x-show="activeTab === 'register'" class="mt-8 mb-6 min-h-[420px]" style="display: none;">
         @include('auth.partials.google-login-button')
         <div class="mt-6 flex items-center">
             <div class="flex-grow border-t border-gray-300"></div>
