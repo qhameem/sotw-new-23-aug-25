@@ -408,7 +408,7 @@ export function useProductForm() {
     }
     if (validCategories.length > 3) {
       showErrorMessage.value = true;
-      errorMessage.value = 'Maximum 3 categories allowed.';
+      errorMessage.value = 'Maximum 3 regular categories allowed.';
       return false;
     }
 
@@ -430,6 +430,13 @@ export function useProductForm() {
     if (actualPricingCategories.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one pricing model is required.';
+      return false;
+    }
+    
+    // Validate pricing categories: maximum 3
+    if (actualPricingCategories.length > 3) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'Maximum 3 pricing categories allowed.';
       return false;
     }
 
@@ -792,30 +799,66 @@ export function useProductForm() {
             let allCategoryIds = initialData.current_categories || [];
             let pricingCategoryIds = [];
             let regularCategoryIds = [];
+            let bestForCategoryIds = [];
 
-            if (allCategoryIds.length > 0 && allPricing) {
+            if (allCategoryIds.length > 0) {
               try {
-                const pricingCats = JSON.parse(allPricing);
-                const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+                // Separate categories by type only if allPricing is available
+                if (allPricing) {
+                  const pricingCats = JSON.parse(allPricing);
+                  const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
 
-                // Separate pricing and regular categories
-                pricingCategoryIds = allCategoryIds.filter(catId =>
-                  pricingCatIds.includes(parseInt(catId))
-                );
-                regularCategoryIds = allCategoryIds.filter(catId =>
-                  !pricingCatIds.includes(parseInt(catId))
-                );
+                  // Parse selected bestFor categories to identify them separately
+                  let parsedBestFor = [];
+                  try {
+                    parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                  } catch (e) {
+                    console.error('Error parsing selectedBestForCategories:', e);
+                    parsedBestFor = [];
+                  }
+
+                  // Separate pricing, bestFor, and regular categories
+                  pricingCategoryIds = allCategoryIds.filter(catId =>
+                    pricingCatIds.includes(parseInt(catId))
+                  );
+                  
+                  bestForCategoryIds = allCategoryIds.filter(catId =>
+                    parsedBestFor.includes(parseInt(catId))
+                  );
+                  
+                  // Regular categories are those that are neither pricing nor bestFor
+                  regularCategoryIds = allCategoryIds.filter(catId => {
+                    const catIntId = parseInt(catId);
+                    return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
+                  });
+                } else {
+                  // If no pricing categories info, we need to use a different approach
+                  // Since we don't know which are pricing, we'll assume none are pricing
+                  // and all are regular categories (excluding known bestFor which are handled separately)
+                  try {
+                    const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                    // Separate bestFor from regular categories
+                    bestForCategoryIds = allCategoryIds.filter(catId =>
+                      parsedBestFor.includes(parseInt(catId))
+                    );
+                    regularCategoryIds = allCategoryIds.filter(catId =>
+                      !parsedBestFor.includes(parseInt(catId))
+                    );
+                  } catch (e) {
+                    console.error('Error parsing selectedBestForCategories:', e);
+                    regularCategoryIds = allCategoryIds;
+                  }
+                }
               } catch (e) {
                 console.error('Error parsing pricing categories:', e);
                 // If parsing fails, treat all as regular categories
                 regularCategoryIds = allCategoryIds;
               }
             } else {
-              // If no pricing categories are available, assume all are regular categories
               regularCategoryIds = allCategoryIds;
             }
 
-            console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds);
+            console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds, 'BestFor:', bestForCategoryIds);
 
             // Format the logo preview URL if it's a relative path
             let logoUrl = initialData.logo;
@@ -870,44 +913,92 @@ export function useProductForm() {
             let allCategoryIds = initialData.current_categories || [];
             let pricingCategoryIds = [];
             let regularCategoryIds = [];
+            let bestForCategoryIds = [];
 
             console.log('All category IDs:', allCategoryIds);
 
-            if (allCategoryIds.length > 0 && allPricing) {
+            if (allCategoryIds.length > 0) {
               try {
-                const pricingCats = JSON.parse(allPricing);
-                console.log('Parsed pricing categories:', pricingCats);
-                const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+                // Separate categories by type only if allPricing is available
+                if (allPricing) {
+                  const pricingCats = JSON.parse(allPricing);
+                  console.log('Parsed pricing categories:', pricingCats);
+                  const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
 
-                // Separate pricing and regular categories
-                pricingCategoryIds = allCategoryIds.filter(catId =>
-                  pricingCatIds.includes(parseInt(catId))
-                );
-                regularCategoryIds = allCategoryIds.filter(catId =>
-                  !pricingCatIds.includes(parseInt(catId))
-                );
+                  // Parse selected bestFor categories to identify them separately
+                  let parsedBestFor = [];
+                  try {
+                    parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                    console.log('Parsed best for categories:', parsedBestFor);
+                  } catch (e) {
+                    console.error('Error parsing selectedBestForCategories:', e);
+                    parsedBestFor = [];
+                  }
 
-                console.log('Pricing category IDs:', pricingCategoryIds);
-                console.log('Regular category IDs:', regularCategoryIds);
+                  // Separate pricing, bestFor, and regular categories
+                  pricingCategoryIds = allCategoryIds.filter(catId =>
+                    pricingCatIds.includes(parseInt(catId))
+                  );
+                  
+                  bestForCategoryIds = allCategoryIds.filter(catId =>
+                    parsedBestFor.includes(parseInt(catId))
+                  );
+                  
+                  // Regular categories are those that are neither pricing nor bestFor
+                  regularCategoryIds = allCategoryIds.filter(catId => {
+                    const catIntId = parseInt(catId);
+                    return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
+                  });
+
+                  console.log('Pricing category IDs:', pricingCategoryIds);
+                  console.log('Regular category IDs:', regularCategoryIds);
+                  console.log('BestFor category IDs:', bestForCategoryIds);
+                } else {
+                  // If no pricing categories info, we need to use a different approach
+                  // Since we don't know which are pricing, we'll assume none are pricing
+                  // and all are regular categories (excluding known bestFor which are handled separately)
+                  try {
+                    const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                    // Separate bestFor from regular categories
+                    bestForCategoryIds = allCategoryIds.filter(catId =>
+                      parsedBestFor.includes(parseInt(catId))
+                    );
+                    regularCategoryIds = allCategoryIds.filter(catId =>
+                      !parsedBestFor.includes(parseInt(catId))
+                    );
+                    console.log('Using separated bestFor and regular categories');
+                  } catch (e) {
+                    console.error('Error parsing selectedBestForCategories:', e);
+                    regularCategoryIds = allCategoryIds;
+                    console.log('Using all categories as regular categories');
+                  }
+                }
               } catch (e) {
                 console.error('Error parsing pricing categories for regular user:', e);
                 // If parsing fails, treat all as regular categories
                 regularCategoryIds = allCategoryIds;
               }
             } else {
-              // If no pricing categories are available, assume all are regular categories
               regularCategoryIds = allCategoryIds;
-              console.log('Using all categories as regular categories');
             }
 
-            // Parse selectedBestForCategories safely
+            // Parse selectedBestForCategories safely (this was already done above, but keeping for consistency)
             let parsedBestFor = [];
             try {
               parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+              if (!bestForCategoryIds || bestForCategoryIds.length === 0) {
+                // If bestForCategoryIds wasn't set in the main logic above, set it here
+                bestForCategoryIds = allCategoryIds.filter(catId =>
+                  parsedBestFor.includes(parseInt(catId))
+                );
+              }
               console.log('Parsed best for categories:', parsedBestFor);
             } catch (e) {
               console.error('Error parsing selectedBestForCategories:', e);
               parsedBestFor = [];
+              if (!bestForCategoryIds) {
+                bestForCategoryIds = [];
+              }
             }
 
             const formUpdates = {
@@ -918,7 +1009,7 @@ export function useProductForm() {
               description: initialData.description || '',
               link: initialData.link || '',
               categories: regularCategoryIds.map(id => parseInt(id)),
-              bestFor: parsedBestFor,
+              bestFor: bestForCategoryIds.map(id => parseInt(id)),
               pricing: pricingCategoryIds.map(id => parseInt(id)),
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: initialData.video_url,
@@ -961,27 +1052,61 @@ export function useProductForm() {
               try {
                 const initialData = JSON.parse(displayData);
                 if (isAdmin === 'true') {
-                  updateFormMultiple({
-                    name: initialData.name || '',
-                    tagline: initialData.tagline || '',
-                    tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
-                    description: initialData.description || '',
-                    link: initialData.link || '',
-                    categories: initialData.current_categories || [],
-                    bestFor: JSON.parse(selectedBestForCategories || '[]'),
-                    pricing: [],
-                    tech_stack: initialData.current_tech_stacks || [],
-                    video_url: initialData.video_url || '',
-                  });
-                } else {
-                  // Also handle regular users in fallback
-                  // Parse selectedBestForCategories safely
-                  let parsedBestFor = [];
-                  try {
-                    parsedBestFor = JSON.parse(selectedBestForCategories || '[]');
-                  } catch (e) {
-                    console.error('Error parsing selectedBestForCategories in fallback:', e);
-                    parsedBestFor = [];
+                  // For fallback, we need to try to separate categories as well
+                  let allCategoryIds = initialData.current_categories || [];
+                  let pricingCategoryIds = [];
+                  let regularCategoryIds = [];
+                  let bestForCategoryIds = [];
+
+                  if (allCategoryIds.length > 0) {
+                    try {
+                      if (allPricing) {
+                        const pricingCats = JSON.parse(allPricing);
+                        const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+
+                        let parsedBestFor = [];
+                        try {
+                          parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                        } catch (e) {
+                          console.error('Error parsing selectedBestForCategories in fallback:', e);
+                          parsedBestFor = [];
+                        }
+
+                        // Separate pricing, bestFor, and regular categories
+                        pricingCategoryIds = allCategoryIds.filter(catId =>
+                          pricingCatIds.includes(parseInt(catId))
+                        );
+                        
+                        bestForCategoryIds = allCategoryIds.filter(catId =>
+                          parsedBestFor.includes(parseInt(catId))
+                        );
+                        
+                        // Regular categories are those that are neither pricing nor bestFor
+                        regularCategoryIds = allCategoryIds.filter(catId => {
+                          const catIntId = parseInt(catId);
+                          return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
+                        });
+                      } else {
+                        // If no pricing categories info, separate bestFor from regular
+                        try {
+                          const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                          bestForCategoryIds = allCategoryIds.filter(catId =>
+                            parsedBestFor.includes(parseInt(catId))
+                          );
+                          regularCategoryIds = allCategoryIds.filter(catId =>
+                            !parsedBestFor.includes(parseInt(catId))
+                          );
+                        } catch (e) {
+                          console.error('Error parsing selectedBestForCategories in fallback:', e);
+                          regularCategoryIds = allCategoryIds;
+                        }
+                      }
+                    } catch (e) {
+                      console.error('Error in fallback category separation:', e);
+                      regularCategoryIds = allCategoryIds;
+                    }
+                  } else {
+                    regularCategoryIds = allCategoryIds;
                   }
 
                   updateFormMultiple({
@@ -990,9 +1115,80 @@ export function useProductForm() {
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
                     description: initialData.description || '',
                     link: initialData.link || '',
-                    categories: initialData.current_categories || [],
-                    bestFor: parsedBestFor,
-                    pricing: [],
+                    categories: regularCategoryIds,
+                    bestFor: bestForCategoryIds,
+                    pricing: pricingCategoryIds,
+                    tech_stack: initialData.current_tech_stacks || [],
+                    video_url: initialData.video_url || '',
+                  });
+                } else {
+                  // Also handle regular users in fallback
+                  // Apply the same category separation logic for consistency
+                  let allCategoryIds = initialData.current_categories || [];
+                  let pricingCategoryIds = [];
+                  let regularCategoryIds = [];
+                  let bestForCategoryIds = [];
+
+                  if (allCategoryIds.length > 0) {
+                    try {
+                      if (allPricing) {
+                        const pricingCats = JSON.parse(allPricing);
+                        const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
+
+                        let parsedBestFor = [];
+                        try {
+                          parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                        } catch (e) {
+                          console.error('Error parsing selectedBestForCategories in fallback:', e);
+                          parsedBestFor = [];
+                        }
+
+                        // Separate pricing, bestFor, and regular categories
+                        pricingCategoryIds = allCategoryIds.filter(catId =>
+                          pricingCatIds.includes(parseInt(catId))
+                        );
+                        
+                        bestForCategoryIds = allCategoryIds.filter(catId =>
+                          parsedBestFor.includes(parseInt(catId))
+                        );
+                        
+                        // Regular categories are those that are neither pricing nor bestFor
+                        regularCategoryIds = allCategoryIds.filter(catId => {
+                          const catIntId = parseInt(catId);
+                          return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
+                        });
+                      } else {
+                        // If no pricing categories info, separate bestFor from regular
+                        try {
+                          const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
+                          bestForCategoryIds = allCategoryIds.filter(catId =>
+                            parsedBestFor.includes(parseInt(catId))
+                          );
+                          regularCategoryIds = allCategoryIds.filter(catId =>
+                            !parsedBestFor.includes(parseInt(catId))
+                          );
+                        } catch (e) {
+                          console.error('Error parsing selectedBestForCategories in fallback:', e);
+                          regularCategoryIds = allCategoryIds;
+                        }
+                      }
+                    } catch (e) {
+                      console.error('Error in fallback category separation:', e);
+                      regularCategoryIds = allCategoryIds;
+                    }
+                  } else {
+                    regularCategoryIds = allCategoryIds;
+                  }
+
+                  updateFormMultiple({
+                    name: initialData.name || '',
+                    tagline: initialData.tagline || '',
+                    tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
+                    description: initialData.description || '',
+                    link: initialData.link || '',
+                    categories: regularCategoryIds,
+                    bestFor: bestForCategoryIds,
+                    pricing: pricingCategoryIds,
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: initialData.video_url || '',
                     id: initialData.id, // Set the product ID
