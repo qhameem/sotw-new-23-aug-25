@@ -432,7 +432,7 @@ export function useProductForm() {
       errorMessage.value = 'At least one pricing model is required.';
       return false;
     }
-    
+
     // Validate pricing categories: maximum 3
     if (actualPricingCategories.length > 3) {
       showErrorMessage.value = true;
@@ -821,11 +821,11 @@ export function useProductForm() {
                   pricingCategoryIds = allCategoryIds.filter(catId =>
                     pricingCatIds.includes(parseInt(catId))
                   );
-                  
+
                   bestForCategoryIds = allCategoryIds.filter(catId =>
                     parsedBestFor.includes(parseInt(catId))
                   );
-                  
+
                   // Regular categories are those that are neither pricing nor bestFor
                   regularCategoryIds = allCategoryIds.filter(catId => {
                     const catIntId = parseInt(catId);
@@ -868,13 +868,18 @@ export function useProductForm() {
 
             // Parse video URL if it's in JSON format
             let parsedVideoUrl = initialData.video_url;
-            if (typeof initialData.video_url === 'string' &&
-                initialData.video_url.startsWith('{') &&
-                initialData.video_url.endsWith('}')) {
+            if (typeof parsedVideoUrl === 'string' && (parsedVideoUrl.startsWith('{') || parsedVideoUrl.startsWith('"'))) {
               try {
-                const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
-                if (parsed.embed_url) {
-                  parsedVideoUrl = parsed.embed_url;
+                if (parsedVideoUrl.startsWith('"')) {
+                  parsedVideoUrl = JSON.parse(parsedVideoUrl);
+                }
+                const parsed = typeof parsedVideoUrl === 'string' ? JSON.parse(parsedVideoUrl) : parsedVideoUrl;
+                if (parsed && typeof parsed === 'object') {
+                  if (parsed.embed_url) {
+                    parsedVideoUrl = parsed.embed_url;
+                  } else if (parsed.url) {
+                    parsedVideoUrl = parsed.url;
+                  }
                 }
               } catch (e) {
                 console.error('Error parsing video URL JSON:', e);
@@ -955,11 +960,11 @@ export function useProductForm() {
                   pricingCategoryIds = allCategoryIds.filter(catId =>
                     pricingCatIds.includes(parseInt(catId))
                   );
-                  
+
                   bestForCategoryIds = allCategoryIds.filter(catId =>
                     parsedBestFor.includes(parseInt(catId))
                   );
-                  
+
                   // Regular categories are those that are neither pricing nor bestFor
                   regularCategoryIds = allCategoryIds.filter(catId => {
                     const catIntId = parseInt(catId);
@@ -1019,13 +1024,18 @@ export function useProductForm() {
 
             // Parse video URL if it's in JSON format
             let parsedVideoUrl = initialData.video_url;
-            if (typeof initialData.video_url === 'string' &&
-                initialData.video_url.startsWith('{') &&
-                initialData.video_url.endsWith('}')) {
+            if (typeof parsedVideoUrl === 'string' && (parsedVideoUrl.startsWith('{') || parsedVideoUrl.startsWith('"'))) {
               try {
-                const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
-                if (parsed.embed_url) {
-                  parsedVideoUrl = parsed.embed_url;
+                if (parsedVideoUrl.startsWith('"')) {
+                  parsedVideoUrl = JSON.parse(parsedVideoUrl);
+                }
+                const parsed = typeof parsedVideoUrl === 'string' ? JSON.parse(parsedVideoUrl) : parsedVideoUrl;
+                if (parsed && typeof parsed === 'object') {
+                  if (parsed.embed_url) {
+                    parsedVideoUrl = parsed.embed_url;
+                  } else if (parsed.url) {
+                    parsedVideoUrl = parsed.url;
+                  }
                 }
               } catch (e) {
                 console.error('Error parsing video URL JSON:', e);
@@ -1108,11 +1118,11 @@ export function useProductForm() {
                         pricingCategoryIds = allCategoryIds.filter(catId =>
                           pricingCatIds.includes(parseInt(catId))
                         );
-                        
+
                         bestForCategoryIds = allCategoryIds.filter(catId =>
                           parsedBestFor.includes(parseInt(catId))
                         );
-                        
+
                         // Regular categories are those that are neither pricing nor bestFor
                         regularCategoryIds = allCategoryIds.filter(catId => {
                           const catIntId = parseInt(catId);
@@ -1141,15 +1151,19 @@ export function useProductForm() {
                     regularCategoryIds = allCategoryIds;
                   }
 
-                  // Parse video URL if it's in JSON format
                   let parsedVideoUrl = initialData.video_url || '';
-                  if (typeof initialData.video_url === 'string' &&
-                      initialData.video_url.startsWith('{') &&
-                      initialData.video_url.endsWith('}')) {
+                  if (typeof parsedVideoUrl === 'string' && (parsedVideoUrl.startsWith('{') || parsedVideoUrl.startsWith('"'))) {
                     try {
-                      const parsed = JSON.parse(initialData.video_url.replace(/\\"/g, '"'));
-                      if (parsed.embed_url) {
-                        parsedVideoUrl = parsed.embed_url;
+                      if (parsedVideoUrl.startsWith('"')) {
+                        parsedVideoUrl = JSON.parse(parsedVideoUrl);
+                      }
+                      const parsed = typeof parsedVideoUrl === 'string' ? JSON.parse(parsedVideoUrl) : parsedVideoUrl;
+                      if (parsed && typeof parsed === 'object') {
+                        if (parsed.embed_url) {
+                          parsedVideoUrl = parsed.embed_url;
+                        } else if (parsed.url) {
+                          parsedVideoUrl = parsed.url;
+                        }
                       }
                     } catch (e) {
                       console.error('Error parsing video URL JSON in fallback:', e);
@@ -1195,11 +1209,11 @@ export function useProductForm() {
                         pricingCategoryIds = allCategoryIds.filter(catId =>
                           pricingCatIds.includes(parseInt(catId))
                         );
-                        
+
                         bestForCategoryIds = allCategoryIds.filter(catId =>
                           parsedBestFor.includes(parseInt(catId))
                         );
-                        
+
                         // Regular categories are those that are neither pricing nor bestFor
                         regularCategoryIds = allCategoryIds.filter(catId => {
                           const catIntId = parseInt(catId);

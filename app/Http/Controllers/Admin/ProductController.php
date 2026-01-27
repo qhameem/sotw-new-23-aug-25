@@ -106,7 +106,7 @@ class ProductController extends Controller
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|image|max:1024',
-            'video_url' => 'nullable|url',
+            'video_url' => 'nullable|string',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -217,7 +217,7 @@ class ProductController extends Controller
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|image|max:1024',
-            'video_url' => 'nullable|url',
+            'video_url' => 'nullable|string',
             'maker_links' => 'nullable|array',
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
