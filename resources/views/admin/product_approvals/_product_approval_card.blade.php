@@ -86,12 +86,44 @@
             {{-- Categories --}}
             @if($product->categories->count() > 0)
                 <div class="mt-4">
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Categories</h4>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($product->categories as $category)
-                            <span class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded-sm">{{ $category->name }}</span>
-                        @endforeach
-                    </div>
+                    @php
+                        // Group categories by their types
+                        $groupedCategories = [];
+                        foreach($product->categories as $category) {
+                            // Load the types for this category
+                            $categoryTypes = $category->load('types')->types;
+                            if($categoryTypes->count() > 0) {
+                                foreach($categoryTypes as $type) {
+                                    if(!isset($groupedCategories[$type->name])) {
+                                        $groupedCategories[$type->name] = collect();
+                                    }
+                                    // Avoid duplicate categories in the same type group
+                                    if(!$groupedCategories[$type->name]->contains('id', $category->id)) {
+                                        $groupedCategories[$type->name]->push($category);
+                                    }
+                                }
+                            } else {
+                                if(!isset($groupedCategories['Category'])) {
+                                    $groupedCategories['Category'] = collect();
+                                }
+                                // Avoid duplicate categories
+                                if(!$groupedCategories['Category']->contains('id', $category->id)) {
+                                    $groupedCategories['Category']->push($category);
+                                }
+                            }
+                        }
+                    @endphp
+                    
+                    @foreach($groupedCategories as $typeName => $categories)
+                        <div class="mt-2">
+                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{{ $typeName }}</h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($categories as $category)
+                                    <span class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded-sm">{{ $category->name }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>
