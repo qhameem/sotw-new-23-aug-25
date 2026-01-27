@@ -122,7 +122,7 @@
                             </td>
                             <td class="px-4 py-2 border-b align-top">
                                 <div class="flex items-center space-x-2">
-                                    <a href="{{ route('admin.products.edit', $product->id) }}" class="text-indigo-600 hover:underline text-sm">Edit</a>
+                                    <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals" class="text-indigo-600 hover:underline text-sm">Edit</a>
                                     <form action="{{ route('admin.product-approvals.disapprove', $product) }}" method="POST" class="inline">
                                         @csrf
                                         <button type="submit" class="text-red-600 hover:underline text-sm" onclick="return confirm('Are you sure you want to disapprove this product?')">Disapprove</button>

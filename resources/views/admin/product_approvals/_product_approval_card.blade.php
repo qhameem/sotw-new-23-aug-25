@@ -139,7 +139,7 @@
                 <div id="utc-time-info-{{ $product->id }}" class="text-xs text-gray-500 mt-1"></div>
             </div>
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.products.edit', $product->id) }}"
+                <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals"
                     class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Edit
                 </a>

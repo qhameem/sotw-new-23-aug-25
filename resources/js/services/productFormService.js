@@ -28,6 +28,7 @@ const initialFormState = {
   asking_price: null,
   additionalLinks: [],
   x_account: '',
+  fromSource: null,
 };
 
 // Define loading states

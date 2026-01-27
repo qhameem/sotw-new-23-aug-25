@@ -266,15 +266,20 @@ class ProductController extends Controller
             }
         }
 
+        // Check if the user came from the product approvals page
+        $fromApprovals = $request->input('from') === 'approvals';
+        
         if ($request->wantsJson() || $request->ajax()) {
+            $redirectUrl = $fromApprovals ? route('admin.product-approvals.index') : route('admin.products.index');
             return response()->json([
                 'success' => true,
                 'message' => 'Product updated successfully.',
-                'redirect_url' => route('admin.products.index')
+                'redirect_url' => $redirectUrl
             ]);
         }
 
-        return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
+        $redirectRoute = $fromApprovals ? 'admin.product-approvals.index' : 'admin.products.index';
+        return redirect()->route($redirectRoute)->with('success', 'Product updated successfully.');
     }
 
     /**

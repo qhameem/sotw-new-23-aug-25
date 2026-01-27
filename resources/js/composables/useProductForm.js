@@ -317,6 +317,16 @@ export function useProductForm() {
         formData.append('_method', 'PUT');
       }
 
+      // Check if we came from approvals page and add the parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromParam = urlParams.get('from');
+      if (fromParam) {
+        formData.append('from', fromParam);
+      } else if (form.fromSource) {
+        // Use the fromSource that was captured during initialization
+        formData.append('from', form.fromSource);
+      }
+      
       // Submit the form
       const response = await axios.post(url, formData, {
         headers: {
@@ -625,7 +635,13 @@ export function useProductForm() {
 
   const updateForm = async (field, value) => {
     console.log('updateForm called for field:', field, 'with value:', value);
+    // Preserve the fromSource field when updating
+    const preservedFromSource = form.fromSource;
     form[field] = value;
+    // Restore the fromSource field after updating
+    if (preservedFromSource) {
+      form.fromSource = preservedFromSource;
+    }
 
     // Check URL existence when the link field is updated
     if (field === 'link') {
@@ -635,6 +651,9 @@ export function useProductForm() {
   };
 
   const updateFormMultiple = async (updates) => {
+    // Preserve the fromSource field if it exists in the current form
+    const preservedFromSource = form.fromSource;
+    
     // Update each field individually to ensure reactivity
     Object.keys(updates).forEach(key => {
       if (form.hasOwnProperty(key)) {
@@ -646,6 +665,11 @@ export function useProductForm() {
       }
     });
 
+    // Restore the fromSource field if it was preserved
+    if (preservedFromSource) {
+      form.fromSource = preservedFromSource;
+    }
+    
     // Check URL existence if the link field was updated
     if (updates.link !== undefined) {
       await checkUrlExists();
@@ -653,7 +677,10 @@ export function useProductForm() {
   };
 
   const resetForm = () => {
+    // Preserve the fromSource when resetting the form
+    const preservedFromSource = form.fromSource;
     Object.assign(form, { ...createProductFormState().form });
+    form.fromSource = preservedFromSource;
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = Array(3).fill(null);
     // Reset URL validation state when form is reset
@@ -722,6 +749,13 @@ export function useProductForm() {
         }
         await loadSavedData();
       }, 10);
+    }
+    
+    // Capture query parameters from URL and store them in form data if applicable
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromParam = urlParams.get('from');
+    if (fromParam) {
+      form.fromSource = fromParam;
     }
   };
 
@@ -870,6 +904,10 @@ export function useProductForm() {
               }
             }
 
+            // Capture the from parameter if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromParam = urlParams.get('from');
+            
             updateFormMultiple({
               name: initialData.name || '',
               slug: initialData.slug || '',
@@ -887,6 +925,7 @@ export function useProductForm() {
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
+              fromSource: fromParam || null,
             });
 
             if (logoUrl) {
@@ -1026,6 +1065,10 @@ export function useProductForm() {
               }
             }
 
+            // Capture the from parameter if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromParam = urlParams.get('from');
+            
             const formUpdates = {
               name: initialData.name || '',
               slug: initialData.slug || '',
@@ -1043,6 +1086,7 @@ export function useProductForm() {
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
+              fromSource: fromParam || null,
             };
 
             console.log('Form updates:', formUpdates);
@@ -1154,6 +1198,10 @@ export function useProductForm() {
                     }
                   }
 
+                  // Capture the from parameter if present in URL
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const fromParam = urlParams.get('from');
+                  
                   updateFormMultiple({
                     name: initialData.name || '',
                     tagline: initialData.tagline || '',
@@ -1165,6 +1213,7 @@ export function useProductForm() {
                     pricing: pricingCategoryIds,
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: parsedVideoUrl,
+                    fromSource: fromParam || null,
                   });
                 } else {
                   // Also handle regular users in fallback
@@ -1225,6 +1274,10 @@ export function useProductForm() {
                     regularCategoryIds = allCategoryIds;
                   }
 
+                  // Capture the from parameter if present in URL
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const fromParam = urlParams.get('from');
+                  
                   updateFormMultiple({
                     name: initialData.name || '',
                     tagline: initialData.tagline || '',
@@ -1241,6 +1294,7 @@ export function useProductForm() {
                     sell_product: !!initialData.sell_product,
                     asking_price: initialData.asking_price,
                     x_account: initialData.x_account,
+                    fromSource: fromParam || null,
                   });
                 }
                 globalFormState.step.value = 2;
