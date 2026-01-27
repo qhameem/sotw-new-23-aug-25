@@ -168,7 +168,7 @@
               </svg>
             </div>
           </div>
-          <SearchableDropdown :items="allCategories" :modelValue="modelValue.categories" @update:modelValue="updateField('categories', $event)" placeholder="Select categories..." :min="1" :max="3" :disabled="loadingStates.categories" />
+          <SearchableDropdown :items="allCategories" :modelValue="modelValue.categories" @update:modelValue="updateField('categories', $event)" placeholder="Select categories..." :min="1" :disabled="loadingStates.categories" />
           <p v-if="extractionErrors.categories" class="mt-1 text-xs text-red-500">{{ extractionErrors.categories }}</p>
         </div>
         <div class="relative">
@@ -182,7 +182,7 @@
               </svg>
             </div>
           </div>
-          <SearchableDropdown :items="allBestFor" :modelValue="modelValue.bestFor" @update:modelValue="updateField('bestFor', $event)" placeholder="Select who this is best for..." :min="1" :max="3" :disabled="loadingStates.bestFor" />
+          <SearchableDropdown :items="allBestFor" :modelValue="modelValue.bestFor" @update:modelValue="updateField('bestFor', $event)" placeholder="Select who this is best for..." :min="1" :disabled="loadingStates.bestFor" />
           <p v-if="extractionErrors.bestFor" class="mt-1 text-xs text-red-500">{{ extractionErrors.bestFor }}</p>
         </div>
       </div>

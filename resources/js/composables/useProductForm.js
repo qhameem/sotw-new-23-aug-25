@@ -399,29 +399,19 @@ export function useProductForm() {
       return false;
     }
 
-    // Validate categories: minimum 1, maximum 3
+    // Validate categories: minimum 1
     const validCategories = (form.categories || []).filter(id => id !== null && id !== undefined && id !== '');
     if (validCategories.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one category is required.';
       return false;
     }
-    if (validCategories.length > 3) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Maximum 3 regular categories allowed.';
-      return false;
-    }
 
-    // Validate bestFor: minimum 1, maximum 3
+    // Validate bestFor: minimum 1
     const validBestFor = (form.bestFor || []).filter(id => id !== null && id !== undefined && id !== '');
     if (validBestFor.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one "best for" option is required.';
-      return false;
-    }
-    if (validBestFor.length > 3) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Maximum 3 "best for" options allowed.';
       return false;
     }
 
@@ -430,13 +420,6 @@ export function useProductForm() {
     if (actualPricingCategories.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one pricing model is required.';
-      return false;
-    }
-
-    // Validate pricing categories: maximum 3
-    if (actualPricingCategories.length > 3) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Maximum 3 pricing categories allowed.';
       return false;
     }
 

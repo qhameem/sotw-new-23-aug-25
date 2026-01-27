@@ -2,7 +2,7 @@
   <div class="relative" ref="dropdown">
     <div class="flex justify-between items-center mb-1">
       <label class="block text-sm font-semibold text-gray-700">{{ label }}</label>
-      <span v-if="max" class="text-sm text-gray-500">{{ selectedItems.length }}/{{ max }}</span>
+      <span v-if="max && max !== Infinity" class="text-sm text-gray-500">{{ selectedItems.length }}/{{ max }}</span>
     </div>
     <slot name="description"></slot>
     <div class="relative">
