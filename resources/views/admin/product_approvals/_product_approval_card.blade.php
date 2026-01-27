@@ -20,6 +20,22 @@
                         <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow"
                             class="hover:underline">{{ $product->name }}</a>
                     </h2>
+                    <div class="text-xs text-gray-500 mt-1">
+                        Submitted: <span id="utc-time-{{ $product->id }}">{{ $product->created_at->format('d M, Y g A') }} UTC</span>
+                        <br>
+                        <span id="local-time-{{ $product->id }}"></span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        By:
+                        @if($product->user && !$product->user->hasRole('admin'))
+                            <a href="{{ route('admin.users.show', $product->user->id) }}" class="text-indigo-600 hover:underline">
+                                {{ $product->user->name ?? 'N/A' }}
+                            </a>
+                        @else
+                            {{ $product->user->name ?? 'N/A' }}
+                        @endif
+                        <{{ $product->user->email ?? 'N/A' }}>
+                    </div>
                     <div class="text-sm text-gray-600 mt-1">
                         <p><strong>Tagline:</strong> {{ $product->tagline }}</p>
                         <p><strong>Product Page Tagline:</strong> {{ $product->product_page_tagline }}</p>
@@ -27,7 +43,6 @@
                     <div class="text-xs text-gray-500 mt-1">
                         <strong>Slug:</strong> {{ $product->slug }}
                     </div>
-                    <div class="text-xs text-gray-500 mt-1">Submitted by: {{ $product->user->name ?? 'N/A' }}</div>
                 </div>
                 <label class="absolute top-4 right-4">
                     <input type="checkbox" name="products[]" value="{{ $product->id }}"
@@ -127,6 +142,43 @@
             const settings = JSON.parse('{!! addslashes(json_encode($settings)) !!}');
             const publishTime = settings.product_publish_time || '07:00';
             const [publishHour, publishMinute] = publishTime.split(':').map(Number);
+
+            // Convert UTC submission time to local time
+            const utcTimeElement = document.getElementById('utc-time-{{ $product->id }}');
+            if (utcTimeElement) {
+                // Get the UTC time from the element and parse it
+                const utcText = utcTimeElement.textContent.replace(' UTC', '');
+                // Parse the date assuming format like "26 Jan, 2026 5 PM"
+                const parts = utcText.match(/(\d{2}) ([A-Za-z]{3}), (\d{4}) (\d{1,2}) ([AP]M)/);
+                if (parts) {
+                    const [, day, month, year, hour, ampm] = parts;
+                    let hourNum = parseInt(hour);
+                    if (ampm === 'PM' && hourNum !== 12) {
+                        hourNum += 12;
+                    } else if (ampm === 'AM' && hourNum === 12) {
+                        hourNum = 0;
+                    }
+                    
+                    // Create date in UTC
+                    const utcDate = new Date(Date.UTC(year, new Date(`${month} 1`).getMonth(), day, hourNum, 0, 0));
+                    
+                    if (!isNaN(utcDate.getTime())) {
+                        const localTimeString = utcDate.toLocaleString(undefined, {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        
+                        const localTimeElement = document.getElementById('local-time-{{ $product->id }}');
+                        if (localTimeElement) {
+                            localTimeElement.textContent = `Local: ${localTimeString}`;
+                        }
+                    }
+                }
+            }
 
             function updateUTCTime() {
                 const now = new Date();
