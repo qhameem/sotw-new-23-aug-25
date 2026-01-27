@@ -145,7 +145,7 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load('media', 'categories.types', 'techStacks');
+        $product->load(['categories', 'proposedCategories', 'techStacks', 'media']);
 
         $categoryTypes = json_decode(Storage::get('category_types.json'), true);
         $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
@@ -164,6 +164,7 @@ class ProductController extends Controller
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
         // For admin editing, always show the original product data, not proposed changes
+        $product->load('media');
         $displayData = [
             'name' => old('name', $product->name),
             'slug' => old('slug', $product->slug),
@@ -182,6 +183,7 @@ class ProductController extends Controller
             'x_account' => old('x_account', $product->x_account),
             'id' => $product->id,
             'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();

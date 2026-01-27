@@ -335,7 +335,7 @@ class ProductController extends Controller
         $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
         $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
 
-        $product->load(['categories', 'proposedCategories', 'techStacks']);
+        $product->load(['categories', 'proposedCategories', 'techStacks', 'media']);
 
         $oldInput = session()->getOldInput();
 
@@ -358,6 +358,7 @@ class ProductController extends Controller
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
                 'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         } else {
             // When no pending edits, use original values
@@ -371,13 +372,14 @@ class ProductController extends Controller
                 'product_page_tagline' => $oldInput['product_page_tagline'] ?? $product->product_page_tagline,
                 'description' => $oldInput['description'] ?? $product->description,
                 'current_categories' => $oldInput['categories'] ?? $product->categories->pluck('id')->toArray(),
-                'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
+                'current_tech_stacks' => old('tech_stacks', $product->techStacks->pluck('id')->toArray()),
                 'maker_links' => $oldInput['maker_links'] ?? $product->maker_links,
                 'sell_product' => $oldInput['sell_product'] ?? $product->sell_product,
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
                 'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         }
 

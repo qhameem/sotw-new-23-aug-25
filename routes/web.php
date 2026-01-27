@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/products/{product}/add-media', [ProductInlineUpdateController::class, 'addMedia'])->name('products.add-media');
     Route::delete('/products/{product}/remove-media/{media}', [ProductInlineUpdateController::class, 'removeMedia'])->name('products.remove-media');
     Route::get('/submission-success/{product}', [ProductController::class, 'showSubmissionSuccess'])->name('products.submission.success');
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::get('/subscribe', [SubscriptionController::class, 'create'])->name('subscribe');
     Route::post('/stripe/checkout', [StripeController::class, 'checkout'])->name('stripe.checkout');

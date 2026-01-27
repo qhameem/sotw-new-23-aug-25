@@ -931,11 +931,22 @@ export function useProductForm() {
               fromSource: fromParam || null,
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
+              logos: initialData.logos || [],
             });
 
             if (logoUrl) {
               globalFormState.logoPreview.value = logoUrl;
               console.log('Set logoPreview to:', globalFormState.logoPreview.value);
+            }
+
+            // Populate gallery previews from initial data
+            if (initialData.gallery && Array.isArray(initialData.gallery)) {
+              const galleryPreviews = Array(3).fill(null);
+              initialData.gallery.forEach((url, index) => {
+                if (index < 3) galleryPreviews[index] = url;
+              });
+              globalFormState.galleryPreviews.value = galleryPreviews;
+              console.log('Set galleryPreviews to:', globalFormState.galleryPreviews.value);
             }
 
             console.log('Updated form with initial data for admin');
@@ -1095,6 +1106,7 @@ export function useProductForm() {
               fromSource: fromParam || null,
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
+              logos: initialData.logos || [],
             };
 
             console.log('Form updates:', formUpdates);
@@ -1107,6 +1119,15 @@ export function useProductForm() {
 
             if (logoUrl) {
               globalFormState.logoPreview.value = logoUrl;
+            }
+
+            // Populate gallery previews from initial data
+            if (initialData.gallery && Array.isArray(initialData.gallery)) {
+              const galleryPreviews = Array(3).fill(null);
+              initialData.gallery.forEach((url, index) => {
+                if (index < 3) galleryPreviews[index] = url;
+              });
+              globalFormState.galleryPreviews.value = galleryPreviews;
             }
 
             // Set step to 2 to show the form ONLY if we have a link (meaning we're editing or restoring)
