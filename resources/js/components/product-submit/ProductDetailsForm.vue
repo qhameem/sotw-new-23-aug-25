@@ -107,8 +107,18 @@
               ref="productLinkRef"
               :value="modelValue.link"
               disabled
-              class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm pr-10"
+              class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm pr-20"
             >
+            <button
+              type="button"
+              @click="openLinkInNewTab(modelValue.link)"
+              class="absolute inset-y-0 right-10 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+              title="Open link in new tab"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </button>
             <button
               type="button"
               @click="copyToClipboard(modelValue.link)"
@@ -347,6 +357,13 @@ const updateAdditionalLink = (index, value) => {
   newLinks[index] = value;
   updateField('additionalLinks', newLinks);
 };
+
+// Function to open link in new tab
+function openLinkInNewTab(url) {
+  if (url) {
+    window.open(url, '_blank');
+  }
+}
 
 // Function to copy text to clipboard
 function copyToClipboard(text) {
