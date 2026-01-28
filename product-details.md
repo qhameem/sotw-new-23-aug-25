@@ -27,6 +27,15 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Removed horizontal padding from the main product details card in `show.blade.php` (changed `p-6 md:p-8` to `py-6 md:py-8`).
 - **Result**: Site logo, breadcrumbs, and main content are now perfectly aligned to the same left boundary.
 
+#### 5. Implemented Horizontal Media Gallery Carousel
+- **Requirement**: Show up to 3 media items in a row. If more items exist (e.g., a video + 3 images), allow horizontal scrolling with navigation arrows. Video must appear first.
+    - Used Alpine.js to manage scroll state and navigation arrow visibility.
+    - Replaced the `flex-wrap` layout with a scrollable `flex overflow-x-auto` container.
+    - Sized media items to `aspect-video` and a fixed width (`w-[392px]` on desktop) to ensure 3 items can fit in the gallery row.
+    - Ensured the video (if present) is always rendered as the first item in the list.
+    - Added responsive sizing (`w-[320px]` on mobile) and navigation arrows that appear on hover when scrolling is possible.
+- **Result**: A smooth, interactive media gallery that handles multiple images and videos efficiently without cluttering the page.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 

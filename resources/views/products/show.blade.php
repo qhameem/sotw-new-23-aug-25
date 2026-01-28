@@ -175,33 +175,79 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                 @endif
 
                 @if($product->video_url || $product->media->isNotEmpty())
-                    <div x-data="{ open: false, mediaUrl: '', isVideo: false }">
-                        <div class="flex flex-wrap gap-4 mb-6">
+                    <div x-data="{ 
+                        open: false, 
+                        mediaUrl: '', 
+                        isVideo: false,
+                        canScrollLeft: false,
+                        canScrollRight: false,
+                        updateScroll() {
+                            const el = this.$refs.mediaContainer;
+                            if (!el) return;
+                            this.canScrollLeft = el.scrollLeft > 5;
+                            this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
+                        },
+                        scroll(direction) {
+                            const el = this.$refs.mediaContainer;
+                            const scrollAmount = el.clientWidth * 0.8;
+                            el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+                        }
+                    }" x-init="$nextTick(() => updateScroll())" class="relative group mt-4">
+                        
+                        <!-- Left Navigation Arrow -->
+                        <button 
+                            x-show="canScrollLeft" 
+                            x-cloak
+                            @click="scroll(-1)" 
+                            class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            aria-label="Scroll Left">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Right Navigation Arrow -->
+                        <button 
+                            x-show="canScrollRight" 
+                            x-cloak
+                            @click="scroll(1)" 
+                            class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            aria-label="Scroll Right">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+
+                        <div 
+                            x-ref="mediaContainer" 
+                            @scroll.debounce.100ms="updateScroll()"
+                            class="flex overflow-x-auto scroll-smooth no-scrollbar gap-4 mb-6 pb-2">
+                            
                             @if($product->video_url)
                                 @php
                                     $embedUrl = $product->getEmbedUrl();
                                     $thumbnailUrl = 'https://img.youtube.com/vi/' . $product->getVideoId() . '/0.jpg';
                                 @endphp
-                                <div class="cursor-pointer" @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
-                                    <div class="relative w-[392px] h-[221px] rounded-lg overflow-hidden border">
+                                <div class="flex-shrink-0 cursor-pointer" @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
+                                    <div class="relative w-[320px] sm:w-[380px] md:w-[392px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                         <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover"
                                             loading="lazy">
-                                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                            <svg class="w-16 h-16 text-white opacity-75 hover:opacity-100 transition-opacity"
-                                                viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                                <path
-                                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-                                            </svg>
+                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center group/play">
+                                            <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform group-hover/play:scale-110">
+                                                <svg class="w-10 h-10 text-white fill-current" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             @endif
 
                             @foreach($product->media as $media)
-                                <div class="cursor-pointer"
+                                <div class="flex-shrink-0 cursor-pointer"
                                     @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
                                     <img src="{{ asset('storage/' . $media->path) }}" alt="{{ $media->alt_text }}"
-                                        class="w-[392px] h-[221px] object-cover rounded-lg border" loading="lazy">
+                                        class="w-[392px] h-[221px] object-cover rounded-xl border shadow-sm hover:shadow-md transition-shadow" loading="lazy">
                                 </div>
                             @endforeach
                         </div>
