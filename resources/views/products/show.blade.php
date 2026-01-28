@@ -120,26 +120,44 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                 </div>
 
                 <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center">
+                    <div class="flex items-center gap-8">
                         @unless($product->user->hasRole('admin'))
                             <div class="flex flex-col gap-1">
-                                <div class="text-xs font-medium">
+                                <div class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">
                                     Publisher
                                 </div>
-                                <div class="flex flex-row">
-                                    <div>
-                                        <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
-                                            class="size-5 rounded-full mr-1 border">
-                                    </div>
-                                    <div class="text-gray-700 text-xs content-center">
+                                <div class="flex items-center gap-1.5">
+                                    <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
+                                        class="size-4 rounded-full border border-gray-100">
+                                    <div class="text-gray-700 text-[0.7rem] font-medium">
                                         {{ $product->user->name }}
                                     </div>
-
                                 </div>
                             </div>
-
-
                         @endunless
+
+                        <div class="flex flex-col gap-1">
+                            @if($bestForCategories->isNotEmpty())
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Best for</span>
+                                    <div class="flex items-center gap-1.5">
+                                        @foreach($bestForCategories as $category)
+                                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                                                class="text-[0.7rem] text-gray-600 hover:text-gray-900 font-medium">
+                                                {{ $category->name }}@if(!$loop->last)<span class="text-gray-300">•</span>@endif
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($pricingCategory)
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Pricing</span>
+                                    <span class="text-[0.7rem] text-gray-600 font-medium">{{ $pricingCategory->name }}</span>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     <div class="flex items-center space-x-4">
                         <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"

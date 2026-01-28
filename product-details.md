@@ -36,6 +36,20 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Added responsive sizing (`w-[240px]` on mobile) and navigation arrows that appear on hover when scrolling is possible.
 - **Result**: A smooth, interactive media gallery that handles multiple images and videos efficiently without cluttering the page.
 
+#### 6. Relocated Category Badges
+- **Requirement**: Move "Best for" and "Pricing model" categories from the right sidebar to the main row (next to Visit Website/Upvote). Align them to the left and make the font smaller.
+- **Fix**: 
+    - Removed the tags from `resources/views/products/partials/_sidebar-info.blade.php`.
+    - Added a new meta-info block in `resources/views/products/show.blade.php` within the action buttons row.
+    - Standardized the labels (e.g., "BEST FOR", "PRICING") to `text-[0.65rem]` and values to `text-[0.7rem]` for a compact, secondary look.
+    - Ensured they align to the left side of the row, next to the Publisher information.
+- **Result**: Important product context is now immediately visible in the main interaction area, and the sidebar is cleaner.
+
+#### 7. Removed Similar Products Section
+- **Requirement**: Remove the "Similar Products" section from the right sidebar as its title was being obscured by the top menubar.
+- **Fix**: Deleted the `@if($similarProducts->isNotEmpty())` block from `resources/views/products/partials/_sidebar-info.blade.php`.
+- **Result**: Resolved the visual overlap issue and simplified the layout.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 
