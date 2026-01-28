@@ -1,56 +1,52 @@
-@php $mainContentMaxWidth = 'max-w-full'; @endphp
+@php $mainContentMaxWidth = 'max-w-full';
+$title = ''; @endphp
 @extends('layouts.app')
 
 @section('title', $pageTitle)
 @section('meta_description', $metaDescription)
 
-@section('header-title')
-    <div class="flex items-center">
-        <a href="javascript:history.back()" class="text-gray-500 hover:text-gray-700 mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-        </a>
-        <h1 class="text-lg md:text-base font-semibold tracking-tight">{{ $title }} details</h1>
-    </div>
-@endsection
+
 
 
 @section('content')
-    <div class="bg-white rounded-lg p-6 md:p-8 mt-4" x-data="{
-        @if(isset($isAdminView) && $isAdminView)
-                editingName: false,
-                editingTagline: false,
-                editingProductPageTagline: false,
-                editingDescription: false,
-                editingCategories: false,
-                editingLogo: false,
-                editingVideoUrl: false,
-                name: '{{ $product->name }}',
-                tagline: '{{ $product->tagline }}',
-                product_page_tagline: '{{ $product->product_page_tagline }}',
-                description: `{{ $product->description }}`,
-                category_ids: {{ $product->categories->pluck('id') }},
-                video_url: '{{ $product->video_url }}',
-                updateProduct() {
-                    let formData = new FormData();
-                    formData.append('name', this.name);
-                    formData.append('tagline', this.tagline);
-                    formData.append('product_page_tagline', this.product_page_tagline);
-                    formData.append('description', this.description);
-                    formData.append('video_url', this.video_url);
-                    this.category_ids.forEach(id => formData.append('categories[]', id));
+    <div class="p-4 mx-auto max-w-7xl">
+        <x-breadcrumbs :items="[['label' => $product->name]]" />
+    </div>
 
-                    let logoInput = document.querySelector('input[type=" file"]'); if (logoInput.files[0]) {
-            formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}'
-            , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData }).then(response=> {
-            if (response.ok) {
-            window.location.reload();
-            }
-            });
-            }
-        @endif
+    <div class="bg-white rounded-lg p-6 md:p-8" x-data="{
+                    @if(isset($isAdminView) && $isAdminView)
+                                                                editingName: false,
+                                                                editingTagline: false,
+                                                                editingProductPageTagline: false,
+                                                                editingDescription: false,
+                                                                editingCategories: false,
+                                                                editingLogo: false,
+                                                                editingVideoUrl: false,
+                                                                name: '{{ $product->name }}',
+                                                                tagline: '{{ $product->tagline }}',
+                                                                product_page_tagline: '{{ $product->product_page_tagline }}',
+                                                                description: `{{ $product->description }}`,
+                                                                category_ids: {{ $product->categories->pluck('id') }},
+                                                                video_url: '{{ $product->video_url }}',
+                                                                updateProduct() {
+                                                                    let formData = new FormData();
+                                                                    formData.append('name', this.name);
+                                                                    formData.append('tagline', this.tagline);
+                                                                    formData.append('product_page_tagline', this.product_page_tagline);
+                                                                    formData.append('description', this.description);
+                                                                    formData.append('video_url', this.video_url);
+                                                                    this.category_ids.forEach(id => formData.append('categories[]', id));
+
+                                                                    let logoInput = document.querySelector('input[type=" file"]'); if
+                        (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers:
+                        { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData
+                        }).then(response=> {
+                        if (response.ok) {
+                        window.location.reload();
+                        }
+                        });
+                        }
+                    @endif
         }">
         <div class="gap-8">
             <div class="md:col-span-2">
