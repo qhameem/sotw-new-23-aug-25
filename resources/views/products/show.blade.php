@@ -1,5 +1,6 @@
 @php $mainContentMaxWidth = 'max-w-full';
-$title = ''; @endphp
+    $title = '';
+$mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 @extends('layouts.app')
 
 @section('title', $pageTitle)
@@ -9,48 +10,48 @@ $title = ''; @endphp
 
 
 @section('content')
-    <div class="p-4 mx-auto max-w-7xl">
+    <div class="py-4 px-1">
         <x-breadcrumbs :items="[['label' => $product->name]]" />
     </div>
 
-    <div class="bg-white rounded-lg p-6 md:p-8" x-data="{
-                    @if(isset($isAdminView) && $isAdminView)
-                                                                editingName: false,
-                                                                editingTagline: false,
-                                                                editingProductPageTagline: false,
-                                                                editingDescription: false,
-                                                                editingCategories: false,
-                                                                editingLogo: false,
-                                                                editingVideoUrl: false,
-                                                                name: '{{ $product->name }}',
-                                                                tagline: '{{ $product->tagline }}',
-                                                                product_page_tagline: '{{ $product->product_page_tagline }}',
-                                                                description: `{{ $product->description }}`,
-                                                                category_ids: {{ $product->categories->pluck('id') }},
-                                                                video_url: '{{ $product->video_url }}',
-                                                                updateProduct() {
-                                                                    let formData = new FormData();
-                                                                    formData.append('name', this.name);
-                                                                    formData.append('tagline', this.tagline);
-                                                                    formData.append('product_page_tagline', this.product_page_tagline);
-                                                                    formData.append('description', this.description);
-                                                                    formData.append('video_url', this.video_url);
-                                                                    this.category_ids.forEach(id => formData.append('categories[]', id));
+    <div class="bg-white rounded-lg py-6 md:py-8"
+        x-data="{
+                        @if(isset($isAdminView) && $isAdminView)
+                                                                                        editingName: false,
+                                                                                        editingTagline: false,
+                                                                                        editingProductPageTagline: false,
+                                                                                        editingDescription: false,
+                                                                                        editingCategories: false,
+                                                                                        editingLogo: false,
+                                                                                        editingVideoUrl: false,
+                                                                                        name: '{{ $product->name }}',
+                                                                                        tagline: '{{ $product->tagline }}',
+                                                                                        product_page_tagline: '{{ $product->product_page_tagline }}',
+                                                                                        description: `{{ $product->description }}`,
+                                                                                        category_ids: {{ $product->categories->pluck('id') }},
+                                                                                        video_url: '{{ $product->video_url }}',
+                                                                                        updateProduct() {
+                                                                                            let formData = new FormData();
+                                                                                            formData.append('name', this.name);
+                                                                                            formData.append('tagline', this.tagline);
+                                                                                            formData.append('product_page_tagline', this.product_page_tagline);
+                                                                                            formData.append('description', this.description);
+                                                                                            formData.append('video_url', this.video_url);
+                                                                                            this.category_ids.forEach(id => formData.append('categories[]', id));
 
-                                                                    let logoInput = document.querySelector('input[type=" file"]'); if
-                        (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers:
-                        { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData
-                        }).then(response=> {
-                        if (response.ok) {
-                        window.location.reload();
-                        }
-                        });
-                        }
-                    @endif
+                                                                                            let logoInput = document.querySelector('input[type=" file"]'); if (logoInput.files[0]) {
+                            formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}'
+                            , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData }).then(response=> {
+                            if (response.ok) {
+                            window.location.reload();
+                            }
+                            });
+                            }
+                        @endif
         }">
         <div class="gap-8">
             <div class="md:col-span-2">
-                <div class="flex items-center mb-4">
+                <div class="flex items-start mb-4">
                     @if(isset($isAdminView) && $isAdminView)
                         <div @click="editingLogo = true">
                             <template x-if="!editingLogo">
@@ -74,10 +75,10 @@ $title = ''; @endphp
                     @else
                         @if($product->logo)
                             <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
-                                alt="{{ $product->name }} logo" class="w-[65px] h-[65px] object-contain rounded-xl mr-3">
+                                alt="{{ $product->name }} logo" class="w-[100px] h-[100px] object-contain rounded-xl mr-3">
                         @elseif($product->link)
                             <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-                                alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-xl mr-3">
+                                alt="{{ $product->name }} favicon" class="size-20 object-contain rounded-xl mr-3">
                         @endif
                     @endif
                     <div>
@@ -90,7 +91,7 @@ $title = ''; @endphp
                                 {{ $product->name }}
                             @endif
                         </h1>
-                        <p class="text-gray-800 text-base">
+                        <p class="text-gray-800 text-sm">
                             @if(isset($isAdminView) && $isAdminView)
                                 <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                                     x-text="product_page_tagline"></span>
