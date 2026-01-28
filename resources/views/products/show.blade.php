@@ -229,12 +229,12 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                     $thumbnailUrl = 'https://img.youtube.com/vi/' . $product->getVideoId() . '/0.jpg';
                                 @endphp
                                 <div class="flex-shrink-0 cursor-pointer" @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
-                                    <div class="relative w-[320px] sm:w-[380px] md:w-[392px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                         <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover"
                                             loading="lazy">
                                         <div class="absolute inset-0 bg-black/40 flex items-center justify-center group/play">
-                                            <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform group-hover/play:scale-110">
-                                                <svg class="w-10 h-10 text-white fill-current" viewBox="0 0 24 24">
+                                            <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform group-hover/play:scale-110">
+                                                <svg class="w-8 h-8 text-white fill-current" viewBox="0 0 24 24">
                                                     <path d="M8 5v14l11-7z" />
                                                 </svg>
                                             </div>
@@ -247,7 +247,7 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                 <div class="flex-shrink-0 cursor-pointer"
                                     @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
                                     <img src="{{ asset('storage/' . $media->path) }}" alt="{{ $media->alt_text }}"
-                                        class="w-[392px] h-[221px] object-cover rounded-xl border shadow-sm hover:shadow-md transition-shadow" loading="lazy">
+                                        class="w-[240px] sm:w-[260px] md:w-[280px] h-[135px] sm:h-[146px] md:h-[157px] object-cover rounded-xl border shadow-sm hover:shadow-md transition-shadow" loading="lazy">
                                 </div>
                             @endforeach
                         </div>
