@@ -1,4 +1,16 @@
-<div class="space-y-6 p-6">
+<div class="space-y-6">
+    @unless($product->user->hasRole('admin'))
+        <div>
+            <h3 class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight mb-2">Publisher</h3>
+            <div class="flex items-center gap-2">
+                <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
+                    class="size-6 rounded-full border border-gray-100">
+                <div class="text-gray-800 text-sm font-medium">
+                    {{ $product->user->name }}
+                </div>
+            </div>
+        </div>
+    @endunless
 
     @if($product->techStacks->isNotEmpty())
         <div>

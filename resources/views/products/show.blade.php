@@ -49,8 +49,8 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                             }
                         @endif
         }">
-        <div class="gap-8">
-            <div class="md:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="md:col-span-3">
                 <div class="flex items-start mb-4">
                     @if(isset($isAdminView) && $isAdminView)
                         <div @click="editingLogo = true">
@@ -121,20 +121,6 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-8">
-                        @unless($product->user->hasRole('admin'))
-                            <div class="flex flex-col gap-1">
-                                <div class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">
-                                    Publisher
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
-                                        class="size-4 rounded-full border border-gray-100">
-                                    <div class="text-gray-700 text-[0.7rem] font-medium">
-                                        {{ $product->user->name }}
-                                    </div>
-                                </div>
-                            </div>
-                        @endunless
 
                         <div class="flex flex-col gap-1">
                             @if($bestForCategories->isNotEmpty())

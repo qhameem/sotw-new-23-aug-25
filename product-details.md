@@ -50,6 +50,16 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Fix**: Deleted the `@if($similarProducts->isNotEmpty())` block from `resources/views/products/partials/_sidebar-info.blade.php`.
 - **Result**: Resolved the visual overlap issue and simplified the layout.
 
+#### 8. Relocated Publisher Information
+- **Requirement**: Move "Publisher" information from the main content row to the right sidebar. Align it horizontally with the top of the product logo.
+- **Fix**: 
+    - Removed the Publisher block from `resources/views/products/show.blade.php`.
+    - Added a `grid` container with `md:grid-cols-4` around the main content and sidebar in `show.blade.php` to ensure proper side-by-side alignment.
+    - Set main content to `md:col-span-3` and sidebar to `md:col-span-1` (75/25 split) to maintain a wide main content area.
+    - Inserted the Publisher block at the very top of `resources/views/products/partials/_sidebar-info.blade.php`.
+    - Removed additional padding from the sidebar partial to ensure the "Publisher" header aligns perfectly with the top of the product logo.
+- **Result**: The Publisher info is now more distinct in the sidebar, perfectly aligned with the start of the product details.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 
