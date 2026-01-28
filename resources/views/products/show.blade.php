@@ -50,7 +50,7 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                 }
                             @endif
         }">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 p-0">
             <div class="md:col-span-3">
                 <div class="flex items-start mb-4">
                     @if(isset($isAdminView) && $isAdminView)
@@ -120,53 +120,24 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-8">
-
-                        <div class="flex flex-col gap-1">
-                            @if($bestForCategories->isNotEmpty())
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Best
-                                        for</span>
-                                    <div class="flex items-center gap-1.5">
-                                        @foreach($bestForCategories as $category)
-                                            <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
-                                                class="text-[0.7rem] text-gray-600 hover:text-gray-900 font-medium">
-                                                {{ $category->name }}@if(!$loop->last)<span class="text-gray-300">•</span>@endif
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-
-                            @if($pricingCategory)
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Pricing</span>
-                                    <span class="text-[0.7rem] text-gray-600 font-medium">{{ $pricingCategory->name }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
-                            target="_blank" rel="noopener ugc noreferrer"
-                            class="inline-flex items-center px-4 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                            Visit Website &nbsp;
-                            <svg class="size-4 stroke-gray-600" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier">
-                                    <path d="M7 17L17 7M17 7H8M17 7V16" stroke="" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round"></path>
-                                </g>
-                            </svg>
-                        </a>
-                        @unless(isset($isAdminView) && $isAdminView)
-                            @livewire('product-upvote-button', ['product' => $product])
-                        @endunless
-                    </div>
+                <div class="flex items-center justify-end mb-6 space-x-4">
+                    <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
+                        target="_blank" rel="noopener ugc noreferrer"
+                        class="inline-flex items-center px-4 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Visit Website &nbsp;
+                        <svg class="size-4 stroke-gray-600" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                            <g id="SVGRepo_iconCarrier">
+                                <path d="M7 17L17 7M17 7H8M17 7V16" stroke="" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"></path>
+                            </g>
+                        </svg>
+                    </a>
+                    @unless(isset($isAdminView) && $isAdminView)
+                        @livewire('product-upvote-button', ['product' => $product])
+                    @endunless
                 </div>
 
                 @if(isset($isAdminView) && $isAdminView)
@@ -180,11 +151,11 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </div>
                     </div>
                 @endif
-
+            
                 @if($product->video_url || $product->media->isNotEmpty())
-                    <div x-data="{ 
-                                open: false, 
-                                mediaUrl: '', 
+                    <div x-data="{
+                                open: false,
+                                mediaUrl: '',
                                 isVideo: false,
                                 canScrollLeft: false,
                                 canScrollRight: false,
@@ -291,7 +262,35 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </div>
                     </div>
                 @endif
+                
+                <!-- Best for and Pricing model section moved here after media -->
+                <div class="flex items-center gap-8 mt-6 mb-6">
+                    <div class="flex flex-row gap-4">
+                        @if($bestForCategories->isNotEmpty())
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500 tracking-tight">Best
+                                    for</span>
+                                <div class="flex items-center gap-1">
+                                    @foreach($bestForCategories as $category)
+                                        <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                                            class="text-[0.7rem] text-gray-600 hover:text-gray-900 font-medium">
+                                            {{ $category->name }}@if(!$loop->last)<span class="text-gray-300">•</span>@endif
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
 
+                        @if($pricingCategory)
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="text-xs text-gray-500 tracking-tight">Pricing model</span>
+                                <span class="text-[0.7rem] text-gray-600 font-medium">{{ $pricingCategory->name }}</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            
                 <div class="prose max-w-none text-sm ql-editor-content">
                     @if(isset($isAdminView) && $isAdminView)
                         <div x-show="!editingDescription" @click="editingDescription = true" x-html="description"></div>
