@@ -1,4 +1,4 @@
-@php $mainContentMaxWidth = 'max-w-full';
+@php $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
 $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 @extends('layouts.app')
@@ -16,40 +16,41 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 
     <div class="bg-white rounded-lg py-6 md:py-8"
         x-data="{
-                        @if(isset($isAdminView) && $isAdminView)
-                                                                                        editingName: false,
-                                                                                        editingTagline: false,
-                                                                                        editingProductPageTagline: false,
-                                                                                        editingDescription: false,
-                                                                                        editingCategories: false,
-                                                                                        editingLogo: false,
-                                                                                        editingVideoUrl: false,
-                                                                                        name: '{{ $product->name }}',
-                                                                                        tagline: '{{ $product->tagline }}',
-                                                                                        product_page_tagline: '{{ $product->product_page_tagline }}',
-                                                                                        description: `{{ $product->description }}`,
-                                                                                        category_ids: {{ $product->categories->pluck('id') }},
-                                                                                        video_url: '{{ $product->video_url }}',
-                                                                                        updateProduct() {
-                                                                                            let formData = new FormData();
-                                                                                            formData.append('name', this.name);
-                                                                                            formData.append('tagline', this.tagline);
-                                                                                            formData.append('product_page_tagline', this.product_page_tagline);
-                                                                                            formData.append('description', this.description);
-                                                                                            formData.append('video_url', this.video_url);
-                                                                                            this.category_ids.forEach(id => formData.append('categories[]', id));
+                            @if(isset($isAdminView) && $isAdminView)
+                                                                                                                    editingName: false,
+                                                                                                                    editingTagline: false,
+                                                                                                                    editingProductPageTagline: false,
+                                                                                                                    editingDescription: false,
+                                                                                                                    editingCategories: false,
+                                                                                                                    editingLogo: false,
+                                                                                                                    editingVideoUrl: false,
+                                                                                                                    name: '{{ $product->name }}',
+                                                                                                                    tagline: '{{ $product->tagline }}',
+                                                                                                                    product_page_tagline: '{{ $product->product_page_tagline }}',
+                                                                                                                    description: `{{ $product->description }}`,
+                                                                                                                    category_ids: {{ $product->categories->pluck('id') }},
+                                                                                                                    video_url: '{{ $product->video_url }}',
+                                                                                                                    updateProduct() {
+                                                                                                                        let formData = new FormData();
+                                                                                                                        formData.append('name', this.name);
+                                                                                                                        formData.append('tagline', this.tagline);
+                                                                                                                        formData.append('product_page_tagline', this.product_page_tagline);
+                                                                                                                        formData.append('description', this.description);
+                                                                                                                        formData.append('video_url', this.video_url);
+                                                                                                                        this.category_ids.forEach(id => formData.append('categories[]', id));
 
-                                                                                            let logoInput = document.querySelector('input[type=" file"]'); if (logoInput.files[0]) {
-                            formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}'
-                            , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData }).then(response=> {
-                            if (response.ok) {
-                            window.location.reload();
-                            }
-                            });
-                            }
-                        @endif
+                                                                                                                        let logoInput = document.querySelector('input[type=" file"]'); if
+                                (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers:
+                                { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData
+                                }).then(response=> {
+                                if (response.ok) {
+                                window.location.reload();
+                                }
+                                });
+                                }
+                            @endif
         }">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="md:col-span-3">
                 <div class="flex items-start mb-4">
                     @if(isset($isAdminView) && $isAdminView)
@@ -125,7 +126,8 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         <div class="flex flex-col gap-1">
                             @if($bestForCategories->isNotEmpty())
                                 <div class="flex items-center gap-2">
-                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Best for</span>
+                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Best
+                                        for</span>
                                     <div class="flex items-center gap-1.5">
                                         @foreach($bestForCategories as $category)
                                             <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
@@ -139,7 +141,8 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 
                             @if($pricingCategory)
                                 <div class="flex items-center gap-2">
-                                    <span class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Pricing</span>
+                                    <span
+                                        class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight">Pricing</span>
                                     <span class="text-[0.7rem] text-gray-600 font-medium">{{ $pricingCategory->name }}</span>
                                 </div>
                             @endif
@@ -180,29 +183,26 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 
                 @if($product->video_url || $product->media->isNotEmpty())
                     <div x-data="{ 
-                        open: false, 
-                        mediaUrl: '', 
-                        isVideo: false,
-                        canScrollLeft: false,
-                        canScrollRight: false,
-                        updateScroll() {
-                            const el = this.$refs.mediaContainer;
-                            if (!el) return;
-                            this.canScrollLeft = el.scrollLeft > 5;
-                            this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
-                        },
-                        scroll(direction) {
-                            const el = this.$refs.mediaContainer;
-                            const scrollAmount = el.clientWidth * 0.8;
-                            el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-                        }
-                    }" x-init="$nextTick(() => updateScroll())" class="relative group mt-4">
-                        
+                                open: false, 
+                                mediaUrl: '', 
+                                isVideo: false,
+                                canScrollLeft: false,
+                                canScrollRight: false,
+                                updateScroll() {
+                                    const el = this.$refs.mediaContainer;
+                                    if (!el) return;
+                                    this.canScrollLeft = el.scrollLeft > 5;
+                                    this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
+                                },
+                                scroll(direction) {
+                                    const el = this.$refs.mediaContainer;
+                                    const scrollAmount = el.clientWidth * 0.8;
+                                    el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+                                }
+                            }" x-init="$nextTick(() => updateScroll())" class="relative group mt-4">
+
                         <!-- Left Navigation Arrow -->
-                        <button 
-                            x-show="canScrollLeft" 
-                            x-cloak
-                            @click="scroll(-1)" 
+                        <button x-show="canScrollLeft" x-cloak @click="scroll(-1)"
                             class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                             aria-label="Scroll Left">
                             <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,10 +211,7 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </button>
 
                         <!-- Right Navigation Arrow -->
-                        <button 
-                            x-show="canScrollRight" 
-                            x-cloak
-                            @click="scroll(1)" 
+                        <button x-show="canScrollRight" x-cloak @click="scroll(1)"
                             class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                             aria-label="Scroll Right">
                             <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,22 +219,23 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                             </svg>
                         </button>
 
-                        <div 
-                            x-ref="mediaContainer" 
-                            @scroll.debounce.100ms="updateScroll()"
+                        <div x-ref="mediaContainer" @scroll.debounce.100ms="updateScroll()"
                             class="flex overflow-x-auto scroll-smooth no-scrollbar gap-4 mb-6 pb-2">
-                            
+
                             @if($product->video_url)
                                 @php
                                     $embedUrl = $product->getEmbedUrl();
                                     $thumbnailUrl = 'https://img.youtube.com/vi/' . $product->getVideoId() . '/0.jpg';
                                 @endphp
-                                <div class="flex-shrink-0 cursor-pointer" @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
-                                    <div class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex-shrink-0 cursor-pointer"
+                                    @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
+                                    <div
+                                        class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                         <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover"
                                             loading="lazy">
                                         <div class="absolute inset-0 bg-black/40 flex items-center justify-center group/play">
-                                            <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform group-hover/play:scale-110">
+                                            <div
+                                                class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform group-hover/play:scale-110">
                                                 <svg class="w-8 h-8 text-white fill-current" viewBox="0 0 24 24">
                                                     <path d="M8 5v14l11-7z" />
                                                 </svg>
@@ -251,7 +249,8 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                 <div class="flex-shrink-0 cursor-pointer"
                                     @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
                                     <img src="{{ asset('storage/' . $media->path) }}" alt="{{ $media->alt_text }}"
-                                        class="w-[240px] sm:w-[260px] md:w-[280px] h-[135px] sm:h-[146px] md:h-[157px] object-cover rounded-xl border shadow-sm hover:shadow-md transition-shadow" loading="lazy">
+                                        class="w-[240px] sm:w-[260px] md:w-[280px] h-[135px] sm:h-[146px] md:h-[157px] object-cover rounded-xl border shadow-sm hover:shadow-md transition-shadow"
+                                        loading="lazy">
                                 </div>
                             @endforeach
                         </div>

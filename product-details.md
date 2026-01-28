@@ -50,15 +50,14 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Fix**: Deleted the `@if($similarProducts->isNotEmpty())` block from `resources/views/products/partials/_sidebar-info.blade.php`.
 - **Result**: Resolved the visual overlap issue and simplified the layout.
 
-#### 8. Relocated Publisher Information
-- **Requirement**: Move "Publisher" information from the main content row to the right sidebar. Align it horizontally with the top of the product logo.
+#### 8. Relocated Publisher Information and Layout Refinement
+- **Requirement**: Move "Publisher" information to the sidebar and align with the product logo. Fix the large empty gap in the middle.
 - **Fix**: 
     - Removed the Publisher block from `resources/views/products/show.blade.php`.
-    - Added a `grid` container with `md:grid-cols-4` around the main content and sidebar in `show.blade.php` to ensure proper side-by-side alignment.
-    - Set main content to `md:col-span-3` and sidebar to `md:col-span-1` (75/25 split) to maintain a wide main content area.
+    - Changed `$mainContentMaxWidth` from `max-w-full` to `max-w-7xl` in `show.blade.php`. This centers the entire content area and prevents the sidebar from drifting too far right on large screens.
+    - Used a `grid-cols-4` layout (`col-span-3` for content, `col-span-1` for sidebar) to maintain a wide main content area while keeping the sidebar close by.
     - Inserted the Publisher block at the very top of `resources/views/products/partials/_sidebar-info.blade.php`.
-    - Removed additional padding from the sidebar partial to ensure the "Publisher" header aligns perfectly with the top of the product logo.
-- **Result**: The Publisher info is now more distinct in the sidebar, perfectly aligned with the start of the product details.
+- **Result**: The layout is now cohesive, with the Publisher info perfectly aligned with the product logo and no large empty spaces in the middle.
 
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
