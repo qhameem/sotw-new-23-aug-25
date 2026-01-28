@@ -17,7 +17,12 @@
 @endphp
 
 <div class="p-4">
-    <h3 class="text-sm font-semibold mb-4 text-gray-800">Top Categories</h3>
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-sm font-semibold text-gray-800">Top Categories</h3>
+        <a href="{{ route('categories.index') }}" class="text-xs text-gray-600 hover:text-gray-900 hover:underline">
+            View all
+        </a>
+    </div>
     <ul class="space-y-2">
         @forelse($topCategories as $category)
             <li>

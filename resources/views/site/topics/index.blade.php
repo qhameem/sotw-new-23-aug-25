@@ -5,9 +5,6 @@
 @endsection
 
 @section('actions')
-    <div class="md:flex items-center space-x-2">
-        <x-add-product-button />
-    </div>
 @endsection
 
 @section('content')
