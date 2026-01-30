@@ -15,6 +15,11 @@ class TechStackController extends Controller
 
         return view('admin.tech-stacks.index', compact('techStacks'));
     }
+    
+    public function create()
+    {
+        return view('admin.tech-stacks.create');
+    }
 
     public function store(Request $request)
     {
@@ -30,6 +35,11 @@ class TechStackController extends Controller
         $techStack->save();
 
         return redirect()->route('admin.tech-stacks.index')->with('status', 'Tech stack created successfully!');
+    }
+    
+    public function edit(TechStack $tech_stack)
+    {
+        return view('admin.tech-stacks.edit', compact('tech_stack'));
     }
 
     public function update(Request $request, TechStack $tech_stack)
