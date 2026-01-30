@@ -9,7 +9,7 @@
         <div @class(['flex flex-col md:flex-row flex-1 md:overflow-hidden w-full mx-auto', $containerMaxWidth])>
             <!-- Main Content -->
             <main @class([
-                'flex-1 w-full order-1 md:order-2 md:pt-14 min-h-0',
+                'flex-1 w-full order-1 md:order-2 md:pt-[3.7rem] min-h-0',
                 $mainPadding,
                 $mainContentMaxWidth,
                 'md:flex md:flex-col md:h-full' => $lockHeight,
@@ -44,10 +44,10 @@
 
             <!-- Right Sidebar -->
             <div @class([
-                'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0',
+                'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0 md:pt-[3.7rem]',
                 'md:h-screen' => !$lockHeight,
-                'md:sticky top-14' => $sidebarSticky && !$lockHeight,
-                'md:flex md:flex-col md:pt-14 md:h-full' => $lockHeight,
+                'md:sticky top-[3.7rem]' => $sidebarSticky && !$lockHeight,
+                'md:flex md:flex-col md:h-full' => $lockHeight,
             ])>
                 <div @class([
                     'p-6 min-h-0',

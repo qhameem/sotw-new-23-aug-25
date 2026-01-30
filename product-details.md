@@ -59,6 +59,15 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Inserted the Publisher block at the very top of `resources/views/products/partials/_sidebar-info.blade.php`.
 - **Result**: The layout is now cohesive, with the Publisher info perfectly aligned with the product logo and no large empty spaces in the middle.
 
+#### 9. Fixed Sidebar Clipping
+- **Issue**: The top of the right sidebar was being obscured by the fixed top menubar.
+- **Fix**: 
+    - Updated `resources/views/components/main-content-layout.blade.php`.
+    - Added `md:pt-[3.7rem]` to the sidebar container to match the top bar's height (`3.7rem`).
+    - Adjusted the sticky offset from `top-14` (56px) to `top-[3.7rem]` (approx 59px) to perfectly align with the bottom of the menubar during scroll.
+    - Synchronized the main content's padding to `md:pt-[3.7rem]` for layout consistency.
+- **Result**: The sidebar content (like "PUBLISHER") now correctly clears the top bar when the page is scrolled to the top.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 
