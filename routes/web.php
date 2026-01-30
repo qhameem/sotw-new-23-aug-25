@@ -106,6 +106,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
     Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
+    Route::resource('tech-stacks', \App\Http\Controllers\Admin\TechStackController::class);
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::resource('advertising', AdvertisingController::class);
     Route::resource('ad-zones', AdZoneController::class);

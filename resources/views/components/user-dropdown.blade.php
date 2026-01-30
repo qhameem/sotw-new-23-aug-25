@@ -67,6 +67,7 @@
                     <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                     <path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z" />
                 </svg>Pending Product Edits</a>
+            <div class="border-t border-gray-200 my-1"></div>
             <a href="{{ route('admin.categories.index') }}"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg
                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -75,7 +76,7 @@
                     <path
                         d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z" />
                     <path d="M7 7h.01" />
-                </svg>Manage Categories</a>
+                </svg>Categories</a>
             <a href="{{ route('admin.products.index') }}"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg
                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -86,7 +87,16 @@
                         d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                     <path d="m3.3 7 8.7 5 8.7-5" />
                     <path d="M12 22V12" />
-                </svg>Manage Products</a>
+                </svg>Products</a>
+            <a href="{{ route('admin.tech-stacks.index') }}"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg
+                    xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                    class="w-5 h-5 mr-2">
+                    <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>Tech Stacks</a>
+            <div class="border-t border-gray-200 my-1"></div>
             <a href="{{ route('admin.premium-products.index') }}"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><svg
                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
