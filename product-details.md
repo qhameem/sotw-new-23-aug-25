@@ -36,14 +36,14 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Added responsive sizing (`w-[240px]` on mobile) and navigation arrows that appear on hover when scrolling is possible.
 - **Result**: A smooth, interactive media gallery that handles multiple images and videos efficiently without cluttering the page.
 
-#### 6. Relocated Category Badges
-- **Requirement**: Move "Best for" and "Pricing model" categories from the right sidebar to the main row (next to Visit Website/Upvote). Align them to the left and make the font smaller.
+#### 6. Relocated Category Badges (Final Placement)
+- **Requirement**: Move "Best for" and "Pricing model" categories to the right sidebar, above the Tech Stack.
 - **Fix**: 
-    - Removed the tags from `resources/views/products/partials/_sidebar-info.blade.php`.
-    - Added a new meta-info block in `resources/views/products/show.blade.php` within the action buttons row.
-    - Standardized the labels (e.g., "BEST FOR", "PRICING") to `text-[0.65rem]` and values to `text-[0.7rem]` for a compact, secondary look.
-    - Ensured they align to the left side of the row, next to the Publisher information.
-- **Result**: Important product context is now immediately visible in the main interaction area, and the sidebar is cleaner.
+    - Removed the tags from `resources/views/products/show.blade.php` (where they were temporarily placed below media).
+    - Inserted the "Best for" and "Pricing Model" blocks into `resources/views/products/partials/_sidebar-info.blade.php`.
+    - Placed them below the "Publisher" block and above the "Tech Stack" block for logical grouping of metadata.
+    - Maintained the compact typography (`text-[0.65rem]` headers, `text-[0.7rem]` values).
+- **Result**: Main content is now cleaner, and all product classification metadata is consolidated in the sidebar.
 
 #### 7. Removed Similar Products Section
 - **Requirement**: Remove the "Similar Products" section from the right sidebar as its title was being obscured by the top menubar.

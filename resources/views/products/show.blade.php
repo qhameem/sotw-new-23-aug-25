@@ -263,33 +263,6 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                     </div>
                 @endif
                 
-                <!-- Best for and Pricing model section moved here after media -->
-                <div class="flex items-center gap-8 mt-6 mb-6">
-                    <div class="flex flex-row gap-4">
-                        @if($bestForCategories->isNotEmpty())
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-500 tracking-tight">Best
-                                    for</span>
-                                <div class="flex items-center gap-1">
-                                    @foreach($bestForCategories as $category)
-                                        <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
-                                            class="text-[0.7rem] text-gray-600 hover:text-gray-900 font-medium">
-                                            {{ $category->name }}@if(!$loop->last)<span class="text-gray-300">•</span>@endif
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-
-                        @if($pricingCategory)
-                            <div class="flex items-center gap-2">
-                                <span
-                                    class="text-xs text-gray-500 tracking-tight">Pricing model</span>
-                                <span class="text-[0.7rem] text-gray-600 font-medium">{{ $pricingCategory->name }}</span>
-                            </div>
-                        @endif
-                    </div>
-                </div>
             
                 <div class="prose max-w-none text-sm ql-editor-content">
                     @if(isset($isAdminView) && $isAdminView)

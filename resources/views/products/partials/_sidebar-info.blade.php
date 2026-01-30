@@ -12,6 +12,27 @@
         </div>
     @endunless
 
+    @if($bestForCategories->isNotEmpty())
+        <div>
+            <h3 class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight mb-2">Best for</h3>
+            <div class="flex flex-wrap gap-1.5">
+                @foreach($bestForCategories as $category)
+                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                        class="text-[0.7rem] text-gray-700 hover:text-gray-900 font-medium">
+                        {{ $category->name }}@if(!$loop->last)<span class="text-gray-300 ml-1.5">•</span>@endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if($pricingCategory)
+        <div>
+            <h3 class="text-[0.65rem] font-semibold text-gray-400 uppercase tracking-tight mb-1">Pricing Model</h3>
+            <p class="text-[0.7rem] text-gray-700 font-medium">{{ $pricingCategory->name }}</p>
+        </div>
+    @endif
+
     @if($product->techStacks->isNotEmpty())
         <div>
             <h3 class="text-sm font-semibold text-gray-800 mb-2">Tech Stack</h3>
