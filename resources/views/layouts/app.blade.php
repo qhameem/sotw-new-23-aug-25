@@ -256,6 +256,15 @@
                 @if(Request::is('free-todo-list-tool'))
                     @include('todolists._lists')
                 @endif
+                @php
+                    $sidebarSnippets = \App\Models\CodeSnippet::where('location', 'sidebar')->get();
+                    $page = \Illuminate\Support\Facades\Route::currentRouteName();
+                @endphp
+                @foreach ($sidebarSnippets as $snippet)
+                    @if ($snippet->page === 'all' || $snippet->page === $page)
+                        {!! $snippet->code !!}
+                    @endif
+                @endforeach
             @endif
         </x-slot:right_sidebar_content>
 

@@ -31,7 +31,7 @@ class CodeSnippetController extends Controller
     {
         $request->validate([
             'page' => 'required|string',
-            'location' => 'required|string|in:head,body',
+            'location' => 'required|string|in:head,body,sidebar',
             'code' => 'required|string',
         ]);
 
