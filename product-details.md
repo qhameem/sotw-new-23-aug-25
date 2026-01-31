@@ -69,14 +69,20 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Result**: The sidebar content (like "PUBLISHER") now correctly clears the top bar when the page is scrolled to the top.
 
 #### 10. Redesigned Mobile Product Header & Final Layout Refinement
-- **Requirement**: Optimize header for mobile (side-by-side logo/name). Fix content touching the right edge on mobile. Ensure perfect alignment on desktop.
+- **Requirement**: Optimize header for mobile (side-by-side logo/name). Fix content touching the right edge on mobile. Ensure perfect alignment on desktop and remove the large gap between content and sidebar.
 - **Fix**: 
-    - Refactored header to use `flex-col` on mobile and `flex-row` on desktop.
-    - Standardized global layout padding in `MainContentLayout.blade.php` and `app.blade.php` to the project standard sequence: `px-4 sm:px-6 lg:px-8`.
-    - Applied specific padding to `show.blade.php`: `px-6 sm:px-6 lg:px-8`. This provides 24px clearance on mobile while aligning with the top bar's 32px padding on desktop.
-    - Removed manual horizontal offsets (`px-1`) from breadcrumbs in `show.blade.php` to ensure a clean left-aligned edge.
-    - Updated the action row to use `flex-row` on mobile, placing "Visit Website" and "Upvote" buttons side-by-side.
-- **Result**: The layout is now globally consistent and perfectly aligned with the top bar on desktop, while maintaining the requested mobile-specific optimizations.
+    - Standardized global layout padding in `MainContentLayout.blade.php` and `app.blade.php` to `px-4 sm:px-6 lg:px-8`.
+    - Applied specific padding to `show.blade.php`: `px-6 sm:px-6 lg:px-8`.
+    - **Removed redundant internal grid** (`grid-cols-4`) in `show.blade.php`. Since the layout already handles the sidebar, this internal grid was causing the main content to shrink and leave a large empty gap.
+- **Result**: The layout is now globally consistent, the "large gap" is gone, and content is perfectly aligned.
+
+#### 11. Architectural Refactoring: Header Partials
+- **Requirement**: Simplify the complex responsive logic in the product header to improve maintainability and debugging.
+- **Fix**: 
+    - Extracted mobile header logic into `products/partials/_header-mobile.blade.php`.
+    - Extracted desktop header logic into `products/partials/_header-desktop.blade.php`.
+    - Updated `show.blade.php` to conditionally include these partials using `md:hidden` and `hidden md:block`.
+- **Result**: The codebase is much cleaner, with device-specific layouts isolated for easier visual tweaking without affecting the other view.
 
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
