@@ -84,6 +84,11 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Updated `show.blade.php` to conditionally include these partials using `md:hidden` and `hidden md:block`.
 - **Result**: The codebase is much cleaner, with device-specific layouts isolated for easier visual tweaking without affecting the other view.
 
+#### 12. Fix Duplicate Sidebar Info on Mobile
+- **Issue**: Sidebar information (Publisher, Best for, etc.) was appearing twice on mobile devices.
+- **Fix**: Wrapped the `@section('right_sidebar_content')` within `show.blade.php` in a `hidden md:block` div. This ensures that the global layout's sidebar area (which stacks on mobile) is hidden for this specific page, leaving only the intentionally placed sidebar info within the main content flow.
+- **Result**: Sidebar metadata now appears exactly once on all devices – integrated into the content flow on mobile and in its dedicated sidebar on desktop.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 

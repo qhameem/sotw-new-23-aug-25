@@ -222,8 +222,10 @@
         </div>
 
         @section('right_sidebar_content')
-            @include('products.partials._sidebar-info')
-        @endsection
+    <div class="hidden md:block">
+        @include('products.partials._sidebar-info')
+    </div>
+@endsection
     </div>
 @endsection
 <script src="https://app.tinyadz.com/scripts/v1.0/ads.js" data-site-id="689a2b0d06e074933a271e16" async></script>
