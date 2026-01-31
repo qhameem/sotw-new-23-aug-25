@@ -107,12 +107,12 @@
                         <span class="font-medium">{{ number_format($product->impressions) }}</span>
                     </div>
 
-                    <x-product-category-tags :categories="$product->categories" :withCounts="true" :hideOnMobile="false" />
+                    <x-product-category-tags :categories="$product->categories" :withCounts="true" :hideOnMobile="true" />
                 </div>
 
                 <!-- <div class="text-xs text-gray-600  mt-1" itemprop="brand" itemscope itemtype="https://schema.org/Organization">
-                                        By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
-                                    </div> -->
+                                            By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
+                                        </div> -->
 
                 <div class="text-xs text-gray-600  mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
@@ -128,17 +128,17 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-60  mt-1" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
-                                        <meta itemprop="worstRating" content="0">
-                                        <meta itemprop="bestRating" content="5">
-                                        @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
-                                            <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
-                                            Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
-                                            (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
-                                        @else
-                                            <meta itemprop="ratingValue" content="0">
-                                            Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
-                                        @endif
-                                    </div> -->
+                                            <meta itemprop="worstRating" content="0">
+                                            <meta itemprop="bestRating" content="5">
+                                            @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
+                                                <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
+                                                Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
+                                                (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
+                                            @else
+                                                <meta itemprop="ratingValue" content="0">
+                                                Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
+                                            @endif
+                                        </div> -->
             </div>
 
             <div class="flex items-center gap-2">

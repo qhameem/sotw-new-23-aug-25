@@ -4,8 +4,10 @@
     <div class="flex justify-between items-center {{ $padding }} py-[0.78rem]">
         <div>
             <div class="flex items-center">
-                <img src="{{ asset('favicon/logo.svg') }}" alt="Favicon"
-                    class="mobile-favicon mr-2 w-10 h-10 md:hidden">
+                <a href="{{ route('home') }}">
+                    <img src="{{ asset('favicon/logo.svg') }}" alt="Favicon"
+                        class="mobile-favicon mr-2 w-10 h-10 md:hidden">
+                </a>
                 <h1 class="text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
             </div>
         </div>

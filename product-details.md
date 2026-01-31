@@ -89,6 +89,16 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Fix**: Wrapped the `@section('right_sidebar_content')` within `show.blade.php` in a `hidden md:block` div. This ensures that the global layout's sidebar area (which stacks on mobile) is hidden for this specific page, leaving only the intentionally placed sidebar info within the main content flow.
 - **Result**: Sidebar metadata now appears exactly once on all devices – integrated into the content flow on mobile and in its dedicated sidebar on desktop.
 
+#### 13. Make Mobile Header Logo Clickable
+- **Issue**: The logo/favicon in the mobile header was not linked to the home page.
+- **Fix**: Wrapped the mobile favicon `img` tag in [page-header.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/components/page-header.blade.php) with an `<a>` tag pointing to the home route.
+- **Result**: Users can now click the logo on mobile to return to the home page.
+
+#### 14. Hide Product Tags on Home Page Mobile View
+- **Requirement**: Remove the tags displayed under each product's tagline in the home page product list on mobile.
+- **Fix**: Updated `resources/views/partials/products_list.blade.php` to set `:hideOnMobile="true"` on the `x-product-category-tags` component.
+- **Result**: The product list on the home page matches the requested mobile aesthetic by removing the tags from the compact mobile view.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 
