@@ -189,15 +189,15 @@
     @stack('styles')
     <!-- Schema markup -->
     @verbatim
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Software on the Web",
-      "alternateName": ["Softwareontheweb"],
-      "url": "https://softwareontheweb.com"
-    }
-    </script>
+        <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "WebSite",
+                      "name": "Software on the Web",
+                      "alternateName": ["Softwareontheweb"],
+                      "url": "https://softwareontheweb.com"
+                    }
+                    </script>
     @endverbatim
 
 
@@ -227,8 +227,9 @@
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'"
         :sidebar-sticky="!request()->routeIs('articles.create')"
         :lock-height="request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')"
-        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'" :header-padding="$headerPadding ?? 'px-4'"
-        :main-padding="$mainPadding ?? 'pl-6'">
+        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'"
+        :header-padding="$headerPadding ?? 'px-4 sm:px-6 lg:px-8'"
+        :main-padding="$mainPadding ?? 'px-4 sm:px-6 lg:px-8'">
         <x-slot:title>
             @hasSection('header-title')
                 @yield('header-title')

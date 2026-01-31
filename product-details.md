@@ -68,6 +68,16 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Synchronized the main content's padding to `md:pt-[3.7rem]` for layout consistency.
 - **Result**: The sidebar content (like "PUBLISHER") now correctly clears the top bar when the page is scrolled to the top.
 
+#### 10. Redesigned Mobile Product Header & Final Layout Refinement
+- **Requirement**: Optimize header for mobile (side-by-side logo/name). Fix content touching the right edge on mobile. Ensure perfect alignment on desktop.
+- **Fix**: 
+    - Refactored header to use `flex-col` on mobile and `flex-row` on desktop.
+    - Standardized global layout padding in `MainContentLayout.blade.php` and `app.blade.php` to the project standard sequence: `px-4 sm:px-6 lg:px-8`.
+    - Applied specific padding to `show.blade.php`: `px-6 sm:px-6 lg:px-8`. This provides 24px clearance on mobile while aligning with the top bar's 32px padding on desktop.
+    - Removed manual horizontal offsets (`px-1`) from breadcrumbs in `show.blade.php` to ensure a clean left-aligned edge.
+    - Updated the action row to use `flex-row` on mobile, placing "Visit Website" and "Upvote" buttons side-by-side.
+- **Result**: The layout is now globally consistent and perfectly aligned with the top bar on desktop, while maintaining the requested mobile-specific optimizations.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 

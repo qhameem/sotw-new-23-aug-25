@@ -1,6 +1,9 @@
-@php $mainContentMaxWidth = 'max-w-7xl';
+@php 
+        $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
-$mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
+    $mainPadding = 'px-6 sm:px-6 lg:px-8';
+    $headerPadding = 'px-6 sm:px-6 lg:px-8';
+@endphp
 @extends('layouts.app')
 
 @section('title', $pageTitle)
@@ -10,80 +13,98 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
 
 
 @section('content')
-    <div class="py-4 px-1">
+    <div class="py-4">
         <x-breadcrumbs :items="[['label' => $product->name]]" />
     </div>
 
     <div class="bg-white rounded-lg py-6 md:py-8"
         x-data="{
-                            @if(isset($isAdminView) && $isAdminView)
-                                                                                                                    editingName: false,
-                                                                                                                    editingTagline: false,
-                                                                                                                    editingProductPageTagline: false,
-                                                                                                                    editingDescription: false,
-                                                                                                                    editingCategories: false,
-                                                                                                                    editingLogo: false,
-                                                                                                                    editingVideoUrl: false,
-                                                                                                                    name: '{{ $product->name }}',
-                                                                                                                    tagline: '{{ $product->tagline }}',
-                                                                                                                    product_page_tagline: '{{ $product->product_page_tagline }}',
-                                                                                                                    description: `{{ $product->description }}`,
-                                                                                                                    category_ids: {{ $product->categories->pluck('id') }},
-                                                                                                                    video_url: '{{ $product->video_url }}',
-                                                                                                                    updateProduct() {
-                                                                                                                        let formData = new FormData();
-                                                                                                                        formData.append('name', this.name);
-                                                                                                                        formData.append('tagline', this.tagline);
-                                                                                                                        formData.append('product_page_tagline', this.product_page_tagline);
-                                                                                                                        formData.append('description', this.description);
-                                                                                                                        formData.append('video_url', this.video_url);
-                                                                                                                        this.category_ids.forEach(id => formData.append('categories[]', id));
+                                                            @if(isset($isAdminView) && $isAdminView)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingName: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingTagline: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingProductPageTagline: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingDescription: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingCategories: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingLogo: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    editingVideoUrl: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    name: '{{ $product->name }}',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    tagline: '{{ $product->tagline }}',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    product_page_tagline: '{{ $product->product_page_tagline }}',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    description: `{{ $product->description }}`,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    category_ids: {{ $product->categories->pluck('id') }},
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    video_url: '{{ $product->video_url }}',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    updateProduct() {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        let formData = new FormData();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        formData.append('name', this.name);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        formData.append('tagline', this.tagline);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        formData.append('product_page_tagline', this.product_page_tagline);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        formData.append('description', this.description);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        formData.append('video_url', this.video_url);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        this.category_ids.forEach(id => formData.append('categories[]', id));
 
-                                                                                                                        let logoInput = document.querySelector('input[type=" file"]'); if
-                                (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with file uploads headers:
-                                { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing }, body: formData
-                                }).then(response=> {
-                                if (response.ok) {
-                                window.location.reload();
-                                }
-                                });
-                                }
-                            @endif
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        let logoInput = document.querySelector('input[type="
+                                                                file"]'); if (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with
+                                                                file uploads headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing
+                                                                }, body: formData }).then(response=> {
+                                                                if (response.ok) {
+                                                                window.location.reload();
+                                                                }
+                                                                });
+                                                                }
+                                                            @endif
         }">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 p-0">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 p-0">
             <div class="md:col-span-3">
-                <div class="flex items-start mb-4">
-                    @if(isset($isAdminView) && $isAdminView)
-                        <div @click="editingLogo = true">
-                            <template x-if="!editingLogo">
-                                @if($product->logo)
-                                    <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
-                                        alt="{{ $product->name }} logo" class="w-[65px] h-[65px] object-contain rounded-xl mr-3">
-                                @elseif($product->link)
-                                    <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-                                        alt="{{ $product->name }} favicon" class="size-14 object-contain rounded-xl mr-3">
-                                @endif
-                            </template>
-                            <template x-if="editingLogo">
-                                <div>
-                                    <input type="file" class="form-input">
-                                    <button @click.stop="updateProduct(); editingLogo = false"
-                                        class="btn btn-primary mt-2">Save</button>
-                                    <button @click.stop="editingLogo = false" class="btn btn-secondary mt-2">Cancel</button>
-                                </div>
-                            </template>
-                        </div>
-                    @else
-                        @if($product->logo)
-                            <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
-                                alt="{{ $product->name }} logo" class="w-[100px] h-[100px] object-contain rounded-xl mr-3">
-                        @elseif($product->link)
-                            <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-                                alt="{{ $product->name }} favicon" class="size-20 object-contain rounded-xl mr-3">
+                <div class="flex flex-col md:flex-row md:items-start mb-4">
+                    {{-- Logo and Name Row (Mobile) / Logo only (Desktop) --}}
+                    <div class="flex items-center flex-shrink-0">
+                        @if(isset($isAdminView) && $isAdminView)
+                            <div @click="editingLogo = true" class="cursor-pointer">
+                                <template x-if="!editingLogo">
+                                    @if($product->logo)
+                                        <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
+                                            alt="{{ $product->name }} logo"
+                                            class="w-14 h-14 md:w-[100px] md:h-[100px] object-contain rounded-xl">
+                                    @elseif($product->link)
+                                        <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
+                                            alt="{{ $product->name }} favicon"
+                                            class="w-14 h-14 md:w-[100px] md:h-[100px] object-contain rounded-xl">
+                                    @endif
+                                </template>
+                                <template x-if="editingLogo">
+                                    <div class="mt-2">
+                                        <input type="file" class="text-xs">
+                                        <div class="mt-1 flex gap-2">
+                                            <button @click.stop="updateProduct(); editingLogo = false"
+                                                class="text-[10px] bg-primary-500 text-white px-2 py-1 rounded">Save</button>
+                                            <button @click.stop="editingLogo = false"
+                                                class="text-[10px] bg-gray-200 px-2 py-1 rounded">Cancel</button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        @else
+                            @if($product->logo)
+                                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
+                                    alt="{{ $product->name }} logo"
+                                    class="w-14 h-14 md:w-[100px] md:h-[100px] object-contain rounded-xl">
+                            @elseif($product->link)
+                                <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
+                                    alt="{{ $product->name }} favicon"
+                                    class="w-14 h-14 md:w-[100px] md:h-[100px] object-contain rounded-xl">
+                            @endif
                         @endif
-                    @endif
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">
+
+                        {{-- Mobile Product Name --}}
+                        <h1 class="text-xl font-bold text-gray-900 ml-4 md:hidden">
+                            {{ $product->name }}
+                        </h1>
+                    </div>
+
+                    {{-- Content Area --}}
+                    <div class="mt-3 md:mt-0 md:ml-5 flex-1">
+                        {{-- Desktop Product Name --}}
+                        <h1 class="text-2xl font-bold text-gray-900 hidden md:block">
                             @if(isset($isAdminView) && $isAdminView)
                                 <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
                                 <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
@@ -92,7 +113,9 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                 {{ $product->name }}
                             @endif
                         </h1>
-                        <p class="text-gray-800 text-sm">
+
+                        {{-- Tagline --}}
+                        <p class="text-gray-800 text-sm md:text-base leading-snug">
                             @if(isset($isAdminView) && $isAdminView)
                                 <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                                     x-text="product_page_tagline"></span>
@@ -103,7 +126,9 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                                 {{ $product->product_page_tagline }}
                             @endif
                         </p>
-                        <div class="flex flex-wrap items-center mt-1">
+
+                        {{-- Tags --}}
+                        <div class="flex flex-wrap items-center mt-2.5">
                             @php
                                 $generalCategories = $product->categories->filter(function ($cat) {
                                     return !$cat->types->contains('name', 'Pricing') && !$cat->types->contains('name', 'Best for');
@@ -111,19 +136,19 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                             @endphp
                             @foreach($generalCategories as $category)
                                 <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
-                                    class="text-[0.65rem] text-gray-500 hover:underline">{{ $category->name }}</a>
+                                    class="text-[0.65rem] md:text-xs text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
                                 @if(!$loop->last)
-                                    <span class="text-gray-400 mx-2">&middot;</span>
+                                    <span class="text-gray-300 mx-2">&middot;</span>
                                 @endif
                             @endforeach
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end mb-6 space-x-4">
+                <div class="flex flex-row items-center md:justify-end mb-6 gap-3">
                     <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
                         target="_blank" rel="noopener ugc noreferrer"
-                        class="inline-flex items-center px-4 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        class="flex-1 md:flex-initial inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         Visit Website &nbsp;
                         <svg class="size-4 stroke-gray-600" viewBox="0 0 24 24" fill="none"
                             xmlns="http://www.w3.org/2000/svg">
@@ -136,7 +161,9 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </svg>
                     </a>
                     @unless(isset($isAdminView) && $isAdminView)
-                        @livewire('product-upvote-button', ['product' => $product])
+                        <div class="flex-1 md:flex-initial">
+                            @livewire('product-upvote-button', ['product' => $product])
+                        </div>
                     @endunless
                 </div>
 
@@ -151,26 +178,27 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </div>
                     </div>
                 @endif
-            
+
                 @if($product->video_url || $product->media->isNotEmpty())
                     <div x-data="{
-                                open: false,
-                                mediaUrl: '',
-                                isVideo: false,
-                                canScrollLeft: false,
-                                canScrollRight: false,
-                                updateScroll() {
-                                    const el = this.$refs.mediaContainer;
-                                    if (!el) return;
-                                    this.canScrollLeft = el.scrollLeft > 5;
-                                    this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
-                                },
-                                scroll(direction) {
-                                    const el = this.$refs.mediaContainer;
-                                    const scrollAmount = el.clientWidth * 0.8;
-                                    el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-                                }
-                            }" x-init="$nextTick(() => updateScroll())" class="relative group mt-4">
+                                                                                                open: false,
+                                                                                                mediaUrl: '',
+                                                                                                isVideo: false,
+                                                                                                canScrollLeft: false,
+                                                                                                canScrollRight: false,
+                                                                                                updateScroll() {
+                                                                                                    const el = this.$refs.mediaContainer;
+                                                                                                    if (!el) return;
+                                                                                                    this.canScrollLeft = el.scrollLeft > 5;
+                                                                                                    this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
+                                                                                                },
+                                                                                                scroll(direction) {
+                                                                                                    const el = this.$refs.mediaContainer;
+                                                                                                    const scrollAmount = el.clientWidth * 0.8;
+                                                                                                    el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+                                                                                                }
+                                                                                            }"
+                        x-init="$nextTick(() => updateScroll())" class="relative group mt-4">
 
                         <!-- Left Navigation Arrow -->
                         <button x-show="canScrollLeft" x-cloak @click="scroll(-1)"
@@ -262,8 +290,8 @@ $mainPadding = 'px-4 sm:px-6 lg:px-8'; @endphp
                         </div>
                     </div>
                 @endif
-                
-            
+
+
                 <div class="prose max-w-none text-sm ql-editor-content">
                     @if(isset($isAdminView) && $isAdminView)
                         <div x-show="!editingDescription" @click="editingDescription = true" x-html="description"></div>
