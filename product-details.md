@@ -112,6 +112,13 @@ This file tracks changes made to the product details page (`product/{product:slu
     - Updated the "Add New Code Snippet" form in [snippets.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/admin/advertising/snippets.blade.php) to use `products.*` wildcards.
 - **Result**: Snippets now display and execute correctly as HTML across all relevant product and article pages.
 
+#### 17. Fix Sidebar Content Clipping
+- **Issue**: Tall sidebar content (snippets + product info) was being cut off at the bottom because the sticky sidebar column lacked a scrollbar.
+- **Fix**: 
+    - Updated [main-content-layout.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/components/main-content-layout.blade.php) to use `calc(100vh - 3.7rem)` for sticky sidebar height and enabled `overflow-y-auto`.
+    - Added `overflow-x-auto` to `sidebar-snippets-container` in [app.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/layouts/app.blade.php) and [_sidebar-info.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/products/partials/_sidebar-info.blade.php).
+- **Result**: The entire sidebar is now scrollable when its content exceeds the screen height, ensuring all snippets and product details are fully accessible.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 

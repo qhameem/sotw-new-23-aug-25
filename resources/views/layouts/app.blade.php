@@ -190,14 +190,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                        {
-                                          "@context": "https://schema.org",
-                                          "@type": "WebSite",
-                                          "name": "Software on the Web",
-                                          "alternateName": ["Softwareontheweb"],
-                                          "url": "https://softwareontheweb.com"
-                                        }
-                                        </script>
+                                            {
+                                              "@context": "https://schema.org",
+                                              "@type": "WebSite",
+                                              "name": "Software on the Web",
+                                              "alternateName": ["Softwareontheweb"],
+                                              "url": "https://softwareontheweb.com"
+                                            }
+                                            </script>
     @endverbatim
 
 
@@ -257,7 +257,7 @@
                     $page = \Illuminate\Support\Facades\Route::currentRouteName();
                 @endphp
                 <div class="space-y-6">
-                    <div class="sidebar-snippets-container">
+                    <div class="sidebar-snippets-container w-full overflow-x-auto">
                         @foreach ($sidebarSnippets as $snippet)
                             @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
                                 {!! html_entity_decode($snippet->code) !!}
