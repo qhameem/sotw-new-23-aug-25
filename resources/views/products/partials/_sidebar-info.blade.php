@@ -1,4 +1,15 @@
+@php
+    $sidebarSnippets = \App\Models\CodeSnippet::where('location', 'sidebar')->get();
+    $page = \Illuminate\Support\Facades\Route::currentRouteName();
+@endphp
 <div class="space-y-6">
+    <div class="sidebar-snippets-container">
+        @foreach ($sidebarSnippets as $snippet)
+            @if ($snippet->page === 'all' || $snippet->page === $page)
+                {!! $snippet->code !!}
+            @endif
+        @endforeach
+    </div>
     @unless($product->user->hasRole('admin'))
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Publisher</h3>

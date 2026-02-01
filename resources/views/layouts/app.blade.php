@@ -190,14 +190,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                    {
-                      "@context": "https://schema.org",
-                      "@type": "WebSite",
-                      "name": "Software on the Web",
-                      "alternateName": ["Softwareontheweb"],
-                      "url": "https://softwareontheweb.com"
-                    }
-                    </script>
+                        {
+                          "@context": "https://schema.org",
+                          "@type": "WebSite",
+                          "name": "Software on the Web",
+                          "alternateName": ["Softwareontheweb"],
+                          "url": "https://softwareontheweb.com"
+                        }
+                        </script>
     @endverbatim
 
 
@@ -252,19 +252,24 @@
             @hasSection('right_sidebar_content')
                 @yield('right_sidebar_content')
             @else
-                {{ $right_sidebar_content ?? '' }}
-                @if(Request::is('free-todo-list-tool'))
-                    @include('todolists._lists')
-                @endif
                 @php
                     $sidebarSnippets = \App\Models\CodeSnippet::where('location', 'sidebar')->get();
                     $page = \Illuminate\Support\Facades\Route::currentRouteName();
                 @endphp
-                @foreach ($sidebarSnippets as $snippet)
-                    @if ($snippet->page === 'all' || $snippet->page === $page)
-                        {!! $snippet->code !!}
+                <div class="space-y-6">
+                    <div class="sidebar-snippets-container">
+                        @foreach ($sidebarSnippets as $snippet)
+                            @if ($snippet->page === 'all' || $snippet->page === $page)
+                                {!! $snippet->code !!}
+                            @endif
+                        @endforeach
+                    </div>
+                    @include('partials._right-sidebar')
+                    {{ $right_sidebar_content ?? '' }}
+                    @if(Request::is('free-todo-list-tool'))
+                        @include('todolists._lists')
                     @endif
-                @endforeach
+                </div>
             @endif
         </x-slot:right_sidebar_content>
 

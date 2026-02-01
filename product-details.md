@@ -99,6 +99,11 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Fix**: Updated `resources/views/partials/products_list.blade.php` to set `:hideOnMobile="true"` on the `x-product-category-tags` component.
 - **Result**: The product list on the home page matches the requested mobile aesthetic by removing the tags from the compact mobile view.
 
+#### 15. Fix Missing Home Page Sidebar Content
+- **Issue**: Implementing "Code Snippets" in the sidebar caused the default sidebar (Statistics, Partners, Categories) to disappear on the home page and other pages without a custom sidebar.
+- **Fix**: Updated [app.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/layouts/app.blade.php) to explicitly include `partials._right-sidebar` within the sidebar slot's `@else` block. Also wrapped the content in `space-y-6` for consistent vertical spacing.
+- **Result**: The home page now correctly displays both the new code snippets and the standard sidebar content (Site Statistics, etc.).
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 
