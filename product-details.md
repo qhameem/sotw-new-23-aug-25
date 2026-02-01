@@ -104,6 +104,14 @@ This file tracks changes made to the product details page (`product/{product:slu
 - **Fix**: Updated [app.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/layouts/app.blade.php) to explicitly include `partials._right-sidebar` within the sidebar slot's `@else` block. Also wrapped the content in `space-y-6` for consistent vertical spacing.
 - **Result**: The home page now correctly displays both the new code snippets and the standard sidebar content (Site Statistics, etc.).
 
+#### 16. Fix Snippet Visibility and Escaping on Product Pages
+- **Issue**: Snippets set to "Products" were not showing due to route name mismatches. Additionally, snippets were appearing as raw HTML text because they contained encoded symbols like `&lt;`.
+- **Fix**: 
+    - Updated matching logic in [app.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/layouts/app.blade.php) and [_sidebar-info.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/products/partials/_sidebar-info.blade.php) to use `request()->routeIs(str_replace('.index', '.*', $snippet->page))`.
+    - Added `html_entity_decode()` to all snippet rendering locations to resolve the "raw HTML text" issue.
+    - Updated the "Add New Code Snippet" form in [snippets.blade.php](file:///Users/quazihameemmahmud/Laravel/software-on-the-web-lara-new/resources/views/admin/advertising/snippets.blade.php) to use `products.*` wildcards.
+- **Result**: Snippets now display and execute correctly as HTML across all relevant product and article pages.
+
 #### 2. Removed Redundant Page Header Title
 - **Issue**: The product name appeared twice: in the layout header and in the page content.
 - **Fix**: 

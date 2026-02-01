@@ -5,8 +5,8 @@
 <div class="space-y-6">
     <div class="sidebar-snippets-container">
         @foreach ($sidebarSnippets as $snippet)
-            @if ($snippet->page === 'all' || $snippet->page === $page)
-                {!! $snippet->code !!}
+            @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+                {!! html_entity_decode($snippet->code) !!}
             @endif
         @endforeach
     </div>
@@ -49,8 +49,7 @@
             <h3 class="text-xs text-gray-500 mb-2">Tech Stack</h3>
             <div class="flex flex-wrap gap-2">
                 @foreach($product->techStacks as $techStack)
-                    <span
-                        class="inline-flex items-center text-xs text-gray-700 font-medium">
+                    <span class="inline-flex items-center text-xs text-gray-700 font-medium">
                         {{ $techStack->name }}
                     </span>
                 @endforeach

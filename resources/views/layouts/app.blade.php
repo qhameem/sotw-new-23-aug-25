@@ -190,14 +190,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                        {
-                          "@context": "https://schema.org",
-                          "@type": "WebSite",
-                          "name": "Software on the Web",
-                          "alternateName": ["Softwareontheweb"],
-                          "url": "https://softwareontheweb.com"
-                        }
-                        </script>
+                                        {
+                                          "@context": "https://schema.org",
+                                          "@type": "WebSite",
+                                          "name": "Software on the Web",
+                                          "alternateName": ["Softwareontheweb"],
+                                          "url": "https://softwareontheweb.com"
+                                        }
+                                        </script>
     @endverbatim
 
 
@@ -206,8 +206,8 @@
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($headSnippets as $snippet)
-        @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+        @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+            {!! html_entity_decode($snippet->code) !!}
         @endif
     @endforeach
 </head>
@@ -219,8 +219,8 @@
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($bodySnippets as $snippet)
-        @if ($snippet->page === 'all' || $snippet->page === $page)
-            {!! $snippet->code !!}
+        @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+            {!! html_entity_decode($snippet->code) !!}
         @endif
     @endforeach
 
@@ -259,8 +259,8 @@
                 <div class="space-y-6">
                     <div class="sidebar-snippets-container">
                         @foreach ($sidebarSnippets as $snippet)
-                            @if ($snippet->page === 'all' || $snippet->page === $page)
-                                {!! $snippet->code !!}
+                            @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+                                {!! html_entity_decode($snippet->code) !!}
                             @endif
                         @endforeach
                     </div>
