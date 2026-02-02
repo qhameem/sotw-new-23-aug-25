@@ -2,7 +2,7 @@
     $organizationSchema = [
         "@type" => "Organization",
         "@id" => url('/') . "/#organization",
-        "name" => "SoftwareOnTheWeb",
+        "name" => "Software on the Web",
         "url" => url('/'),
         "logo" => asset('images/logo.png') // Adjust path as needed
     ];
@@ -11,7 +11,7 @@
         "@type" => "WebPage",
         "@id" => route('products.show', $product->slug) . "#webpage",
         "url" => route('products.show', $product->slug),
-        "name" => $product->name . " on SoftwareOnTheWeb",
+        "name" => $product->name . " on Software on the Web",
         "publisher" => ["@id" => url('/') . "/#organization"]
     ];
 
