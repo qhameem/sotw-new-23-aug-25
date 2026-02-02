@@ -42,3 +42,13 @@ The product submission form has been refined to provide a premium, modern experi
 - **Zero Friction**: Transitions are instant; heavy data fetching happens in the background.
 - **Visual Excellence**: Modern blue styling, geometric patterns, and clean typography.
 - **User Assistance**: Tooltips, auto-focus, and intelligent suggestions guide the user throughout.
+
+## Known Issues & Maintenance
+
+### 1. Dropdown Stickiness (Multi-select)
+- **Issue**: In "Categories" and "Best For" fields, the dropdown tray sometimes closes abruptly after selecting an item and won't re-open when typing.
+- **Root Cause**: A race condition in `SearchableDropdown.vue`. When an item is clicked, Vue reactively removes it from the DOM. The global `handleClickOutside` listener then incorrectly identifies the click as being "outside" because the target element is no longer a child of the component.
+- **Symptom**: The tray closes, but the input retains focus. Typing doesn't trigger a new `@focus` event, so the tray remains closed until the user clicks out and back in.
+- **Future Fix**: 
+    1. Add `@click.stop` to the dropdown items to prevent event bubbling.
+    2. Add an `@input` handler to the search field to ensure the tray opens upon typing.

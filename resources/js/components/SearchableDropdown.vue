@@ -23,6 +23,7 @@
           @keydown.down.prevent="moveDown"
           @keydown.up.prevent="moveUp"
           @keydown.enter.prevent="selectItem(highlightedIndex)"
+          @input="isOpen = true"
           class="flex-grow bg-transparent text-sm focus:outline-none ml-2 ring-0 shadow-none focus:ring-0 focus:shadow-none"
           style="outline: none; border: none;"
           :placeholder="selectedItems.length === 0 ? placeholder : ''"
@@ -32,7 +33,7 @@
         <li
           v-for="(item, index) in filteredItems"
           :key="item.id"
-          @click="selectItem(index)"
+          @click.stop="selectItem(index)"
           :class="['p-2 cursor-pointer hover:bg-sky-100', { 'bg-sky-200': highlightedIndex === index }]"
         >
           {{ item.name }}
