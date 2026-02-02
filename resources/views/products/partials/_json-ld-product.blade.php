@@ -18,7 +18,7 @@
     $softwareApplicationSchema = [
         "@type" => "SoftwareApplication",
         "name" => $product->name,
-        "description" => $product->description ?? $product->tagline,
+        "description" => strip_tags(html_entity_decode($product->description ?? $product->tagline)),
         "applicationCategory" => $product->application_category ?? 'BusinessApplication',
         "operatingSystem" => $product->operating_system ?? 'Web',
         "offers" => [
