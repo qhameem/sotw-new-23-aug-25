@@ -1,4 +1,4 @@
-@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false, 'headerPadding' => 'px-4 sm:px-6 lg:px-8', 'mainPadding' => 'px-4 sm:px-6 lg:px-8'])
+@props(['mainContentMaxWidth' => 'max-w-3xl', 'sidebarSticky' => true, 'containerMaxWidth' => 'max-w-7xl', 'lockHeight' => false, 'headerPadding' => 'px-4 sm:px-6 lg:px-4', 'mainPadding' => 'px-4 sm:px-6 lg:px-8'])
 
 <x-top-bar />
 

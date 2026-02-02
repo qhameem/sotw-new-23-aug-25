@@ -57,8 +57,8 @@
     @endif
 
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
-        <div class="bg-white px-4 py-3">
-            <p class="text-sm text-gray-700">{{ $category->description }}</p>
+        <div class="bg-white px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
+            <p class="text-sm text-gray-800">{{ $category->description }}</p>
         </div>
     @endif
     </div>
