@@ -48,6 +48,10 @@ class Product extends Model implements Sitemapable
         'proposed_product_page_tagline',
         'video_url',
         'last_edited_by_id',
+        'operating_system',
+        'application_category',
+        'price',
+        'currency',
     ];
 
     protected $casts = [
