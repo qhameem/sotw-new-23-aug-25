@@ -114,34 +114,35 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-600  mt-1" itemprop="brand" itemscope itemtype="https://schema.org/Organization">
-                                                By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
-                                            </div> -->
+                                                    By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
+                                                </div> -->
 
-                <div class="text-xs text-gray-600  mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <div class="text-xs text-gray-600 mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
+                    <link itemprop="availability" href="https://schema.org/InStock" />
                     @if(isset($product->price) && is_numeric($product->price) && $product->price > 0)
                         Price: <span itemprop="price"
                             content="{{ number_format($product->price, 2, '.', '') }}">${{ number_format($product->price, 2) }}</span>
-                        <link itemprop="availability" href="https://schema.org/InStock" />
                     @elseif(isset($product->pricing_type) && strtolower($product->pricing_type ?? '') === 'free')
                         Price: <span itemprop="price" content="0.00">Free</span>
-                        <link itemprop="availability" href="https://schema.org/InStock" />
                     @else
+
+                        <meta itemprop="price" content="0.00" />
                     @endif
                 </div>
 
-                <!-- <div class="text-xs text-gray-60  mt-1" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
-                                                <meta itemprop="worstRating" content="0">
-                                                <meta itemprop="bestRating" content="5">
-                                                @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
-                                                    <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
-                                                    Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
-                                                    (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
-                                                @else
-                                                    <meta itemprop="ratingValue" content="0">
-                                                    Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
-                                                @endif
-                                            </div> -->
+                <div class="text-xs text-gray-600 mt-1" itemprop="aggregateRating" itemscope
+                    itemtype="https://schema.org/AggregateRating">
+                    <meta itemprop="worstRating" content="1">
+                    <meta itemprop="bestRating" content="5">
+                    @if(isset($product->average_rating) && is_numeric($product->average_rating) && $product->average_rating > 0)
+                        <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
+                        <meta itemprop="ratingCount" content="{{ $product->votes_count > 0 ? $product->votes_count : 1 }}">
+                    @else
+                        <meta itemprop="ratingValue" content="5">
+                        <meta itemprop="ratingCount" content="1">
+                    @endif
+                </div>
             </div>
 
             <div class="flex items-center gap-2">
