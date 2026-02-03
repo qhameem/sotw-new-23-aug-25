@@ -64,7 +64,7 @@
         @endphp
         <article
             class="p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
-            itemscope itemtype="https://schema.org/Product" x-data="{}" @if($isPromoted)
+            itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
                 @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com&utm_medium=promoted_listing_card', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
             <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
@@ -97,6 +97,9 @@
                             <span class="px-2 py-1 font-semibold">Promoted</span>
                         </span>
                     @endif
+                    <meta itemprop="applicationCategory"
+                        content="{{ $product->application_category ?? 'BusinessApplication' }}" />
+                    <meta itemprop="operatingSystem" content="{{ $product->operating_system ?? 'Web' }}" />
 
                     <div class="flex flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
@@ -111,8 +114,8 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-600  mt-1" itemprop="brand" itemscope itemtype="https://schema.org/Organization">
-                                            By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
-                                        </div> -->
+                                                By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
+                                            </div> -->
 
                 <div class="text-xs text-gray-600  mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
@@ -128,17 +131,17 @@
                 </div>
 
                 <!-- <div class="text-xs text-gray-60  mt-1" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
-                                            <meta itemprop="worstRating" content="0">
-                                            <meta itemprop="bestRating" content="5">
-                                            @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
-                                                <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
-                                                Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
-                                                (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
-                                            @else
-                                                <meta itemprop="ratingValue" content="0">
-                                                Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
-                                            @endif
-                                        </div> -->
+                                                <meta itemprop="worstRating" content="0">
+                                                <meta itemprop="bestRating" content="5">
+                                                @if(isset($product->average_rating) && is_numeric($product->average_rating) && isset($product->votes_count) && $product->votes_count > 0)
+                                                    <meta itemprop="ratingValue" content="{{ number_format($product->average_rating, 1) }}">
+                                                    Rating: <span class="font-semibold">{{ number_format($product->average_rating, 1) }}</span>/5
+                                                    (<span itemprop="ratingCount">{{ $product->votes_count }}</span> votes)
+                                                @else
+                                                    <meta itemprop="ratingValue" content="0">
+                                                    Votes: <span itemprop="ratingCount">{{ $product->votes_count ?? 0 }}</span>
+                                                @endif
+                                            </div> -->
             </div>
 
             <div class="flex items-center gap-2">
