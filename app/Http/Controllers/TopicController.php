@@ -23,13 +23,15 @@ class TopicController extends Controller
     {
         // Eager load categories with their types and count the number of approved products
         $categories = Category::with(['types'])
-            ->withCount(['products' => function ($query) {
-                $query->where('approved', true)
-                      ->where(function ($subQuery) {
-                          $subQuery->whereNull('published_at')
-                                   ->orWhereDate('published_at', '<=', Carbon::today());
-                      });
-            }])
+            ->withCount([
+                'products' => function ($query) {
+                    $query->where('approved', true)
+                        ->where(function ($subQuery) {
+                            $subQuery->whereNull('published_at')
+                                ->orWhereDate('published_at', '<=', Carbon::today());
+                        });
+                }
+            ])
             ->get();
 
         // Sort the categories by the number of products in descending order
@@ -68,11 +70,15 @@ class TopicController extends Controller
     public function show(Category $category): View
     {
         // 1. Fetch Promoted Products for this category
-        $promotedProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $promotedProducts = Product::with([
+            'categories.types',
+            'user',
+            'userUpvotes' => function ($query) {
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }])
+            }
+        ])
             ->where('approved', true)
             ->where('is_promoted', true)
             ->whereNotNull('promoted_position')
@@ -83,16 +89,20 @@ class TopicController extends Controller
             ->get();
 
         // 2. Fetch Regular (non-promoted) Products for this category
-        $regularProducts = Product::with(['categories.types', 'user', 'userUpvotes' => function ($query) {
+        $regularProducts = Product::with([
+            'categories.types',
+            'user',
+            'userUpvotes' => function ($query) {
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }])
+            }
+        ])
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where(function ($query) {
                 $query->whereNull('published_at')
-                      ->orWhereDate('published_at', '<=', Carbon::today());
+                    ->orWhereDate('published_at', '<=', Carbon::today());
             })
             ->whereHas('categories', function ($q) use ($category) {
                 $q->where('categories.id', $category->id);
@@ -102,29 +112,35 @@ class TopicController extends Controller
             ->get();
 
         // 3. Fetch all types with their categories and product counts for the sidebar
-        $allTypes = Type::with(['categories' => function ($query) {
-            $query->withCount(['products' => function ($subQuery) {
-                $subQuery->where('approved', true)
-                         ->where(function ($subSubQuery) {
-                             $subSubQuery->whereNull('published_at')
-                                        ->orWhereDate('published_at', '<=', Carbon::today());
-                         });
-            }])->orderByDesc('products_count')->orderBy('name');
-        }])->orderBy('name')->get();
+        $allTypes = Type::with([
+            'categories' => function ($query) {
+                $query->withCount([
+                    'products' => function ($subQuery) {
+                        $subQuery->where('approved', true)
+                            ->where(function ($subSubQuery) {
+                                $subSubQuery->whereNull('published_at')
+                                    ->orWhereDate('published_at', '<=', Carbon::today());
+                            });
+                    }
+                ])->orderByDesc('products_count')->orderBy('name');
+            }
+        ])->orderBy('name')->get();
 
-        $softwareTypes = $allTypes->filter(fn ($type) => $type->name === 'Software Categories');
-        $pricingTypes = $allTypes->filter(fn ($type) => $type->name === 'Pricing');
-        $otherTypes = $allTypes->filter(fn ($type) => $type->name !== 'Software Categories' && $type->name !== 'Pricing');
+        $softwareTypes = $allTypes->filter(fn($type) => $type->name === 'Software Categories');
+        $pricingTypes = $allTypes->filter(fn($type) => $type->name === 'Pricing');
+        $otherTypes = $allTypes->filter(fn($type) => $type->name !== 'Software Categories' && $type->name !== 'Pricing');
         $types = $softwareTypes->concat($otherTypes)->concat($pricingTypes);
 
         // 4. Fetch all categories for the "Other" categories list in sidebar
-        $allCategories = Category::withCount(['products' => function ($query) {
-            $query->where('approved', true)
-                  ->where(function ($subQuery) {
-                      $subQuery->whereNull('published_at')
-                               ->orWhereDate('published_at', '<=', Carbon::today());
-                  });
-        }])->orderBy('name')->get();
+        $allCategories = Category::withCount([
+            'products' => function ($query) {
+                $query->where('approved', true)
+                    ->where(function ($subQuery) {
+                        $subQuery->whereNull('published_at')
+                            ->orWhereDate('published_at', '<=', Carbon::today());
+                    });
+            }
+        ])->orderBy('name')->get();
 
 
         // 5. Fetch an active ad for the 'below-product-listing' zone and its position
@@ -136,11 +152,11 @@ class TopicController extends Controller
                 ->where('is_active', true)
                 ->where(function ($query) {
                     $query->whereNull('start_date')
-                          ->orWhere('start_date', '<=', Carbon::now());
+                        ->orWhere('start_date', '<=', Carbon::now());
                 })
                 ->where(function ($query) {
                     $query->whereNull('end_date')
-                          ->orWhere('end_date', '>=', Carbon::now());
+                        ->orWhere('end_date', '>=', Carbon::now());
                 })
                 ->inRandomOrder()
                 ->first();
@@ -149,6 +165,9 @@ class TopicController extends Controller
             }
         }
 
+        $currentYear = Carbon::now()->year;
+        $meta_title = "Discover Top " . strip_tags($category->name) . " (" . $currentYear . ") - Software on the Web";
+
         return view('site.topics.category', compact(
             'category', // The current category being viewed
             'promotedProducts',
@@ -156,7 +175,8 @@ class TopicController extends Controller
             'types',          // For the sidebar category listing
             'allCategories',  // For the "Other" categories in sidebar, renamed from 'categories' to avoid conflict
             'belowProductListingAd',
-            'belowProductListingAdPosition'
+            'belowProductListingAdPosition',
+            'meta_title'
         ));
     }
 }

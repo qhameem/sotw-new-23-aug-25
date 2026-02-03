@@ -16,7 +16,9 @@ class SeoComposer
         if ($meta) {
             $category = $view->getData()['category'] ?? null;
             if ($category && $routeName === 'categories.show') {
-                $view->with('meta_title', $category->name . ' - ' . config('app.name'));
+                if (!isset($view->getData()['meta_title'])) {
+                    $view->with('meta_title', $category->name . ' - ' . config('app.name'));
+                }
             } else {
                 $view->with('meta_title', $meta->meta_title ?? config('app.name'));
             }
