@@ -1,10 +1,4 @@
-import { createApp } from 'vue';
-import ProductSubmit from './components/ProductSubmit.vue';
-import NotificationBell from './components/NotificationBell.vue';
-import UserDropdown from './components/UserDropdown.vue';
-import DynamicChecklist from './components/DynamicChecklist.vue';
-import TodoList from './components/TodoList.vue';
-import ProductAssignment from './components/admin/ProductAssignment.vue';
+// Components will be dynamically imported
 import axios from 'axios';
 
 // Add this line to set the CSRF token for all Axios requests
@@ -104,45 +98,69 @@ if (!window.Alpine) {
 }
 
 if (document.getElementById('notification-bell-app')) {
-    const notificationApp = createApp({});
-    notificationApp.component('notification-bell', NotificationBell);
-    notificationApp.mount('#notification-bell-app');
+    import('./components/NotificationBell.vue').then((NotificationBell) => {
+        import('vue').then(({ createApp }) => {
+            const notificationApp = createApp({});
+            notificationApp.component('notification-bell', NotificationBell.default);
+            notificationApp.mount('#notification-bell-app');
+        });
+    });
 }
 
 if (document.getElementById('product-submit-app')) {
-    const app = createApp(ProductSubmit);
-    app.mount('#product-submit-app');
+    import('./components/ProductSubmit.vue').then((ProductSubmit) => {
+        import('vue').then(({ createApp }) => {
+            const app = createApp(ProductSubmit.default);
+            app.mount('#product-submit-app');
+        });
+    });
 }
 
 if (document.getElementById('user-dropdown-app')) {
     const el = document.getElementById('user-dropdown-app');
-    const userDropdownApp = createApp(UserDropdown, {
-        user: JSON.parse(el.dataset.user),
-        isAdmin: el.dataset.isAdmin === 'true',
+    import('./components/UserDropdown.vue').then((UserDropdown) => {
+        import('vue').then(({ createApp }) => {
+            const userDropdownApp = createApp(UserDropdown.default, {
+                user: JSON.parse(el.dataset.user),
+                isAdmin: el.dataset.isAdmin === 'true',
+            });
+            userDropdownApp.mount('#user-dropdown-app');
+        });
     });
-    userDropdownApp.mount('#user-dropdown-app');
 }
 
 // Register the TodoList component globally
 if (document.getElementById('todo-app-container')) {
-    const todoApp = createApp({
-        components: {
-            TodoList
-        }
+    import('./components/TodoList.vue').then((TodoList) => {
+        import('vue').then(({ createApp }) => {
+            const todoApp = createApp({
+                components: {
+                    TodoList: TodoList.default
+                }
+            });
+            todoApp.mount('#todo-app-container');
+        });
     });
-    todoApp.mount('#todo-app-container');
 }
 
 // Mount the DynamicChecklist component to the checklist container
 if (document.getElementById('checklist-container')) {
-    const checklistApp = createApp(DynamicChecklist);
-    checklistApp.mount('#checklist-container');
+    import('./components/DynamicChecklist.vue').then((DynamicChecklist) => {
+        import('vue').then(({ createApp }) => {
+            const checklistApp = createApp(DynamicChecklist.default);
+            checklistApp.mount('#checklist-container');
+        });
+    });
 }
 
 // Mount the ProductAssignment component for admin
 if (document.getElementById('product-assignment-app')) {
-    const assignmentApp = createApp(ProductAssignment);
-    assignmentApp.mount('#product-assignment-app');
+    import('./components/admin/ProductAssignment.vue').then((ProductAssignment) => {
+        import('vue').then(({ createApp }) => {
+            const assignmentApp = createApp(ProductAssignment.default);
+            assignmentApp.mount('#product-assignment-app');
+        });
+    });
 }
 
 // Make Datepicker available globally for inline scripts
