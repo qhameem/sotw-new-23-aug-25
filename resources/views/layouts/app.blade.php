@@ -85,13 +85,22 @@
 
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="{{ config('theme.font_url') }}" rel="stylesheet">
+        <link href="{{ config('theme.font_url') }}" rel="stylesheet" media="print" onload="this.media='all'">
+        <noscript>
+            <link href="{{ config('theme.font_url') }}" rel="stylesheet">
+        </noscript>
     @elseif($fontFamily === 'Inter')
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
-            rel="stylesheet">
+            rel="stylesheet" media="print" onload="this.media='all'">
+        <noscript>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+                rel="stylesheet">
+        </noscript>
     @endif
+
 
     @php
         $fontFamily = config('theme.font_family', 'Inter');
@@ -189,14 +198,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                {
-                                                  "@context": "https://schema.org",
-                                                  "@type": "WebSite",
-                                                  "name": "Software on the Web",
-                                                  "alternateName": ["Softwareontheweb"],
-                                                  "url": "https://softwareontheweb.com"
-                                                }
-                                                </script>
+                                                    {
+                                                      "@context": "https://schema.org",
+                                                      "@type": "WebSite",
+                                                      "name": "Software on the Web",
+                                                      "alternateName": ["Softwareontheweb"],
+                                                      "url": "https://softwareontheweb.com"
+                                                    }
+                                                    </script>
     @endverbatim
 
 
