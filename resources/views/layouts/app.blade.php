@@ -184,20 +184,19 @@
     {{-- End Google Analytics Code Injection --}}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     @stack('styles')
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                            {
-                                              "@context": "https://schema.org",
-                                              "@type": "WebSite",
-                                              "name": "Software on the Web",
-                                              "alternateName": ["Softwareontheweb"],
-                                              "url": "https://softwareontheweb.com"
-                                            }
-                                            </script>
+                                                {
+                                                  "@context": "https://schema.org",
+                                                  "@type": "WebSite",
+                                                  "name": "Software on the Web",
+                                                  "alternateName": ["Softwareontheweb"],
+                                                  "url": "https://softwareontheweb.com"
+                                                }
+                                                </script>
     @endverbatim
 
 
@@ -317,7 +316,7 @@
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     @stack('scripts')
     @stack('form-scripts')
 
