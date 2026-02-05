@@ -30,6 +30,8 @@ use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ProductController extends Controller
 {
@@ -257,12 +259,46 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('media')) {
+            $manager = new ImageManager(new Driver());
+
             foreach ($request->file('media') as $file) {
                 $path = $file->store('product_media', 'public');
+                $mimeType = $file->getMimeType();
+                $type = Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+
+                $pathThumb = null;
+                $pathMedium = null;
+
+                if ($type === 'image') {
+                    try {
+                        $filename = basename($path);
+                        $directory = dirname($path);
+
+                        // Generate Thumbnail (300px width)
+                        $imageThumb = $manager->read($file->getRealPath());
+                        $imageThumb->scale(width: 300);
+                        $thumbFilename = 'thumb_' . $filename;
+                        $pathThumb = $directory . '/' . $thumbFilename;
+                        Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
+
+                        // Generate Medium (800px width)
+                        $imageMedium = $manager->read($file->getRealPath());
+                        $imageMedium->scale(width: 800);
+                        $mediumFilename = 'medium_' . $filename;
+                        $pathMedium = $directory . '/' . $mediumFilename;
+                        Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
+                    } catch (\Exception $e) {
+                        // Fallback: if resizing fails, we just don't set the paths, keeping original behavior
+                        Log::error('Image resizing failed: ' . $e->getMessage());
+                    }
+                }
+
                 $product->media()->create([
                     'path' => $path,
+                    'path_thumb' => $pathThumb,
+                    'path_medium' => $pathMedium,
                     'alt_text' => $product->name . ' media',
-                    'type' => Str::startsWith($file->getMimeType(), 'image') ? 'image' : 'video',
+                    'type' => $type,
                 ]);
             }
         } else {

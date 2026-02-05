@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage; // Added Storage facade
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ProductController extends Controller
 {
@@ -271,15 +273,50 @@ class ProductController extends Controller
 
         // Handle gallery images
         if ($request->hasFile('media')) {
+            $manager = new ImageManager(new Driver());
+
             foreach ($request->file('media') as $file) {
                 $path = $file->store('product_media', 'public');
+                $mimeType = $file->getMimeType();
+                $type = \Illuminate\Support\Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+
+                $pathThumb = null;
+                $pathMedium = null;
+
+                if ($type === 'image') {
+                    try {
+                        $filename = basename($path);
+                        $directory = dirname($path);
+
+                        // Generate Thumbnail (300px width)
+                        $imageThumb = $manager->read($file->getRealPath());
+                        $imageThumb->scale(width: 300);
+                        $thumbFilename = 'thumb_' . $filename;
+                        $pathThumb = $directory . '/' . $thumbFilename;
+                        Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
+
+                        // Generate Medium (800px width)
+                        $imageMedium = $manager->read($file->getRealPath());
+                        $imageMedium->scale(width: 800);
+                        $mediumFilename = 'medium_' . $filename;
+                        $pathMedium = $directory . '/' . $mediumFilename;
+                        Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
+                    } catch (\Exception $e) {
+                        // Fallback: if resizing fails, we just don't set the paths, keeping original behavior
+                        \Log::error('Image resizing failed: ' . $e->getMessage());
+                    }
+                }
+
                 $product->media()->create([
                     'path' => $path,
+                    'path_thumb' => $pathThumb,
+                    'path_medium' => $pathMedium,
                     'alt_text' => $product->name . ' media',
-                    'type' => \Illuminate\Support\Str::startsWith($file->getMimeType(), 'image') ? 'image' : 'video',
+                    'type' => $type,
                 ]);
             }
         }
+
 
         // Check if the user came from the product approvals page
         $fromApprovals = $request->input('from') === 'approvals';
