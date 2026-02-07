@@ -5,7 +5,7 @@
         <div>
             <div class="flex items-center">
                 <a href="{{ route('home') }}">
-                    <img src="{{ asset('favicon/logo.svg') }}" alt="Favicon"
+                    <img src="{{ asset('favicon/logo.svg') }}" alt="Favicon" width="40" height="40"
                         class="mobile-favicon mr-2 w-10 h-10 md:hidden">
                 </a>
                 <h1 class="text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
@@ -21,8 +21,8 @@
             @push('styles')
                 <style>
                     .mobile-favicon {
-                        width: 16px;
-                        height: 16px;
+                        width: 40px;
+                        height: 40px;
                         vertical-align: middle;
                     }
                 </style>

@@ -5,7 +5,7 @@
         <li class="inline-flex items-center">
             <a href="{{ route('home') }}"
                 class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700">
-                <img src="{{ asset('favicon/logo.svg') }}" alt="Home" class="w-4 h-4">
+                <img src="{{ asset('favicon/logo.svg') }}" alt="Home" width="16" height="16" class="w-4 h-4">
             </a>
         </li>
         @foreach($items as $item)
