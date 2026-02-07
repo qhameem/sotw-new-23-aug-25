@@ -60,6 +60,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <script>
+        window.loadDelayedScripts = function() {
+            if (window.delayedScriptsLoaded) return;
+            window.delayedScriptsLoaded = true;
+
+            // Load Google Analytics/Tag Manager
+            const gaTemplate = document.getElementById('delayed-ga-code');
+            if (gaTemplate) {
+                const div = document.createElement('div');
+                div.innerHTML = gaTemplate.innerHTML;
+                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    document.head.appendChild(newScript);
+                });
+            }
+
+            // Load Head Snippets
+            document.querySelectorAll('template.delayed-head-snippet').forEach(template => {
+                const container = template.parentElement;
+                const fragment = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.innerHTML = template.innerHTML;
+                
+                Array.from(div.childNodes).forEach(node => {
+                    if (node.nodeName === 'SCRIPT') {
+                        const newScript = document.createElement('script');
+                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(node.innerHTML));
+                        fragment.appendChild(newScript);
+                    } else {
+                        fragment.appendChild(node.cloneNode(true));
+                    }
+                });
+                container.appendChild(fragment);
+            });
+
+            // Load Body Snippets
+            document.querySelectorAll('template.delayed-body-snippet').forEach(template => {
+                const container = template.parentElement;
+                const fragment = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.innerHTML = template.innerHTML;
+                
+                Array.from(div.childNodes).forEach(node => {
+                    if (node.nodeName === 'SCRIPT') {
+                        const newScript = document.createElement('script');
+                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(node.innerHTML));
+                        fragment.appendChild(newScript);
+                    } else {
+                        fragment.appendChild(node.cloneNode(true));
+                    }
+                });
+                container.appendChild(fragment);
+            });
+        };
+
+        ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
+            window.addEventListener(event, window.loadDelayedScripts, { once: true, passive: true });
+        });
+    </script>
+
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $metaDescription ?? '')">
 
@@ -188,7 +252,7 @@
         }
     @endphp
     @if(!empty($gaCode) && !Auth::check())
-        {!! $gaCode !!}
+        <template id="delayed-ga-code">{!! $gaCode !!}</template>
     @endif
     {{-- End Google Analytics Code Injection --}}
 
@@ -198,14 +262,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                    {
-                                                      "@context": "https://schema.org",
-                                                      "@type": "WebSite",
-                                                      "name": "Software on the Web",
-                                                      "alternateName": ["Softwareontheweb"],
-                                                      "url": "https://softwareontheweb.com"
-                                                    }
-                                                    </script>
+                                                        {
+                                                          "@context": "https://schema.org",
+                                                          "@type": "WebSite",
+                                                          "name": "Software on the Web",
+                                                          "alternateName": ["Softwareontheweb"],
+                                                          "url": "https://softwareontheweb.com"
+                                                        }
+                                                        </script>
     @endverbatim
 
 
@@ -215,7 +279,7 @@
     @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
-            {!! html_entity_decode($snippet->code) !!}
+            <template class="delayed-head-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
 </head>
@@ -228,7 +292,7 @@
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
-            {!! html_entity_decode($snippet->code) !!}
+            <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
 
@@ -268,7 +332,7 @@
                     <div class="sidebar-snippets-container w-full overflow-x-auto">
                         @foreach ($sidebarSnippets as $snippet)
                             @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
-                                {!! html_entity_decode($snippet->code) !!}
+                                <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
                             @endif
                         @endforeach
                     </div>
@@ -324,7 +388,6 @@
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     @stack('scripts')
     @stack('form-scripts')
