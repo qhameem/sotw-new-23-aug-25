@@ -24,13 +24,14 @@ export default {
 
     safelist: [
         {
-            pattern: /bg-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-(50|100|200|300|400|500|600|700|800|900|950)/,
+            // Specifically for PriorityFilter.vue in the Todo app
+            pattern: /bg-(rose-500|amber-600|emerald-500|gray-400)/,
         },
         // Keep other specific classes if needed, or add patterns for them too
         'ring-2',
         'ring-offset-2',
-        'ring-indigo-500', // Keep for existing components if not all are updated at once
-        'ring-primary-500', // Add new dynamic primary ring color
+        'ring-indigo-500',
+        'ring-primary-500',
         'hover:ring-1',
         'hover:ring-gray-400',
     ],
@@ -55,11 +56,11 @@ export default {
             },
             keyframes: {
                 l7: {
-                  '0%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 100%' },
-                  '33%': { backgroundSize: 'calc(100%/3) 0%, calc(100%/3) 100%, calc(100%/3) 100%' },
-                  '50%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 0%, calc(100%/3) 100%' },
-                  '66%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 0%' },
-                  '100%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 100%' },
+                    '0%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 100%' },
+                    '33%': { backgroundSize: 'calc(100%/3) 0%, calc(100%/3) 100%, calc(100%/3) 100%' },
+                    '50%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 0%, calc(100%/3) 100%' },
+                    '66%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 0%' },
+                    '100%': { backgroundSize: 'calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 100%' },
                 },
             },
             animation: {
@@ -74,11 +75,11 @@ export default {
         scrollbarHide,
         function ({ addUtilities }) {
             addUtilities({
-              '.custom-dots-loader-bg': {
-                '--_g': 'no-repeat radial-gradient(circle closest-side, white 90%, transparent)',
-                'background': 'var(--_g) 0% 50%, var(--_g) 50% 50%, var(--_g) 100% 50%',
-                'background-size': 'calc(100%/3) 100%', // Initial state for background-size
-              },
+                '.custom-dots-loader-bg': {
+                    '--_g': 'no-repeat radial-gradient(circle closest-side, white 90%, transparent)',
+                    'background': 'var(--_g) 0% 50%, var(--_g) 50% 50%, var(--_g) 100% 50%',
+                    'background-size': 'calc(100%/3) 100%', // Initial state for background-size
+                },
             })
         }
     ],
