@@ -61,7 +61,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <script>
-        window.loadDelayedScripts = function() {
+        window.loadDelayedScripts = function () {
             if (window.delayedScriptsLoaded) return;
             window.delayedScriptsLoaded = true;
 
@@ -84,7 +84,7 @@
                 const fragment = document.createDocumentFragment();
                 const div = document.createElement('div');
                 div.innerHTML = template.innerHTML;
-                
+
                 Array.from(div.childNodes).forEach(node => {
                     if (node.nodeName === 'SCRIPT') {
                         const newScript = document.createElement('script');
@@ -104,7 +104,7 @@
                 const fragment = document.createDocumentFragment();
                 const div = document.createElement('div');
                 div.innerHTML = template.innerHTML;
-                
+
                 Array.from(div.childNodes).forEach(node => {
                     if (node.nodeName === 'SCRIPT') {
                         const newScript = document.createElement('script');
@@ -117,6 +117,19 @@
                 });
                 container.appendChild(fragment);
             });
+
+            // Load Livewire Scripts
+            const livewireTemplate = document.getElementById('delayed-livewire-scripts');
+            if (livewireTemplate && window.Livewire === undefined) {
+                const div = document.createElement('div');
+                div.innerHTML = livewireTemplate.innerHTML;
+                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    document.body.appendChild(newScript);
+                });
+            }
         };
 
         ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
@@ -257,19 +270,20 @@
     {{-- End Google Analytics Code Injection --}}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 
     @stack('styles')
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                        {
-                                                          "@context": "https://schema.org",
-                                                          "@type": "WebSite",
-                                                          "name": "Software on the Web",
-                                                          "alternateName": ["Softwareontheweb"],
-                                                          "url": "https://softwareontheweb.com"
-                                                        }
-                                                        </script>
+                                                            {
+                                                              "@context": "https://schema.org",
+                                                              "@type": "WebSite",
+                                                              "name": "Software on the Web",
+                                                              "alternateName": ["Softwareontheweb"],
+                                                              "url": "https://softwareontheweb.com"
+                                                            }
+                                                            </script>
     @endverbatim
 
 
@@ -391,6 +405,7 @@
 
     @stack('scripts')
     @stack('form-scripts')
+    <template id="delayed-livewire-scripts">@livewireScripts</template>
 
     <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
         @include('auth.partials.login-modal-content')

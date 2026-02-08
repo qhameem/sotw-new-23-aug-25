@@ -60,6 +60,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <script>
+        window.loadDelayedScripts = function () {
+            if (window.delayedScriptsLoaded) return;
+            window.delayedScriptsLoaded = true;
+
+            // Load Google Analytics/Tag Manager
+            const gaTemplate = document.getElementById('delayed-ga-code');
+            if (gaTemplate) {
+                const div = document.createElement('div');
+                div.innerHTML = gaTemplate.innerHTML;
+                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    document.head.appendChild(newScript);
+                });
+            }
+
+            // Load Head Snippets
+            document.querySelectorAll('template.delayed-head-snippet').forEach(template => {
+                const container = template.parentElement;
+                const fragment = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.innerHTML = template.innerHTML;
+
+                Array.from(div.childNodes).forEach(node => {
+                    if (node.nodeName === 'SCRIPT') {
+                        const newScript = document.createElement('script');
+                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(node.innerHTML));
+                        fragment.appendChild(newScript);
+                    } else {
+                        fragment.appendChild(node.cloneNode(true));
+                    }
+                });
+                container.appendChild(fragment);
+            });
+
+            // Load Body Snippets
+            document.querySelectorAll('template.delayed-body-snippet').forEach(template => {
+                const container = template.parentElement;
+                const fragment = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.innerHTML = template.innerHTML;
+
+                Array.from(div.childNodes).forEach(node => {
+                    if (node.nodeName === 'SCRIPT') {
+                        const newScript = document.createElement('script');
+                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(node.innerHTML));
+                        fragment.appendChild(newScript);
+                    } else {
+                        fragment.appendChild(node.cloneNode(true));
+                    }
+                });
+                container.appendChild(fragment);
+            });
+
+            // Load jQuery/Select2/Livewire
+            const genericTemplate = document.getElementById('delayed-vendor-scripts');
+            if (genericTemplate) {
+                const div = document.createElement('div');
+                div.innerHTML = genericTemplate.innerHTML;
+                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    if (oldScript.innerHTML) {
+                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    }
+                    document.body.appendChild(newScript);
+                });
+            }
+        };
+
+        ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
+            window.addEventListener(event, window.loadDelayedScripts, { once: true, passive: true });
+        });
+    </script>
+
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $metaDescription ?? '')">
 
@@ -179,44 +258,37 @@
         }
     @endphp
     @if(!empty($gaCode) && !Auth::check())
-        {!! $gaCode !!}
+        <template id="delayed-ga-code">{!! $gaCode !!}</template>
     @endif
     {{-- End Google Analytics Code Injection --}}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
-    
+
     <!-- Schema markup -->
     @verbatim
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Software on the Web",
-      "alternateName": ["Softwareontheweb"],
-      "url": "https://softwareontheweb.com"
-    }
-    </script>
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Software on the Web",
+          "alternateName": ["Softwareontheweb"],
+          "url": "https://softwareontheweb.com"
+        }
+        </script>
     @endverbatim
 
-    
+
     @php
         $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($headSnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            <script>
-                (function () {
-                    try {
-                        {!! $snippet->code !!}
-                    } catch (e) {
-                        console.error('Error injected code snippet:', e);
-                    }
-                })();
-            </script>
+            <template class="delayed-head-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
 </head>
@@ -229,15 +301,7 @@
     @endphp
     @foreach ($bodySnippets as $snippet)
         @if ($snippet->page === 'all' || $snippet->page === $page)
-            <script>
-                (function () {
-                    try {
-                        {!! $snippet->code !!}
-                    } catch (e) {
-                        console.error('Error in injected code snippet:', e);
-                    }
-                })();
-            </script>
+            <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
 
@@ -288,8 +352,11 @@
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <template id="delayed-vendor-scripts">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        @livewireScripts
+    </template>
     @stack('scripts')
     @stack('form-scripts')
 
