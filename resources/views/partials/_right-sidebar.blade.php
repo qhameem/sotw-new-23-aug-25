@@ -32,27 +32,28 @@
                     });
                 @endphp
                 @if($sponsors->isNotEmpty())
-                <div class="p-4">
-                    <h3 class="text-base font-semibold mb-4 text-gray-70">Our Partners</h3>
-                    <ul class="space-y-4">
-                        @foreach($sponsors as $sponsor)
-                            <li>
-                                <a href="{{ $sponsor->target_url }}" target="_blank" class="flex items-center space-x-3">
-                                    <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}"
-                                        class="w-10 h-10 rounded-xl object-cover">
-                                    <div>
-                                        <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span
-                                                class="text-gray-400">↗</span></div>
-                                        <p class="text-sm text-gray-50">{{ $sponsor->tagline }}</p>
-                                    </div>
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
+                    <div class="p-4">
+                        <h3 class="text-base font-semibold mb-4 text-gray-70">Our Partners</h3>
+                        <ul class="space-y-4">
+                            @foreach($sponsors as $sponsor)
+                                <li>
+                                    <a href="{{ $sponsor->target_url }}" target="_blank" class="flex items-center space-x-3">
+                                        <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}"
+                                            class="w-10 h-10 rounded-xl object-cover">
+                                        <div>
+                                            <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span
+                                                    class="text-gray-400">↗</span></div>
+                                            <p class="text-sm text-gray-50">{{ $sponsor->tagline }}</p>
+                                        </div>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
                 @endif
 
                 <x-top-categories />
+
                 @guest
                     <div class="p-4">
                         @include('partials._what-is-sotw-card')
