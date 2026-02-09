@@ -57,7 +57,7 @@ class GenerateSitemap extends Command
         // Add Article models
         // The toSitemapTag method in Article will be called for each instance
         $sitemap->add(Article::where('status', 'published')->where('published_at', '<=', now())->get());
-        
+
         // Add BlogCategory models
         $sitemap->add(ArticleCategory::all()->filter(function ($category) {
             return $category->articles()->where('status', 'published')->where('published_at', '<=', now())->exists();
@@ -75,7 +75,46 @@ class GenerateSitemap extends Command
         $sitemap->add(Category::all()->filter(function ($category) {
             return $category->products()->where('approved', true)->exists();
         }));
-        
+
+        // Add Archive URLs (Weeks)
+        $activeWeeks = Product::where('approved', true)
+            ->where('is_published', true)
+            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year, WEEK(COALESCE(published_at, created_at), 3) as week')
+            ->groupBy('year', 'week')
+            ->get();
+
+        foreach ($activeWeeks as $activeWeek) {
+            $sitemap->add(Url::create(route('products.byWeek', ['year' => $activeWeek->year, 'week' => $activeWeek->week]))
+                ->setPriority(0.4)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        }
+
+        // Add Archive URLs (Months)
+        $activeMonths = Product::where('approved', true)
+            ->where('is_published', true)
+            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year, MONTH(COALESCE(published_at, created_at)) as month')
+            ->groupBy('year', 'month')
+            ->get();
+
+        foreach ($activeMonths as $activeMonth) {
+            $sitemap->add(Url::create(route('products.byMonth', ['year' => $activeMonth->year, 'month' => $activeMonth->month]))
+                ->setPriority(0.4)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        }
+
+        // Add Archive URLs (Years)
+        $activeYears = Product::where('approved', true)
+            ->where('is_published', true)
+            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year')
+            ->groupBy('year')
+            ->get();
+
+        foreach ($activeYears as $activeYear) {
+            $sitemap->add(Url::create(route('products.byYear', ['year' => $activeYear->year]))
+                ->setPriority(0.3)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY));
+        }
+
 
         $sitemap->writeToFile($sitemapPath);
 

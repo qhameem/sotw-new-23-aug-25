@@ -122,12 +122,23 @@
                 const displayYear = urlWeek ? urlWeek.year : (backendYear || now.getUTCFullYear());
                 const selectedWeek = urlWeek ? urlWeek.week : backendWeek;
 
-                // Loop through previous, current, and next year to allow scrolling
-                const years = [displayYear - 1, displayYear, displayYear + 1];
+                // Loop through previous and current year to allow scrolling
+                const currentYear = now.getUTCFullYear();
+                const currentWeekNo = this.getWeekNumber(now);
+                
+                // Only include the next year if we are currently looking at a past year
+                let years = [displayYear - 1, displayYear, displayYear + 1];
+                years = years.filter(y => y <= currentYear);
 
                 years.forEach(year => {
                     const weeksInYear = this.getWeeksInYear(year);
                     for (let i = 1; i <= weeksInYear; i++) {
+                        // Limit future weeks to prevent massive SEO crawl of empty pages
+                        // We allow up to the ACTUAL current week of the ACTUAL current year
+                        if (year === currentYear && i > currentWeekNo) {
+                            break; 
+                        }
+
                         const isSelected = (year === displayYear && i === selectedWeek);
                         // Backend activeWeeks are in format "YYYY-W" or "YYYY-WW" (padded or unpadded)
                         // Adjust isActive check to handle unpadded week numbers from DB if necessary
@@ -139,7 +150,7 @@
                             week: i,
                             url: `/week/${year}/${i}`,
                             label: `Week ${i}`,
-                            isCurrent: this.getWeekNumber(now) === i && now.getUTCFullYear() === year,
+                            isCurrent: i === currentWeekNo && currentYear === year,
                             isActive: this.activeWeeks.includes(weekKey) || this.activeWeeks.includes(weekKeyPadded),
                             isSelected: isSelected,
                         });
