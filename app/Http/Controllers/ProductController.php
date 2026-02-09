@@ -856,7 +856,7 @@ class ProductController extends Controller
             ->get()
             ->keyBy('promoted_position');
 
-        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'date_' . $date->toDateString());
+        $shuffledRegularProductIds = $isFuture ? collect() : $this->getShuffledProductIds($baseRegularProductsQuery, 'date_' . $date->toDateString());
 
         $perPage = 15;
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
@@ -951,7 +951,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture'));
     }
     public function redirectToCurrentWeek()
     {
@@ -974,12 +974,18 @@ class ProductController extends Controller
     public function productsByWeek(Request $request, $year, $week, $isHomepage = false)
     {
         $now = Carbon::now();
+        if ($year > $now->year + 1) {
+            abort(404);
+        }
+
         if (!$isHomepage && $year == $now->year && $week == $now->weekOfYear) {
             return redirect()->route('home');
         }
 
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $isFuture = $startOfWeek->isFuture();
 
         $baseRegularProductsQuery = Product::with([
             'categories.types',
@@ -1013,11 +1019,11 @@ class ProductController extends Controller
             ->get()
             ->keyBy('promoted_position');
 
-        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
+        $shuffledRegularProductIds = $isFuture ? collect() : $this->getShuffledProductIds($baseRegularProductsQuery, 'week_' . $year . '_' . $week);
 
         // Only check for missing products if this is not called from the home page
         // This prevents double redirects when home() method already handled the redirect
-        if ($shuffledRegularProductIds->isEmpty() && !$isHomepage) {
+        if ($shuffledRegularProductIds->isEmpty() && !$isHomepage && !$isFuture) {
             // Check if there are promoted products for this week - if so, we don't need to redirect
             // Only redirect if there are no products at all (regular or promoted)
             $hasAnyProductsThisWeek = Product::where('approved', true)
@@ -1120,13 +1126,20 @@ class ProductController extends Controller
                 ->toArray();
         }
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek', 'isFuture'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
     {
+        $now = Carbon::now();
+        if ($year > $now->year + 1) {
+            abort(404);
+        }
+
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
+
+        $isFuture = $startOfMonth->isFuture();
 
         $baseRegularProductsQuery = Product::with([
             'categories.types',
@@ -1160,7 +1173,7 @@ class ProductController extends Controller
             ->get()
             ->keyBy('promoted_position');
 
-        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'month_' . $year . '_' . $month);
+        $shuffledRegularProductIds = $isFuture ? collect() : $this->getShuffledProductIds($baseRegularProductsQuery, 'month_' . $year . '_' . $month);
 
         $perPage = 15;
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
@@ -1236,13 +1249,20 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
 
     public function productsByYear(Request $request, $year)
     {
+        $now = Carbon::now();
+        if ($year > $now->year + 1) {
+            abort(404);
+        }
+
         $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfYear();
         $endOfYear = $startOfYear->copy()->endOfYear();
+
+        $isFuture = $startOfYear->isFuture();
 
         $baseRegularProductsQuery = Product::with([
             'categories.types',
@@ -1276,7 +1296,7 @@ class ProductController extends Controller
             ->get()
             ->keyBy('promoted_position');
 
-        $shuffledRegularProductIds = $this->getShuffledProductIds($baseRegularProductsQuery, 'year_' . $year);
+        $shuffledRegularProductIds = $isFuture ? collect() : $this->getShuffledProductIds($baseRegularProductsQuery, 'year_' . $year);
 
         $perPage = 15;
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
@@ -1352,7 +1372,7 @@ class ProductController extends Controller
         }
         $nextLaunchTime = $nextLaunchTime->toIso8601String();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
 
     public function search(Request $request)

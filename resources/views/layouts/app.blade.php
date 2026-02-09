@@ -139,6 +139,7 @@
 
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $metaDescription ?? '')">
+    <meta name="robots" content="@yield('robots', 'index, follow')">
 
     @if(request()->routeIs('products.byWeek'))
         <link rel="canonical"
@@ -276,14 +277,14 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                            {
-                                                              "@context": "https://schema.org",
-                                                              "@type": "WebSite",
-                                                              "name": "Software on the Web",
-                                                              "alternateName": ["Softwareontheweb"],
-                                                              "url": "https://softwareontheweb.com"
-                                                            }
-                                                            </script>
+                                                                {
+                                                                  "@context": "https://schema.org",
+                                                                  "@type": "WebSite",
+                                                                  "name": "Software on the Web",
+                                                                  "alternateName": ["Softwareontheweb"],
+                                                                  "url": "https://softwareontheweb.com"
+                                                                }
+                                                                </script>
     @endverbatim
 
 

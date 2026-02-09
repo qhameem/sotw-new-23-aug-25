@@ -20,6 +20,10 @@
 @endsection
 
 
+@if(isset($isFuture) && $isFuture)
+    @section('robots', 'noindex')
+@endif
+
 @section('content')
     <div class="flex-shrink-0 bg-white z-10 relative">
     @if(!isset($isCategoryPage) || !$isCategoryPage)
@@ -64,15 +68,27 @@
     </div>
 
     <!-- Product List Container -->
-    <div class="bg-white flex-1">
-        <div class="md:space-y-1">
-            @include('partials.products_list', [
-                'regularProducts' => $regularProducts ?? collect(),
-                'promotedProducts' => $promotedProducts ?? collect(),
-                'belowProductListingAd' => $belowProductListingAd ?? null,
-                'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
-            ])
-        </div>
+    <div class="bg-white flex-1 min-h-[400px] flex flex-col">
+        @if(isset($isFuture) && $isFuture)
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div class="w-24 h-24 mb-6 text-gray-200">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">The week is coming soon...</h2>
+                <p class="text-gray-500 max-w-xs">We're gathering the best software for this upcoming week. Check back later!</p>
+            </div>
+        @else
+            <div class="md:space-y-1">
+                @include('partials.products_list', [
+                    'regularProducts' => $regularProducts ?? collect(),
+                    'promotedProducts' => $promotedProducts ?? collect(),
+                    'belowProductListingAd' => $belowProductListingAd ?? null,
+                    'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
+                ])
+            </div>
+        @endif
     </div>
 @endsection
 
