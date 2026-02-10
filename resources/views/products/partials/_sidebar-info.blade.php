@@ -66,23 +66,6 @@
         </div>
     @endif
 
-    @if($product->operating_system || $product->application_category)
-        <div>
-            <h3 class="text-xs text-gray-500 mb-2">Platform & Category</h3>
-            <div class="space-y-1">
-                @if($product->operating_system)
-                    <p class="text-xs text-gray-700 font-medium flex items-center gap-1.5">
-                        <span class="text-gray-400">OS:</span> {{ $product->operating_system }}
-                    </p>
-                @endif
-                @if($product->application_category)
-                    <p class="text-xs text-gray-700 font-medium flex items-center gap-1.5">
-                        <span class="text-gray-400">Type:</span> {{ str_replace('Application', '', $product->application_category) }}
-                    </p>
-                @endif
-            </div>
-        </div>
-    @endif
 
     @php
         $makerLinks = is_array($product->maker_links) ? $product->maker_links : json_decode($product->maker_links, true) ?? [];
