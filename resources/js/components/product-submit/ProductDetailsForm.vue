@@ -146,12 +146,12 @@
           </div>
           
           <!-- Dynamic additional links -->
-          <div v-for="(link, index) in modelValue.additionalLinks || []" :key="index" class="flex items-center mb-2">
+          <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center mb-2">
             <input
               type="url"
               :id="`additional-link-${index}`"
               :value="link"
-              @input="updateAdditionalLink(index, $event.target.value)"
+              @input="updateMakerLink(index, $event.target.value)"
               placeholder="https://example.com"
               class="flex-1 px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
             >
@@ -337,25 +337,34 @@ function updatePricing(event) {
   updateField('pricing', pricing);
 }
 
-// Additional links functionality
+// Maker links functionality
+const makerLinks = ref(props.modelValue.maker_links?.length ? [...props.modelValue.maker_links] : []);
+
+// Watch for external changes to maker_links (e.g. from Step 3 or restoration)
+watch(() => props.modelValue.maker_links, (newVal) => {
+  if (JSON.stringify(newVal) !== JSON.stringify(makerLinks.value.filter(l => l.trim() !== ''))) {
+    makerLinks.value = newVal?.length ? [...newVal] : [];
+  }
+}, { deep: true });
+
+// Sync local changes to modelValue
+watch(makerLinks, (newVal) => {
+  const filtered = newVal.filter(link => link.trim() !== '');
+  if (JSON.stringify(filtered) !== JSON.stringify(props.modelValue.maker_links)) {
+    updateField('maker_links', filtered);
+  }
+}, { deep: true });
+
 const addMoreLink = () => {
-  const currentLinks = props.modelValue.additionalLinks || [];
-  const newLinks = [...currentLinks, ''];
-  updateField('additionalLinks', newLinks);
+  makerLinks.value.push('');
 };
 
 const removeLink = (index) => {
-  const currentLinks = props.modelValue.additionalLinks || [];
-  const newLinks = [...currentLinks];
-  newLinks.splice(index, 1);
-  updateField('additionalLinks', newLinks);
+  makerLinks.value.splice(index, 1);
 };
 
-const updateAdditionalLink = (index, value) => {
-  const currentLinks = props.modelValue.additionalLinks || [];
-  const newLinks = [...currentLinks];
-  newLinks[index] = value;
-  updateField('additionalLinks', newLinks);
+const updateMakerLink = (index, value) => {
+  makerLinks.value[index] = value;
 };
 
 // Function to open link in new tab

@@ -226,7 +226,12 @@ class ProductController extends Controller
         $validated['maker_links'] = $request->input('maker_links', []);
         $validated['sell_product'] = $request->boolean('sell_product', false);
         $validated['asking_price'] = $request->input('asking_price');
-        $validated['x_account'] = $request->input('x_account');
+
+        $xAccount = $request->input('x_account');
+        if ($xAccount && (str_contains($xAccount, 'x.com/') || str_contains($xAccount, 'twitter.com/'))) {
+            $xAccount = basename(parse_url($xAccount, PHP_URL_PATH));
+        }
+        $validated['x_account'] = $xAccount;
 
         if ($request->hasFile('logo')) {
             $image = $request->file('logo');
@@ -473,6 +478,11 @@ class ProductController extends Controller
             'video_url' => 'nullable|string|max:2048',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
+            'maker_links' => 'nullable|array',
+            'maker_links.*' => 'url|max:2048',
+            'sell_product' => 'nullable|boolean',
+            'asking_price' => 'nullable|numeric|min:0|max:99999.99',
+            'x_account' => 'nullable|string|max:255',
         ]);
 
         // Category validation (ensure at least one from each required type is selected)
@@ -526,7 +536,17 @@ class ProductController extends Controller
             'product_page_tagline' => $validated['product_page_tagline'],
             'description' => $this->ensureProperParagraphStructure($this->addNofollowToLinks($validated['description'])),
             'video_url' => $validated['video_url'] ?? null,
+            'maker_links' => $validated['maker_links'] ?? [],
+            'sell_product' => $validated['sell_product'] ?? false,
+            'asking_price' => $validated['asking_price'] ?? null,
         ];
+
+        $xAccount = $validated['x_account'] ?? null;
+        if ($xAccount && (str_contains($xAccount, 'x.com/') || str_contains($xAccount, 'twitter.com/'))) {
+            $xAccount = basename(parse_url($xAccount, PHP_URL_PATH));
+        }
+        $updateData['x_account'] = $xAccount;
+
         $newCategories = $validated['categories'];
         $newTechStacks = $validated['tech_stacks'] ?? [];
         $logoPath = null;

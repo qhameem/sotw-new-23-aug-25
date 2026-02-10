@@ -26,7 +26,6 @@ const initialFormState = {
   maker_links: [],
   sell_product: false,
   asking_price: null,
-  additionalLinks: [],
   x_account: '',
   fromSource: null,
 };

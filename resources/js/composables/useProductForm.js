@@ -274,7 +274,21 @@ export function useProductForm() {
 
       // Add X account if available
       if (form.x_account) {
-        formData.append('x_account', form.x_account);
+        let xHandle = form.x_account;
+        // If it's a full URL, extract the handle
+        if (xHandle.includes('x.com/') || xHandle.includes('twitter.com/')) {
+          xHandle = xHandle.split('/').pop().split('?')[0];
+        }
+        formData.append('x_account', xHandle);
+      }
+
+      // Add maker links if available
+      if (form.maker_links && form.maker_links.length > 0) {
+        form.maker_links.forEach((link) => {
+          if (link && link.trim() !== '') {  // Only add non-empty links
+            formData.append('maker_links[]', link);
+          }
+        });
       }
 
       // Determine submission URL

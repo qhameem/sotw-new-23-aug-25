@@ -69,34 +69,71 @@
 
     @php
         $makerLinks = is_array($product->maker_links) ? $product->maker_links : json_decode($product->maker_links, true) ?? [];
+        $socialLinks = [];
+        $extraLinks = [];
+        
+        foreach($makerLinks as $link) {
+            $host = parse_url($link, PHP_URL_HOST);
+            if (Str::contains($host, ['twitter.com', 'x.com', 'linkedin.com', 'facebook.com', 'instagram.com', 'threads.net', 'youtube.com'])) {
+                $socialLinks[] = $link;
+            } else {
+                $extraLinks[] = $link;
+            }
+        }
     @endphp
 
-    @if(!empty($makerLinks) || $product->x_account)
-        <div>
-            <h3 class="text-xs text-gray-500 mb-2">Links & Social</h3>
-            <div class="space-y-2">
-                @if($product->x_account)
-                    <a href="https://x.com/{{ ltrim($product->x_account, '@') }}" target="_blank" rel="noopener" 
-                       class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group text-[11px]">
-                        <svg class="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        <span>@ {{ ltrim($product->x_account, '@') }}</span>
-                    </a>
-                @endif
+    @if($product->x_account || !empty($socialLinks) || !empty($extraLinks))
+        <div class="space-y-6">
+            @if($product->x_account || !empty($socialLinks))
+                <div>
+                    <h3 class="text-xs text-gray-500 mb-2">Social Profiles</h3>
+                    <div class="space-y-2">
+                        @if($product->x_account)
+                            <a href="https://x.com/{{ ltrim($product->x_account, '@') }}" target="_blank" rel="noopener" 
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group text-[11px]">
+                                <svg class="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                <span>@ {{ ltrim($product->x_account, '@') }}</span>
+                            </a>
+                        @endif
 
-                @if(!empty($makerLinks))
-                    @foreach($makerLinks as $link)
-                        @php 
-                            $host = parse_url($link, PHP_URL_HOST);
-                            $displayLink = $host ? str_replace('www.', '', $host) : 'Extra link';
-                        @endphp
-                        <a href="{{ $link }}" target="_blank" rel="noopener" 
-                           class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px]">
-                            <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                            <span>{{ $displayLink }}</span>
-                        </a>
-                    @endforeach
-                @endif
-            </div>
+                        @foreach($socialLinks as $link)
+                            @php 
+                                $host = str_replace('www.', '', parse_url($link, PHP_URL_HOST));
+                                $label = explode('.', $host)[0];
+                            @endphp
+                            <a href="{{ $link }}" target="_blank" rel="noopener" 
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px] capitalize">
+                                <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                <span>{{ $label }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if(!empty($extraLinks))
+                <div>
+                    <h3 class="text-xs text-gray-500 mb-2">Extra Resources</h3>
+                    <div class="space-y-2">
+                        @foreach($extraLinks as $link)
+                            @php 
+                                $host = parse_url($link, PHP_URL_HOST);
+                                $displayLink = $host ? str_replace('www.', '', $host) : 'Link';
+                                
+                                // Specific label improvements
+                                if (Str::contains($host, 'github.com')) $displayLink = 'GitHub Repository';
+                                elseif (Str::contains($host, 'docs.')) $displayLink = 'Documentation';
+                                elseif (Str::contains($host, 'help.')) $displayLink = 'Help Center';
+                            @endphp
+                            <a href="{{ $link }}" target="_blank" rel="noopener" 
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px]">
+                                <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                <span>{{ $displayLink }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 

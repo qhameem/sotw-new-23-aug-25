@@ -247,27 +247,33 @@ const emit = defineEmits(['update:modelValue', 'back', 'submit']);
 
 const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
 
-// Initialize maker links from modelValue or start with one empty field
-const makerLinks = ref(props.modelValue.maker_links || ['']);
+// Initialize maker links from modelValue
+const makerLinks = ref(props.modelValue.maker_links?.length ? [...props.modelValue.maker_links] : []);
 
-// Watch for changes to makerLinks and update the modelValue
-watch(makerLinks, (newLinks) => {
-  emit('update:modelValue', {
-    ...props.modelValue,
-    maker_links: newLinks.filter(link => link.trim() !== '') // Only include non-empty links
-  });
+// Watch for external changes to maker_links (e.g. from Step 2 or restoration)
+watch(() => props.modelValue.maker_links, (newVal) => {
+  if (JSON.stringify(newVal) !== JSON.stringify(makerLinks.value.filter(l => l.trim() !== ''))) {
+    makerLinks.value = newVal?.length ? [...newVal] : [];
+  }
+}, { deep: true });
+
+// Sync local changes to modelValue
+watch(makerLinks, (newVal) => {
+  const filtered = newVal.filter(link => link.trim() !== '');
+  if (JSON.stringify(filtered) !== JSON.stringify(props.modelValue.maker_links)) {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      maker_links: filtered
+    });
+  }
 }, { deep: true });
 
 function addMakerLink() {
-  if (makerLinks.value.length < 10) {
-    makerLinks.value.push('');
-  }
+  makerLinks.value.push('');
 }
 
 function removeMakerLink(index) {
-  if (makerLinks.value.length > 1) {
-    makerLinks.value.splice(index, 1);
-  }
+  makerLinks.value.splice(index, 1);
 }
 
 function updateMakerLink(index, value) {
