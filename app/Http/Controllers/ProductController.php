@@ -822,6 +822,13 @@ class ProductController extends Controller
             abort(404, 'Invalid date format provided.');
         }
 
+        $now = Carbon::now();
+        if ($date->year > $now->year + 1) {
+            abort(404);
+        }
+
+        $isFuture = $date->isFuture();
+
         $baseRegularProductsQuery = Product::with([
             'categories.types',
             'user',
@@ -1451,7 +1458,7 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product->load('categories.types', 'user', 'userUpvotes');
+        $product->load('categories.types', 'user', 'userUpvotes', 'techStacks');
 
         // Record impression
         $product->increment('impressions');
