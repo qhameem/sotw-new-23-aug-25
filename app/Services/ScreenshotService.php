@@ -60,7 +60,11 @@ class ScreenshotService
 
             return asset('storage/screenshots/' . $filename);
         } catch (\Exception $e) {
-            Log::error('Browsershot failed to capture screenshot for ' . $url . ': ' . $e->getMessage());
+            Log::error('Browsershot failed to capture screenshot for ' . $url, [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             return null;
         }
     }
