@@ -57,6 +57,7 @@ class ScreenshotService
             $browser = Browsershot::url($url)
                 ->setNodeBinary($this->nodePath)
                 ->setNpmBinary($this->npmPath)
+                ->setEnvironment(['HOME' => '/tmp']) // Fixes 'mkdir: cannot create directory /.local: Permission denied'
                 ->windowSize(1280, 800)
                 ->timeout(60) // Increase Puppeteer navigation timeout to 60s
                 ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
