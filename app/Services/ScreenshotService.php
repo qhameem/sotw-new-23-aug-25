@@ -57,10 +57,15 @@ class ScreenshotService
             $browser = Browsershot::url($url)
                 ->setNodeBinary($this->nodePath)
                 ->setNpmBinary($this->npmPath)
-                ->setEnvironmentOptions(['HOME' => '/tmp']) // Fixes 'mkdir: cannot create directory /.local: Permission denied'
                 ->windowSize(1280, 800)
                 ->timeout(60) // Increase Puppeteer navigation timeout to 60s
-                ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
+                ->setOption('args', [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--user-data-dir=/tmp/chrome-browsershot',
+                    '--homedir=/tmp',
+                ])
                 ->setOption('waitUntil', 'networkidle2') // Use networkidle2 instead of networkidle0 for modern sites
                 ->setDelay(3000) // Extra buffer for dynamic logic/animations
                 ->setScreenshotType('jpeg', 85);
