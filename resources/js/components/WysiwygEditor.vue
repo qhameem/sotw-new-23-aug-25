@@ -133,6 +133,7 @@ const editor = useEditor({
 });
 
 watch(() => props.modelValue, (value) => {
+  console.log('[WysiwygEditor] modelValue changed:', value ? value.substring(0, 50) + '...' : value);
   const isSame = editor.value.getHTML() === value;
   if (isSame) {
     return;

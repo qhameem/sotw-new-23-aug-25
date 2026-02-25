@@ -31,7 +31,8 @@ class SettingsController extends Controller
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
-        return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots', 'productPublishTime'));
+        $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
+        return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots', 'productPublishTime', 'badgeImageUrl'));
     }
 
     public function emailTemplates()
@@ -100,11 +101,15 @@ class SettingsController extends Controller
         }
 
         $request->validate([
-            'google_analytics_code' => ['nullable', 'string', function ($attribute, $value, $fail) {
-                if (!empty($value) && (!str_contains($value, '<script') || !str_contains($value, '</script>'))) {
-                    $fail('The '.$attribute.' must be a valid script tag.');
+            'google_analytics_code' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value) && (!str_contains($value, '<script') || !str_contains($value, '</script>'))) {
+                        $fail('The ' . $attribute . ' must be a valid script tag.');
+                    }
                 }
-            }],
+            ],
         ]);
 
         $settings = [];
@@ -113,7 +118,7 @@ class SettingsController extends Controller
         }
 
         $settings['google_analytics_code'] = $request->input('google_analytics_code', '');
-        
+
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
             Log::info('Google Analytics code updated by user: ' . Auth::id());
@@ -140,7 +145,7 @@ class SettingsController extends Controller
         }
 
         $settings['premium_product_spots'] = $request->input('premium_product_spots');
-        
+
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
             Log::info('Premium product spots updated by user: ' . Auth::id());
@@ -177,7 +182,7 @@ class SettingsController extends Controller
 
         $settingsToSave = array_merge($defaultSettings, $currentSettings);
         $settingsToSave['product_publish_time'] = $request->input('product_publish_time');
-        
+
         try {
             Storage::disk('local')->put($settingsPath, json_encode($settingsToSave, JSON_PRETTY_PRINT));
             Log::info('Product publish time updated by user: ' . Auth::id());
@@ -249,7 +254,7 @@ class SettingsController extends Controller
                 Log::error("Database export failed: Unsupported database driver '{$dbDriver}'.");
                 return back()->with('error', 'Database export failed: Unsupported database driver.');
             }
-            
+
             // The $command array was for an older approach and is not used by Process for output redirection.
             // The $processCommand array is correctly built below for Process.
             // Lines for adding '>' and $fullPath to $command are removed.
@@ -289,7 +294,7 @@ class SettingsController extends Controller
                     "--username={$dbUser}",
                     $dbName,
                 ];
-                 // PGPASSWORD is set via environment variable for pg_dump
+                // PGPASSWORD is set via environment variable for pg_dump
             } elseif ($dbDriver === 'sqlite') {
                 $sqlite3Path = env('SQLITE3_PATH', 'sqlite3');
                 $processCommand = [$sqlite3Path, $dbName, '.dump'];
@@ -305,10 +310,10 @@ class SettingsController extends Controller
                 Log::error("Database export failed (mysqldump/pg_dump/sqlite3): " . $process->getErrorOutput());
                 throw new ProcessFailedException($process);
             }
-            
+
             // Write the successful output to the file on the 'local' disk
             Storage::disk('local')->put($fullStorageDiskPathWithFile, $process->getOutput());
-            
+
             // Log success *after* file is written
             Log::info("Database export process successful for user: " . Auth::id() . ". File: {$filename} stored at {$fullStorageDiskPathWithFile}");
 
@@ -321,7 +326,7 @@ class SettingsController extends Controller
             $absolutePathToFile = Storage::disk('local')->path($fullStorageDiskPathWithFile);
 
             if (Storage::disk('local')->exists($fullStorageDiskPathWithFile)) {
-                 return response()->download($absolutePathToFile, $filename, $headers)->deleteFileAfterSend(true);
+                return response()->download($absolutePathToFile, $filename, $headers)->deleteFileAfterSend(true);
             } else {
                 Log::error("Database export failed: File not found for download at disk path {$fullStorageDiskPathWithFile} (absolute: {$absolutePathToFile})");
                 return back()->with('error', 'Database export failed: Backup file could not be created or found for download.');
@@ -344,13 +349,47 @@ class SettingsController extends Controller
         try {
             \Illuminate\Support\Facades\Mail::raw('This is a test email from your application.', function ($message) use ($recipientEmail) {
                 $message->to($recipientEmail)
-                        ->subject('Test Email');
+                    ->subject('Test Email');
             });
 
             return response()->json(['message' => 'Test email sent successfully to ' . $recipientEmail]);
         } catch (\Exception $e) {
             Log::error('Test email failed: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to send test email. Please check your mail configuration and logs. Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function storeBadgeImage(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'badge_image' => 'required|image|mimes:png,svg,jpeg,webp|max:2048',
+        ]);
+
+        try {
+            // Store the badge image in public/images/
+            $file = $request->file('badge_image');
+            $filename = 'badge.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images'), $filename);
+
+            $badgeUrl = url('/images/' . $filename);
+
+            // Save to settings.json
+            $settings = [];
+            if (Storage::disk('local')->exists('settings.json')) {
+                $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+            }
+            $settings['badge_image_url'] = $badgeUrl;
+            Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
+
+            Log::info('Badge image updated by user: ' . Auth::id(), ['url' => $badgeUrl]);
+            return back()->with('success', 'Badge image uploaded successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to upload badge image: ' . $e->getMessage());
+            return back()->with('error', 'Failed to upload badge image. Please check logs.');
         }
     }
 }

@@ -131,6 +131,67 @@ class ProductApprovalController extends Controller
                 break;
         }
 
+        // Handle custom category submissions if any
+        $pendingCustomSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
+        foreach ($pendingCustomSubmissions as $submission) {
+            // Check if there's a decision for this submission in the request
+            $decisionKey = 'custom_category_' . $submission->id;
+            if ($request->has($decisionKey)) {
+                $decision = $request->input($decisionKey);
+                if ($decision === 'approve') {
+                    // Create the actual category in the database
+                    if ($submission->type === 'category' || $submission->type === 'best_for') {
+                        $slug = $request->input('custom_category_' . $submission->id . '_slug') ?: \Illuminate\Support\Str::slug($submission->name);
+                        $description = $request->input('custom_category_' . $submission->id . '_description') ?? $submission->name;
+                        $metaDescription = $request->input('custom_category_' . $submission->id . '_meta_description') ?? $submission->name;
+                        
+                        $newCategory = \App\Models\Category::create([
+                            'name' => $submission->name,
+                            'slug' => $slug,
+                            'description' => $description,
+                            'meta_description' => $metaDescription,
+                        ]);
+                        
+                        // Associate the new category with the product
+                        $product->categories()->attach($newCategory->id);
+                        
+                        // If it's a best_for type, we need to assign it to the correct type
+                        if ($submission->type === 'best_for') {
+                            $bestForTypeId = 3; // Assuming Best For type ID is 3
+                            $type = \App\Models\Type::find($bestForTypeId);
+                            if ($type) {
+                                $newCategory->types()->attach($type->id);
+                            }
+                        } elseif ($submission->type === 'category') {
+                            $categoryId = 1; // Assuming Category type ID is 1
+                            $type = \App\Models\Type::find($categoryId);
+                            if ($type) {
+                                $newCategory->types()->attach($type->id);
+                            }
+                        }
+                    } elseif ($submission->type === 'tech_stack') {
+                        $slug = $request->input('custom_category_' . $submission->id . '_slug') ?: \Illuminate\Support\Str::slug($submission->name);
+                        
+                        $newTechStack = \App\Models\TechStack::create([
+                            'name' => $submission->name,
+                            'slug' => $slug,
+                        ]);
+                        
+                        // Associate the new tech stack with the product
+                        $product->techStacks()->attach($newTechStack->id);
+                    }
+                    
+                    // Update the submission status to approved
+                    $submission->update(['status' => 'approved']);
+                } elseif ($decision === 'reject') {
+                    $submission->update(['status' => 'rejected']);
+                }
+            } else {
+                // If no decision was made, default to reject
+                $submission->update(['status' => 'rejected']);
+            }
+        }
+
         $product->save();
 
         // Clear homepage-related caches when a product is approved and published

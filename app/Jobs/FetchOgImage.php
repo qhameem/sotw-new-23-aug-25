@@ -74,10 +74,8 @@ class FetchOgImage implements ShouldQueue
 
     protected function fallbackToScreenshot()
     {
-        // In a real application, you would use a service like screenshotapi.net or screenshotlayer.com
-        // For this example, we'll just use a placeholder.
-        $placeholderUrl = 'https://via.placeholder.com/1200x630.png?text=Screenshot+Not+Available';
-        $this->processImage($placeholderUrl, 'screenshot');
+        $screenshotUrl = 'https://api.microlink.io?url=' . urlencode($this->product->link) . '&screenshot=true&embed=screenshot.url';
+        $this->processImage($screenshotUrl, 'screenshot');
     }
 
     protected function createMediaRecord($path, $type)

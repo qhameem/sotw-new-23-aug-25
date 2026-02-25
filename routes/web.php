@@ -116,6 +116,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
     Route::post('product-approvals/bulk-approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'bulkApprove'])->name('product-approvals.bulk-approve');
     // Route::post('products/bulk-delete', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->name('products.bulk-delete'); // Commented out original
+    // Custom category submissions routes
+    Route::get('custom-category-submissions', [\App\Http\Controllers\Admin\CustomCategorySubmissionController::class, 'index'])->name('custom-category-submissions.index');
+    Route::post('custom-category-submissions/{submission}/approve', [\App\Http\Controllers\Admin\CustomCategorySubmissionController::class, 'approve'])->name('custom-category-submissions.approve');
+    Route::post('custom-category-submissions/{submission}/reject', [\App\Http\Controllers\Admin\CustomCategorySubmissionController::class, 'reject'])->name('custom-category-submissions.reject');
 
     // Theme settings
     // Temporarily remove 'role:admin' for testing if it affects /api/user redirect
@@ -151,6 +155,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('settings.emailTemplates');
     Route::post('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'storeEmailTemplates'])->name('settings.storeEmailTemplates');
+    Route::post('settings/store-badge-image', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeImage'])->name('settings.storeBadgeImage');
 
     // SEO Meta Tag Management
     Route::get('seo', function () {

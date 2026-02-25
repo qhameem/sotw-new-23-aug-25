@@ -1,22 +1,19 @@
 <template>
   <div>
     <div class="space-y-6">
-      <!-- Back button at top -->
-      <div class="flex justify-between items-center mb-2">
-        <h1 class="text-2xl font-bold text-gray-800">Launch</h1>
-        <button @click="$emit('back')" class="text-sm font-medium text-gray-600 hover:text-gray-900">
-          ← Back to Images and Media
-        </button>
+      <!-- Back button at top removed for Single Step Form -->
+      <div class="mb-2">
+        
       </div>
       
       <!-- Makers & Extras Section -->
       <section>
-        <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers & Extras</h3>
+        
         
         <div class="space-y-6">
           <!-- Makers' Links Section -->
           <div>
-            <h4 class="text-md font-medium text-gray-700 mb-3">Makers' Links</h4>
+            <h4 class="text-xs font-bold text-gray-900 mb-3">Makers' Links</h4>
             
             <!-- Dynamic maker links -->
             <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center mb-3">
@@ -54,18 +51,74 @@
           
           <!-- Tech Stack Section -->
           <div>
-            <h4 class="text-md font-medium text-gray-700 mb-3">Tech Stack</h4>
-            <SearchableDropdown
-              :items="allTechStacks"
-              :modelValue="modelValue.tech_stack"
-              @update:modelValue="updateField('tech_stack', $event)"
-              placeholder="Select technologies..."
-              :max="5"
-            >
-              <template #description>
-                <p class="text-xs text-gray-400 mt-1">Select the technologies that were used to develop the product.</p>
-              </template>
-            </SearchableDropdown>
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-bold text-gray-900">Tech Stack <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></h4>
+            </div>
+
+            <!-- Tech Stack Search -->
+            <div class="relative mb-3">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                v-model="techSearch"
+                placeholder="Search technologies..."
+                class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                :class="{'pr-36': showAddTechStackButton}"
+              >
+              <button
+                v-if="showAddTechStackButton"
+                type="button"
+                @click="addCustomTechStackFromSearch"
+                class="absolute inset-y-0 right-0 px-3 flex items-center text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors"
+              >
+                + Add "{{ techSearch.trim() }}"
+              </button>
+            </div>
+
+            <p class="text-xs text-gray-400 mb-2">Select the technologies that were used to develop the product.</p>
+
+            <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+              <button
+                v-for="tech in filteredTechStacks"
+                :key="tech.id"
+                type="button"
+                @click="toggleTechStack(tech.id)"
+                class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+                :class="modelValue.tech_stack && modelValue.tech_stack.includes(tech.id)
+                  ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'"
+              >
+                {{ tech.name }}
+                <svg v-if="modelValue.tech_stack && modelValue.tech_stack.includes(tech.id)" class="ml-1.5 h-3 w-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <div v-if="filteredTechStacks.length === 0 && !showAddTechStackButton" class="w-full py-4 text-center text-xs text-gray-400 italic">
+                No technologies found matching "{{ techSearch }}"
+              </div>
+            </div>
+            
+            <!-- Display selected custom tech stacks -->
+            <div v-if="modelValue.tech_stack_custom && modelValue.tech_stack_custom.length > 0" class="flex flex-wrap gap-2 mt-2">
+              <span
+                v-for="customTech in modelValue.tech_stack_custom"
+                :key="customTech.id"
+                class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-purple-50 border border-purple-200 text-purple-700"
+              >
+                {{ customTech.name }} (pending)
+                <button
+                  type="button"
+                  @click="removeCustomTechStack(customTech.id)"
+                  class="ml-2 text-purple-500 hover:text-purple-700"
+                >
+                  &times;
+                </button>
+              </span>
+            </div>
           </div>
           
           <!-- Sell Product Option -->
@@ -100,43 +153,7 @@
         </div>
       </section>
       
-      <!-- Horizontal separator -->
-      <hr class="border-t border-gray-200 my-6">
-      
-      <!-- Optional fields section -->
-      <section>
-        <h3 class="text-lg font-semibold text-gray-700">Optional</h3>
-        <div class="flex flex-wrap gap-4 mt-4">
-          <div
-            v-for="field in optionalFields"
-            :key="field.key"
-            class="flex items-center cursor-pointer min-w-fit"
-            :class="field.value ? 'text-green-600' : 'text-gray-500'"
-          >
-            <svg
-              :class="field.value ? 'text-green-500' : 'text-gray-400'"
-              class="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                :d="field.value ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'"
-              />
-            </svg>
-            <span class="text-sm">{{ field.label }}</span>
-            <span
-              v-if="field.key === 'sell_product' && field.value && modelValue.asking_price"
-              class="ml-2 text-xs text-gray-500"
-            >
-              ({{ formatCurrency(modelValue.asking_price) }})
-            </span>
-          </div>
-        </div>
-      </section>
+
       
       <!-- Horizontal separator -->
       <hr class="border-t border-gray-200 my-6">
@@ -182,21 +199,23 @@
               price="$0"
               description="Launch your product for free with a badge"
               :features="freeLaunchFeatures"
+              :isLoading="isLoading"
               @submit="handlePricingOptionSubmit"
             />
             
-            <PaidSubmissionOption
-              id="paid-option"
+            <BadgeSubmissionOption
+              id="badge-option"
               name="pricing-option"
-              value="paid"
+              value="badge"
               :modelValue="selectedPricingOption"
               :isAllRequiredFilled="isAllRequiredFilled"
               :isEditMode="!!modelValue.id"
               @update:modelValue="selectedPricingOption = $event"
-              title="Paid Submission"
-              price="$29"
-              description="Launch immediately without any requirements"
-              :features="paidLaunchFeatures"
+              title="Share Our Badge"
+              price="Free"
+              description="Get instant approval with a dofollow backlink"
+              :features="badgeLaunchFeatures"
+              :isLoading="isLoading"
               @submit="handlePricingOptionSubmit"
             />
           </div>
@@ -226,8 +245,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import FreeSubmissionOption from './FreeSubmissionOption.vue';
-import PaidSubmissionOption from './PaidSubmissionOption.vue';
-import SearchableDropdown from '../SearchableDropdown.vue';
+import BadgeSubmissionOption from './BadgeSubmissionOption.vue';
 import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
@@ -241,9 +259,10 @@ const props = defineProps({
   },
   allTechStacks: Array,
   isAdmin: Boolean,
+  isLoading: Boolean,
 });
 
-const emit = defineEmits(['update:modelValue', 'back', 'submit']);
+const emit = defineEmits(['update:modelValue', 'submit']);
 
 const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
 
@@ -256,6 +275,63 @@ watch(() => props.modelValue.maker_links, (newVal) => {
     makerLinks.value = newVal?.length ? [...newVal] : [];
   }
 }, { deep: true });
+
+// Tech Stack search + toggle
+const techSearch = ref('');
+
+const showAddTechStackButton = computed(() => {
+  const search = techSearch.value.trim();
+  if (!search) return false;
+  if (props.modelValue.tech_stack_custom?.some(ts => ts.name.toLowerCase() === search.toLowerCase())) return false;
+  if ((props.modelValue.tech_stack_custom?.length || 0) >= 3) return false;
+  return !props.allTechStacks?.some(ts => ts.name.toLowerCase() === search.toLowerCase());
+});
+
+const filteredTechStacks = computed(() => {
+  if (!props.allTechStacks) return [];
+  if (!techSearch.value.trim()) return props.allTechStacks;
+  
+  const existingCustomTechStacks = props.modelValue.tech_stack_custom?.map(ts => ts.name.toLowerCase()) || [];
+  
+  return props.allTechStacks.filter(t =>
+    t.name.toLowerCase().includes(techSearch.value.toLowerCase()) &&
+    !existingCustomTechStacks.includes(t.name.toLowerCase())
+  );
+});
+
+function toggleTechStack(id) {
+  const current = Array.isArray(props.modelValue.tech_stack) ? [...props.modelValue.tech_stack] : [];
+  const idx = current.indexOf(id);
+  if (idx === -1) {
+    if (current.length < 5) current.push(id);
+  } else {
+    current.splice(idx, 1);
+  }
+  updateField('tech_stack', current);
+}
+
+// Functions to handle custom tech stacks (triggered from search inline button)
+function addCustomTechStackFromSearch() {
+  const name = techSearch.value.trim();
+  if (!name) return;
+  if ((props.modelValue.tech_stack_custom?.length || 0) >= 3) return;
+  
+  const newCustomTechStack = {
+    id: `custom-${Date.now()}`,
+    name,
+    is_custom: true
+  };
+  
+  const updatedCustomTechStacks = [...(props.modelValue.tech_stack_custom || []), newCustomTechStack];
+  updateField('tech_stack_custom', updatedCustomTechStacks);
+  techSearch.value = '';
+}
+
+function removeCustomTechStack(customTechStackId) {
+  const currentCustomTechStacks = props.modelValue.tech_stack_custom || [];
+  const updatedCustomTechStacks = currentCustomTechStacks.filter(ts => ts.id !== customTechStackId);
+  updateField('tech_stack_custom', updatedCustomTechStacks);
+}
 
 // Sync local changes to modelValue
 watch(makerLinks, (newVal) => {
@@ -335,41 +411,28 @@ const freeLaunchFeatures = [
   'Potential waiting period for approval'
 ];
 
-const paidLaunchFeatures = [
-  'You choose when to publish',
-  'No badge required',
-  'Immediate approval',
- 'Priority placement'
+const badgeLaunchFeatures = [
+  'Instant approval & publish',
+  'Dofollow backlink to your product',
+  'Place our badge on your site',
+  'Priority placement'
 ];
 
 
 // Handle pricing option submit (when user clicks the button in either option)
 const handlePricingOptionSubmit = (optionValue) => {
- // Update the selected pricing option when user submits from either option
+  // Update the selected pricing option when user submits from either option
   selectedPricingOption.value = optionValue;
-  // Update the model value to include the submission option separately
+  // Update the model value to include the submission type
   emit('update:modelValue', {
     ...props.modelValue,
-    submissionOption: optionValue // Add submission option as separate field
- });
+    submissionOption: optionValue,
+    submission_type: optionValue, // 'free' or 'badge'
+    tech_stack_custom: props.modelValue.tech_stack_custom
+  });
   
   // Then call the original submit logic
   emit('submit');
-  
-  // Reset loading state after submission is complete
-  // Note: This will be called immediately, but the actual reset happens in the parent component
-  // after the submission process is complete
-  if (freeSubmissionOptionRef.value && typeof freeSubmissionOptionRef.value.submissionComplete === 'function') {
-    setTimeout(() => {
-      freeSubmissionOptionRef.value.submissionComplete();
-    }, 0);
-  }
-  
-  if (paidSubmissionOptionRef.value && typeof paidSubmissionOptionRef.value.submissionComplete === 'function') {
-    setTimeout(() => {
-      paidSubmissionOptionRef.value.submissionComplete();
-    }, 0);
-  }
 };
 
 

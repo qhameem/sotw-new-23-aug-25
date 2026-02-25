@@ -52,7 +52,7 @@
     <!-- Button -->
     <a href="#"
        id="submit-button"
-       class="bg-white hover:bg-rose-50 text-primary-500 border border-primary-500 text-sm font-semibold py-1 px-3 rounded-md transition duration-300 shadow inline-flex items-center justify-center gap-2 relative">
+       class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-500 hover:border-rose-700 text-sm font-semibold py-1 px-3 rounded-md transition duration-300 shadow inline-flex items-center justify-center gap-2 relative">
 
         <!-- Text that gets replaced -->
         <span id="button-content" class="flex items-center gap-2">

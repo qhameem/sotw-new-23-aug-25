@@ -277,14 +277,13 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                                {
-                                                                  "@context": "https://schema.org",
-                                                                  "@type": "WebSite",
-                                                                  "name": "Software on the Web",
-                                                                  "alternateName": ["Softwareontheweb"],
-                                                                  "url": "https://softwareontheweb.com"
-                                                                }
-                                                                </script>
+                                                                    {
+                                                                      "@context": "https://schema.org",
+                                                                      "@type": "WebSite",
+                                                                      "name": "Software on the Web",
+                                                                      "url": "https://softwareontheweb.com"
+                                                                    }
+                                                                    </script>
     @endverbatim
 
 

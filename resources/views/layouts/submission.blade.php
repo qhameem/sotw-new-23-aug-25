@@ -271,14 +271,13 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "Software on the Web",
-          "alternateName": ["Softwareontheweb"],
-          "url": "https://softwareontheweb.com"
-        }
-        </script>
+            {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "Software on the Web",
+                "url": "https://softwareontheweb.com"
+            }
+            </script>
     @endverbatim
 
 
@@ -307,13 +306,43 @@
 
     <div class="flex flex-col min-h-screen bg-white">
         <x-top-bar />
+        
+        <!-- Mobile Header (visible only on mobile) -->
+        <div class="md:hidden fixed top-0 w-full z-50 bg-white h-[75px] border-b border-gray-200 flex-shrink-0">
+            <div class="h-full px-4 flex items-center justify-between">
+                <a href="{{ route('home') }}">
+                    <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                </a>
+                <div class="flex items-center space-x-3">
+                    @guest
+                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" 
+                           class="text-sm bg-gray-900 text-white py-1.5 px-4 rounded-lg font-semibold">
+                            Log in <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    @else
+                        <div class="flex items-center space-x-2">
+                            @auth
+                            <div id="mobile-notification-bell-app">
+                                <notification-bell :user-id="{{ Auth::id() }}"></notification-bell>
+                            </div>
+                            @endauth
+                            <div id="mobile-user-dropdown-app" data-user="{{ json_encode(Auth::user()) }}" 
+                                 data-is-admin="{{ Auth::user()->hasRole('admin') ? 'true' : 'false' }}"></div>
+                        </div>
+                    @endguest
+                </div>
+            </div>
+        </div>
+        
         <!-- Main Content Wrapper -->
-        <div class="flex-1 w-full flex flex-col relative">
+        <div class="flex-1 w-full flex flex-col relative pt-[75px] md:pt-0">
             <main class="w-full flex-1 flex flex-col">
                 @yield('content')
             </main>
         </div>
         <x-footer />
+        <!-- Mobile navigation -->
+        @include('partials._mobile-footer-menu')
     </div>
 
     <div x-show="searchModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
@@ -353,8 +382,6 @@
         </div>
     </div>
     <template id="delayed-vendor-scripts">
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         @livewireScripts
     </template>
     @stack('scripts')

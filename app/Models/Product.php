@@ -52,6 +52,12 @@ class Product extends Model implements Sitemapable
         'application_category',
         'price',
         'currency',
+        'submission_type',
+        'badge_verified',
+        'badge_verified_at',
+        'badge_consecutive_failures',
+        'badge_placement_url',
+        'badge_warning_sent_at',
     ];
 
     protected $casts = [
@@ -151,6 +157,11 @@ class Product extends Model implements Sitemapable
     public function techStacks()
     {
         return $this->belongsToMany(TechStack::class, 'product_tech_stack');
+    }
+
+    public function customCategorySubmissions()
+    {
+        return $this->hasMany(CustomCategorySubmission::class);
     }
 
     public function getIsUpvotedByCurrentUserAttribute()

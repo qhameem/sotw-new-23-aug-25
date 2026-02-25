@@ -28,6 +28,8 @@ use App\Services\SlugService;
 use App\Services\TechStackDetectorService;
 use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
+use App\Services\DescriptionRewriterService;
+use App\Services\ScreenshotService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
 use Intervention\Image\ImageManager;
@@ -41,8 +43,9 @@ class ProductController extends Controller
     protected NameExtractorService $nameExtractor;
     protected LogoExtractorService $logoExtractor;
     protected \App\Services\CategoryClassifier $categoryClassifier;
+    protected ScreenshotService $screenshotService;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
@@ -50,6 +53,7 @@ class ProductController extends Controller
         $this->nameExtractor = $nameExtractor;
         $this->logoExtractor = $logoExtractor;
         $this->categoryClassifier = $categoryClassifier;
+        $this->screenshotService = $screenshotService;
     }
 
     public function home(Request $request)
@@ -177,14 +181,28 @@ class ProductController extends Controller
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'x_account' => 'nullable|string|max:255',
-            'categories' => 'required|array',
-            'categories.*' => 'exists:categories,id',
+            'categories' => [
+                function ($attribute, $value, $fail) use ($request) {
+                    $hasExisting = is_array($value) && count($value) > 0;
+                    $hasCustom = $request->has('custom_categories') && is_array($request->input('custom_categories')) && count($request->input('custom_categories')) > 0;
+
+                    if (!$hasExisting && !$hasCustom) {
+                        $fail('The categories field is required.');
+                    }
+                },
+            ],
+            'categories.*' => 'nullable|exists:categories,id',
+            'custom_categories' => 'nullable|array|max:3',
+            'custom_categories.*.name' => 'required|string|max:100',
+            'custom_categories.*.type' => 'required|in:category,best_for',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
-            'logo_url' => 'nullable|url|max:2048',
+            'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
+            'custom_tech_stacks' => 'nullable|array|max:3',
+            'custom_tech_stacks.*.name' => 'required|string|max:100',
         ]);
 
         // Check if a product with this URL already exists
@@ -202,24 +220,42 @@ class ProductController extends Controller
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
         $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
         $bestForType = Type::where('id', 3)->with('categories')->first();
-        $selected = collect($request->input('categories', []))->map(fn($id) => (int) $id);
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-        $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
+        $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
+        $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
+        $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
+        $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
+        $bestForIds = $bestForType ? $bestForType->categories->pluck('id') : collect();
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
+        $customCategories = $request->input('custom_categories', []);
+        $hasCustomPricing = collect($customCategories)->contains('type', 'pricing'); // Note: Assuming users don't submit custom pricing types, but theoretically could
+        $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
+        $hasCustomBestFor = collect($customCategories)->contains('type', 'best_for');
+
+        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
-        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
+        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
+        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty() && !$hasCustomBestFor) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
         }
 
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 0;
-        $validated['approved'] = false;
+
+        // Handle submission type: 'badge' submissions get instant approval
+        $submissionType = $request->input('submission_type', 'free');
+        $validated['submission_type'] = in_array($submissionType, ['free', 'badge']) ? $submissionType : 'free';
+
+        if ($submissionType === 'badge') {
+            $validated['approved'] = true;
+            $validated['is_published'] = true;
+            $validated['published_at'] = now();
+            $validated['badge_placement_url'] = $request->input('badge_placement_url') ?: $request->input('link');
+        } else {
+            $validated['approved'] = false;
+        }
         $validated['description'] = $this->ensureProperParagraphStructure($this->addNofollowToLinks($request->input('description')));
 
         // Handle optional fields
@@ -253,7 +289,38 @@ class ProductController extends Controller
                 $validated['logo'] = $path . $image->getClientOriginalName();
             }
         } elseif ($request->filled('logo_url')) {
-            $validated['logo'] = $validated['logo_url'];
+            $logoUrl = $request->input('logo_url');
+
+            // Handle Base64/Data URL
+            if (Str::startsWith($logoUrl, 'data:image')) {
+                try {
+                    // Extract extension
+                    $extension = 'png';
+                    if (preg_match('/^data:image\/([\w\+\-\.]+);base64,/', $logoUrl, $matches)) {
+                        $extension = $matches[1];
+                        if ($extension === 'svg+xml') {
+                            $extension = 'svg';
+                        }
+                    }
+
+                    // Decode data
+                    $base64Data = preg_replace('/^data:image\/[\w\+\-\.]+;base64,/', '', $logoUrl);
+                    $decodedData = base64_decode($base64Data);
+
+                    if ($decodedData) {
+                        $filename = Str::uuid() . '.' . $extension;
+                        $path = 'logos/' . $filename;
+                        Storage::disk('public')->put($path, $decodedData);
+                        $validated['logo'] = $path;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to save base64 logo: ' . $e->getMessage());
+                    // Fallback to URL if saving fails (though it might still fail validation later)
+                    $validated['logo'] = $logoUrl;
+                }
+            } else {
+                $validated['logo'] = $logoUrl;
+            }
         }
         unset($validated['logo_url']);
 
@@ -263,50 +330,63 @@ class ProductController extends Controller
             $product->techStacks()->sync($validated['tech_stacks']);
         }
 
+        // Handle custom categories if any
+        if ($request->has('custom_categories')) {
+            foreach ($request->input('custom_categories') as $customCategory) {
+                \App\Models\CustomCategorySubmission::create([
+                    'product_id' => $product->id,
+                    'type' => $customCategory['type'],
+                    'name' => $customCategory['name'],
+                    'status' => 'pending'
+                ]);
+            }
+        }
+
+        // Handle custom tech stacks if any
+        if ($request->has('custom_tech_stacks')) {
+            foreach ($request->input('custom_tech_stacks') as $customTechStack) {
+                \App\Models\CustomCategorySubmission::create([
+                    'product_id' => $product->id,
+                    'type' => 'tech_stack',
+                    'name' => $customTechStack['name'],
+                    'status' => 'pending'
+                ]);
+            }
+        }
+
         if ($request->hasFile('media')) {
             $manager = new ImageManager(new Driver());
 
             foreach ($request->file('media') as $file) {
-                $path = $file->store('product_media', 'public');
-                $mimeType = $file->getMimeType();
-                $type = Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+                $this->processMediaItem($product, $file, $manager);
+            }
+        }
 
-                $pathThumb = null;
-                $pathMedium = null;
-
-                if ($type === 'image') {
+        if ($request->filled('media_urls')) {
+            $manager = new ImageManager(new Driver());
+            foreach ($request->input('media_urls') as $url) {
+                if ($url) {
                     try {
-                        $filename = basename($path);
-                        $directory = dirname($path);
+                        $imageContents = Http::get($url)->body();
+                        $extension = 'jpg'; // Default for mshots, or we can try to detect
+                        if (str_contains($url, '.png'))
+                            $extension = 'png';
+                        if (str_contains($url, '.webp'))
+                            $extension = 'webp';
 
-                        // Generate Thumbnail (300px width)
-                        $imageThumb = $manager->read($file->getRealPath());
-                        $imageThumb->scale(width: 300);
-                        $thumbFilename = 'thumb_' . $filename;
-                        $pathThumb = $directory . '/' . $thumbFilename;
-                        Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
+                        $filename = Str::uuid() . '.' . $extension;
+                        $path = 'product_media/' . $filename;
+                        Storage::disk('public')->put($path, $imageContents);
 
-                        // Generate Medium (800px width)
-                        $imageMedium = $manager->read($file->getRealPath());
-                        $imageMedium->scale(width: 800);
-                        $mediumFilename = 'medium_' . $filename;
-                        $pathMedium = $directory . '/' . $mediumFilename;
-                        Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
+                        $this->processMediaItem($product, Storage::disk('public')->path($path), $manager, true);
                     } catch (\Exception $e) {
-                        // Fallback: if resizing fails, we just don't set the paths, keeping original behavior
-                        Log::error('Image resizing failed: ' . $e->getMessage());
+                        Log::error('Failed to download media from URL: ' . $url . ' - ' . $e->getMessage());
                     }
                 }
-
-                $product->media()->create([
-                    'path' => $path,
-                    'path_thumb' => $pathThumb,
-                    'path_medium' => $pathMedium,
-                    'alt_text' => $product->name . ' media',
-                    'type' => $type,
-                ]);
             }
-        } else {
+        }
+
+        if (!$request->hasFile('media') && !$request->filled('media_urls')) {
             FetchOgImage::dispatch($product);
         }
 
@@ -317,6 +397,11 @@ class ProductController extends Controller
         $user = User::find($product->user_id);
         if ($user) {
             $user->notify(new \App\Notifications\ProductSubmissionConfirmation($product));
+        }
+
+        // For badge submissions, dispatch verification job (delayed 1 hour to give user time to place badge)
+        if ($validated['submission_type'] === 'badge') {
+            \App\Jobs\VerifyBadgePlacement::dispatch($product)->delay(now()->addHour());
         }
 
         // Return JSON response for API calls, redirect for regular form submissions
@@ -471,13 +556,27 @@ class ProductController extends Controller
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'required|string|max:5000', // Max 5000 chars
             // 'link' is not editable by users directly in this form
-            'categories' => 'required|array',
-            'categories.*' => 'exists:categories,id',
+            'categories' => [
+                function ($attribute, $value, $fail) use ($request) {
+                    $hasExisting = is_array($value) && count($value) > 0;
+                    $hasCustom = $request->has('custom_categories') && is_array($request->input('custom_categories')) && count($request->input('custom_categories')) > 0;
+
+                    if (!$hasExisting && !$hasCustom) {
+                        $fail('The categories field is required.');
+                    }
+                },
+            ],
+            'categories.*' => 'nullable|exists:categories,id',
+            'custom_categories' => 'nullable|array|max:3',
+            'custom_categories.*.name' => 'required|string|max:100',
+            'custom_categories.*.type' => 'required|in:category,best_for',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|string|max:2048',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
+            'custom_tech_stacks' => 'nullable|array|max:3',
+            'custom_tech_stacks.*.name' => 'required|string|max:100',
             'maker_links' => 'nullable|array',
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
@@ -491,12 +590,18 @@ class ProductController extends Controller
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
         $softwareType = Type::where('name', 'Software Categories')->with('categories')->first(); // Assuming this type name
         $bestForType = Type::where('id', 3)->with('categories')->first();
-        $selected = collect($request->input('categories', []))->map(fn($id) => (int) $id);
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-        $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
+        $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
+        $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
+        $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
+        $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
+        $bestForIds = $bestForType ? $bestForType->categories->pluck('id') : collect();
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
+        $customCategories = $request->input('custom_categories', []);
+        $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');
+        $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
+        $hasCustomBestFor = collect($customCategories)->contains('type', 'best_for');
+
+        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -507,7 +612,7 @@ class ProductController extends Controller
             }
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
-        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
+        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -518,7 +623,7 @@ class ProductController extends Controller
             }
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
+        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty() && !$hasCustomBestFor) {
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -655,6 +760,31 @@ class ProductController extends Controller
             $product->update($updateData);
             $product->categories()->sync($newCategories);
             $product->techStacks()->sync($newTechStacks);
+
+            // Handle custom categories if any
+            if ($request->has('custom_categories')) {
+                foreach ($request->input('custom_categories') as $customCategory) {
+                    \App\Models\CustomCategorySubmission::create([
+                        'product_id' => $product->id,
+                        'type' => $customCategory['type'],
+                        'name' => $customCategory['name'],
+                        'status' => 'pending'
+                    ]);
+                }
+            }
+
+            // Handle custom tech stacks if any
+            if ($request->has('custom_tech_stacks')) {
+                foreach ($request->input('custom_tech_stacks') as $customTechStack) {
+                    \App\Models\CustomCategorySubmission::create([
+                        'product_id' => $product->id,
+                        'type' => 'tech_stack',
+                        'name' => $customTechStack['name'],
+                        'status' => 'pending'
+                    ]);
+                }
+            }
+
             // 'approved' status remains false as it's handled by admin
 
             // Return JSON response for API calls
@@ -1691,35 +1821,15 @@ class ProductController extends Controller
                 }
             }
 
-            if (!empty($ogImages)) {
-                $ogImage = $ogImages[0];
-                $logos = array_merge($logos, $ogImages);
-            }
+            // Extract Logos using the dedicated service
+            $logos = $this->logoExtractor->extract($url, $html);
 
-            $links = $doc->getElementsByTagName('link');
-            foreach ($links as $link) {
-                $rel = strtolower($link->getAttribute('rel'));
-                if (in_array($rel, ['icon', 'shortcut icon', 'apple-touch-icon'])) {
-                    $href = $link->getAttribute('href');
-                    if ($href) {
-                        $logos[] = $this->resolveUrl($url, $href);
-                    }
-                }
-            }
-
-            $images = $doc->getElementsByTagName('img');
-            foreach ($images as $img) {
-                $src = $img->getAttribute('src');
-                if (preg_match('/logo/i', $src)) {
-                    $logos[] = $this->resolveUrl($url, $src);
-                }
-            }
-
-            $logos = array_values(array_unique($logos));
-            if (empty($logos)) {
+            if (!empty($logos)) {
+                $ogImage = $logos[0];
+            } else {
+                // Last ditch fallback to Google Favicon API
                 $logos[] = 'https://www.google.com/s2/favicons?sz=128&domain_url=' . urlencode($url);
             }
-            $logos = $this->rankAndSelectLogos($logos);
 
 
             // Category classification has been removed as part of AI functionality removal
@@ -1747,54 +1857,6 @@ class ProductController extends Controller
         }
     }
 
-    private function resolveUrl($baseUrl, $relativeUrl)
-    {
-        if (Str::startsWith($relativeUrl, ['http://', 'https://', '//'])) {
-            if (Str::startsWith($relativeUrl, '//')) {
-                return 'https:' . $relativeUrl;
-            }
-            return $relativeUrl;
-        }
-
-        $base = parse_url($baseUrl);
-        $path = $base['path'] ?? '';
-
-        if (Str::startsWith($relativeUrl, '/')) {
-            $path = '';
-        } else {
-            $path = dirname($path);
-        }
-
-        $path = rtrim($path, '/');
-
-        return $base['scheme'] . '://' . $base['host'] . $path . '/' . ltrim($relativeUrl, '/');
-    }
-    private function rankAndSelectLogos(array $logos): array
-    {
-        $scoredLogos = [];
-        foreach ($logos as $logo) {
-            $score = 0;
-            if (stripos($logo, 'logo') !== false) {
-                $score += 5;
-            }
-            if (stripos($logo, '.svg') !== false) {
-                $score += 3;
-            }
-            if (stripos($logo, '.png') !== false) {
-                $score += 2;
-            }
-            if (stripos($logo, '.jpg') !== false || stripos($logo, '.jpeg') !== false || stripos($logo, '.webp') !== false) {
-                $score += 1;
-            }
-            $scoredLogos[] = ['url' => $logo, 'score' => $score];
-        }
-
-        usort($scoredLogos, function ($a, $b) {
-            return $b['score'] <=> $a['score'];
-        });
-
-        return array_slice(array_column($scoredLogos, 'url'), 0, 6);
-    }
     public function fetchProductData(Request $request)
     {
         $url = $request->input('url');
@@ -1841,7 +1903,9 @@ class ProductController extends Controller
         }
 
         try {
-            $response = Http::get($url);
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ])->get($url);
             $html = $response->body();
 
             $doc = new DOMDocument();
@@ -1863,7 +1927,7 @@ class ProductController extends Controller
             $faviconUrl = 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($url);
 
             return response()->json([
-                'name' => $this->nameExtractor->extract(trim($title)),
+                'name' => $this->nameExtractor->extract(trim($title), $url),
                 'tagline' => trim($description),
                 'description' => '',
                 'favicon' => $faviconUrl,
@@ -1915,6 +1979,9 @@ class ProductController extends Controller
     }
     public function fetchInitialMetadata(Request $request)
     {
+        // Increase maximum execution time for scraping
+        set_time_limit(120);
+
         $url = $request->input('url');
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
@@ -1929,7 +1996,9 @@ class ProductController extends Controller
         // Extract additional information from the URL content
         $taglineDetailed = '';
         try {
-            $response = Http::get($url);
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ])->get($url);
             $html = $response->body();
 
             $doc = new DOMDocument();
@@ -1981,17 +2050,253 @@ class ProductController extends Controller
 
         $responseData = [
             'name' => $metadata['name'],
-            'tagline' => $metadata['tagline'],
-            'tagline_detailed' => $taglineDetailed,
             'favicon' => $metadata['favicon'],
+            'screenshot_url' => $this->screenshotService->capture($url),
         ];
+
+        // Smart assignment: short tagline ≤ 60 chars, detailed ≤ 160 chars
+        $metaTagline = $metadata['tagline'] ?? '';
+        $headingTagline = $taglineDetailed;
+
+        // If both are available, the shorter one is the tagline, longer is detailed
+        if (!empty($metaTagline) && !empty($headingTagline) && $metaTagline !== $headingTagline) {
+            if (strlen($metaTagline) <= strlen($headingTagline)) {
+                $responseData['tagline'] = Str::limit($metaTagline, 60, '...');
+                $responseData['tagline_detailed'] = Str::limit($headingTagline, 160, '...');
+            } else {
+                $responseData['tagline'] = Str::limit($headingTagline, 60, '...');
+                $responseData['tagline_detailed'] = Str::limit($metaTagline, 160, '...');
+            }
+        } else {
+            // Only one available — use it for whichever field it fits
+            $availableTagline = !empty($metaTagline) ? $metaTagline : $headingTagline;
+            if (strlen($availableTagline) <= 60) {
+                $responseData['tagline'] = $availableTagline;
+                $responseData['tagline_detailed'] = '';
+            } else {
+                $responseData['tagline'] = Str::limit($availableTagline, 60, '...');
+                $responseData['tagline_detailed'] = Str::limit($availableTagline, 160, '...');
+            }
+        }
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
         return response()->json($responseData);
     }
 
+    public function processUrlStream(Request $request)
+    {
+        set_time_limit(120);
+
+        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
+            $sendUpdate = function ($message, $progress, $data = null) {
+                echo json_encode(['message' => $message, 'progress' => $progress, 'data' => $data]) . "\n";
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            };
+
+            $url = $request->input('url');
+            if (!$url) {
+                $sendUpdate('URL is required.', 0, ['error' => 'URL is required.']);
+                return;
+            }
+
+            $name = $request->input('name');
+            $tagline = $request->input('tagline');
+            $fetchContent = $request->input('fetch_content', true);
+
+            $description = '';
+            $extractedTagline = '';
+            $extractedTaglineDetailed = '';
+
+            try {
+                $sendUpdate('Connecting to website...', 5);
+                $htmlResponse = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                ])->timeout(15)->get($url);
+
+                if (!$htmlResponse->successful()) {
+                    $sendUpdate('Failed to fetch website.', 100, [
+                        'description' => $description,
+                        'logos' => [],
+                        'tagline' => $tagline,
+                        'tagline_detailed' => '',
+                        'categories' => [],
+                        'bestFor' => [],
+                        'pricing' => [],
+                    ]);
+                    return;
+                }
+                $htmlContent = $htmlResponse->body();
+                $sendUpdate('Website fetched successfully...', 15);
+
+                if ($fetchContent) {
+                    $sendUpdate('Analyzing page structure...', 20);
+                    $doc = new \DOMDocument();
+                    @$doc->loadHTML($htmlContent);
+
+                    $titleNode = $doc->getElementsByTagName('title')->item(0);
+                    $title = $titleNode ? $titleNode->nodeValue : '';
+
+                    $descriptionContent = '';
+                    $metas = $doc->getElementsByTagName('meta');
+                    for ($i = 0; $i < $metas->length; $i++) {
+                        $meta = $metas->item($i);
+                        if (strtolower($meta->getAttribute('name')) == 'description') {
+                            $descriptionContent = $meta->getAttribute('content');
+                            break;
+                        }
+                    }
+
+                    $potentialTaglines = [];
+                    foreach (['h1', 'h2', 'h3'] as $tag) {
+                        foreach ($doc->getElementsByTagName($tag) as $heading) {
+                            $potentialTaglines[] = $heading->nodeValue;
+                        }
+                    }
+
+                    $xpath = new \DOMXPath($doc);
+                    $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
+                    foreach ($elements as $element) {
+                        $potentialTaglines[] = $element->nodeValue;
+                    }
+
+                    $description = $descriptionContent;
+
+                    $cleanDoc = clone $doc;
+                    $cleanXpath = new \DOMXPath($cleanDoc);
+                    $noise = $cleanXpath->query('//nav | //header | //footer | //script | //style | //noscript | //aside');
+                    foreach ($noise as $node) {
+                        $node->parentNode?->removeChild($node);
+                    }
+
+                    $textContent = "Title: {$title}\n";
+                    if (!empty($descriptionContent)) {
+                        $textContent .= "Meta Description: {$descriptionContent}\n";
+                    }
+                    foreach (['h1', 'h2', 'h3'] as $tag) {
+                        foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
+                            $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
+                        }
+                    }
+                    $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+
+                    $productNameForAI = $name ?: ($title ?: 'this product');
+
+                    $sendUpdate('Generating AI taglines...', 40);
+                    try {
+                        $taglineRewriter = new \App\Services\TaglineRewriterService();
+                        $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
+                        $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
+
+                        if ($aiTaglines) {
+                            $extractedTagline = $aiTaglines['tagline'];
+                            $extractedTaglineDetailed = $aiTaglines['product_page_tagline'];
+                        }
+                    } catch (\Exception $e) {
+                         // fallback
+                    }
+
+                    if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
+                        $allCandidates = array_filter(array_map('trim', array_merge([$descriptionContent, trim($title)], $potentialTaglines)));
+                        $allCandidates = array_unique($allCandidates);
+                        $allCandidates = array_filter($allCandidates, function ($c) use ($name) {
+                            return !empty($c) && strtolower(trim($c)) !== strtolower(trim($name ?? ''));
+                        });
+                        usort($allCandidates, fn($a, $b) => strlen($a) - strlen($b));
+
+                        if (empty($extractedTagline)) {
+                            foreach ($allCandidates as $candidate) {
+                                if (strlen($candidate) <= 60 && strlen($candidate) > 5) {
+                                    $extractedTagline = $candidate;
+                                    break;
+                                }
+                            }
+                            if (empty($extractedTagline) && !empty($allCandidates)) $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 60, '...');
+                        }
+
+                        if (empty($extractedTaglineDetailed)) {
+                            $reversed = array_reverse($allCandidates);
+                            foreach ($reversed as $candidate) {
+                                if ($candidate !== $extractedTagline && strlen($candidate) > 10) {
+                                    $extractedTaglineDetailed = \Illuminate\Support\Str::limit($candidate, 160, '...');
+                                    break;
+                                }
+                            }
+                            if (empty($extractedTaglineDetailed) && !empty($allCandidates)) $extractedTaglineDetailed = \Illuminate\Support\Str::limit(end($allCandidates), 160, '...');
+                        }
+                    }
+
+                    $extractedTagline = \Illuminate\Support\Str::limit($extractedTagline, 60, '...');
+                    $extractedTaglineDetailed = \Illuminate\Support\Str::limit($extractedTaglineDetailed, 160, '...');
+
+                    $sendUpdate('Writing product description...', 65);
+                    $rawDescForRewrite = $descriptionContent;
+                    if (empty($rawDescForRewrite)) {
+                        $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
+                    }
+
+                    if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
+                        $descRewriter = new \App\Services\DescriptionRewriterService();
+                        $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $textContent);
+                        if ($rewritten) {
+                            $description = $rewritten;
+                        }
+                    }
+                }
+
+                $sendUpdate('Extracting logos...', 85);
+                $logos = $this->logoExtractor->extract($url, $htmlContent);
+
+                $sendUpdate('Classifying features and categories...', 95);
+                $classificationResult = $this->categoryClassifier->classify($htmlContent);
+                $categories = $classificationResult['categories'] ?? [];
+                $bestFor = $classificationResult['best_for'] ?? [];
+                $pricing = $classificationResult['pricing'] ?? [];
+
+                $categoryIds = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
+                $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
+                $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
+
+                $responseData = [
+                    'description' => $description,
+                    'logos' => $logos,
+                    'tagline' => $extractedTagline ?: $tagline,
+                    'tagline_detailed' => $extractedTaglineDetailed,
+                    'categories' => $categoryIds,
+                    'bestFor' => $bestForIds,
+                    'pricing' => $pricingIds,
+                    'screenshot_url' => $this->screenshotService->capture($url),
+                ];
+
+                $sendUpdate('Done!', 100, $responseData);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error in processUrlStream: ' . $e->getMessage());
+                $sendUpdate('An error occurred during processing.', 100, [
+                    'description' => $description,
+                    'logos' => [],
+                    'tagline' => $tagline,
+                    'tagline_detailed' => '',
+                    'categories' => [],
+                    'bestFor' => [],
+                    'pricing' => [],
+                ]);
+            }
+        });
+
+        $response->headers->set('Content-Type', 'application/x-ndjson');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('X-Accel-Buffering', 'no');
+
+        return $response;
+    }
+
     public function processUrl(Request $request)
     {
+        set_time_limit(120);
+
         $url = $request->input('url');
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
@@ -2008,7 +2313,9 @@ class ProductController extends Controller
 
         try {
             // 3. Fetch HTML for content extraction with timeout
-            $htmlResponse = Http::timeout(15)->get($url);
+            $htmlResponse = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ])->timeout(15)->get($url);
             if (!$htmlResponse->successful()) {
                 return response()->json([
                     'description' => $description,
@@ -2064,61 +2371,115 @@ class ProductController extends Controller
                     $potentialTaglines[] = $element->nodeValue;
                 }
 
-                // Use the extracted content
-                $extractedTagline = $descriptionContent ?: trim($title);
-                $extractedTaglineDetailed = trim($title) ?: $descriptionContent;
-                $description = $descriptionContent;
+                // --- Gather raw material for taglines and description ---
+                $description = $descriptionContent; // meta description as raw material
 
-                // If we still don't have a good tagline, try from potential taglines
-                if (empty($extractedTagline) && !empty($potentialTaglines)) {
-                    foreach ($potentialTaglines as $potential) {
-                        $potential = trim($potential);
-                        if (strlen($potential) > 0 && strlen($potential) < 120) { // Reasonable tagline length
-                            $extractedTagline = $potential;
-                            break;
+                // Gather page text for additional context (cleaned of noise)
+                $cleanDoc = clone $doc;
+                $cleanXpath = new \DOMXPath($cleanDoc);
+                $noise = $cleanXpath->query('//nav | //header | //footer | //script | //style | //noscript | //aside');
+                foreach ($noise as $node) {
+                    $node->parentNode?->removeChild($node);
+                }
+
+                $textContent = "Title: {$title}\n";
+                if (!empty($descriptionContent)) {
+                    $textContent .= "Meta Description: {$descriptionContent}\n";
+                }
+                foreach (['h1', 'h2', 'h3'] as $tag) {
+                    foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
+                        $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
+                    }
+                }
+                $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+
+                $productNameForAI = $name ?: ($title ?: 'this product');
+
+                // --- AI Tagline Generation (primary source) ---
+                try {
+                    $taglineRewriter = new \App\Services\TaglineRewriterService();
+                    $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
+                    $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
+
+                    if ($aiTaglines) {
+                        $extractedTagline = $aiTaglines['tagline'];
+                        $extractedTaglineDetailed = $aiTaglines['product_page_tagline'];
+                        Log::info('TaglineRewriterService: AI-generated taglines', [
+                            'tagline' => $extractedTagline,
+                            'product_page_tagline' => $extractedTaglineDetailed,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('TaglineRewriterService failed, falling back to heuristic extraction', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // --- Heuristic fallback if AI didn't produce taglines ---
+                if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
+                    // Collect all candidate strings: meta description, title, headings
+                    $allCandidates = array_filter(array_map('trim', array_merge(
+                        [$descriptionContent, trim($title)],
+                        $potentialTaglines
+                    )));
+
+                    // Remove duplicates and the product name itself
+                    $allCandidates = array_unique($allCandidates);
+                    $allCandidates = array_filter($allCandidates, function ($c) use ($name) {
+                        return !empty($c) && strtolower(trim($c)) !== strtolower(trim($name ?? ''));
+                    });
+
+                    // Sort by length: shortest first
+                    usort($allCandidates, fn($a, $b) => strlen($a) - strlen($b));
+
+                    if (empty($extractedTagline)) {
+                        // Pick the shortest candidate that's ≤ 60 chars for short tagline
+                        foreach ($allCandidates as $candidate) {
+                            if (strlen($candidate) <= 60 && strlen($candidate) > 5) {
+                                $extractedTagline = $candidate;
+                                break;
+                            }
+                        }
+                        // If nothing ≤ 60, truncate the shortest candidate
+                        if (empty($extractedTagline) && !empty($allCandidates)) {
+                            $extractedTagline = Str::limit(reset($allCandidates), 60, '...');
+                        }
+                    }
+
+                    if (empty($extractedTaglineDetailed)) {
+                        // Pick the longest candidate that differs from $extractedTagline
+                        $reversed = array_reverse($allCandidates);
+                        foreach ($reversed as $candidate) {
+                            if ($candidate !== $extractedTagline && strlen($candidate) > 10) {
+                                $extractedTaglineDetailed = Str::limit($candidate, 160, '...');
+                                break;
+                            }
+                        }
+                        // If nothing differs, use the same one truncated to 160
+                        if (empty($extractedTaglineDetailed) && !empty($allCandidates)) {
+                            $extractedTaglineDetailed = Str::limit(end($allCandidates), 160, '...');
                         }
                     }
                 }
 
-                // If we still don't have a detailed tagline, try from potential taglines
-                if (empty($extractedTaglineDetailed) && !empty($potentialTaglines)) {
-                    foreach ($potentialTaglines as $potential) {
-                        $potential = trim($potential);
-                        if (strlen($potential) > 0 && strlen($potential) < 200) { // Reasonable detailed tagline length
-                            $extractedTaglineDetailed = $potential;
-                            break;
-                        }
-                    }
-                }
-
-                // Fallback to the first non-empty potential tagline if still empty
-                if (empty($extractedTagline) && !empty($potentialTaglines)) {
-                    foreach ($potentialTaglines as $potential) {
-                        $potential = trim($potential);
-                        if (!empty($potential)) {
-                            $extractedTagline = $potential;
-                            break;
-                        }
-                    }
-                }
-
-                if (empty($extractedTaglineDetailed) && !empty($potentialTaglines)) {
-                    foreach ($potentialTaglines as $potential) {
-                        $potential = trim($potential);
-                        if (!empty($potential)) {
-                            $extractedTaglineDetailed = $potential;
-                            break;
-                        }
-                    }
-                }
-
-                // Limit the length of taglines to fit form requirements
+                // Final length enforcement
                 $extractedTagline = Str::limit($extractedTagline, 60, '...');
                 $extractedTaglineDetailed = Str::limit($extractedTaglineDetailed, 160, '...');
 
-                // If we have a name and tagline is still empty, try to enhance it
-                if (empty($extractedTagline) && !empty($name)) {
-                    $extractedTagline = $name;
+                // --- AI Description Rewrite ---
+                // Generate description from page body text even if meta description is empty
+                $rawDescForRewrite = $descriptionContent;
+                if (empty($rawDescForRewrite)) {
+                    // Build a description from headings and first body paragraphs
+                    $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
+                }
+
+                if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
+                    $descRewriter = new DescriptionRewriterService();
+                    $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $textContent);
+                    if ($rewritten) {
+                        $description = $rewritten;
+                    }
                 }
             }
 
@@ -2155,6 +2516,7 @@ class ProductController extends Controller
                 'categories' => $categoryIds,
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,
+                'screenshot_url' => $this->screenshotService->capture($url),
             ];
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
@@ -2227,4 +2589,75 @@ class ProductController extends Controller
         ]);
     }
 
+    protected function processMediaItem($product, $file, $manager, $isExternalPath = false)
+    {
+        if ($isExternalPath) {
+            $path = 'product_media/' . basename($file);
+            // $file is already the absolute path to the downloaded image
+            $absolutePath = $file;
+            $mimeType = mime_content_type($file);
+        } else {
+            $path = $file->store('product_media', 'public');
+            $absolutePath = Storage::disk('public')->path($path);
+            $mimeType = $file->getMimeType();
+        }
+
+        $type = Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+        $pathThumb = null;
+        $pathMedium = null;
+
+        if ($type === 'image') {
+            try {
+                $filename = basename($path);
+                $directory = dirname($path);
+
+                // Generate Thumbnail (300px width)
+                $imageThumb = $manager->read($absolutePath);
+                $imageThumb->scale(width: 300);
+                $thumbFilename = 'thumb_' . $filename;
+                $pathThumb = $directory . '/' . $thumbFilename;
+                Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
+
+                // Generate Medium (800px width)
+                $imageMedium = $manager->read($absolutePath);
+                $imageMedium->scale(width: 800);
+                $mediumFilename = 'medium_' . $filename;
+                $pathMedium = $directory . '/' . $mediumFilename;
+                Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Image resizing failed: ' . $e->getMessage());
+            }
+        }
+
+        $product->media()->create([
+            'path' => $path,
+            'path_thumb' => $pathThumb,
+            'path_medium' => $pathMedium,
+            'alt_text' => $product->name . ' media',
+            'type' => $type,
+        ]);
+    }
+
+    private function resolveUrl($baseUrl, $relativeUrl)
+    {
+        if (Str::startsWith($relativeUrl, ['http://', 'https://', '//'])) {
+            if (Str::startsWith($relativeUrl, '//')) {
+                return 'https:' . $relativeUrl;
+            }
+            return $relativeUrl;
+        }
+
+        $base = parse_url($baseUrl);
+        $path = $base['path'] ?? '';
+
+        if (Str::startsWith($relativeUrl, '/')) {
+            $path = '';
+        } else {
+            $path = dirname($path);
+        }
+
+        $path = rtrim($path, '/');
+
+        return $base['scheme'] . '://' . $base['host'] . $path . '/' . ltrim($relativeUrl, '/');
+    }
 }

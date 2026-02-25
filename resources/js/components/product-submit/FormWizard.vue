@@ -1,395 +1,317 @@
 <template>
-  <div class="h-full flex flex-col flex-1">
-    <!-- Error message display -->
-    <div v-if="showErrorMessage" class="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
-      {{ errorMessage }}
-      <button @click="showErrorMessage = false" class="ml-4 text-white font-bold">&times;</button>
-    </div>
-    
-    <ProductURLInput
-      v-if="step === 1"
-      v-model="form.link"
-      :isLoading="isLoading"
-      :isUrlInvalid="isUrlInvalid"
-      :urlExistsError="urlExistsError"
-      :existingProduct="existingProduct"
-      :submissionBgUrl="submissionBgUrl"
-      @getStarted="getStarted"
-      @clear="clearUrlInput"
-    />
+  <div class="min-h-screen bg-white text-gray-900 font-sans pb-20">
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto w-full px-4 pt-4 mt-4 md:mt-12 md:px-8 md:pt-12">
+      
+      <transition name="fade-slide" mode="out-in">
+        <!-- Landing View -->
+        <div v-if="!showForm" key="landing" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <!-- Left Column: Entry Options -->
+          <div class="lg:col-span-8 space-y-6">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-8">Submit a Project</h1>
+            
+            <!-- URL Input Block -->
+            <ProductURLInput
+              :modelValue="form.link"
+              @update:modelValue="(val) => { console.log('[FormWizard] update:modelValue:', val); form.link = val; }"
+              :isLoading="isLoading"
+              :loadingProgress="loadingProgress"
+              :loadingMessage="loadingMessage"
+              :isUrlInvalid="isUrlInvalid"
+              :urlExistsError="urlExistsError"
+              :existingProduct="existingProduct"
+              @getStarted="handleUrlFetch"
+              @clear="clearForm"
+            />
 
-    <div v-if="step === 2" :class="['w-full px-4 pt-28 mx-auto pb-12', isAdmin ? 'max-w-full' : 'max-w-6xl']">
-      <div class="w-full md:p-6">
-        <div class="flex flex-col md:flex-row gap-8">
-          <!-- Sidebar Navigation -->
-          <div class="w-full md:w-64 shrink-0 transition-all duration-300 ease-in-out md:sticky md:left-0 z-20">
-            <div class="md:sticky md:top-24 bg-gray-100 rounded-lg p-4 md:shadow-sm border border-gray-100">
-              <div class="flex mb-6 items-center border-b pb-4">
-                <img
-                  v-if="logoPreview || form.favicon"
-                  :src="logoPreview || form.favicon"
-                  alt="Logo"
-                  class="h-10 w-10 mr-3 rounded-md shadow-sm object-contain bg-white"
-                >
-                <div class="overflow-hidden">
-                  <h2 class="text-base font-bold text-gray-800 truncate">{{ form.name || 'Product Details' }}</h2>
-                  <p class="text-xs text-blue-600 font-medium bg-blue-50 inline-block px-1.5 py-0.5 rounded mt-1">In progress</p>
-                </div>
+            <!-- Manual Fill Trigger -->
+            <div
+              @click="showForm = true"
+              class="group relative border-2 border-dashed border-gray-200 rounded-3xl h-1/2 flex items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition-all duration-300"
+            >
+              <div class="text-center group-hover:scale-105 transition-transform duration-300">
+                <p class="text-gray-400 font-medium text-sm">Or click here to fill manually</p>
               </div>
-              
-              <ul class="flex flex-row md:flex-col overflow-x-auto md:overflow-visible gap-2 md:gap-1 pb-2 md:pb-0 no-scrollbar">
-                <li v-for="(step, index) in sidebarSteps" :key="index"
-                    @click="currentTab = step.id"
-                    :class="['cursor-pointer rounded-md transition-all duration-200 whitespace-nowrap', 
-                      currentTab === step.id ? 'bg-white shadow-sm' : 'hover:bg-gray-50']">
-                  <a href="#" class="flex items-center px-3 py-2.5 relative group">
-                    <span :class="['flex items-center justify-center rounded-full w-6 h-6 text-xs font-bold mr-3 transition-colors', 
-                      currentTab === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300']">
-                      {{ index + 1 }}
-                    </span>
-                    <span :class="['text-sm font-medium', currentTab === step.id ? 'text-gray-900 font-bold' : 'text-gray-600 group-hover:text-gray-900']">{{ step.name }}</span>
-                    
-                    <!-- Arrow for active state on desktop -->
-                    <div v-if="currentTab === step.id" class="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-r border-transparent"></div>
-                  </a>
-                </li>
-              </ul>
             </div>
           </div>
-          
-          <!-- Main Content Area -->
-          <div :class="['flex-1 min-w-0 bg-gray-50 rounded-lg md:shadow-sm md:border md:border-gray-100 md:p-6', isAdmin ? 'max-w-full' : 'max-w-4xl']">
-            <ProductDetailsForm
-              v-if="currentTab === 'mainInfo'"
-              :modelValue="form"
-              @update:modelValue="Object.assign(form, $event)"
+
+          <!-- Right Column: Sidebar Previews -->
+          <div class="hidden lg:block lg:col-span-4 space-y-8">
+            <ProductPreviewCard 
+              :form="form" 
+              :logoPreview="logoPreview" 
+              :galleryPreviews="galleryPreviews" 
               :allCategories="allCategories"
-              :allBestFor="allBestFor"
-              :allPricing="allPricing"
-              :loadingStates="loadingStates"
-              :extractionErrors="extractionErrors"
-              @next="goToNextStep('imagesAndMedia')"
-              @back="goBack"
             />
-
-            <ProductMediaForm
-              v-if="currentTab === 'imagesAndMedia'"
-              :modelValue="form"
-              @update:modelValue="Object.assign(form, $event)"
-              v-model:logoPreview="logoPreview"
-              v-model:galleryPreviews="galleryPreviews"
-              :loadingStates="loadingStates"
-              @back="currentTab = 'mainInfo'"
-              @next="goToNextStep('launchChecklist')"
-              @extractLogos="extractLogosFromUrl"
-            />
-
-            <LaunchChecklistForm
-              v-if="currentTab === 'launchChecklist'"
-              :modelValue="form"
-              @update:modelValue="Object.assign(form, $event)"
-              :logoPreview="logoPreview"
-              :allTechStacks="allTechStacks"
-              :isAdmin="isAdmin"
-              @back="currentTab = 'imagesAndMedia'"
-              @submit="submitProduct"
+            <FormProgress 
+              :form="form" 
+              :logoPreview="logoPreview" 
+              :galleryPreviews="galleryPreviews"
             />
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <ProductPreviewModal
-    :show="showPreviewModal"
-    :product="form"
-    :allPricing="allPricing"
-    @close="closeModal"
-    @confirm="confirmSubmit"
-  />
-  
+        <!-- Full Form View -->
+        <div v-else key="form" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <!-- Left Main Column (Form Fields) -->
+          <div class="lg:col-span-8 space-y-10">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900 mb-6">Submit a Project</h1>
 
-</template>
+              <!-- Submission Error Message -->
+              <transition name="fade">
+                <div v-if="showErrorMessage" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm text-red-700 font-medium">
+                      {{ errorMessage }}
+                    </p>
+                  </div>
+                  <div class="ml-auto pl-3">
+                    <div class="-mx-1.5 -my-1.5">
+                      <button @click="showErrorMessage = false" type="button" class="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <span class="sr-only">Dismiss</span>
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </transition>
+              
+              <form @submit.prevent="submitProduct" class="space-y-8">
+                <div id="url-section" class="scroll-mt-6">
+                  <ProductURLInput
+                    :modelValue="form.link"
+                    @update:modelValue="(val) => { console.log('[FormWizard] update:modelValue:', val); form.link = val; }"
+                    :isLoading="isLoading"
+                    :loadingProgress="loadingProgress"
+                    :loadingMessage="loadingMessage"
+                    :isUrlInvalid="isUrlInvalid"
+                    :urlExistsError="urlExistsError"
+                    :existingProduct="existingProduct"
+                    @getStarted="handleUrlFetch"
+                    @clear="clearForm"
+                  />
+                </div>
+
+                <div id="details-section" class="scroll-mt-6">
+                  <ProductDetailsForm
+                    :modelValue="form"
+                    @update:modelValue="handleFormDetailUpdate"
+                    :allCategories="allCategories"
+                    :allBestFor="allBestFor"
+                    :allPricing="allPricing"
+                    :loadingStates="loadingStates"
+                    :extractionErrors="extractionErrors"
+                  />
+                </div>
+
+                <!-- Section 3: Media -->
+                <div id="media-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
+                  <h2 class="text-xl font-bold text-gray-800 mb-4">Media</h2>
+                  <ProductMediaForm
+                    :modelValue="form"
+                    @update:modelValue="handleFormDetailUpdate"
+                    :logoPreview="logoPreview"
+                    :galleryPreviews="galleryPreviews"
+                    :loadingStates="loadingStates"
+                    @update:logoPreview="logoPreview = $event"
+                    @update:galleryPreviews="galleryPreviews = $event"
+                    @extractLogos="extractLogos"
+                  />
+                </div>
+
+                <!-- Section 4: Launch Checklist & Submit -->
+                <div id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
+                  <h2 class="text-xl font-bold text-gray-800 mb-4">Additional Info</h2>
+                  <LaunchChecklistForm
+                    :modelValue="form"
+                    @update:modelValue="handleFormDetailUpdate"
+                    :logoPreview="logoPreview"
+                    :allTechStacks="allTechStacks"
+                    :isAdmin="isAdmin"
+                    :isLoading="isLoading"
+                    @submit="submitProduct"
+                  />
+                </div>
+              </form>
+            </div>
+            
+            <!-- Bottom Navigation Buttons -->
+            <div class="flex justify-between items-center pt-8 border-t border-gray-100">
+              
+            </div>
+          </div>
+
+            <!-- Right Sidebar (Preview & Progress) -->
+           <div class="hidden lg:block lg:col-span-4 space-y-8">
+             <div class="sticky top-8 space-y-6">
+               <ProductPreviewCard 
+                 :form="form" 
+                 :logoPreview="logoPreview" 
+                 :galleryPreviews="galleryPreviews" 
+                 :allCategories="allCategories"
+                 :originalFavicon="originalFavicon"
+                 @update:logo="form.logo = $event"
+                 @update:logoPreview="logoPreview = $event"
+                 @update:favicon="form.favicon = $event"
+                 @restore:favicon="() => { form.favicon = originalFavicon; logoPreview.value = null; }"
+               />
+               <FormProgress 
+                 :form="form" 
+                 :logoPreview="logoPreview" 
+                 :galleryPreviews="galleryPreviews"
+               />
+             </div>
+           </div>
+         </div>
+       </transition>
+     </div>
+   </div>
+ </template>
 
 <script setup>
-import { watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useProductForm } from '../../composables/useProductForm';
-import { isTabCompleted } from '../../services/productFormService';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
-import ProductPreviewModal from './ProductPreviewModal.vue';
+import ProductPreviewCard from './ProductPreviewCard.vue';
+import FormProgress from './FormProgress.vue';
+import { useProductForm } from '../../composables/useProductForm';
 
-// Use the product form composable
+const props = defineProps({
+  initialProduct: {
+    type: Object,
+    default: null
+  },
+  // Removed props that are now fetched via useProductForm
+});
+
+const showForm = ref(props.initialProduct ? true : false);
+
 const {
-  errorMessage,
-  showErrorMessage,
-  step,
-  currentTab,
-  isRestored,
-  isMounted,
-  isLoading,
- urlExistsError,
-  existingProduct,
-  showPreviewModal,
+  form,
   loadingStates,
+  extractionErrors,
+  urlExistsError,
+  existingProduct,
   logoPreview,
- galleryPreviews,
+  galleryPreviews,
+  submitProduct,
+  fetchInitialData,
+  checkUrlExists,
+  extractLogos,
   allCategories,
   allBestFor,
   allPricing,
   allTechStacks,
   isAdmin,
-  form,
-  sidebarSteps,
   isUrlInvalid,
-  getStarted,
-  clearUrlInput,
-  goBack,
-  goToNextStep,
-  submitProduct,
- confirmSubmit,
-  closeModal,
-  validateForm,
-  submissionBgUrl,
-  fetchInitialMetadata,
-  fetchRemainingData,
   initializeFormData,
- loadSavedData,
-  saveFormData
-} = useProductForm();
+  isLoading,
+  loadingProgress,
+  loadingMessage,
+  errorMessage,
+  showErrorMessage
+} = useProductForm(props.initialProduct);
 
-// Track if we've loaded initial data to avoid clearing fields when loading existing product
-let initialDataLoaded = false;
-
-// Debounce function
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
- };
-}
-
-// Debounced function form updates
-const debouncedFormUpdate = debounce((newForm) => {
- saveFormData();
-}, 100); // 100ms debounce delay - reduced for more responsive updates
-
-
-// Debounced function for logo preview updates
-const debouncedLogoUpdate = debounce((newLogoPreview) => {
-}, 10); // 100ms debounce delay - reduced for more responsive updates
-
-// Watch for form changes and trigger debounced update
-watch(form, (newForm) => {
- // Clear error message when form is updated, but not if it's a URL exists error
- if (!urlExistsError.value) {
-   showErrorMessage.value = false;
- }
- 
- // Call the debounced function
- debouncedFormUpdate(newForm);
-}, { deep: true });
-
-// Watch for logo preview changes and trigger debounced update
-watch(logoPreview, (newLogoPreview) => {
-  // Clear error message when logo preview changes, but not if it's a URL exists error
-  if (!urlExistsError.value) {
-    showErrorMessage.value = false;
+// Store the original fetched favicon so users can restore it after removing
+const originalFavicon = ref(null);
+watch(() => form.favicon, (newVal) => {
+  if (newVal && !originalFavicon.value) {
+    originalFavicon.value = newVal;
   }
-  
-  // Call the debounced function
-  debouncedLogoUpdate(newLogoPreview);
 });
 
+watch(() => form.link, (newVal) => {
+  // Reset original favicon when URL changes
+  if (!newVal) originalFavicon.value = null;
+  console.log('[FormWizard] form.link changed:', newVal);
+});
 
+// Navigation Steps
+const steps = [
+  { id: 'url-section', name: 'Start' },
+  { id: 'details-section', name: 'Details' },
+  { id: 'media-section', name: 'Media' },
+  { id: 'launch-section', name: 'Launch' },
+];
 
+const activeSection = ref('url-section');
 
-// Set flag when initial data is loaded
-const markInitialDataLoaded = () => {
-  initialDataLoaded = true;
+const scrollToSection = (id) => {
+  const element = document.getElementById(id);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    activeSection.value = id;
+  }
 };
 
-// Watch for when initial data is loaded via the composable
-watch(() => form.id, (newId) => {
- // When a product ID is set, it means we're loading an existing product
- if (newId && !initialDataLoaded) {
-    markInitialDataLoaded();
-  }
-});
+// Intersection Observer for scroll spying
+let observer = null;
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        activeSection.value = entry.target.id;
+      }
+    });
+  }, { threshold: 0.5 });
 
-watch(() => form.link, (newLink, oldLink) => {
-  // If we haven't loaded initial data yet, just mark it as processed
-  if (!initialDataLoaded) {
-    // Check if this looks like initial data loading (oldLink is empty/falsy)
-    if (!oldLink && newLink) {
-      // This appears to be initial data loading, don't clear fields
-      markInitialDataLoaded();
-      return;
-    }
-  }
-  // Only clear fields if component is mounted, initial data has been loaded, and the link actually changed
-  else if (isMounted.value && newLink !== oldLink) {
-    form.name = '';
-    form.tagline = '';
-    form.tagline_detailed = '';
-    form.description = '';
-    // Don't reset favicon as it will be fetched automatically with initial data
-    form.logos = [];
-    logoPreview.value = null;
-    
-     
-    // We do NOT fetch initial data here anymore.
-    // Fetching happens only when the user clicks "Get Started" to prevent UI blocking loops during typing.
-    /*
-    if (newLink) {
-      fetchInitialData();
-    }
-    */
-  }
-});
-
-// Watch for step changes
-watch(() => step.value, (newStep) => {
-  if (newStep === 2) {
-    // Always fetch remaining data when entering step 2 to ensure logos are available
-    fetchRemainingData();
-  }
-  
-  // Emit a custom event when step changes
-  document.dispatchEvent(new CustomEvent('step-changed', {
-    detail: { step: newStep }
-  }));
-});
-
-watch(isRestored, (restored) => {
- if (restored && step.value === 2) {
-    fetchRemainingData();
-  }
-});
-
-// Watch for form changes to trigger UI updates for step completion
-watch(() => [
-  form.name,
-  form.tagline,
-  form.tagline_detailed,
-  form.description,
-  form.categories,
-  form.bestFor,
-  form.pricing,
-  logoPreview,
-  form.logos
-], () => {
-  // This forces the UI to update when form data changes
-  // The isStepCompleted function will be re-evaluated when these values change
-}, { deep: true });
-
-onMounted(async () => {
-  // Initialize form options
-  await initializeFormData();
-  
-  // Load saved data if available
- loadSavedData();
-  
-  nextTick(() => {
-    isRestored.value = true;
-    isMounted.value = true;
-    
-    // Emit initial step change event
-    document.dispatchEvent(new CustomEvent('step-changed', {
-      detail: { step: step }
-    }));
+  steps.forEach((step) => {
+    const el = document.getElementById(step.id);
+    if (el) observer.observe(el);
   });
+  
+  initializeFormData();
 });
 
+onUnmounted(() => {
+  if (observer) observer.disconnect();
+});
+
+// Handle URL Fetch Action (formerly "Get Started")
+const handleUrlFetch = async (url) => {
+  await fetchInitialData(url);
+  showForm.value = true;
+};
+
+const clearForm = () => {
+    form.link = '';
+    // Reset other fields if needed, but keeping it simple for now as per previous logic
+};
+
+const handleFormDetailUpdate = (updatedForm) => {
+  // We must mutate the reactive form object, not replace it
+  Object.assign(form, updatedForm);
+};
 
 
-// Function to extract logos when the button is clicked
-async function extractLogosFromUrl() {
- console.log('extractLogosFromUrl called', {
-    form: form,
-    link: form?.link,
-    name: form?.name,
-    linkType: typeof form?.link,
-    linkTruthy: !!form?.link
- });
-  
-  try {
-    // Immediately set the loading state for logos to show the loader immediately
-    loadingStates.logos = true;
-    console.log('Loading state set to true');
-    
-    // Use the reactive form from the composable - access the values directly
-    console.log('Full form object:', JSON.stringify(form, null, 2));
-    
-    // Check if we have a link - if not, show an appropriate message
-    // Using the actual form data from the composable which should be reactive
-    const linkValue = form?.link;
-    console.log('Link value being checked:', linkValue, 'Type:', typeof linkValue, 'Truthy:', !!linkValue);
-    
-    if (!linkValue || linkValue.trim() === '') {
-      console.log('No link available, prompting user to enter a product URL first');
-      // Show an error message to the user
-      showErrorMessage.value = true;
-      errorMessage.value = 'Please enter a product URL first before extracting logos.';
-      return;
-    }
-    
-    // If we have a link but no name, fetch the initial data first
-    if (linkValue && !form.name) {
-      console.log('Link exists but name is missing, fetching initial data first', { link: linkValue });
-      await fetchInitialData();
-      // Wait a bit to ensure initial data is fetched before remaining data
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    // Now that we have both link and name (or have attempted to fetch them), proceed with logo extraction
-    if (linkValue && form.name) {
-      console.log('Calling fetchRemainingData with link and name', { link: linkValue, name: form.name });
-      await fetchRemainingData(true); // Pass true to indicate explicit logo extraction
-    } else {
-      console.log('Cannot extract logos - missing required data after attempting to fetch initial data', {
-        link: linkValue,
-        name: form?.name
-      });
-      showErrorMessage.value = true;
-      errorMessage.value = 'Unable to extract logos. Please make sure the product URL is valid and try again.';
-    }
- } catch (error) {
-    console.error('Error during logo extraction:', error);
-    // Make sure to reset the loading state even if there's an error
-    loadingStates.logos = false;
-    // Show error message to user
-    showErrorMessage.value = true;
-    errorMessage.value = 'Error extracting logos: ' + (error.message || 'Unknown error occurred');
- } finally {
-    console.log('Resetting loading state to false in finally block');
-    // Ensure loading state is reset in all cases
-    loadingStates.logos = false;
- }
-}
+// Calculate Overall Progress (Simplified for demo)
+const overallProgress = computed(() => {
+  let filled = 0;
+  let total = 0;
 
-// Function to check if a step is completed based on required fields
-const isStepCompleted = (stepId) => {
-  // Find the step in sidebarSteps
-  const step = sidebarSteps.find(s => s.id === stepId);
-  if (!step) return false;
+  // Basic required fields check (simplified)
+  if (form.link) filled++; total++;
+  if (form.name) filled++; total++;
+  if (form.tagline) filled++; total++;
+  if (form.description) filled++; total++;
+  if (form.logo || logoPreview.value) filled++; total++;
   
-  // Use the service function to check if the tab is completed
-  const completed = isTabCompleted(step, form, logoPreview.value);
-  
-  // For launch checklist, we'll consider it completed when the form is submitted
-  // For now, this tab will only show a checkmark when the form is actually submitted
- if (stepId === 'launchChecklist') {
-    return false; // This tab should not show a checkmark until form is submitted
-  }
-  
-  return completed;
-}
+  return (filled / total) * 100;
+});
+
 </script>
+
+<style scoped>
+/* Add any specific overrides here if needed */
+
+</style>

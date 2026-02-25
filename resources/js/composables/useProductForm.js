@@ -228,10 +228,33 @@ export function useProductForm() {
         formData.append(`categories[${index}]`, categoryId);
       });
 
+      // Add custom categories if any
+      if (form.categories_custom && form.categories_custom.length > 0) {
+        form.categories_custom.forEach((customCat, index) => {
+          formData.append(`custom_categories[${index}][name]`, customCat.name);
+          formData.append(`custom_categories[${index}][type]`, 'category');
+        });
+      }
+
+      // Add custom bestFor if any
+      if (form.bestFor_custom && form.bestFor_custom.length > 0) {
+        form.bestFor_custom.forEach((customTag, index) => {
+          formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][name]`, customTag.name);
+          formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][type]`, 'best_for');
+        });
+      }
+
       // Add tech stacks
       if (form.tech_stack && form.tech_stack.length > 0) {
         form.tech_stack.forEach((techStackId, index) => {
           formData.append(`tech_stacks[${index}]`, techStackId);
+        });
+      }
+
+      // Add custom tech stacks if any
+      if (form.tech_stack_custom && form.tech_stack_custom.length > 0) {
+        form.tech_stack_custom.forEach((customTech, index) => {
+          formData.append(`custom_tech_stacks[${index}][name]`, customTech.name);
         });
       }
 
@@ -247,10 +270,14 @@ export function useProductForm() {
       }
 
       // Add gallery images if available
-      if (form.gallery && form.gallery.length > 0) {
-        form.gallery.forEach((galleryImage, index) => {
-          if (galleryImage) {
-            formData.append(`media[${index}]`, galleryImage);
+      if (globalFormState.galleryPreviews.value && globalFormState.galleryPreviews.value.length > 0) {
+        globalFormState.galleryPreviews.value.forEach((preview, index) => {
+          const galleryFile = form.gallery[index];
+          if (galleryFile instanceof File) {
+            formData.append(`media[${index}]`, galleryFile);
+          } else if (typeof preview === 'string' && preview && preview.startsWith('http')) {
+            // If it's a URL (like an automated screenshot), send it as media_url
+            formData.append(`media_urls[${index}]`, preview);
           }
         });
       }
@@ -289,6 +316,11 @@ export function useProductForm() {
             formData.append('maker_links[]', link);
           }
         });
+      }
+
+      // Add submission type ('free' or 'badge')
+      if (form.submission_type) {
+        formData.append('submission_type', form.submission_type);
       }
 
       // Determine submission URL
@@ -423,17 +455,19 @@ export function useProductForm() {
       return false;
     }
 
-    // Validate categories: minimum 1
+    // Validate categories: minimum 1 (either existing or custom)
     const validCategories = (form.categories || []).filter(id => id !== null && id !== undefined && id !== '');
-    if (validCategories.length === 0) {
+    const customCategories = (form.categories_custom || []).filter(cat => cat && cat.name && cat.name.trim() !== '');
+    if (validCategories.length === 0 && customCategories.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one category is required.';
       return false;
     }
 
-    // Validate bestFor: minimum 1
+    // Validate bestFor: minimum 1 (either existing or custom)
     const validBestFor = (form.bestFor || []).filter(id => id !== null && id !== undefined && id !== '');
-    if (validBestFor.length === 0) {
+    const customBestFor = (form.bestFor_custom || []).filter(tag => tag && tag.name && tag.name.trim() !== '');
+    if (validBestFor.length === 0 && customBestFor.length === 0) {
       showErrorMessage.value = true;
       errorMessage.value = 'At least one "best for" option is required.';
       return false;
@@ -458,8 +492,8 @@ export function useProductForm() {
     return true;
   };
 
-  const fetchInitialData = async () => {
-    const linkValue = form.link;
+  const fetchInitialData = async (urlOverride) => {
+    const linkValue = urlOverride || form.link;
     console.log('fetchInitialData called with link:', linkValue);
 
     if (!linkValue || linkValue.trim() === '') {
@@ -470,54 +504,99 @@ export function useProductForm() {
     loadingStates.name = true;
     extractionErrors.name = '';
     globalFormState.isLoading.value = true;
+    globalFormState.loadingProgress.value = 5;
+    globalFormState.loadingMessage.value = 'Initializing request...';
 
     try {
+      globalFormState.loadingMessage.value = 'Fetching basic metadata and taking screenshot...';
       const response = await axios.post('/api/fetch-initial-metadata', { url: linkValue });
+      globalFormState.loadingProgress.value = 30;
       const data = response.data;
 
       console.log('fetchInitialData response:', data);
 
-      form.name = data.name;
-      form.tagline = data.tagline_detailed || data.tagline;
-      form.tagline_detailed = data.tagline || data.tagline_detailed;
-      form.favicon = data.favicon;
+      if (data.name) form.name = data.name;
+      if (data.tagline) form.tagline = data.tagline;
+      if (data.tagline_detailed) form.tagline_detailed = data.tagline_detailed;
+      if (data.favicon) form.favicon = data.favicon;
 
-      // Auto-set favicon as logo if available
-      if (data.favicon) {
+      // Auto-set screenshot as first gallery item if available
+      if (data.screenshot_url) {
+        globalFormState.galleryPreviews.value[0] = data.screenshot_url;
+      }
+
+      console.log('Form state after fetchInitialData:', {
+        name: form.name,
+        tagline: form.tagline,
+        favicon: form.favicon
+      });
+
+      // Prioritize the best logo found by our extractor over the favicon
+      if (data.logos && data.logos.length > 0) {
+        globalFormState.logoPreview.value = data.logos[0];
+      } else if (data.favicon) {
         globalFormState.logoPreview.value = data.favicon;
       }
 
       loadingStates.name = false;
+
+      // Ensure form.link is set
+      if (!form.link && linkValue) {
+        form.link = linkValue;
+      }
+
+      // Trigger fetching of remaining data (description, categories, etc.)
+      // We don't await this to keep the UI responsive, or we could await it if we want the button to spin until everything is done.
+      // Based on user feedback "stuck in loop", they likely want to see progress.
+      // Let's await it so the button state reflects total activity.
+      await fetchRemainingData(false, linkValue);
+
     } catch (error) {
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
       extractionErrors.name = 'Failed to extract name and taglines.';
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
+    } finally {
       globalFormState.isLoading.value = false;
     }
   };
 
-  const fetchRemainingData = async (explicitLogoExtraction = false) => {
+  const fetchRemainingData = async (explicitLogoExtraction = false, urlOverride = null) => {
     console.log('fetchRemainingData called', {
       explicitLogoExtraction,
+      urlOverride,
       link: form.link,
       linkType: typeof form.link,
       linkTruthy: !!form.link,
       name: form.name
     });
 
-    const shouldFetchContent = !form.tagline && !form.tagline_detailed && !form.description;
+    // We should fetch content if description is missing, OR if we don't have a detailed tagline.
+    // The previous logic (!tagline && !detailed && !description) was too strict because initial data provides a tagline.
+    const shouldFetchContent = !form.description || !form.tagline_detailed;
+
+    // Always fetch categories if they are empty
     const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
+
+    // Use urlOverride if available, otherwise fall back to form.link
+    const linkValue = urlOverride || form.link;
 
     // Always fetch logos if we have a link and name, regardless of other content
     // If explicitLogoExtraction is true, always attempt to fetch logos even if they exist
-    const shouldFetchLogos = form.link && (explicitLogoExtraction || (!form.logos || form.logos.length === 0));
+    const shouldFetchLogos = linkValue && (explicitLogoExtraction || (!form.logos || form.logos.length === 0));
 
     console.log('Should fetch checks:', { shouldFetchContent, shouldFetchCategoriesAndBestFor, shouldFetchLogos });
 
+    // START DEBUG
+    console.log('Form state before fetchRemainingData:', {
+      tagline: form.tagline,
+      tagline_detailed: form.tagline_detailed,
+      description: form.description
+    });
+    // END DEBUG
+
     // Only proceed if we have a valid link (name is not strictly required for explicit logo extraction)
-    const linkValue = form.link;
     if (!linkValue || linkValue.trim() === '') {
       console.log('No link provided or link is empty, returning early');
       Object.keys(loadingStates).forEach(k => loadingStates[k] = false);
@@ -545,52 +624,133 @@ export function useProductForm() {
     }
 
     try {
-      const linkValue = form.link;
       const nameValue = form.name || '';
       const taglineValue = form.tagline || '';
 
-      console.log('Making API call to /api/process-url with:', {
+      console.log('Making API call to /api/process-url-stream with:', {
         url: linkValue,
         name: nameValue,
         tagline: taglineValue,
-        fetch_content: shouldFetchContent
-      });
-
-      // Make the API call with a timeout
-      const response = await axios.post('/api/process-url', {
-        url: linkValue,
-        name: nameValue, // Pass empty string if name is not available
-        tagline: taglineValue, // Pass empty string if tagline is not available
         fetch_content: shouldFetchContent,
-      }, {
-        timeout: 30000 // 30 second timeout
       });
-      console.log('API response received:', response.data);
 
-      const data = response.data;
+      globalFormState.loadingMessage.value = 'Connecting for detailed analysis...';
 
-      if (shouldFetchContent) {
-        // Only update if the field is currently empty to avoid overwriting user input or existing data
-        if (!form.tagline || form.tagline.trim() === '') {
-          form.tagline = data.tagline_detailed || data.tagline || form.tagline;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+      const response = await fetch('/api/process-url-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, application/x-ndjson',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+        },
+        body: JSON.stringify({
+          url: linkValue,
+          name: nameValue,
+          tagline: taglineValue,
+          fetch_content: shouldFetchContent,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let data = {};
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep the last incomplete line
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const streamData = JSON.parse(line);
+              if (streamData.message) {
+                globalFormState.loadingMessage.value = streamData.message;
+              }
+              if (streamData.progress) {
+                // Map 0-100 from stream to 30-100 overall
+                globalFormState.loadingProgress.value = 30 + (streamData.progress * 0.7);
+              }
+              if (streamData.data) {
+                // We got the final payload
+                data = streamData.data;
+              }
+            } catch (e) {
+              console.error('Error parsing stream chunk', e, line);
+            }
+          }
         }
-        if (!form.tagline_detailed || form.tagline_detailed.trim() === '') {
-          form.tagline_detailed = data.tagline || data.tagline_detailed || form.tagline_detailed;
+      }
+
+      console.log('fetchRemainingData: Stream finished. Extracted data object:', data);
+      console.log('fetchRemainingData: Extracted data object:', data);
+
+      // Update form data sequentially to give visual feedback
+      // 1. Content (Description & Detailed Tagline)
+      if (shouldFetchContent) {
+        console.log('fetchRemainingData: Updating content fields...');
+
+        // Trust the backend's tagline values directly — the backend now uses AI
+        // (TaglineRewriterService) to generate properly-sized taglines.
+        if (data.tagline && data.tagline.trim() !== '') {
+          const tagline = data.tagline.length > 60 ? data.tagline.substring(0, 57) + '...' : data.tagline;
+          // Only override if current tagline is empty, too long, or is the product name
+          if (!form.tagline || form.tagline.length > 60 || form.tagline === form.name) {
+            console.log('fetchRemainingData: Setting tagline to:', tagline);
+            form.tagline = tagline;
+          }
+        }
+
+        if (data.tagline_detailed && data.tagline_detailed.trim() !== '') {
+          const detailed = data.tagline_detailed.length > 160 ? data.tagline_detailed.substring(0, 157) + '...' : data.tagline_detailed;
+          if (!form.tagline_detailed || form.tagline_detailed === form.tagline) {
+            console.log('fetchRemainingData: Setting tagline_detailed to:', detailed);
+            form.tagline_detailed = detailed;
+          }
         }
         if (!form.description || form.description.trim() === '' || form.description === '<p></p>') {
+          console.log('fetchRemainingData: Setting description to:', data.description);
           form.description = data.description || form.description;
         }
+        loadingStates.description = false; // Turn off immediately for visual progress
+        await new Promise(r => setTimeout(r, 300)); // Small delay for visual effect
       }
-      // Always update logos if we received them, regardless of whether we explicitly requested them
-      if (data.logos && Array.isArray(data.logos)) {
-        console.log('Updating logos with data:', data.logos);
-        form.logos = data.logos;
-      }
+
+      // 2. Categories
       if (shouldFetchCategoriesAndBestFor) {
-        form.categories = data.categories || [];
-        form.bestFor = data.bestFor || [];
+        console.log('fetchRemainingData: Updating categories/bestFor/pricing...', {
+          categories: data.categories,
+          bestFor: data.bestFor,
+          pricing: data.pricing
+        });
         form.pricing = data.pricing || [];
       }
+
+      // 3. Update screenshot if available (refresh with viewport-specific version)
+      if (data.screenshot_url) {
+        globalFormState.galleryPreviews.value[0] = data.screenshot_url;
+      }
+
+      // 4. Update logos if available
+      if (data.logos && data.logos.length > 0) {
+        form.logos = data.logos;
+        // If we don't have a logo preview yet, or it's just the favicon, set it to the best logo
+        if (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon) {
+          globalFormState.logoPreview.value = data.logos[0];
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching remaining data:', error);
       // Check if it's a timeout error
@@ -646,6 +806,11 @@ export function useProductForm() {
         console.log('Resetting general isLoading to false');
       }
     }
+  };
+
+  const extractLogos = async () => {
+    console.log('extractLogos called');
+    await fetchRemainingData(true);
   };
 
   const updateForm = async (field, value) => {
@@ -1410,6 +1575,8 @@ export function useProductForm() {
     showPreviewModal: globalFormState.showPreviewModal,
     submissionBgUrl: globalFormState.submissionBgUrl,
     extractionErrors: globalFormState.extractionErrors,
+    loadingProgress: globalFormState.loadingProgress,
+    loadingMessage: globalFormState.loadingMessage,
     loadingStates,
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,
@@ -1434,6 +1601,7 @@ export function useProductForm() {
     validateForm,
     fetchInitialData,
     fetchRemainingData,
+    extractLogos,
     updateForm,
     updateFormMultiple,
     resetForm,

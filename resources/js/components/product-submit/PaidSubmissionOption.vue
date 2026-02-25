@@ -90,6 +90,10 @@ const props = defineProps({
   isEditMode: {
     type: Boolean,
     default: false
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
   }
 });
 

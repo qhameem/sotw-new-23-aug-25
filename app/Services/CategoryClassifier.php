@@ -32,16 +32,16 @@ class CategoryClassifier
             $response = Http::withHeaders([
                 'X-goog-api-key' => $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent", [
-                'contents' => [['parts' => [['text' => $prompt]]]]
-            ]);
+            ])->timeout(60)->post("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent", [
+                        'contents' => [['parts' => [['text' => $prompt]]]]
+                    ]);
 
             if ($response->failed()) {
                 return ['categories' => [], 'best_for' => [], 'pricing' => []];
             }
 
             $responseText = $response->json('candidates.0.content.parts.0.text', '');
-            
+
             // Clean the response text
             $cleanedText = str_replace(['```json', '```'], '', $responseText);
             $jsonResponse = json_decode(trim($cleanedText), true);

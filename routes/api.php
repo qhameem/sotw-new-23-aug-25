@@ -58,9 +58,30 @@ Route::post('/fetch-product-data', [ProductController::class, 'fetchProductData'
 Route::post('/fetch-metadata', [\App\Http\Controllers\ProductController::class, 'fetchMetadata']);
 Route::post('/fetch-initial-metadata', [\App\Http\Controllers\ProductController::class, 'fetchInitialMetadata']);
 Route::post('/process-url', [\App\Http\Controllers\ProductController::class, 'processUrl']);
+Route::post('/process-url-stream', [\App\Http\Controllers\ProductController::class, 'processUrlStream']);
 Route::post('/check-product-url', [ProductController::class, 'checkUrl']);
 Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate']);
 Route::get('/categories', [ProductController::class, 'getCategories']);
 Route::get('/tech-stacks', [ProductController::class, 'getTechStacks']);
 Route::post('/generate-ai-content', [ProductController::class, 'generateAiContent']);
 Route::post('/detect-categories', [ProductController::class, 'detectCategories']);
+
+// Badge snippet API
+Route::get('/badge-snippet/{product}', function (\App\Models\Product $product) {
+    $settings = [];
+    if (\Illuminate\Support\Facades\Storage::disk('local')->exists('settings.json')) {
+        $settings = json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get('settings.json'), true);
+    }
+    $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
+    $productUrl = url('/product/' . $product->slug);
+
+    $snippet = '<a href="' . $productUrl . '" rel="dofollow">' . "\n"
+        . '  <img src="' . $badgeImageUrl . '" alt="Featured on Software on the Web" width="200">' . "\n"
+        . '</a>';
+
+    return response()->json([
+        'snippet' => $snippet,
+        'product_url' => $productUrl,
+        'badge_image_url' => $badgeImageUrl,
+    ]);
+});

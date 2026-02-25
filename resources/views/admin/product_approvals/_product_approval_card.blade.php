@@ -126,6 +126,36 @@
                     @endforeach
                 </div>
             @endif
+            
+            {{-- Custom Category Submissions --}}
+            @php
+                $customSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
+            @endphp
+            
+            @if($customSubmissions->count() > 0)
+                <div class="mt-4">
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Custom Categories</h4>
+                    <div class="space-y-3">
+                        @foreach($customSubmissions as $submission)
+                            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                <span class="bg-purple-100 text-purple-800 px-2 py-1 text-xs rounded-sm flex-1">
+                                    {{ $submission->name }} ({{ ucfirst(str_replace('_', ' ', $submission->type)) }})
+                                </span>
+                                <select name="custom_category_{{ $submission->id }}" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                    <option value="">Select action...</option>
+                                    <option value="approve">Approve</option>
+                                    <option value="reject">Reject</option>
+                                </select>
+                                <div class="hidden approval-fields" id="approval-fields-{{ $submission->id }}">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_slug" placeholder="Slug" class="text-xs border border-gray-300 rounded px-2 py-1 w-24 mr-1">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_description" placeholder="Description" class="text-xs border border-gray-300 rounded px-2 py-1 w-32 mr-1">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_meta_description" placeholder="Meta Desc" class="text-xs border border-gray-300 rounded px-2 py-1 w-32">
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -167,6 +197,25 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+   // Add event listeners for custom category approval selections
+   const approvalSelects = document.querySelectorAll('select[name^="custom_category_"]');
+   approvalSelects.forEach(select => {
+       select.addEventListener('change', function() {
+           const submissionId = this.name.replace('custom_category_', '');
+           const approvalFields = document.getElementById(`approval-fields-${submissionId}`);
+           
+           if (this.value === 'approve') {
+               approvalFields.classList.remove('hidden');
+           } else {
+               approvalFields.classList.add('hidden');
+           }
+       });
+   });
+});
+</script>
 
 @push('scripts')
     <script>

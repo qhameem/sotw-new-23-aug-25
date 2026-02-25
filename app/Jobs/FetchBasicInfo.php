@@ -10,6 +10,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Client;
 use App\Services\NameExtractorService;
+use App\Services\DescriptionRewriterService;
+use App\Services\ScreenshotService;
 
 class FetchBasicInfo implements ShouldQueue
 {
@@ -34,23 +36,56 @@ class FetchBasicInfo implements ShouldQueue
      */
     public function handle()
     {
-        $client = new Client(['timeout' => 5]);
+        $client = new Client([
+            'timeout' => 10,
+            'headers' => [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ]
+        ]);
         $res = $client->get($this->url);
         $html = (string) $res->getBody();
         $doc = new \DOMDocument();
         @$doc->loadHTML($html);
 
         $title = $doc->getElementsByTagName('title')->item(0)?->textContent ?? '';
-        $description = '';
+        $rawDescription = '';
         foreach ($doc->getElementsByTagName('meta') as $meta) {
             if (strtolower($meta->getAttribute('name')) === 'description') {
-                $description = $meta->getAttribute('content');
+                $rawDescription = $meta->getAttribute('content');
                 break;
             }
         }
 
         $nameExtractor = new NameExtractorService();
         $productName = $nameExtractor->extract($title, $this->url);
+
+        // Gather page text for additional context (cleaned of noise)
+        $cleanDoc = clone $doc;
+        $xpath = new \DOMXPath($cleanDoc);
+        $noise = $xpath->query('//nav | //header | //footer | //script | //style | //noscript | //aside');
+        foreach ($noise as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        $textContent = "Title: {$title}\nDescription: {$rawDescription}\n";
+        foreach (['h1', 'h2', 'h3'] as $tag) {
+            foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
+                $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
+            }
+        }
+        $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+
+        // Rewrite description with Groq AI (falls back to raw if API fails)
+        $rewriter = new DescriptionRewriterService();
+        $structuredDescription = $rewriter->rewrite($productName, $rawDescription, $textContent)
+            ?? $rawDescription;
+
+        // Generate AI taglines with Groq (falls back to raw description if API fails)
+        $taglineRewriter = new \App\Services\TaglineRewriterService();
+        $aiTaglines = $taglineRewriter->rewrite($productName, $rawDescription, $textContent);
+
+        $tagline = $aiTaglines['tagline'] ?? $rawDescription;
+        $detailedTagline = $aiTaglines['product_page_tagline'] ?? $rawDescription;
 
         $cacheKey = 'product_meta_' . md5($this->url);
         $ogImage = null;
@@ -63,21 +98,12 @@ class FetchBasicInfo implements ShouldQueue
 
         Cache::put($cacheKey, [
             'title' => $productName,
-            'description' => $description,
-            'tagline' => $description,
-            'product_page_tagline' => $description,
+            'description' => $structuredDescription,
+            'tagline' => $tagline,
+            'product_page_tagline' => $detailedTagline,
             'og_image' => $ogImage,
             'status' => 'processing_categories',
         ], now()->addHours(24));
-
-        $textContent = $title . ' ' . $description;
-        foreach ($doc->getElementsByTagName('h1') as $h1) {
-            $textContent .= ' ' . $h1->textContent;
-        }
-        foreach ($doc->getElementsByTagName('h2') as $h2) {
-            $textContent .= ' ' . $h2->textContent;
-        }
-        $textContent .= ' ' . $doc->getElementsByTagName('body')->item(0)?->textContent ?? '';
 
         FetchCategories::dispatch($this->url, $textContent);
     }

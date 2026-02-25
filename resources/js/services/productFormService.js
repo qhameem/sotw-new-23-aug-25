@@ -15,9 +15,12 @@ const initialFormState = {
   tagline_detailed: '',
   description: '',
   categories: [],
+  categories_custom: [],
   bestFor: [],
+  bestFor_custom: [],
   pricing: [],
   tech_stack: [],
+  tech_stack_custom: [],
   favicon: '',
   logo: null,
   gallery: Array(3).fill(null),
@@ -55,6 +58,8 @@ export const createProductFormState = () => {
     isRestored: ref(false),
     isMounted: ref(false),
     isLoading: ref(false),
+    loadingProgress: ref(0),
+    loadingMessage: ref(''),
     urlExistsError: ref(false),
     existingProduct: ref(null),
     showPreviewModal: ref(false),
@@ -144,8 +149,8 @@ export const productFormService = {
           form.tagline &&
           form.tagline_detailed &&
           form.description &&
-          form.categories && form.categories.length > 0 &&
-          form.bestFor && form.bestFor.length > 0 &&
+          (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+          (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0
         );
         break;
@@ -161,8 +166,8 @@ export const productFormService = {
           form.tagline &&
           form.tagline_detailed &&
           form.description &&
-          form.categories && form.categories.length > 0 &&
-          form.bestFor && form.bestFor.length > 0 &&
+          (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+          (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0 &&
           (logoPreview || (form.logos && form.logos.length > 0))
         );
@@ -261,8 +266,8 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.tagline &&
         form.tagline_detailed &&
         form.description &&
-        form.categories && form.categories.length > 0 &&
-        form.bestFor && form.bestFor.length > 0 &&
+        (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+        (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0
       );
       break;
@@ -278,8 +283,8 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.tagline &&
         form.tagline_detailed &&
         form.description &&
-        form.categories && form.categories.length > 0 &&
-        form.bestFor && form.bestFor.length > 0 &&
+        (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+        (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0 &&
         (logoPreview || (form.logos && form.logos.length > 0))
       );
@@ -305,8 +310,8 @@ export const getTabProgress = (stepId, form, logoPreview) => {
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
-      if (form.categories && form.categories.length > 0) completed++;
-      if (form.bestFor && form.bestFor.length > 0) completed++;
+      if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
+      if (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       break;
     case 'imagesAndMedia':
@@ -320,8 +325,8 @@ export const getTabProgress = (stepId, form, logoPreview) => {
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
-      if (form.categories && form.categories.length > 0) completed++;
-      if (form.bestFor && form.bestFor.length > 0) completed++;
+      if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
+      if (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       if (logoPreview || (form.logos && form.logos.length > 0)) completed++;
       break;

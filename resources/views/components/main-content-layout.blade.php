@@ -68,5 +68,7 @@
     <!-- Footer Container (Outside Body) -->
     <div class="flex-shrink-0 relative bg-white w-full z-20">
         <x-footer />
+        <!-- Mobile navigation -->
+        @include('partials._mobile-footer-menu')
     </div>
 </div>

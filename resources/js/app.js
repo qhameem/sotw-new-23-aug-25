@@ -129,6 +129,32 @@ if (document.getElementById('user-dropdown-app')) {
     });
 }
 
+// Mount mobile notification bell
+if (document.getElementById('mobile-notification-bell-app')) {
+    import('./components/NotificationBell.vue').then((NotificationBell) => {
+        import('vue').then(({ createApp }) => {
+            const mobileNotificationApp = createApp({});
+            mobileNotificationApp.component('notification-bell', NotificationBell.default);
+            mobileNotificationApp.mount('#mobile-notification-bell-app');
+        });
+    });
+}
+
+// Mount mobile user dropdown
+if (document.getElementById('mobile-user-dropdown-app')) {
+    const el = document.getElementById('mobile-user-dropdown-app');
+    import('./components/UserDropdown.vue').then((UserDropdown) => {
+        import('vue').then(({ createApp }) => {
+            const mobileUserDropdownApp = createApp(UserDropdown.default, {
+                user: JSON.parse(el.dataset.user),
+                isAdmin: el.dataset.isAdmin === 'true',
+            });
+            mobileUserDropdownApp.mount('#mobile-user-dropdown-app');
+        });
+    });
+}
+
+
 // Register the TodoList component globally
 if (document.getElementById('todo-app-container')) {
     import('./components/TodoList.vue').then((TodoList) => {
