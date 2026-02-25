@@ -44,8 +44,9 @@ class ScreenshotService
                 ->setNodeBinary($this->nodePath)
                 ->setNpmBinary($this->npmPath)
                 ->windowSize(1280, 800)
+                ->timeout(60) // Increase Puppeteer navigation timeout to 60s
                 ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox'])
-                ->waitUntilNetworkIdle() // Wait for most things to load
+                ->setOption('waitUntil', 'networkidle2') // Use networkidle2 instead of networkidle0 for modern sites
                 ->setDelay(3000) // Extra buffer for dynamic logic/animations
                 ->setScreenshotType('jpeg', 85)
                 ->save($savePath);
