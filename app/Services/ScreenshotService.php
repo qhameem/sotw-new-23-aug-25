@@ -11,15 +11,22 @@ class ScreenshotService
 {
     /**
      * The path to the node binary.
-     * Calculated from 'which node' on the user's system.
+     * Calculated from 'which node' on the user's system or .env.
      */
-    protected string $nodePath = '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/node';
+    protected string $nodePath;
 
     /**
      * The path to the npm binary.
-     * Calculated from 'which npm' on the user's system.
+     * Calculated from 'which npm' on the user's system or .env.
      */
-    protected string $npmPath = '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/npm';
+    protected string $npmPath;
+
+    public function __construct()
+    {
+        // Use env variables, fallback to local Herd path for development, or generic 'node'/'npm' for default server environments
+        $this->nodePath = env('NODE_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/node');
+        $this->npmPath = env('NPM_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/npm');
+    }
 
     /**
      * Capture a screenshot of the given URL.
