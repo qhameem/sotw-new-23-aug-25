@@ -21,11 +21,18 @@ class ScreenshotService
      */
     protected string $npmPath;
 
+    /**
+     * The path to the custom Chrome/Chromium binary.
+     * Use this in production to bypass Puppeteer's internal broken caches.
+     */
+    protected ?string $chromePath;
+
     public function __construct()
     {
         // Use env variables, fallback to local Herd path for development, or generic 'node'/'npm' for default server environments
         $this->nodePath = env('NODE_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/node');
         $this->npmPath = env('NPM_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/npm');
+        $this->chromePath = env('CHROME_BINARY_PATH', null);
     }
 
     /**
@@ -47,16 +54,22 @@ class ScreenshotService
 
             $savePath = $disk->path('screenshots/' . $filename);
 
-            Browsershot::url($url)
+            $browser = Browsershot::url($url)
                 ->setNodeBinary($this->nodePath)
                 ->setNpmBinary($this->npmPath)
                 ->windowSize(1280, 800)
                 ->timeout(60) // Increase Puppeteer navigation timeout to 60s
-                ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox'])
+                ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                 ->setOption('waitUntil', 'networkidle2') // Use networkidle2 instead of networkidle0 for modern sites
                 ->setDelay(3000) // Extra buffer for dynamic logic/animations
-                ->setScreenshotType('jpeg', 85)
-                ->save($savePath);
+                ->setScreenshotType('jpeg', 85);
+
+            // Directly inject the system path to Chrome on production, bypassing Puppeteer
+            if ($this->chromePath) {
+                $browser->setChromePath($this->chromePath);
+            }
+
+            $browser->save($savePath);
 
             return asset('storage/screenshots/' . $filename);
         } catch (\Exception $e) {
