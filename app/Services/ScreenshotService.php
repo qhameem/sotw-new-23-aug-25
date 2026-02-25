@@ -54,14 +54,6 @@ class ScreenshotService
 
             $savePath = $disk->path('screenshots/' . $filename);
 
-            // On production, the www user may not have $HOME set, causing
-            // the google-chrome wrapper script to fail with 'mkdir /.local: Permission denied'.
-            // We temporarily set HOME=/tmp so Chrome can write its config files.
-            $originalHome = getenv('HOME');
-            if (empty($originalHome)) {
-                putenv('HOME=/tmp');
-            }
-
             $browser = Browsershot::url($url)
                 ->setNodeBinary($this->nodePath)
                 ->setNpmBinary($this->npmPath)
@@ -83,12 +75,13 @@ class ScreenshotService
                 $browser->setChromePath($this->chromePath);
             }
 
-            $browser->save($savePath);
-
-            // Restore original HOME if we changed it
-            if (empty($originalHome)) {
-                putenv('HOME');
+            // On production PHP-FPM, HOME may not be set, causing Chrome to fail
+            // with 'mkdir /.local: Permission denied'. Only override when HOME is empty.
+            if (empty(getenv('HOME'))) {
+                $browser->setNodeEnv(['HOME' => '/tmp']);
             }
+
+            $browser->save($savePath);
 
             return asset('storage/screenshots/' . $filename);
         } catch (\Exception $e) {
