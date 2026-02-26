@@ -2,41 +2,14 @@
 
 namespace App\Services;
 
-use Spatie\Browsershot\Browsershot;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
 class ScreenshotService
 {
     /**
-     * The path to the node binary.
-     * Calculated from 'which node' on the user's system or .env.
-     */
-    protected string $nodePath;
-
-    /**
-     * The path to the npm binary.
-     * Calculated from 'which npm' on the user's system or .env.
-     */
-    protected string $npmPath;
-
-    /**
-     * The path to the custom Chrome/Chromium binary.
-     * Use this in production to bypass Puppeteer's internal broken caches.
-     */
-    protected ?string $chromePath;
-
-    public function __construct()
-    {
-        // Use env variables, fallback to local Herd path for development, or generic 'node'/'npm' for default server environments
-        $this->nodePath = env('NODE_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/node');
-        $this->npmPath = env('NPM_BINARY_PATH', '/Users/quazihameemmahmud/Library/Application Support/Herd/config/nvm/versions/node/v22.21.1/bin/npm');
-        $this->chromePath = env('CHROME_BINARY_PATH', null);
-    }
-
-    /**
-     * Capture a screenshot of the given URL.
+     * Capture a screenshot of the given URL using the thum.io free API.
      *
      * @param string $url
      * @return string|null The public URL of the screenshot, or null on failure.
@@ -52,40 +25,25 @@ class ScreenshotService
                 $disk->makeDirectory('screenshots');
             }
 
-            $savePath = $disk->path('screenshots/' . $filename);
+            // Use thum.io to generate a screenshot (free, no API key required)
+            $thumUrl = 'https://image.thum.io/get/width/1280/crop/800/noanimate/' . $url;
 
-            $browser = Browsershot::url($url)
-                ->setNodeBinary($this->nodePath)
-                ->setNpmBinary($this->npmPath)
-                ->windowSize(1280, 800)
-                ->timeout(60) // Increase Puppeteer navigation timeout to 60s
-                ->setOption('args', [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--user-data-dir=/tmp/chrome-browsershot',
-                    '--homedir=/tmp',
-                ])
-                ->setOption('waitUntil', 'networkidle2') // Use networkidle2 instead of networkidle0 for modern sites
-                ->setDelay(3000) // Extra buffer for dynamic logic/animations
-                ->setScreenshotType('jpeg', 85);
+            // Download the screenshot image
+            $response = Http::timeout(30)->get($thumUrl);
 
-            // Directly inject the system path to Chrome on production, bypassing Puppeteer
-            if ($this->chromePath) {
-                $browser->setChromePath($this->chromePath);
+            if (!$response->successful()) {
+                Log::error('Thum.io screenshot failed for ' . $url, [
+                    'status' => $response->status(),
+                ]);
+                return null;
             }
 
-            // On production PHP-FPM, HOME may not be set, causing Chrome to fail
-            // with 'mkdir /.local: Permission denied'. Only override when HOME is empty.
-            if (empty(getenv('HOME'))) {
-                $browser->setNodeEnv(['HOME' => '/tmp']);
-            }
-
-            $browser->save($savePath);
+            // Save the downloaded image to storage
+            $disk->put('screenshots/' . $filename, $response->body());
 
             return asset('storage/screenshots/' . $filename);
         } catch (\Exception $e) {
-            Log::error('Browsershot failed to capture screenshot for ' . $url, [
+            Log::error('Screenshot failed for ' . $url, [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -100,8 +58,6 @@ class ScreenshotService
      */
     public function captureAsync(string $url, string $savePath): void
     {
-        // This is still technically synchronous in PHP execution, 
-        // but used within a Queue Job context.
         $this->capture($url);
     }
 }
