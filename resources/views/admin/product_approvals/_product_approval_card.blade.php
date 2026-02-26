@@ -21,14 +21,16 @@
                             class="hover:underline">{{ $product->name }}</a>
                     </h2>
                     <div class="text-xs text-gray-500 mt-1">
-                        Submitted: <span id="utc-time-{{ $product->id }}">{{ $product->created_at->format('d M, Y g A') }} UTC</span>
+                        Submitted: <span
+                            id="utc-time-{{ $product->id }}">{{ $product->created_at->format('d M, Y g A') }} UTC</span>
                         <br>
                         <span id="local-time-{{ $product->id }}"></span>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
                         By:
                         @if($product->user && !$product->user->hasRole('admin'))
-                            <a href="{{ route('admin.users.show', $product->user->id) }}" class="text-indigo-600 hover:underline">
+                            <a href="{{ route('admin.users.show', $product->user->id) }}"
+                                class="text-indigo-600 hover:underline">
                                 {{ $product->user->name ?? 'N/A' }}
                             </a>
                         @else
@@ -62,8 +64,8 @@
                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Media</h4>
                     <div class="flex flex-wrap gap-2">
                         @foreach($product->media as $media)
-                            <img src="{{ Str::startsWith($media->path, 'http') ? $media->path : asset('storage/' . $media->path) }}" alt="{{ $product->name }} media"
-                                class="w-32 h-32 object-cover rounded-xl bg-gray-100 border">
+                            <img src="{{ Str::startsWith($media->path, 'http') ? $media->path : asset('storage/' . $media->path) }}"
+                                alt="{{ $product->name }} media" class="w-32 h-32 object-cover rounded-xl bg-gray-100 border">
                         @endforeach
                     </div>
                 </div>
@@ -89,67 +91,78 @@
                     @php
                         // Group categories by their types
                         $groupedCategories = [];
-                        foreach($product->categories as $category) {
+                        foreach ($product->categories as $category) {
                             // Load the types for this category
                             $categoryTypes = $category->load('types')->types;
-                            if($categoryTypes->count() > 0) {
-                                foreach($categoryTypes as $type) {
-                                    if(!isset($groupedCategories[$type->name])) {
+                            if ($categoryTypes->count() > 0) {
+                                foreach ($categoryTypes as $type) {
+                                    if (!isset($groupedCategories[$type->name])) {
                                         $groupedCategories[$type->name] = collect();
                                     }
                                     // Avoid duplicate categories in the same type group
-                                    if(!$groupedCategories[$type->name]->contains('id', $category->id)) {
+                                    if (!$groupedCategories[$type->name]->contains('id', $category->id)) {
                                         $groupedCategories[$type->name]->push($category);
                                     }
                                 }
                             } else {
-                                if(!isset($groupedCategories['Category'])) {
+                                if (!isset($groupedCategories['Category'])) {
                                     $groupedCategories['Category'] = collect();
                                 }
                                 // Avoid duplicate categories
-                                if(!$groupedCategories['Category']->contains('id', $category->id)) {
+                                if (!$groupedCategories['Category']->contains('id', $category->id)) {
                                     $groupedCategories['Category']->push($category);
                                 }
                             }
                         }
                     @endphp
-                    
+
                     @foreach($groupedCategories as $typeName => $categories)
                         <div class="mt-2">
                             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{{ $typeName }}</h4>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($categories as $category)
-                                    <span class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded-sm">{{ $category->name }}</span>
+                                    <span
+                                        class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded-sm">{{ $category->name }}</span>
                                 @endforeach
                             </div>
                         </div>
                     @endforeach
                 </div>
             @endif
-            
+
             {{-- Custom Category Submissions --}}
             @php
                 $customSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
             @endphp
-            
+
             @if($customSubmissions->count() > 0)
                 <div class="mt-4">
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Custom Categories</h4>
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Custom Categories
+                    </h4>
                     <div class="space-y-3">
                         @foreach($customSubmissions as $submission)
                             <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
                                 <span class="bg-purple-100 text-purple-800 px-2 py-1 text-xs rounded-sm flex-1">
                                     {{ $submission->name }} ({{ ucfirst(str_replace('_', ' ', $submission->type)) }})
                                 </span>
-                                <select name="custom_category_{{ $submission->id }}" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                <select name="custom_category_{{ $submission->id }}"
+                                    class="text-xs border border-gray-300 rounded px-2 py-1"
+                                    form="approve-date-form-{{ $product->id }}">
                                     <option value="">Select action...</option>
                                     <option value="approve">Approve</option>
                                     <option value="reject">Reject</option>
                                 </select>
                                 <div class="hidden approval-fields" id="approval-fields-{{ $submission->id }}">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_slug" placeholder="Slug" class="text-xs border border-gray-300 rounded px-2 py-1 w-24 mr-1">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_description" placeholder="Description" class="text-xs border border-gray-300 rounded px-2 py-1 w-32 mr-1">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_meta_description" placeholder="Meta Desc" class="text-xs border border-gray-300 rounded px-2 py-1 w-32">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_slug" placeholder="Slug"
+                                        class="text-xs border border-gray-300 rounded px-2 py-1 w-24 mr-1"
+                                        form="approve-date-form-{{ $product->id }}">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_description"
+                                        placeholder="Description"
+                                        class="text-xs border border-gray-300 rounded px-2 py-1 w-32 mr-1"
+                                        form="approve-date-form-{{ $product->id }}">
+                                    <input type="text" name="custom_category_{{ $submission->id }}_meta_description"
+                                        placeholder="Meta Desc" class="text-xs border border-gray-300 rounded px-2 py-1 w-32"
+                                        form="approve-date-form-{{ $product->id }}">
                                 </div>
                             </div>
                         @endforeach
@@ -176,7 +189,8 @@
             </div>
         </div>
         <div class="mt-4 flex justify-end items-center gap-3">
-            <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
+            <form id="approve-date-form-{{ $product->id }}"
+                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
                 @csrf
                 <input type="hidden" name="publish_option" value="specific_date">
                 <input type="hidden" name="published_at" id="hidden_published_at_{{ $product->id }}">
@@ -186,7 +200,8 @@
                     Publish on selected date
                 </button>
             </form>
-            <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
+            <form id="approve-now-form-{{ $product->id }}"
+                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
                 @csrf
                 <input type="hidden" name="publish_option" value="now">
                 <button type="submit"
@@ -199,22 +214,32 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-   // Add event listeners for custom category approval selections
-   const approvalSelects = document.querySelectorAll('select[name^="custom_category_"]');
-   approvalSelects.forEach(select => {
-       select.addEventListener('change', function() {
-           const submissionId = this.name.replace('custom_category_', '');
-           const approvalFields = document.getElementById(`approval-fields-${submissionId}`);
-           
-           if (this.value === 'approve') {
-               approvalFields.classList.remove('hidden');
-           } else {
-               approvalFields.classList.add('hidden');
-           }
-       });
-   });
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Add event listeners for custom category approval selections
+        const approvalSelects = document.querySelectorAll('select[name^="custom_category_"]');
+        approvalSelects.forEach(select => {
+            select.addEventListener('change', function () {
+                const submissionId = this.name.replace('custom_category_', '');
+                const approvalFields = document.getElementById(`approval-fields-${submissionId}`);
+
+                if (this.value === 'approve') {
+                    approvalFields.classList.remove('hidden');
+                } else {
+                    approvalFields.classList.add('hidden');
+                }
+            });
+        });
+
+        // When "Publish now" is clicked, switch all custom category inputs to that form
+        document.querySelectorAll('form[id^="approve-now-form-"]').forEach(form => {
+            form.addEventListener('submit', function () {
+                const productId = this.id.replace('approve-now-form-', '');
+                document.querySelectorAll(`[form="approve-date-form-${productId}"]`).forEach(input => {
+                    input.setAttribute('form', `approve-now-form-${productId}`);
+                });
+            });
+        });
+    });
 </script>
 
 @push('scripts')
@@ -239,10 +264,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else if (ampm === 'AM' && hourNum === 12) {
                         hourNum = 0;
                     }
-                    
+
                     // Create date in UTC
                     const utcDate = new Date(Date.UTC(year, new Date(`${month} 1`).getMonth(), day, hourNum, 0, 0));
-                    
+
                     if (!isNaN(utcDate.getTime())) {
                         const localTimeString = utcDate.toLocaleString(undefined, {
                             day: '2-digit',
@@ -252,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             minute: '2-digit',
                             hour12: true
                         });
-                        
+
                         const localTimeElement = document.getElementById('local-time-{{ $product->id }}');
                         if (localTimeElement) {
                             localTimeElement.textContent = `Local: ${localTimeString}`;
