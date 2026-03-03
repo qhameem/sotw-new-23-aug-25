@@ -219,8 +219,16 @@ const {
   loadingProgress,
   loadingMessage,
   errorMessage,
-  showErrorMessage
+  showErrorMessage,
+  isRestored
 } = useProductForm(props.initialProduct);
+
+// When editing an existing product, show the form once data is loaded
+watch(isRestored, (val) => {
+  if (val && form.link) {
+    showForm.value = true;
+  }
+});
 
 // Store the original fetched favicon so users can restore it after removing
 const originalFavicon = ref(null);

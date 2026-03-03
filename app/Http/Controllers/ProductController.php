@@ -30,6 +30,7 @@ use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
 use App\Services\ScreenshotService;
+use App\Services\BadgeService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
 use Intervention\Image\ImageManager;
@@ -44,8 +45,9 @@ class ProductController extends Controller
     protected LogoExtractorService $logoExtractor;
     protected \App\Services\CategoryClassifier $categoryClassifier;
     protected ScreenshotService $screenshotService;
+    protected BadgeService $badgeService;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
@@ -54,6 +56,7 @@ class ProductController extends Controller
         $this->logoExtractor = $logoExtractor;
         $this->categoryClassifier = $categoryClassifier;
         $this->screenshotService = $screenshotService;
+        $this->badgeService = $badgeService;
     }
 
     public function home(Request $request)
@@ -249,9 +252,10 @@ class ProductController extends Controller
         $validated['submission_type'] = in_array($submissionType, ['free', 'badge']) ? $submissionType : 'free';
 
         if ($submissionType === 'badge') {
+            $launchDate = $this->badgeService->getNextMondayLaunchDate();
             $validated['approved'] = true;
-            $validated['is_published'] = true;
-            $validated['published_at'] = now();
+            $validated['is_published'] = false; // Scheduled, not instant
+            $validated['published_at'] = $launchDate;
             $validated['badge_placement_url'] = $request->input('badge_placement_url') ?: $request->input('link');
         } else {
             $validated['approved'] = false;
@@ -367,8 +371,29 @@ class ProductController extends Controller
             foreach ($request->input('media_urls') as $url) {
                 if ($url) {
                     try {
+                        // Check if this is a local screenshot URL (already on disk)
+                        $appUrl = config('app.url');
+                        $isLocal = str_starts_with($url, $appUrl . '/storage/') || str_contains($url, '/storage/screenshots/');
+
+                        if ($isLocal) {
+                            // Extract the relative storage path from the URL
+                            // URL format: https://domain.com/storage/screenshots/filename.jpg
+                            $storagePath = preg_replace('#^.*?/storage/#', '', $url);
+
+                            if (Storage::disk('public')->exists($storagePath)) {
+                                // Copy directly from disk — no HTTP request needed
+                                $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
+                                $filename = Str::uuid() . '.' . $extension;
+                                $newPath = 'product_media/' . $filename;
+                                Storage::disk('public')->copy($storagePath, $newPath);
+                                $this->processMediaItem($product, Storage::disk('public')->path($newPath), $manager, true);
+                                continue;
+                            }
+                        }
+
+                        // Fallback: download from external URL
                         $imageContents = Http::get($url)->body();
-                        $extension = 'jpg'; // Default for mshots, or we can try to detect
+                        $extension = 'jpg';
                         if (str_contains($url, '.png'))
                             $extension = 'png';
                         if (str_contains($url, '.webp'))
@@ -380,7 +405,7 @@ class ProductController extends Controller
 
                         $this->processMediaItem($product, Storage::disk('public')->path($path), $manager, true);
                     } catch (\Exception $e) {
-                        Log::error('Failed to download media from URL: ' . $url . ' - ' . $e->getMessage());
+                        Log::error('Failed to process media from URL: ' . $url . ' - ' . $e->getMessage());
                     }
                 }
             }
@@ -399,9 +424,10 @@ class ProductController extends Controller
             $user->notify(new \App\Notifications\ProductSubmissionConfirmation($product));
         }
 
-        // For badge submissions, dispatch verification job (delayed 1 hour to give user time to place badge)
+        // For badge submissions, dispatch verification job on launch day (2 hours after publish time)
         if ($validated['submission_type'] === 'badge') {
-            \App\Jobs\VerifyBadgePlacement::dispatch($product)->delay(now()->addHour());
+            $verifyAt = $product->published_at->copy()->addHours(2);
+            \App\Jobs\VerifyBadgePlacement::dispatch($product)->delay($verifyAt);
         }
 
         // Return JSON response for API calls, redirect for regular form submissions
@@ -430,11 +456,29 @@ class ProductController extends Controller
         $daysToLive = $submissionDate->diffInDays($tentativeLiveDate);
 
         $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-        $totalSpots = $settings['premium_product_spots'] ?? 6; // Use 6 as default if not found in settings
+        $totalSpots = $settings['premium_product_spots'] ?? 6;
         $spotsTaken = PremiumProduct::where('expires_at', '>', now())->count();
         $spotsAvailable = $totalSpots - $spotsTaken;
 
-        return view('products.submission_success', compact('product', 'daysToLive', 'spotsAvailable'));
+        // Badge-specific data for the success page
+        $badgeSnippet = null;
+        $launchDate = null;
+        $launchDateFormatted = null;
+
+        if ($product->submission_type === 'badge') {
+            $badgeSnippet = $this->badgeService->generateSnippet($product);
+            $launchDate = $product->published_at;
+            $launchDateFormatted = $this->badgeService->getLaunchDateFormatted($product->published_at);
+        }
+
+        return view('products.submission_success', compact(
+            'product',
+            'daysToLive',
+            'spotsAvailable',
+            'badgeSnippet',
+            'launchDate',
+            'launchDateFormatted'
+        ));
     }
 
     public function edit(Product $product)
@@ -2195,7 +2239,7 @@ class ProductController extends Controller
                             $extractedTaglineDetailed = $aiTaglines['product_page_tagline'];
                         }
                     } catch (\Exception $e) {
-                         // fallback
+                        // fallback
                     }
 
                     if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
@@ -2213,7 +2257,8 @@ class ProductController extends Controller
                                     break;
                                 }
                             }
-                            if (empty($extractedTagline) && !empty($allCandidates)) $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 60, '...');
+                            if (empty($extractedTagline) && !empty($allCandidates))
+                                $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 60, '...');
                         }
 
                         if (empty($extractedTaglineDetailed)) {
@@ -2224,7 +2269,8 @@ class ProductController extends Controller
                                     break;
                                 }
                             }
-                            if (empty($extractedTaglineDetailed) && !empty($allCandidates)) $extractedTaglineDetailed = \Illuminate\Support\Str::limit(end($allCandidates), 160, '...');
+                            if (empty($extractedTaglineDetailed) && !empty($allCandidates))
+                                $extractedTaglineDetailed = \Illuminate\Support\Str::limit(end($allCandidates), 160, '...');
                         }
                     }
 

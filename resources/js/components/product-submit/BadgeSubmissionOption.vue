@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   id: {
@@ -99,27 +99,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'submit']);
 
-const isLoading = ref(false);
-
 const handleSubmit = () => {
   // Update the selected option when the button is clicked
   emit('update:modelValue', props.value);
 
   if (props.isAllRequiredFilled) {
-    isLoading.value = true;
     emit('submit', props.value);
   } else {
     alert('Please fill out all required fields before submitting.');
   }
 };
-
-const submissionComplete = () => {
-  isLoading.value = false;
-};
-
-defineExpose({
-  submissionComplete
-});
 
 const optionClass = computed(() => ({
   'border-gray-200': true,

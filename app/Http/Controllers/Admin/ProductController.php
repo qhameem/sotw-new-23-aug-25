@@ -135,7 +135,9 @@ class ProductController extends Controller
             app(\App\Services\TechStackDetectorService::class),
             app(\App\Services\NameExtractorService::class),
             app(\App\Services\LogoExtractorService::class),
-            app(\App\Services\CategoryClassifier::class)
+            app(\App\Services\CategoryClassifier::class),
+            app(\App\Services\ScreenshotService::class),
+            app(\App\Services\BadgeService::class)
         );
 
         $view = $productController->showProductPage($product);
@@ -253,7 +255,9 @@ class ProductController extends Controller
                 app(\App\Services\TechStackDetectorService::class),
                 app(\App\Services\NameExtractorService::class),
                 app(\App\Services\LogoExtractorService::class),
-                app(\App\Services\CategoryClassifier::class)
+                app(\App\Services\CategoryClassifier::class),
+                app(\App\Services\ScreenshotService::class),
+                app(\App\Services\BadgeService::class)
             );
 
             $validated['description'] = $productController->ensureProperParagraphStructure(

@@ -211,9 +211,9 @@
               :isAllRequiredFilled="isAllRequiredFilled"
               :isEditMode="!!modelValue.id"
               @update:modelValue="selectedPricingOption = $event"
-              title="Share Our Badge"
+              title="Premium Launch (100% free)"
               price="Free"
-              description="Get instant approval with a dofollow backlink"
+              description="A do-follow backlink if you share our badge"
               :features="badgeLaunchFeatures"
               :isLoading="isLoading"
               @submit="handlePricingOptionSubmit"
@@ -412,10 +412,10 @@ const freeLaunchFeatures = [
 ];
 
 const badgeLaunchFeatures = [
-  'Instant approval & publish',
-  'Dofollow backlink to your product',
-  'Place our badge on your site',
-  'Priority placement'
+  'Skip the wait. Launch next Monday',
+  'Up to 3x more exposure',
+  'Featured on homepage',
+  'Guaranteed dofollow backlink'
 ];
 
 

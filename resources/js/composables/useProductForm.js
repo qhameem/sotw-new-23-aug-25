@@ -161,8 +161,8 @@ export function useProductForm() {
       return false;
     }
 
-    // Check if the selected submission option is 'free' to bypass the modal
-    if (form.submissionOption === 'free' || globalFormState.isAdmin.value) {
+    // Check if the selected submission option is 'free' or 'badge' to bypass the modal
+    if (form.submissionOption === 'free' || form.submissionOption === 'badge' || globalFormState.isAdmin.value) {
       // Directly submit the product without showing modal
       confirmSubmit();
       return true;
@@ -1059,7 +1059,7 @@ export function useProductForm() {
 
             // Format the logo preview URL if it's a relative path
             let logoUrl = initialData.logo_url || initialData.logo;
-            if (logoUrl && !logoUrl.startsWith('http')) {
+            if (logoUrl && !logoUrl.startsWith('http') && !logoUrl.startsWith('/storage')) {
               logoUrl = `/storage/${logoUrl}`;
             }
 
@@ -1143,7 +1143,7 @@ export function useProductForm() {
 
             // Format the logo preview URL if it's a relative path
             let logoUrl = initialData.logo_url || initialData.logo;
-            if (logoUrl && !logoUrl.startsWith('http')) {
+            if (logoUrl && !logoUrl.startsWith('http') && !logoUrl.startsWith('/storage')) {
               logoUrl = `/storage/${logoUrl}`;
             }
 

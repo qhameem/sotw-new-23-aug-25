@@ -35,6 +35,7 @@ class Kernel extends ConsoleKernel
         $publishTime = $settings['product_publish_time'] ?? '07:00';
         $schedule->command('products:publish-scheduled')->dailyAt($publishTime);
         $schedule->command('reminders:send-deadline')->everyMinute();
+        $schedule->command('badge:verify')->weekly()->mondays()->at('09:00');
     }
 
     /**
@@ -44,7 +45,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
