@@ -13,8 +13,8 @@ class TaglineRewriterService
 
     /**
      * Generate two distinct taglines from raw content:
-     *   - 'tagline': A punchy, 50-character phrase
-     *   - 'product_page_tagline': A detailed, 120-character sentence
+     *   - 'tagline': A descriptive, up to 140-character phrase
+     *   - 'product_page_tagline': A detailed, up to 160-character sentence
      *
      * Returns an associative array ['tagline' => '...', 'product_page_tagline' => '...'], or null on failure.
      */
@@ -42,9 +42,22 @@ Raw information: "{$rawDescription}"
 
 Additional context: "{$context}"
 
+CRITICAL RULES:
+- You MUST rewrite the taglines in your own words. NEVER copy-paste text directly from the website's hero section, headings, or meta description. Always rephrase and improve.
+- Focus on clearly explaining what the product does and who it helps.
+- Use active language. Be specific, not generic.
+
 Constraints:
-1. "tagline": A maximum of 50 characters. It must be a punchy, engaging phrase that captures the core essence (e.g., "The ultimate task manager for creatives"). Do NOT just use the product name.
-2. "product_page_tagline": A maximum of 120 characters. It must be a complete sentence that elaborates on the value proposition and who it's for, without repeating the short tagline verbatim (e.g., "Organize your creative chaos into beautifully structured projects and hit every deadline.").
+1. "tagline": Between 60 and 140 characters. It must clearly explain what the product does and its core value in a specific, compelling way. Use the space to be informative — avoid vague or generic phrases. Describe the actual function and benefit.
+   Good examples:
+   - "Monitor AI agent and bot traffic on your website with real-time analytics and actionable insights" (97 chars)
+   - "Turn messy spreadsheets into beautiful visual dashboards your whole team can understand" (87 chars)
+   - "AI-powered code review assistant that catches bugs and suggests improvements before you merge" (93 chars)
+   Bad examples (too vague or copy-pasted):
+   - "The best way to work" (too short and generic)
+   - "Your AI companion" (says nothing about what it does)
+   - Anything copied word-for-word from the website
+2. "product_page_tagline": Between 100 and 160 characters. It must be a complete sentence that elaborates on the specific value proposition, without repeating the short tagline verbatim. Describe a key benefit or use case.
 
 Respond ONLY with valid JSON in the exact structure below. Do NOT wrap it in markdown blockquotes or add any other text.
 {

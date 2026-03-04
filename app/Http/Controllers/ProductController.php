@@ -596,7 +596,7 @@ class ProductController extends Controller
         // Validation rules for editable fields
         $validated = $request->validate([
             // 'name' and 'slug' are not editable by users directly in this form
-            'tagline' => 'required|string|max:60', // Max 60 chars
+            'tagline' => 'required|string|max:140', // Max 140 chars
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'required|string|max:5000', // Max 5000 chars
             // 'link' is not editable by users directly in this form
@@ -2098,27 +2098,27 @@ class ProductController extends Controller
             'screenshot_url' => $this->screenshotService->capture($url),
         ];
 
-        // Smart assignment: short tagline ≤ 60 chars, detailed ≤ 160 chars
+        // Smart assignment: short tagline ≤ 140 chars, detailed ≤ 160 chars
         $metaTagline = $metadata['tagline'] ?? '';
         $headingTagline = $taglineDetailed;
 
         // If both are available, the shorter one is the tagline, longer is detailed
         if (!empty($metaTagline) && !empty($headingTagline) && $metaTagline !== $headingTagline) {
             if (strlen($metaTagline) <= strlen($headingTagline)) {
-                $responseData['tagline'] = Str::limit($metaTagline, 60, '...');
+                $responseData['tagline'] = Str::limit($metaTagline, 140, '...');
                 $responseData['tagline_detailed'] = Str::limit($headingTagline, 160, '...');
             } else {
-                $responseData['tagline'] = Str::limit($headingTagline, 60, '...');
+                $responseData['tagline'] = Str::limit($headingTagline, 140, '...');
                 $responseData['tagline_detailed'] = Str::limit($metaTagline, 160, '...');
             }
         } else {
             // Only one available — use it for whichever field it fits
             $availableTagline = !empty($metaTagline) ? $metaTagline : $headingTagline;
-            if (strlen($availableTagline) <= 60) {
+            if (strlen($availableTagline) <= 140) {
                 $responseData['tagline'] = $availableTagline;
                 $responseData['tagline_detailed'] = '';
             } else {
-                $responseData['tagline'] = Str::limit($availableTagline, 60, '...');
+                $responseData['tagline'] = Str::limit($availableTagline, 140, '...');
                 $responseData['tagline_detailed'] = Str::limit($availableTagline, 160, '...');
             }
         }
@@ -2252,13 +2252,13 @@ class ProductController extends Controller
 
                         if (empty($extractedTagline)) {
                             foreach ($allCandidates as $candidate) {
-                                if (strlen($candidate) <= 60 && strlen($candidate) > 5) {
+                                if (strlen($candidate) <= 140 && strlen($candidate) > 5) {
                                     $extractedTagline = $candidate;
                                     break;
                                 }
                             }
                             if (empty($extractedTagline) && !empty($allCandidates))
-                                $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 60, '...');
+                                $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 140, '...');
                         }
 
                         if (empty($extractedTaglineDetailed)) {
@@ -2274,7 +2274,7 @@ class ProductController extends Controller
                         }
                     }
 
-                    $extractedTagline = \Illuminate\Support\Str::limit($extractedTagline, 60, '...');
+                    $extractedTagline = \Illuminate\Support\Str::limit($extractedTagline, 140, '...');
                     $extractedTaglineDetailed = \Illuminate\Support\Str::limit($extractedTaglineDetailed, 160, '...');
 
                     $sendUpdate('Writing product description...', 65);
@@ -2481,14 +2481,14 @@ class ProductController extends Controller
                     if (empty($extractedTagline)) {
                         // Pick the shortest candidate that's ≤ 60 chars for short tagline
                         foreach ($allCandidates as $candidate) {
-                            if (strlen($candidate) <= 60 && strlen($candidate) > 5) {
+                            if (strlen($candidate) <= 140 && strlen($candidate) > 5) {
                                 $extractedTagline = $candidate;
                                 break;
                             }
                         }
                         // If nothing ≤ 60, truncate the shortest candidate
                         if (empty($extractedTagline) && !empty($allCandidates)) {
-                            $extractedTagline = Str::limit(reset($allCandidates), 60, '...');
+                            $extractedTagline = Str::limit(reset($allCandidates), 140, '...');
                         }
                     }
 
@@ -2509,7 +2509,7 @@ class ProductController extends Controller
                 }
 
                 // Final length enforcement
-                $extractedTagline = Str::limit($extractedTagline, 60, '...');
+                $extractedTagline = Str::limit($extractedTagline, 140, '...');
                 $extractedTaglineDetailed = Str::limit($extractedTaglineDetailed, 160, '...');
 
                 // --- AI Description Rewrite ---

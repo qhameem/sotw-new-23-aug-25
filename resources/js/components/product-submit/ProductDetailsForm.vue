@@ -31,13 +31,13 @@
         <div>
            <div class="flex justify-between mb-1">
              <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
-             <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/60</span>
+             <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
            </div>
            <textarea 
              id="tagline" 
              :value="modelValue.tagline" 
              @input="updateField('tagline', $event.target.value)" 
-             maxlength="60" 
+             maxlength="140" 
              rows="2" 
              class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
            ></textarea>

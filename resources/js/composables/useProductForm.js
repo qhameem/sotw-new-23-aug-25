@@ -701,24 +701,20 @@ export function useProductForm() {
       if (shouldFetchContent) {
         console.log('fetchRemainingData: Updating content fields...');
 
-        // Trust the backend's tagline values directly — the backend now uses AI
-        // (TaglineRewriterService) to generate properly-sized taglines.
+        // The streaming endpoint uses TaglineRewriterService (AI rewrite),
+        // so its taglines should ALWAYS override the initial heuristic ones.
         if (data.tagline && data.tagline.trim() !== '') {
-          const tagline = data.tagline.length > 60 ? data.tagline.substring(0, 57) + '...' : data.tagline;
-          // Only override if current tagline is empty, too long, or is the product name
-          if (!form.tagline || form.tagline.length > 60 || form.tagline === form.name) {
-            console.log('fetchRemainingData: Setting tagline to:', tagline);
-            form.tagline = tagline;
-          }
+          const tagline = data.tagline.length > 140 ? data.tagline.substring(0, 137) + '...' : data.tagline;
+          console.log('fetchRemainingData: Setting AI-rewritten tagline to:', tagline);
+          form.tagline = tagline;
         }
 
         if (data.tagline_detailed && data.tagline_detailed.trim() !== '') {
           const detailed = data.tagline_detailed.length > 160 ? data.tagline_detailed.substring(0, 157) + '...' : data.tagline_detailed;
-          if (!form.tagline_detailed || form.tagline_detailed === form.tagline) {
-            console.log('fetchRemainingData: Setting tagline_detailed to:', detailed);
-            form.tagline_detailed = detailed;
-          }
+          console.log('fetchRemainingData: Setting AI-rewritten tagline_detailed to:', detailed);
+          form.tagline_detailed = detailed;
         }
+
         if (!form.description || form.description.trim() === '' || form.description === '<p></p>') {
           console.log('fetchRemainingData: Setting description to:', data.description);
           form.description = data.description || form.description;

@@ -27,16 +27,16 @@ class TaglineController extends Controller
                 'X-goog-api-key' => $apiKey,
                 'Content-Type' => 'application/json',
             ])->post("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent", [
-                'contents' => [
-                    [
-                        'parts' => [
+                        'contents' => [
                             [
-                                'text' => "Based on the product description \"{$request->input('description')}\", generate two taglines in JSON format: a 'short' one (max 60 chars, Product Hunt style) and a 'detailed' one (max 160 chars). Return only the JSON object with keys 'short' and 'detailed'."
+                                'parts' => [
+                                    [
+                                        'text' => "Based on the product description \"{$request->input('description')}\", generate two taglines in JSON format: a 'short' one (between 60-140 chars, must clearly describe what the product does in your own words — NEVER copy-paste from the description, always rewrite and improve) and a 'detailed' one (between 100-160 chars, a complete sentence elaborating the value proposition). Return only the JSON object with keys 'short' and 'detailed'."
+                                    ]
+                                ]
                             ]
                         ]
-                    ]
-                ]
-            ]);
+                    ]);
 
             if ($response->failed()) {
                 throw new \Exception('API request failed.');
@@ -87,7 +87,7 @@ class TaglineController extends Controller
             }
 
             return response()->json([
-                'tagline' => Str::limit(trim($title), 60),
+                'tagline' => Str::limit(trim($title), 140),
                 'tagline_detailed' => Str::limit(trim($description), 160)
             ]);
         } catch (\Exception $e) {
