@@ -107,7 +107,7 @@ class ProductController extends Controller
             'link' => 'required|url|max:255',
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
-            'logo' => 'nullable|image|max:1024',
+            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'video_url' => 'nullable|string',
         ]);
 
@@ -219,7 +219,7 @@ class ProductController extends Controller
             'link' => 'required|url|max:255',
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
-            'logo' => 'nullable|image|max:1024',
+            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'video_url' => 'nullable|string',
             'maker_links' => 'nullable|array',
             'maker_links.*' => 'url|max:2048',
