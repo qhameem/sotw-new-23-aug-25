@@ -92,8 +92,16 @@
            v-model="categorySearch" 
            placeholder="Search categories..." 
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-           :class="{'pr-32': showAddCategoryButton}"
+           :class="{'pr-32': showAddCategoryButton, 'pr-8': !showAddCategoryButton && categorySearch.length >= 2}"
          >
+         <button
+           v-if="categorySearch.length >= 2 && !showAddCategoryButton"
+           type="button"
+           @click="categorySearch = ''"
+           class="absolute inset-y-0 right-0 px-2.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+         >
+           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+         </button>
          <button
            v-if="showAddCategoryButton"
            type="button"
@@ -165,8 +173,16 @@
            v-model="tagSearch"
            placeholder="Search tags..."
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-           :class="{'pr-32': showAddTagButton}"
+           :class="{'pr-32': showAddTagButton, 'pr-8': !showAddTagButton && tagSearch.length >= 2}"
          >
+         <button
+           v-if="tagSearch.length >= 2 && !showAddTagButton"
+           type="button"
+           @click="tagSearch = ''"
+           class="absolute inset-y-0 right-0 px-2.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+         >
+           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+         </button>
          <button
            v-if="showAddTagButton"
            type="button"
@@ -455,6 +471,7 @@ function toggleCategory(id) {
         current.splice(index, 1);
     }
     updateField('categories', current);
+    categorySearch.value = ''; // Clear search after selection
 }
 
 // Checkbox/Chip Logic for Best For (Tags)
@@ -468,6 +485,7 @@ function toggleBestFor(id) {
         current.splice(index, 1);
     }
     updateField('bestFor', current);
+    tagSearch.value = ''; // Clear search after selection
 }
 
 // Card Logic for Pricing
