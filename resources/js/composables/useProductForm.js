@@ -724,7 +724,24 @@ export function useProductForm() {
           pricing: data.pricing,
           suggestedCategories: data.suggestedCategories
         });
-        form.pricing = data.pricing || [];
+
+        // Set categories from classifier (only if not already user-selected)
+        if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
+          form.categories = data.categories;
+          console.log('fetchRemainingData: Set categories to:', data.categories);
+        }
+
+        // Set bestFor from classifier (only if not already user-selected)
+        if (data.bestFor && data.bestFor.length > 0 && (!form.bestFor || form.bestFor.length === 0)) {
+          form.bestFor = data.bestFor;
+          console.log('fetchRemainingData: Set bestFor to:', data.bestFor);
+        }
+
+        // Set pricing from classifier
+        if (data.pricing && data.pricing.length > 0) {
+          form.pricing = data.pricing;
+          console.log('fetchRemainingData: Set pricing to:', data.pricing);
+        }
 
         // Auto-add suggested categories (classifier names that don't exist in DB) as custom entries
         if (data.suggestedCategories && data.suggestedCategories.length > 0) {

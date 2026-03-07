@@ -183,9 +183,6 @@
           <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
             {{ progress.completed }} of {{ progress.total }} total required fields filled
           </div>
-          <div v-else class="text-xs font-bold text-green-600 mb-4 flex items-center transition-all duration-300 animate-bounce">
-            <span class="mr-1">✓</span> All requirements met! You are ready to launch.
-          </div>
           <div class="flex flex-wrap gap-6 items-stretch">
             <FreeSubmissionOption
               id="free-option"
@@ -378,6 +375,7 @@ watch(selectedPricingOption, (newValue) => {
 // Check if all required fields are filled
 const isAllRequiredFilled = computed(() => {
   const { link, name, tagline, tagline_detailed, description, categories, bestFor, pricing, logo, logos } = props.modelValue;
+  const categoriesCustom = props.modelValue.categories_custom || [];
   
   // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
   const actualPricingCategories = (pricing || []).filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
@@ -388,8 +386,8 @@ const isAllRequiredFilled = computed(() => {
     tagline,
     tagline_detailed,
     description,
-    categories && Array.isArray(categories) && categories.length > 0,
-    bestFor && Array.isArray(bestFor) && bestFor.length > 0,
+    (categories && Array.isArray(categories) && categories.length > 0) || categoriesCustom.length > 0,
+    // bestFor is optional — not checked here
     actualPricingCategories.length > 0, // Only count actual pricing categories, not submission options
     logo || (logos && Array.isArray(logos) && logos.length > 0) || props.logoPreview // Check for logo preview as well
  ];

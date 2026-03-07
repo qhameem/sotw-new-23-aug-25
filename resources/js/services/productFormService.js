@@ -150,7 +150,6 @@ export const productFormService = {
           form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
-          (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0
         );
         break;
@@ -167,7 +166,6 @@ export const productFormService = {
           form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
-          (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0 &&
           (logoPreview || (form.logos && form.logos.length > 0))
         );
@@ -267,7 +265,6 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
-        (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0
       );
       break;
@@ -284,7 +281,6 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
-        (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0 &&
         (logoPreview || (form.logos && form.logos.length > 0))
       );
@@ -305,13 +301,12 @@ export const getTabProgress = (stepId, form, logoPreview) => {
 
   switch (stepId) {
     case 'mainInfo':
-      total = 7;
+      total = 6;
       if (form.name) completed++;
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
-      if (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       break;
     case 'imagesAndMedia':
@@ -319,14 +314,13 @@ export const getTabProgress = (stepId, form, logoPreview) => {
       if (logoPreview) completed++;
       break;
     case 'launchChecklist':
-      total = 8; // 7 from mainInfo + logo
+      total = 7; // 6 from mainInfo + logo
       if (form.link) completed++;
       if (form.name) completed++;
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
-      if (form.bestFor?.length > 0 || form.bestFor_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       if (logoPreview || (form.logos && form.logos.length > 0)) completed++;
       break;
