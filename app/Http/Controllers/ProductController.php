@@ -240,9 +240,7 @@ class ProductController extends Controller
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty() && !$hasCustomBestFor) {
-            return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
-        }
+        // bestFor is optional — no validation needed
 
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 0;
@@ -667,17 +665,7 @@ class ProductController extends Controller
             }
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty() && !$hasCustomBestFor) {
-            // Return JSON response for API calls
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please select at least one category from the Best for group.',
-                    'errors' => ['categories' => ['Please select at least one category from the Best for group.']]
-                ], 422);
-            }
-            return back()->withErrors(['categories' => 'Please select at least one category from the Best for group.'])->withInput();
-        }
+        // bestFor is optional — no validation needed
 
         // Prepare data for update
         $updateData = [
@@ -2305,6 +2293,10 @@ class ProductController extends Controller
                 $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
                 $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
 
+                // Find category names the classifier suggested but that don't exist in DB
+                $matchedCategoryNames = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
+                $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
+
                 $responseData = [
                     'description' => $description,
                     'logos' => $logos,
@@ -2313,6 +2305,7 @@ class ProductController extends Controller
                     'categories' => $categoryIds,
                     'bestFor' => $bestForIds,
                     'pricing' => $pricingIds,
+                    'suggestedCategories' => $unmatchedCategories,
                     'screenshot_url' => $this->screenshotService->capture($url),
                 ];
 
@@ -2540,9 +2533,12 @@ class ProductController extends Controller
 
             // Convert category names to IDs
             $categoryIds = [];
+            $matchedCategoryNames = [];
             if (!empty($categories)) {
                 $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
+                $matchedCategoryNames = Category::whereIn('name', $categories)->pluck('name')->toArray();
             }
+            $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
 
             $bestForIds = [];
             if (!empty($bestFor)) {
@@ -2562,6 +2558,7 @@ class ProductController extends Controller
                 'categories' => $categoryIds,
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,
+                'suggestedCategories' => $unmatchedCategories,
                 'screenshot_url' => $this->screenshotService->capture($url),
             ];
 

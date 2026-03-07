@@ -464,14 +464,7 @@ export function useProductForm() {
       return false;
     }
 
-    // Validate bestFor: minimum 1 (either existing or custom)
-    const validBestFor = (form.bestFor || []).filter(id => id !== null && id !== undefined && id !== '');
-    const customBestFor = (form.bestFor_custom || []).filter(tag => tag && tag.name && tag.name.trim() !== '');
-    if (validBestFor.length === 0 && customBestFor.length === 0) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'At least one "best for" option is required.';
-      return false;
-    }
+    // bestFor/Tags is optional — no validation needed
 
     // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
     const actualPricingCategories = (form.pricing || []).filter(id => !isNaN(id));
@@ -728,9 +721,27 @@ export function useProductForm() {
         console.log('fetchRemainingData: Updating categories/bestFor/pricing...', {
           categories: data.categories,
           bestFor: data.bestFor,
-          pricing: data.pricing
+          pricing: data.pricing,
+          suggestedCategories: data.suggestedCategories
         });
         form.pricing = data.pricing || [];
+
+        // Auto-add suggested categories (classifier names that don't exist in DB) as custom entries
+        if (data.suggestedCategories && data.suggestedCategories.length > 0) {
+          const existingCustomNames = (form.categories_custom || []).map(c => c.name.toLowerCase());
+          const newCustomCategories = data.suggestedCategories
+            .filter(name => !existingCustomNames.includes(name.toLowerCase()))
+            .slice(0, 3) // Max 3 custom categories
+            .map(name => ({
+              id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              name: name,
+              is_custom: true
+            }));
+          if (newCustomCategories.length > 0) {
+            form.categories_custom = [...(form.categories_custom || []), ...newCustomCategories].slice(0, 3);
+            console.log('fetchRemainingData: Auto-added suggested custom categories:', newCustomCategories.map(c => c.name));
+          }
+        }
       }
 
       // 3. Update screenshot if available (refresh with viewport-specific version)

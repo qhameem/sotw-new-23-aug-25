@@ -158,7 +158,7 @@
     <!-- Best For / Tags (Chip Selection) -->
     <div>
        <div class="flex items-center justify-between mb-3">
-          <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
+          <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
        </div>
 
        <!-- Tag Search -->
