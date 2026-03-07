@@ -28,9 +28,9 @@
               <input type="file" @change="onGalleryChange($event, i - 1)" accept="image/*" class="hidden" :ref="el => { if (el) galleryInputs[i - 1] = el }">
               <div v-if="galleryPreviews[i - 1]" class="w-full h-full cursor-pointer" @click="showLargePreview(galleryPreviews[i - 1])">
                 <img :src="galleryPreviews[i - 1]" class="h-full w-full object-cover rounded-md">
-                <button @click.stop="removeGalleryImage(i - 1)" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
+                <button type="button" @click.stop="removeGalleryImage(i - 1)" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
               </div>
-              <button v-else @click="() => galleryInputs[i - 1] && galleryInputs[i - 1].click()" class="text-gray-500 hover:text-gray-600">
+              <button type="button" v-else @click="() => galleryInputs[i - 1] && galleryInputs[i - 1].click()" class="text-gray-500 hover:text-gray-600">
                 <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 0 0 -4 4v20m32-12v8m0 0v8a4 4 0 0 1 -4 4H12a4 4 0 0 1 -4 -4v-4m32-4l-3.172-3.172a4 4 0 0 0 -5.656 0L28 28M8 32l9.172-9.172a4 4 0 0 1 5.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 <span class="mt-2 block text-sm font-medium">Upload image</span>
               </button>
