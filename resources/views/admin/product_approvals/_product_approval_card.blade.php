@@ -141,28 +141,81 @@
                     </h4>
                     <div class="space-y-3">
                         @foreach($customSubmissions as $submission)
-                            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                                <span class="bg-purple-100 text-purple-800 px-2 py-1 text-xs rounded-sm flex-1">
-                                    {{ $submission->name }} ({{ ucfirst(str_replace('_', ' ', $submission->type)) }})
-                                </span>
-                                <select name="custom_category_{{ $submission->id }}"
-                                    class="text-xs border border-gray-300 rounded px-2 py-1"
-                                    form="approve-date-form-{{ $product->id }}">
-                                    <option value="">Select action...</option>
-                                    <option value="approve">Approve</option>
-                                    <option value="reject">Reject</option>
-                                </select>
-                                <div class="hidden approval-fields" id="approval-fields-{{ $submission->id }}">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_slug" placeholder="Slug"
-                                        class="text-xs border border-gray-300 rounded px-2 py-1 w-24 mr-1"
+                            <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="bg-sky-100 text-sky-800 px-3 py-1.5 text-sm font-medium rounded-md flex-1">
+                                        {{ $submission->name }} <span
+                                            class="text-sky-600 font-normal text-xs ml-1">({{ ucfirst(str_replace('_', ' ', $submission->type)) }})</span>
+                                    </span>
+                                    <select name="custom_category_{{ $submission->id }}"
+                                        class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500 py-2 pl-3 pr-8"
                                         form="approve-date-form-{{ $product->id }}">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_description"
-                                        placeholder="Description"
-                                        class="text-xs border border-gray-300 rounded px-2 py-1 w-32 mr-1"
-                                        form="approve-date-form-{{ $product->id }}">
-                                    <input type="text" name="custom_category_{{ $submission->id }}_meta_description"
-                                        placeholder="Meta Desc" class="text-xs border border-gray-300 rounded px-2 py-1 w-32"
-                                        form="approve-date-form-{{ $product->id }}">
+                                        <option value="">Select action...</option>
+                                        <option value="approve">Approve</option>
+                                        <option value="reject">Reject</option>
+                                    </select>
+                                </div>
+                                <div class="hidden approval-fields mt-4 pt-4 border-t border-gray-200"
+                                    id="approval-fields-{{ $submission->id }}">
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 mb-1">Slug</label>
+                                            <input type="text" name="custom_category_{{ $submission->id }}_slug"
+                                                placeholder="e.g. {{ Str::slug($submission->name) }}"
+                                                value="{{ Str::slug($submission->name) }}"
+                                                class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500 py-2 px-3"
+                                                form="approve-date-form-{{ $product->id }}">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <label class="block text-xs font-semibold text-gray-700">Description <span
+                                                        class="text-gray-400 font-normal">(Optional)</span></label>
+                                                <button type="button"
+                                                    class="js-generate-ai-seo text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 transition-opacity duration-200"
+                                                    data-submission-id="{{ $submission->id }}"
+                                                    data-category-name="{{ $submission->name }}">
+                                                    <span class="icon-default">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="icon-loading hidden">
+                                                        <svg class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                                stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                            </path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="btn-text">Generate via AI</span>
+                                                </button>
+                                            </div>
+                                            <textarea name="custom_category_{{ $submission->id }}_description"
+                                                placeholder="Category description" rows="2"
+                                                class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500 py-2 px-3"
+                                                form="approve-date-form-{{ $product->id }}"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 mb-1">Meta Description <span
+                                                    class="text-gray-400 font-normal">(Optional)</span></label>
+                                            <textarea name="custom_category_{{ $submission->id }}_meta_description"
+                                                placeholder="SEO meta description for category page" rows="2"
+                                                class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500 py-2 px-3"
+                                                form="approve-date-form-{{ $product->id }}"></textarea>
+                                        </div>
+                                        <div>
+                                            <button type="button" data-submission-id="{{ $submission->id }}"
+                                                data-product-id="{{ $product->id }}"
+                                                id="save-category-btn-{{ $submission->id }}"
+                                                class="js-save-custom-category w-full mt-2 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                                                Save Category
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -237,6 +290,113 @@
                 document.querySelectorAll(`[form="approve-date-form-${productId}"]`).forEach(input => {
                     input.setAttribute('form', `approve-now-form-${productId}`);
                 });
+            });
+        });
+
+        // Handle dynamic saving of custom categories
+        document.querySelectorAll('.js-save-custom-category').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const submissionId = this.dataset.submissionId;
+                const productId = this.dataset.productId;
+
+                const slugInput = document.querySelector(`input[name="custom_category_${submissionId}_slug"]`);
+                const descInput = document.querySelector(`textarea[name="custom_category_${submissionId}_description"]`);
+                const metaDescInput = document.querySelector(`textarea[name="custom_category_${submissionId}_meta_description"]`);
+
+                if (!slugInput || !slugInput.value.trim()) {
+                    alert('Slug is required to save the category.');
+                    return;
+                }
+
+                const originalText = this.innerHTML;
+                this.innerHTML = 'Saving...';
+                this.disabled = true;
+
+                try {
+                    const response = await fetch(`/admin/product-approvals/${productId}/approve-custom-category/${submissionId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            slug: slugInput.value.trim(),
+                            description: descInput ? descInput.value.trim() : null,
+                            meta_description: metaDescInput ? metaDescInput.value.trim() : null,
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Success: visually indicate success and remove the form
+                        const container = this.closest('.p-4.bg-gray-50');
+                        container.innerHTML = `<div class="text-sm text-green-600 font-medium flex items-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Custom category approved and saved successfully!</div>`;
+                    } else {
+                        alert(data.message || 'Failed to save custom category.');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error saving custom category:', error);
+                    alert('An error occurred while saving.');
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // Handle AI generation for custom categories
+        document.querySelectorAll('.js-generate-ai-seo').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const submissionId = this.dataset.submissionId;
+                const categoryName = this.dataset.categoryName;
+
+                const descInput = document.querySelector(`textarea[name="custom_category_${submissionId}_description"]`);
+                const metaDescInput = document.querySelector(`textarea[name="custom_category_${submissionId}_meta_description"]`);
+
+                const defaultIcon = this.querySelector('.icon-default');
+                const loadingIcon = this.querySelector('.icon-loading');
+                const btnText = this.querySelector('.btn-text');
+
+                // Set loading state
+                defaultIcon.classList.add('hidden');
+                loadingIcon.classList.remove('hidden');
+                btnText.textContent = 'Generating...';
+                this.classList.add('opacity-50', 'cursor-not-allowed');
+                this.disabled = true;
+
+                try {
+                    const response = await fetch(`/admin/product-approvals/generate-category-seo`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ category_name: categoryName })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.data) {
+                        if (descInput) descInput.value = data.data.description;
+                        if (metaDescInput) metaDescInput.value = data.data.meta_description;
+                    } else {
+                        alert(data.message || 'Failed to generate content.');
+                    }
+                } catch (error) {
+                    console.error('Error generating AI content:', error);
+                    alert('An error occurred while generating content.');
+                } finally {
+                    // Restore default state
+                    defaultIcon.classList.remove('hidden');
+                    loadingIcon.classList.add('hidden');
+                    btnText.textContent = 'Generate via AI';
+                    this.classList.remove('opacity-50', 'cursor-not-allowed');
+                    this.disabled = false;
+                }
             });
         });
     });

@@ -424,6 +424,101 @@ class ProductApprovalController extends Controller
         return redirect()->route('admin.products.pending-edits.index')->with('success', 'Proposed product edits rejected.');
     }
 
+    public function approveCustomCategory(Request $request, Product $product, \App\Models\CustomCategorySubmission $submission)
+    {
+        $request->validate([
+            'slug' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'meta_description' => 'nullable|string',
+        ]);
+
+        try {
+            \DB::beginTransaction();
+
+            if ($submission->type === 'category' || $submission->type === 'best_for') {
+                $newCategory = \App\Models\Category::create([
+                    'name' => $submission->name,
+                    'slug' => $request->slug,
+                    'description' => $request->description,
+                    'meta_description' => $request->meta_description,
+                ]);
+
+                // Associate the new category with the product
+                $product->categories()->attach($newCategory->id);
+
+                // If it's a best_for type, we need to assign it to the correct type
+                if ($submission->type === 'best_for') {
+                    $bestForTypeId = 3; // Assuming Best For type ID is 3
+                    $type = \App\Models\Type::find($bestForTypeId);
+                    if ($type) {
+                        $newCategory->types()->attach($type->id);
+                    }
+                } elseif ($submission->type === 'category') {
+                    $categoryId = 1; // Assuming Category type ID is 1
+                    $type = \App\Models\Type::find($categoryId);
+                    if ($type) {
+                        $newCategory->types()->attach($type->id);
+                    }
+                }
+            } elseif ($submission->type === 'tech_stack') {
+                $newTechStack = \App\Models\TechStack::create([
+                    'name' => $submission->name,
+                    'slug' => $request->slug,
+                ]);
+
+                // Associate the new tech stack with the product
+                $product->techStacks()->attach($newTechStack->id);
+            }
+
+            // Mark the submission as approved
+            $submission->update(['status' => 'approved']);
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Custom category approved successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error approving custom category: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve custom category: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function generateCategorySeo(Request $request, \App\Services\CategoryDescriptionGenerator $generator)
+    {
+        $request->validate([
+            'category_name' => 'required|string|max:255',
+        ]);
+
+        try {
+            $result = $generator->generate($request->category_name);
+
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $result
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate content from AI.',
+            ], 500);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('generateCategorySeo Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while generating content.',
+            ], 500);
+        }
+    }
+
     protected $slugService;
 
     public function __construct(\App\Services\SlugService $slugService)

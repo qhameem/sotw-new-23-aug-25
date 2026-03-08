@@ -113,6 +113,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
+    Route::post('product-approvals/{product}/approve-custom-category/{submission}', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approveCustomCategory'])->name('product-approvals.approve-custom-category');
+    Route::post('product-approvals/generate-category-seo', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'generateCategorySeo'])->name('product-approvals.generate-category-seo');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
     Route::post('product-approvals/bulk-approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'bulkApprove'])->name('product-approvals.bulk-approve');
     // Route::post('products/bulk-delete', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->name('products.bulk-delete'); // Commented out original
