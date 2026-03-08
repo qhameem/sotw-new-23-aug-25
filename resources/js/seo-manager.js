@@ -106,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pageSelector.innerHTML = '';
         pages.forEach(page => {
             const option = document.createElement('option');
-            option.value = page.name;
+            // The API now returns 'id' (route name or 'global_defaults') and 'name' (friendly label)
+            option.value = page.id || page.name;
             option.textContent = page.name;
             pageSelector.appendChild(option);
         });
@@ -174,9 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formData = new FormData(seoForm);
-        const selectedPage = allPages.find(p => p.name === pageId);
+        // Find the selected page by id, not by name text
+        const selectedPage = allPages.find(p => p.id === pageId || p.name === pageId);
         formData.append('path', selectedPage ? selectedPage.uri : '');
-        formData.append('page_id', pageId);
+        formData.append('page_id', selectedPage ? (selectedPage.id || selectedPage.name) : pageId);
 
 
         try {

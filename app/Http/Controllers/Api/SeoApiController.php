@@ -15,24 +15,59 @@ class SeoApiController extends Controller
         try {
             \Illuminate\Support\Facades\Log::info('Attempting to fetch pages for SEO manager.');
 
-            $routes = collect(Route::getRoutes()->getRoutes())->map(function ($route) {
+            $friendlyNames = [
+                'home' => 'Home Page',
+                'products.index' => 'Browse Software (All Products)',
+                'products.create' => 'Submit Product Form',
+                'categories.index' => 'Browse Categories List',
+                'categories.show' => 'Individual Category Page',
+                'blog.index' => 'Blog Home',
+                'blog.show' => 'Individual Blog Post',
+                'deals.index' => 'Software Deals',
+                'pages.about' => 'About Us Page',
+                'pages.contact' => 'Contact Us Page',
+                'pages.terms' => 'Terms of Service',
+                'pages.privacy' => 'Privacy Policy',
+                'pricing' => 'Pricing Page',
+                'search' => 'Search Results',
+            ];
+
+            $routes = collect(Route::getRoutes()->getRoutes())->map(function ($route) use ($friendlyNames) {
                 $routeName = $route->getName();
-                $routeUri = $route->uri();
-                $routeMethods = $route->methods();
+                if (!$routeName || !in_array('GET', $route->methods())) {
+                    return null;
+                }
 
-                \Illuminate\Support\Facades\Log::debug("Processing route: Name={$routeName}, URI={$routeUri}, Methods=" . implode(',', $routeMethods));
+                // Only include predefined friendly names or simple pages, skip complex admin/auth routes
+                if (isset($friendlyNames[$routeName])) {
+                    return [
+                        'name' => $routeName,
+                        'friendly_name' => $friendlyNames[$routeName],
+                        'uri' => $route->uri(),
+                    ];
+                }
 
+                return null;
+            })->filter()->values()->toArray();
+
+            // Format to match the JS frontend expectations (using 'name' for the primary label)
+            $formattedRoutes = array_map(function ($route) {
                 return [
-                    'name' => $routeName,
-                    'uri' => $routeUri,
-                    'methods' => $routeMethods,
+                    'name' => $route['friendly_name'] . ' (' . $route['uri'] . ')',
+                    'id' => $route['name'], // Store actual route name for backend indexing
+                    'uri' => $route['uri'],
                 ];
-            })->filter(function ($route) {
-                return $route['name'] && in_array('GET', $route['methods']);
-            })->values();
+            }, $routes);
 
-            \Illuminate\Support\Facades\Log::info('Successfully fetched pages for SEO manager.', ['count' => $routes->count()]);
-            return response()->json($routes);
+            // Add the Global Fallback Defaults option at the very top
+            array_unshift($formattedRoutes, [
+                'name' => '⭐ Global Fallback Defaults (Applies to all unconfigured pages)',
+                'id' => 'global_defaults',
+                'uri' => '*',
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('Successfully fetched pages for SEO manager.', ['count' => count($formattedRoutes)]);
+            return response()->json($formattedRoutes);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error fetching pages for SEO manager: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'Error loading pages.', 'error' => $e->getMessage()], 500);
@@ -108,9 +143,14 @@ class SeoApiController extends Controller
             imagecopyresampled(
                 $targetImage,
                 $sourceImage,
-                0, 0, 0, 0,
-                $targetWidth, $targetHeight,
-                $sourceWidth, $sourceHeight
+                0,
+                0,
+                0,
+                0,
+                $targetWidth,
+                $targetHeight,
+                $sourceWidth,
+                $sourceHeight
             );
 
             // Save the image as a WEBP file
