@@ -138,7 +138,7 @@
     </script>
 
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
-    <meta name="description" content="@yield('meta_description', $metaDescription ?? '')">
+    <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
     <meta name="robots" content="@yield('robots', 'index, follow')">
 
     @if(request()->routeIs('products.byWeek'))
@@ -156,7 +156,7 @@
     <meta property="og:site_name" content="Software on the Web">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
-    <meta property="og:description" content="@yield('meta_description', $metaDescription ?? '')">
+    <meta property="og:description" content="@yield('meta_description', $meta_description ?? '')">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     @if(isset($meta_og_image))
         <meta property="og:image" content="{{ $meta_og_image }}">
@@ -284,13 +284,13 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                                        {
-                                                                          "@context": "https://schema.org",
-                                                                          "@type": "WebSite",
-                                                                          "name": "Software on the Web",
-                                                                          "url": "https://softwareontheweb.com"
-                                                                        }
-                                                                        </script>
+                                                                            {
+                                                                              "@context": "https://schema.org",
+                                                                              "@type": "WebSite",
+                                                                              "name": "Software on the Web",
+                                                                              "url": "https://softwareontheweb.com"
+                                                                            }
+                                                                            </script>
     @endverbatim
 
 
