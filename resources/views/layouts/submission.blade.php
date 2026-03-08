@@ -155,11 +155,18 @@
 
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
+    <meta property="og:description" content="@yield('meta_description', $metaDescription ?? '')">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     @if(isset($meta_og_image))
         <meta property="og:image" content="{{ $meta_og_image }}">
     @endif
+    @php
+        $customLogoUrl = config('theme.logo_url');
+        $siteLogo = $customLogoUrl ? \Illuminate\Support\Facades\Storage::url($customLogoUrl) : asset('favicon/apple-touch-icon.png');
+    @endphp
+    <meta property="og:logo" content="{{ $siteLogo }}">
 
 
     @if(config('theme.font_url'))
@@ -271,13 +278,13 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-            {
-                "@context": "https://schema.org",
-                "@type": "WebSite",
-                "name": "Software on the Web",
-                "url": "https://softwareontheweb.com"
-            }
-            </script>
+                {
+                    "@context": "https://schema.org",
+                    "@type": "WebSite",
+                    "name": "Software on the Web",
+                    "url": "https://softwareontheweb.com"
+                }
+                </script>
     @endverbatim
 
 
@@ -306,7 +313,7 @@
 
     <div class="flex flex-col min-h-screen bg-white">
         <x-top-bar />
-        
+
         <!-- Mobile Header (visible only on mobile) -->
         <div class="md:hidden fixed top-0 w-full z-50 bg-white h-[75px] border-b border-gray-200 flex-shrink-0">
             <div class="h-full px-4 flex items-center justify-between">
@@ -315,25 +322,25 @@
                 </a>
                 <div class="flex items-center space-x-3">
                     @guest
-                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" 
-                           class="text-sm bg-gray-900 text-white py-1.5 px-4 rounded-lg font-semibold">
+                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
+                            class="text-sm bg-gray-900 text-white py-1.5 px-4 rounded-lg font-semibold">
                             Log in <span aria-hidden="true">&rarr;</span>
                         </a>
                     @else
                         <div class="flex items-center space-x-2">
                             @auth
-                            <div id="mobile-notification-bell-app">
-                                <notification-bell :user-id="{{ Auth::id() }}"></notification-bell>
-                            </div>
+                                <div id="mobile-notification-bell-app">
+                                    <notification-bell :user-id="{{ Auth::id() }}"></notification-bell>
+                                </div>
                             @endauth
-                            <div id="mobile-user-dropdown-app" data-user="{{ json_encode(Auth::user()) }}" 
-                                 data-is-admin="{{ Auth::user()->hasRole('admin') ? 'true' : 'false' }}"></div>
+                            <div id="mobile-user-dropdown-app" data-user="{{ json_encode(Auth::user()) }}"
+                                data-is-admin="{{ Auth::user()->hasRole('admin') ? 'true' : 'false' }}"></div>
                         </div>
                     @endguest
                 </div>
             </div>
         </div>
-        
+
         <!-- Main Content Wrapper -->
         <div class="flex-1 w-full flex flex-col relative pt-[75px] md:pt-0">
             <main class="w-full flex-1 flex flex-col">

@@ -154,11 +154,18 @@
 
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
+    <meta property="og:description" content="@yield('meta_description', $metaDescription ?? '')">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     @if(isset($meta_og_image))
         <meta property="og:image" content="{{ $meta_og_image }}">
     @endif
+    @php
+        $customLogoUrl = config('theme.logo_url');
+        $siteLogo = $customLogoUrl ? \Illuminate\Support\Facades\Storage::url($customLogoUrl) : asset('favicon/apple-touch-icon.png');
+    @endphp
+    <meta property="og:logo" content="{{ $siteLogo }}">
 
 
     @if(config('theme.font_url'))
@@ -277,13 +284,13 @@
     <!-- Schema markup -->
     @verbatim
         <script type="application/ld+json">
-                                                                    {
-                                                                      "@context": "https://schema.org",
-                                                                      "@type": "WebSite",
-                                                                      "name": "Software on the Web",
-                                                                      "url": "https://softwareontheweb.com"
-                                                                    }
-                                                                    </script>
+                                                                        {
+                                                                          "@context": "https://schema.org",
+                                                                          "@type": "WebSite",
+                                                                          "name": "Software on the Web",
+                                                                          "url": "https://softwareontheweb.com"
+                                                                        }
+                                                                        </script>
     @endverbatim
 
 

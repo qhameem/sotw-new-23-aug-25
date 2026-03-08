@@ -31,6 +31,17 @@
     </script>
 
     <title>{{ config('app.name', 'Software on the Web') }}</title>
+    <meta name="description" content="@yield('meta_description', config('app.name'))">
+    <meta name="application-name" content="Software on the Web">
+    <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ config('app.name', 'Software on the Web') }}">
+    <meta property="og:description" content="@yield('meta_description', config('app.name'))">
+    @php
+        $customLogoUrl = config('theme.logo_url');
+        $siteLogo = $customLogoUrl ? \Illuminate\Support\Facades\Storage::url($customLogoUrl) : asset('favicon/apple-touch-icon.png');
+    @endphp
+    <meta property="og:logo" content="{{ $siteLogo }}">
 
     <!-- Fonts -->
     {{--
