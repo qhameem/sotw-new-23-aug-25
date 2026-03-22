@@ -183,6 +183,7 @@ class ProductController extends Controller
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
+            'pricing_page_url' => 'nullable|url|max:2048',
             'x_account' => 'nullable|string|max:255',
             'categories' => [
                 function ($attribute, $value, $fail) use ($request) {
@@ -623,6 +624,7 @@ class ProductController extends Controller
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
+            'pricing_page_url' => 'nullable|url|max:2048',
             'x_account' => 'nullable|string|max:255',
         ]);
 
@@ -2157,6 +2159,7 @@ class ProductController extends Controller
                         'categories' => [],
                         'bestFor' => [],
                         'pricing' => [],
+                        'pricing_page_url' => null,
                     ]);
                     return;
                 }
@@ -2280,7 +2283,27 @@ class ProductController extends Controller
                     }
                 }
 
-                $sendUpdate('Extracting logos...', 85);
+                $sendUpdate('Extracting pricing page and logos...', 85);
+                
+                $pricingPageUrl = null;
+                $links = $doc->getElementsByTagName('a');
+                foreach ($links as $link) {
+                    if (!$link->hasAttribute('href')) continue;
+                    $href = $link->getAttribute('href');
+                    if (str_starts_with($href, '#') || str_starts_with($href, 'javascript:')) continue;
+                    $text = strtolower(trim($link->textContent));
+                    if (str_contains(strtolower($href), 'pricing') || str_contains($text, 'pricing') || str_contains($text, 'plans')) {
+                        if (!preg_match('~^(?:f|ht)tps?://~i', $href)) {
+                            $parsedUrl = parse_url($url);
+                            $base = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? '');
+                            $pricingPageUrl = $base . '/' . ltrim($href, '/');
+                        } else {
+                            $pricingPageUrl = $href;
+                        }
+                        break;
+                    }
+                }
+
                 $logos = $this->logoExtractor->extract($url, $htmlContent);
 
                 $sendUpdate('Classifying features and categories...', 95);
@@ -2307,6 +2330,7 @@ class ProductController extends Controller
                     'pricing' => $pricingIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'screenshot_url' => $this->screenshotService->capture($url),
+                    'pricing_page_url' => $pricingPageUrl,
                 ];
 
                 $sendUpdate('Done!', 100, $responseData);
@@ -2320,6 +2344,7 @@ class ProductController extends Controller
                     'categories' => [],
                     'bestFor' => [],
                     'pricing' => [],
+                    'pricing_page_url' => null,
                 ]);
             }
         });
@@ -2364,6 +2389,7 @@ class ProductController extends Controller
                     'categories' => [],
                     'bestFor' => [],
                     'pricing' => [],
+                    'pricing_page_url' => null,
                 ]);
             }
             $htmlContent = $htmlResponse->body();
@@ -2522,6 +2548,26 @@ class ProductController extends Controller
                 }
             }
 
+            // Extract Pricing Page URL
+            $pricingPageUrl = null;
+            $links = $doc->getElementsByTagName('a');
+            foreach ($links as $link) {
+                if (!$link->hasAttribute('href')) continue;
+                $href = $link->getAttribute('href');
+                if (str_starts_with($href, '#') || str_starts_with($href, 'javascript:')) continue;
+                $text = strtolower(trim($link->textContent));
+                if (str_contains(strtolower($href), 'pricing') || str_contains($text, 'pricing') || str_contains($text, 'plans')) {
+                    if (!preg_match('~^(?:f|ht)tps?://~i', $href)) {
+                        $parsedUrl = parse_url($url);
+                        $base = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? '');
+                        $pricingPageUrl = $base . '/' . ltrim($href, '/');
+                    } else {
+                        $pricingPageUrl = $href;
+                    }
+                    break;
+                }
+            }
+
             // Extract Logos
             $logos = $this->logoExtractor->extract($url, $htmlContent);
 
@@ -2560,6 +2606,7 @@ class ProductController extends Controller
                 'pricing' => $pricingIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'screenshot_url' => $this->screenshotService->capture($url),
+                'pricing_page_url' => $pricingPageUrl,
             ];
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
@@ -2580,6 +2627,7 @@ class ProductController extends Controller
                 'categories' => [],
                 'bestFor' => [],
                 'pricing' => [],
+                'pricing_page_url' => null,
             ]);
         }
     }

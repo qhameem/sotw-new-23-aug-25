@@ -299,6 +299,11 @@ export function useProductForm() {
         formData.append('sell_product', '0');
       }
 
+      // Add pricing page url if available
+      if (form.pricing_page_url) {
+        formData.append('pricing_page_url', form.pricing_page_url);
+      }
+
       // Add X account if available
       if (form.x_account) {
         let xHandle = form.x_account;
@@ -764,6 +769,12 @@ export function useProductForm() {
       // 3. Update screenshot if available (refresh with viewport-specific version)
       if (data.screenshot_url) {
         globalFormState.galleryPreviews.value[0] = data.screenshot_url;
+      }
+
+      // 3.5. Update pricing page url if available
+      if (data.pricing_page_url && (!form.pricing_page_url || form.pricing_page_url.trim() === '')) {
+        form.pricing_page_url = data.pricing_page_url;
+        console.log('fetchRemainingData: Auto-filled pricing_page_url with:', data.pricing_page_url);
       }
 
       // 4. Update logos if available

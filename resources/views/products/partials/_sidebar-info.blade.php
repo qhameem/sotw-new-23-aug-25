@@ -44,6 +44,17 @@
         </div>
     @endif
 
+    @if($product->pricing_page_url)
+        <div>
+            <h3 class="text-xs text-gray-500 mb-2">Pricing Page</h3>
+            <a href="{{ $product->pricing_page_url }}" target="_blank" rel="nofollow noopener" 
+               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px]">
+                <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                <span>View Pricing</span>
+            </a>
+        </div>
+    @endif
+
     @if($product->price > 0)
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Price</h3>

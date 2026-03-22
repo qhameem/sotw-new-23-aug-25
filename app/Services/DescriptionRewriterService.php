@@ -64,6 +64,38 @@ Respond ONLY with the structured description in this exact HTML format — no pr
   <li>[Specific audience 3]</li>
 </ul>
 
+<h2><strong>Top Use Cases</strong></h2>
+<ul>
+  <li>[Specific "Problem -> Solution" use case 1, e.g. "Automating invoice data entry for accounting teams"]</li>
+  <li>[Specific "Problem -> Solution" use case 2]</li>
+  <li>[Specific "Problem -> Solution" use case 3]</li>
+</ul>
+
+<h2><strong>Known Alternatives</strong></h2>
+<ul>
+  <li>[Alternative 1: Name the tool and a brief reason to choose this product instead, e.g. "A lightweight, privacy-focused alternative to Google Analytics."]</li>
+  <li>[Alternative 2]</li>
+</ul>
+
+<h2><strong>Integrations & Ecosystem</strong></h2>
+<ul>
+  <li>[List integrations, APIs, or platforms it works with, e.g. "Integrates seamlessly with Slack, Notion, and Zapier."]</li>
+</ul>
+
+<h2><strong>Pros & Cons</strong></h2>
+<ul>
+  <li><strong>Pros:</strong> [List 2-3 key advantages]</li>
+  <li><strong>Limitations:</strong> [List 1-2 honest limitations, e.g. "Not ideal for enterprise-level teams requiring custom SLAs."]</li>
+</ul>
+
+<h2><strong>Frequently Asked Questions</strong></h2>
+<dl>
+  <dt><strong>[Common question 1 about the product?]</strong></dt>
+  <dd>[Direct 1-2 sentence answer.]</dd>
+  <dt><strong>[Common question 2 about the product?]</strong></dt>
+  <dd>[Direct 1-2 sentence answer.]</dd>
+</dl>
+
 Tone: Professional, persuasive, and authoritative. Avoid generic marketing fluff like "game-changing" or "innovative" unless backed by specific facts.
 PROMPT;
 
@@ -79,7 +111,7 @@ PROMPT;
                         ],
                     ],
                     'temperature' => 0.4, // Slightly creative but mostly factual
-                    'max_tokens' => 400,
+                    'max_tokens' => 1200,
                 ]);
 
             if (!$response->successful()) {

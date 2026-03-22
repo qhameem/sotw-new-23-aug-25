@@ -19,6 +19,7 @@ const initialFormState = {
   bestFor: [],
   bestFor_custom: [],
   pricing: [],
+  pricing_page_url: '',
   tech_stack: [],
   tech_stack_custom: [],
   favicon: '',

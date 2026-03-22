@@ -58,6 +58,7 @@ class Product extends Model implements Sitemapable
         'badge_consecutive_failures',
         'badge_placement_url',
         'badge_warning_sent_at',
+        'pricing_page_url',
     ];
 
     protected $casts = [
