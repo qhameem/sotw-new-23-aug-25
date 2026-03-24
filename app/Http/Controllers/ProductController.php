@@ -2201,7 +2201,12 @@ class ProductController extends Controller
 
                     $cleanDoc = clone $doc;
                     $cleanXpath = new \DOMXPath($cleanDoc);
-                    $noise = $cleanXpath->query('//nav | //header | //footer | //script | //style | //noscript | //aside');
+                    // Remove common noise: layout elements, scripts, and third-party widgets
+                    // (video embeds, iframes, cookie banners, chat widgets can pollute the AI context)
+                    $noiseQuery = '//nav | //header | //footer | //script | //style | //noscript | //aside'
+                        . ' | //video | //iframe | //form | //figure | //picture | //template'
+                        . ' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
+                    $noise = $cleanXpath->query($noiseQuery);
                     foreach ($noise as $node) {
                         $node->parentNode?->removeChild($node);
                     }
@@ -2215,7 +2220,9 @@ class ProductController extends Controller
                             $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
                         }
                     }
-                    $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+                    // Cap body content to avoid drowning out product metadata in the AI context window
+                    $rawBodyText = trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+                    $textContent .= "\n\nBODY CONTENT:\n" . mb_substr($rawBodyText, 0, 4000);
 
                     $productNameForAI = $name ?: ($title ?: 'this product');
 
