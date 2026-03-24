@@ -55,7 +55,7 @@
                 ])>
                     <div class="pb-40">
                         @if (isset($right_sidebar_content) && trim($right_sidebar_content))
-                            {{ $right_sidebar_content }}
+                            {!! $right_sidebar_content !!}
                         @else
                             @include('partials._right-sidebar')
                         @endif
