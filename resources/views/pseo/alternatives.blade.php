@@ -41,7 +41,7 @@
         </div>
 
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ $title }}</h1>
-        <p class="text-gray-500 text-sm mb-6">{{ $alternatives->count() }} alternatives found · Ranked by community votes</p>
+        <p class="text-gray-500 text-sm mb-6">{{ $alternatives->count() }} alternatives found</p>
 
         @if($alternatives->isEmpty())
             <p class="text-gray-500">No alternatives found yet. Check back as new products are added.</p>
@@ -61,11 +61,10 @@
                             <div class="mt-2">
                                 <a href="{{ route('pseo.compare', ['slugA' => $product->slug, 'slugB' => $alt->slug]) }}"
                                    class="text-xs text-primary-600 hover:underline">
-                                    Compare {{ $product->name }} vs {{ $alt->name }} →
+                                    Compare {{ $product->name }} vs {{ $alt->name }} &rarr;
                                 </a>
                             </div>
                         </div>
-
                     </div>
                 @endforeach
             </div>
@@ -77,9 +76,9 @@
     <div class="hidden md:block space-y-4">
         <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <h3 class="text-sm font-semibold text-gray-700 mb-2">About {{ $product->name }}</h3>
-            <p class="text-xs text-gray-500">{{ Str::limit(strip_tags($product->description ?? $product->tagline), 120) }}</p>
+            <p class="text-xs text-gray-500">{{ Str::limit(strip_tags($product->tagline ?? ''), 120) }}</p>
             <a href="{{ route('products.show', $product->slug) }}" class="mt-3 block text-xs text-primary-600 hover:underline">
-                View {{ $product->name }} →
+                View {{ $product->name }} &rarr;
             </a>
         </div>
     </div>

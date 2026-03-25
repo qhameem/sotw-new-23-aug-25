@@ -35,6 +35,20 @@
         {{-- Side-by-side comparison --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach([$productA, $productB] as $p)
+                @php
+                    $pricingCat = null;
+                    $softCats = collect();
+                    foreach ($p->categories as $cat) {
+                        $typeNames = $cat->types->pluck('name');
+                        if ($typeNames->contains('Pricing') && !$pricingCat) {
+                            $pricingCat = $cat;
+                        }
+                        if ($typeNames->contains('Software')) {
+                            $softCats->push($cat);
+                        }
+                    }
+                    $softCats = $softCats->take(2);
+                @endphp
                 <div class="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                     <div class="flex items-center gap-3 mb-4">
                         <img src="{{ $p->logo_url }}" alt="{{ $p->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
@@ -48,7 +62,6 @@
 
                     <div class="space-y-3 text-sm">
                         {{-- Pricing --}}
-                        @php $pricingCat = $p->categories->first(fn($c) => $c->types->contains('name', 'Pricing')); @endphp
                         <div class="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span class="text-gray-500 text-xs">Pricing</span>
                             @if($pricingCat)
@@ -56,7 +69,7 @@
                                     {{ $pricingCat->name }}
                                 </a>
                             @else
-                                <span class="text-xs text-gray-400">—</span>
+                                <span class="text-xs text-gray-400">&mdash;</span>
                             @endif
                         </div>
 
@@ -81,7 +94,6 @@
                         @endif
 
                         {{-- Categories --}}
-                        @php $softCats = $p->categories->filter(fn($c) => $c->types->contains('name', 'Category'))->take(2); @endphp
                         @if($softCats->isNotEmpty())
                             <div class="flex justify-between items-start pb-1">
                                 <span class="text-gray-500 text-xs flex-shrink-0">Category</span>
@@ -97,7 +109,7 @@
                     </div>
 
                     <div class="mt-4 flex gap-2">
-                        <a href="{{ route('products.show', $p->slug) }}" class="flex-1 text-center text-xs font-medium bg-primary-500 text-white px-3 py-1.5 rounded-lg hover:bg-primary-600 transition-colors" style="background-color: var(--color-primary-500);">
+                        <a href="{{ route('products.show', $p->slug) }}" class="flex-1 text-center text-xs font-medium text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity" style="background-color: var(--color-primary-500, #6366f1);">
                             View {{ $p->name }}
                         </a>
                         <a href="{{ route('pseo.alternatives', $p->slug) }}" class="flex-1 text-center text-xs font-medium border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
@@ -115,10 +127,10 @@
         <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">Explore more</h3>
             <a href="{{ route('pseo.alternatives', $productA->slug) }}" class="block text-xs text-primary-600 hover:underline mb-2">
-                Alternatives to {{ $productA->name }} →
+                Alternatives to {{ $productA->name }} &rarr;
             </a>
             <a href="{{ route('pseo.alternatives', $productB->slug) }}" class="block text-xs text-primary-600 hover:underline">
-                Alternatives to {{ $productB->name }} →
+                Alternatives to {{ $productB->name }} &rarr;
             </a>
         </div>
     </div>
