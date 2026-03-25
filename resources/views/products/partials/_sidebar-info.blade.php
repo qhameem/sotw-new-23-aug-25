@@ -40,7 +40,9 @@
     @if($pricingCategory)
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Pricing Model</h3>
-            <p class="text-xs text-gray-700 font-medium">{{ $pricingCategory->name }}</p>
+            <a href="{{ route('pseo.pricing', $pricingCategory->slug) }}" class="text-xs text-gray-700 font-medium hover:text-primary-600 hover:underline">
+                {{ $pricingCategory->name }}
+            </a>
         </div>
     @endif
 
@@ -69,13 +71,35 @@
             <h3 class="text-xs text-gray-500 mb-2">Built with</h3>
             <div class="flex flex-wrap gap-2">
                 @foreach($product->techStacks as $techStack)
-                    <span class="inline-flex items-center text-xs text-gray-700 font-medium bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                    <a href="{{ route('pseo.builtWith', $techStack->slug) }}"
+                       class="inline-flex items-center text-xs text-gray-700 font-medium bg-gray-50 px-2 py-0.5 rounded border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-colors">
                         {{ $techStack->name }}
-                    </span>
+                    </a>
                 @endforeach
             </div>
         </div>
     @endif
+
+    {{-- pSEO: Alternatives + Compare links --}}
+    <div class="space-y-2 pt-1">
+        <a href="{{ route('pseo.alternatives', $product->slug) }}"
+           class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors">
+            <svg class="size-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            Find alternatives to {{ $product->name }}
+        </a>
+
+        @if(isset($similarProducts) && $similarProducts->isNotEmpty())
+            <div>
+                <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1.5">Compare with</p>
+                @foreach($similarProducts->take(2) as $similar)
+                    <a href="{{ route('pseo.compare', ['slugA' => $product->slug, 'slugB' => $similar->slug]) }}"
+                       class="block text-xs text-gray-500 hover:text-primary-600 transition-colors mb-1">
+                        {{ $product->name }} vs {{ $similar->name }} →
+                    </a>
+                @endforeach
+            </div>
+        @endif
+    </div>
 
 
     @php

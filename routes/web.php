@@ -243,6 +243,16 @@ Route::get('/faq', function () {
     return view('site.faq');
 })->name('faq');
 
+use App\Http\Controllers\PseoController;
+
+// pSEO pages
+Route::get('/best/{category:slug}/for/{bestfor:slug}', [PseoController::class, 'bestFor'])->name('pseo.bestFor');
+Route::get('/best/{category:slug}', [PseoController::class, 'bestOf'])->name('pseo.best');
+Route::get('/alternatives/{product:slug}', [PseoController::class, 'alternatives'])->name('pseo.alternatives');
+Route::get('/built-with/{techstack:slug}', [PseoController::class, 'builtWith'])->name('pseo.builtWith');
+Route::get('/compare/{slugA}-vs-{slugB}', [PseoController::class, 'compare'])->name('pseo.compare');
+Route::get('/software/{pricing:slug}', [PseoController::class, 'pricingModel'])->name('pseo.pricing');
+
 // Dedicated product page - Ensure this doesn't conflict with article post slugs if products can have any slug.
 // If product slugs might overlap with 'articles', consider prefixing product routes, e.g., /products/{product:slug}
 // Redirect for old product URLs
@@ -257,7 +267,7 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog|free-todo-list-tool)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog|free-todo-list-tool|best|alternatives|built-with|compare|software)[^/]+$');
 
 Route::post('/products/{product}/upvote', [ProductController::class, 'upvote'])->name('products.upvote');
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
