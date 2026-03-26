@@ -22,12 +22,12 @@
 
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
         "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
-            {"@type": "ListItem", "position": 2, "name": "{{ $productA->name }}", "item": "{{ route('products.show', $productA->slug) }}"},
-            {"@type": "ListItem", "position": 3, "name": "vs {{ $productB->name }}"}
+            {"@@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
+            {"@@type": "ListItem", "position": 2, "name": "{{ $productA->name }}", "item": "{{ route('products.show', $productA->slug) }}"},
+            {"@@type": "ListItem", "position": 3, "name": "vs {{ $productB->name }}"}
         ]
     }
     </script>
@@ -35,7 +35,6 @@
     <div class="bg-white rounded-lg py-6 md:py-8">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6">{{ $title }}</h1>
 
-        {{-- Side-by-side comparison --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach([$productA, $productB] as $p)
                 @php
@@ -64,7 +63,7 @@
                     </div>
 
                     <div class="space-y-3 text-sm">
-                        {{-- Pricing --}}
+                        
                         <div class="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span class="text-gray-500 text-xs">Pricing</span>
                             @if($pricingCat)
@@ -76,13 +75,13 @@
                             @endif
                         </div>
 
-                        {{-- Community votes --}}
+                        
                         <div class="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span class="text-gray-500 text-xs">Community votes</span>
                             <span class="text-xs font-bold text-gray-800">{{ number_format($p->votes_count) }}</span>
                         </div>
 
-                        {{-- Tech stacks --}}
+                        
                         @if($p->techStacks->isNotEmpty())
                             <div class="flex justify-between items-start border-b border-gray-50 pb-2">
                                 <span class="text-gray-500 text-xs flex-shrink-0">Built with</span>
@@ -96,7 +95,7 @@
                             </div>
                         @endif
 
-                        {{-- Categories --}}
+                        
                         @if($softCats->isNotEmpty())
                             <div class="flex justify-between items-start pb-1">
                                 <span class="text-gray-500 text-xs flex-shrink-0">Category</span>

@@ -22,18 +22,17 @@
 
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
         "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
-            {"@type": "ListItem", "position": 2, "name": "{{ $product->name }}", "item": "{{ route('products.show', $product->slug) }}"},
-            {"@type": "ListItem", "position": 3, "name": "Alternatives to {{ $product->name }}"}
+            {"@@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
+            {"@@type": "ListItem", "position": 2, "name": "{{ $product->name }}", "item": "{{ route('products.show', $product->slug) }}"},
+            {"@@type": "ListItem", "position": 3, "name": "Alternatives to {{ $product->name }}"}
         ]
     }
     </script>
 
     <div class="bg-white rounded-lg py-6 md:py-8">
-        {{-- Original product card --}}
         <div class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4">
             <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
             <div>
@@ -86,3 +85,4 @@
         </div>
     </div>
 @endsection
+
