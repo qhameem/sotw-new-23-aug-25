@@ -116,10 +116,16 @@ class PseoController extends Controller
      * /compare/{slugA}-vs-{slugB}
      * "{ProductA} vs {ProductB}: Which is Better?"
      */
-    public function compare($slugA, $slugB)
+    public function compare($params)
     {
-        // Prevent comparing a product with itself
-        abort_if($slugA === $slugB, 404);
+        // Split on the FIRST occurrence of '-vs-' so slugs with hyphens work
+        $pos = strpos($params, '-vs-');
+        if ($pos === false) {
+            abort(404);
+        }
+        $slugA = substr($params, 0, $pos);
+        $slugB = substr($params, $pos + 4); // 4 = strlen('-vs-')
+
 
         $productA = Product::where('slug', $slugA)
             ->where('approved', true)

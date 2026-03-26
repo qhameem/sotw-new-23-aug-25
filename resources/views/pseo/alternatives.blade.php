@@ -59,7 +59,7 @@
                             </a>
                             <p class="text-sm text-gray-500 mt-0.5">{{ $alt->tagline }}</p>
                             <div class="mt-2">
-                                <a href="{{ route('pseo.compare', ['slugA' => $product->slug, 'slugB' => $alt->slug]) }}"
+                                <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $alt->slug]) }}"
                                    class="text-xs text-primary-600 hover:underline">
                                     Compare {{ $product->name }} vs {{ $alt->name }} &rarr;
                                 </a>

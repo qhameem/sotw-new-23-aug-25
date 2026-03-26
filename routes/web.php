@@ -250,7 +250,7 @@ Route::get('/best/{category:slug}/for/{bestfor:slug}', [PseoController::class, '
 Route::get('/best/{category:slug}', [PseoController::class, 'bestOf'])->name('pseo.best');
 Route::get('/alternatives/{product:slug}', [PseoController::class, 'alternatives'])->name('pseo.alternatives');
 Route::get('/built-with/{techstack:slug}', [PseoController::class, 'builtWith'])->name('pseo.builtWith');
-Route::get('/compare/{slugA}-vs-{slugB}', [PseoController::class, 'compare'])->name('pseo.compare');
+Route::get('/compare/{params}', [PseoController::class, 'compare'])->name('pseo.compare')->where('params', '.+-vs-.+');
 Route::get('/software/{pricing:slug}', [PseoController::class, 'pricingModel'])->name('pseo.pricing');
 
 // Dedicated product page - Ensure this doesn't conflict with article post slugs if products can have any slug.

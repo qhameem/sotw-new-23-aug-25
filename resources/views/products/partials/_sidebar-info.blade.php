@@ -92,7 +92,7 @@
             <div>
                 <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1.5">Compare with</p>
                 @foreach($similarProducts->take(2) as $similar)
-                    <a href="{{ route('pseo.compare', ['slugA' => $product->slug, 'slugB' => $similar->slug]) }}"
+                    <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $similar->slug]) }}"
                        class="block text-xs text-gray-500 hover:text-primary-600 transition-colors mb-1">
                         {{ $product->name }} vs {{ $similar->name }} →
                     </a>
