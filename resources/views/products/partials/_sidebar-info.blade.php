@@ -81,7 +81,7 @@
     @endif
 
     {{-- pSEO: Alternatives + Compare links --}}
-    <div class="space-y-2 pt-1">
+    <div class="space-y-6 pt-1">
         <a href="{{ route('pseo.alternatives', $product->slug) }}"
            class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors">
             <svg class="size-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
@@ -90,7 +90,7 @@
 
         @if(isset($similarProducts) && $similarProducts->isNotEmpty())
             <div>
-                <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1.5">Compare with</p>
+                <p class="text-xs text-gray-400 font-medium tracking-wide mb-1.5">Compare with</p>
                 @foreach($similarProducts->take(2) as $similar)
                     <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $similar->slug]) }}"
                        class="block text-xs text-gray-500 hover:text-primary-600 transition-colors mb-1">
