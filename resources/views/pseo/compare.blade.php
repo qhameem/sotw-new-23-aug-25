@@ -37,8 +37,8 @@
 
         {{-- Side-by-side comparison --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <?php foreach([$productA, $productB] as $p): ?>
-                <?php
+            @foreach([$productA, $productB] as $p)
+                @php
                     $pricingCat = null;
                     $softCats = collect();
                     foreach ($p->categories as $cat) {
@@ -51,7 +51,7 @@
                         }
                     }
                     $softCats = $softCats->take(2);
-                ?>
+                @endphp
                 <div class="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                     <div class="flex items-center gap-3 mb-4">
                         <img src="{{ $p->logo_url }}" alt="{{ $p->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
@@ -67,13 +67,13 @@
                         {{-- Pricing --}}
                         <div class="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span class="text-gray-500 text-xs">Pricing</span>
-                            <?php if($pricingCat): ?>
+                            @if($pricingCat)
                                 <a href="{{ route('pseo.pricing', $pricingCat->slug) }}" class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full hover:underline">
                                     {{ $pricingCat->name }}
                                 </a>
-                            <?php else: ?>
+                            @else
                                 <span class="text-xs text-gray-400">&mdash;</span>
-                            <?php endif; ?>
+                            @endif
                         </div>
 
                         {{-- Community votes --}}
@@ -83,32 +83,32 @@
                         </div>
 
                         {{-- Tech stacks --}}
-                        <?php if($p->techStacks->isNotEmpty()): ?>
+                        @if($p->techStacks->isNotEmpty())
                             <div class="flex justify-between items-start border-b border-gray-50 pb-2">
                                 <span class="text-gray-500 text-xs flex-shrink-0">Built with</span>
                                 <div class="flex flex-wrap gap-1 justify-end">
-                                    <?php foreach($p->techStacks->take(3) as $stack): ?>
+                                    @foreach($p->techStacks->take(3) as $stack)
                                         <a href="{{ route('pseo.builtWith', $stack->slug) }}" class="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded hover:bg-gray-200">
                                             {{ $stack->name }}
                                         </a>
-                                    <?php endforeach; ?>
+                                    @endforeach
                                 </div>
                             </div>
-                        <?php endif; ?>
+                        @endif
 
                         {{-- Categories --}}
-                        <?php if($softCats->isNotEmpty()): ?>
+                        @if($softCats->isNotEmpty())
                             <div class="flex justify-between items-start pb-1">
                                 <span class="text-gray-500 text-xs flex-shrink-0">Category</span>
                                 <div class="flex flex-wrap gap-1 justify-end">
-                                    <?php foreach($softCats as $cat): ?>
+                                    @foreach($softCats as $cat)
                                         <a href="{{ route('categories.show', $cat->slug) }}" class="text-xs text-gray-600 hover:underline">
                                             {{ $cat->name }}
                                         </a>
-                                    <?php endforeach; ?>
+                                    @endforeach
                                 </div>
                             </div>
-                        <?php endif; ?>
+                        @endif
                     </div>
 
                     <div class="mt-4 flex gap-2">
@@ -120,7 +120,7 @@
                         </a>
                     </div>
                 </div>
-            <?php endforeach; ?>
+            @endforeach
         </div>
     </div>
 @endsection
