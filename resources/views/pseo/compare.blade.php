@@ -11,10 +11,13 @@
 
 @section('content')
     <div class="py-4">
-        <x-breadcrumbs :items="[
-            ['label' => $productA->name, 'url' => route('products.show', $productA->slug)],
-            ['label' => 'vs ' . $productB->name],
-        ]" />
+        @php
+            $breadcrumbs = [
+                ['label' => $productA->name, 'url' => route('products.show', $productA->slug)],
+                ['label' => 'vs ' . $productB->name],
+            ];
+        @endphp
+        <x-breadcrumbs :items="$breadcrumbs" />
     </div>
 
     <script type="application/ld+json">
