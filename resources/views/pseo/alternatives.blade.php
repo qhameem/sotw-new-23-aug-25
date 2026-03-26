@@ -13,7 +13,7 @@
     <div class="py-4">
         @php
             $breadcrumbs = [
-                ['label' => $product->name, 'url' => route('products.show', $product->slug)],
+                ['label' => $product->name, 'link' => route('products.show', $product->slug)],
                 ['label' => 'Alternatives'],
             ];
         @endphp

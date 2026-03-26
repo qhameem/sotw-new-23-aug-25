@@ -13,8 +13,8 @@
     {{-- Breadcrumbs --}}
     <div class="py-4">
         <x-breadcrumbs :items="[
-            ['label' => 'Topics', 'url' => route('topics.index')],
-            ['label' => $category->name, 'url' => route('categories.show', $category->slug)],
+            ['label' => 'Topics', 'link' => route('topics.index')],
+            ['label' => $category->name, 'link' => route('categories.show', $category->slug)],
             ['label' => 'Best of'],
         ]" />
     </div>

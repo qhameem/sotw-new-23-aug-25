@@ -12,7 +12,7 @@
 @section('content')
     <div class="py-4">
         <x-breadcrumbs :items="[
-            ['label' => $category->name, 'url' => route('categories.show', $category->slug)],
+            ['label' => $category->name, 'link' => route('categories.show', $category->slug)],
             ['label' => 'Best for ' . $bestfor->name],
         ]" />
     </div>
