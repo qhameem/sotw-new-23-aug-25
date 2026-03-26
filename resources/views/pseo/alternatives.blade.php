@@ -43,11 +43,11 @@
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ $title }}</h1>
         <p class="text-gray-500 text-sm mb-6">{{ $alternatives->count() }} alternatives found</p>
 
-        @if($alternatives->isEmpty())
+        <?php if($alternatives->isEmpty()): ?>
             <p class="text-gray-500">No alternatives found yet. Check back as new products are added.</p>
-        @else
+        <?php else: ?>
             <div class="space-y-4">
-                @foreach($alternatives as $index => $alt)
+                <?php foreach($alternatives as $index => $alt): ?>
                     <div class="flex items-start gap-4 p-4 border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-sm transition-all">
                         <span class="text-sm font-bold text-gray-300 w-5 mt-1 flex-shrink-0">{{ $index + 1 }}</span>
                         <div class="flex-shrink-0">
@@ -66,9 +66,9 @@
                             </div>
                         </div>
                     </div>
-                @endforeach
+                <?php endforeach; ?>
             </div>
-        @endif
+        <?php endif; ?>
     </div>
 @endsection
 
