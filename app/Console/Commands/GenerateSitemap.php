@@ -116,6 +116,75 @@ class GenerateSitemap extends Command
         }
 
 
+        // --- pSEO Pages --- //
+        $this->info('Adding pSEO routes...');
+
+        // 1. Alternatives Pages
+        foreach (Product::where('approved', true)->get() as $product) {
+            $sitemap->add(Url::create(route('pseo.alternatives', $product->slug))
+                ->setPriority(0.8)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        }
+
+        // 2. Best-Of Category Pages
+        $softwareCats = Category::whereHas('products', function($q) { $q->where('approved', true); })
+            ->whereHas('types', function($q) { $q->where('name', 'Software'); })->get();
+            
+        foreach ($softwareCats as $category) {
+            $sitemap->add(Url::create(route('pseo.best', $category->slug))
+                ->setPriority(0.8)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        }
+
+        // 3. Built-With (Tech Stack) Pages
+        if (class_exists(\App\Models\TechStack::class)) {
+            foreach (\App\Models\TechStack::whereHas('products', function($q) { $q->where('approved', true); })->get() as $stack) {
+                $sitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
+                    ->setPriority(0.7)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+            }
+        }
+
+        // 4. Pricing Pages
+        $pricingCategories = Category::whereHas('types', function($q) { $q->where('name', 'Pricing'); })
+            ->whereHas('products', function($q) { $q->where('approved', true); })->get();
+        foreach ($pricingCategories as $pricing) {
+            $sitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
+                ->setPriority(0.7)
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        }
+
+        // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
+        $this->info('Generating comparison URLs...');
+        $products = Product::where('approved', true)->with('categories')->get();
+        $addedComparisons = [];
+        
+        foreach ($products as $product) {
+            $categoryIds = $product->categories->pluck('id');
+            $similarProducts = Product::whereHas('categories', function ($query) use ($categoryIds) {
+                $query->whereIn('categories.id', $categoryIds);
+            })
+            ->where('id', '!=', $product->id)
+            ->where('approved', true)
+            ->orderBy('votes_count', 'desc')
+            ->take(5) // Top 5 competitors per product
+            ->get();
+            
+            foreach ($similarProducts as $similar) {
+                // Ensure alphabetical order so A-vs-B is the same as B-vs-A
+                $slugs = [$product->slug, $similar->slug];
+                sort($slugs);
+                $compareKey = $slugs[0] . '-vs-' . $slugs[1];
+                
+                if (!isset($addedComparisons[$compareKey])) {
+                    $sitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
+                        ->setPriority(0.6)
+                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+                    $addedComparisons[$compareKey] = true;
+                }
+            }
+        }
+
         $sitemap->writeToFile($sitemapPath);
 
         $this->info("Sitemap generated successfully at {$sitemapPath}");
