@@ -29,7 +29,7 @@ class ScreenshotService
             $thumUrl = 'https://image.thum.io/get/width/1280/crop/800/noanimate/' . $url;
 
             // Download the screenshot image
-            $response = Http::timeout(30)->get($thumUrl);
+            $response = Http::timeout(5)->get($thumUrl);
 
             if (!$response->successful()) {
                 Log::error('Thum.io screenshot failed for ' . $url, [
