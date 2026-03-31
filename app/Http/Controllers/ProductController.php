@@ -1967,7 +1967,13 @@ class ProductController extends Controller
                 'favicon' => $faviconUrl,
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to fetch data.'], 500);
+            Log::warning('Basic metadata fetch timed out or blocked: ' . $e->getMessage(), ['url' => $url]);
+            return response()->json([
+                'name' => '',
+                'tagline' => '',
+                'description' => '',
+                'favicon' => null,
+            ], 200);
         }
     }
 
