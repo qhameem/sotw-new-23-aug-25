@@ -205,23 +205,18 @@
     <style>
         :root {
             --font-family-sans: '{{ $fontFamily }}', sans-serif;
-            --color-primary-500:
-                {{ $primaryHexColor }}
-            ;
-            --color-primary-600:
-                {{ $primaryHexColor }}
-            ;
-            --color-primary-700:
-                {{ $primaryHexColor }}
-            ;
-            --color-primary-button-text:
-                {{ $primaryButtonTextColor }}
-            ;
+            --color-primary-500: {{ $primaryHexColor }};
+            --color-primary-600: {{ $primaryHexColor }};
+            --color-primary-700: {{ $primaryHexColor }};
+            --color-primary-button-text: {{ $primaryButtonTextColor }};
+            --color-navbar-bg: {{ config('theme.navbar_bg_color', '#ffffff') }};
+            --color-body-bg: {{ config('theme.body_bg_color', '#ffffff') }};
         }
 
         html,
         body {
             font-family: var(--font-family-sans);
+            background-color: var(--color-body-bg);
         }
 
         [x-cloak] {
@@ -305,7 +300,7 @@
     @endforeach
 </head>
 
-<body class="font-sans antialiased bg-white" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
+<body class="font-sans antialiased" style="background-color: var(--color-body-bg);" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
     data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
     @php
         $bodySnippets = \App\Models\CodeSnippet::where('location', 'body')->get();

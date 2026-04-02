@@ -97,6 +97,12 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['submission_bg_url'])) { // Can be null
                     Config::set('theme.submission_bg_url', $settings['submission_bg_url']);
                 }
+                if (isset($settings['navbar_bg_color'])) {
+                    Config::set('theme.navbar_bg_color', $settings['navbar_bg_color']);
+                }
+                if (isset($settings['body_bg_color'])) {
+                    Config::set('theme.body_bg_color', $settings['body_bg_color']);
+                }
             }
         }
     }

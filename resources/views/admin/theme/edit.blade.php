@@ -350,9 +350,105 @@
                         </div>
 
 
+
+                        {{-- =============================== --}}
+                        {{-- Background Colors Section       --}}
+                        {{-- =============================== --}}
+                        <div class="mt-8 pt-6 border-t border-gray-200" x-data="{
+                            navbarColor: {{ Js::from(old('navbar_bg_color', $currentNavbarBgColor ?? '#ffffff')) }},
+                            bodyColor:   {{ Js::from(old('body_bg_color',   $currentBodyBgColor   ?? '#ffffff')) }},
+
+                            isValidHex(c) {
+                                return /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(c);
+                            },
+                            normalise(val) {
+                                val = val.trim();
+                                if (!val.startsWith('#')) val = '#' + val;
+                                return val;
+                            },
+                            applyNavbar(val) {
+                                val = this.normalise(val);
+                                if (this.isValidHex(val)) {
+                                    this.navbarColor = val;
+                                    document.documentElement.style.setProperty('--color-navbar-bg', val);
+                                    document.getElementById('navbar_color_picker').value = val;
+                                }
+                            },
+                            applyBody(val) {
+                                val = this.normalise(val);
+                                if (this.isValidHex(val)) {
+                                    this.bodyColor = val;
+                                    document.documentElement.style.setProperty('--color-body-bg', val);
+                                    document.getElementById('body_color_picker').value = val;
+                                }
+                            },
+                            init() {
+                                // Sync pickers with saved values on load
+                                if (this.isValidHex(this.navbarColor)) {
+                                    document.getElementById('navbar_color_picker').value = this.navbarColor;
+                                }
+                                if (this.isValidHex(this.bodyColor)) {
+                                    document.getElementById('body_color_picker').value = this.bodyColor;
+                                }
+                            }
+                        }" x-init="init()">
+
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">Background Colors</h3>
+                            <p class="text-sm text-gray-500 mb-5">Enter a hex color code. The page preview updates instantly so you can see the result before saving.</p>
+
+                            {{-- Menubar Background --}}
+                            <div class="mb-6">
+                                <x-input-label for="navbar_color_text" :value="__('Top Menubar Background')" />
+                                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                                    <input type="color" id="navbar_color_picker"
+                                        class="w-12 h-10 p-0.5 border border-gray-300 rounded-md shadow-sm cursor-pointer"
+                                        @input="applyNavbar($event.target.value)">
+                                    <x-text-input id="navbar_color_text" type="text" class="block w-36 font-mono"
+                                        x-model="navbarColor"
+                                        placeholder="#ffffff"
+                                        @input="applyNavbar($event.target.value)"
+                                        @paste="$nextTick(() => applyNavbar($event.target.value))" />
+                                    <span class="inline-flex items-center gap-2 text-xs text-gray-500">
+                                        <span class="inline-block w-5 h-5 rounded border border-gray-300 flex-shrink-0"
+                                            :style="{ backgroundColor: navbarColor }"></span>
+                                        Preview applied live above
+                                    </span>
+                                </div>
+                                <input type="hidden" name="navbar_bg_color" :value="navbarColor">
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Current saved value: <strong>{{ $currentNavbarBgColor ?? '#ffffff' }}</strong>
+                                </p>
+                            </div>
+
+                            {{-- Body Background --}}
+                            <div>
+                                <x-input-label for="body_color_text" :value="__('Page Body Background')" />
+                                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                                    <input type="color" id="body_color_picker"
+                                        class="w-12 h-10 p-0.5 border border-gray-300 rounded-md shadow-sm cursor-pointer"
+                                        @input="applyBody($event.target.value)">
+                                    <x-text-input id="body_color_text" type="text" class="block w-36 font-mono"
+                                        x-model="bodyColor"
+                                        placeholder="#ffffff"
+                                        @input="applyBody($event.target.value)"
+                                        @paste="$nextTick(() => applyBody($event.target.value))" />
+                                    <span class="inline-flex items-center gap-2 text-xs text-gray-500">
+                                        <span class="inline-block w-5 h-5 rounded border border-gray-300 flex-shrink-0"
+                                            :style="{ backgroundColor: bodyColor }"></span>
+                                        Preview applied live to page background
+                                    </span>
+                                </div>
+                                <input type="hidden" name="body_bg_color" :value="bodyColor">
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Current saved value: <strong>{{ $currentBodyBgColor ?? '#ffffff' }}</strong>
+                                </p>
+                            </div>
+                        </div>
+
                         {{-- Submission Page Background Section --}}
                         <div class="mt-8 pt-6 border-t border-gray-200 ">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Submission Page Background') }}</h3>
+
 
                             <div class="mt-6" x-data="{
                                     bgPreviewUrl: '{{ $currentSubmissionBgUrl ?? $defaultSubmissionBgUrl }}',

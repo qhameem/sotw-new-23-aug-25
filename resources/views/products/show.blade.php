@@ -18,7 +18,7 @@
         <x-breadcrumbs :items="[['label' => $product->name]]" />
     </div>
 
-    <div class="bg-white rounded-lg py-6 md:py-8"
+    <div class="rounded-lg py-6 md:py-8"
         x-data="{
                                                                                         @if(isset($isAdminView) && $isAdminView)
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         editingName: false,

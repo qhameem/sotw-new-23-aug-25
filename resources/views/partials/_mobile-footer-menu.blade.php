@@ -50,7 +50,7 @@ $navItems = [
 ];
 @endphp
 
-<div class="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
+<div class="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 border-t border-gray-200" style="background-color: var(--color-navbar-bg, #ffffff);">
     <div class="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         @foreach ($navItems as $item)
             <x-mobile-nav-item :href="$item['href']" :text="$item['text']" :active-routes="$item['activeRoutes']">

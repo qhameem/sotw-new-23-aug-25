@@ -66,7 +66,7 @@
     </div>
 
     <!-- Footer Container (Outside Body) -->
-    <div class="flex-shrink-0 relative bg-white w-full z-20">
+    <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
         <x-footer />
         <!-- Mobile navigation -->
         @include('partials._mobile-footer-menu')

@@ -23,4 +23,7 @@ return [
     'logo_alt_text' => null,
     'favicon_url' => null,
     'primary_button_text_color' => null, // Default, will be determined or overridden
+
+    'navbar_bg_color' => env('THEME_NAVBAR_BG_COLOR', '#ffffff'),
+    'body_bg_color'   => env('THEME_BODY_BG_COLOR', '#ffffff'),
 ];

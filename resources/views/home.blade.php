@@ -25,9 +25,9 @@
 @endif
 
 @section('content')
-    <div class="flex-shrink-0 bg-white z-10 relative">
+    <div class="flex-shrink-0 z-10 relative" style="background-color: var(--color-body-bg, #ffffff);">
     @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <div class="bg-white px-4 py-2">
+        <div class="px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data='weeklyNavigation(@json($activeWeeks ?? []))'>
                 <button @click="scroll('left')" class="px-2 text-sm cursor-pointer text-gray-600 hover:text-rose-500">
                     &larr;
@@ -61,14 +61,14 @@
     @endif
 
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
-        <div class="bg-white px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
+        <div class="px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
             <p class="text-sm text-gray-800">{{ $category->description }}</p>
         </div>
     @endif
     </div>
 
     <!-- Product List Container -->
-    <div class="bg-white flex-1 min-h-[400px] flex flex-col">
+    <div class="flex-1 min-h-[400px] flex flex-col" style="background-color: var(--color-body-bg, #ffffff);">
         @if(isset($isFuture) && $isFuture)
             <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
                 <div class="w-24 h-24 mb-6 text-gray-200">
