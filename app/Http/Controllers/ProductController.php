@@ -1655,7 +1655,13 @@ class ProductController extends Controller
             return $category->types->contains('name', 'Best for');
         });
 
-        $categoryIds = $product->categories->pluck('id');
+        // Only use functional categories for similarity matching.
+        // Exclude meta-category types like "Pricing" (Free, Paid…) and "Best for"
+        // so that products are compared by what they *do*, not by their pricing model.
+        $categoryIds = $product->categories
+            ->filter(fn($cat) => $cat->types->doesntContain('name', 'Pricing')
+                && $cat->types->doesntContain('name', 'Best for'))
+            ->pluck('id');
 
         $similarProducts = Product::where('id', '!=', $product->id)
             ->where('approved', true)
