@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title')
-    {{-- This is intentionally left blank to give more prominence to the article's h1 title --}}
-@endsection
+@section('title', $post->meta_title ?: ($post->title . ' | Software on the Web'))
+
+@section('meta_description', $post->meta_description ?: $post->excerpt)
 
 @section('content')
     <div class="py-12">

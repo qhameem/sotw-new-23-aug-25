@@ -125,7 +125,10 @@ class ArticleController extends Controller
             ->latest('published_at')
             ->paginate(10);
 
-        return view('articles.category', ['posts' => $posts, 'articleCategory' => $articleCategory]);
+        return view('articles.category', [
+            'posts' => $posts,
+            'category' => $articleCategory,
+        ]);
     }
 
     public function tag(ArticleTag $articleTag)
@@ -137,7 +140,10 @@ class ArticleController extends Controller
             ->latest('published_at')
             ->paginate(10);
 
-        return view('articles.tag', ['posts' => $posts, 'articleTag' => $articleTag]);
+        return view('articles.tag', [
+            'posts' => $posts,
+            'tag' => $articleTag,
+        ]);
     }
 
     public function search(Request $request)
