@@ -953,7 +953,7 @@ class ProductController extends Controller
         $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear;
         $meta_title = "Discover Top " . strip_tags($category->name) . " (" . $currentYear . ") - Software on the Web";
         $isCategoryPage = true;
-        $metaDescription = $category->meta_description;
+        $meta_description = $category->meta_description ?: $category->description;
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -981,7 +981,7 @@ class ProductController extends Controller
             'belowProductListingAdPosition',
             'title',
             'isCategoryPage',
-            'metaDescription',
+            'meta_description',
             'meta_title',
             'nextLaunchTime'
         ));
