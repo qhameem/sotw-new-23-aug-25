@@ -19,22 +19,38 @@ class SeoComposer
             $meta = PageMetaTag::where('page_id', 'global_defaults')->first();
         }
 
+        $viewData = $view->getData();
+
         if ($meta) {
-            $category = $view->getData()['category'] ?? null;
+            $category = $viewData['category'] ?? null;
             if ($category && $routeName === 'categories.show') {
-                if (!isset($view->getData()['meta_title'])) {
+                if (!isset($viewData['meta_title'])) {
                     $view->with('meta_title', $category->name . ' - ' . config('app.name'));
                 }
             } else {
-                $view->with('meta_title', $meta->meta_title ?? config('app.name'));
+                if (!isset($viewData['meta_title'])) {
+                    $view->with('meta_title', $meta->meta_title ?? config('app.name'));
+                }
             }
-            $view->with('meta_description', $meta->meta_description ?? '');
-            $view->with('meta_og_image', $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null);
+            
+            if (!isset($viewData['meta_description'])) {
+                $view->with('meta_description', $meta->meta_description ?? '');
+            }
+            
+            if (!isset($viewData['meta_og_image'])) {
+                $view->with('meta_og_image', $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null);
+            }
         } else {
             // Absolute default if nothing is configured
-            $view->with('meta_title', config('app.name'));
-            $view->with('meta_description', '');
-            $view->with('meta_og_image', null);
+            if (!isset($viewData['meta_title'])) {
+                $view->with('meta_title', config('app.name'));
+            }
+            if (!isset($viewData['meta_description'])) {
+                $view->with('meta_description', '');
+            }
+            if (!isset($viewData['meta_og_image'])) {
+                $view->with('meta_og_image', null);
+            }
         }
     }
 }
