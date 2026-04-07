@@ -303,7 +303,7 @@
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($headSnippets as $snippet)
-        @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+        @if ($snippet->shouldRenderFor(request()))
             <template class="delayed-head-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
@@ -316,7 +316,7 @@
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
     @endphp
     @foreach ($bodySnippets as $snippet)
-        @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+        @if ($snippet->shouldRenderFor(request()))
             <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
         @endif
     @endforeach
@@ -356,7 +356,7 @@
                 <div class="space-y-6">
                     <div class="sidebar-snippets-container w-full overflow-x-auto">
                         @foreach ($sidebarSnippets as $snippet)
-                            @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+                            @if ($snippet->shouldRenderFor(request()))
                                 <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
                             @endif
                         @endforeach

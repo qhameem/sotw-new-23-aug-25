@@ -5,7 +5,7 @@
 <div class="space-y-6">
     <div class="sidebar-snippets-container w-full overflow-x-auto">
         @foreach ($sidebarSnippets as $snippet)
-            @if ($snippet->page === 'all' || request()->routeIs(str_replace('.index', '.*', $snippet->page)))
+            @if ($snippet->shouldRenderFor(request()))
                 {!! html_entity_decode($snippet->code) !!}
             @endif
         @endforeach

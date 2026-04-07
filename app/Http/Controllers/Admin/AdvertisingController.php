@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
 use App\Models\Ad;
 use App\Models\AdZone;
 use App\Models\CodeSnippet;
@@ -15,9 +14,10 @@ class AdvertisingController extends Controller
     {
         $ads = Ad::with('adZones')->latest()->paginate(10);
         $adZones = AdZone::latest()->paginate(10);
-        $snippets = CodeSnippet::all();
+        $snippets = CodeSnippet::latest()->get();
+        $countries = $this->countryOptions();
 
-        return view('admin.advertising.index', compact('ads', 'adZones', 'snippets'));
+        return view('admin.advertising.index', compact('ads', 'adZones', 'snippets', 'countries'));
     }
 
     public function store(Request $request)
@@ -61,5 +61,29 @@ class AdvertisingController extends Controller
     public function create()
     {
         return view('admin.advertising.create');
+    }
+
+    protected function countryOptions(): array
+    {
+        $bundle = \ResourceBundle::create('en', 'ICUDATA-region');
+        $countries = [];
+
+        if (! $bundle) {
+            return $countries;
+        }
+
+        $countryBundle = $bundle->get('Countries');
+
+        foreach ($countryBundle as $countryCode => $countryName) {
+            if (preg_match('/^[A-Z]{2}$/', $countryCode) !== 1) {
+                continue;
+            }
+
+            $countries[$countryCode] = (string) $countryName;
+        }
+
+        asort($countries);
+
+        return $countries;
     }
 }

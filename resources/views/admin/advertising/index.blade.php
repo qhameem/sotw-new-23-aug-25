@@ -43,7 +43,7 @@
     </div>
 
     <div x-show="activeTab === 'code_snippets'">
-        @include('admin.advertising.snippets', ['snippets' => $snippets])
+        @include('admin.advertising.snippets', ['snippets' => $snippets, 'countries' => $countries])
     </div>
 </div>
 @endsection
