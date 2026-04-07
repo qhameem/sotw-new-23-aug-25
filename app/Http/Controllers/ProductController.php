@@ -951,7 +951,7 @@ class ProductController extends Controller
 
         $currentYear = Carbon::now()->year;
         $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear;
-        $meta_title = "Discover Top " . strip_tags($category->name) . " (" . $currentYear . ") - Software on the Web";
+        $meta_title = "Best " . strip_tags($category->name) . " Tools & Software (" . $currentYear . ") | Software on the Web";
         $isCategoryPage = true;
         $meta_description = $category->meta_description ?: $category->description;
 
