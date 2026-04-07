@@ -142,9 +142,18 @@
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
 
-    @if(request()->routeIs('products.byWeek'))
+    @hasSection('canonical')
+        @yield('canonical')
+    @elseif(request()->routeIs('products.byWeek'))
         <link rel="canonical"
             href="{{ route('products.byWeek', ['year' => request()->route('year'), 'week' => request()->route('week')]) }}" />
+    @elseif(request()->routeIs('products.byDate'))
+        <link rel="canonical" href="{{ url()->current() }}" />
+    @elseif(request()->routeIs('products.byMonth'))
+        <link rel="canonical"
+            href="{{ route('products.byMonth', ['year' => request()->route('year'), 'month' => request()->route('month')]) }}" />
+    @elseif(request()->routeIs('products.byYear'))
+        <link rel="canonical" href="{{ route('products.byYear', ['year' => request()->route('year')]) }}" />
     @elseif(request()->routeIs('home'))
         <link rel="canonical" href="{{ route('home') }}" />
     @elseif(request()->routeIs('products.show'))
