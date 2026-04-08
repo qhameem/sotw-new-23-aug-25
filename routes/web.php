@@ -108,6 +108,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
     Route::resource('tech-stacks', \App\Http\Controllers\Admin\TechStackController::class);
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
+    Route::get('advertising/detect-audience', [AdvertisingController::class, 'detectAudience'])->name('advertising.detect-audience');
     Route::resource('advertising', AdvertisingController::class);
     Route::resource('ad-zones', AdZoneController::class);
     Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
@@ -326,5 +327,3 @@ Route::prefix('free-todo-list-tool')->name('todolists.')->group(function () {
     Route::put('/items/{todoListItem}', [TodoListController::class, 'updateItem'])->name('items.update');
     Route::delete('/items/{todoListItem}', [TodoListController::class, 'destroyItem'])->name('items.destroy');
 });
-
-

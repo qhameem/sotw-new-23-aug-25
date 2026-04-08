@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Ad;
 use App\Models\AdZone;
 use App\Models\CodeSnippet;
+use App\Services\CodeSnippetVisibilityService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AdvertisingController extends Controller
 {
@@ -18,6 +20,19 @@ class AdvertisingController extends Controller
         $countries = $this->countryOptions();
 
         return view('admin.advertising.index', compact('ads', 'adZones', 'snippets', 'countries'));
+    }
+
+    public function detectAudience(Request $request, CodeSnippetVisibilityService $visibilityService): JsonResponse
+    {
+        $ipAddress = $visibilityService->resolveIpAddress($request);
+        $countryCode = $visibilityService->resolveCountryCode($request);
+        $countries = $this->countryOptions();
+
+        return response()->json([
+            'ip' => $ipAddress,
+            'country_code' => $countryCode,
+            'country_name' => $countryCode !== null ? ($countries[$countryCode] ?? $countryCode) : null,
+        ]);
     }
 
     public function store(Request $request)
