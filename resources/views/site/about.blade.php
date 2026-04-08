@@ -13,7 +13,7 @@
             <p class="text-gray-700 leading-relaxed">
                 <strong>Software On The Web</strong> is a curated platform for discovering standout digital products—
                 built for makers, seekers, and anyone passionate about innovative software.
-                We surface <strong>exceptional tools daily</strong>, chosen through a rigorous handpicking process by a team
+                We surface <strong>exceptional tools weekly</strong>, chosen through a rigorous handpicking process by a team
                 that lives and breathes digital.
             </p>
             <p class="text-gray-700 mt-2 leading-relaxed">
