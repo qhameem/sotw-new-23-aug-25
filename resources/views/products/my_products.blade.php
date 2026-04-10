@@ -70,17 +70,7 @@
                                             </h2>
                                         </div>
                                     </div>
-                                    <button x-show="editingField !== 'name'" @click="startEdit('name', product.name)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                        Edit
-                                    </button>
-                                    
-                                    <div x-show="editingField === 'name'" class="flex items-center gap-2 w-full">
-                                        <input type="text" x-model="tempValue" class="text-base md:text-lg font-bold border-gray-300 rounded px-2 py-1 w-full focus:ring-blue-500 focus:border-blue-500">
-                                        <div class="flex gap-1">
-                                            <button @click="save('name')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">Save</button>
-                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
-                                        </div>
-                                    </div>
+                                    <span class="text-gray-400 text-xs font-semibold">Locked</span>
                                 </div>
                             </div>
                             
@@ -190,24 +180,17 @@
                                 <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
                                     <div class="flex items-center justify-between mb-2">
                                         <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Link</p>
-                                        <button x-show="editingField !== 'link'" @click="startEdit('link', product.link)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
+                                        <span class="text-gray-400 text-xs font-semibold">Locked</span>
                                     </div>
                                     <p x-show="editingField !== 'link'" class="text-sm text-blue-600 break-all">
                                         <a :href="product.link" target="_blank" rel="noopener nofollow" x-text="product.link"></a>
                                     </p>
-                                    <div x-show="editingField === 'link'" class="flex items-center gap-2 mt-1">
-                                        <input type="url" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full">
-                                        <button @click="save('link')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                    </div>
                                      <!-- Slug display below Link field -->
                                      <div class="mt-2 text-[0.7rem] text-gray-500">
                                          <span class="font-bold uppercase tracking-wider text-gray-400">Software on the Web URL:</span>
                                          <div class="mt-0.5 flex items-center gap-1">
                                              <span class="text-gray-400">softwareontheweb.com/</span>
-                                             <span class="font-semibold text-blue-600" x-text="editingField === 'link' || editingField === 'name' ? generateSlug(tempValue || product.name) : product.slug"></span>
+                                             <span class="font-semibold text-blue-600" x-text="product.slug"></span>
                                          </div>
                                      </div>
                                  </div>

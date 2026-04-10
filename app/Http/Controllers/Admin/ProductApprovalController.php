@@ -364,6 +364,7 @@ class ProductApprovalController extends Controller
         $product->sell_product = !is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product;
         $product->asking_price = !is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
         $product->maker_links = $product->proposed_maker_links ?? $product->maker_links;
+        $product->pricing_page_url = $product->proposed_pricing_page_url ?? $product->pricing_page_url;
 
         // Sync categories and tech stacks
         $product->categories()->sync($product->proposedCategories()->pluck('categories.id')->toArray());
@@ -381,6 +382,7 @@ class ProductApprovalController extends Controller
         $product->proposed_asking_price = null;
         $product->proposed_maker_links = null;
         $product->proposed_product_page_tagline = null;
+        $product->proposed_pricing_page_url = null;
 
         $product->proposedCategories()->detach();
         $product->proposedTechStacks()->detach();
@@ -414,6 +416,7 @@ class ProductApprovalController extends Controller
         $product->proposed_asking_price = null;
         $product->proposed_maker_links = null;
         $product->proposed_product_page_tagline = null;
+        $product->proposed_pricing_page_url = null;
 
         $product->proposedCategories()->detach();
         $product->proposedTechStacks()->detach();

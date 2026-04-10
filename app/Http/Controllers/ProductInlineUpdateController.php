@@ -35,17 +35,16 @@ class ProductInlineUpdateController extends Controller
 
         // Validation based on field
         $rules = [
-            'field' => 'required|string|in:name,tagline,product_page_tagline,description,link,x_account,sell_product,asking_price,maker_links,categories,tech_stacks,video_url',
+            'field' => 'required|string|in:tagline,product_page_tagline,description,x_account,sell_product,asking_price,maker_links,categories,tech_stacks,video_url,pricing_page_url',
         ];
 
         switch ($field) {
-            case 'name':
             case 'tagline':
             case 'product_page_tagline':
-            case 'link':
             case 'x_account':
+            case 'pricing_page_url':
                 $rules['value'] = 'required|string|max:255';
-                if ($field === 'link')
+                if ($field === 'pricing_page_url')
                     $rules['value'] .= '|url';
                 break;
             case 'description':
@@ -96,35 +95,14 @@ class ProductInlineUpdateController extends Controller
             $updateData[$field] = $value;
         }
 
-        if ($field === 'name' || $field === 'link') {
-            $existsCheck = function ($slug) use ($product) {
-                return Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
-            };
-
-            $textForSlug = $product->name;
-            if ($field === 'name') {
-                $textForSlug = $value;
-            } elseif ($field === 'link') {
-                $textForSlug = $this->extractNameFromUrl($value);
-            }
-
-            $updateData['slug'] = $this->slugService->generateUniqueSlug($textForSlug, $existsCheck);
+        if ($field === 'pricing_page_url') {
+            $value = Product::normalizeLink($value);
+            $updateData['pricing_page_url'] = $value;
         }
 
         if ($product->approved) {
             // Approved products store changes as "proposed"
             switch ($field) {
-                case 'name':
-                    $product->proposed_name = $value;
-                    // If name changes, we should also propose a new slug
-                    $existsCheck = function ($slug) use ($product) {
-                        return Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
-                    };
-                    $product->proposed_slug = $this->slugService->generateUniqueSlug($value, $existsCheck); // Wait, I didn't add proposed_slug. Let's use proposed_name for now, and handle slug on approval.
-                    break;
-                case 'link':
-                    $product->proposed_link = $value;
-                    break;
                 case 'video_url':
                     $product->proposed_video_url = $value;
                     break;
@@ -148,6 +126,9 @@ class ProductInlineUpdateController extends Controller
                     break;
                 case 'description':
                     $product->proposed_description = $value;
+                    break;
+                case 'pricing_page_url':
+                    $product->proposed_pricing_page_url = $value;
                     break;
                 case 'categories':
                     $product->proposedCategories()->sync($value);
@@ -187,18 +168,10 @@ class ProductInlineUpdateController extends Controller
         $selected = collect($selectedIds)->map(fn($id) => (int) $id);
 
         $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
-        $bestForType = Type::where('id', 3)->with('categories')->first();
+        $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
 
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-
-        $softwareTypeIds = Type::whereIn('name', ['Software', 'Category'])->pluck('id');
-        $softwareIds = DB::table('category_types')
-            ->whereIn('type_id', $softwareTypeIds)
-            ->pluck('category_id')
-            ->concat(Category::whereDoesntHave('types')->pluck('id'))
-            ->unique()
-            ->map(fn($id) => (int) $id);
-        $bestForIds = $bestForType ? $bestForType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
+        $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Please select at least one category from the Pricing group.'], 422);
@@ -206,10 +179,6 @@ class ProductInlineUpdateController extends Controller
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Please select at least one category from the Software Categories group.'], 422);
         }
-        if ($bestForIds->count() && $selected->intersect($bestForIds)->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Please select at least one category from the Best for group.'], 422);
-        }
-
         return null;
     }
 

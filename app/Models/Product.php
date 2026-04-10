@@ -59,6 +59,7 @@ class Product extends Model implements Sitemapable
         'badge_placement_url',
         'badge_warning_sent_at',
         'pricing_page_url',
+        'proposed_pricing_page_url',
     ];
 
     protected $casts = [
@@ -87,6 +88,58 @@ class Product extends Model implements Sitemapable
     }
 
     protected $appends = ['logo_url'];
+
+    public static function normalizeLink(?string $url): ?string
+    {
+        if (!is_string($url)) {
+            return $url;
+        }
+
+        $url = trim($url);
+        if ($url === '') {
+            return $url;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || !isset($parts['host'])) {
+            return $url;
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? 'https');
+        $host = strtolower($parts['host']);
+        if (str_starts_with($host, 'www.')) {
+            $host = substr($host, 4);
+        }
+
+        $path = $parts['path'] ?? '';
+        $path = $path === '/' ? '' : rtrim($path, '/');
+
+        $normalized = $scheme . '://' . $host;
+
+        if (isset($parts['port']) && !in_array([$scheme, $parts['port']], [['http', 80], ['https', 443]], true)) {
+            $normalized .= ':' . $parts['port'];
+        }
+
+        $normalized .= $path;
+
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+            $query = collect($query)
+                ->reject(fn($_, $key) => str_starts_with(strtolower((string) $key), 'utm_'))
+                ->all();
+
+            if (!empty($query)) {
+                ksort($query);
+                $normalized .= '?' . http_build_query($query);
+            }
+        }
+
+        if (!empty($parts['fragment'])) {
+            $normalized .= '#' . $parts['fragment'];
+        }
+
+        return $normalized;
+    }
 
     public function getLogoUrlAttribute()
     {

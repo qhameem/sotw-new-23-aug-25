@@ -209,6 +209,11 @@ class ProductController extends Controller
             'custom_tech_stacks.*.name' => 'required|string|max:100',
         ]);
 
+        $validated['link'] = Product::normalizeLink($validated['link']);
+        if (!empty($validated['pricing_page_url'])) {
+            $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
+        }
+
         // Check if a product with this URL already exists
         $existingProduct = Product::where('link', $validated['link'])->first();
         if ($existingProduct) {
@@ -327,35 +332,37 @@ class ProductController extends Controller
         }
         unset($validated['logo_url']);
 
-        $product = Product::create($validated);
-        $product->categories()->sync($validated['categories']);
-        if (isset($validated['tech_stacks'])) {
-            $product->techStacks()->sync($validated['tech_stacks']);
-        }
-
-        // Handle custom categories if any
-        if ($request->has('custom_categories')) {
-            foreach ($request->input('custom_categories') as $customCategory) {
-                \App\Models\CustomCategorySubmission::create([
-                    'product_id' => $product->id,
-                    'type' => $customCategory['type'],
-                    'name' => $customCategory['name'],
-                    'status' => 'pending'
-                ]);
+        $product = DB::transaction(function () use ($validated, $request) {
+            $product = Product::create($validated);
+            $product->categories()->sync($validated['categories']);
+            if (isset($validated['tech_stacks'])) {
+                $product->techStacks()->sync($validated['tech_stacks']);
             }
-        }
 
-        // Handle custom tech stacks if any
-        if ($request->has('custom_tech_stacks')) {
-            foreach ($request->input('custom_tech_stacks') as $customTechStack) {
-                \App\Models\CustomCategorySubmission::create([
-                    'product_id' => $product->id,
-                    'type' => 'tech_stack',
-                    'name' => $customTechStack['name'],
-                    'status' => 'pending'
-                ]);
+            if ($request->has('custom_categories')) {
+                foreach ($request->input('custom_categories') as $customCategory) {
+                    \App\Models\CustomCategorySubmission::create([
+                        'product_id' => $product->id,
+                        'type' => $customCategory['type'],
+                        'name' => $customCategory['name'],
+                        'status' => 'pending'
+                    ]);
+                }
             }
-        }
+
+            if ($request->has('custom_tech_stacks')) {
+                foreach ($request->input('custom_tech_stacks') as $customTechStack) {
+                    \App\Models\CustomCategorySubmission::create([
+                        'product_id' => $product->id,
+                        'type' => 'tech_stack',
+                        'name' => $customTechStack['name'],
+                        'status' => 'pending'
+                    ]);
+                }
+            }
+
+            return $product;
+        });
 
         if ($request->hasFile('media')) {
             $manager = new ImageManager(new Driver());
@@ -628,6 +635,10 @@ class ProductController extends Controller
             'x_account' => 'nullable|string|max:255',
         ]);
 
+        if (!empty($validated['pricing_page_url'])) {
+            $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
+        }
+
         // Category validation (ensure at least one from each required type is selected)
         // This logic can be kept or adjusted based on whether proposed edits should also adhere to it.
         // For simplicity, we'll assume it applies.
@@ -678,6 +689,7 @@ class ProductController extends Controller
             'maker_links' => $validated['maker_links'] ?? [],
             'sell_product' => $validated['sell_product'] ?? false,
             'asking_price' => $validated['asking_price'] ?? null,
+            'pricing_page_url' => $validated['pricing_page_url'] ?? null,
         ];
 
         $xAccount = $validated['x_account'] ?? null;
@@ -738,6 +750,11 @@ class ProductController extends Controller
             $product->proposed_product_page_tagline = $updateData['product_page_tagline'];
             $product->proposed_description = $this->ensureProperParagraphStructure($updateData['description']);
             $product->proposed_video_url = $updateData['video_url'] ?? null;
+            $product->proposed_x_account = $updateData['x_account'] ?? null;
+            $product->proposed_sell_product = $updateData['sell_product'];
+            $product->proposed_asking_price = $updateData['asking_price'];
+            $product->proposed_maker_links = $updateData['maker_links'];
+            $product->proposed_pricing_page_url = $updateData['pricing_page_url'];
             $product->proposedCategories()->sync($newCategories);
             $product->proposedTechStacks()->sync($newTechStacks);
             $product->has_pending_edits = true;
@@ -786,6 +803,7 @@ class ProductController extends Controller
             $product->proposed_asking_price = null;
             $product->proposed_maker_links = null;
             $product->proposed_product_page_tagline = null;
+            $product->proposed_pricing_page_url = null;
             $product->proposedCategories()->detach();
             $product->proposedTechStacks()->detach();
             $product->has_pending_edits = false;
@@ -837,7 +855,7 @@ class ProductController extends Controller
 
     public function checkUrl(Request $request)
     {
-        $url = $request->input('url');
+        $url = Product::normalizeLink($request->input('url'));
         $excludeId = $request->input('exclude_id');
         \Log::info('Checking URL for existence: ' . $url . ($excludeId ? ' (excluding ID: ' . $excludeId . ')' : ''));
         if (!$url) {
