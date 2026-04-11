@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('login') }}" class="space-y-7">
+<form method="POST" action="{{ route('login') }}" class="space-y-5">
     @csrf
     <input type="hidden" name="intended" x-bind:value="intendedUrl">
     <div>
@@ -6,7 +6,7 @@
         <x-text-input id="email_modal_login" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
         <x-input-error :messages="$errors->get('email')" class="mt-2" />
     </div>
-    <div class="mt-5">
+    <div class="mt-4">
         <!-- <x-input-label for="password_modal_login" :value="__('Password')" /> -->
         <div class="flex items-center justify-between">
             <x-input-label for="password_modal_login" :value="__('Password')" />

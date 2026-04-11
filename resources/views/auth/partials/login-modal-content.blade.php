@@ -1,49 +1,45 @@
-<div x-data="{ activeTab: 'login', intendedUrl: '' }" x-init="intendedUrl = window.location.href" class="px-10 py-7">
-    <div class="flex justify-center mb-7">
+<div x-data="{ activeTab: 'login', intendedUrl: '' }" x-init="intendedUrl = window.location.href" class="px-8 py-5 sm:px-10 sm:py-6">
+    <div class="flex justify-center mb-5">
         <x-application-logo class="h-9 w-auto" />
     </div>
     
-    <div class="">
-        
-        <nav class="flex justify-center mx-auto bg-neutral-50 rounded-xl w-1/2 px-1 py-1 shadow-inner" aria-label="Tabs">
-            <a href="#" @click.prevent="activeTab = 'login'"
-               :class="{ 'text-gray-800': activeTab === 'login', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'login' }"
-               class="whitespace-nowrap py-1 px-1 font-medium text-sm">
-               <div class="flex flex-row px-3 py-1.5 rounded-lg justify-between content-center items-center transition-all duration-200"  :class="{ 'bg-white shadow-sm': activeTab === 'login' }">
-                <div class="mr-2">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M8 16C8 18.8284 8 20.2426 8.87868 21.1213C9.75736 22 11.1716 22 14 22H15C17.8284 22 19.2426 22 20.1213 21.1213C21 20.2426 21 18.8284 21 16V8C21 5.17157 21 3.75736 20.1213 2.87868C19.2426 2 17.8284 2 15 2H14C11.1716 2 9.75736 2 8.87868 2.87868C8 3.75736 8 5.17157 8 8" stroke="#383838" stroke-width="1.5" stroke-linecap="round"></path> <path d="M8 19.5C5.64298 19.5 4.46447 19.5 3.73223 18.7678C3 18.0355 3 16.857 3 14.5V9.5C3 7.14298 3 5.96447 3.73223 5.23223C4.46447 4.5 5.64298 4.5 8 4.5" stroke="#383838" stroke-width="1.5"></path> <path d="M6 12L15 12M15 12L12.5 14.5M15 12L12.5 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
-               </div>
-                
-               <div> 
-                    Login
-                </div>
-            </div>
-                        
-            </a>
-            <a href="#" @click.prevent="activeTab = 'register'"
-               :class="{ 'text-gray-800': activeTab === 'register', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'register' }"
-               class="whitespace-nowrap py-1 px-1 font-medium text-sm">
-                <div class="flex flex-row px-3 py-1.5 rounded-lg justify-between content-center items-center transition-all duration-200"  :class="{ 'bg-white shadow-sm': activeTab === 'register' }">
-                    <div class="mr-2">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <circle cx="12" cy="6" r="4" stroke="#383838" stroke-width="1.5"></circle> <path d="M15 13.3271C14.0736 13.1162 13.0609 13 12 13C7.58172 13 4 15.0147 4 17.5C4 19.9853 4 22 12 22C17.6874 22 19.3315 20.9817 19.8068 19.5" stroke="#383838" stroke-width="1.5"></path> <circle cx="18" cy="16" r="4" stroke="#383838" stroke-width="1.5"></circle> <path d="M18 14.6667V17.3333" stroke="#383838" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M16.6665 16L19.3332 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
-                   </div>
-                
-                   <div> 
-                        Sign Up
-                    </div>
-                </div>
-            </a>
+    <div class="mx-auto w-full max-w-xs">
+        <nav class="relative grid grid-cols-2 rounded-2xl border border-gray-200 bg-gray-100/80 p-1" aria-label="Authentication tabs">
+            <div
+                class="pointer-events-none absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-xl bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-transform duration-300 ease-out"
+                :class="activeTab === 'login' ? 'translate-x-1' : 'translate-x-[calc(100%+0.25rem)]'"
+            ></div>
+
+            <button
+                type="button"
+                @click="activeTab = 'login'"
+                :aria-pressed="activeTab === 'login'"
+                class="relative z-10 rounded-xl px-4 py-2.5 text-sm font-medium tracking-tight transition-colors duration-200"
+                :class="activeTab === 'login' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+            >
+                Log in
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'register'"
+                :aria-pressed="activeTab === 'register'"
+                class="relative z-10 rounded-xl px-4 py-2.5 text-sm font-medium tracking-tight transition-colors duration-200"
+                :class="activeTab === 'register' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+            >
+                Sign up
+            </button>
         </nav>
     </div>
 
-    <div class="flex flex-col items-center justify-center mt-5">
+    <div class="flex flex-col items-center justify-center mt-4">
         <div class="text-[1.4rem] text-gray-800 font-semibold tracking-tight" x-text="activeTab === 'login' ? 'Welcome back!' : 'Create your account'"></div>
         <div class="text-xs text-gray-500 w-72 text-center" x-text="activeTab === 'login' ? 'Pick a sign-in method to continue exploring and submitting products.' : 'Join the community to submit products, save your favorites, and keep up with new launches.'"></div>
     </div>
 
-    <div x-show="activeTab === 'login'" class="mt-9 mb-6 min-h-[420px]">
+    <div x-show="activeTab === 'login'" class="mt-7 mb-3">
         @include('auth.partials.google-login-button')
-        <div class="mt-7 flex items-center">
+        <div class="mt-5 flex items-center">
             <div class="flex-grow border-t border-gray-300"></div>
             <span class="flex-shrink mx-4 text-gray-400 text-sm">or</span>
             <div class="flex-grow border-t border-gray-300"></div>
@@ -51,9 +47,9 @@
         @include('auth.partials.login-form')
     </div>
 
-    <div x-show="activeTab === 'register'" class="mt-9 mb-6 min-h-[420px]" style="display: none;">
+    <div x-show="activeTab === 'register'" class="mt-7 mb-3" style="display: none;">
         @include('auth.partials.google-login-button')
-        <div class="mt-7 flex items-center">
+        <div class="mt-5 flex items-center">
             <div class="flex-grow border-t border-gray-300"></div>
             <span class="flex-shrink mx-4 text-gray-400 text-sm">or</span>
             <div class="flex-grow border-t border-gray-300"></div>
