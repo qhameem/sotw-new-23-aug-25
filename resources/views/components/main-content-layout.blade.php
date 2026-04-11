@@ -45,15 +45,16 @@
             <!-- Right Sidebar -->
             <div @class([
                 'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0 md:pt-[3.7rem]',
-                'md:h-[calc(100vh-3.7rem)]' => !$lockHeight,
                 'md:sticky top-[3.7rem]' => $sidebarSticky && !$lockHeight,
                 'md:flex md:flex-col md:h-full' => $lockHeight,
             ])>
                 <div @class([
                     'p-6 min-h-0',
-                    'md:flex-1 md:overflow-y-auto' => true
+                    'md:flex-1 md:overflow-y-auto' => $lockHeight
                 ])>
-                    <div class="pb-40">
+                    <div @class([
+                        'pb-40' => $lockHeight,
+                    ])>
                         @if (isset($right_sidebar_content) && trim($right_sidebar_content))
                             {!! $right_sidebar_content !!}
                         @else
