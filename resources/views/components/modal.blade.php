@@ -18,6 +18,42 @@ $maxWidth = [
     x-data="{
         show: @js($show),
         intendedUrl: '',
+        lockBodyScroll() {
+            const body = document.body
+            const root = document.documentElement
+            const openCount = Number(body.dataset.modalOpenCount || 0)
+
+            if (openCount === 0) {
+                body.dataset.modalOriginalPaddingRight = body.style.paddingRight || ''
+                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+                root.style.setProperty('--modal-scrollbar-compensation', `${Math.max(scrollbarWidth, 0)}px`)
+
+                if (scrollbarWidth > 0) {
+                    body.style.paddingRight = `${scrollbarWidth}px`
+                }
+
+                body.classList.add('overflow-y-hidden')
+            }
+
+            body.dataset.modalOpenCount = String(openCount + 1)
+        },
+        unlockBodyScroll() {
+            const body = document.body
+            const root = document.documentElement
+            const openCount = Number(body.dataset.modalOpenCount || 0)
+
+            if (openCount <= 1) {
+                body.classList.remove('overflow-y-hidden')
+                body.style.paddingRight = body.dataset.modalOriginalPaddingRight || ''
+                root.style.setProperty('--modal-scrollbar-compensation', '0px')
+                delete body.dataset.modalOpenCount
+                delete body.dataset.modalOriginalPaddingRight
+                return
+            }
+
+            body.dataset.modalOpenCount = String(openCount - 1)
+        },
         focusables() {
             // All focusable element types...
             let selector = 'a, button, input:not([type=\'hidden\']), textarea, select, details, [tabindex]:not([tabindex=\'-1\'])'
@@ -34,10 +70,10 @@ $maxWidth = [
     }"
     x-init="$watch('show', value => {
         if (value) {
-            document.body.classList.add('overflow-y-hidden');
+            lockBodyScroll();
             {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable().focus(), 100)' : '' }}
         } else {
-            document.body.classList.remove('overflow-y-hidden');
+            unlockBodyScroll();
         }
     })"
     x-on:open-modal.window="if ($event.detail.name == '{{ $name }}') { show = true; if ($event.detail.url) { intendedUrl = $event.detail.url } }"

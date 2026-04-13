@@ -235,6 +235,10 @@
         [v-cloak] {
             display: none;
         }
+
+        [data-modal-scroll-lock-fixed] {
+            padding-right: var(--modal-scrollbar-compensation, 0px);
+        }
     </style>
 
     @php

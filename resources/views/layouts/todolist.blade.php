@@ -98,7 +98,7 @@
 
 <body class="font-sans antialiased bg-gray-100 pt-16" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
     data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
-    <div class="fixed top-5 left-0 right-0 z-10">
+    <div data-modal-scroll-lock-fixed class="fixed top-5 left-0 right-0 z-10">
         <div
             class="sm:max-w-xl md:max-w-[640px] lg:max-w-[640px] xl:max-w-[640px] mx-auto px-8 border bg-white opacity-90 rounded-full">
             <div class="flex justify-between items-center py-4">
