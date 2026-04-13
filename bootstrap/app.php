@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
         ]);
 
 

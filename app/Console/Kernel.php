@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\PublishScheduledProducts;
+use App\Console\Commands\PruneMagicLoginLinks;
 use Illuminate\Support\Facades\Storage;
 
 class Kernel extends ConsoleKernel
@@ -18,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         GenerateSitemap::class,
         PublishScheduledProducts::class,
+        PruneMagicLoginLinks::class,
         \App\Console\Commands\AddNofollowToProductDescriptions::class,
     ];
 
@@ -36,6 +38,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('products:publish-scheduled')->dailyAt($publishTime);
         $schedule->command('reminders:send-deadline')->everyMinute();
         $schedule->command('badge:verify')->weekly()->mondays()->at('09:00');
+        $schedule->command('auth:prune-magic-links')->daily();
     }
 
     /**

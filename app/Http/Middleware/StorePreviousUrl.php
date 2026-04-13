@@ -27,6 +27,8 @@ class StorePreviousUrl
             'verification.notice',
             'verification.verify',
             'verification.send',
+            'auth.magic-link.consume',
+            'auth.complete-profile.show',
             'auth.google',
             'auth.google.callback',
         ];

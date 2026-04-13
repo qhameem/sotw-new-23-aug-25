@@ -2,31 +2,19 @@
 
 use App\Models\User;
 
-test('confirm password screen can be rendered', function () {
+test('confirm password screen redirects to profile', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)->get('/confirm-password');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('profile.edit'));
 });
 
-test('password can be confirmed', function () {
-    $user = User::factory()->create();
+test('confirm password post redirects without errors for passwordless flow', function () {
+    $user = User::factory()->create(['password' => null]);
 
-    $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'password',
-    ]);
+    $response = $this->actingAs($user)->post('/confirm-password');
 
-    $response->assertRedirect();
+    $response->assertRedirect(route('profile.edit'));
     $response->assertSessionHasNoErrors();
-});
-
-test('password is not confirmed with invalid password', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'wrong-password',
-    ]);
-
-    $response->assertSessionHasErrors();
 });

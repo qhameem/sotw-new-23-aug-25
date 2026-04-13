@@ -6,7 +6,6 @@
     use App\Models\User;
     use Illuminate\Http\Request;
     use Illuminate\Support\Facades\Auth;
-    use Illuminate\Support\Facades\Hash;
     use Illuminate\Support\Str;
     use Laravel\Socialite\Facades\Socialite;
     use Exception;
@@ -49,13 +48,17 @@
                 } else {
                     // No user found by email, create a new user
                     $user = User::create([
-                        'name' => $googleUser->getName(),
+                        'name' => $googleUser->getName() ?: Str::before($googleUser->getEmail(), '@'),
                         'email' => $googleUser->getEmail(),
                         'google_id' => $googleUser->getId(),
                         'google_avatar' => $googleUser->getAvatar(),
-                        'password' => Hash::make(Str::random(24)), // Generate a random password
+                        'password' => null,
                         'email_verified_at' => now(), // Consider email verified via Google
                     ]);
+                }
+
+                if (! $user->email_verified_at) {
+                    $user->forceFill(['email_verified_at' => now()])->save();
                 }
 
                 Auth::login($user, true);

@@ -48,11 +48,11 @@ Route::get('/thank-you', function () {
 
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'profile.complete'])->name('dashboard');
 
 Route::get('/add-product', [ProductController::class, 'createSubmission'])->name('products.create');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotificationPreferences'])->name('profile.update.notifications'); // Added route
@@ -85,7 +85,7 @@ Route::get('/stripe/product-review/success', [StripeController::class, 'productR
 // TEMPORARY TEST ROUTE - REMOVE ADMIN GROUPING
 Route::any('/temporary-bulk-delete-test-no-name', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->middleware('auth'); // Changed to Route::any for diagnostics
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', CategoryController::class);
     // Define specific product routes BEFORE the resource controller for products
     // Test route for debugging 404
