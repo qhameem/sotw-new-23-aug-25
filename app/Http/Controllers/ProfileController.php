@@ -61,7 +61,7 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/')->with('auth_sync_event', 'signed-out');
     }
 
     /**

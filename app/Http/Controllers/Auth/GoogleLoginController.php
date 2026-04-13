@@ -34,7 +34,7 @@
                 if ($user) {
                     // User found by google_id, log them in
                     Auth::login($user, true); // true for "remember me"
-                    return redirect()->intended('/'); // Redirect to home page
+                    return redirect()->intended('/')->with('auth_sync_event', 'signed-in'); // Redirect to home page
                 }
 
                 // User not found by google_id, try to find by email
@@ -62,7 +62,7 @@
                 }
 
                 Auth::login($user, true);
-                return redirect()->intended('/'); // Redirect to home page
+                return redirect()->intended('/')->with('auth_sync_event', 'signed-in'); // Redirect to home page
 
             } catch (Exception $e) {
                 // Log the error or show a generic error message

@@ -42,6 +42,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect($request->input('redirect', '/'));
+        return redirect($request->input('redirect', '/'))
+            ->with('auth_sync_event', 'signed-out');
     }
 }

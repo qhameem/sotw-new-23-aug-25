@@ -73,7 +73,9 @@ class MagicLinkController extends Controller
             new MagicLoginLinkNotification($url, self::EXPIRY_MINUTES)
         );
 
-        return back()->with('status', 'magic-link-sent');
+        return back()
+            ->with('status', 'magic-link-sent')
+            ->with('magic_link_email', $email);
     }
 
     public function consume(Request $request, AuthMagicLink $magicLink): RedirectResponse
@@ -126,10 +128,14 @@ class MagicLinkController extends Controller
         $request->session()->regenerate();
 
         if (blank($user->name)) {
-            return redirect()->route('auth.complete-profile.show');
+            return redirect()
+                ->route('auth.complete-profile.show')
+                ->with('auth_sync_event', 'signed-in');
         }
 
-        return redirect()->to($magicLink->redirect_to ?: route('home'));
+        return redirect()
+            ->to($magicLink->redirect_to ?: route('home'))
+            ->with('auth_sync_event', 'signed-in');
     }
 
     public function showCompleteProfile(Request $request): View|RedirectResponse

@@ -314,7 +314,8 @@
 </head>
 
 <body class="font-sans antialiased" style="background-color: var(--color-body-bg);" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
-    data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
+    data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}" data-auth-sync-event="{{ session('auth_sync_event', '') }}"
+    data-auth-session-state="{{ Auth::check() ? 'authenticated' : 'guest' }}">
     @php
         $bodySnippets = \App\Models\CodeSnippet::where('location', 'body')->get();
         $page = \Illuminate\Support\Facades\Route::currentRouteName();
@@ -422,7 +423,7 @@
     @stack('form-scripts')
     <template id="delayed-livewire-scripts">@livewireScripts</template>
 
-    <x-modal name="login-required-modal" :show="false" maxWidth="md" focusable>
+    <x-modal name="login-required-modal" :show="session('status') === 'magic-link-sent' || $errors->has('email')" maxWidth="md" focusable>
         @include('auth.partials.login-modal-content')
     </x-modal>
 

@@ -1,4 +1,4 @@
-<form method="POST" action="{{ route('auth.email-link.send') }}" class="space-y-5">
+<form method="POST" action="{{ route('auth.email-link.send') }}" class="space-y-5" @submit="emailSubmitting = true">
     @csrf
     <input type="hidden" name="intended" x-bind:value="intendedUrl">
     <div>
@@ -11,9 +11,18 @@
     </div>
     <div class="flex justify-end pt-1">
         <div>
-        <button class="inline-flex items-center gap-2 text-sm bg-gray-900 text-white border border-gray-900 rounded-lg px-8 py-2.5 font-semibold shadow-sm transition-colors hover:cursor-pointer hover:bg-gray-800">
-            {{ __('Email me a sign-in link') }}
-            <span aria-hidden="true">&rarr;</span>
+        <button
+            type="submit"
+            :disabled="emailSubmitting"
+            :class="emailSubmitting ? 'cursor-wait opacity-80' : 'hover:cursor-pointer hover:bg-gray-800'"
+            class="inline-flex min-w-[220px] items-center justify-center gap-2 text-sm bg-gray-900 text-white border border-gray-900 rounded-lg px-8 py-2.5 font-semibold shadow-sm transition-colors"
+        >
+            <svg x-show="emailSubmitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" style="display: none;" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
+                <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+            </svg>
+            <span x-text="emailSubmitting ? 'Sending magic link...' : 'Email me a sign-in link'"></span>
+            <span x-show="!emailSubmitting" aria-hidden="true">&rarr;</span>
             </button>
         </div>
     </div>

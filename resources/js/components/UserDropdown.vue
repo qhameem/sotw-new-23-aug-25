@@ -49,8 +49,20 @@
             </div>
             <div class="border-t border-gray-200 my-1"></div>
             <form @submit.prevent="logout">
-                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Log Out
+                <button
+                    type="submit"
+                    :disabled="isLoggingOut"
+                    :class="isLoggingOut ? 'cursor-wait opacity-70' : ''"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                    <span v-if="isLoggingOut" class="inline-flex items-center gap-2">
+                        <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
+                            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                        </svg>
+                        Logging out...
+                    </span>
+                    <span v-else>Log Out</span>
                 </button>
             </form>
         </div>
@@ -75,11 +87,23 @@ const props = defineProps({
 
 const isOpen = ref(false);
 const dropdown = ref(null);
+const isLoggingOut = ref(false);
 
 const logout = () => {
-  axios.post('/logout').then(() => {
-    window.location.href = '/';
-  });
+  if (isLoggingOut.value) {
+    return;
+  }
+
+  isLoggingOut.value = true;
+
+  axios.post('/logout')
+    .then(() => {
+      window.location.href = '/';
+    })
+    .catch((error) => {
+      console.error('Error logging out:', error);
+      isLoggingOut.value = false;
+    });
 };
 
 const handleClickOutside = (event) => {

@@ -134,7 +134,8 @@
     @livewireStyles
 </head>
 
-<body class="font-sans text-gray-900 antialiased "> {{-- Added for consistency if dark mode is ever enabled globally
+<body class="font-sans text-gray-900 antialiased " data-auth-sync-event="{{ session('auth_sync_event', '') }}"
+    data-auth-session-state="{{ Auth::check() ? 'authenticated' : 'guest' }}"> {{-- Added for consistency if dark mode is ever enabled globally
     --}}
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 "> {{-- Added --}}
         <div>

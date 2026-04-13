@@ -4,6 +4,87 @@ import axios from 'axios';
 // Add this line to set the CSRF token for all Axios requests
 axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+const authSyncTabId = (() => {
+    const existing = sessionStorage.getItem('authSyncTabId');
+
+    if (existing) {
+        return existing;
+    }
+
+    const generated = window.crypto?.randomUUID?.() ?? `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    sessionStorage.setItem('authSyncTabId', generated);
+
+    return generated;
+})();
+
+const authSyncChannel = 'BroadcastChannel' in window ? new BroadcastChannel('auth-sync') : null;
+
+function showAuthFeedbackToast(message) {
+    const existing = document.getElementById('auth-feedback-toast');
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'auth-feedback-toast';
+    toast.className = 'fixed right-5 top-5 z-[200] rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-lg';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+}
+
+function publishAuthSyncEvent(type) {
+    const payload = {
+        type,
+        origin: authSyncTabId,
+        timestamp: Date.now(),
+    };
+
+    localStorage.setItem('auth-sync-event', JSON.stringify(payload));
+    authSyncChannel?.postMessage(payload);
+}
+
+function handleIncomingAuthSync(payload) {
+    if (!payload || payload.origin === authSyncTabId) {
+        return;
+    }
+
+    const currentState = document.body?.dataset?.authSessionState ?? 'guest';
+    const shouldRefresh =
+        (payload.type === 'signed-in' && currentState !== 'authenticated') ||
+        (payload.type === 'signed-out' && currentState !== 'guest');
+
+    if (!shouldRefresh) {
+        return;
+    }
+
+    showAuthFeedbackToast(
+        payload.type === 'signed-in'
+            ? 'Signed in in another tab. Refreshing...'
+            : 'Signed out in another tab. Refreshing...'
+    );
+
+    window.setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+window.addEventListener('storage', (event) => {
+    if (event.key !== 'auth-sync-event' || !event.newValue) {
+        return;
+    }
+
+    try {
+        handleIncomingAuthSync(JSON.parse(event.newValue));
+    } catch (error) {
+        console.error('Unable to parse auth sync event:', error);
+    }
+});
+
+authSyncChannel?.addEventListener('message', (event) => {
+    handleIncomingAuthSync(event.data);
+});
+
 // Check if Alpine is already loaded (e.g., by Livewire) to avoid multiple instances
 if (!window.Alpine) {
     import('alpinejs').then(Alpine => {
@@ -192,6 +273,12 @@ if (document.getElementById('product-assignment-app')) {
 // Make Datepicker available globally for inline scripts
 
 document.addEventListener('DOMContentLoaded', () => {
+    const authSyncEvent = document.body?.dataset?.authSyncEvent;
+
+    if (authSyncEvent) {
+        publishAuthSyncEvent(authSyncEvent);
+    }
+
     console.log('[app.js] DOMContentLoaded: Flowbite, Alpine initialized. Main script logic follows.');
 
     // Inline loader logic for "Add your product" buttons (only run if buttons exist)
