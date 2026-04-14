@@ -146,17 +146,16 @@ class UpvoteController extends Controller
             $upvote->delete();
             Log::info("Upvote destroy: After upvote->delete. Time elapsed: " . (microtime(true) - $startTime) . "s", ['product_id' => $lockedProduct->id]);
 
-            // Decrement votes_count, ensuring it doesn't go below zero
-            if ($lockedProduct->votes_count > 0) {
+            // Decrement votes_count, ensuring the system vote floor of 1 is preserved
+            if ($lockedProduct->votes_count > 1) {
                 $lockedProduct->decrement('votes_count');
             } else {
                 // This case should ideally not be reached if data is consistent,
-                // but as a safeguard, ensure votes_count is not negative.
-                // No need to save if it's already 0 and we are not decrementing.
-                if ($lockedProduct->votes_count < 0) { // Only update if it's somehow negative
-                    $lockedProduct->votes_count = 0;
+                // but as a safeguard, ensure votes_count never drops below 1.
+                if ($lockedProduct->votes_count < 1) {
+                    $lockedProduct->votes_count = 1;
                     $lockedProduct->save();
-                    Log::warning("Upvote destroy: Product votes_count was negative. Reset to 0.", ['product_id' => $lockedProduct->id, 'original_votes_count' => $lockedProduct->getOriginal('votes_count')]);
+                    Log::warning("Upvote destroy: Product votes_count was below the system vote floor. Reset to 1.", ['product_id' => $lockedProduct->id, 'original_votes_count' => $lockedProduct->getOriginal('votes_count')]);
                 }
             }
             // $lockedProduct->refresh(); // Refresh to get the latest votes_count if needed before commit

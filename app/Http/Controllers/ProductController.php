@@ -249,7 +249,7 @@ class ProductController extends Controller
         // bestFor is optional — no validation needed
 
         $validated['user_id'] = Auth::id();
-        $validated['votes_count'] = 0;
+        $validated['votes_count'] = 1;
 
         // Handle submission type: 'badge' submissions get instant approval
         $submissionType = $request->input('submission_type', 'free');
@@ -2699,7 +2699,11 @@ class ProductController extends Controller
         if ($existingUpvote) {
             // Remove the upvote (toggle off)
             $existingUpvote->delete();
-            $product->decrement('votes_count');
+            if ($product->votes_count > 1) {
+                $product->decrement('votes_count');
+            } else {
+                $product->update(['votes_count' => 1]);
+            }
             $isUpvoted = false;
         } else {
             // Add the upvote (toggle on)

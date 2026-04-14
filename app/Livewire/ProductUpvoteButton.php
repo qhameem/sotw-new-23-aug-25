@@ -4,7 +4,6 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Product;
-use App\Models\UserProductUpvote;
 use Illuminate\Support\Facades\Auth;
 
 class ProductUpvoteButton extends Component
@@ -31,7 +30,7 @@ class ProductUpvoteButton extends Component
         if ($this->hasUpvoted) {
             // Remove upvote
             $this->product->userUpvotes()->where('user_id', $user->id)->delete();
-            $this->votesCount--;
+            $this->votesCount = max(1, $this->votesCount - 1);
             $this->hasUpvoted = false;
         } else {
             // Add upvote

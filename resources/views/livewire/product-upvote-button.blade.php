@@ -8,7 +8,7 @@
             {{-- Alternate upvote button design for /product/{product_name} page --}}
             <div x-data="upvote(
                                                                                 {{ $product->is_upvoted_by_current_user ? 'true' : 'false' }},
-                                                                                {{ $product->votes_count ?? 0 }},
+                                                                                {{ $product->votes_count ?? 1 }},
                                                                                 '{{ $product->id }}',
                                                                                 '{{ $product->slug }}',
                                                                                 {{ Auth::check() ? 'true' : 'false' }},
@@ -37,7 +37,7 @@
             {{-- Default upvote button --}}
             <div x-data="upvote(
                                                                                 {{ $product->is_upvoted_by_current_user ? 'true' : 'false' }},
-                                                                                {{ $product->votes_count ?? 0 }},
+                                                                                {{ $product->votes_count ?? 1 }},
                                                                                 '{{ $product->id }}',
                                                                                 '{{ $product->slug }}',
                                                                                 {{ Auth::check() ? 'true' : 'false' }},
@@ -45,18 +45,18 @@
                                                                             )" class="">
 
                 <button type="button" @click.stop="toggleUpvote"
-                    class="group flex flex-col items-center justify-center w-10 h-11 rounded-lg border border-transparent bg-transparent transition-all duration-200 hover:border-gray-200 hover:bg-gray-50">
+                    class="group flex h-16 w-16 flex-col items-center justify-center rounded-xl border border-slate-200 transition-colors duration-200 hover:border-slate-300">
 
-                    <svg class="w-4 h-4 transition-colors duration-200"
-                        :class="isUpvoted ? 'text-rose-600 fill-rose-600' : 'text-gray-400 group-hover:text-gray-600'"
+                    <svg class="h-5 w-5 transition-colors duration-200"
+                        :class="isUpvoted ? 'text-rose-600 fill-rose-600' : 'text-slate-300 group-hover:text-slate-400'"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path
                             d="M4.37891 15.1999C3.46947 16.775 3.01489 17.5634 3.08281 18.2097C3.14206 18.7734 3.43792 19.2851 3.89648 19.6182C4.42204 20.0001 5.3309 20.0001 7.14853 20.0001H16.8515C18.6691 20.0001 19.5778 20.0001 20.1034 19.6182C20.5619 19.2851 20.8579 18.7734 20.9172 18.2097C20.9851 17.5634 20.5307 16.775 19.6212 15.1999L14.7715 6.79986C13.8621 5.22468 13.4071 4.43722 12.8135 4.17291C12.2957 3.94236 11.704 3.94236 11.1862 4.17291C10.5928 4.43711 10.1381 5.22458 9.22946 6.79845L4.37891 15.1999Z" />
                     </svg>
 
-                    <span x-text="votesCount === 0 ? '–' : votesCount" class="mt-1 text-xs font-semibold leading-none transition-colors duration-200"
-                        :class="isUpvoted ? 'text-rose-600' : (votesCount === 0 ? 'text-gray-300 group-hover:text-gray-400' : 'text-gray-500 group-hover:text-gray-700')"></span>
+                    <span x-text="votesCount" class="mt-2 text-xs font-regular leading-none tracking-tight transition-colors duration-200"
+                        :class="isUpvoted ? 'text-rose-600' : 'text-slate-800'"></span>
                 </button>
                 <p x-show="errorMessage" x-text="errorMessage" class="text-red-500 text-xs mt-1"></p>
             </div>

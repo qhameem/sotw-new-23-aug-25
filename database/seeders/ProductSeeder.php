@@ -29,7 +29,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Description for ' . $name . '. Lorem ipsum dolor sit amet.',
                 'link' => 'https://example.com/product' . $i,
                 // 'category_id' => $categories[array_rand($categories)], // Removed
-                'votes_count' => rand(0, 100),
+                'votes_count' => rand(1, 100),
                 'logo' => 'https://placehold.co/150x150/0000FF/808080/png?text=Product%20' . $i, // Using a different placeholder service
                 'approved' => true, // Assuming products are approved by default for seeding
                 'published_at' => now(), // Assuming products are published by default for seeding
