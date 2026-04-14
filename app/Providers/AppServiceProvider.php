@@ -49,6 +49,12 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+        View::composer('components.top-bar', function ($view) {
+            if (Auth::check() && Auth::user()->hasRole('admin')) {
+                $view->with('pendingApprovalCount', Product::where('approved', false)->count());
+            }
+        });
+
         View::composer(
             'layouts.app',
             SeoComposer::class

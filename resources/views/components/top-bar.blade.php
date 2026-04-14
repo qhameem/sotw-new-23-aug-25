@@ -65,6 +65,19 @@
                     </div>
                     @endauth
                 </div>
+                @auth
+                    @if (Auth::user()->hasRole('admin'))
+                        <a href="{{ route('admin.product-approvals.index') }}"
+                            class="mr-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium transition
+                                {{ ($pendingApprovalCount ?? 0) > 0
+                                    ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100' }}">
+                            <x-phosphor-seal-check class="h-4 w-4" />
+                            <span>{{ $pendingApprovalCount ?? 0 }}</span>
+                            <span class="hidden lg:inline">Pending</span>
+                        </a>
+                    @endif
+                @endauth
                 <x-user-dropdown />
             </div>
         @endguest
