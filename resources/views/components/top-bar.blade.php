@@ -65,7 +65,7 @@
                     </div>
                     @endauth
                 </div>
-                <div id="user-dropdown-app" data-user="{{ json_encode(Auth::user()) }}" data-is-admin="{{ Auth::user()->hasRole('admin') ? 'true' : 'false' }}"></div>
+                <x-user-dropdown />
             </div>
         @endguest
         </div>
