@@ -44,14 +44,6 @@
                     @if($isPromoted || $product->is_premium)
                         <span class="inline-flex items-center text-gray-400 rounded text-xs mr-2">
                             <span class="py-1 font-medium">Promoted</span>
-                            <a href="/promote-your-software" class="ml-2 text-slate-800 text-xs hover:underline">
-                                Advertise with Software on the web
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline-block transform rotate-45"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                </svg>
-                            </a>
                         </span>
                     @endif
                     @if(!$isPromoted && !$product->is_premium)

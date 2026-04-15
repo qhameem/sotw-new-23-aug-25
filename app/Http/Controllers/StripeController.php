@@ -111,7 +111,7 @@ class StripeController extends Controller
                         }
                     }
                 } else {
-                    return redirect()->route('promote')->with('error', 'Payment was not successful.');
+                    return redirect()->route('fast-track.index')->with('error', 'Payment was not successful.');
                 }
             }
 
@@ -125,7 +125,7 @@ class StripeController extends Controller
             ]);
 
         } catch (ApiErrorException $e) {
-            return redirect()->route('promote')->with('error', 'Error retrieving payment information: ' . $e->getMessage());
+            return redirect()->route('fast-track.index')->with('error', 'Error retrieving payment information: ' . $e->getMessage());
         }
     }
 
@@ -171,7 +171,7 @@ class StripeController extends Controller
 
     public function cancel()
     {
-        return redirect()->route('promote')->with('error', 'Payment was canceled.');
+        return redirect()->route('home')->with('error', 'Payment was canceled.');
     }
 
     public function webhook()

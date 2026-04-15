@@ -1,5 +1,5 @@
 <div class="relative" x-data="{ tooltip: false }">
-    <a href="{{ route('promote') }}"
+    <a href="{{ route('premium-spot.index') }}"
        @if($disabled)
            x-on:click.prevent
            @mouseenter="tooltip = true"

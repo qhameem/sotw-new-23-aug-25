@@ -6,9 +6,9 @@ Fast-track Submission
 
 @section('content')
 <div class="mb-4">
-    <a href="{{ route('promote') }}" class="text-xs font-medium text-gray-600 items-center inline-flex border border-sky-200 px-2 py-0.5 rounded-md hover:bg-sky-50">
+    <a href="{{ route('home') }}" class="text-xs font-medium text-gray-600 items-center inline-flex border border-sky-200 px-2 py-0.5 rounded-md hover:bg-sky-50">
         &larr;
-        Back to the advertising page
+        Back to products
     </a>
 </div>
 <h1 class="text-4xl font-bold text-gray-800">Skip the Waiting Line</h1>

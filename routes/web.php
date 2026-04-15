@@ -237,8 +237,6 @@ Route::get('/about', function () {
 Route::get('/legal', function () {
     return view('site.legal');
 })->name('legal');
-// Promote Your Software Page
-
 // FAQ Page
 Route::get('/faq', function () {
     return view('site.faq');
@@ -268,23 +266,14 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|promote-your-software|software-review|premium-spot-details|changelog|free-todo-list-tool|best|alternatives|built-with|compare|software)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|software-review|premium-spot-details|changelog|free-todo-list-tool|best|alternatives|built-with|compare|software)[^/]+$');
 
 Route::post('/products/{product}/upvote', [ProductController::class, 'upvote'])->name('products.upvote');
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
 
-
-
-
-
-
-use App\Http\Controllers\SiteController;
-
 use App\Http\Controllers\FastTrackController;
 use App\Http\Controllers\PremiumSpotController;
-
-Route::get('/promote-your-software', [SiteController::class, 'promote'])->name('promote');
 
 Route::get('/fast-track', [FastTrackController::class, 'index'])->name('fast-track.index');
 

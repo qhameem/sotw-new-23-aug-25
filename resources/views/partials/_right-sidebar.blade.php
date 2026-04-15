@@ -59,7 +59,7 @@
                         @include('partials._what-is-sotw-card')
                     </div>
                 @endguest
-            @elseif(request()->is('articles*') && !request()->is('promote-your-software'))
+            @elseif(request()->is('articles*'))
                 <div class="p-4">
                     @if(isset($staffPicks) && $staffPicks->isNotEmpty())
                         <h3 class="text-sm font-semibold mb-4 text-gray-800">Staff Picks</h3>

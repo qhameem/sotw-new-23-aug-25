@@ -1,6 +1,5 @@
 <footer class="w-full p-4 border-t md:flex md:items-center md:justify-center md:p-6">
     <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
-        <a href="{{ route('promote') }}" class="hover:underline">Pricing</a> •
         <a href="{{ route('about') }}" class="hover:underline">About</a> •
         <a href="{{ route('faq') }}" class="hover:underline">FAQ</a> •
         <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •

@@ -22,7 +22,6 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('promote') }}" class="text-sm text-gray-900 hover:text-primary-500">Promote</a>
         </div>
         @guest
             <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
