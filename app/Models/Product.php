@@ -147,6 +147,40 @@ class Product extends Model implements Sitemapable
         return $normalized;
     }
 
+    public static function normalizeXAccount(?string $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('~(?:https?://)?(?:www\.)?(?:x\.com|twitter\.com)/@?([A-Za-z0-9_]{1,15})~i', $value, $matches)) {
+            return $matches[1];
+        }
+
+        $value = ltrim($value, '@');
+        if (preg_match('/^([A-Za-z0-9_]{1,15})$/', $value, $matches)) {
+            return $matches[1];
+        }
+
+        return $value;
+    }
+
+    public static function xProfileUrl(?string $value): ?string
+    {
+        $handle = static::normalizeXAccount($value);
+
+        if (!$handle || !preg_match('/^[A-Za-z0-9_]{1,15}$/', $handle)) {
+            return null;
+        }
+
+        return 'https://x.com/' . $handle;
+    }
+
     public function getLogoUrlAttribute()
     {
         if ($this->logo) {

@@ -33,7 +33,7 @@
                         $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
                     @endphp
                     <article x-data="productEditor({ 
-                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url', 'slug']), ['logo_url' => $product->logo_url])) }},
+                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url', 'slug']), ['logo_url' => $product->logo_url, 'x_handle' => \App\Models\Product::normalizeXAccount($product->x_account), 'x_profile_url' => \App\Models\Product::xProfileUrl($product->x_account)])) }},
                         categories: {{ $product->categories->pluck('id')->toJson() }},
                         tech_stacks: {{ $product->techStacks->pluck('id')->toJson() }},
                         media: {{ $product->media->map->only(['id', 'path', 'type', 'alt_text'])->toJson() }}
@@ -232,13 +232,13 @@
                                 <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
                                     <div class="flex items-center justify-between mb-2">
                                         <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">X Account</p>
-                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_account)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_handle || product.x_account)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
                                             Edit
                                         </button>
                                     </div>
                                     <p x-show="editingField !== 'x_account'" class="text-sm text-gray-700">
-                                        <a x-show="product.x_account" :href="'https://x.com/' + product.x_account" target="_blank" rel="noopener nofollow" class="text-blue-600 hover:underline">@<span x-text="product.x_account"></span></a>
-                                        <span x-show="!product.x_account" class="text-gray-400 italic">None</span>
+                                        <a x-show="product.x_profile_url" :href="product.x_profile_url" target="_blank" rel="noopener nofollow" class="text-blue-600 hover:underline">@<span x-text="product.x_handle"></span></a>
+                                        <span x-show="!product.x_profile_url" class="text-gray-400 italic">None</span>
                                     </p>
                                     <div x-show="editingField === 'x_account'" class="flex items-center gap-2 mt-1">
                                         <div class="relative w-full">
@@ -460,6 +460,19 @@
                         .replace(/^-+|-+$/g, '');
                 },
 
+                normalizeXHandle(value) {
+                    if (!value) return '';
+                    const input = String(value).trim();
+                    const match = input.match(/(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/@?([A-Za-z0-9_]{1,15})/i);
+                    if (match && match[1]) return match[1];
+                    return input.replace(/^@+/, '');
+                },
+
+                buildXProfileUrl(value) {
+                    const handle = this.normalizeXHandle(value);
+                    return /^[A-Za-z0-9_]{1,15}$/.test(handle) ? `https://x.com/${handle}` : null;
+                },
+
                 cancelEdit() {
                     this.editingField = null;
                     this.tempValue = null;
@@ -498,6 +511,16 @@
                             if (field === 'categories') this.categories = JSON.parse(JSON.stringify(this.tempValue));
                             else if (field === 'tech_stacks') this.techStacks = JSON.parse(JSON.stringify(this.tempValue));
                             else if (field === 'maker_links') this.product.maker_links = JSON.parse(JSON.stringify(this.tempValue));
+                            else if (field === 'x_account') {
+                                let savedValue = this.tempValue;
+                                if (data && data.product && typeof data.product.x_account !== 'undefined') {
+                                    savedValue = data.product.x_account;
+                                }
+                                const normalizedHandle = this.normalizeXHandle(savedValue);
+                                this.product.x_account = savedValue;
+                                this.product.x_handle = normalizedHandle;
+                                this.product.x_profile_url = this.buildXProfileUrl(normalizedHandle);
+                            }
                             else {
                                 this.product[field] = this.tempValue;
                                 // Update slug if name or link changed

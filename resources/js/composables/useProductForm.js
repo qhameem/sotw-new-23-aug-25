@@ -25,6 +25,9 @@ export function useProductForm() {
   const isUrlInvalid = computed(() => {
     return productFormService.isUrlInvalid(form.link);
   });
+  const urlTrimSuggestion = computed(() => {
+    return productFormService.getUrlTrimSuggestion(form.link);
+  });
 
   const checkUrlExists = async () => {
     console.log('checkUrlExists called with URL:', form.link, 'and ID:', form.id);
@@ -306,12 +309,7 @@ export function useProductForm() {
 
       // Add X account if available
       if (form.x_account) {
-        let xHandle = form.x_account;
-        // If it's a full URL, extract the handle
-        if (xHandle.includes('x.com/') || xHandle.includes('twitter.com/')) {
-          xHandle = xHandle.split('/').pop().split('?')[0];
-        }
-        formData.append('x_account', xHandle);
+        formData.append('x_account', form.x_account);
       }
 
       // Add maker links if available
@@ -1650,6 +1648,7 @@ export function useProductForm() {
     errorMessage,
     showErrorMessage,
     isUrlInvalid,
+    urlTrimSuggestion,
     completionPercentage,
     getStarted,
     clearUrlInput,

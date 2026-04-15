@@ -360,7 +360,7 @@ class ProductApprovalController extends Controller
         $product->product_page_tagline = $product->proposed_product_page_tagline ?? $product->product_page_tagline;
         $product->description = $product->proposed_description ?? $product->description;
         $product->video_url = $product->proposed_video_url ?? $product->video_url;
-        $product->x_account = $product->proposed_x_account ?? $product->x_account;
+        $product->x_account = Product::normalizeXAccount($product->proposed_x_account ?? $product->x_account);
         $product->sell_product = !is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product;
         $product->asking_price = !is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
         $product->maker_links = $product->proposed_maker_links ?? $product->maker_links;

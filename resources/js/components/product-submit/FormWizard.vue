@@ -18,6 +18,7 @@
               :loadingProgress="loadingProgress"
               :loadingMessage="loadingMessage"
               :isUrlInvalid="isUrlInvalid"
+              :urlTrimSuggestion="urlTrimSuggestion"
               :urlExistsError="urlExistsError"
               :existingProduct="existingProduct"
               @getStarted="handleUrlFetch"
@@ -93,6 +94,7 @@
                     :loadingProgress="loadingProgress"
                     :loadingMessage="loadingMessage"
                     :isUrlInvalid="isUrlInvalid"
+                    :urlTrimSuggestion="urlTrimSuggestion"
                     :urlExistsError="urlExistsError"
                     :existingProduct="existingProduct"
                     @getStarted="handleUrlFetch"
@@ -214,6 +216,7 @@ const {
   allTechStacks,
   isAdmin,
   isUrlInvalid,
+  urlTrimSuggestion,
   initializeFormData,
   isLoading,
   loadingProgress,

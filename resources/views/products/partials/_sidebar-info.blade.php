@@ -109,6 +109,8 @@
         $makerLinks = is_array($product->maker_links) ? $product->maker_links : json_decode($product->maker_links, true) ?? [];
         $socialLinks = [];
         $extraLinks = [];
+        $xHandle = \App\Models\Product::normalizeXAccount($product->x_account);
+        $xProfileUrl = \App\Models\Product::xProfileUrl($product->x_account);
         
         foreach($makerLinks as $link) {
             $host = parse_url($link, PHP_URL_HOST);
@@ -120,17 +122,17 @@
         }
     @endphp
 
-    @if($product->x_account || !empty($socialLinks) || !empty($extraLinks))
+    @if($xProfileUrl || !empty($socialLinks) || !empty($extraLinks))
         <div class="space-y-6">
-            @if($product->x_account || !empty($socialLinks))
+            @if($xProfileUrl || !empty($socialLinks))
                 <div>
                     <h3 class="text-xs text-gray-500 mb-2">Social Profiles</h3>
                     <div class="space-y-2">
-                        @if($product->x_account)
-                            <a href="https://x.com/{{ ltrim($product->x_account, '@') }}" target="_blank" rel="noopener" 
+                        @if($xProfileUrl)
+                            <a href="{{ $xProfileUrl }}" target="_blank" rel="noopener" 
                                class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group text-[11px]">
                                 <svg class="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                                <span>@ {{ ltrim($product->x_account, '@') }}</span>
+                                <span>@ {{ $xHandle }}</span>
                             </a>
                         @endif
 

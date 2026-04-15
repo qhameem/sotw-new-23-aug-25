@@ -85,6 +85,9 @@ class ProductInlineUpdateController extends Controller
         if ($field === 'description') {
             $value = $this->addNofollowToLinks($value);
         }
+        if ($field === 'x_account') {
+            $value = Product::normalizeXAccount($value);
+        }
 
         $product->last_edited_by_id = Auth::id();
 

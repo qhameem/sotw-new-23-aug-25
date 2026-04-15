@@ -274,11 +274,7 @@ class ProductController extends Controller
         $validated['sell_product'] = $request->boolean('sell_product', false);
         $validated['asking_price'] = $request->input('asking_price');
 
-        $xAccount = $request->input('x_account');
-        if ($xAccount && (str_contains($xAccount, 'x.com/') || str_contains($xAccount, 'twitter.com/'))) {
-            $xAccount = basename(parse_url($xAccount, PHP_URL_PATH));
-        }
-        $validated['x_account'] = $xAccount;
+        $validated['x_account'] = Product::normalizeXAccount($request->input('x_account'));
 
         if ($request->hasFile('logo')) {
             $image = $request->file('logo');
@@ -695,11 +691,7 @@ class ProductController extends Controller
             'pricing_page_url' => $validated['pricing_page_url'] ?? null,
         ];
 
-        $xAccount = $validated['x_account'] ?? null;
-        if ($xAccount && (str_contains($xAccount, 'x.com/') || str_contains($xAccount, 'twitter.com/'))) {
-            $xAccount = basename(parse_url($xAccount, PHP_URL_PATH));
-        }
-        $updateData['x_account'] = $xAccount;
+        $updateData['x_account'] = Product::normalizeXAccount($validated['x_account'] ?? null);
 
         $newCategories = $validated['categories'];
         $newTechStacks = $validated['tech_stacks'] ?? [];

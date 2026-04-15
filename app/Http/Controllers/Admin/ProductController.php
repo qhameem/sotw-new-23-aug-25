@@ -271,8 +271,8 @@ class ProductController extends Controller
             );
         }
 
-        if (isset($validated['x_account']) && ($validated['x_account'] && (str_contains($validated['x_account'], 'x.com/') || str_contains($validated['x_account'], 'twitter.com/')))) {
-            $validated['x_account'] = basename(parse_url($validated['x_account'], PHP_URL_PATH));
+        if (array_key_exists('x_account', $validated)) {
+            $validated['x_account'] = Product::normalizeXAccount($validated['x_account']);
         }
 
         $validated['comparison_product_ids'] = $this->resolveRelatedProductOverrides(

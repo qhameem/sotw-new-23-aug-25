@@ -21,12 +21,13 @@
           placeholder="https://your-website.com"
         >
         <!-- Clear Button -->
-        <button v-if="modelValue" @click="$emit('clear')" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
+        <button v-if="modelValue" type="button" @click="$emit('clear')" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
       
       <button
+        type="button"
         @click="performValidationAndFetch"
         :disabled="isLoading"
         class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-md text-sm
@@ -63,6 +64,31 @@
         <div class="bg-sky-500 h-1.5 rounded-full transition-all duration-300 ease-out" :style="{ width: `${loadingProgress || 0}%` }"></div>
       </div>
     </div>
+
+    <transition name="fade">
+      <div
+        v-if="urlTrimSuggestion && !isLoading"
+        class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start justify-between gap-3"
+      >
+        <div class="flex items-start gap-2 min-w-0">
+          <svg class="h-5 w-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="min-w-0">
+            <span class="font-medium">Tip:</span> you can trim
+            {{ urlTrimSuggestion.removedParts.join(', ') }}.
+            <span class="block text-xs mt-1 font-mono break-all">{{ urlTrimSuggestion.suggestedUrl }}</span>
+          </span>
+        </div>
+        <button
+          type="button"
+          @click="applyTrimSuggestion"
+          class="px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold whitespace-nowrap"
+        >
+          Use trimmed URL
+        </button>
+      </div>
+    </transition>
     
     <!-- Error Message -->
     <transition name="fade">
@@ -91,6 +117,7 @@ const props = defineProps({
   loadingProgress: Number,
   loadingMessage: String,
   isUrlInvalid: Boolean,
+  urlTrimSuggestion: Object,
   urlExistsError: Boolean,
   existingProduct: Object,
   submissionBgUrl: String,
@@ -154,6 +181,15 @@ const performValidationAndFetch = async () => {
   // All validations passed, proceed with fetching data
   console.log('[ProductURLInput] All validations passed, proceeding to fetch data...');
   emit('getStarted', inputValue);
+};
+
+const applyTrimSuggestion = () => {
+  const suggestedUrl = props.urlTrimSuggestion?.suggestedUrl;
+  if (!suggestedUrl) {
+    return;
+  }
+
+  emit('update:modelValue', suggestedUrl);
 };
 
 

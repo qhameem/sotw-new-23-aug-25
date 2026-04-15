@@ -5,6 +5,26 @@ import axios from 'axios';
  * Service for managing product form state
  */
 
+const TRACKING_QUERY_PARAMS = new Set([
+  'fbclid',
+  'gclid',
+  'gclsrc',
+  'dclid',
+  'msclkid',
+  'mc_cid',
+  'mc_eid',
+  'igshid',
+  'ref',
+  'ref_src',
+  'si',
+]);
+
+const formatUrlWithoutRootSlash = (urlObject) => {
+  const protocol = urlObject.protocol.replace(':', '');
+  const path = urlObject.pathname === '/' ? '' : urlObject.pathname;
+  return `${protocol}://${urlObject.host}${path}${urlObject.search}${urlObject.hash}`;
+};
+
 // Define initial form state
 const initialFormState = {
   id: null,
@@ -135,6 +155,72 @@ export const productFormService = {
       return false;
     } catch (e) {
       return true;
+    }
+  },
+
+  /**
+   * Suggest if trailing URL parts can be trimmed (anchor, tracking params, trailing slash)
+   */
+  getUrlTrimSuggestion(url) {
+    if (!url || typeof url !== 'string') {
+      return null;
+    }
+
+    const rawUrl = url.trim();
+    if (!rawUrl) {
+      return null;
+    }
+
+    try {
+      const withScheme = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+      const parsed = new URL(withScheme);
+      const trimmed = new URL(parsed.toString());
+      const removedParts = [];
+
+      if (trimmed.hash) {
+        trimmed.hash = '';
+        removedParts.push('the page anchor (#...)');
+      }
+
+      const hasTrailingSlash = trimmed.pathname !== '/' && /\/+$/.test(trimmed.pathname);
+      if (hasTrailingSlash) {
+        trimmed.pathname = trimmed.pathname.replace(/\/+$/, '');
+        removedParts.push('the trailing slash');
+      }
+
+      const removedTrackingParams = [];
+      for (const key of [...trimmed.searchParams.keys()]) {
+        const lowered = key.toLowerCase();
+        if (lowered.startsWith('utm_') || TRACKING_QUERY_PARAMS.has(lowered)) {
+          trimmed.searchParams.delete(key);
+          removedTrackingParams.push(key);
+        }
+      }
+
+      if (removedTrackingParams.length > 0) {
+        removedParts.push(
+          removedTrackingParams.length === 1
+            ? `tracking parameter "${removedTrackingParams[0]}"`
+            : `${removedTrackingParams.length} tracking parameters`
+        );
+      }
+
+      if (removedParts.length === 0) {
+        return null;
+      }
+
+      const currentUrl = formatUrlWithoutRootSlash(parsed);
+      const suggestedUrl = formatUrlWithoutRootSlash(trimmed);
+      if (!suggestedUrl || suggestedUrl === currentUrl) {
+        return null;
+      }
+
+      return {
+        suggestedUrl,
+        removedParts,
+      };
+    } catch (e) {
+      return null;
     }
   },
 
