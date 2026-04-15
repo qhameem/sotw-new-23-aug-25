@@ -10,11 +10,16 @@ class ImpressionController extends Controller
     public function store(Request $request)
     {
         $productIds = $request->input('products', []);
+        $productIds = collect($productIds)
+            ->filter(fn ($productId) => is_numeric($productId))
+            ->map(fn ($productId) => (int) $productId)
+            ->unique()
+            ->values();
 
         foreach ($productIds as $productId) {
             $product = Product::find($productId);
             if ($product) {
-                $product->increment('impressions');
+                $product->recordImpressionAndAutoUpvote();
             }
         }
 

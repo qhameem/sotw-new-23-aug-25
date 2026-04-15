@@ -1665,8 +1665,8 @@ class ProductController extends Controller
 
         $product->load('categories.types', 'user', 'userUpvotes', 'techStacks');
 
-        // Record impression
-        $product->increment('impressions');
+        // Record impression and grant automatic vote bonus every 4 views
+        $product->recordImpressionAndAutoUpvote();
 
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');

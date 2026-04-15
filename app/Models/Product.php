@@ -17,6 +17,8 @@ class Product extends Model implements Sitemapable
 {
     use HasFactory;
 
+    public const AUTO_UPVOTE_VIEW_THRESHOLD = 4;
+
     protected $fillable = [
         'name',
         'slug',
@@ -228,6 +230,32 @@ class Product extends Model implements Sitemapable
             return false;
         }
         return $this->userUpvotes()->where('user_id', Auth::id())->exists();
+    }
+
+    public function recordImpressionAndAutoUpvote(): void
+    {
+        DB::transaction(function () {
+            $lockedProduct = static::query()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (!$lockedProduct) {
+                return;
+            }
+
+            $lockedProduct->impressions = (int) $lockedProduct->impressions + 1;
+            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
+
+            if ($lockedProduct->impressions % self::AUTO_UPVOTE_VIEW_THRESHOLD === 0) {
+                $lockedProduct->votes_count++;
+            }
+
+            $lockedProduct->save();
+
+            $this->impressions = $lockedProduct->impressions;
+            $this->votes_count = $lockedProduct->votes_count;
+        });
     }
 
     public function getEmbedUrl()
