@@ -19,13 +19,14 @@
       <div>
         <label class="block text-sm font-semibold text-gray-700">Gallery</label>
         <p class="text-xs text-gray-500 mb-2">The first image will be used as the social preview when your link is shared online. We recommend at least 3 or more images.</p>
+        <p v-if="galleryUploadError" class="text-sm text-red-600 mb-2">{{ galleryUploadError }}</p>
         <div v-if="largePreview" class="my-4">
           <img :src="largePreview" class="w-full h-auto object-contain rounded-md">
         </div>
         <div class="grid grid-cols-3 gap-4">
           <div v-for="i in 3" :key="i" class="relative">
             <div class="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-md">
-              <input type="file" @change="onGalleryChange($event, i - 1)" accept="image/*" class="hidden" :ref="el => { if (el) galleryInputs[i - 1] = el }">
+              <input type="file" @change="onGalleryChange($event, i - 1)" :accept="supportedImageAcceptList" class="hidden" :ref="el => { if (el) galleryInputs[i - 1] = el }">
               <div v-if="galleryPreviews[i - 1]" class="w-full h-full cursor-pointer" @click="showLargePreview(galleryPreviews[i - 1])">
                 <img :src="galleryPreviews[i - 1]" class="h-full w-full object-cover rounded-md">
                 <button type="button" @click.stop="removeGalleryImage(i - 1)" class="absolute top-1 right-1 bg-gray-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center">&times;</button>
@@ -89,6 +90,18 @@ function extractLogos() {
 
 const galleryInputs = ref([]);
 const largePreview = ref(null);
+const galleryUploadError = ref('');
+const supportedImageAcceptList = 'image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif';
+const supportedImageMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/svg+xml',
+  'image/webp',
+  'image/avif',
+  'image/avif-sequence',
+];
+const supportedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
 
 const videoThumbnailUrl = computed(() => {
   // Get the display URL using our helper function
@@ -175,19 +188,36 @@ function setFaviconAsLogo() {
 
 function onGalleryChange(e, index) {
   const file = e.target.files[0];
-  if (file) {
-    const gallery = [...props.modelValue.gallery];
-    gallery[index] = file;
-    updateField('gallery', gallery);
+  galleryUploadError.value = '';
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const previews = [...props.galleryPreviews];
-      previews[index] = e.target.result;
-      emit('update:galleryPreviews', previews);
-    };
-    reader.readAsDataURL(file);
+  if (!file) {
+    return;
   }
+
+  const normalizedMimeType = (file.type || '').toLowerCase();
+  const fileName = file.name || '';
+  const normalizedExtension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+  const isSupportedFile =
+    supportedImageMimeTypes.includes(normalizedMimeType) ||
+    supportedImageExtensions.includes(normalizedExtension);
+
+  if (!isSupportedFile) {
+    galleryUploadError.value = 'Unsupported image format. Please upload JPG, PNG, GIF, SVG, WEBP, or AVIF.';
+    e.target.value = '';
+    return;
+  }
+
+  const gallery = [...props.modelValue.gallery];
+  gallery[index] = file;
+  updateField('gallery', gallery);
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const previews = [...props.galleryPreviews];
+    previews[index] = e.target.result;
+    emit('update:galleryPreviews', previews);
+  };
+  reader.readAsDataURL(file);
 }
 
 function removeGalleryImage(index) {
