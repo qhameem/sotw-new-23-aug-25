@@ -119,6 +119,8 @@ class ProductController extends Controller
         ];
 
         $types = Type::with('categories')->get();
+        $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+        $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         return view('products.create', compact(
             'displayData',
             'regularCategories',
@@ -577,6 +579,8 @@ class ProductController extends Controller
             'categories_count' => count($displayData['current_categories'] ?? [])
         ]);
 
+        $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+
         return view('products.create', compact(
             'product',
             'displayData',
@@ -585,7 +589,8 @@ class ProductController extends Controller
             'pricingCategories',
             'allTechStacksData',
             'types',
-            'selectedBestForCategories'
+            'selectedBestForCategories',
+            'submissionBgUrl'
         ));
     }
 

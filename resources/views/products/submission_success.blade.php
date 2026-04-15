@@ -10,7 +10,27 @@
 @endsection
 
 @section('content')
+    @php
+        $referenceId = 'SOTW-' . str_pad((string) $product->id, 6, '0', STR_PAD_LEFT);
+        $submittedAt = $product->created_at?->timezone(config('app.timezone'))->format('M j, Y \\a\\t g:i A');
+    @endphp
     <div class="p-4 mx-auto max-w-7xl">
+        <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Submission Received</h2>
+            <p class="text-sm text-gray-700 mb-4">
+                Your product has been received. Keep this confirmation for your records.
+            </p>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div class="rounded-md bg-gray-50 border border-gray-100 px-3 py-2">
+                    <dt class="text-gray-500">Reference ID</dt>
+                    <dd class="font-medium text-gray-900">{{ $referenceId }}</dd>
+                </div>
+                <div class="rounded-md bg-gray-50 border border-gray-100 px-3 py-2">
+                    <dt class="text-gray-500">Submitted</dt>
+                    <dd class="font-medium text-gray-900">{{ $submittedAt ?? 'Just now' }}</dd>
+                </div>
+            </dl>
+        </div>
 
         @if($product->submission_type === 'badge')
             {{-- Badge Submission Success --}}
@@ -27,9 +47,19 @@
                 </div>
             </div>
 
+            <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">What Happens Next</h3>
+                <ol class="space-y-2 text-sm text-gray-700 list-decimal list-inside">
+                    <li>Your placement is already approved.</li>
+                    <li>Add the badge snippet to your website so verification can pass before launch day.</li>
+                    <li>We run automatic badge checks before launch.</li>
+                    <li>Your listing goes live on <strong>{{ $launchDateFormatted }}</strong>.</li>
+                </ol>
+            </div>
+
             {{-- Badge Snippet Section --}}
             <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">📋 Place this badge on your site</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Place This Badge On Your Site</h3>
                 <p class="text-sm text-gray-600 mb-4">
                     Copy the HTML snippet below and paste it anywhere on your website. We'll verify it before your launch day.
                     This gives you a guaranteed <strong>dofollow backlink</strong>.
@@ -47,7 +77,7 @@
 
                 <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p class="text-xs text-blue-800">
-                        <strong>💡 Tip:</strong> Place this in your site's footer, homepage, or an "As Seen On" section.
+                        <strong>Tip:</strong> Place this in your site's footer, homepage, or an "As Seen On" section.
                         We'll check for the badge before your Monday launch.
                     </p>
                 </div>
@@ -61,30 +91,37 @@
                     <span class="font-semibold">Thank you! Your product has been submitted for review.</span>
                 </div>
             </div>
+
+            <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">What Happens Next</h3>
+                <ol class="space-y-2 text-sm text-gray-700 list-decimal list-inside">
+                    <li>Your listing enters our review queue now.</li>
+                    <li>Typical review time is up to <strong>{{ $daysToLive }} days</strong>.</li>
+                    <li>You can edit this submission while it's pending.</li>
+                    <li>We will notify you once it is approved and scheduled.</li>
+                </ol>
+            </div>
         @endif
 
-        <h3 class="mb-5 font-noto-serif text-lg font-medium text-gray-800 italic">What's next?</h3>
-
-        <div class="space-y-6">
-
-            <x-promote.fast-track-card />
-            <div class="flex flex-col gap-2">
-                <div>
-                    <x-promote.premium-spot-card :spots-available="$spotsAvailable" />
-                </div>
-                <div>
-                    <x-promote.product-review-card />
-                </div>
-
+        <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Track And Manage</h3>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{{ route('products.my') }}"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition">
+                    Track My Submissions
+                </a>
+                <a href="{{ route('products.edit', $product) }}"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-300 text-gray-800 text-sm font-medium hover:bg-gray-50 transition">
+                    Edit This Submission
+                </a>
             </div>
-
-
-
-
-
+            <p class="mt-4 text-xs text-gray-500">
+                Need help? Include reference <strong>{{ $referenceId }}</strong> when contacting support.
+            </p>
         </div>
+
     </div>
-    {{-- Mobile view for "What's next?" --}}
+    {{-- Mobile view for quick actions --}}
     <div class="md:hidden mt-8">
 
         <div class="space-y-3">
@@ -104,7 +141,7 @@
 
 @section('right_sidebar_content')
     <div class="p-6 items-start hidden md:block">
-        <h3 class="font-noto-serif text-lg font-medium tracking-tighter italic text-gray-800 mb-4">Other options</h3>
+        <h3 class="font-noto-serif text-lg font-medium tracking-tighter italic text-gray-800 mb-4">Quick Actions</h3>
         <div class="space-y-2">
 
             <a href="{{ route('products.my') }}"
