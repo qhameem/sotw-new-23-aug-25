@@ -96,6 +96,9 @@
                        class="block text-xs text-gray-500 hover:text-primary-600 transition-colors mb-1">
                         {{ $product->name }} vs {{ $similar->name }} →
                     </a>
+                    @if(!empty($similar->match_summary))
+                        <p class="text-[11px] text-gray-400 mb-2">{{ $similar->match_summary }}</p>
+                    @endif
                 @endforeach
             </div>
         @endif

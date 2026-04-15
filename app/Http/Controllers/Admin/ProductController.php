@@ -137,7 +137,8 @@ class ProductController extends Controller
             app(\App\Services\LogoExtractorService::class),
             app(\App\Services\CategoryClassifier::class),
             app(\App\Services\ScreenshotService::class),
-            app(\App\Services\BadgeService::class)
+            app(\App\Services\BadgeService::class),
+            app(\App\Services\RelatedProductService::class)
         );
 
         $view = $productController->showProductPage($product);
@@ -185,6 +186,8 @@ class ProductController extends Controller
             'sell_product' => old('sell_product', $product->sell_product),
             'asking_price' => old('asking_price', $product->asking_price),
             'x_account' => old('x_account', $product->x_account),
+            'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
+            'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
             'id' => $product->id,
             'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
@@ -229,6 +232,8 @@ class ProductController extends Controller
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
+            'comparison_overrides_input' => 'nullable|string|max:5000',
+            'alternative_overrides_input' => 'nullable|string|max:5000',
         ]);
 
         // Handle logo removal
@@ -257,7 +262,8 @@ class ProductController extends Controller
                 app(\App\Services\LogoExtractorService::class),
                 app(\App\Services\CategoryClassifier::class),
                 app(\App\Services\ScreenshotService::class),
-                app(\App\Services\BadgeService::class)
+                app(\App\Services\BadgeService::class),
+                app(\App\Services\RelatedProductService::class)
             );
 
             $validated['description'] = $productController->ensureProperParagraphStructure(
@@ -268,6 +274,16 @@ class ProductController extends Controller
         if (isset($validated['x_account']) && ($validated['x_account'] && (str_contains($validated['x_account'], 'x.com/') || str_contains($validated['x_account'], 'twitter.com/')))) {
             $validated['x_account'] = basename(parse_url($validated['x_account'], PHP_URL_PATH));
         }
+
+        $validated['comparison_product_ids'] = $this->resolveRelatedProductOverrides(
+            $validated['comparison_overrides_input'] ?? null,
+            $product->id
+        );
+        $validated['alternative_product_ids'] = $this->resolveRelatedProductOverrides(
+            $validated['alternative_overrides_input'] ?? null,
+            $product->id
+        );
+        unset($validated['comparison_overrides_input'], $validated['alternative_overrides_input']);
 
         $product->update($validated);
 
@@ -340,6 +356,112 @@ class ProductController extends Controller
 
         $redirectRoute = $fromApprovals ? 'admin.product-approvals.index' : 'admin.products.index';
         return redirect()->route($redirectRoute)->with('success', 'Product updated successfully.');
+    }
+
+    private function resolveRelatedProductOverrides(?string $rawInput, ?int $excludeProductId = null): array
+    {
+        $rawInput = trim((string) $rawInput);
+        if ($rawInput === '') {
+            return [];
+        }
+
+        $tokens = collect(preg_split('/[\s,;]+/', $rawInput) ?: [])
+            ->map(fn($token) => trim((string) $token))
+            ->filter()
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return [];
+        }
+
+        $normalized = $tokens->map(function (string $token): array {
+            $token = trim($token);
+
+            if (Str::startsWith($token, ['http://', 'https://'])) {
+                $path = trim((string) parse_url($token, PHP_URL_PATH), '/');
+                if ($path !== '') {
+                    $segments = explode('/', $path);
+                    $token = end($segments) ?: $token;
+                }
+            }
+
+            $token = trim($token, "/ \t\n\r\0\x0B");
+
+            if (is_numeric($token)) {
+                return ['kind' => 'id', 'value' => (int) $token];
+            }
+
+            $slug = Str::slug($token);
+            if ($slug === '') {
+                $slug = Str::of($token)->lower()->trim('-')->value();
+            }
+
+            return ['kind' => 'slug', 'value' => $slug];
+        })->filter(fn($entry) => !empty($entry['value']))->values();
+
+        if ($normalized->isEmpty()) {
+            return [];
+        }
+
+        $numericIds = $normalized
+            ->where('kind', 'id')
+            ->pluck('value')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $slugs = $normalized
+            ->where('kind', 'slug')
+            ->pluck('value')
+            ->map(fn($slug) => (string) $slug)
+            ->unique()
+            ->values();
+
+        $products = Product::query()
+            ->select(['id', 'slug'])
+            ->where(function ($query) use ($numericIds, $slugs) {
+                if ($numericIds->isNotEmpty()) {
+                    $query->whereIn('id', $numericIds);
+                }
+                if ($slugs->isNotEmpty()) {
+                    if ($numericIds->isNotEmpty()) {
+                        $query->orWhereIn('slug', $slugs);
+                    } else {
+                        $query->whereIn('slug', $slugs);
+                    }
+                }
+            })
+            ->get();
+
+        $idMap = $products->pluck('id', 'id');
+        $slugMap = $products->pluck('id', 'slug');
+
+        $resolved = [];
+        foreach ($normalized as $entry) {
+            $resolvedId = null;
+            if ($entry['kind'] === 'id') {
+                $resolvedId = $idMap->get((int) $entry['value']);
+            } else {
+                $resolvedId = $slugMap->get((string) $entry['value']);
+            }
+
+            if (!$resolvedId) {
+                continue;
+            }
+            if ($excludeProductId && (int) $resolvedId === (int) $excludeProductId) {
+                continue;
+            }
+            if (in_array((int) $resolvedId, $resolved, true)) {
+                continue;
+            }
+
+            $resolved[] = (int) $resolvedId;
+            if (count($resolved) >= 30) {
+                break;
+            }
+        }
+
+        return $resolved;
     }
 
     /**

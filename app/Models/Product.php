@@ -60,6 +60,8 @@ class Product extends Model implements Sitemapable
         'badge_warning_sent_at',
         'pricing_page_url',
         'proposed_pricing_page_url',
+        'comparison_product_ids',
+        'alternative_product_ids',
     ];
 
     protected $casts = [
@@ -74,6 +76,8 @@ class Product extends Model implements Sitemapable
         'proposed_sell_product' => 'boolean',
         'proposed_asking_price' => 'decimal:2',
         'proposed_maker_links' => 'array',
+        'comparison_product_ids' => 'array',
+        'alternative_product_ids' => 'array',
     ];
 
     protected static function boot()

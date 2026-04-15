@@ -328,6 +328,12 @@ export function useProductForm() {
         formData.append('submission_type', form.submission_type);
       }
 
+      // Admin-only curated related-product overrides
+      if (globalFormState.isAdmin.value) {
+        formData.append('comparison_overrides_input', form.comparison_overrides_input || '');
+        formData.append('alternative_overrides_input', form.alternative_overrides_input || '');
+      }
+
       // Determine submission URL
       // Determine submission URL and method logic
       let url;
@@ -1143,6 +1149,8 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
               fromSource: fromParam || null,
+              comparison_overrides_input: initialData.comparison_overrides_input || '',
+              alternative_overrides_input: initialData.alternative_overrides_input || '',
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
               logos: initialData.logos || [],
@@ -1318,6 +1326,8 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               x_account: initialData.x_account,
               fromSource: fromParam || null,
+              comparison_overrides_input: initialData.comparison_overrides_input || '',
+              alternative_overrides_input: initialData.alternative_overrides_input || '',
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
               logos: initialData.logos || [],
@@ -1457,6 +1467,8 @@ export function useProductForm() {
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: parsedVideoUrl,
                     fromSource: fromParam || null,
+                    comparison_overrides_input: initialData.comparison_overrides_input || '',
+                    alternative_overrides_input: initialData.alternative_overrides_input || '',
                   });
                 } else {
                   // Also handle regular users in fallback
@@ -1538,6 +1550,8 @@ export function useProductForm() {
                     asking_price: initialData.asking_price,
                     x_account: initialData.x_account,
                     fromSource: fromParam || null,
+                    comparison_overrides_input: initialData.comparison_overrides_input || '',
+                    alternative_overrides_input: initialData.alternative_overrides_input || '',
                     logo: initialData.logo || null,
                     favicon: initialData.logo_url || null,
                   });

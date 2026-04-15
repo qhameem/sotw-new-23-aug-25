@@ -31,6 +31,7 @@ use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
 use App\Services\ScreenshotService;
 use App\Services\BadgeService;
+use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
 use Intervention\Image\ImageManager;
@@ -46,8 +47,9 @@ class ProductController extends Controller
     protected \App\Services\CategoryClassifier $categoryClassifier;
     protected ScreenshotService $screenshotService;
     protected BadgeService $badgeService;
+    protected RelatedProductService $relatedProductService;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService, RelatedProductService $relatedProductService)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
@@ -57,6 +59,7 @@ class ProductController extends Controller
         $this->categoryClassifier = $categoryClassifier;
         $this->screenshotService = $screenshotService;
         $this->badgeService = $badgeService;
+        $this->relatedProductService = $relatedProductService;
     }
 
     public function home(Request $request)
@@ -1673,24 +1676,7 @@ class ProductController extends Controller
             return $category->types->contains('name', 'Best for');
         });
 
-        // Only use functional categories for similarity matching.
-        // Exclude meta-category types like "Pricing" (Free, Paid…) and "Best for"
-        // so that products are compared by what they *do*, not by their pricing model.
-        $categoryIds = $product->categories
-            ->filter(fn($cat) => $cat->types->doesntContain('name', 'Pricing')
-                && $cat->types->doesntContain('name', 'Best for'))
-            ->pluck('id');
-
-        $similarProducts = Product::where('id', '!=', $product->id)
-            ->where('approved', true)
-            ->where('is_published', true)
-            ->whereHas('categories', function ($query) use ($categoryIds) {
-                $query->whereIn('categories.id', $categoryIds);
-            })
-            ->orderByRaw('(votes_count + impressions) DESC')
-            ->orderByDesc('created_at')
-            ->take(3)
-            ->get();
+        $similarProducts = $this->relatedProductService->getComparisons($product, 3);
 
         $title = $product->name;
         $pageTitle = $product->name . ': ' . $product->product_page_tagline . ' - Software on the Web';

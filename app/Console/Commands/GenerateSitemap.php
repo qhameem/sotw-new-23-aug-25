@@ -10,6 +10,7 @@ use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
 use App\Models\Product; // Added
 use App\Models\Category; // Added
+use App\Services\RelatedProductService;
 // It's good practice to also include your main app URL and other important static pages
 // use Carbon\Carbon; // Already imported in models, but good to be explicit if used directly here
 
@@ -35,6 +36,7 @@ class GenerateSitemap extends Command
     public function handle()
     {
         $this->info('Generating sitemap...');
+        $relatedProductService = app(RelatedProductService::class);
 
         $sitemapPath = public_path('sitemap.xml');
 
@@ -120,7 +122,7 @@ class GenerateSitemap extends Command
         $this->info('Adding pSEO routes...');
 
         // 1. Alternatives Pages
-        foreach (Product::where('approved', true)->get() as $product) {
+        foreach (Product::where('approved', true)->where('is_published', true)->get() as $product) {
             $sitemap->add(Url::create(route('pseo.alternatives', $product->slug))
                 ->setPriority(0.8)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
@@ -128,7 +130,7 @@ class GenerateSitemap extends Command
 
         // 2. Best-Of Category Pages
         $softwareCats = Category::whereHas('products', function($q) { $q->where('approved', true); })
-            ->whereHas('types', function($q) { $q->where('name', 'Software'); })->get();
+            ->whereHas('types', function($q) { $q->whereIn('name', ['Software', 'Software Categories']); })->get();
             
         foreach ($softwareCats as $category) {
             $sitemap->add(Url::create(route('pseo.best', $category->slug))
@@ -156,19 +158,14 @@ class GenerateSitemap extends Command
 
         // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
         $this->info('Generating comparison URLs...');
-        $products = Product::where('approved', true)->with('categories')->get();
+        $products = Product::where('approved', true)
+            ->where('is_published', true)
+            ->with(['categories.types', 'techStacks'])
+            ->get();
         $addedComparisons = [];
         
         foreach ($products as $product) {
-            $categoryIds = $product->categories->pluck('id');
-            $similarProducts = Product::whereHas('categories', function ($query) use ($categoryIds) {
-                $query->whereIn('categories.id', $categoryIds);
-            })
-            ->where('id', '!=', $product->id)
-            ->where('approved', true)
-            ->orderBy('votes_count', 'desc')
-            ->take(5) // Top 5 competitors per product
-            ->get();
+            $similarProducts = $relatedProductService->getComparisons($product, 3);
             
             foreach ($similarProducts as $similar) {
                 // Ensure alphabetical order so A-vs-B is the same as B-vs-A

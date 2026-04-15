@@ -31,6 +31,8 @@ const initialFormState = {
   sell_product: false,
   asking_price: null,
   x_account: '',
+  comparison_overrides_input: '',
+  alternative_overrides_input: '',
   fromSource: null,
 };
 

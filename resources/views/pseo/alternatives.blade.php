@@ -7,7 +7,7 @@
 
 @section('title', $title)
 @section('meta_description', $metaDescription)
-@section('robots', 'index, follow')
+@section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow')
 
 @section('content')
     <div class="py-4">
@@ -44,6 +44,7 @@
 
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ $title }}</h1>
         <p class="text-gray-500 text-sm mb-6">{{ $alternatives->count() }} alternatives found</p>
+        <p class="text-xs text-gray-400 mb-6">Alternatives are ranked by category fit, audience overlap, tech stack overlap, and product-positioning similarity.</p>
 
         @if($alternatives->isEmpty())
             <p class="text-gray-500">No alternatives found yet. Check back as new products are added.</p>
@@ -60,6 +61,9 @@
                                 {{ $alt->name }}
                             </a>
                             <p class="text-sm text-gray-500 mt-0.5">{{ $alt->tagline }}</p>
+                            @if(!empty($alt->match_summary))
+                                <p class="text-xs text-gray-400 mt-1">{{ $alt->match_summary }}</p>
+                            @endif
                             <div class="mt-2">
                                 <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $alt->slug]) }}"
                                    class="text-xs text-primary-600 hover:underline">
@@ -85,4 +89,3 @@
         </div>
     </div>
 @endsection
-

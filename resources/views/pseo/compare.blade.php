@@ -7,7 +7,7 @@
 
 @section('title', $title)
 @section('meta_description', $metaDescription)
-@section('robots', 'index, follow')
+@section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow')
 
 @section('content')
     <div class="py-4">
@@ -34,6 +34,11 @@
 
     <div class="bg-white rounded-lg py-6 md:py-8">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6">{{ $title }}</h1>
+        @if(!empty($pairMatchSummary))
+            <div class="mb-6 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                <p class="text-xs text-gray-500">{{ $pairMatchSummary }}</p>
+            </div>
+        @endif
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach([$productA, $productB] as $p)
@@ -45,7 +50,7 @@
                         if ($typeNames->contains('Pricing') && !$pricingCat) {
                             $pricingCat = $cat;
                         }
-                        if ($typeNames->contains('Software')) {
+                        if ($typeNames->contains('Software') || $typeNames->contains('Software Categories')) {
                             $softCats->push($cat);
                         }
                     }

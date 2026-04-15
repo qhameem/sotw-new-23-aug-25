@@ -221,6 +221,41 @@
         <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
           <p class="text-sm text-gray-600 mb-6">As an admin, you can save your edits directly without selecting a pricing option.</p>
+          <div v-if="!!modelValue.id" class="space-y-4 mb-6">
+            <div>
+              <label for="comparison-overrides" class="block text-sm font-semibold text-gray-700 mb-1">
+                Curated Comparisons
+              </label>
+              <textarea
+                id="comparison-overrides"
+                :value="modelValue.comparison_overrides_input || ''"
+                @input="updateField('comparison_overrides_input', $event.target.value)"
+                rows="3"
+                placeholder="Comma or newline separated product IDs or slugs (e.g. 12, ai-agent-flow, another-product)"
+                class="w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+              ></textarea>
+              <p class="mt-1 text-xs text-gray-500">
+                These are shown first in the sidebar "Compare with" section.
+              </p>
+            </div>
+
+            <div>
+              <label for="alternative-overrides" class="block text-sm font-semibold text-gray-700 mb-1">
+                Curated Alternatives
+              </label>
+              <textarea
+                id="alternative-overrides"
+                :value="modelValue.alternative_overrides_input || ''"
+                @input="updateField('alternative_overrides_input', $event.target.value)"
+                rows="3"
+                placeholder="Comma or newline separated product IDs or slugs"
+                class="w-full px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+              ></textarea>
+              <p class="mt-1 text-xs text-gray-500">
+                These are shown first on the alternatives page.
+              </p>
+            </div>
+          </div>
           <div class="flex flex-col items-start gap-4">
             <div v-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
               Note: Some required fields are missing, but you can still save as admin.

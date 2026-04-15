@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\TechStack;
-use Illuminate\Support\Str;
+use App\Services\RelatedProductService;
 
 class PseoController extends Controller
 {
+    public function __construct(
+        private readonly RelatedProductService $relatedProductService
+    ) {}
+
     /**
      * /best/{category:slug}
      * "Best {Category} Software in {year}"
@@ -16,7 +20,7 @@ class PseoController extends Controller
     public function bestOf(Category $category)
     {
         $category->loadMissing('types');
-        abort_unless($category->types->contains('name', 'Software'), 404);
+        abort_unless($this->hasSoftwareType($category), 404);
 
         $products = $category->products()
             ->where('approved', true)
@@ -43,23 +47,17 @@ class PseoController extends Controller
         abort_unless($product->approved && $product->is_published, 404);
         $product->loadMissing('categories.types', 'user');
 
-        $categoryIds = $product->categories->pluck('id');
-
-        $alternatives = Product::where('approved', true)
-            ->where('is_published', true)
-            ->where('id', '!=', $product->id)
-            ->whereHas('categories', fn($q) => $q->whereIn('categories.id', $categoryIds))
-            ->with(['categories.types', 'user'])
-            ->orderByRaw('(votes_count + impressions) DESC')
-            ->take(15)
-            ->get();
+        $alternatives = $this->relatedProductService->getAlternatives($product, 15);
+        $hasManualAlternatives = !empty($product->alternative_product_ids ?? []);
+        $topScore = (int) ($alternatives->max('match_score') ?? 0);
+        $shouldNoindex = $alternatives->count() < 3 || (!$hasManualAlternatives && $topScore < 55);
 
         $year = now()->year;
         $title = "Best {$product->name} Alternatives in {$year}";
         $metaDescription = "Looking for {$product->name} alternatives? "
             . "Here are the top " . $alternatives->count() . " tools similar to {$product->name} in {$year}.";
 
-        return view('pseo.alternatives', compact('product', 'alternatives', 'title', 'metaDescription', 'year'));
+        return view('pseo.alternatives', compact('product', 'alternatives', 'title', 'metaDescription', 'year', 'shouldNoindex'));
     }
 
     /**
@@ -91,7 +89,7 @@ class PseoController extends Controller
         $category->loadMissing('types');
         $bestfor->loadMissing('types');
 
-        abort_unless($category->types->contains('name', 'Software'), 404);
+        abort_unless($this->hasSoftwareType($category), 404);
         abort_unless($bestfor->types->contains('name', 'Best for'), 404);
 
         $products = Product::where('approved', true)
@@ -139,10 +137,17 @@ class PseoController extends Controller
             ->with(['categories.types', 'techStacks', 'user'])
             ->firstOrFail();
 
+        $pairMatch = $this->relatedProductService->scorePair($productA, $productB);
+        $isCuratedPair = $this->relatedProductService->isCuratedComparisonPair($productA, $productB);
+        $pairMatchSummary = $isCuratedPair
+            ? 'This comparison is manually curated by the editorial team.'
+            : $pairMatch['summary'];
+        $shouldNoindex = !$isCuratedPair && !$pairMatch['qualifiesComparison'];
+
         $title = "{$productA->name} vs {$productB->name}: Which is Better?";
         $metaDescription = "Compare {$productA->name} and {$productB->name} side-by-side — features, pricing, tech stack, and community votes.";
 
-        return view('pseo.compare', compact('productA', 'productB', 'title', 'metaDescription'));
+        return view('pseo.compare', compact('productA', 'productB', 'title', 'metaDescription', 'pairMatchSummary', 'shouldNoindex'));
     }
 
     /**
@@ -166,5 +171,14 @@ class PseoController extends Controller
         $metaDescription = "Browse {$products->count()} {$pricing->name} software tools, ranked by the community.";
 
         return view('pseo.pricing-model', compact('pricing', 'products', 'title', 'metaDescription'));
+    }
+
+    private function hasSoftwareType(Category $category): bool
+    {
+        $typeNames = $category->types->pluck('name')->map(fn($name) => strtolower((string) $name));
+
+        return $typeNames->contains('software')
+            || $typeNames->contains('software categories')
+            || $typeNames->contains('category');
     }
 }
