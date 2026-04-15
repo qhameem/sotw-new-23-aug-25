@@ -2742,8 +2742,10 @@ class ProductController extends Controller
                 $mediumFilename = 'medium_' . $filename;
                 $pathMedium = $directory . '/' . $mediumFilename;
                 Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Image resizing failed: ' . $e->getMessage());
+            } catch (\Throwable $e) {
+                // Some environments allow storing AVIF files but GD cannot decode them for resizing.
+                // Keep the original media and skip derivative thumbnails instead of failing submission.
+                \Illuminate\Support\Facades\Log::warning('Image resizing skipped: ' . $e->getMessage());
             }
         }
 

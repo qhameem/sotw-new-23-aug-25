@@ -325,9 +325,9 @@ class ProductController extends Controller
                         $mediumFilename = 'medium_' . $filename;
                         $pathMedium = $directory . '/' . $mediumFilename;
                         Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
-                    } catch (\Exception $e) {
+                    } catch (\Throwable $e) {
                         // Fallback: if resizing fails, we just don't set the paths, keeping original behavior
-                        \Log::error('Image resizing failed: ' . $e->getMessage());
+                        \Log::warning('Image resizing skipped: ' . $e->getMessage());
                     }
                 }
 

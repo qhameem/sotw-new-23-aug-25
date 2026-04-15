@@ -388,6 +388,8 @@ export function useProductForm() {
       const response = await axios.post(url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
       });
 
@@ -403,11 +405,20 @@ export function useProductForm() {
       }));
 
       // Redirect to success page
-      if (response.data && response.data.redirect_url) {
+      if (response.data && typeof response.data === 'object' && response.data.redirect_url) {
         window.location.href = response.data.redirect_url;
+      } else if (response.request?.responseURL && response.request.responseURL.includes('/submission-success/')) {
+        // If Laravel already redirected and Axios followed it, use that final URL.
+        window.location.href = response.request.responseURL;
       } else {
         // Fallback redirect
-        window.location.href = `/products/submission-success/${response.data.product_id || ''}`;
+        const productId = (response.data && typeof response.data === 'object') ? response.data.product_id : null;
+        if (productId) {
+          window.location.href = `/submission-success/${productId}`;
+        } else {
+          // Last resort to avoid routing into PUT /products/{product}
+          window.location.href = '/my-products';
+        }
       }
 
       return true;
