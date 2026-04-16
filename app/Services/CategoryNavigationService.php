@@ -13,41 +13,49 @@ class CategoryNavigationService
             'label' => 'AI & Automation',
             'eyebrow' => 'Build With AI',
             'description' => 'LLMs, agents, chatbots, no-code tools, and workflow automation.',
+            'icon' => 'brain',
         ],
         'marketing-sales' => [
             'label' => 'Marketing & Sales',
             'eyebrow' => 'Grow Demand',
             'description' => 'SEO, CRM, content, social, analytics, and revenue-driving tools.',
+            'icon' => 'megaphone',
         ],
         'productivity-hr' => [
             'label' => 'Productivity & HR',
             'eyebrow' => 'Run The Work',
             'description' => 'Project planning, scheduling, knowledge, hiring, and day-to-day operations.',
+            'icon' => 'briefcase',
         ],
         'design-creative' => [
             'label' => 'Design & Creative',
             'eyebrow' => 'Create The Experience',
             'description' => 'Graphic design, UI, media, writing, branding, and creative assets.',
+            'icon' => 'palette',
         ],
         'developer-tools' => [
             'label' => 'Developer Tools',
             'eyebrow' => 'Ship Faster',
             'description' => 'APIs, hosting, security, data, frameworks, and developer workflows.',
+            'icon' => 'terminal-window',
         ],
         'finance-legal' => [
             'label' => 'Finance & Legal',
             'eyebrow' => 'Protect The Business',
             'description' => 'Accounting, compliance, fintech, legal workflows, and money operations.',
+            'icon' => 'bank',
         ],
         'customer-support' => [
             'label' => 'Customer Support',
             'eyebrow' => 'Support Customers',
             'description' => 'Help desks, feedback loops, live chat, and customer communication.',
+            'icon' => 'lifebuoy',
         ],
         'view-all' => [
-            'label' => 'View All Categories',
+            'label' => 'All Categories',
             'eyebrow' => 'Browse Everything',
             'description' => 'An alphabetical directory of every category, including software, pricing, and best-for tags.',
+            'icon' => 'grid-nine',
         ],
     ];
 
@@ -195,6 +203,7 @@ class CategoryNavigationService
                     'label' => $group['label'],
                     'eyebrow' => $group['eyebrow'],
                     'description' => $group['description'],
+                    'icon' => $group['icon'],
                     'items' => $items->values()->all(),
                     'item_count' => $items->count(),
                 ];

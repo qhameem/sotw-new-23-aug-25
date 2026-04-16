@@ -86,7 +86,7 @@
                                 <div>
                                     <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Browse By Goal</p>
                                     <h2 class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</h2>
-                                    <p class="mt-1 max-w-xl text-xs text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
+                                    <p class="mt-1 max-w-none whitespace-nowrap text-[11px] text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
                                 </div>
                                 <a href="{{ route('categories.index') }}" class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
                                     View all categories
@@ -96,24 +96,59 @@
 
                         <div class="grid grid-cols-[15rem_minmax(0,1fr)]">
                             <div class="border-r border-gray-100 bg-slate-50/70 p-3">
-                                <template x-for="group in groups" :key="group.key">
+                                @foreach (($categoryNavigationGroups ?? []) as $group)
                                     <button
                                         type="button"
-                                        class="flex w-full items-start justify-between rounded-2xl px-4 py-3 text-left transition"
-                                        @mouseenter="setGroup(group.key)"
-                                        @focus="setGroup(group.key)"
-                                        @click="setGroup(group.key)"
-                                        :class="activeGroup === group.key ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-white hover:text-gray-900'"
+                                        class="flex w-full items-start justify-between gap-3 rounded-2xl px-4 py-3 text-left transition"
+                                        @mouseenter="setGroup('{{ $group['key'] }}')"
+                                        @focus="setGroup('{{ $group['key'] }}')"
+                                        @click="setGroup('{{ $group['key'] }}')"
+                                        :class="activeGroup === '{{ $group['key'] }}' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-white hover:text-gray-900'"
                                     >
-                                        <span>
-                                            <span class="block text-xs font-semibold" x-text="group.label"></span>
-                                            <span class="mt-1 block text-[11px] text-gray-500" x-text="group.item_count ? `${group.item_count} categories` : 'Browse all categories'"></span>
+                                        <span class="flex min-w-0 items-start gap-3">
+                                            <span
+                                                class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/80 ring-1 ring-gray-200"
+                                                :class="activeGroup === '{{ $group['key'] }}' ? 'text-primary-600' : 'text-gray-500'"
+                                            >
+                                                @switch($group['icon'])
+                                                    @case('brain')
+                                                        <x-phosphor-brain class="h-4 w-4" />
+                                                        @break
+                                                    @case('megaphone')
+                                                        <x-phosphor-megaphone class="h-4 w-4" />
+                                                        @break
+                                                    @case('briefcase')
+                                                        <x-phosphor-briefcase class="h-4 w-4" />
+                                                        @break
+                                                    @case('palette')
+                                                        <x-phosphor-palette class="h-4 w-4" />
+                                                        @break
+                                                    @case('terminal-window')
+                                                        <x-phosphor-terminal-window class="h-4 w-4" />
+                                                        @break
+                                                    @case('bank')
+                                                        <x-phosphor-bank class="h-4 w-4" />
+                                                        @break
+                                                    @case('lifebuoy')
+                                                        <x-phosphor-lifebuoy class="h-4 w-4" />
+                                                        @break
+                                                    @default
+                                                        <x-phosphor-grid-nine class="h-4 w-4" />
+                                                @endswitch
+                                            </span>
+
+                                            <span class="min-w-0">
+                                                <span class="block text-xs font-semibold">{{ $group['label'] }}</span>
+                                                <span class="mt-1 block text-[11px] text-gray-500">
+                                                    {{ $group['item_count'] ? $group['item_count'] . ' categories' : 'Browse all categories' }}
+                                                </span>
+                                            </span>
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </button>
-                                </template>
+                                @endforeach
                             </div>
 
                             <div class="p-6">
