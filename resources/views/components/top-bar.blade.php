@@ -158,9 +158,6 @@
                                         <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h3>
                                         <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600" x-text="activeGroupData.description"></p>
                                     </div>
-                                    <a href="{{ route('categories.index') }}" class="inline-flex shrink-0 items-center rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800">
-                                        Explore directory
-                                    </a>
                                 </div>
 
                                 <template x-if="activeGroupData.items && activeGroupData.items.length">
