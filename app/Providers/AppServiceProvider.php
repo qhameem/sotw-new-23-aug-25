@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 use App\Http\View\Composers\ScheduledProductsStatsComposer;
+use App\Services\CategoryNavigationService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(TechStackDetectorService::class, function ($app) {
             return new TechStackDetectorService();
+        });
+
+        $this->app->singleton(CategoryNavigationService::class, function ($app) {
+            return new CategoryNavigationService();
         });
     }
 
@@ -50,9 +55,21 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('components.top-bar', function ($view) {
+            $categoryNavigation = app(CategoryNavigationService::class);
+
             if (Auth::check() && Auth::user()->hasRole('admin')) {
                 $view->with('pendingApprovalCount', Product::where('approved', false)->count());
             }
+
+            $view->with('categoryNavigationGroups', $categoryNavigation->getMenuGroups())
+                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
+        });
+
+        View::composer(['partials._mobile-footer-menu', 'components.mobile-categories-menu'], function ($view) {
+            $categoryNavigation = app(CategoryNavigationService::class);
+
+            $view->with('categoryNavigationGroups', $categoryNavigation->getMenuGroups())
+                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
         });
 
         View::composer(

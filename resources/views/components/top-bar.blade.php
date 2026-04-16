@@ -1,4 +1,8 @@
 <div data-modal-scroll-lock-fixed class="fixed top-0 w-full z-50 h-[3.7rem] border-b border-gray-200 flex-shrink-0 hidden md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
+    @php
+        $isCategoriesRoute = request()->routeIs('categories.*');
+    @endphp
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-14">
             <div class="flex items-center">
@@ -7,7 +11,160 @@
                 </a>
             </div>
         <div class="flex items-center space-x-4">
-            <a href="{{ route('home') }}" class="text-sm  text-gray-900 hover:text-primary-500">Software</a>
+            <div
+                x-data="{
+                    open: false,
+                    closeTimer: null,
+                    activeGroup: '{{ $defaultCategoryNavigationGroupKey ?? 'ai-automation' }}',
+                    groups: {{ \Illuminate\Support\Js::from($categoryNavigationGroups ?? []) }},
+                    clearCloseTimer() {
+                        if (this.closeTimer) {
+                            clearTimeout(this.closeTimer);
+                            this.closeTimer = null;
+                        }
+                    },
+                    openMenu() {
+                        this.clearCloseTimer();
+                        this.open = true;
+                    },
+                    scheduleClose() {
+                        this.clearCloseTimer();
+                        this.closeTimer = setTimeout(() => {
+                            this.open = false;
+                        }, 180);
+                    },
+                    setGroup(key) {
+                        if (this.activeGroup !== key) {
+                            this.activeGroup = key;
+                        }
+
+                        this.openMenu();
+                    },
+                    get activeGroupData() {
+                        return this.groups.find((group) => group.key === this.activeGroup) ?? this.groups[0] ?? { items: [] };
+                    },
+                }"
+                class="relative"
+                @click.outside="open = false; clearCloseTimer()"
+                @keydown.escape.window="open = false; clearCloseTimer()"
+            >
+                <button
+                    x-ref="trigger"
+                    type="button"
+                    class="text-sm flex items-center gap-1.5 transition-colors"
+                    @mouseenter="openMenu()"
+                    @mouseleave="scheduleClose()"
+                    @focus="openMenu()"
+                    @click="open ? open = false : openMenu()"
+                    :aria-expanded="open.toString()"
+                    aria-haspopup="true"
+                >
+                    <span class="{{ $isCategoriesRoute ? 'text-primary-600 font-semibold' : 'text-gray-900 hover:text-primary-500' }}">Categories</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <div
+                    x-ref="panel"
+                    x-show="open"
+                    x-cloak
+                    @mouseenter="openMenu()"
+                    @mouseleave="scheduleClose()"
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-100"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="fixed left-1/2 top-[3.5rem] z-50 w-[58rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 pt-3"
+                    style="display: none;"
+                >
+                    <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
+                        <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5">
+                            <div class="flex items-start justify-between gap-6">
+                                <div>
+                                    <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Browse By Goal</p>
+                                    <h2 class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</h2>
+                                    <p class="mt-1 max-w-xl text-xs text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
+                                </div>
+                                <a href="{{ route('categories.index') }}" class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
+                                    View all categories
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-[15rem_minmax(0,1fr)]">
+                            <div class="border-r border-gray-100 bg-slate-50/70 p-3">
+                                <template x-for="group in groups" :key="group.key">
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-start justify-between rounded-2xl px-4 py-3 text-left transition"
+                                        @mouseenter="setGroup(group.key)"
+                                        @focus="setGroup(group.key)"
+                                        @click="setGroup(group.key)"
+                                        :class="activeGroup === group.key ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-white hover:text-gray-900'"
+                                    >
+                                        <span>
+                                            <span class="block text-xs font-semibold" x-text="group.label"></span>
+                                            <span class="mt-1 block text-[11px] text-gray-500" x-text="group.item_count ? `${group.item_count} categories` : 'Browse all categories'"></span>
+                                        </span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <div class="p-6">
+                                <div class="mb-5 flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="activeGroupData.eyebrow"></p>
+                                        <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h3>
+                                        <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600" x-text="activeGroupData.description"></p>
+                                    </div>
+                                    <a href="{{ route('categories.index') }}" class="inline-flex shrink-0 items-center rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800">
+                                        Explore directory
+                                    </a>
+                                </div>
+
+                                <template x-if="activeGroupData.items && activeGroupData.items.length">
+                                    <div class="max-h-[24rem] overflow-y-auto pr-2">
+                                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                            <template x-for="item in activeGroupData.items" :key="item.slug">
+                                                <a
+                                                    :href="item.url"
+                                                    class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
+                                                >
+                                                    <span class="pr-3">
+                                                        <span class="block font-semibold text-sm text-gray-900" x-text="item.name"></span>
+                                                        <span class="mt-1 flex items-center gap-2 text-[11px] text-gray-500">
+                                                            <span x-text="`${item.count} products`"></span>
+                                                            <template x-if="item.type_label">
+                                                                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600" x-text="item.type_label"></span>
+                                                            </template>
+                                                        </span>
+                                                    </span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </a>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="!activeGroupData.items || !activeGroupData.items.length">
+                                    <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                        <p class="text-sm font-medium text-gray-900">No categories are in this section yet.</p>
+                                        <p class="mt-2 text-sm text-gray-600">Use the alphabetical directory to browse everything that is available right now.</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <a href="{{ route('articles.index') }}" class="text-sm text-gray-900 hover:text-primary-500">Articles</a>
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="text-sm text-gray-900 hover:text-primary-500 flex items-center">

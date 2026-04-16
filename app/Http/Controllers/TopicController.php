@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Models\Product;
 use App\Models\Type;
 use App\Models\AdZone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Services\CategoryNavigationService;
 
 class TopicController extends Controller
 {
@@ -19,46 +18,11 @@ class TopicController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index(): View
+    public function index(CategoryNavigationService $categoryNavigation): View
     {
-        // Eager load categories with their types and count the number of approved products
-        $categories = Category::with(['types'])
-            ->withCount([
-                'products' => function ($query) {
-                    $query->where('approved', true)
-                        ->where(function ($subQuery) {
-                            $subQuery->whereNull('published_at')
-                                ->orWhereDate('published_at', '<=', Carbon::today());
-                        });
-                }
-            ])
-            ->get();
-
-        // Sort the categories by the number of products in descending order
-        $sortedCategories = $categories->sortByDesc('products_count');
-
-        // Group categories by their type name
-        $groupedCategories = $sortedCategories->groupBy(function ($category) {
-            // A category might belong to multiple types, we'll group by the first one for simplicity
-            // or handle it based on specific business logic. Here, we check for 'Software' or 'Pricing'.
-            $typeName = $category->types->first()->name ?? 'Other';
-            if (str_contains($typeName, 'Software')) {
-                return 'Software';
-            }
-            if (str_contains($typeName, 'Pricing')) {
-                return 'Pricing';
-            }
-            return 'Other';
-        });
-
-        // Ensure 'Software' and 'Pricing' groups exist even if empty
-        $finalGroupedCategories = collect([
-            'Software' => $groupedCategories->get('Software', collect()),
-            'Pricing' => $groupedCategories->get('Pricing', collect()),
-            'Other' => $groupedCategories->get('Other', collect()),
+        return view('site.topics.index', [
+            'categoryNavigationGroups' => $categoryNavigation->getMenuGroups(),
         ]);
-
-        return view('site.topics.index', ['groupedCategories' => $finalGroupedCategories]);
     }
 
     /**
