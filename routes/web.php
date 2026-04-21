@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ArticlePostController; // Added
 use App\Http\Controllers\Admin\ArticleCategoryController; // Added
 use App\Http\Controllers\Admin\ArticleTagController; // Added
+use App\Http\Controllers\Admin\AdController;
 use App\Http\Controllers\Admin\AdvertisingController;
 use App\Http\Controllers\Admin\AdZoneController;
 use App\Http\Controllers\Admin\UserController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
 use App\Http\Controllers\ProductInlineUpdateController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\AdInteractionController;
 
 Route::get('/phpinfo', [ProductController::class, 'phpinfo']);
 
@@ -38,6 +40,8 @@ Route::resource('product-reviews', ProductReviewController::class)->only(['creat
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
 Route::post('/fetch-videos', [VideoController::class, 'fetch'])->name('fetch-videos');
+Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');
+Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
 
@@ -109,7 +113,11 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::resource('tech-stacks', \App\Http\Controllers\Admin\TechStackController::class);
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::get('advertising/detect-audience', [AdvertisingController::class, 'detectAudience'])->name('advertising.detect-audience');
-    Route::resource('advertising', AdvertisingController::class);
+    Route::get('advertising', [AdvertisingController::class, 'index'])->name('advertising.index');
+    Route::get('advertising/create', fn () => redirect()->route('admin.ads.create', ['template' => 'sponsor']))->name('advertising.create');
+    Route::patch('ads/{ad}/toggle-active', [AdController::class, 'toggleActive'])->name('ads.toggle-active');
+    Route::post('ads/{ad}/duplicate', [AdController::class, 'duplicate'])->name('ads.duplicate');
+    Route::resource('ads', AdController::class);
     Route::resource('ad-zones', AdZoneController::class);
     Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');

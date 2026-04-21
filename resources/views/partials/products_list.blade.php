@@ -49,7 +49,7 @@
     @endphp
 
     @if($productCountForAd === 0 && $shouldDisplayAd)
-        @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+        @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
         @php $adDisplayed = true; @endphp
     @endif
 
@@ -151,7 +151,7 @@
         </article>
 
         @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
-            @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+            @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
             @php $adDisplayed = true; @endphp
         @endif
     @empty
@@ -163,7 +163,7 @@
 
     @if($shouldDisplayAd && !$adDisplayed && $productCountForAd > 0)
         {{-- Display ad after the last product if N was too large or not met by loop --}}
-        @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+        @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
         @php $adDisplayed = true; @endphp
     @endif
 </div>

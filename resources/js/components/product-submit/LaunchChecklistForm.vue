@@ -169,6 +169,7 @@
               Note: Some required fields are missing, but you can still save.
             </div>
             <button
+              type="button"
               @click="$emit('submit')"
               class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >
@@ -261,6 +262,7 @@
               Note: Some required fields are missing, but you can still save as admin.
             </div>
             <button
+              type="button"
               @click="$emit('submit')"
               class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >

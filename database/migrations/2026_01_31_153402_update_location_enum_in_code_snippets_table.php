@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Update the enum values to include 'sidebar'
         DB::statement("ALTER TABLE code_snippets MODIFY COLUMN location ENUM('head', 'body', 'sidebar')");
     }
@@ -20,6 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Remove 'sidebar' from the enum values
         DB::statement("ALTER TABLE code_snippets MODIFY COLUMN location ENUM('head', 'body')");
     }

@@ -24,6 +24,7 @@
     </div>
     <div class="mt-auto pt-4">
       <button
+        type="button"
         @click="handleSubmit"
         :disabled="!isAllRequiredFilled || isLoading"
         :class="{

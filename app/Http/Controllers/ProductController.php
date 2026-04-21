@@ -9,8 +9,6 @@ use App\Models\Type;
 use App\Models\PremiumProduct;
 use App\Models\TechStack;
 use App\Models\UserProductUpvote; // Added for upvote checking
-use App\Models\Ad; // Added for Ad model
-use App\Models\AdZone; // Added for AdZone model
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
 use Illuminate\Support\Facades\Notification;
@@ -31,6 +29,7 @@ use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
 use App\Services\ScreenshotService;
 use App\Services\BadgeService;
+use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
 use DOMDocument;
@@ -885,7 +884,7 @@ class ProductController extends Controller
         return response()->json(['exists' => false]);
     }
 
-    public function categoryProducts(Category $category)
+    public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
         // 1. Fetch Promoted Products (always shown, regardless of category filter for regular products)
         // Note: For category pages, you might decide if promoted products should *also* belong to the current category.
@@ -947,18 +946,15 @@ class ProductController extends Controller
 
         $types = $softwareTypes->concat($otherTypes)->concat($pricingTypes);
 
-        // Fetch ads for this category page
-        $headerAd = Ad::whereHas('adZones', fn($q) => $q->where('slug', 'header-above-calendar'))->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-        $sidebarTopAd = Ad::whereHas('adZones', fn($q) => $q->where('slug', 'sidebar-top'))->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-        $belowProductListingAdZone = AdZone::where('slug', 'below-product-listing')->first();
-        $belowProductListingAd = null;
-        $belowProductListingAdPosition = null;
-        if ($belowProductListingAdZone) {
-            $belowProductListingAd = $belowProductListingAdZone->ads()->where('is_active', true)->where(fn($q) => $q->whereNull('start_date')->orWhere('start_date', '<=', Carbon::now()))->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', Carbon::now()))->inRandomOrder()->first();
-            if ($belowProductListingAd) {
-                $belowProductListingAdPosition = $belowProductListingAdZone->display_after_nth_product;
-            }
-        }
+        $adContext = $adDeliveryService->contextFromRequest($request, [
+            'category_id' => $category->id,
+            'page_type' => 'category',
+        ]);
+        $headerAd = $adDeliveryService->oneForZone('header-above-calendar', $adContext);
+        $sidebarTopAd = $adDeliveryService->oneForZone('sidebar-top', $adContext);
+        $belowProductListingPlacement = $adDeliveryService->placementForZone('below-product-listing', $adContext);
+        $belowProductListingAd = $belowProductListingPlacement['ads']->first();
+        $belowProductListingAdPosition = $belowProductListingPlacement['position'];
 
         $categories = Category::withCount([
             'products' => function ($query) {

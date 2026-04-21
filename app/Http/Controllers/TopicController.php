@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Type;
-use App\Models\AdZone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use App\Services\AdDeliveryService;
 use App\Services\CategoryNavigationService;
 
 class TopicController extends Controller
@@ -31,7 +32,7 @@ class TopicController extends Controller
      * @param \App\Models\Category $category
      * @return \Illuminate\View\View
      */
-    public function show(Category $category): View
+    public function show(Request $request, Category $category, AdDeliveryService $adDeliveryService): View
     {
         // 1. Fetch Promoted Products for this category
         $promotedProducts = Product::with([
@@ -108,26 +109,12 @@ class TopicController extends Controller
 
 
         // 5. Fetch an active ad for the 'below-product-listing' zone and its position
-        $belowProductListingAd = null;
-        $belowProductListingAdPosition = null;
-        $belowProductListingAdZone = AdZone::where('slug', 'below-product-listing')->first();
-        if ($belowProductListingAdZone) {
-            $belowProductListingAd = $belowProductListingAdZone->ads()
-                ->where('is_active', true)
-                ->where(function ($query) {
-                    $query->whereNull('start_date')
-                        ->orWhere('start_date', '<=', Carbon::now());
-                })
-                ->where(function ($query) {
-                    $query->whereNull('end_date')
-                        ->orWhere('end_date', '>=', Carbon::now());
-                })
-                ->inRandomOrder()
-                ->first();
-            if ($belowProductListingAd) {
-                $belowProductListingAdPosition = $belowProductListingAdZone->display_after_nth_product;
-            }
-        }
+        $belowProductListingPlacement = $adDeliveryService->placementForZone('below-product-listing', $adDeliveryService->contextFromRequest($request, [
+            'category_id' => $category->id,
+            'page_type' => 'topic',
+        ]));
+        $belowProductListingAd = $belowProductListingPlacement['ads']->first();
+        $belowProductListingAdPosition = $belowProductListingPlacement['position'];
 
         $currentYear = Carbon::now()->year;
         $meta_title = "Discover Top " . strip_tags($category->name) . " (" . $currentYear . ") - Software on the Web";

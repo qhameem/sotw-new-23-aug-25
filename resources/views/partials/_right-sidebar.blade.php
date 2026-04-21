@@ -3,6 +3,21 @@
     @if(!request()->is('free-todo-list-tool'))
         <div x-show="!searchFocused">
             @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
+                @php
+                    $adDelivery = app(\App\Services\AdDeliveryService::class);
+                    $sidebarTopAd = $sidebarTopAd ?? $adDelivery->oneForZone('sidebar-top', $adDelivery->contextFromRequest(request(), [
+                        'route_name' => Route::currentRouteName(),
+                        'page_type' => Route::currentRouteName(),
+                        'category_id' => isset($category) ? $category->id : null,
+                    ]));
+                @endphp
+
+                @if($sidebarTopAd)
+                    <div class="p-4">
+                        @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top'])
+                    </div>
+                @endif
+
                 <div class="p-4">
                     <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
                         <div class="relative group inline-block">
@@ -26,10 +41,11 @@
                 </div>
 
                 @php
-                    $sponsors = cache()->remember('sponsors_sidebar', config('performance.sponsors_cache_ttl', 3600), function () {
-                        $sponsorZone = \App\Models\AdZone::where('slug', 'sponsors')->first();
-                        return $sponsorZone ? $sponsorZone->ads()->where('is_active', true)->take(config('performance.max_sponsors_display', 6))->get() : collect();
-                    });
+                    $sponsors = $adDelivery->forZone('sponsors', $adDelivery->contextFromRequest(request(), [
+                        'route_name' => Route::currentRouteName(),
+                        'page_type' => Route::currentRouteName(),
+                        'category_id' => isset($category) ? $category->id : null,
+                    ]), config('performance.max_sponsors_display', 6));
                 @endphp
                 @if($sponsors->isNotEmpty())
                     <div class="p-4">
@@ -37,15 +53,22 @@
                         <ul class="space-y-4">
                             @foreach($sponsors as $sponsor)
                                 <li>
-                                    <a href="{{ $sponsor->target_url }}" target="_blank" class="flex items-center space-x-3">
-                                        <img src="{{ $sponsor->content }}" alt="{{ $sponsor->internal_name }}"
+                                    <a href="{{ route('ads.click', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" target="_blank" rel="noopener noreferrer" class="group flex items-center space-x-3 rounded-lg p-1 hover:bg-stone-50" aria-label="Open {{ $sponsor->internal_name }} website">
+                                        <img src="{{ $sponsor->image_url }}" alt="{{ $sponsor->internal_name }}"
                                             class="w-10 h-10 rounded-xl object-cover">
-                                        <div>
-                                            <div class="font-semibold text-gray-900">{{ $sponsor->internal_name }} <span
-                                                    class="text-gray-400">↗</span></div>
-                                            <p class="text-sm text-gray-50">{{ $sponsor->tagline }}</p>
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-1 font-semibold text-gray-900">
+                                                <span class="truncate">{{ $sponsor->internal_name }}</span>
+                                                <span class="ad-link-out-icon inline-flex h-4 w-4 flex-shrink-0 items-center justify-center text-gray-400 transition group-hover:text-gray-700" aria-hidden="true">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <p class="text-sm text-gray-500 line-clamp-2">{{ $sponsor->tagline }}</p>
                                         </div>
                                     </a>
+                                    <img src="{{ route('ads.impression', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" alt="" class="hidden" width="1" height="1">
                                 </li>
                             @endforeach
                         </ul>

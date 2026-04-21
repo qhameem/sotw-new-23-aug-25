@@ -41,7 +41,7 @@
 </script>
 
 @if($productCountForAd === 0 && $shouldDisplayAd)
-    @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+    @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
     @php $adDisplayed = true; @endphp
 @endif
 
@@ -61,7 +61,7 @@
         @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
     @endif
     @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
-        @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+        @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
         @php $adDisplayed = true; @endphp
     @endif
 @empty
@@ -71,7 +71,7 @@
 @endforelse
 
 @if($shouldDisplayAd && !$adDisplayed && $productCountForAd > 0)
-    @include('partials.render_ad_block', ['ad' => $belowProductListingAd])
+    @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
     @php $adDisplayed = true; @endphp
 @endif
 

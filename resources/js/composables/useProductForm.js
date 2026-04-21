@@ -160,6 +160,10 @@ export function useProductForm() {
   };
 
   const submitProduct = () => {
+    if (globalFormState.isLoading.value) {
+      return false;
+    }
+
     if (!validateForm()) {
       return false;
     }
@@ -177,6 +181,10 @@ export function useProductForm() {
   };
 
   const confirmSubmit = async () => {
+    if (globalFormState.isLoading.value) {
+      return false;
+    }
+
     if (!validateForm()) {
       return false;
     }

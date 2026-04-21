@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="{ activeTab: 'ads' }">
+<div class="container mx-auto px-4 py-8" x-data="{ activeTab: '{{ request('tab', 'ads') }}' }">
     <div class="mb-6 border-b border-gray-200">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
             <li class="mr-2">

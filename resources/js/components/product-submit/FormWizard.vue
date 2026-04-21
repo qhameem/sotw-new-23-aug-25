@@ -43,6 +43,8 @@
               :logoPreview="logoPreview" 
               :galleryPreviews="galleryPreviews" 
               :allCategories="allCategories"
+              @open-logo-picker="openLogoPicker"
+              @remove-logo="removeSelectedLogo"
             />
             <FormProgress 
               :form="form" 
@@ -125,7 +127,7 @@
                     :loadingStates="loadingStates"
                     @update:logoPreview="logoPreview = $event"
                     @update:galleryPreviews="galleryPreviews = $event"
-                    @extractLogos="extractLogos"
+                    @open-logo-picker="openLogoPicker"
                   />
                 </div>
 
@@ -159,11 +161,8 @@
                  :logoPreview="logoPreview" 
                  :galleryPreviews="galleryPreviews" 
                  :allCategories="allCategories"
-                 :originalFavicon="originalFavicon"
-                 @update:logo="form.logo = $event"
-                 @update:logoPreview="logoPreview = $event"
-                 @update:favicon="form.favicon = $event"
-                 @restore:favicon="() => { form.favicon = originalFavicon; logoPreview.value = null; }"
+                 @open-logo-picker="openLogoPicker"
+                 @remove-logo="removeSelectedLogo"
                />
                <FormProgress 
                  :form="form" 
@@ -174,7 +173,21 @@
            </div>
          </div>
        </transition>
-     </div>
+
+      <LogoPickerModal
+        :show="isLogoPickerOpen"
+        :currentLogo="logoPreview || form.favicon"
+        :logos="form.logos"
+        :favicon="form.favicon || originalFavicon"
+        :productName="form.name || 'your product'"
+        :isLoading="loadingStates.logos"
+        @close="closeLogoPicker"
+        @select-logo="applySelectedLogo"
+        @upload-logo="uploadLogoFile"
+        @refresh-logos="extractLogos"
+        @restore-favicon="restoreFaviconLogo"
+      />
+    </div>
    </div>
  </template>
 
@@ -186,6 +199,7 @@ import ProductMediaForm from './ProductMediaForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewCard from './ProductPreviewCard.vue';
 import FormProgress from './FormProgress.vue';
+import LogoPickerModal from './LogoPickerModal.vue';
 import { useProductForm } from '../../composables/useProductForm';
 
 const props = defineProps({
@@ -197,6 +211,7 @@ const props = defineProps({
 });
 
 const showForm = ref(props.initialProduct ? true : false);
+const isLogoPickerOpen = ref(false);
 
 const {
   form,
@@ -302,6 +317,53 @@ const clearForm = () => {
 const handleFormDetailUpdate = (updatedForm) => {
   // We must mutate the reactive form object, not replace it
   Object.assign(form, updatedForm);
+};
+
+const openLogoPicker = async () => {
+  isLogoPickerOpen.value = true;
+
+  if (!loadingStates.logos && form.link && (!form.logos || form.logos.length === 0)) {
+    await extractLogos();
+  }
+};
+
+const closeLogoPicker = () => {
+  isLogoPickerOpen.value = false;
+};
+
+const applySelectedLogo = (logoUrl) => {
+  form.logo = logoUrl;
+  logoPreview.value = logoUrl;
+  isLogoPickerOpen.value = false;
+};
+
+const uploadLogoFile = (file) => {
+  form.logo = file;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    logoPreview.value = event.target.result;
+    isLogoPickerOpen.value = false;
+  };
+  reader.readAsDataURL(file);
+};
+
+const restoreFaviconLogo = () => {
+  const restoredLogo = form.favicon || originalFavicon.value;
+  if (!restoredLogo) {
+    return;
+  }
+
+  form.logo = null;
+  form.favicon = restoredLogo;
+  logoPreview.value = restoredLogo;
+  isLogoPickerOpen.value = false;
+};
+
+const removeSelectedLogo = () => {
+  form.logo = null;
+  form.favicon = null;
+  logoPreview.value = null;
 };
 
 

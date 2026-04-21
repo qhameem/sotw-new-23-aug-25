@@ -4,91 +4,108 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdZone;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class AdZoneController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): RedirectResponse
     {
-        $adZones = AdZone::latest()->paginate(15);
-        return view('admin.ad_zones.index', compact('adZones'));
+        return redirect()->route('admin.advertising.index', ['tab' => 'ad_zones']);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
-        return view('admin.ad_zones.create');
+        return view('admin.ad_zones.create', $this->formData());
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:ad_zones,name',
-            'slug' => 'required|string|max:255|unique:ad_zones,slug|regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-            'description' => 'nullable|string',
-            'display_after_nth_product' => 'nullable|integer|min:1',
-        ]);
+        AdZone::create($this->validateRequest($request));
 
-        AdZone::create($validated);
-
-        return redirect()->route('admin.ad-zones.index')->with('success', 'Ad Zone created successfully.');
+        return redirect()
+            ->route('admin.advertising.index', ['tab' => 'ad_zones'])
+            ->with('success', 'Ad zone created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(AdZone $adZone)
+    public function show(AdZone $adZone): RedirectResponse
     {
-        // Not typically used for admin CRUD, redirect to edit or index.
         return redirect()->route('admin.ad-zones.edit', $adZone);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AdZone $adZone)
+    public function edit(AdZone $adZone): View
     {
-        return view('admin.ad_zones.edit', compact('adZone'));
+        return view('admin.ad_zones.edit', $this->formData($adZone));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, AdZone $adZone)
+    public function update(Request $request, AdZone $adZone): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:ad_zones,name,' . $adZone->id,
-            'slug' => 'required|string|max:255|unique:ad_zones,slug,' . $adZone->id . '|regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-            'description' => 'nullable|string',
-            'display_after_nth_product' => 'nullable|integer|min:1',
+        $adZone->update($this->validateRequest($request, $adZone));
+
+        return redirect()
+            ->route('admin.advertising.index', ['tab' => 'ad_zones'])
+            ->with('success', 'Ad zone updated successfully.');
+    }
+
+    public function destroy(AdZone $adZone): RedirectResponse
+    {
+        if ($adZone->ads()->exists()) {
+            return redirect()
+                ->route('admin.advertising.index', ['tab' => 'ad_zones'])
+                ->with('error', 'Cannot delete ad zone while ads are still assigned to it.');
+        }
+
+        $adZone->delete();
+
+        return redirect()
+            ->route('admin.advertising.index', ['tab' => 'ad_zones'])
+            ->with('success', 'Ad zone deleted successfully.');
+    }
+
+    protected function formData(?AdZone $adZone = null): array
+    {
+        return [
+            'adZone' => $adZone,
+            'placementTypes' => AdZone::PLACEMENT_TYPES,
+            'rotationModes' => AdZone::ROTATION_MODES,
+            'deviceScopes' => AdZone::DEVICE_SCOPES,
+            'fallbackModes' => AdZone::FALLBACK_MODES,
+            'supportedAdTypes' => AdZone::SUPPORTED_AD_TYPES,
+        ];
+    }
+
+    protected function validateRequest(Request $request, ?AdZone $adZone = null): array
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255', Rule::unique('ad_zones', 'name')->ignore($adZone?->id)],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('ad_zones', 'slug')->ignore($adZone?->id), 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'description' => ['nullable', 'string'],
+            'render_location' => ['nullable', 'string', 'max:255'],
+            'placement_type' => ['required', Rule::in(AdZone::PLACEMENT_TYPES)],
+            'supported_ad_types' => ['nullable', 'array'],
+            'supported_ad_types.*' => [Rule::in(AdZone::SUPPORTED_AD_TYPES)],
+            'max_ads' => ['required', 'integer', 'min:1', 'max:50'],
+            'rotation_mode' => ['required', Rule::in(AdZone::ROTATION_MODES)],
+            'device_scope' => ['required', Rule::in(AdZone::DEVICE_SCOPES)],
+            'fallback_mode' => ['required', Rule::in(AdZone::FALLBACK_MODES)],
+            'display_after_nth_product' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        // Ensure null is saved if the field is empty, rather than 0 or an empty string
-        $validated['display_after_nth_product'] = $request->filled('display_after_nth_product') ? $validated['display_after_nth_product'] : null;
+        $validator->after(function ($validator) use ($request) {
+            if ($request->input('placement_type') !== 'in_feed' && $request->filled('display_after_nth_product')) {
+                $validator->errors()->add('display_after_nth_product', 'Inline position is only available for in-feed zones.');
+            }
+        });
 
-        $adZone->update($validated);
+        $validated = $validator->validate();
+        $validated['supported_ad_types'] = $validated['supported_ad_types'] ?? AdZone::SUPPORTED_AD_TYPES;
+        $validated['display_after_nth_product'] = $validated['placement_type'] === 'in_feed'
+            ? ($validated['display_after_nth_product'] ?? null)
+            : null;
 
-        return redirect()->route('admin.ad-zones.index')->with('success', 'Ad Zone updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AdZone $adZone)
-    {
-        // Check if any ads are associated with this zone before deleting
-        if ($adZone->ads()->count() > 0) {
-            return redirect()->route('admin.ad-zones.index')->with('error', 'Cannot delete Ad Zone: It has ads associated with it.');
-        }
-        $adZone->delete();
-        return redirect()->route('admin.ad-zones.index')->with('success', 'Ad Zone deleted successfully.');
+        return $validated;
     }
 }

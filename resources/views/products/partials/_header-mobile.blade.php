@@ -71,6 +71,12 @@
 
 {{-- Interaction Buttons --}}
 <div class="flex flex-row items-center mt-6 gap-3">
+    @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
+        <a href="{{ route('admin.products.edit', $product) }}"
+            class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-lg shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+            Edit Product
+        </a>
+    @endif
     <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
         target="_blank" rel="noopener ugc noreferrer"
         class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
