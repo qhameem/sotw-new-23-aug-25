@@ -1,9 +1,9 @@
 @extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true])
 
-@section('title', 'Edit Article Post | Software on the Web')
+@section('title', 'Edit Article | Software on the Web')
 
 @section('header-title')
-    <h1 class="text-xl font-bold text-gray-900">Edit Article Post</h1>
+    <h1 class="text-xl font-bold text-gray-900">Edit Article</h1>
 @endsection
 
 @section('content')
@@ -14,9 +14,9 @@
         'statuses' => $statuses,
         'revisions' => $revisions,
         'context' => $context,
-        'formAction' => route('admin.articles.posts.update', ['post' => $article->id]),
+        'formAction' => route('articles.update', ['article' => $article->id]),
         'formMethod' => 'PUT',
-        'cancelUrl' => route('admin.articles.posts.index'),
+        'cancelUrl' => route('articles.my'),
         'submitLabel' => 'Save Changes',
     ])
 @endsection

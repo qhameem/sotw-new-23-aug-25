@@ -326,10 +326,20 @@
         @endif
     @endforeach
 
-    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? 'max-w-3xl'"
-        :sidebar-sticky="!request()->routeIs('articles.create')"
+    @php
+        $isArticleEditorRoute = request()->routeIs(
+            'articles.create',
+            'articles.edit',
+            'admin.articles.posts.create',
+            'admin.articles.posts.edit'
+        );
+    @endphp
+
+    <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-3xl')"
+        :sidebar-sticky="!$isArticleEditorRoute"
         :lock-height="false"
-        :container-max-width="$containerMaxWidth ?? 'max-w-7xl'"
+        :container-max-width="$containerMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-7xl')"
+        :hide-sidebar="$hideSidebar ?? $isArticleEditorRoute"
         :header-padding="$headerPadding ?? 'px-4 sm:px-6 lg:px-8'"
         :main-padding="$mainPadding ?? 'px-4 sm:px-6 lg:px-8'">
         <x-slot:title>

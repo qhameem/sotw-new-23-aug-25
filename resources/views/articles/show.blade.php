@@ -4,9 +4,23 @@
 
 @section('meta_description', $post->meta_description ?: $post->excerpt)
 
+@section('robots', ($isPreview ?? false) ? 'noindex, nofollow' : 'index, follow')
+
+@section('canonical')
+    <link rel="canonical" href="{{ route('articles.show', ['article' => $post->slug]) }}" />
+@endsection
+
+@section('og_type', 'article')
+
 @section('content')
     <div class="py-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            @if($isPreview ?? false)
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Preview mode is showing unpublished editor changes. Search engines will not index this view.
+                </div>
+            @endif
+
             <article class="bg-white  shadow-xl rounded-lg overflow-hidden">
                 @if($post->featured_image_path)
                     <img class="w-full h-auto max-h-[500px] object-cover object-center"

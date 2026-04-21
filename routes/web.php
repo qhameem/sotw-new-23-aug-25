@@ -33,6 +33,7 @@ use App\Http\Controllers\ProductInlineUpdateController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\AdInteractionController;
+use App\Http\Controllers\ArticleEditorController;
 
 Route::get('/phpinfo', [ProductController::class, 'phpinfo']);
 
@@ -76,6 +77,12 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     // Article routes for authenticated users
     Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
     Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::get('/articles/{article:id}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
+    Route::put('/articles/{article:id}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::post('/articles/editor/autosave', [ArticleEditorController::class, 'autosave'])->name('articles.editor.autosave');
+    Route::post('/articles/editor/upload-image', [ArticleEditorController::class, 'uploadImage'])->name('articles.editor.upload-image');
+    Route::get('/articles/{article:id}/preview', [ArticleEditorController::class, 'preview'])->name('articles.preview');
+    Route::post('/articles/revisions/{revision}/restore', [ArticleEditorController::class, 'restoreRevision'])->name('articles.revisions.restore');
     Route::get('/my-articles', [ArticleController::class, 'myArticles'])->name('articles.my');
     Route::get('/promote/success', [StripeController::class, 'promoteSuccess'])->name('promote.success');
     Route::post('/promote/update-date', [StripeController::class, 'updateDate'])->name('promote.update-date');
@@ -301,12 +308,6 @@ Route::get('/software-review', function () {
 Route::get('/changelog', [App\Http\Controllers\ChangelogController::class, 'index'])->name('changelog.index');
 
 Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController::class, 'details'])->name('premium-spot.details');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/my-articles', [App\Http\Controllers\ArticleController::class, 'myArticles'])->name('articles.my');
-});
-
-Route::post('/admin/articles/posts/upload-featured-image', [App\Http\Controllers\Admin\ArticlePostController::class, 'uploadFeaturedImage'])->name('admin.articles.posts.uploadFeaturedImage');
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');

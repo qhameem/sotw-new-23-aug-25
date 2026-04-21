@@ -3,358 +3,150 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SaveArticleRequest;
 use App\Models\Article;
 use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
+use App\Services\ArticleEditorService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Log; // Added Log facade
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
+use Illuminate\View\View;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\ImageManager;
 
 class ArticlePostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
-        // TODO: Implement search and sorting
-        $paginatedPosts = Article::with('author', 'categories', 'tags')
-            ->latest('published_at')
+        $posts = Article::with('author', 'categories', 'tags')
+            ->latest('updated_at')
             ->paginate(15);
-
-        $itemsToView = [];
-        $slugsFixed = false;
-
-        foreach ($paginatedPosts->items() as $post) {
-            $currentPost = $post; // Work with a copy in case fresh() returns null
-            if (empty($currentPost->slug) && $currentPost->exists) {
-                Log::warning("ArticlePostController@index: Post ID {$currentPost->id} (Title: '{$currentPost->title}') has an empty slug. Attempting to fix.");
-                try {
-                    $currentPost->save(); // Trigger model's saving event to generate slug
-                    $freshPost = $currentPost->fresh(); // Get the absolute latest from DB
-                    if ($freshPost) {
-                        $itemsToView[] = $freshPost;
-                        Log::info("ArticlePostController@index: Slug for Post ID {$freshPost->id} (Title: '{$freshPost->title}') fixed to '{$freshPost->slug}'.");
-                        $slugsFixed = true;
-                    } else {
-                        Log::error("ArticlePostController@index: Failed to refresh Post ID {$currentPost->id} after attempting to fix slug. Using original potentially problematic post data for view.");
-                        $itemsToView[] = $currentPost; // Add original if fresh fails
-                    }
-                } catch (\Exception $e) {
-                    Log::error("ArticlePostController@index: Failed to fix slug for Post ID {$currentPost->id}: " . $e->getMessage() . ". Using original post data for view.");
-                    $itemsToView[] = $currentPost; // Add original on error
-                }
-            } else {
-                if ($currentPost->exists) {
-                     Log::info("ArticlePostController@index: Post ID {$currentPost->id} (Title: '{$currentPost->title}') has slug '{$currentPost->slug}'. No fix needed.");
-                }
-                $itemsToView[] = $currentPost;
-            }
-        }
-        
-        // Reconstruct a paginator instance with the potentially modified items
-        // This is a bit manual but ensures the view gets the corrected items.
-        // Note: This manual reconstruction is for the items on the *current page only*.
-        // If you need to ensure all items across all pages are fixed, a background job or a dedicated script is better.
-        $posts = new \Illuminate\Pagination\LengthAwarePaginator(
-            $itemsToView,
-            $paginatedPosts->total(),
-            $paginatedPosts->perPage(),
-            $paginatedPosts->currentPage(),
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
 
         return view('admin.articles.posts.index', compact('posts'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(ArticleEditorService $articleEditorService): View
     {
-        $categories = ArticleCategory::orderBy('name')->get();
-        $tags = ArticleTag::orderBy('name')->get();
-        $statuses = ['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled']; // Example statuses
-        return view('admin.articles.posts.create', compact('categories', 'tags', 'statuses'));
+        return view('admin.articles.posts.create', $this->editorViewData(
+            article: new Article(['status' => 'draft']),
+            articleEditorService: $articleEditorService
+        ));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(SaveArticleRequest $request, ArticleEditorService $articleEditorService): RedirectResponse
     {
-        Log::info('Article store request data: ', $request->all());
+        $article = $articleEditorService->save(
+            new Article(),
+            $request->validated(),
+            $request->user(),
+            true,
+            'created'
+        );
 
-        $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'slug' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('articles', 'slug'),
-            ],
-            'content' => 'required|string',
-            'status' => 'required|string|in:draft,published,scheduled',
-            'published_at' => 'nullable|date',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:65535',
-            'meta_keywords' => 'nullable|string|max:255',
-            'og_title' => 'nullable|string|max:255',
-            'og_description' => 'nullable|string|max:65535',
-            'og_image' => 'nullable|string|max:255', // Later, this could be an image upload
-            'og_url' => 'nullable|string|max:255|url',
-            'twitter_card' => 'nullable|string|max:255',
-            'twitter_title' => 'nullable|string|max:255',
-            'twitter_description' => 'nullable|string|max:65535',
-            'featured_image_path' => 'nullable|string|max:255',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:article_categories,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:article_tags,id',
-        ]);
-
-        Log::info('Validated featured_image_path: ' . ($validatedData['featured_image_path'] ?? 'Not Present'));
-
-        $post = new Article($validatedData);
-        $post->user_id = Auth::id();
-
-        if (empty($validatedData['slug'])) {
-            $post->slug = Str::slug($validatedData['title']);
-        } else {
-            $post->slug = Str::slug($validatedData['slug']); // Ensure slug is sanitized
-        }
-
-        // Ensure slug uniqueness again after potential auto-generation or manual input sanitization
-        $originalSlug = $post->slug;
-        $counter = 1;
-        while (Article::where('slug', $post->slug)->exists()) {
-            $post->slug = $originalSlug . '-' . $counter++;
-        }
-
-
-        if ($validatedData['status'] === 'published' && empty($validatedData['published_at'])) {
-            $post->published_at = now();
-        }
-
-        $post->save();
-
-        if (!empty($validatedData['categories'])) {
-            $post->categories()->sync($validatedData['categories']);
-        }
-        if (!empty($validatedData['tags'])) {
-            $post->tags()->sync($validatedData['tags']);
-        }
-
-        return redirect()->route('admin.articles.posts.index')->with('success', 'Article post created successfully.');
+        return redirect()
+            ->route('admin.articles.posts.edit', ['post' => $article->id])
+            ->with('success', 'Article post created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Article $article) // Route model binding
+    public function show(Article $article): View
     {
-        // For admin, show might be the same as edit, or a specific admin preview
         return view('admin.articles.posts.show', compact('article'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Request $request, $postId) // Changed signature to accept $postId
+    public function edit(Article $post, ArticleEditorService $articleEditorService): View
     {
-        Log::info("ArticlePostController@edit: Entry point. Attempting to edit post with explicit ID: {$postId}");
-
-        try {
-            $article = Article::findOrFail($postId);
-            Log::info("ArticlePostController@edit: Successfully fetched Article ID {$article->id} directly. Slug: '{$article->slug}', Title: '{$article->title}'");
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error("ArticlePostController@edit: Article::findOrFail({$postId}) failed. Post not found. Redirecting.");
-            return redirect()->route('admin.articles.posts.index')->with('error', "Post with ID '{$postId}' not found for editing.");
-        }
-
-        // At this point, $article exists (it was found by slug).
-        // Now, check if its slug property is empty (which would be unusual if found by slug, but could happen with old data).
-        if (empty($article->slug)) {
-            Log::warning("ArticlePostController@edit: Article ID {$article->id} (Title: '{$article->title}') exists but has an empty slug property. Attempting to fix by saving.");
-            try {
-                $article->save(); // Trigger the 'saving' event in the model to generate/ensure slug.
-                $article->refresh(); // Get the latest state.
-                
-                if (empty($article->slug)) {
-                    Log::critical("ArticlePostController@edit: CRITICAL - Article ID {$article->id} still has an empty slug after save/refresh. Title: '{$article->title}'.");
-                    return redirect()->route('admin.articles.posts.index')->with('error', 'Post has a critical slug issue and cannot be edited.');
-                }
-                Log::info("ArticlePostController@edit: Slug for Article ID {$article->id} was confirmed/fixed to '{$article->slug}'.");
-            } catch (\Exception $e) {
-                Log::error("ArticlePostController@edit: Error saving Article ID {$article->id} to fix empty slug: " . $e->getMessage());
-                return redirect()->route('admin.articles.posts.index')->with('error', 'Error preparing post for editing while trying to fix slug.');
-            }
-        }
-
-        $categories = ArticleCategory::orderBy('name')->get();
-        $tags = ArticleTag::orderBy('name')->get();
-        $statuses = ['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled'];
-        $article->load('categories', 'tags');
-        return view('admin.articles.posts.edit', compact('article', 'categories', 'tags', 'statuses'));
+        return view('admin.articles.posts.edit', $this->editorViewData(
+            article: $post->load('categories', 'tags', 'revisions.user'),
+            articleEditorService: $articleEditorService
+        ));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $postId) // Changed signature
-    {
-        Log::info("ArticlePostController@update: Attempting to update post with explicit ID: {$postId}");
-        try {
-            $article = Article::findOrFail($postId);
-            Log::info("ArticlePostController@update: Successfully fetched Article ID {$article->id} for update.");
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error("ArticlePostController@update: Article::findOrFail({$postId}) failed. Post not found for update. Redirecting.");
-            return redirect()->route('admin.articles.posts.index')->with('error', "Post with ID '{$postId}' not found for update.");
-        }
+    public function update(
+        SaveArticleRequest $request,
+        Article $post,
+        ArticleEditorService $articleEditorService
+    ): RedirectResponse {
+        $articleEditorService->save(
+            $post,
+            $request->validated(),
+            $request->user(),
+            true,
+            'updated'
+        );
 
-        Log::info('Article update request data: ', $request->all());
-
-        $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'slug' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('articles', 'slug')->ignore($article->id),
-            ],
-            'content' => 'required|string',
-            'status' => 'required|string|in:draft,published,scheduled',
-            'published_at' => 'nullable|date',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:65535',
-            'meta_keywords' => 'nullable|string|max:255',
-            'og_title' => 'nullable|string|max:255',
-            'og_description' => 'nullable|string|max:65535',
-            'og_image' => 'nullable|string|max:255',
-            'og_url' => 'nullable|string|max:255|url',
-            'twitter_card' => 'nullable|string|max:255',
-            'twitter_title' => 'nullable|string|max:255',
-            'twitter_description' => 'nullable|string|max:65535',
-            'featured_image_path' => 'nullable|string|max:255',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:article_categories,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:article_tags,id',
-        ]);
-
-        Log::info('Validated featured_image_path for update: ' . ($validatedData['featured_image_path'] ?? 'Not Present'));
-
-        $article->fill($validatedData);
-
-        if (empty($validatedData['slug'])) {
-            $article->slug = Str::slug($validatedData['title']);
-        } else {
-            $article->slug = Str::slug($validatedData['slug']);
-        }
-        
-        // Ensure slug uniqueness again after potential auto-generation or manual input sanitization
-        if ($article->isDirty('slug')) {
-            $originalSlug = $article->slug;
-            $counter = 1;
-            // Check if other posts use this slug
-            while (Article::where('slug', $article->slug)->where('id', '!=', $article->id)->exists()) {
-                $article->slug = $originalSlug . '-' . $counter++;
-            }
-        }
-
-
-        if ($validatedData['status'] === 'published' && empty($validatedData['published_at'])) {
-            $article->published_at = now();
-        } elseif ($validatedData['status'] !== 'published' && $article->status === 'published') {
-            // If changing status from published to something else, nullify published_at if it's not explicitly set
-            // Or, admin might want to keep the original published_at date, this logic can be adjusted.
-            // For now, let's assume if it's not published, published_at might be cleared or kept as is if scheduled.
-            if($validatedData['status'] === 'draft') {
-                 $article->published_at = null;
-            }
-        }
-
-
-        $article->save();
-
-        $article->categories()->sync($validatedData['categories'] ?? []);
-        $article->tags()->sync($validatedData['tags'] ?? []);
-
-        return redirect()->route('admin.articles.posts.index')->with('success', 'Article post updated successfully.');
+        return back()->with('success', 'Article post updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($postId) // Changed signature
+    public function destroy(Article $post): RedirectResponse
     {
-        Log::info("ArticlePostController@destroy: Attempting to delete post with explicit ID: {$postId}");
-        try {
-            $article = Article::findOrFail($postId);
-            Log::info("ArticlePostController@destroy: Successfully fetched Article ID {$article->id} for deletion.");
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error("ArticlePostController@destroy: Article::findOrFail({$postId}) failed. Post not found for deletion. Redirecting.");
-            return redirect()->route('admin.articles.posts.index')->with('error', "Post with ID '{$postId}' not found for deletion.");
+        if ($post->featured_image_path && Storage::disk('public')->exists($post->featured_image_path)) {
+            Storage::disk('public')->delete($post->featured_image_path);
         }
 
-        // Consider deleting associated featured image if stored locally
-        if ($article->featured_image_path && Storage::disk('public')->exists($article->featured_image_path)) {
-            Storage::disk('public')->delete($article->featured_image_path);
-        }
-        $article->delete();
+        $post->delete();
+
         return redirect()->route('admin.articles.posts.index')->with('success', 'Article post deleted successfully.');
     }
 
     public function uploadFeaturedImage(Request $request)
     {
         $request->validate([
-            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:2048', // Max 2MB
+            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:2048',
         ]);
 
         if ($request->hasFile('featured_image')) {
             try {
                 $file = $request->file('featured_image');
-                $directory = 'articles'; // Simplified directory
+                $directory = 'articles';
                 $filename = uniqid() . '_' . time();
-                $extension = $file->getClientOriginalExtension();
+                $extension = strtolower($file->getClientOriginalExtension());
 
                 if ($extension === 'svg') {
-                    // For SVG, just store it directly
                     $path = $file->storeAs($directory, "{$filename}.svg", 'public');
                 } else {
-                    // For other image types, convert to WebP
                     $imageManager = new ImageManager(new GdDriver());
                     $image = $imageManager->read($file);
-                    $webpPath = "{$directory}/{$filename}.webp";
-                    Storage::disk('public')->put($webpPath, (string) $image->encode(new WebpEncoder(80)));
-                    $path = $webpPath;
+                    $path = "{$directory}/{$filename}.webp";
+                    Storage::disk('public')->put($path, (string) $image->encode(new WebpEncoder(80)));
                 }
-                
+
                 return response()->json(['success' => true, 'path' => $path, 'url' => Storage::url($path)]);
-            } catch (\Exception $e) {
-                Log::error('Featured image upload failed: ' . $e->getMessage());
-                return response()->json(['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()], 500);
+            } catch (\Throwable $throwable) {
+                Log::error('Featured image upload failed: ' . $throwable->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Upload failed: ' . $throwable->getMessage(),
+                ], 500);
             }
         }
 
         return response()->json(['success' => false, 'message' => 'No image uploaded.'], 400);
     }
-    public function toggleStaffPick(Request $request, $postId)
-    {
-        try {
-            $article = Article::findOrFail($postId);
-            $article->staff_pick = !$article->staff_pick;
-            $article->save();
 
-            return redirect()->back()->with('success', 'Staff pick status updated successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update staff pick status.');
-        }
+    public function toggleStaffPick(Request $request, Article $post): RedirectResponse
+    {
+        $post->staff_pick = !$post->staff_pick;
+        $post->save();
+
+        return back()->with('success', 'Staff pick status updated successfully.');
+    }
+
+    private function editorViewData(Article $article, ArticleEditorService $articleEditorService): array
+    {
+        return [
+            'article' => $article,
+            'categories' => ArticleCategory::orderBy('name')->get(),
+            'tags' => ArticleTag::orderBy('name')->get(),
+            'statuses' => $articleEditorService->availableStatuses(Auth::user()),
+            'revisions' => $article->exists
+                ? $article->revisions()->with('user')->limit(8)->get()
+                : collect(),
+            'context' => 'admin',
+        ];
     }
 }

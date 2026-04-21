@@ -260,6 +260,12 @@ if (document.getElementById('checklist-container')) {
     });
 }
 
+if (document.querySelector('[data-article-editor-root]')) {
+    import('./article-editor').then(({ initArticleEditors }) => {
+        initArticleEditors();
+    });
+}
+
 // Mount the ProductAssignment component for admin
 if (document.getElementById('product-assignment-app')) {
     import('./components/admin/ProductAssignment.vue').then((ProductAssignment) => {

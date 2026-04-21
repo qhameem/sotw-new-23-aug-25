@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\Feed\Feedable;
 use Spatie\Feed\FeedItem;
@@ -67,7 +68,7 @@ class Article extends Model implements Feedable, Sitemapable
      */
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'article_category_pivot', 'article_id', 'article_category_id')->withTimestamps();
+        return $this->belongsToMany(ArticleCategory::class, 'article_category_pivot', 'article_id', 'article_category_id')->withTimestamps();
     }
 
     /**
@@ -76,6 +77,11 @@ class Article extends Model implements Feedable, Sitemapable
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(ArticleTag::class, 'article_tag_pivot', 'article_id', 'article_tag_id')->withTimestamps();
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(ArticleRevision::class)->latest();
     }
 
     /**
