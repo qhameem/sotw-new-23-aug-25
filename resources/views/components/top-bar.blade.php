@@ -3,7 +3,7 @@
         $isCategoriesRoute = request()->routeIs('categories.*');
     @endphp
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <div class="flex items-center justify-between h-14">
             <div class="flex items-center">
                 <a href="{{ route('home') }}">
