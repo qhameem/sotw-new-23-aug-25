@@ -6,10 +6,12 @@ use App\Http\Requests\SaveArticleRequest;
 use App\Models\Article;
 use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
+use App\Services\ArticleDiscoveryService;
 use App\Services\ArticleEditorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ArticleController extends Controller
@@ -65,18 +67,42 @@ class ArticleController extends Controller
         return back()->with('success', 'Article updated successfully.');
     }
 
-    public function index(Request $request)
+    public function index(Request $request, ArticleDiscoveryService $articleDiscoveryService): View
     {
-        $posts = Article::select('articles.*')
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
-            ->with('author', 'categories', 'tags')
-            ->latest('published_at')
-            ->paginate(10);
+        $feed = $request->string('view')->toString() ?: 'latest';
 
-        $title = 'Articles - Software on the web';
+        validator(
+            ['view' => $feed],
+            ['view' => ['required', Rule::in(['latest', 'featured', 'popular'])]]
+        )->validate();
 
-        return view('articles.index', compact('posts', 'title'));
+        $posts = match ($feed) {
+            'featured' => Article::query()
+                ->published()
+                ->featured()
+                ->with('author', 'categories', 'tags')
+                ->latest('published_at')
+                ->paginate(10)
+                ->withQueryString(),
+            'popular' => $articleDiscoveryService->popularArticlesPaginator(10),
+            default => Article::query()
+                ->published()
+                ->with('author', 'categories', 'tags')
+                ->latest('published_at')
+                ->paginate(10)
+                ->withQueryString(),
+        };
+
+        return view('articles.index', [
+            'posts' => $posts,
+            'title' => 'Articles - Software on the web',
+            'feed' => $feed,
+            'featuredPosts' => $articleDiscoveryService->featuredArticles(),
+            'popularPosts' => $articleDiscoveryService->popularArticles(),
+            'topicCategories' => $articleDiscoveryService->topicCategories(),
+            'mainContentMaxWidth' => 'max-w-4xl',
+            'containerMaxWidth' => 'max-w-[90rem]',
+        ]);
     }
 
     public function show(Article $article)
@@ -93,8 +119,7 @@ class ArticleController extends Controller
     public function category(ArticleCategory $articleCategory)
     {
         $posts = $articleCategory->articles()
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
+            ->published()
             ->with('author', 'categories', 'tags')
             ->latest('published_at')
             ->paginate(10);
@@ -108,8 +133,7 @@ class ArticleController extends Controller
     public function tag(ArticleTag $articleTag)
     {
         $posts = $articleTag->articles()
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
+            ->published()
             ->with('author', 'categories', 'tags')
             ->latest('published_at')
             ->paginate(10);
@@ -123,8 +147,8 @@ class ArticleController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('query');
-        $posts = Article::where('status', 'published')
-            ->where('published_at', '<=', now())
+        $posts = Article::query()
+            ->published()
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
                     ->orWhere('content', 'like', "%{$query}%");
@@ -138,8 +162,8 @@ class ArticleController extends Controller
 
     public function feed()
     {
-        $posts = Article::where('status', 'published')
-            ->where('published_at', '<=', now())
+        $posts = Article::query()
+            ->published()
             ->orderBy('published_at', 'desc')
             ->limit(20)
             ->get();

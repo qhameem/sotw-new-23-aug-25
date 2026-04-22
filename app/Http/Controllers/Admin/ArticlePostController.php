@@ -133,7 +133,7 @@ class ArticlePostController extends Controller
         $post->staff_pick = !$post->staff_pick;
         $post->save();
 
-        return back()->with('success', 'Staff pick status updated successfully.');
+        return back()->with('success', 'Featured status updated successfully.');
     }
 
     private function editorViewData(Article $article, ArticleEditorService $articleEditorService): array

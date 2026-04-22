@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl'])
 
 @section('title', $meta_title ?? 'Software on the Web')
 

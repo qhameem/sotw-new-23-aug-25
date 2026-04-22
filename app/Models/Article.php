@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,7 +46,20 @@ class Article extends Model implements Feedable, Sitemapable
 
     protected $casts = [
         'published_at' => 'datetime',
+        'staff_pick' => 'boolean',
     ];
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'published')
+            ->where('published_at', '<=', now());
+    }
+
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('staff_pick', true);
+    }
 
     /**
      * Get the user that owns the article.
