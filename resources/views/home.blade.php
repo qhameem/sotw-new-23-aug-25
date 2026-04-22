@@ -1,6 +1,10 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl'])
+@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'headerPadding' => 'px-4 md:pt-4'])
 
 @section('title', $meta_title ?? 'Software on the Web')
+
+@section('header-title')
+    <span class="text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
+@endsection
 
 @section('canonical')
     @if (Route::currentRouteName() == 'home')
