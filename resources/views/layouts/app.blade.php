@@ -161,6 +161,8 @@
         <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
     @endif
 
+    @yield('preloads')
+
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
     <meta property="og:type" content="@yield('og_type', 'website')">

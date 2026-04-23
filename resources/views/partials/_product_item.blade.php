@@ -1,7 +1,7 @@
 @php
-    use Illuminate\Support\Str;
-    $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
-    $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
+    use App\Support\ProductLogo;
+    $logo = ProductLogo::url($product);
+    $logoLoadPosition = $logoLoadPosition ?? 1;
     $isPromoted = $product->is_promoted ?? false;
 @endphp
 <article wire:key="product-{{ $product->id }}"
@@ -10,8 +10,12 @@
     <div class="flex items-center gap-3 flex-1">
         <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
             <span class="hidden md:block text-xs text-gray-500">{{ $itemNumber }}.</span>
-            <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
-                class="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+            <img src="{{ $logo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
+                class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                width="48" height="48"
+                loading="{{ ProductLogo::loading($logoLoadPosition) }}"
+                fetchpriority="{{ ProductLogo::fetchPriority($logoLoadPosition) }}"
+                decoding="async" />
             <div class="flex flex-col space-y-0">
                 <h2 class="text-sm font-semibold flex items-center leading-none">
                     <span class="text-left text-black">{{ $product->name }}</span>

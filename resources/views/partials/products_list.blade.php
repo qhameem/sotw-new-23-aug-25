@@ -1,48 +1,7 @@
-@php use Illuminate\Support\Str; @endphp
+@php use App\Support\ProductLogo; @endphp
 <div class="md:space-y-2">
     @php
-        $promotedProductsList = $promotedProducts ?? collect();
-        $regularProductsList = $regularProducts ?? collect();
-        $finalProductList = [];
-        $maxPosition = 0;
-
-        // Place promoted products
-        foreach ($promotedProductsList as $p) {
-            if (isset($p->promoted_position) && $p->promoted_position > 0) {
-                $finalProductList[$p->promoted_position - 1] = $p;
-                if ($p->promoted_position > $maxPosition) {
-                    $maxPosition = $p->promoted_position;
-                }
-            }
-        }
-
-        // Fill in with regular products
-        $regularProductIndex = 0;
-        $currentFinalListLength = count($finalProductList);
-        $targetListSize = max($maxPosition, $currentFinalListLength + $regularProductsList->count());
-
-        for ($i = 0; $i < $targetListSize; $i++) {
-            if (!isset($finalProductList[$i])) {
-                if ($regularProductIndex < $regularProductsList->count()) {
-                    $finalProductList[$i] = $regularProductsList[$regularProductIndex];
-                    $regularProductIndex++;
-                } else {
-                    // No more regular products to fill this slot, break if we are beyond maxPosition
-                    // or if we only intended to fill up to the count of regular products after promoted ones.
-                    // For now, let ensure list is at least $maxPosition long if promoted products define it.
-                    if ($i >= $maxPosition && $regularProductIndex >= $regularProductsList->count())
-                        break;
-                }
-            }
-        }
-        // Remove empty slots if any were created by high promoted_position values beyond available products
-        $finalProductList = array_filter($finalProductList, function ($value) {
-            return $value !== null;
-        });
-        // Re-index if sparse, though foreach handles non-sequential keys. For consistent $loopIndex, ksort might be an option.
-        // For simplicity, we'll iterate directly. If $loopIndex is critical for ad placement, this needs more thought.
-        ksort($finalProductList); // Sort by keys (original positions) to maintain order
-
+        $finalProductList = ProductLogo::productListItems($regularProducts ?? collect(), $promotedProducts ?? collect());
         $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
         $adDisplayed = false;
         $productCountForAd = count($finalProductList); // Count of products to display for ad logic
@@ -53,13 +12,11 @@
         @php $adDisplayed = true; @endphp
     @endif
 
-    @forelse($finalProductList as $loopIndexActual => $product) {{-- $loopIndexActual is the 0-based array index after
-        ksort --}}
+    @forelse($finalProductList as $loopIndexActual => $product)
         @php
             // $loopIndex is now 1-based for ad logic, based on visible product sequence
             $loopIndex = $loop->iteration;
-            $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
-            $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
+            $productLogo = ProductLogo::url($product);
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
         @endphp
         <article
@@ -67,8 +24,13 @@
             itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
                 @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com&utm_medium=promoted_listing_card', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
-            <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
-                class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy" itemprop="image" />
+            <img src="{{ $productLogo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
+                class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                width="48" height="48"
+                loading="{{ ProductLogo::loading($loopIndex) }}"
+                fetchpriority="{{ ProductLogo::fetchPriority($loopIndex) }}"
+                decoding="async"
+                itemprop="image" />
             <div class="flex-1">
                 <h2 class="text-sm font-semibold leading-tight flex items-center">
                     @if(!$isPromoted)

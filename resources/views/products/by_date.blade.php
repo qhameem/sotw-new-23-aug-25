@@ -1,5 +1,14 @@
 @extends('layouts.app')
 
+@section('preloads')
+    @include('partials.product_logo_preloads', [
+        'products' => \App\Support\ProductLogo::paginatedListItems(
+            $regularProducts ?? collect(),
+            $premiumProducts ?? collect()
+        ),
+    ])
+@endsection
+
 @section('content')
 <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-20">
     <div class="flex flex-col gap-2 items-left pl-4 pt-9 mb-2 md:mb-6 md:pt-4">

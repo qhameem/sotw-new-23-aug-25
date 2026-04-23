@@ -23,6 +23,17 @@
     @endif
 @endsection
 
+@section('preloads')
+    @if(!isset($isFuture) || !$isFuture)
+        @include('partials.product_logo_preloads', [
+            'products' => \App\Support\ProductLogo::productListItems(
+                $regularProducts ?? collect(),
+                $promotedProducts ?? collect()
+            ),
+        ])
+    @endif
+@endsection
+
 
 @if(isset($isFuture) && $isFuture)
     @section('robots', 'noindex')

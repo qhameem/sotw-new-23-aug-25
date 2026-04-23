@@ -1,26 +1,8 @@
-@php use Illuminate\Support\Str; @endphp
+@php use App\Support\ProductLogo; @endphp
 <div class="pb-24">
 @php
     $regularProductsList = $regularProducts ?? collect();
-    $finalProductList = $regularProductsList instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $regularProductsList->items() : ($regularProductsList instanceof \Illuminate\Support\Collection ? $regularProductsList->all() : []);
-    $premiumProductsList = $premiumProducts ?? collect();
-    $premiumProductIndex = 0;
-
-    // Intersperse premium products
-    if ($premiumProductsList->isNotEmpty()) {
-        $newFinalProductList = [];
-        $productCount = 0;
-        foreach ($finalProductList as $product) {
-            $newFinalProductList[] = $product;
-            $productCount++;
-            if ($productCount % 4 === 0 && $premiumProductIndex < $premiumProductsList->count()) {
-                $newFinalProductList[] = $premiumProductsList[$premiumProductIndex];
-                $premiumProductIndex++;
-            }
-        }
-        $finalProductList = $newFinalProductList;
-    }
-
+    $finalProductList = ProductLogo::paginatedListItems($regularProductsList, $premiumProducts ?? collect());
     $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
     $adDisplayed = false;
     $productCountForAd = count($finalProductList);
@@ -56,9 +38,9 @@
     @endphp
 
     @if ($isPromoted)
-        @include('partials._promoted_product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
+        @include('partials._promoted_product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index, 'logoLoadPosition' => $loop->iteration])
     @else
-        @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index])
+        @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index, 'logoLoadPosition' => $loop->iteration])
     @endif
     @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
         @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
