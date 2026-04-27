@@ -185,6 +185,8 @@ class ScreenshotService
             ->addChromiumArguments([
                 'disable-dev-shm-usage',
                 'hide-scrollbars',
+                'disable-setuid-sandbox',
+                'no-zygote',
             ]);
 
         $nodeModulePath = base_path('node_modules');
@@ -192,15 +194,20 @@ class ScreenshotService
             $browsershot->setNodeModulePath($nodeModulePath);
         }
 
-        $nodeBinary = $this->resolveExistingPath([
-            env('BROWSERSHOT_NODE_BINARY'),
-            '/opt/homebrew/bin/node',
-            '/usr/local/bin/node',
-            '/usr/bin/node',
-        ]);
+        $nodeBinary = $this->resolvedNodeBinary();
 
         if ($nodeBinary) {
             $browsershot->setNodeBinary($nodeBinary);
+        }
+
+        $chromePath = $this->resolvedChromePath();
+        if ($chromePath) {
+            $browsershot->setChromePath($chromePath);
+        }
+
+        $nodeEnv = $this->resolvedNodeEnvironment();
+        if ($nodeEnv !== []) {
+            $browsershot->setNodeEnv($nodeEnv);
         }
 
         $browsershot->save($absolutePath);
@@ -307,6 +314,9 @@ class ScreenshotService
             'app_env' => app()->environment(),
             'queue_connection' => config('queue.default'),
             'filesystem_disk' => 'public',
+            'configured_chrome_path' => config('services.screenshot.chrome_path'),
+            'configured_puppeteer_home' => config('services.screenshot.home'),
+            'configured_puppeteer_cache_dir' => config('services.screenshot.cache_dir'),
         ];
     }
 
@@ -330,7 +340,7 @@ class ScreenshotService
     protected function resolvedNodeBinary(): ?string
     {
         return $this->resolveExistingPath([
-            env('BROWSERSHOT_NODE_BINARY'),
+            config('services.screenshot.node_binary'),
             '/opt/homebrew/bin/node',
             '/usr/local/bin/node',
             '/usr/bin/node',
@@ -342,6 +352,21 @@ class ScreenshotService
         $nodeModulePath = base_path('node_modules');
 
         return is_dir($nodeModulePath) ? $nodeModulePath : null;
+    }
+
+    protected function resolvedChromePath(): ?string
+    {
+        return $this->resolveExistingPath([
+            config('services.screenshot.chrome_path'),
+        ]);
+    }
+
+    protected function resolvedNodeEnvironment(): array
+    {
+        return array_filter([
+            'HOME' => config('services.screenshot.home'),
+            'PUPPETEER_CACHE_DIR' => config('services.screenshot.cache_dir'),
+        ], fn($value) => is_string($value) && $value !== '');
     }
 
     protected function resolveExistingPath(array $paths): ?string

@@ -50,4 +50,11 @@ return [
         'key' => env('GROQ_API_KEY'),
     ],
 
+    'screenshot' => [
+        'node_binary' => env('BROWSERSHOT_NODE_BINARY'),
+        'chrome_path' => env('BROWSERSHOT_CHROME_PATH'),
+        'home' => env('PUPPETEER_HOME'),
+        'cache_dir' => env('PUPPETEER_CACHE_DIR'),
+    ],
+
 ];
