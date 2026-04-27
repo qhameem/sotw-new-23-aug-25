@@ -6,7 +6,7 @@ use App\Jobs\FetchOgImage;
 use App\Models\Product;
 use App\Services\ScreenshotService;
 use Mockery;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class FetchOgImageTest extends TestCase
 {

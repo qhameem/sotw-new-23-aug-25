@@ -34,9 +34,15 @@ class ScreenshotService
         string $directory = self::DEFAULT_DIRECTORY,
         ?string $filename = null
     ): ?string {
+        $attemptId = (string) Str::uuid();
         $normalizedUrl = $this->normalizeUrl($url);
         if (!$normalizedUrl) {
-            Log::warning('Screenshot skipped because the URL is invalid.', ['url' => $url]);
+            Log::warning('Screenshot capture skipped because the URL is invalid.', [
+                'attempt_id' => $attemptId,
+                'url' => $url,
+                'directory' => $directory,
+                'requested_filename' => $filename,
+            ]);
 
             return null;
         }
@@ -51,32 +57,88 @@ class ScreenshotService
         }
 
         $absolutePath = $disk->path($relativePath);
+        $context = $this->buildLogContext(
+            $attemptId,
+            $url,
+            $normalizedUrl,
+            $directory,
+            $filename,
+            $relativePath,
+            $absolutePath
+        );
 
+        Log::info('Screenshot capture started.', $context);
+
+        $programmaticStartedAt = microtime(true);
         try {
             $this->captureProgrammatically($normalizedUrl, $absolutePath);
+            $programmaticDurationMs = $this->elapsedMilliseconds($programmaticStartedAt);
+            $savedFileInfo = $this->savedFileContext($absolutePath, $relativePath);
+
+            Log::info('Programmatic screenshot capture succeeded.', array_merge(
+                $context,
+                [
+                    'duration_ms' => $programmaticDurationMs,
+                    'driver' => 'browsershot',
+                ],
+                $savedFileInfo
+            ));
 
             return $relativePath;
         } catch (\Throwable $exception) {
-            Log::warning('Programmatic screenshot capture failed, falling back to thum.io.', [
-                'url' => $normalizedUrl,
-                'message' => $exception->getMessage(),
-            ]);
+            Log::warning('Programmatic screenshot capture failed, falling back to thum.io.', array_merge(
+                $context,
+                [
+                    'duration_ms' => $this->elapsedMilliseconds($programmaticStartedAt),
+                    'driver' => 'browsershot',
+                    'exception_class' => $exception::class,
+                    'message' => $exception->getMessage(),
+                    'node_binary' => $this->resolvedNodeBinary(),
+                    'node_module_path' => $this->resolvedNodeModulePath(),
+                ]
+            ));
         }
+
+        $fallbackStartedAt = microtime(true);
+        Log::info('Fallback screenshot download started.', array_merge($context, [
+            'driver' => 'thum_io',
+            'fallback_url' => $this->fallbackUrl($normalizedUrl),
+        ]));
 
         try {
             $imageContents = $this->downloadFallbackScreenshot($normalizedUrl);
             if ($imageContents === null) {
+                Log::warning('Fallback screenshot capture ended without a saved image.', array_merge($context, [
+                    'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
+                    'driver' => 'thum_io',
+                ]));
+
                 return null;
             }
 
             $disk->put($relativePath, $imageContents);
 
+            Log::info('Fallback screenshot capture succeeded.', array_merge(
+                $context,
+                [
+                    'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
+                    'driver' => 'thum_io',
+                ],
+                $this->savedFileContext($absolutePath, $relativePath)
+            ));
+
             return $relativePath;
         } catch (\Throwable $exception) {
-            Log::error('Fallback screenshot capture failed.', [
-                'url' => $normalizedUrl,
-                'message' => $exception->getMessage(),
-            ]);
+            Log::error('Fallback screenshot capture failed.', array_merge(
+                $context,
+                [
+                    'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
+                    'driver' => 'thum_io',
+                    'fallback_url' => $this->fallbackUrl($normalizedUrl),
+                    'exception_class' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]
+            ));
 
             return null;
         }
@@ -90,6 +152,13 @@ class ScreenshotService
         $savePath = trim($savePath, '/');
         $directory = trim(dirname($savePath), './');
         $filename = basename($savePath);
+
+        Log::info('Screenshot async capture requested.', [
+            'url' => $url,
+            'save_path' => $savePath,
+            'directory' => $directory !== '' ? $directory : self::DEFAULT_DIRECTORY,
+            'filename' => $filename !== '' ? $filename : null,
+        ]);
 
         $this->captureToStorage(
             $url,
@@ -147,6 +216,7 @@ class ScreenshotService
             Log::warning('thum.io fallback screenshot request was unsuccessful.', [
                 'url' => $url,
                 'status' => $response->status(),
+                'headers' => $response->headers(),
             ]);
 
             return null;
@@ -214,6 +284,64 @@ class ScreenshotService
     protected function userAgent(): string
     {
         return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+    }
+
+    protected function buildLogContext(
+        string $attemptId,
+        string $originalUrl,
+        string $normalizedUrl,
+        string $directory,
+        string $filename,
+        string $relativePath,
+        string $absolutePath
+    ): array {
+        return [
+            'attempt_id' => $attemptId,
+            'original_url' => $originalUrl,
+            'normalized_url' => $normalizedUrl,
+            'directory' => $directory,
+            'filename' => $filename,
+            'relative_path' => $relativePath,
+            'absolute_path' => $absolutePath,
+            'public_url' => asset('storage/' . $relativePath),
+            'app_env' => app()->environment(),
+            'queue_connection' => config('queue.default'),
+            'filesystem_disk' => 'public',
+        ];
+    }
+
+    protected function savedFileContext(string $absolutePath, string $relativePath): array
+    {
+        clearstatcache(true, $absolutePath);
+
+        return [
+            'saved_file_exists' => is_file($absolutePath),
+            'saved_file_size' => is_file($absolutePath) ? filesize($absolutePath) : null,
+            'saved_relative_path' => $relativePath,
+            'saved_absolute_path' => $absolutePath,
+        ];
+    }
+
+    protected function elapsedMilliseconds(float $startedAt): int
+    {
+        return (int) round((microtime(true) - $startedAt) * 1000);
+    }
+
+    protected function resolvedNodeBinary(): ?string
+    {
+        return $this->resolveExistingPath([
+            env('BROWSERSHOT_NODE_BINARY'),
+            '/opt/homebrew/bin/node',
+            '/usr/local/bin/node',
+            '/usr/bin/node',
+        ]);
+    }
+
+    protected function resolvedNodeModulePath(): ?string
+    {
+        $nodeModulePath = base_path('node_modules');
+
+        return is_dir($nodeModulePath) ? $nodeModulePath : null;
     }
 
     protected function resolveExistingPath(array $paths): ?string
