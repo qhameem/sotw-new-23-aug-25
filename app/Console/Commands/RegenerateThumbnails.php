@@ -31,7 +31,7 @@ class RegenerateThumbnails extends Command
     {
         $this->info('Starting thumbnail regeneration...');
 
-        $mediaItems = ProductMedia::where('type', 'image')->get();
+        $mediaItems = ProductMedia::whereIn('type', ['image', 'screenshot'])->get();
         $manager = new ImageManager(new Driver());
 
         $bar = $this->output->createProgressBar($mediaItems->count());

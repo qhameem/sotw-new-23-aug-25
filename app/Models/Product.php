@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use App\Helpers\HtmlHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use App\Support\ProductMediaSeo;
 
 class Product extends Model implements Sitemapable
 {
@@ -382,11 +383,60 @@ class Product extends Model implements Sitemapable
         }
 
         $url = route('products.show', $this->slug);
-
-        return Url::create($url)
+        $tag = Url::create($url)
             ->setLastModificationDate(Carbon::parse($this->updated_at))
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
             ->setPriority(0.8);
+
+        foreach ($this->seoImageObjects() as $image) {
+            $tag->addImage(
+                $image['url'],
+                $image['caption'],
+                '',
+                $image['title']
+            );
+        }
+
+        return $tag;
+    }
+
+    public function seoImageObjects(): array
+    {
+        $images = [];
+
+        if ($this->logo_url) {
+            $images[] = [
+                'url' => $this->logo_url,
+                'caption' => ProductMediaSeo::productMediaAltText($this, 'logo'),
+                'title' => $this->name . ' logo',
+            ];
+        }
+
+        foreach ($this->media as $index => $media) {
+            $url = $media->medium_url ?: $media->url;
+            if (!$url) {
+                continue;
+            }
+
+            $images[] = [
+                'url' => $url,
+                'caption' => $media->alt_text ?: ProductMediaSeo::productMediaAltText($this, $media->type === 'screenshot' ? 'screenshot' : 'image', $index + 1),
+                'title' => $this->name . ' ' . ($media->type === 'screenshot' ? 'screenshot' : 'image'),
+            ];
+        }
+
+        return collect($images)
+            ->unique('url')
+            ->values()
+            ->all();
+    }
+
+    public function seoImageUrls(): array
+    {
+        return array_values(array_map(
+            static fn (array $image): string => $image['url'],
+            $this->seoImageObjects()
+        ));
     }
 
     /**

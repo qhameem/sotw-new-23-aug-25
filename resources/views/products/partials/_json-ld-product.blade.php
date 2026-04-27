@@ -21,6 +21,7 @@
         "description" => strip_tags(html_entity_decode($product->description ?? $product->tagline)),
         "applicationCategory" => $product->application_category ?? 'BusinessApplication',
         "operatingSystem" => $product->operating_system ?? 'Web',
+        "image" => $product->seoImageUrls(),
         "offers" => [
             "@type" => "AggregateOffer",
             "lowPrice" => (string) ($product->price ?? 0),

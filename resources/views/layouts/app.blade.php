@@ -139,7 +139,7 @@
 
     <title>@yield('title', $meta_title ?? 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
-    <meta name="robots" content="@yield('robots', 'index, follow')">
+    <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large')">
 
     @hasSection('canonical')
         @yield('canonical')

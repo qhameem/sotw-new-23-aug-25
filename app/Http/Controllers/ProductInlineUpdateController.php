@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\ProductMediaSeo;
 
 class ProductInlineUpdateController extends Controller
 {
@@ -256,12 +257,15 @@ class ProductInlineUpdateController extends Controller
         ]);
 
         $file = $request->file('media');
-        $path = $file->store('product_media', 'public');
         $type = Str::startsWith($file->getMimeType(), 'image') ? 'image' : 'video';
+        $position = $product->media()->count() + 1;
+        $extension = strtolower($file->getClientOriginalExtension()) ?: ($type === 'image' ? 'png' : 'bin');
+        $filename = ProductMediaSeo::productMediaFilename($product, $type, $extension, $position);
+        $path = $file->storeAs('product_media', $filename, 'public');
 
         $media = $product->media()->create([
             'path' => $path,
-            'alt_text' => $product->name . ' media',
+            'alt_text' => ProductMediaSeo::productMediaAltText($product, $type, $position),
             'type' => $type,
         ]);
 

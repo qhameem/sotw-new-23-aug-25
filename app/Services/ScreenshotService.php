@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Symfony\Component\Process\Process;
+use App\Support\ProductMediaSeo;
 
 class ScreenshotService
 {
@@ -703,7 +704,7 @@ class ScreenshotService
 
     protected function makeFilename(string $url): string
     {
-        return 'screenshot_' . md5($url . microtime(true)) . '.' . self::DEFAULT_EXTENSION;
+        return ProductMediaSeo::screenshotFilenameForUrl($url, self::DEFAULT_EXTENSION);
     }
 
     protected function normalizeFilename(string $filename): string

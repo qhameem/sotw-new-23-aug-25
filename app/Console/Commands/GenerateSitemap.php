@@ -70,7 +70,7 @@ class GenerateSitemap extends Command
         }));
 
         // Add Product models
-        $sitemap->add(Product::where('approved', true)->get());
+        $sitemap->add(Product::where('approved', true)->with('media')->get());
 
         // Add Product Category models (only if they have approved products)
         $sitemap->add(Category::all()->filter(function ($category) {

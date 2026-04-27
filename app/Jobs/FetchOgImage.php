@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
+use App\Support\ProductMediaSeo;
 
 class FetchOgImage implements ShouldQueue
 {
@@ -145,7 +146,7 @@ class FetchOgImage implements ShouldQueue
         $relativePath = $screenshotService->captureToStorage(
             $this->product->link,
             'media',
-            Str::slug($this->product->name) . '-screenshot-' . $this->product->id . '.webp'
+            ProductMediaSeo::productMediaFilename($this->product, 'homepage-screenshot', 'webp')
         );
 
         if ($relativePath) {
@@ -172,7 +173,9 @@ class FetchOgImage implements ShouldQueue
 
         $this->product->media()->create([
             'path' => $path,
-            'alt_text' => $this->product->name . ' – ' . $this->product->tagline,
+            'alt_text' => $type === 'screenshot'
+                ? ProductMediaSeo::productMediaAltText($this->product, 'screenshot')
+                : ProductMediaSeo::productMediaAltText($this->product, 'image'),
             'type' => $type,
         ]);
     }

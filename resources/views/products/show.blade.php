@@ -127,6 +127,7 @@
                                 <div
                                     class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                     <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover"
+                                        itemprop="image"
                                         loading="eager" decoding="async"
                                         sizes="(min-width: 768px) 280px, (min-width: 640px) 260px, 240px">
                                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center group/play">
@@ -151,6 +152,7 @@
                                                                         {{ $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : '' }}
                                                                         {{ asset('storage/' . $media->path) }} 1200w"
                                         alt="{{ $media->alt_text }}" class="w-full h-full object-cover"
+                                        itemprop="image"
                                         loading="{{ ($loop->first && !$product->video_url) ? 'eager' : 'lazy' }}"
                                         sizes="(min-width: 768px) 280px, (min-width: 640px) 260px, 240px">
                                 </div>

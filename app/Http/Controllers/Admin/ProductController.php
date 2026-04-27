@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage; // Added Storage facade
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use App\Support\ProductMediaSeo;
 
 class ProductController extends Controller
 {
@@ -189,8 +190,8 @@ class ProductController extends Controller
             'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
             'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
             'id' => $product->id,
-            'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-            'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -298,11 +299,15 @@ class ProductController extends Controller
         // Handle gallery images
         if ($request->hasFile('media')) {
             $manager = new ImageManager(new Driver());
+            $mediaPosition = $product->media()->count();
 
             foreach ($request->file('media') as $file) {
-                $path = $file->store('product_media', 'public');
                 $mimeType = $file->getMimeType();
                 $type = \Illuminate\Support\Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+                $mediaPosition++;
+                $extension = strtolower($file->getClientOriginalExtension()) ?: ($type === 'image' ? 'png' : 'bin');
+                $filename = ProductMediaSeo::productMediaFilename($product, $type, $extension, $mediaPosition);
+                $path = $file->storeAs('product_media', $filename, 'public');
 
                 $pathThumb = null;
                 $pathMedium = null;
@@ -335,7 +340,7 @@ class ProductController extends Controller
                     'path' => $path,
                     'path_thumb' => $pathThumb,
                     'path_medium' => $pathMedium,
-                    'alt_text' => $product->name . ' media',
+                    'alt_text' => ProductMediaSeo::productMediaAltText($product, $type, $mediaPosition),
                     'type' => $type,
                 ]);
             }

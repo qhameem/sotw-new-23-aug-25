@@ -32,6 +32,7 @@ use App\Services\BadgeService;
 use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
+use App\Support\ProductMediaSeo;
 use DOMDocument;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -533,8 +534,8 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
-                'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-                'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         } else {
             // When no pending edits, use original values
@@ -554,8 +555,8 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
-                'logos' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-                'gallery' => $product->media->where('type', 'image')->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         }
 
@@ -2703,17 +2704,28 @@ class ProductController extends Controller
     protected function processMediaItem($product, $file, $manager, $isExternalPath = false)
     {
         if ($isExternalPath) {
-            $path = 'product_media/' . basename($file);
             // $file is already the absolute path to the downloaded image
             $absolutePath = $file;
             $mimeType = mime_content_type($file);
         } else {
-            $path = $file->store('product_media', 'public');
-            $absolutePath = Storage::disk('public')->path($path);
             $mimeType = $file->getMimeType();
         }
 
         $type = Str::startsWith($mimeType, 'image') ? 'image' : 'video';
+        $mediaPosition = $product->media()->count() + 1;
+        $extension = $isExternalPath
+            ? strtolower(pathinfo((string) $file, PATHINFO_EXTENSION)) ?: ($type === 'image' ? 'png' : 'bin')
+            : (strtolower($file->getClientOriginalExtension()) ?: ($type === 'image' ? 'png' : 'bin'));
+        $filename = ProductMediaSeo::productMediaFilename($product, $type === 'image' && $isExternalPath ? 'screenshot' : $type, $extension, $mediaPosition);
+        $path = 'product_media/' . $filename;
+
+        if ($isExternalPath) {
+            Storage::disk('public')->put($path, file_get_contents($absolutePath));
+        } else {
+            $path = $file->storeAs('product_media', $filename, 'public');
+            $absolutePath = Storage::disk('public')->path($path);
+        }
+
         $pathThumb = null;
         $pathMedium = null;
 
@@ -2746,8 +2758,12 @@ class ProductController extends Controller
             'path' => $path,
             'path_thumb' => $pathThumb,
             'path_medium' => $pathMedium,
-            'alt_text' => $product->name . ' media',
-            'type' => $type,
+            'alt_text' => ProductMediaSeo::productMediaAltText(
+                $product,
+                $type === 'image' && $isExternalPath ? 'screenshot' : $type,
+                $mediaPosition
+            ),
+            'type' => $type === 'image' && $isExternalPath ? 'screenshot' : $type,
         ]);
     }
 
