@@ -37,7 +37,7 @@ class ScreenshotService
         $attemptId = (string) Str::uuid();
         $normalizedUrl = $this->normalizeUrl($url);
         if (!$normalizedUrl) {
-            Log::warning('Screenshot capture skipped because the URL is invalid.', [
+            $this->logEvent('warning', 'Screenshot capture skipped because the URL is invalid.', [
                 'attempt_id' => $attemptId,
                 'url' => $url,
                 'directory' => $directory,
@@ -67,7 +67,7 @@ class ScreenshotService
             $absolutePath
         );
 
-        Log::info('Screenshot capture started.', $context);
+        $this->logEvent('info', 'Screenshot capture started.', $context);
 
         $programmaticStartedAt = microtime(true);
         try {
@@ -75,7 +75,7 @@ class ScreenshotService
             $programmaticDurationMs = $this->elapsedMilliseconds($programmaticStartedAt);
             $savedFileInfo = $this->savedFileContext($absolutePath, $relativePath);
 
-            Log::info('Programmatic screenshot capture succeeded.', array_merge(
+            $this->logEvent('info', 'Programmatic screenshot capture succeeded.', array_merge(
                 $context,
                 [
                     'duration_ms' => $programmaticDurationMs,
@@ -86,7 +86,7 @@ class ScreenshotService
 
             return $relativePath;
         } catch (\Throwable $exception) {
-            Log::warning('Programmatic screenshot capture failed, falling back to thum.io.', array_merge(
+            $this->logEvent('warning', 'Programmatic screenshot capture failed, falling back to thum.io.', array_merge(
                 $context,
                 [
                     'duration_ms' => $this->elapsedMilliseconds($programmaticStartedAt),
@@ -100,7 +100,7 @@ class ScreenshotService
         }
 
         $fallbackStartedAt = microtime(true);
-        Log::info('Fallback screenshot download started.', array_merge($context, [
+        $this->logEvent('info', 'Fallback screenshot download started.', array_merge($context, [
             'driver' => 'thum_io',
             'fallback_url' => $this->fallbackUrl($normalizedUrl),
         ]));
@@ -108,7 +108,7 @@ class ScreenshotService
         try {
             $imageContents = $this->downloadFallbackScreenshot($normalizedUrl);
             if ($imageContents === null) {
-                Log::warning('Fallback screenshot capture ended without a saved image.', array_merge($context, [
+                $this->logEvent('warning', 'Fallback screenshot capture ended without a saved image.', array_merge($context, [
                     'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
                     'driver' => 'thum_io',
                 ]));
@@ -118,7 +118,7 @@ class ScreenshotService
 
             $disk->put($relativePath, $imageContents);
 
-            Log::info('Fallback screenshot capture succeeded.', array_merge(
+            $this->logEvent('info', 'Fallback screenshot capture succeeded.', array_merge(
                 $context,
                 [
                     'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
@@ -129,7 +129,7 @@ class ScreenshotService
 
             return $relativePath;
         } catch (\Throwable $exception) {
-            Log::error('Fallback screenshot capture failed.', array_merge(
+            $this->logEvent('error', 'Fallback screenshot capture failed.', array_merge(
                 $context,
                 [
                     'duration_ms' => $this->elapsedMilliseconds($fallbackStartedAt),
@@ -153,7 +153,7 @@ class ScreenshotService
         $directory = trim(dirname($savePath), './');
         $filename = basename($savePath);
 
-        Log::info('Screenshot async capture requested.', [
+        $this->logEvent('info', 'Screenshot async capture requested.', [
             'url' => $url,
             'save_path' => $savePath,
             'directory' => $directory !== '' ? $directory : self::DEFAULT_DIRECTORY,
@@ -213,7 +213,7 @@ class ScreenshotService
             ->get($this->fallbackUrl($url));
 
         if (!$response->successful()) {
-            Log::warning('thum.io fallback screenshot request was unsuccessful.', [
+            $this->logEvent('warning', 'thum.io fallback screenshot request was unsuccessful.', [
                 'url' => $url,
                 'status' => $response->status(),
                 'headers' => $response->headers(),
@@ -224,7 +224,7 @@ class ScreenshotService
 
         $contentType = strtolower((string) $response->header('Content-Type'));
         if (!str_starts_with($contentType, 'image/')) {
-            Log::warning('thum.io fallback did not return an image.', [
+            $this->logEvent('warning', 'thum.io fallback did not return an image.', [
                 'url' => $url,
                 'content_type' => $contentType,
             ]);
@@ -234,7 +234,7 @@ class ScreenshotService
 
         $body = $response->body();
         if ($body === '') {
-            Log::warning('thum.io fallback returned an empty body.', ['url' => $url]);
+            $this->logEvent('warning', 'thum.io fallback returned an empty body.', ['url' => $url]);
 
             return null;
         }
@@ -353,5 +353,27 @@ class ScreenshotService
         }
 
         return null;
+    }
+
+    protected function logEvent(string $level, string $message, array $context = []): void
+    {
+        match ($level) {
+            'error' => Log::error($message, $context),
+            'warning' => Log::warning($message, $context),
+            default => Log::info($message, $context),
+        };
+
+        $payload = [
+            'timestamp' => now()->toIso8601String(),
+            'level' => $level,
+            'message' => $message,
+            'context' => $context,
+        ];
+
+        @file_put_contents(
+            storage_path('logs/screenshot-debug.log'),
+            json_encode($payload, JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND
+        );
     }
 }

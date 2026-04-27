@@ -29,7 +29,7 @@ class FetchOgImage implements ShouldQueue
 
     public function handle(ScreenshotService $screenshotService): void
     {
-        Log::info('FetchOgImage job started.', [
+        $this->logEvent('info', 'FetchOgImage job started.', [
             'product_id' => $this->product->id,
             'product_name' => $this->product->name,
             'product_link' => $this->product->link,
@@ -52,7 +52,7 @@ class FetchOgImage implements ShouldQueue
 
             if ($ogImage) {
                 $ogImage = $this->resolveUrl($this->product->link, $ogImage);
-                Log::info('FetchOgImage found og:image meta tag.', [
+                $this->logEvent('info', 'FetchOgImage found og:image meta tag.', [
                     'product_id' => $this->product->id,
                     'og_image_url' => $ogImage,
                 ]);
@@ -60,20 +60,20 @@ class FetchOgImage implements ShouldQueue
                 if ($ogImage !== $this->product->logo) {
                     $this->processImage($ogImage, 'og');
                 } else {
-                    Log::info('FetchOgImage skipped og:image because it matches the product logo.', [
+                    $this->logEvent('info', 'FetchOgImage skipped og:image because it matches the product logo.', [
                         'product_id' => $this->product->id,
                         'og_image_url' => $ogImage,
                     ]);
                 }
             } else {
-                Log::warning('FetchOgImage did not find og:image, falling back to screenshot capture.', [
+                $this->logEvent('warning', 'FetchOgImage did not find og:image, falling back to screenshot capture.', [
                     'product_id' => $this->product->id,
                     'product_link' => $this->product->link,
                 ]);
                 $this->fallbackToScreenshot($screenshotService);
             }
         } catch (\Exception $e) {
-            Log::error('FetchOgImage failed while reading the product page, falling back to screenshot capture.', [
+            $this->logEvent('error', 'FetchOgImage failed while reading the product page, falling back to screenshot capture.', [
                 'product_id' => $this->product->id,
                 'product_link' => $this->product->link,
                 'exception_class' => $e::class,
@@ -88,7 +88,7 @@ class FetchOgImage implements ShouldQueue
         try {
             $response = Http::timeout(20)->get($imageUrl);
             if (!$response->successful()) {
-                Log::warning('FetchOgImage image download was unsuccessful.', [
+                $this->logEvent('warning', 'FetchOgImage image download was unsuccessful.', [
                     'product_id' => $this->product->id,
                     'image_type' => $type,
                     'image_url' => $imageUrl,
@@ -99,7 +99,7 @@ class FetchOgImage implements ShouldQueue
 
             $contentType = strtolower((string) $response->header('Content-Type'));
             if (!str_starts_with($contentType, 'image/')) {
-                Log::warning('FetchOgImage image download did not return an image content type.', [
+                $this->logEvent('warning', 'FetchOgImage image download did not return an image content type.', [
                     'product_id' => $this->product->id,
                     'image_type' => $type,
                     'image_url' => $imageUrl,
@@ -116,7 +116,7 @@ class FetchOgImage implements ShouldQueue
             $image = $manager->read($imageContents)->toWebp(80);
             Storage::disk('public')->put($path, (string) $image);
 
-            Log::info('FetchOgImage stored processed image.', [
+            $this->logEvent('info', 'FetchOgImage stored processed image.', [
                 'product_id' => $this->product->id,
                 'image_type' => $type,
                 'source_url' => $imageUrl,
@@ -125,7 +125,7 @@ class FetchOgImage implements ShouldQueue
 
             $this->createMediaRecord($path, $type);
         } catch (\Exception $e) {
-            Log::error('FetchOgImage failed while processing image.', [
+            $this->logEvent('error', 'FetchOgImage failed while processing image.', [
                 'product_id' => $this->product->id,
                 'image_type' => $type,
                 'image_url' => $imageUrl,
@@ -137,7 +137,7 @@ class FetchOgImage implements ShouldQueue
 
     protected function fallbackToScreenshot(ScreenshotService $screenshotService): void
     {
-        Log::info('FetchOgImage screenshot fallback started.', [
+        $this->logEvent('info', 'FetchOgImage screenshot fallback started.', [
             'product_id' => $this->product->id,
             'product_link' => $this->product->link,
         ]);
@@ -149,13 +149,13 @@ class FetchOgImage implements ShouldQueue
         );
 
         if ($relativePath) {
-            Log::info('FetchOgImage screenshot fallback stored image.', [
+            $this->logEvent('info', 'FetchOgImage screenshot fallback stored image.', [
                 'product_id' => $this->product->id,
                 'stored_path' => $relativePath,
             ]);
             $this->createMediaRecord($relativePath, 'screenshot');
         } else {
-            Log::error('FetchOgImage screenshot fallback did not produce an image.', [
+            $this->logEvent('error', 'FetchOgImage screenshot fallback did not produce an image.', [
                 'product_id' => $this->product->id,
                 'product_link' => $this->product->link,
             ]);
@@ -164,7 +164,7 @@ class FetchOgImage implements ShouldQueue
 
     protected function createMediaRecord($path, $type): void
     {
-        Log::info('FetchOgImage creating product media record.', [
+        $this->logEvent('info', 'FetchOgImage creating product media record.', [
             'product_id' => $this->product->id,
             'path' => $path,
             'type' => $type,
@@ -175,6 +175,28 @@ class FetchOgImage implements ShouldQueue
             'alt_text' => $this->product->name . ' – ' . $this->product->tagline,
             'type' => $type,
         ]);
+    }
+
+    protected function logEvent(string $level, string $message, array $context = []): void
+    {
+        match ($level) {
+            'error' => Log::error($message, $context),
+            'warning' => Log::warning($message, $context),
+            default => Log::info($message, $context),
+        };
+
+        $payload = [
+            'timestamp' => now()->toIso8601String(),
+            'level' => $level,
+            'message' => $message,
+            'context' => $context,
+        ];
+
+        @file_put_contents(
+            storage_path('logs/screenshot-debug.log'),
+            json_encode($payload, JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND
+        );
     }
 
     protected function resolveUrl(string $baseUrl, string $imageUrl): string
