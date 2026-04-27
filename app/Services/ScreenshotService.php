@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Spatie\Browsershot\Browsershot;
+use Symfony\Component\Process\Process;
 
 class ScreenshotService
 {
@@ -169,58 +169,43 @@ class ScreenshotService
 
     protected function captureProgrammatically(string $url, string $absolutePath): void
     {
-        $browsershot = Browsershot::url($url)
-            ->windowSize(1440, 900)
-            ->deviceScaleFactor(1)
-            ->waitForSelector('body', ['timeout' => 10000])
-            ->waitUntilNetworkIdle(false)
-            ->delay(1500)
-            ->timeout(45)
-            ->newHeadless()
-            ->noSandbox()
-            ->dismissDialogs()
-            ->ignoreHttpsErrors()
-            ->preventUnsuccessfulResponse()
-            ->userAgent($this->userAgent())
-            ->addChromiumArguments([
-                'disable-dev-shm-usage',
-                'hide-scrollbars',
-                'disable-setuid-sandbox',
-                'no-zygote',
-            ]);
-
-        $nodeModulePath = base_path('node_modules');
-        if (is_dir($nodeModulePath)) {
-            $browsershot->setNodeModulePath($nodeModulePath);
+        $chromePath = $this->resolvedChromePath();
+        if (!$chromePath) {
+            throw new \RuntimeException('Chrome executable path could not be resolved.');
         }
 
         $userDataDir = $this->resolvedUserDataDir();
-        if ($userDataDir) {
-            $browsershot->setUserDataDir($userDataDir);
-        }
-
         $tempPath = $this->resolvedTempPath();
-        if ($tempPath) {
-            $browsershot->setCustomTempPath($tempPath);
+
+        $command = [
+            $chromePath,
+            '--headless=new',
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--hide-scrollbars',
+            '--disable-setuid-sandbox',
+            '--no-zygote',
+            '--no-sandbox',
+            '--ignore-certificate-errors',
+            '--window-size=1440,900',
+            '--screenshot=' . $absolutePath,
+            $url,
+        ];
+
+        if ($userDataDir) {
+            $command[] = '--user-data-dir=' . $userDataDir;
         }
 
-        $nodeBinary = $this->resolvedNodeBinary();
+        $process = new Process($command, public_path(), $this->resolvedChromeEnvironment($tempPath), null, 60);
+        $process->run();
 
-        if ($nodeBinary) {
-            $browsershot->setNodeBinary($nodeBinary);
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException(trim($process->getErrorOutput()) ?: trim($process->getOutput()) ?: 'Chrome CLI screenshot command failed.');
         }
 
-        $chromePath = $this->resolvedChromePath();
-        if ($chromePath) {
-            $browsershot->setChromePath($chromePath);
+        if (!is_file($absolutePath) || filesize($absolutePath) === 0) {
+            throw new \RuntimeException('Chrome CLI completed without producing a screenshot file.');
         }
-
-        $nodeEnv = $this->resolvedNodeEnvironment();
-        if ($nodeEnv !== []) {
-            $browsershot->setNodeEnv($nodeEnv);
-        }
-
-        $browsershot->save($absolutePath);
     }
 
     protected function downloadFallbackScreenshot(string $url): ?string
@@ -378,6 +363,15 @@ class ScreenshotService
         return array_filter([
             'HOME' => config('services.screenshot.home'),
             'PUPPETEER_CACHE_DIR' => config('services.screenshot.cache_dir'),
+        ], fn($value) => is_string($value) && $value !== '');
+    }
+
+    protected function resolvedChromeEnvironment(?string $tempPath = null): array
+    {
+        return array_filter([
+            'HOME' => config('services.screenshot.home'),
+            'PUPPETEER_CACHE_DIR' => config('services.screenshot.cache_dir'),
+            'TMPDIR' => $tempPath,
         ], fn($value) => is_string($value) && $value !== '');
     }
 
