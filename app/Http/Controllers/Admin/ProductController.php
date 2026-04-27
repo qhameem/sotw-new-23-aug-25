@@ -86,6 +86,11 @@ class ProductController extends Controller
             'tagline' => old('tagline'),
             'product_page_tagline' => old('product_page_tagline'),
             'description' => old('description'),
+            'maker_links' => old('maker_links', []),
+            'sell_product' => old('sell_product', false),
+            'asking_price' => old('asking_price'),
+            'pricing_page_url' => old('pricing_page_url'),
+            'x_account' => old('x_account'),
             'current_categories' => old('categories', []),
             'current_tech_stacks' => old('tech_stacks', []),
             'video_url' => old('video_url'),
@@ -186,6 +191,7 @@ class ProductController extends Controller
             'maker_links' => old('maker_links', is_array($product->maker_links) ? $product->maker_links : []),
             'sell_product' => old('sell_product', $product->sell_product),
             'asking_price' => old('asking_price', $product->asking_price),
+            'pricing_page_url' => old('pricing_page_url', $product->pricing_page_url),
             'x_account' => old('x_account', $product->x_account),
             'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
             'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
@@ -229,6 +235,7 @@ class ProductController extends Controller
             'maker_links.*' => 'url|max:2048',
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
+            'pricing_page_url' => 'nullable|url|max:2048',
             'x_account' => 'nullable|string|max:255',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
@@ -274,6 +281,10 @@ class ProductController extends Controller
 
         if (array_key_exists('x_account', $validated)) {
             $validated['x_account'] = Product::normalizeXAccount($validated['x_account']);
+        }
+
+        if (!empty($validated['pricing_page_url'])) {
+            $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
 
         $validated['comparison_product_ids'] = $this->resolveRelatedProductOverrides(
