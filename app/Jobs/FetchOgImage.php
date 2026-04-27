@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Product;
-use App\Models\ProductMedia;
+use App\Services\ScreenshotService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,14 +19,14 @@ class FetchOgImage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $product;
+    protected Product $product;
 
     public function __construct(Product $product)
     {
         $this->product = $product;
     }
 
-    public function handle()
+    public function handle(ScreenshotService $screenshotService): void
     {
         try {
             $response = Http::get($this->product->link);
@@ -44,21 +44,33 @@ class FetchOgImage implements ShouldQueue
             }
 
             if ($ogImage) {
+                $ogImage = $this->resolveUrl($this->product->link, $ogImage);
+
                 if ($ogImage !== $this->product->logo) {
                     $this->processImage($ogImage, 'og');
                 }
             } else {
-                $this->fallbackToScreenshot();
+                $this->fallbackToScreenshot($screenshotService);
             }
         } catch (\Exception $e) {
-            $this->fallbackToScreenshot();
+            $this->fallbackToScreenshot($screenshotService);
         }
     }
 
-    protected function processImage($imageUrl, $type)
+    protected function processImage($imageUrl, $type): void
     {
         try {
-            $imageContents = Http::get($imageUrl)->body();
+            $response = Http::timeout(20)->get($imageUrl);
+            if (!$response->successful()) {
+                return;
+            }
+
+            $contentType = strtolower((string) $response->header('Content-Type'));
+            if (!str_starts_with($contentType, 'image/')) {
+                return;
+            }
+
+            $imageContents = $response->body();
             $filename = Str::slug($this->product->name) . '-' . $type . '.webp';
             $path = 'media/' . $filename;
 
@@ -72,18 +84,50 @@ class FetchOgImage implements ShouldQueue
         }
     }
 
-    protected function fallbackToScreenshot()
+    protected function fallbackToScreenshot(ScreenshotService $screenshotService): void
     {
-        $screenshotUrl = 'https://api.microlink.io?url=' . urlencode($this->product->link) . '&screenshot=true&embed=screenshot.url';
-        $this->processImage($screenshotUrl, 'screenshot');
+        $relativePath = $screenshotService->captureToStorage(
+            $this->product->link,
+            'media',
+            Str::slug($this->product->name) . '-screenshot-' . $this->product->id . '.jpg'
+        );
+
+        if ($relativePath) {
+            $this->createMediaRecord($relativePath, 'screenshot');
+        }
     }
 
-    protected function createMediaRecord($path, $type)
+    protected function createMediaRecord($path, $type): void
     {
         $this->product->media()->create([
             'path' => $path,
             'alt_text' => $this->product->name . ' – ' . $this->product->tagline,
             'type' => $type,
         ]);
+    }
+
+    protected function resolveUrl(string $baseUrl, string $imageUrl): string
+    {
+        if (Str::startsWith($imageUrl, ['http://', 'https://'])) {
+            return $imageUrl;
+        }
+
+        if (Str::startsWith($imageUrl, '//')) {
+            return 'https:' . $imageUrl;
+        }
+
+        $base = parse_url($baseUrl);
+        if (!$base || empty($base['scheme']) || empty($base['host'])) {
+            return $imageUrl;
+        }
+
+        if (Str::startsWith($imageUrl, '/')) {
+            return $base['scheme'] . '://' . $base['host'] . $imageUrl;
+        }
+
+        $basePath = $base['path'] ?? '/';
+        $directory = rtrim(str_replace('\\', '/', dirname($basePath)), '/');
+
+        return $base['scheme'] . '://' . $base['host'] . ($directory ? $directory . '/' : '/') . ltrim($imageUrl, '/');
     }
 }
