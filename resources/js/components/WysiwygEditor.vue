@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white border border-gray-300 rounded-md focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400">
+  <div class="wysiwyg-editor bg-white border border-gray-300 rounded-md focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400 flex flex-col">
     <div v-if="editor" class="flex items-center p-1 border-b border-gray-300 gap-1 bg-gray-50">
       <button @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()" class="p-1 rounded hover:bg-gray-200 disabled:opacity-50">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13v-2a4 4 0 0 0-4-4H8L12 3"></path><path d="M7 7l-5 5 5 5"></path></svg>
@@ -26,7 +26,9 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
       </button>
     </div>
-    <editor-content :editor="editor" v-if="editor" />
+    <div v-if="editor" class="h-64 overflow-y-auto">
+      <editor-content :editor="editor" />
+    </div>
     <div v-if="editor" class="flex justify-end p-2 text-sm text-gray-500">
       <span v-if="maxLength !== null && maxLength !== undefined">{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }}/{{ maxLength }}</span>
       <span v-else>{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }} characters</span>
@@ -102,7 +104,7 @@ const editor = useEditor({
   },
   editorProps: {
     attributes: {
-      class: 'prose prose-sm max-w-none p-4 focus:outline-none min-h-[200px]',
+      class: 'prose prose-sm max-w-none p-4 focus:outline-none min-h-full',
     },
     // Explicitly allow paste operations
     handlePaste: (view, event, slice) => {
@@ -154,5 +156,9 @@ watch(() => props.modelValue, (value) => {
 }
 :deep(.prose) {
   font-size: 0.875rem; /* Equivalent to text-sm */
+}
+
+:deep(.ProseMirror) {
+  min-height: 100%;
 }
 </style>
