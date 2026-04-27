@@ -145,7 +145,7 @@ class FetchOgImage implements ShouldQueue
         $relativePath = $screenshotService->captureToStorage(
             $this->product->link,
             'media',
-            Str::slug($this->product->name) . '-screenshot-' . $this->product->id . '.jpg'
+            Str::slug($this->product->name) . '-screenshot-' . $this->product->id . '.webp'
         );
 
         if ($relativePath) {

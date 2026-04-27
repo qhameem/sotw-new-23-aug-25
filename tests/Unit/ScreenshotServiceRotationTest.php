@@ -49,6 +49,16 @@ class ScreenshotServiceRotationTest extends TestCase
             $service->exposedDistinctProvidersFromSequence($sequence, 4)
         );
     }
+
+    public function test_screenshot_filenames_are_forced_to_webp(): void
+    {
+        $service = new TestableScreenshotService();
+
+        self::assertSame(
+            'demo-shot.webp',
+            $service->exposedNormalizeFilename('demo-shot.jpg')
+        );
+    }
 }
 
 class TestableScreenshotService extends ScreenshotService
@@ -61,5 +71,10 @@ class TestableScreenshotService extends ScreenshotService
     public function exposedDistinctProvidersFromSequence(array $sequence, int $startIndex): array
     {
         return $this->distinctProvidersFromSequence($sequence, $startIndex);
+    }
+
+    public function exposedNormalizeFilename(string $filename): string
+    {
+        return $this->normalizeFilename($filename);
     }
 }

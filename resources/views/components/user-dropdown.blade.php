@@ -114,6 +114,8 @@
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-palette class="mr-2 h-4 w-4 text-gray-400" />Theme Settings</a>
                     <a href="{{ route('admin.settings.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-gear-six class="mr-2 h-4 w-4 text-gray-400" />Settings</a>
+                    <a href="{{ route('admin.settings.screenshotProviders') }}"
+                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-browser class="mr-2 h-4 w-4 text-gray-400" />Screenshot Debug</a>
                 </div>
             </div>
             <div class="border-t border-gray-200 my-1"></div>

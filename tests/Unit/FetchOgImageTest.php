@@ -27,16 +27,16 @@ class FetchOgImageTest extends TestCase
             ->with(
                 'https://example.com',
                 'media',
-                'test-product-screenshot-42.jpg'
+                'test-product-screenshot-42.webp'
             )
-            ->andReturn('media/test-product-screenshot-42.jpg');
+            ->andReturn('media/test-product-screenshot-42.webp');
 
         $job = new TestableFetchOgImage($product);
         $job->runFallback($service);
 
         self::assertSame([
             [
-                'path' => 'media/test-product-screenshot-42.jpg',
+                'path' => 'media/test-product-screenshot-42.webp',
                 'type' => 'screenshot',
             ],
         ], $job->createdMedia);

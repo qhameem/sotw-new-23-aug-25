@@ -16,7 +16,7 @@ class ScreenshotService
 {
     private const DEFAULT_DIRECTORY = 'screenshots';
 
-    private const DEFAULT_EXTENSION = 'jpg';
+    private const DEFAULT_EXTENSION = 'webp';
 
     private const PROVIDER_USAGE_PREFIX = 'screenshot_provider_usage';
 
@@ -30,6 +30,24 @@ class ScreenshotService
         $relativePath = $this->captureToStorage($url);
 
         return $relativePath ? asset('storage/' . $relativePath) : null;
+    }
+
+    /**
+     * Provide admin/debug visibility into provider quotas and weighted order.
+     */
+    public function providerDashboard(): array
+    {
+        $snapshots = $this->configuredProviderSnapshots();
+        $availableSnapshots = array_values(array_filter(
+            $snapshots,
+            fn (array $snapshot): bool => $snapshot['configured'] && $snapshot['remaining'] > 0
+        ));
+
+        return [
+            'configured_providers' => $this->configuredProviders(),
+            'snapshots' => $snapshots,
+            'available_provider_order' => $this->orderedProvidersForDashboard($availableSnapshots),
+        ];
     }
 
     /**
@@ -246,7 +264,7 @@ class ScreenshotService
             [
                 'access_key' => $this->providerConfig('apiflash', 'access_key'),
                 'url' => $url,
-                'format' => 'jpeg',
+                'format' => 'webp',
                 'quality' => 85,
                 'response_type' => 'image',
                 'viewport' => $this->viewportWidth() . 'x' . $this->viewportHeight(),
@@ -265,7 +283,7 @@ class ScreenshotService
             [
                 'access_key' => $this->providerConfig('screenshotone', 'access_key'),
                 'url' => $url,
-                'format' => 'jpeg',
+                'format' => 'webp',
                 'image_quality' => 85,
                 'viewport_width' => $this->viewportWidth(),
                 'viewport_height' => $this->viewportHeight(),
@@ -289,7 +307,7 @@ class ScreenshotService
                 (string) $this->providerConfig('snaprender', 'base_url'),
                 [
                     'url' => $url,
-                    'format' => 'jpeg',
+                    'format' => 'webp',
                     'quality' => 85,
                     'width' => $this->viewportWidth(),
                     'height' => $this->viewportHeight(),
@@ -332,7 +350,7 @@ class ScreenshotService
                 rtrim((string) $this->providerConfig('screenshotbase', 'base_url'), '/') . '/take',
                 [
                     'url' => $url,
-                    'format' => 'jpg',
+                    'format' => 'webp',
                     'quality' => 85,
                     'viewport_width' => $this->viewportWidth(),
                     'viewport_height' => $this->viewportHeight(),
@@ -372,7 +390,7 @@ class ScreenshotService
     {
         $manager = new ImageManager(new Driver());
 
-        return (string) $manager->read($body)->toJpeg(85);
+        return (string) $manager->read($body)->toWebp(85);
     }
 
     protected function looksLikeImageBinary(string $body): bool
@@ -388,6 +406,11 @@ class ScreenshotService
     protected function orderedAvailableProviders(): array
     {
         $snapshots = $this->availableProviderSnapshots();
+        return $this->orderedProvidersForDashboard($snapshots);
+    }
+
+    protected function orderedProvidersForDashboard(array $snapshots): array
+    {
         if ($snapshots === []) {
             return [];
         }
@@ -690,12 +713,14 @@ class ScreenshotService
             return $this->makeFilename(Str::uuid()->toString());
         }
 
-        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if ($extension === '') {
-            $filename .= '.' . self::DEFAULT_EXTENSION;
+        $nameWithoutExtension = pathinfo($filename, PATHINFO_FILENAME);
+        $nameWithoutExtension = trim($nameWithoutExtension);
+
+        if ($nameWithoutExtension === '') {
+            $nameWithoutExtension = pathinfo($this->makeFilename(Str::uuid()->toString()), PATHINFO_FILENAME);
         }
 
-        return $filename;
+        return $nameWithoutExtension . '.' . self::DEFAULT_EXTENSION;
     }
 
     protected function userAgent(): string

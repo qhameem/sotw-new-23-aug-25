@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ScreenshotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,17 @@ class SettingsController extends Controller
     {
         $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
         return view('admin.settings.email_templates', compact('template'));
+    }
+
+    public function screenshotProviders(ScreenshotService $screenshotService)
+    {
+        $dashboard = $screenshotService->providerDashboard();
+
+        return view('admin.settings.screenshot_providers', [
+            'configuredProviders' => $dashboard['configured_providers'],
+            'providerSnapshots' => $dashboard['snapshots'],
+            'availableProviderOrder' => $dashboard['available_provider_order'],
+        ]);
     }
 
     public function storeEmailTemplates(Request $request)
