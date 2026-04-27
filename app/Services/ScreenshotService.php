@@ -194,6 +194,16 @@ class ScreenshotService
             $browsershot->setNodeModulePath($nodeModulePath);
         }
 
+        $userDataDir = $this->resolvedUserDataDir();
+        if ($userDataDir) {
+            $browsershot->setUserDataDir($userDataDir);
+        }
+
+        $tempPath = $this->resolvedTempPath();
+        if ($tempPath) {
+            $browsershot->setCustomTempPath($tempPath);
+        }
+
         $nodeBinary = $this->resolvedNodeBinary();
 
         if ($nodeBinary) {
@@ -317,6 +327,8 @@ class ScreenshotService
             'configured_chrome_path' => config('services.screenshot.chrome_path'),
             'configured_puppeteer_home' => config('services.screenshot.home'),
             'configured_puppeteer_cache_dir' => config('services.screenshot.cache_dir'),
+            'configured_user_data_dir' => $this->resolvedUserDataDir(),
+            'configured_temp_path' => $this->resolvedTempPath(),
         ];
     }
 
@@ -367,6 +379,33 @@ class ScreenshotService
             'HOME' => config('services.screenshot.home'),
             'PUPPETEER_CACHE_DIR' => config('services.screenshot.cache_dir'),
         ], fn($value) => is_string($value) && $value !== '');
+    }
+
+    protected function resolvedUserDataDir(): ?string
+    {
+        return $this->ensureDirectory(storage_path('app/puppeteer-profile'));
+    }
+
+    protected function resolvedTempPath(): ?string
+    {
+        return $this->ensureDirectory(storage_path('app/browsershot-temp'));
+    }
+
+    protected function ensureDirectory(string $path): ?string
+    {
+        if (is_dir($path)) {
+            return $path;
+        }
+
+        try {
+            if (@mkdir($path, 0775, true) || is_dir($path)) {
+                return $path;
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return null;
     }
 
     protected function resolveExistingPath(array $paths): ?string
