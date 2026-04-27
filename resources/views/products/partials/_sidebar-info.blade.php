@@ -183,6 +183,32 @@
             return null;
         };
 
+        $extractSocialHandle = function (string $link, string $platformKey): ?string {
+            $path = trim((string) parse_url($link, PHP_URL_PATH), '/');
+
+            if ($path === '') {
+                return null;
+            }
+
+            $segments = array_values(array_filter(explode('/', $path), fn ($segment) => $segment !== ''));
+
+            if (empty($segments)) {
+                return null;
+            }
+
+            $handle = match ($platformKey) {
+                'linkedin' => in_array(strtolower($segments[0]), ['in', 'company', 'school', 'showcase'], true) ? ($segments[1] ?? $segments[0]) : $segments[0],
+                'youtube' => in_array(strtolower($segments[0]), ['channel', 'c', 'user', '@'], true) ? ($segments[1] ?? $segments[0]) : $segments[0],
+                default => $segments[0],
+            };
+
+            $handle = urldecode($handle);
+            $handle = preg_replace('/^@+/', '', $handle);
+            $handle = preg_replace('/\?.*$/', '', $handle);
+
+            return $handle !== '' ? '@' . $handle : null;
+        };
+
         $normalizedXProfileUrl = $xProfileUrl ? \App\Models\Product::normalizeLink($xProfileUrl) : null;
 
         foreach($makerLinks as $link) {
@@ -197,7 +223,7 @@
 
                 $socialLinks[] = [
                     'link' => $link,
-                    'label' => $platform['label'],
+                    'label' => $extractSocialHandle($link, $platform['key']) ?? $platform['label'],
                     'icon' => $platform['icon'],
                 ];
             } else {
@@ -214,7 +240,7 @@
                     <div class="space-y-2">
                         @if($xProfileUrl)
                             <a href="{{ $xProfileUrl }}" target="_blank" rel="noopener" 
-                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group text-[11px]">
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group text-[11px] underline-offset-2">
                                 <svg class="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                                 <span>@ {{ $xHandle }}</span>
                             </a>
@@ -222,7 +248,7 @@
 
                         @foreach($socialLinks as $socialLink)
                             <a href="{{ $socialLink['link'] }}" target="_blank" rel="noopener" 
-                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px]">
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group truncate text-[11px] underline-offset-2">
                                 {!! $socialLink['icon'] !!}
                                 <span>{{ $socialLink['label'] }}</span>
                             </a>
@@ -246,7 +272,7 @@
                                 elseif (Str::contains($host, 'help.')) $displayLink = 'Help Center';
                             @endphp
                             <a href="{{ $link }}" target="_blank" rel="noopener" 
-                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 font-medium group truncate text-[11px]">
+                               class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group truncate text-[11px] underline-offset-2">
                                 <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                 <span>{{ $displayLink }}</span>
                             </a>
