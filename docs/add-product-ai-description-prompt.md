@@ -1,46 +1,43 @@
-<?php
+# Add Product AI Description Prompt
 
-namespace App\Services;
+## Purpose
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+- Keep a record of the live AI prompt used for `/add-product` product description generation.
+- Track what was changed to make descriptions sound more human while preserving the existing HTML structure.
 
-class DescriptionRewriterService
-{
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-    private const MODEL = 'llama-3.3-70b-versatile'; // Powerful 70B model
-    private const TIMEOUT = 60; // Allow more time for the larger model
+## Status
 
-    /**
-     * Rewrite a raw product description into a structured format:
-     *   - 1-sentence headline (bolded)
-     *   - 1-sentence elaboration
-     *   - Multiple structured sections in HTML
-     *
-     * Returns HTML, or null on failure.
-     */
-    public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?string
-    {
-        $apiKey = config('services.groq.key');
+1. Updated the live prompt used by `App\Services\DescriptionRewriterService`.
+2. Kept the existing HTML response structure intact.
+3. Added a unit test to verify the prompt and structure instructions are still sent to the AI API.
 
-        if (empty($apiKey)) {
-            Log::warning('DescriptionRewriterService: GROQ_API_KEY is not set.');
-            return null;
-        }
+## Live Integration Path
 
-        if (empty(trim($rawDescription))) {
-            return null;
-        }
+1. Active service: `app/Services/DescriptionRewriterService.php`
+2. Used by:
+- `app/Http/Controllers/ProductController.php`
+- `app/Jobs/FetchBasicInfo.php`
+3. Active API endpoint: Groq chat completions at `https://api.groq.com/openai/v1/chat/completions`
 
-        // Truncate context to avoid hitting token limits
-        $context = mb_substr(strip_tags($pageTextContext), 0, 8000); // 70B can handle more context
+## Important Note
 
-        $prompt = <<<PROMPT
-You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, and easy to trust.
+1. `resources/prompts/description_prompt.txt` is not the live `/add-product` prompt source right now.
+2. The production prompt is defined directly inside `app/Services/DescriptionRewriterService.php`.
 
-Raw information: "{$rawDescription}"
+## Prompt Goals
 
-Additional context: "{$context}"
+1. Make the writing sound human, simple, and useful.
+2. Avoid robotic AI phrasing and generic marketing hype.
+3. Preserve the exact HTML skeleton already expected by the product submission flow.
+
+## Current Live Prompt
+
+```text
+You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{productName}" so it feels genuinely human-written, useful, and easy to trust.
+
+Raw information: "{rawDescription}"
+
+Additional context: "{context}"
 
 OBJECTIVE:
 - Make the description sound like a real person wrote it.
@@ -63,7 +60,7 @@ STRUCTURE RULES:
 - Return ONLY HTML. No markdown fences, no commentary, no labels.
 - Keep the first two lines as exactly two separate <p> paragraphs.
 - Keep each list item concise and focused on user value.
-- Mention "{$productName}" naturally in the opening paragraph.
+- Mention "{productName}" naturally in the opening paragraph.
 
 <p><strong>[Write a single, punchy headline that captures the core value proposition. This entire line MUST be wrapped in <strong> tags.]</strong></p>
 <p>[Write a second sentence that elaborates on how the product solves a main pain point. Do NOT bold this line.]</p>
@@ -121,38 +118,27 @@ STYLE CHECK BEFORE YOU RESPOND:
 - Is the structure exactly preserved?
 - Are the claims grounded in the provided information?
 - Is the writing free from obvious AI-style hype and repetition?
-PROMPT;
+```
 
-        try {
-            $response = Http::timeout(self::TIMEOUT)
-                ->withToken($apiKey)
-                ->post(self::GROQ_API_URL, [
-                    'model' => self::MODEL,
-                    'messages' => [
-                        [
-                            'role' => 'user',
-                            'content' => $prompt,
-                        ],
-                    ],
-                    'temperature' => 0.55, // Slightly more natural while keeping the structure stable
-                    'max_tokens' => 1200,
-                ]);
+## Implementation Notes
 
-            if (!$response->successful()) {
-                Log::warning('DescriptionRewriterService: Groq API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                return null;
-            }
+1. The service temperature is set to `0.55`.
+2. This is slightly higher than before to make the copy feel more natural without making the structure unstable.
+3. The response is still expected to be HTML only.
 
-            $content = $response->json('choices.0.message.content');
+## Verification
 
-            return is_string($content) ? trim($content) : null;
+1. Test file: `tests/Unit/DescriptionRewriterServiceTest.php`
+2. Verified command:
 
-        } catch (\Exception $e) {
-            Log::warning('DescriptionRewriterService: Exception', ['message' => $e->getMessage()]);
-            return null;
-        }
-    }
-}
+```bash
+CACHE_STORE=array php artisan test tests/Unit/DescriptionRewriterServiceTest.php
+```
+
+3. Latest result: passed
+
+## Future Update Checklist
+
+1. If the prompt changes, update this file and `app/Services/DescriptionRewriterService.php` together.
+2. If the HTML structure changes, update the unit test too.
+3. If `/add-product` is later switched to `resources/prompts/description_prompt.txt`, update this document to reflect that.
