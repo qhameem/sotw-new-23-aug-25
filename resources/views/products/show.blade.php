@@ -1,8 +1,8 @@
 @php 
                                     $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
-    $mainPadding = 'px-6 sm:px-6 lg:px-8';
-    $headerPadding = 'px-6 sm:px-6 lg:px-8';
+    $mainPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
+    $headerPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
 @endphp
 @extends('layouts.app')
 

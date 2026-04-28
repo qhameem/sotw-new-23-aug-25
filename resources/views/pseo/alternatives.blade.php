@@ -1,13 +1,13 @@
 @php
     $mainContentMaxWidth = 'max-w-7xl';
-    $mainPadding = 'px-6 sm:px-6 lg:px-8';
-    $headerPadding = 'px-6 sm:px-6 lg:px-8';
 @endphp
 @extends('layouts.app')
 
 @section('title', $title)
 @section('meta_description', $metaDescription)
 @section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow')
+@section('hide_desktop_page_header', '1')
+@section('header-title', '')
 
 @section('content')
     <div class="py-4">
@@ -32,7 +32,7 @@
     }
     </script>
 
-    <div class="bg-white rounded-lg py-6 md:py-8">
+    <div class="rounded-lg py-6 md:py-8" style="background-color: var(--color-body-bg, #ffffff);">
         <div class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4">
             <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
             <div>

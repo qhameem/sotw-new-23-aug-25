@@ -28,22 +28,24 @@
                 @endif
             >
                 <div class="flex-shrink-0">
-                    <div class="h-[75px] md:hidden w-full"></div>
-                    <x-page-header :padding="$headerPadding">
-                        <x-slot:title>
-                            {!! $title !!}
-                        </x-slot:title>
-                        @if (isset($actions))
-                            <x-slot:actions>
-                                {!! $actions !!}
-                            </x-slot:actions>
-                        @endif
-                        @if (isset($below_header))
-                            <x-slot:below_header>
-                                {{ $below_header }}
-                            </x-slot:below_header>
-                        @endif
-                    </x-page-header>
+                    @unless($hideDesktopPageHeader ?? false)
+                        <div class="h-[75px] md:hidden w-full"></div>
+                        <x-page-header :padding="$headerPadding">
+                            <x-slot:title>
+                                {!! $title !!}
+                            </x-slot:title>
+                            @if (isset($actions))
+                                <x-slot:actions>
+                                    {!! $actions !!}
+                                </x-slot:actions>
+                            @endif
+                            @if (isset($below_header))
+                                <x-slot:below_header>
+                                    {{ $below_header }}
+                                </x-slot:below_header>
+                            @endif
+                        </x-page-header>
+                    @endunless
                 </div>
                 <div @class([
                     'md:flex-1 md:flex md:flex-col min-h-0' => $lockHeight,
