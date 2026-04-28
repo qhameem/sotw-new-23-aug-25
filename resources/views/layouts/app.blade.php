@@ -4,24 +4,46 @@
         open: false, // For mobile navigation
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
-        searchResults: null,
+        searchResults: { products: [], categories: [] },
         searchTerm: '',
+        searchLoading: false,
+        searchController: null,
+        hasSearchResults() {
+            return this.searchResults.products.length > 0 || this.searchResults.categories.length > 0;
+        },
         performSearch: async function(term) {
-            if (term.length < 2) {
-                this.searchResults = null;
+            const query = term.trim();
+
+            if (query.length < 2) {
+                this.searchResults = { products: [], categories: [] };
+                this.searchLoading = false;
                 return;
             }
-            
+
+            if (this.searchController) {
+                this.searchController.abort();
+            }
+
+            this.searchController = new AbortController();
+            this.searchLoading = true;
+
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`, {
+                    signal: this.searchController.signal
+                });
+
                 if (response.ok) {
                     this.searchResults = await response.json();
                 } else {
                     this.searchResults = { products: [], categories: [] };
                 }
             } catch (error) {
-                console.error('Search error:', error);
-                this.searchResults = { products: [], categories: [] };
+                if (error.name !== 'AbortError') {
+                    console.error('Search error:', error);
+                    this.searchResults = { products: [], categories: [] };
+                }
+            } finally {
+                this.searchLoading = false;
             }
         }
     }" x-init="() => {
@@ -404,7 +426,7 @@
         x-init="$watch('searchModalOpen', open => { if (open) { $nextTick(() => document.getElementById('globalSearchInput')?.focus()); } else { document.getElementById('globalSearchInput')?.blur(); } })">
         <div class="bg-white  rounded-lg shadow-xl w-full max-w-2xl p-6" @click.outside="searchModalOpen = false">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800 ">Search Products</h2>
+                <h2 class="text-xl font-semibold text-gray-800 ">Search Products and Categories</h2>
                 <button @click="searchModalOpen = false" class="text-gray-400 hover:text-gray-600  ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -427,8 +449,42 @@
                 </button>
             </div>
             <div id="searchResultsContainer" class="max-h-[60vh] overflow-y-auto space-y-3">
-                <p x-show="!searchResults || searchResults.length === 0" class="text-gray-500 text-center py-4">Start
-                    typing to search for products.</p>
+                <p x-show="searchTerm.trim().length < 2 && !searchLoading" class="text-center text-gray-500 py-4">
+                    Start typing to search for products or categories.
+                </p>
+                <p x-show="searchLoading" class="text-center text-gray-500 py-4">Searching...</p>
+                <p x-show="searchTerm.trim().length >= 2 && !searchLoading && !hasSearchResults()" class="text-center text-gray-500 py-4">
+                    No matching products or categories found.
+                </p>
+
+                <template x-if="searchResults.products.length > 0">
+                    <div class="overflow-hidden rounded-lg border border-gray-200">
+                        <div class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Products</div>
+                        <template x-for="product in searchResults.products" :key="`product-${product.id}`">
+                            <a :href="product.url" class="flex items-center gap-3 border-t border-gray-100 px-4 py-3 hover:bg-gray-50">
+                                <template x-if="product.logo_url">
+                                    <img :src="product.logo_url" :alt="product.name" class="h-10 w-10 rounded-md object-cover">
+                                </template>
+                                <template x-if="!product.logo_url">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 text-xs font-semibold text-gray-500" x-text="product.name.charAt(0)"></div>
+                                </template>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-gray-900" x-text="product.name"></p>
+                                    <p class="truncate text-xs text-gray-500" x-text="product.tagline"></p>
+                                </div>
+                            </a>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="searchResults.categories.length > 0">
+                    <div class="overflow-hidden rounded-lg border border-gray-200">
+                        <div class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Categories</div>
+                        <template x-for="category in searchResults.categories" :key="`category-${category.id}`">
+                            <a :href="category.url" class="block border-t border-gray-100 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50" x-text="category.name"></a>
+                        </template>
+                    </div>
+                </template>
             </div>
         </div>
     </div>

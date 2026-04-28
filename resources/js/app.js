@@ -375,6 +375,57 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('sidebar-search-results');
     const searchClear = document.getElementById('sidebar-search-clear');
     let timeout = null;
+    let activeController = null;
+    const resultCache = new Map();
+    const escapeHtml = (value) => {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML;
+    };
+
+    const hideResults = () => {
+        searchResults.style.display = 'none';
+    };
+
+    const renderResults = (data) => {
+        let html = '';
+
+        if (data.products.length > 0) {
+            html += '<div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Products</div>';
+            data.products.forEach(product => {
+                const productInitial = escapeHtml((product.name ?? '').charAt(0));
+                const productName = escapeHtml(product.name);
+                const productTagline = escapeHtml(product.tagline ?? '');
+                const productUrl = escapeHtml(product.url);
+                const productLogoUrl = escapeHtml(product.logo_url ?? '');
+                const logoHtml = product.logo_url
+                    ? `<img src="${productLogoUrl}" alt="${productName}" class="h-8 w-8 rounded-md object-cover">`
+                    : `<div class="flex h-8 w-8 items-center justify-center rounded-md bg-gray-100 text-xs font-semibold text-gray-500">${productInitial}</div>`;
+
+                html += `<a href="${productUrl}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            ${logoHtml}
+                            <div class="min-w-0">
+                                <div class="truncate font-medium text-gray-900">${productName}</div>
+                                ${product.tagline ? `<div class="truncate text-xs text-gray-500">${productTagline}</div>` : ''}
+                            </div>
+                         </a>`;
+            });
+        }
+
+        if (data.categories.length > 0) {
+            html += '<div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Categories</div>';
+            data.categories.forEach(category => {
+                html += `<a href="${escapeHtml(category.url)}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${escapeHtml(category.name)}</a>`;
+            });
+        }
+
+        if (html === '') {
+            html = '<div class="px-4 py-3 text-sm text-gray-500">No results found.</div>';
+        }
+
+        searchResults.innerHTML = html;
+        searchResults.style.display = 'block';
+    };
 
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -386,57 +437,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clearTimeout(timeout);
             timeout = setTimeout(() => {
-                const query = searchInput.value;
+                const query = searchInput.value.trim();
 
-                if (query.length > 2) {
-                    fetch(`/api/sidebar-search?query=${query}`)
+                if (query.length >= 2) {
+                    if (resultCache.has(query)) {
+                        renderResults(resultCache.get(query));
+                        return;
+                    }
+
+                    if (activeController) {
+                        activeController.abort();
+                    }
+
+                    activeController = new AbortController();
+                    searchResults.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">Searching...</div>';
+                    searchResults.style.display = 'block';
+
+                    fetch(`/api/search?query=${encodeURIComponent(query)}`, {
+                        signal: activeController.signal,
+                    })
                         .then(response => response.json())
                         .then(data => {
-                            let html = '';
-
-                            if (data.products.length > 0) {
-                                html += '<div class="px-4 py-2 text-xs text-gray-500">Products</div>';
-                                data.products.forEach(product => {
-                                    const logoHtml = product.logo_url
-                                        ? `<img src="${product.logo_url}" alt="${product.name}" class="w-8 h-8 mr-3 rounded-md object-cover">`
-                                        : `<div class="w-8 h-8 mr-3 rounded-md bg-gray-20 flex items-center justify-center"><span class="text-xs font-semibold text-gray-500">${product.name.substring(0, 1)}</span></div>`;
-
-                                    html += `<a href="/product/${product.slug}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                ${logoHtml}
-                                                <span>${product.name}</span>
-                                             </a>`;
-                                });
+                            resultCache.set(query, data);
+                            renderResults(data);
+                        })
+                        .catch(error => {
+                            if (error.name !== 'AbortError') {
+                                searchResults.innerHTML = '<div class="px-4 py-3 text-sm text-red-500">Search is unavailable right now.</div>';
+                                searchResults.style.display = 'block';
                             }
-
-                            if (data.categories.length > 0) {
-                                html += '<div class="px-4 py-2 text-xs text-gray-500">Categories</div>';
-                                data.categories.forEach(category => {
-                                    html += `<a href="/categories/${category.slug}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${category.name}</a>`;
-                                });
-                            }
-
-                            if (html === '') {
-                                html = '<div class="px-4 py-2 text-sm text-gray-500">No results found.</div>';
-                            }
-
-                            searchResults.innerHTML = html;
-                            searchResults.style.display = 'block';
                         });
                 } else {
-                    searchResults.style.display = 'none';
+                    hideResults();
                 }
             }, 300);
         });
 
         searchClear.addEventListener('click', () => {
+            if (activeController) {
+                activeController.abort();
+            }
+
             searchInput.value = '';
-            searchResults.style.display = 'none';
+            hideResults();
             searchClear.style.display = 'none';
         });
 
         document.addEventListener('click', (e) => {
             if (!searchResults.contains(e.target) && e.target !== searchInput) {
-                searchResults.style.display = 'none';
+                hideResults();
             }
         });
     }
