@@ -48,3 +48,105 @@
 .ql-editor-content li {
     margin: 0.5em 0;
 }
+
+.product-detail-description {
+    color: #0f172a;
+    line-height: 1.8;
+}
+
+.product-detail-description > p:first-of-type {
+    margin-top: 0;
+    margin-bottom: 0.9rem;
+}
+
+.product-detail-description > p:first-of-type strong {
+    display: block;
+    font-size: clamp(1.28rem, 1.65vw, 1.6rem);
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    color: #0f172a;
+}
+
+.product-detail-description > p:nth-of-type(2) {
+    font-size: clamp(1.05rem, 1.15vw, 1.18rem);
+    line-height: 1.75;
+    color: #475569;
+    margin-bottom: 1.4rem;
+    max-width: 66ch;
+}
+
+.product-detail-description h1,
+.product-detail-description h2 {
+    font-size: clamp(1rem, 1.08vw, 1.16rem);
+    line-height: 1.25;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #111827;
+    margin-top: 2.2rem;
+    margin-bottom: 0.95rem;
+    text-wrap: balance;
+}
+
+.product-detail-description h1 strong,
+.product-detail-description h2 strong {
+    font-weight: inherit;
+}
+
+.product-detail-description p,
+.product-detail-description li,
+.product-detail-description dd {
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.product-detail-description ul,
+.product-detail-description ol {
+    margin: 1rem 0 1.3rem;
+    padding-left: 1.45rem;
+    list-style-position: outside;
+}
+
+.product-detail-description ul {
+    list-style-type: disc;
+}
+
+.product-detail-description ol {
+    list-style-type: decimal;
+}
+
+.product-detail-description li {
+    padding-left: 0.15rem;
+}
+
+.product-detail-description li::marker {
+    color: #f43f5e;
+}
+
+.product-detail-description dl {
+    margin-top: 1rem;
+}
+
+.product-detail-description dt {
+    margin-top: 1rem;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.product-detail-description dd {
+    margin-top: 0.35rem;
+    margin-left: 0;
+    color: #475569;
+}
+
+@media (max-width: 640px) {
+    .product-detail-description > p:first-of-type strong {
+        font-size: 1.22rem;
+    }
+
+    .product-detail-description h1,
+    .product-detail-description h2 {
+        font-size: 0.98rem;
+    }
+}

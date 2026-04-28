@@ -197,7 +197,7 @@
                 </div>
             @endif
 
-            <div class="prose max-w-none text-sm ql-editor-content">
+            <div class="prose max-w-none text-base ql-editor-content product-detail-description">
                 @if(isset($isAdminView) && $isAdminView)
                     <div x-show="!editingDescription" @click="editingDescription = true" x-html="description"></div>
                     <textarea x-show="editingDescription" x-model="description"
