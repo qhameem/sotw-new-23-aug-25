@@ -19,6 +19,7 @@ class Product extends Model implements Sitemapable
     use HasFactory;
 
     public const AUTO_UPVOTE_VIEW_THRESHOLD = 4;
+    public const AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD = 2;
 
     protected $fillable = [
         'name',
@@ -34,6 +35,7 @@ class Product extends Model implements Sitemapable
         'logo',
         'user_id',
         'votes_count',
+        'outbound_clicks_count',
         'approved',
         'is_promoted',
         'promoted_position',
@@ -289,6 +291,32 @@ class Product extends Model implements Sitemapable
             $lockedProduct->save();
 
             $this->impressions = $lockedProduct->impressions;
+            $this->votes_count = $lockedProduct->votes_count;
+        });
+    }
+
+    public function recordOutboundClickAndAutoUpvote(): void
+    {
+        DB::transaction(function () {
+            $lockedProduct = static::query()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedProduct) {
+                return;
+            }
+
+            $lockedProduct->outbound_clicks_count = (int) $lockedProduct->outbound_clicks_count + 1;
+            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
+
+            if ($lockedProduct->outbound_clicks_count % self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD === 0) {
+                $lockedProduct->votes_count++;
+            }
+
+            $lockedProduct->save();
+
+            $this->outbound_clicks_count = $lockedProduct->outbound_clicks_count;
             $this->votes_count = $lockedProduct->votes_count;
         });
     }

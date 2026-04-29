@@ -22,7 +22,7 @@
         <article
             class="p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
             itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
-                @click="window.open('{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com&utm_medium=promoted_listing_card', '_blank')"
+                @click="window.open('{{ route('products.click', ['product' => $product->slug, 'surface' => 'promoted_listing_card']) }}', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
             <img src="{{ $productLogo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
                 class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
@@ -35,7 +35,7 @@
                 <h2 class="text-sm font-semibold leading-tight flex items-center">
                     @if(!$isPromoted)
                         <span itemprop="name" class="text-left">{{ $product->name }}</span>
-                        <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
+                        <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
                             target="_blank" rel="noopener nofollow" @click.stop
                             class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
                             aria-label="Open product link in new tab">

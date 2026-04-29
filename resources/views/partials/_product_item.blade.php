@@ -20,7 +20,7 @@
                 <h2 class="text-sm font-semibold flex items-center leading-none">
                     <span class="text-left text-black">{{ $product->name }}</span>
                     @if(!$isPromoted)
-                        <a href="{{ $product->link . (parse_url($product->link, PHP_URL_QUERY) ? '&' : '?') }}utm_source=softwareontheweb.com"
+                        <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
                             target="_blank" rel="noopener ugc" @click.stop
                             class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
                             aria-label="Open product link in new tab">

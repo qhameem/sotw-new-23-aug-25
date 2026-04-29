@@ -34,6 +34,7 @@ use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\AdInteractionController;
 use App\Http\Controllers\ArticleEditorController;
+use App\Http\Controllers\ProductInteractionController;
 
 Route::get('/phpinfo', [ProductController::class, 'phpinfo']);
 
@@ -43,6 +44,7 @@ Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])-
 Route::post('/fetch-videos', [VideoController::class, 'fetch'])->name('fetch-videos');
 Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');
 Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
+Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
 

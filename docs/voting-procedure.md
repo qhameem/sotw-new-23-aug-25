@@ -2,7 +2,7 @@
 
 ## Summary
 
-Every product starts with `1` vote by default. That first vote is a system vote, similar to how Reddit gives a new post an initial score. In addition, products automatically gain votes from view activity: every `4` impressions adds `1` vote.
+Every product starts with `1` vote by default. That first vote is a system vote, similar to how Reddit gives a new post an initial score. In addition, products automatically gain votes from activity: every `4` impressions adds `1` vote, and every `2` outbound product link clicks adds `1` vote.
 
 ## Rules
 
@@ -12,6 +12,7 @@ Every product starts with `1` vote by default. That first vote is a system vote,
 - Removing a user upvote decreases `votes_count`, but never below `1`.
 - Existing products that previously had `0` votes are migrated to `1`.
 - Every `4` impressions on a product add `1` automatic vote to `votes_count`.
+- Every `2` tracked outbound product link clicks add `1` automatic vote to `votes_count`.
 
 ## Examples
 
@@ -21,6 +22,7 @@ Every product starts with `1` vote by default. That first vote is a system vote,
 - Existing product with `7` views and `1` vote becomes `2` votes after backfill (`+1` for the first 4 views)
 - Product with no user upvotes and `4` views: `2`
 - Product with no user upvotes and `8` views: `3`
+- Product with no user upvotes and `2` outbound link clicks: `2`
 
 ## Implementation Notes
 
@@ -28,4 +30,5 @@ Every product starts with `1` vote by default. That first vote is a system vote,
 - Application-level product creation also initializes `votes_count` to `1`.
 - Upvote removal logic preserves the minimum value of `1`.
 - Impression recording applies the `4 views => +1 vote` rule in both product-page and impression-API flows.
+- Product click tracking applies the `2 outbound clicks => +1 vote` rule in both listing-card and product-details click flows.
 - A one-time migration backfills existing products by adding `floor(impressions / 4)` votes to current `votes_count`.

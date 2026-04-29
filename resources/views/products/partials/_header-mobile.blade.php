@@ -77,7 +77,7 @@
             Edit Product
         </a>
     @endif
-    <a href="{{ $product->link . (strpos($product->link, '?') === false ? '?' : '&') }}utm_source=softwareontheweb.com"
+    <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_details']) }}"
         target="_blank" rel="noopener ugc noreferrer"
         class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
         Visit Website &nbsp;
