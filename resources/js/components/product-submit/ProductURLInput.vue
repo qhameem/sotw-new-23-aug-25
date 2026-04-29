@@ -175,9 +175,11 @@ const logButtonConditions = () => {
 const performValidationAndFetch = async (explicitValue = null) => {
   console.log('[ProductURLInput] Starting validation sequence...');
   clipboardFeedback.value = '';
+
+  const normalizedExplicitValue = explicitValue instanceof Event ? null : explicitValue;
   
   // Get the current value directly from the input element to avoid timing issues
-  const inputValue = explicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
+  const inputValue = normalizedExplicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
   console.log('[ProductURLInput] Using URL value:', inputValue);
   
   // Step 1: Check if anything is loading
@@ -197,14 +199,6 @@ const performValidationAndFetch = async (explicitValue = null) => {
     return;
   }
   console.log('[ProductURLInput] Step 2 passed: URL is valid');
-  
-  // Step 3: Check if URL exists in database
-  console.log('[ProductURLInput] Step 3: Checking if URL exists in database...');
-  if (props.urlExistsError) {
-    console.log('[ProductURLInput] Validation failed: URL already exists in database');
-    return;
-  }
-  console.log('[ProductURLInput] Step 3 passed: URL does not exist in database');
   
   // Update the model value if needed before proceeding
   if (inputValue !== props.modelValue) {
