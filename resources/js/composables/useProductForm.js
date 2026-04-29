@@ -8,6 +8,26 @@ const globalFormState = createProductFormState();
 // Create shared reactive objects to ensure consistency across all components
 const sharedForm = reactive({ ...globalFormState.form });
 const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
+const LOADING_PROFILES = {
+  fullAutofill: {
+    checkpoints: [
+      { elapsed: 0, progress: 5 },
+      { elapsed: 1, progress: 10 },
+      { elapsed: 4, progress: 30 },
+      { elapsed: 5, progress: 35 },
+      { elapsed: 6, progress: 40.5 },
+      { elapsed: 7, progress: 44 },
+      { elapsed: 11, progress: 58 },
+      { elapsed: 17, progress: 75.5 },
+      { elapsed: 21, progress: 89.5 },
+      { elapsed: 23, progress: 96.5 },
+      { elapsed: 25, progress: 99 },
+    ],
+  },
+  logoExtraction: null,
+};
+
+let loadingAnimationFrameId = null;
 
 export function useProductForm() {
   const isAdmin = globalFormState.isAdmin;
@@ -29,17 +49,185 @@ export function useProductForm() {
     return productFormService.getUrlTrimSuggestion(form.link);
   });
 
-  const checkUrlExists = async () => {
-    console.log('checkUrlExists called with URL:', form.link, 'and ID:', form.id);
-    if (!form.link) {
-      globalFormState.urlExistsError.value = false;
-      globalFormState.existingProduct.value = null;
+  const mergeAutofillLinks = (existingLinks = [], fetchedLinks = []) => {
+    const merged = [];
+    const seen = new Set();
+
+    [...existingLinks, ...fetchedLinks].forEach((link) => {
+      if (typeof link !== 'string') {
+        return;
+      }
+
+      const trimmed = link.trim();
+      if (!trimmed || seen.has(trimmed)) {
+        return;
+      }
+
+      seen.add(trimmed);
+      merged.push(trimmed);
+    });
+
+    return merged.slice(0, 10);
+  };
+
+  const getLoadingProfile = () => {
+    const sessionType = globalFormState.loadingSessionType.value;
+    return LOADING_PROFILES[sessionType] || null;
+  };
+
+  const getExpectedProgressForElapsed = (elapsedSeconds, checkpoints = []) => {
+    if (!checkpoints.length) {
+      return null;
+    }
+
+    if (elapsedSeconds <= checkpoints[0].elapsed) {
+      return checkpoints[0].progress;
+    }
+
+    for (let i = 1; i < checkpoints.length; i += 1) {
+      const previous = checkpoints[i - 1];
+      const current = checkpoints[i];
+
+      if (elapsedSeconds <= current.elapsed) {
+        const elapsedSpan = current.elapsed - previous.elapsed || 1;
+        const elapsedOffset = elapsedSeconds - previous.elapsed;
+        const ratio = elapsedOffset / elapsedSpan;
+        return previous.progress + ((current.progress - previous.progress) * ratio);
+      }
+    }
+
+    return checkpoints[checkpoints.length - 1].progress;
+  };
+
+  const getAnimatedLoadingTarget = () => {
+    const actualTarget = globalFormState.loadingTargetProgress.value || 0;
+    if (!globalFormState.isLoading.value) {
+      return actualTarget;
+    }
+
+    const profile = getLoadingProfile();
+    if (!profile || !globalFormState.loadingStartedAt.value) {
+      return actualTarget;
+    }
+
+    const elapsedSeconds = Math.max((Date.now() - globalFormState.loadingStartedAt.value) / 1000, 0);
+    const timelineProgress = getExpectedProgressForElapsed(elapsedSeconds, profile.checkpoints);
+    if (timelineProgress === null) {
+      return actualTarget;
+    }
+
+    return Math.max(actualTarget, timelineProgress);
+  };
+
+  const stopLoadingAnimation = () => {
+    if (loadingAnimationFrameId !== null) {
+      cancelAnimationFrame(loadingAnimationFrameId);
+      loadingAnimationFrameId = null;
+    }
+  };
+
+  const tickLoadingAnimation = () => {
+    const target = getAnimatedLoadingTarget();
+    const current = globalFormState.loadingProgress.value || 0;
+    const delta = target - current;
+
+    if (Math.abs(delta) <= 0.1) {
+      globalFormState.loadingProgress.value = target;
+    } else {
+      const step = Math.min(Math.max(delta * 0.1, 0.18), 2.5);
+      globalFormState.loadingProgress.value = Math.min(target, current + step);
+    }
+
+    const shouldContinue = globalFormState.isLoading.value
+      ? globalFormState.loadingProgress.value < 99.9 || globalFormState.loadingTargetProgress.value < 100
+      : false;
+
+    if (shouldContinue) {
+      loadingAnimationFrameId = requestAnimationFrame(tickLoadingAnimation);
       return;
     }
 
+    stopLoadingAnimation();
+  };
+
+  const ensureLoadingAnimation = () => {
+    if (loadingAnimationFrameId === null) {
+      loadingAnimationFrameId = requestAnimationFrame(tickLoadingAnimation);
+    }
+  };
+
+  const beginAutofillProgress = (message, progress = 5, sessionType = 'fullAutofill') => {
+    globalFormState.isLoading.value = true;
+    globalFormState.loadingMessage.value = message;
+    globalFormState.loadingSessionType.value = sessionType;
+    globalFormState.loadingStartedAt.value = Date.now();
+    globalFormState.loadingTargetProgress.value = progress;
+    globalFormState.loadingProgress.value = progress;
+    ensureLoadingAnimation();
+  };
+
+  const updateAutofillProgress = (message, progress) => {
+    if (!globalFormState.loadingStartedAt.value) {
+      beginAutofillProgress(message, progress);
+      return;
+    }
+
+    globalFormState.loadingMessage.value = message;
+    globalFormState.loadingTargetProgress.value = Math.max(globalFormState.loadingTargetProgress.value || 0, progress);
+    ensureLoadingAnimation();
+  };
+
+  const completeAutofillProgress = () => {
+    globalFormState.loadingTargetProgress.value = 100;
+    globalFormState.loadingProgress.value = 100;
+    globalFormState.loadingSessionType.value = null;
+    globalFormState.loadingStartedAt.value = null;
+    stopLoadingAnimation();
+  };
+
+  const applyAutofillLinks = (data) => {
+    if (data.pricing_page_url && (!form.pricing_page_url || form.pricing_page_url.trim() === '')) {
+      form.pricing_page_url = data.pricing_page_url;
+      console.log('Applied autofill pricing page URL:', data.pricing_page_url);
+    }
+
+    if (data.x_account && (!form.x_account || form.x_account.trim() === '')) {
+      form.x_account = data.x_account;
+      console.log('Applied autofill X account:', data.x_account);
+    }
+
+    if (Array.isArray(data.maker_links) && data.maker_links.length > 0) {
+      const mergedLinks = mergeAutofillLinks(form.maker_links || [], data.maker_links);
+      if (JSON.stringify(mergedLinks) !== JSON.stringify(form.maker_links || [])) {
+        form.maker_links = mergedLinks;
+        console.log('Applied autofill maker links:', mergedLinks);
+      }
+    }
+  };
+
+  const checkUrlExists = async (urlToCheck = form.link) => {
+    console.log('checkUrlExists called with URL:', urlToCheck, 'and ID:', form.id);
+    if (!urlToCheck) {
+      globalFormState.urlExistsError.value = false;
+      globalFormState.existingProduct.value = null;
+      return { exists: false };
+    }
+
+    if (productFormService.isUrlInvalid(urlToCheck)) {
+      globalFormState.urlExistsError.value = false;
+      globalFormState.existingProduct.value = null;
+      return { exists: false };
+    }
+
     try {
-      const response = await productFormService.checkUrlExists(form.link, form.id);
+      const response = await productFormService.checkUrlExists(urlToCheck, form.id);
       console.log('checkUrlExists response:', response);
+
+      if (urlToCheck !== form.link) {
+        console.log('Ignoring stale URL check response for:', urlToCheck);
+        return response;
+      }
+
       if (response.exists) {
         globalFormState.urlExistsError.value = true;
         globalFormState.existingProduct.value = response.product;
@@ -52,10 +240,12 @@ export function useProductForm() {
         showErrorMessage.value = false;
       }
       console.log('Updated state - urlExistsError:', globalFormState.urlExistsError.value, 'existingProduct:', globalFormState.existingProduct.value);
+      return response;
     } catch (error) {
       console.error('Error checking URL existence:', error);
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
+      return { exists: false };
     }
   };
 
@@ -524,14 +714,12 @@ export function useProductForm() {
 
     loadingStates.name = true;
     extractionErrors.name = '';
-    globalFormState.isLoading.value = true;
-    globalFormState.loadingProgress.value = 5;
-    globalFormState.loadingMessage.value = 'Initializing request...';
+    beginAutofillProgress('Initializing request...', 5, 'fullAutofill');
 
     try {
-      globalFormState.loadingMessage.value = 'Fetching basic metadata and taking screenshot...';
+      updateAutofillProgress('Fetching basic metadata and taking screenshot...', 10);
       const response = await axios.post('/api/fetch-initial-metadata', { url: linkValue });
-      globalFormState.loadingProgress.value = 30;
+      updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       const data = response.data;
 
       console.log('fetchInitialData response:', data);
@@ -540,6 +728,7 @@ export function useProductForm() {
       if (data.tagline) form.tagline = data.tagline;
       if (data.tagline_detailed) form.tagline_detailed = data.tagline_detailed;
       if (data.favicon) form.favicon = data.favicon;
+      applyAutofillLinks(data);
 
       // Auto-set screenshot as first gallery item if available
       if (data.screenshot_url) {
@@ -579,7 +768,13 @@ export function useProductForm() {
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
     } finally {
-      globalFormState.isLoading.value = false;
+      if (!Object.values(loadingStates).some((loading) => loading === true)) {
+        globalFormState.isLoading.value = false;
+        globalFormState.loadingTargetProgress.value = 0;
+        globalFormState.loadingSessionType.value = null;
+        globalFormState.loadingStartedAt.value = null;
+        stopLoadingAnimation();
+      }
     }
   };
 
@@ -645,6 +840,14 @@ export function useProductForm() {
     }
 
     try {
+      if (!globalFormState.loadingStartedAt.value) {
+        beginAutofillProgress(
+          explicitLogoExtraction ? 'Preparing logo extraction...' : 'Preparing detailed analysis...',
+          35,
+          explicitLogoExtraction ? 'logoExtraction' : 'fullAutofill'
+        );
+      }
+
       const nameValue = form.name || '';
       const taglineValue = form.tagline || '';
 
@@ -655,7 +858,7 @@ export function useProductForm() {
         fetch_content: shouldFetchContent,
       });
 
-      globalFormState.loadingMessage.value = 'Connecting for detailed analysis...';
+      updateAutofillProgress('Connecting for detailed analysis...', 35);
 
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
@@ -701,7 +904,10 @@ export function useProductForm() {
               }
               if (streamData.progress) {
                 // Map 0-100 from stream to 30-100 overall
-                globalFormState.loadingProgress.value = 30 + (streamData.progress * 0.7);
+                updateAutofillProgress(
+                  streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...',
+                  30 + (streamData.progress * 0.7)
+                );
               }
               if (streamData.data) {
                 // We got the final payload
@@ -800,6 +1006,8 @@ export function useProductForm() {
         console.log('fetchRemainingData: Auto-filled pricing_page_url with:', data.pricing_page_url);
       }
 
+      applyAutofillLinks(data);
+
       // 4. Update logos if available
       if (data.logos && data.logos.length > 0) {
         form.logos = data.logos;
@@ -860,7 +1068,10 @@ export function useProductForm() {
       // Check if any other loading states are still active
       const anyLoadingActive = Object.values(loadingStates).some(loading => loading === true);
       if (!anyLoadingActive) {
+        completeAutofillProgress();
         globalFormState.isLoading.value = false;
+        globalFormState.loadingTargetProgress.value = 0;
+        globalFormState.loadingStartedAt.value = null;
         console.log('Resetting general isLoading to false');
       }
     }

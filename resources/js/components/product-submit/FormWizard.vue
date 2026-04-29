@@ -13,7 +13,7 @@
             <!-- URL Input Block -->
             <ProductURLInput
               :modelValue="form.link"
-              @update:modelValue="(val) => { console.log('[FormWizard] update:modelValue:', val); form.link = val; }"
+              @update:modelValue="handleUrlInputUpdate"
               :isLoading="isLoading"
               :loadingProgress="loadingProgress"
               :loadingMessage="loadingMessage"
@@ -91,7 +91,7 @@
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
-                    @update:modelValue="(val) => { console.log('[FormWizard] update:modelValue:', val); form.link = val; }"
+                    @update:modelValue="handleUrlInputUpdate"
                     :isLoading="isLoading"
                     :loadingProgress="loadingProgress"
                     :loadingMessage="loadingMessage"
@@ -212,6 +212,7 @@ const props = defineProps({
 
 const showForm = ref(props.initialProduct ? true : false);
 const isLogoPickerOpen = ref(false);
+let urlExistsCheckTimeout = null;
 
 const {
   form,
@@ -300,17 +301,45 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (urlExistsCheckTimeout) {
+    clearTimeout(urlExistsCheckTimeout);
+  }
   if (observer) observer.disconnect();
 });
 
 // Handle URL Fetch Action (formerly "Get Started")
 const handleUrlFetch = async (url) => {
+  form.link = url;
+  await checkUrlExists(url);
+  if (urlExistsError.value) {
+    return;
+  }
+
   await fetchInitialData(url);
   showForm.value = true;
 };
 
+const handleUrlInputUpdate = (val) => {
+  console.log('[FormWizard] update:modelValue:', val);
+  form.link = val;
+
+  if (urlExistsCheckTimeout) {
+    clearTimeout(urlExistsCheckTimeout);
+  }
+
+  if (!val) {
+    checkUrlExists('');
+    return;
+  }
+
+  urlExistsCheckTimeout = setTimeout(() => {
+    checkUrlExists(val);
+  }, 300);
+};
+
 const clearForm = () => {
     form.link = '';
+    checkUrlExists('');
     // Reset other fields if needed, but keeping it simple for now as per previous logic
 };
 

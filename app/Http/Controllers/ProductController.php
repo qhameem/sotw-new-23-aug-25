@@ -879,11 +879,19 @@ class ProductController extends Controller
 
         if ($product) {
             \Log::info('URL exists, product name: ' . $product->name);
+            /** @var \App\Models\User|null $user */
+            $user = Auth::user();
+            $canEdit = Auth::check() && $user && ($user->id === $product->user_id || $user->hasRole('admin'));
+
             return response()->json([
                 'exists' => true,
                 'product' => [
+                    'id' => $product->id,
                     'name' => $product->name,
                     'slug' => $product->slug,
+                    'can_edit' => $canEdit,
+                    'edit_url' => $canEdit ? route('products.edit', $product) : null,
+                    'view_url' => route('products.show', $product->slug),
                 ],
             ]);
         }
@@ -2046,6 +2054,11 @@ class ProductController extends Controller
 
         // Extract additional information from the URL content
         $taglineDetailed = '';
+        $autofillLinks = [
+            'pricing_page_url' => null,
+            'x_account' => null,
+            'maker_links' => [],
+        ];
         try {
             $response = Http::timeout(5)->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -2054,6 +2067,7 @@ class ProductController extends Controller
 
             $doc = new DOMDocument();
             @$doc->loadHTML($html);
+            $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
 
             // Extract potential detailed tagline from h1, h2, h3 tags or specific classes
             $potentialTaglines = [];
@@ -2103,6 +2117,9 @@ class ProductController extends Controller
             'name' => $metadata['name'],
             'favicon' => $metadata['favicon'],
             'screenshot_url' => $this->screenshotService->capture($url),
+            'pricing_page_url' => $autofillLinks['pricing_page_url'],
+            'x_account' => $autofillLinks['x_account'],
+            'maker_links' => $autofillLinks['maker_links'],
         ];
 
         // Smart assignment: short tagline ≤ 140 chars, detailed ≤ 160 chars
@@ -2132,6 +2149,185 @@ class ProductController extends Controller
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
         return response()->json($responseData);
+    }
+
+    protected function extractAutofillLinksFromDocument(DOMDocument $doc, string $pageUrl): array
+    {
+        $pricingPageUrl = null;
+        $xAccount = null;
+        $makerLinks = [];
+        $seenMakerLinks = [];
+        $seenCandidates = [];
+
+        foreach ($this->collectAutofillLinkCandidates($doc) as $candidate) {
+            $resolvedUrl = $this->resolveAutofillUrl($pageUrl, $candidate['href']);
+            if (!$resolvedUrl || isset($seenCandidates[$resolvedUrl])) {
+                continue;
+            }
+
+            $seenCandidates[$resolvedUrl] = true;
+            $text = $candidate['text'];
+
+            if (!$pricingPageUrl && $this->isPricingLinkCandidate($resolvedUrl, $text)) {
+                $pricingPageUrl = $resolvedUrl;
+                continue;
+            }
+
+            if (!$xAccount && $this->isXProfileUrl($resolvedUrl)) {
+                $xHandle = Product::normalizeXAccount($resolvedUrl);
+                $xAccount = $xHandle ? (Product::xProfileUrl($xHandle) ?? $xHandle) : null;
+                continue;
+            }
+
+            if ($this->isResourceLinkCandidate($pageUrl, $resolvedUrl, $text)) {
+                if (!isset($seenMakerLinks[$resolvedUrl])) {
+                    $makerLinks[] = $resolvedUrl;
+                    $seenMakerLinks[$resolvedUrl] = true;
+                }
+            }
+        }
+
+        return [
+            'pricing_page_url' => $pricingPageUrl,
+            'x_account' => $xAccount,
+            'maker_links' => array_slice($makerLinks, 0, 10),
+        ];
+    }
+
+    protected function collectAutofillLinkCandidates(DOMDocument $doc): array
+    {
+        $xpath = new \DOMXPath($doc);
+        $queries = [
+            '//footer//a[@href] | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]//a[@href] | //*[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]//a[@href]',
+            '//a[@href]',
+        ];
+
+        $candidates = [];
+
+        foreach ($queries as $query) {
+            foreach ($xpath->query($query) as $linkNode) {
+                $href = trim((string) $linkNode->getAttribute('href'));
+                if ($href === '') {
+                    continue;
+                }
+
+                $text = trim(preg_replace('/\s+/', ' ', $linkNode->textContent ?? ''));
+                $candidates[] = [
+                    'href' => $href,
+                    'text' => $text,
+                ];
+            }
+        }
+
+        return $candidates;
+    }
+
+    protected function resolveAutofillUrl(string $pageUrl, string $href): ?string
+    {
+        $href = trim($href);
+        if ($href === '') {
+            return null;
+        }
+
+        $lowerHref = strtolower($href);
+        if (
+            str_starts_with($lowerHref, '#') ||
+            str_starts_with($lowerHref, 'javascript:') ||
+            str_starts_with($lowerHref, 'mailto:') ||
+            str_starts_with($lowerHref, 'tel:')
+        ) {
+            return null;
+        }
+
+        $pageParts = parse_url($pageUrl);
+        if ($pageParts === false || empty($pageParts['host'])) {
+            return null;
+        }
+
+        $scheme = $pageParts['scheme'] ?? 'https';
+        $host = $pageParts['host'];
+        $port = isset($pageParts['port']) ? ':' . $pageParts['port'] : '';
+        $origin = "{$scheme}://{$host}{$port}";
+
+        if (preg_match('~^https?://~i', $href)) {
+            $absoluteUrl = $href;
+        } elseif (str_starts_with($href, '//')) {
+            $absoluteUrl = "{$scheme}:{$href}";
+        } elseif (str_starts_with($href, '/')) {
+            $absoluteUrl = $origin . $href;
+        } else {
+            $basePath = $pageParts['path'] ?? '/';
+            $directory = str_ends_with($basePath, '/') ? $basePath : rtrim(dirname($basePath), '.');
+            $directory = $directory === '/' ? '' : trim($directory, '/');
+            $absoluteUrl = $origin . '/' . ltrim(($directory ? "{$directory}/" : '') . $href, '/');
+        }
+
+        $normalized = Product::normalizeLink($absoluteUrl);
+        if (!is_string($normalized) || $normalized === '') {
+            return null;
+        }
+
+        return explode('#', $normalized, 2)[0];
+    }
+
+    protected function isPricingLinkCandidate(string $url, string $text): bool
+    {
+        $haystack = strtolower($url . ' ' . $text);
+
+        return str_contains($haystack, 'pricing')
+            || str_contains($haystack, 'plans')
+            || preg_match('/\bplan\b/', $haystack) === 1;
+    }
+
+    protected function isXProfileUrl(string $url): bool
+    {
+        return preg_match('~^https?://(?:www\.)?(?:x\.com|twitter\.com)/@?[A-Za-z0-9_]{1,15}(?:/)?$~i', $url) === 1;
+    }
+
+    protected function isResourceLinkCandidate(string $pageUrl, string $candidateUrl, string $text): bool
+    {
+        $candidateParts = parse_url($candidateUrl);
+        $pageParts = parse_url($pageUrl);
+
+        if ($candidateParts === false || $pageParts === false || empty($candidateParts['host']) || empty($pageParts['host'])) {
+            return false;
+        }
+
+        $candidateHost = $this->normalizeAutofillHost($candidateParts['host']);
+        $pageHost = $this->normalizeAutofillHost($pageParts['host']);
+        $sameHost = $candidateHost === $pageHost
+            || str_ends_with($candidateHost, '.' . $pageHost)
+            || str_ends_with($pageHost, '.' . $candidateHost);
+
+        $socialAndResourceHosts = [
+            'github.com',
+            'linkedin.com',
+            'facebook.com',
+            'instagram.com',
+            'youtube.com',
+            'youtu.be',
+            'discord.com',
+            'discord.gg',
+            'reddit.com',
+            'tiktok.com',
+            'medium.com',
+            'substack.com',
+        ];
+
+        foreach ($socialAndResourceHosts as $host) {
+            if ($candidateHost === $host || str_ends_with($candidateHost, '.' . $host)) {
+                return true;
+            }
+        }
+
+        return !$sameHost;
+    }
+
+    protected function normalizeAutofillHost(string $host): string
+    {
+        $host = strtolower(trim($host));
+
+        return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 
     public function processUrlStream(Request $request)
@@ -2177,16 +2373,19 @@ class ProductController extends Controller
                         'bestFor' => [],
                         'pricing' => [],
                         'pricing_page_url' => null,
+                        'x_account' => null,
+                        'maker_links' => [],
                     ]);
                     return;
                 }
                 $htmlContent = $htmlResponse->body();
+                $doc = new DOMDocument();
+                @$doc->loadHTML($htmlContent);
+                $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
                 $sendUpdate('Website fetched successfully...', 15);
 
                 if ($fetchContent) {
                     $sendUpdate('Analyzing page structure...', 20);
-                    $doc = new \DOMDocument();
-                    @$doc->loadHTML($htmlContent);
 
                     $titleNode = $doc->getElementsByTagName('title')->item(0);
                     $title = $titleNode ? $titleNode->nodeValue : '';
@@ -2307,26 +2506,7 @@ class ProductController extends Controller
                     }
                 }
 
-                $sendUpdate('Extracting pricing page and logos...', 85);
-                
-                $pricingPageUrl = null;
-                $links = $doc->getElementsByTagName('a');
-                foreach ($links as $link) {
-                    if (!$link->hasAttribute('href')) continue;
-                    $href = $link->getAttribute('href');
-                    if (str_starts_with($href, '#') || str_starts_with($href, 'javascript:')) continue;
-                    $text = strtolower(trim($link->textContent));
-                    if (str_contains(strtolower($href), 'pricing') || str_contains($text, 'pricing') || str_contains($text, 'plans')) {
-                        if (!preg_match('~^(?:f|ht)tps?://~i', $href)) {
-                            $parsedUrl = parse_url($url);
-                            $base = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? '');
-                            $pricingPageUrl = $base . '/' . ltrim($href, '/');
-                        } else {
-                            $pricingPageUrl = $href;
-                        }
-                        break;
-                    }
-                }
+                $sendUpdate('Extracting pricing page, socials, and logos...', 85);
 
                 $logos = $this->logoExtractor->extract($url, $htmlContent);
 
@@ -2354,7 +2534,9 @@ class ProductController extends Controller
                     'pricing' => $pricingIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'screenshot_url' => $this->screenshotService->capture($url),
-                    'pricing_page_url' => $pricingPageUrl,
+                    'pricing_page_url' => $autofillLinks['pricing_page_url'],
+                    'x_account' => $autofillLinks['x_account'],
+                    'maker_links' => $autofillLinks['maker_links'],
                 ];
 
                 $sendUpdate('Done!', 100, $responseData);
@@ -2369,6 +2551,8 @@ class ProductController extends Controller
                     'bestFor' => [],
                     'pricing' => [],
                     'pricing_page_url' => null,
+                    'x_account' => null,
+                    'maker_links' => [],
                 ]);
             }
         });
@@ -2414,15 +2598,16 @@ class ProductController extends Controller
                     'bestFor' => [],
                     'pricing' => [],
                     'pricing_page_url' => null,
+                    'x_account' => null,
+                    'maker_links' => [],
                 ]);
             }
             $htmlContent = $htmlResponse->body();
+            $doc = new DOMDocument();
+            @$doc->loadHTML($htmlContent);
+            $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
 
             if ($fetchContent) {
-                // Extract content from HTML
-                $doc = new DOMDocument();
-                @$doc->loadHTML($htmlContent);
-
                 // Extract title
                 $titleNode = $doc->getElementsByTagName('title')->item(0);
                 $title = $titleNode ? $titleNode->nodeValue : '';
@@ -2572,26 +2757,6 @@ class ProductController extends Controller
                 }
             }
 
-            // Extract Pricing Page URL
-            $pricingPageUrl = null;
-            $links = $doc->getElementsByTagName('a');
-            foreach ($links as $link) {
-                if (!$link->hasAttribute('href')) continue;
-                $href = $link->getAttribute('href');
-                if (str_starts_with($href, '#') || str_starts_with($href, 'javascript:')) continue;
-                $text = strtolower(trim($link->textContent));
-                if (str_contains(strtolower($href), 'pricing') || str_contains($text, 'pricing') || str_contains($text, 'plans')) {
-                    if (!preg_match('~^(?:f|ht)tps?://~i', $href)) {
-                        $parsedUrl = parse_url($url);
-                        $base = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? '');
-                        $pricingPageUrl = $base . '/' . ltrim($href, '/');
-                    } else {
-                        $pricingPageUrl = $href;
-                    }
-                    break;
-                }
-            }
-
             // Extract Logos
             $logos = $this->logoExtractor->extract($url, $htmlContent);
 
@@ -2630,7 +2795,9 @@ class ProductController extends Controller
                 'pricing' => $pricingIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'screenshot_url' => $this->screenshotService->capture($url),
-                'pricing_page_url' => $pricingPageUrl,
+                'pricing_page_url' => $autofillLinks['pricing_page_url'],
+                'x_account' => $autofillLinks['x_account'],
+                'maker_links' => $autofillLinks['maker_links'],
             ];
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
@@ -2652,6 +2819,8 @@ class ProductController extends Controller
                 'bestFor' => [],
                 'pricing' => [],
                 'pricing_page_url' => null,
+                'x_account' => null,
+                'maker_links' => [],
             ]);
         }
     }

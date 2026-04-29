@@ -16,12 +16,23 @@
           @input="handleInput" 
           type="url" 
           required 
-          class="block w-full px-6 py-1.5 bg-white border-2 border-sky-200 rounded-xl text-sm shadow-sm placeholder-gray-400
+          class="block w-full pl-6 pr-20 py-1.5 bg-white border-2 border-sky-200 rounded-xl text-sm shadow-sm placeholder-gray-400
                  focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
           placeholder="https://your-website.com"
         >
-        <!-- Clear Button -->
-        <button v-if="modelValue" type="button" @click="$emit('clear')" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
+        <button
+          type="button"
+          @click="pasteFromClipboard"
+          :disabled="isLoading"
+          class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-sky-600 disabled:text-gray-300 transition-colors"
+          aria-label="Paste URL from clipboard"
+          title="Paste URL"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </button>
+        <button v-if="modelValue" type="button" @click="$emit('clear')" class="absolute inset-y-0 right-10 flex items-center text-gray-400 hover:text-gray-600">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -41,17 +52,23 @@
           Fetching...
         </span>
         <span v-else class="flex items-center gap-2">
-          <!-- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wand-2">
-            <path d="M15 2l-2 2"/>
-            <path d="M11 7l-2 2"/>
-            <path d="M19 6l-2 2"/>
-            <path d="M4 22L11 15L15 19L22 12"/>
-          </svg> -->
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M7 7L5.5 5.5M15 7L16.5 5.5M5.5 16.5L7 15M11 5L11 3M5 11L3 11M17.1603 16.9887L21.0519 15.4659C21.4758 15.3001 21.4756 14.7003 21.0517 14.5346L11.6992 10.8799C11.2933 10.7213 10.8929 11.1217 11.0515 11.5276L14.7062 20.8801C14.8719 21.304 15.4717 21.3042 15.6375 20.8803L17.1603 16.9887Z" stroke="currentColor"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
           AI Auto-fill
         </span>
       </button>
     </div>
+
+    <transition name="fade">
+      <p
+        v-if="clipboardFeedback"
+        :class="[
+          'mt-3 text-xs',
+          clipboardFeedbackType === 'error' ? 'text-red-600' : 'text-sky-600'
+        ]"
+      >
+        {{ clipboardFeedback }}
+      </p>
+    </transition>
 
 
     <!-- Loading State Message -->
@@ -61,7 +78,10 @@
         <span>{{ Math.round(loadingProgress || 0) }}%</span>
       </div>
       <div class="w-full bg-sky-100 rounded-full h-1.5 mb-2 overflow-hidden">
-        <div class="bg-sky-500 h-1.5 rounded-full transition-all duration-300 ease-out" :style="{ width: `${loadingProgress || 0}%` }"></div>
+        <div
+          class="bg-sky-500 h-1.5 rounded-full will-change-[width]"
+          :style="{ width: `${loadingProgress || 0}%` }"
+        ></div>
       </div>
     </div>
 
@@ -96,9 +116,17 @@
         <svg class="h-5 w-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>
-          This URL already exists as <a :href="`/product/${existingProduct.slug}`" target="_blank" class="font-bold hover:underline underline-offset-2">"{{ existingProduct.name }}"</a>.
-        </span>
+        <div class="min-w-0">
+          <p>
+            This exact URL already exists as
+            <a :href="existingProduct?.view_url || `/product/${existingProduct.slug}`" target="_blank" class="font-bold hover:underline underline-offset-2">"{{ existingProduct.name }}"</a>.
+          </p>
+          <div v-if="existingProduct?.can_edit && existingProduct?.edit_url" class="mt-2">
+            <a :href="existingProduct.edit_url" class="inline-flex items-center rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200">
+              Edit existing product
+            </a>
+          </div>
+        </div>
       </div>
     </transition>
     
@@ -108,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
@@ -124,9 +152,13 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'getStarted', 'clear']);
+const clipboardFeedback = ref('');
+const clipboardFeedbackType = ref('info');
+const inputRef = ref(null);
 
 const handleInput = (event) => {
   const value = event.target.value;
+  clipboardFeedback.value = '';
   console.log('[ProductURLInput] Input event:', value);
   emit('update:modelValue', value);
 };
@@ -140,11 +172,12 @@ const logButtonConditions = () => {
   });
 };
 
-const performValidationAndFetch = async () => {
+const performValidationAndFetch = async (explicitValue = null) => {
   console.log('[ProductURLInput] Starting validation sequence...');
+  clipboardFeedback.value = '';
   
   // Get the current value directly from the input element to avoid timing issues
-  const inputValue = document.getElementById('product-url')?.value || props.modelValue;
+  const inputValue = explicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
   console.log('[ProductURLInput] Using URL value:', inputValue);
   
   // Step 1: Check if anything is loading
@@ -183,6 +216,42 @@ const performValidationAndFetch = async () => {
   emit('getStarted', inputValue);
 };
 
+const pasteFromClipboard = async () => {
+  clipboardFeedback.value = '';
+
+  if (props.isLoading) {
+    return;
+  }
+
+  if (!navigator?.clipboard?.readText) {
+    clipboardFeedbackType.value = 'error';
+    clipboardFeedback.value = 'Clipboard access is not available in this browser. Paste the URL manually, then click AI Auto-fill.';
+    return;
+  }
+
+  try {
+    const clipboardText = (await navigator.clipboard.readText()).trim();
+
+    if (!clipboardText) {
+      clipboardFeedbackType.value = 'error';
+      clipboardFeedback.value = 'Your clipboard is empty. Copy a website URL and try again.';
+      return;
+    }
+
+    if (inputRef.value) {
+      inputRef.value.value = clipboardText;
+    }
+
+    emit('update:modelValue', clipboardText);
+    clipboardFeedbackType.value = 'info';
+    clipboardFeedback.value = 'URL pasted from clipboard.';
+  } catch (error) {
+    console.error('[ProductURLInput] Clipboard read failed:', error);
+    clipboardFeedbackType.value = 'error';
+    clipboardFeedback.value = 'Clipboard permission was denied. Paste the URL manually, then click AI Auto-fill.';
+  }
+};
+
 const applyTrimSuggestion = () => {
   const suggestedUrl = props.urlTrimSuggestion?.suggestedUrl;
   if (!suggestedUrl) {
@@ -194,7 +263,6 @@ const applyTrimSuggestion = () => {
 
 
 // Focus the input when component is mounted
-const inputRef = ref(null);
 onMounted(() => {
   // Use nextTick to ensure the DOM is fully rendered
  setTimeout(() => {
