@@ -121,7 +121,13 @@ class GenerateSitemap extends Command
         $this->info('Adding pSEO routes...');
 
         // 1. Alternatives Pages
-        foreach (Product::where('approved', true)->where('is_published', true)->get() as $product) {
+        foreach (Product::where('approved', true)->where('is_published', true)->with(['categories.types', 'techStacks'])->get() as $product) {
+            $alternatives = $relatedProductService->getAlternatives($product, 15);
+
+            if ($relatedProductService->shouldNoindexAlternatives($product, $alternatives)) {
+                continue;
+            }
+
             $sitemap->add(Url::create(route('pseo.alternatives', $product->slug))
                 ->setPriority(0.8)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));

@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Console\Commands\BackfillProductEditorialContent;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\PruneMagicLoginLinks;
@@ -17,6 +18,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
+        BackfillProductEditorialContent::class,
         GenerateSitemap::class,
         PublishScheduledProducts::class,
         PruneMagicLoginLinks::class,

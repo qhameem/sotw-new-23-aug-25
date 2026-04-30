@@ -35,6 +35,16 @@ class RelatedProductService
         return $this->getRelatedProducts($product, $limit, 'alternative');
     }
 
+    public function shouldNoindexAlternatives(Product $product, ?Collection $alternatives = null): bool
+    {
+        $alternatives ??= $this->getAlternatives($product, 15);
+
+        $hasManualAlternatives = !empty($product->alternative_product_ids ?? []);
+        $topScore = (int) ($alternatives->max('match_score') ?? 0);
+
+        return $alternatives->count() < 3 || (!$hasManualAlternatives && $topScore < 55);
+    }
+
     public function scorePair(Product $productA, Product $productB): array
     {
         $productA->loadMissing('categories.types', 'techStacks');
@@ -252,7 +262,14 @@ class RelatedProductService
             && $score >= 42
             && ($sharedSoftwareCount >= 1 || $sharedTechCount >= 1 || $textSimilarity >= 0.16);
 
-        $summary = $this->buildSummary($sourceProfile, $sharedSoftwareIds, $sharedBestForIds, $sharedTechIds, $reasonLabels);
+        $summary = $this->buildSummary(
+            $sourceProfile,
+            $sharedSoftwareIds,
+            $sharedPricingIds,
+            $sharedBestForIds,
+            $sharedTechIds,
+            $reasonLabels
+        );
 
         return [
             'score' => $score,
@@ -266,6 +283,7 @@ class RelatedProductService
     private function buildSummary(
         array $sourceProfile,
         array $sharedSoftwareIds,
+        array $sharedPricingIds,
         array $sharedBestForIds,
         array $sharedTechIds,
         array $reasonLabels
@@ -279,7 +297,15 @@ class RelatedProductService
                 ->implode(', ');
 
             if ($names !== '') {
-                return 'Shares software category focus: ' . $names . '.';
+                if (!empty($sharedBestForIds)) {
+                    return 'A close match in ' . $names . ' for a similar audience.';
+                }
+
+                if (!empty($sharedPricingIds)) {
+                    return 'A like-for-like option in ' . $names . ' with comparable pricing signals.';
+                }
+
+                return 'A strong like-for-like option in ' . $names . '.';
             }
         }
 
@@ -288,7 +314,7 @@ class RelatedProductService
         }
 
         if (!empty($sharedTechIds)) {
-            return 'Built with overlapping tech stack choices.';
+            return 'Worth considering if technical overlap matters.';
         }
 
         if (!empty($reasonLabels)) {
