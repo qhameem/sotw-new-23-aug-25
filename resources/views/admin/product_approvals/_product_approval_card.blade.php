@@ -271,6 +271,11 @@
         // Add event listeners for custom category approval selections
         const approvalSelects = document.querySelectorAll('select[name^="custom_category_"]');
         approvalSelects.forEach(select => {
+            if (select.dataset.approvalChangeBound === '1') {
+                return;
+            }
+            select.dataset.approvalChangeBound = '1';
+
             select.addEventListener('change', function () {
                 const submissionId = this.name.replace('custom_category_', '');
                 const approvalFields = document.getElementById(`approval-fields-${submissionId}`);
@@ -285,6 +290,11 @@
 
         // When "Publish now" is clicked, switch all custom category inputs to that form
         document.querySelectorAll('form[id^="approve-now-form-"]').forEach(form => {
+            if (form.dataset.publishNowBound === '1') {
+                return;
+            }
+            form.dataset.publishNowBound = '1';
+
             form.addEventListener('submit', function () {
                 const productId = this.id.replace('approve-now-form-', '');
                 document.querySelectorAll(`[form="approve-date-form-${productId}"]`).forEach(input => {
@@ -295,6 +305,11 @@
 
         // Handle dynamic saving of custom categories
         document.querySelectorAll('.js-save-custom-category').forEach(btn => {
+            if (btn.dataset.saveCustomCategoryBound === '1') {
+                return;
+            }
+            btn.dataset.saveCustomCategoryBound = '1';
+
             btn.addEventListener('click', async function () {
                 const submissionId = this.dataset.submissionId;
                 const productId = this.dataset.productId;
@@ -349,6 +364,11 @@
 
         // Handle AI generation for custom categories
         document.querySelectorAll('.js-generate-ai-seo').forEach(btn => {
+            if (btn.dataset.generateAiSeoBound === '1') {
+                return;
+            }
+            btn.dataset.generateAiSeoBound = '1';
+
             btn.addEventListener('click', async function () {
                 const submissionId = this.dataset.submissionId;
                 const categoryName = this.dataset.categoryName;
