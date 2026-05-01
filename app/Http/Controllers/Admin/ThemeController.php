@@ -26,8 +26,8 @@ class ThemeController extends Controller
     {
         $settings = $this->loadSettings();
 
-        $currentFontUrl = $settings['font_url'] ?? Config::get('theme.font_url');
-        $currentFontFamily = $settings['font_family'] ?? Config::get('theme.font_family');
+        $currentFontUrl = array_key_exists('font_url', $settings) ? $settings['font_url'] : Config::get('theme.font_url');
+        $currentFontFamily = array_key_exists('font_family', $settings) ? $settings['font_family'] : Config::get('theme.font_family');
         $currentFontColor = $settings['font_color'] ?? Config::get('theme.font_color', '#111827');
         $currentBodyTextColor = $settings['body_text_color'] ?? Config::get('theme.body_text_color', '#4b5563');
         $availableFonts = $settings['font_families'] ?? [];
@@ -69,14 +69,19 @@ class ThemeController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'font_url' => [
-                'required',
+                'nullable',
                 'url',
                 function ($attribute, $value, $fail) {
+                    if (blank($value)) {
+                        return;
+                    }
+
                     if (!Str::startsWith($value, 'https://fonts.googleapis.com/css')) {
                         $fail('The ' . $attribute . ' must be a valid Google Fonts API URL.');
                     }
                 },
             ],
+            'font_family' => ['required', 'string', 'max:500'],
             'primary_color' => [
                 'required',
                 'string',
@@ -120,7 +125,9 @@ class ThemeController extends Controller
         $settings = $this->loadSettings();
 
         // Font settings
-        $fontUrl = $request->input('font_url');
+        $fontUrl = trim((string) $request->input('font_url', ''));
+        $fontUrl = $fontUrl === '' ? null : $fontUrl;
+        $customFontFamily = trim((string) $request->input('font_family', ''));
         $fontFamilies = $this->extractFontFamiliesFromUrl($fontUrl);
 
         if (empty($fontFamilies) && $fontUrl) { // only error if URL was provided but family extraction failed
@@ -132,17 +139,17 @@ class ThemeController extends Controller
         $settings['font_url'] = $fontUrl;
         $settings['font_families'] = $fontFamilies;
 
-        // New logic for default font
         $defaultFont = $request->input('default_font_family');
         if (!empty($fontFamilies)) {
             if ($defaultFont && in_array($defaultFont, $fontFamilies)) {
                 $settings['font_family'] = $defaultFont;
+            } elseif ($customFontFamily !== '') {
+                $settings['font_family'] = $customFontFamily;
             } else {
-                // If no default is selected, or the selected one is invalid, default to the first one.
                 $settings['font_family'] = $fontFamilies[0];
             }
         } else {
-            $settings['font_family'] = null;
+            $settings['font_family'] = $customFontFamily;
         }
         $settings['primary_color'] = $request->input('primary_color');
         $settings['font_color'] = $request->input('font_color', '#111827');

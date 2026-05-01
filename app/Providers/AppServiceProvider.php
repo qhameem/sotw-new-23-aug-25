@@ -99,10 +99,10 @@ class AppServiceProvider extends ServiceProvider
             $settings = json_decode(File::get($settingsPath), true);
 
             if (is_array($settings)) {
-                if (!empty($settings['font_url'])) {
+                if (array_key_exists('font_url', $settings)) {
                     Config::set('theme.font_url', $settings['font_url']);
                 }
-                if (!empty($settings['font_family'])) {
+                if (array_key_exists('font_family', $settings)) {
                     Config::set('theme.font_family', $settings['font_family']);
                 }
                 if (isset($settings['font_color'])) {
@@ -140,6 +140,66 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
+
+        Config::set('theme.font_css_stack', $this->normalizeFontFamilyForCss(
+            Config::get('theme.font_family', 'Inter')
+        ));
+    }
+
+    private function normalizeFontFamilyForCss(?string $fontFamily): string
+    {
+        $fontFamily = trim((string) $fontFamily);
+
+        if ($fontFamily === '') {
+            return "'Inter', sans-serif";
+        }
+
+        $genericFamilies = [
+            'serif',
+            'sans-serif',
+            'monospace',
+            'cursive',
+            'fantasy',
+            'system-ui',
+            'ui-serif',
+            'ui-sans-serif',
+            'ui-monospace',
+            'ui-rounded',
+            'emoji',
+            'math',
+            'fangsong',
+            '-apple-system',
+            'BlinkMacSystemFont',
+        ];
+
+        $segments = array_values(array_filter(
+            array_map('trim', explode(',', $fontFamily)),
+            fn ($segment) => $segment !== ''
+        ));
+
+        if (empty($segments)) {
+            return "'Inter', sans-serif";
+        }
+
+        $normalizedSegments = array_map(function (string $segment) use ($genericFamilies) {
+            $unquotedSegment = trim($segment, "\"'");
+
+            if (in_array($unquotedSegment, $genericFamilies, true)) {
+                return $unquotedSegment;
+            }
+
+            return "'" . str_replace("'", "\\'", $unquotedSegment) . "'";
+        }, $segments);
+
+        $hasGenericFallback = collect($segments)->contains(function (string $segment) use ($genericFamilies) {
+            return in_array(trim($segment, "\"'"), $genericFamilies, true);
+        });
+
+        if (!$hasGenericFallback) {
+            $normalizedSegments[] = 'sans-serif';
+        }
+
+        return implode(', ', $normalizedSegments);
     }
 
     private function resolveColor(string $colorValue): string

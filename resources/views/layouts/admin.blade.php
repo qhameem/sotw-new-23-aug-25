@@ -39,13 +39,14 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Inter');
+        $fontCssStack = config('theme.font_css_stack', "'Inter', sans-serif");
         $siteFontColor = config('theme.font_color', '#111827');
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
     @endphp
 
     <style>
         :root {
-            --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --font-family-sans: {!! $fontCssStack !!};
             --color-site-text: {{ $siteFontColor }};
             --color-site-body-text: {{ $siteBodyTextColor }};
         }

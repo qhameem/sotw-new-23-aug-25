@@ -32,7 +32,7 @@
                 decoding="async"
                 itemprop="image" />
             <div class="flex-1">
-                <h2 class="site-heading-text text-sm font-semibold leading-tight flex items-center">
+                <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">
                     @if(!$isPromoted)
                         <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                         <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
@@ -49,7 +49,7 @@
                         <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="site-body-text text-gray-700 text-sm mb-0 line-clamp-2" itemprop="description">
+                <p class="site-body-text text-base mb-0 line-clamp-2" itemprop="description">
                     {{ $product->tagline }}
                 </p>
 

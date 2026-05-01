@@ -53,7 +53,7 @@
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="{{ config('theme.font_url') }}" rel="stylesheet">
-    @else
+    @elseif(config('theme.font_family', 'Figtree') === 'Figtree')
         {{-- Fallback font if not configured --}}
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -61,6 +61,7 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Figtree'); // Default to Figtree for guest
+        $fontCssStack = config('theme.font_css_stack', "'Figtree', sans-serif");
         $siteFontColor = config('theme.font_color', '#111827');
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
         $primaryHexColor = config('theme.primary_color', '#3b82f6'); // Default to a blue hex
@@ -89,7 +90,7 @@
 
     <style>
         :root {
-            --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --font-family-sans: {!! $fontCssStack !!};
             --color-site-text: {{ $siteFontColor }};
             --color-site-body-text: {{ $siteBodyTextColor }};
             --color-primary-500:

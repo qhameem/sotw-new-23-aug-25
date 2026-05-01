@@ -7,6 +7,10 @@
 @endsection
 
 @section('content')
+    @php
+        $productHuntSystemStack =
+            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
+    @endphp
     <div class="py-12">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white  overflow-hidden shadow-sm sm:rounded-lg">
@@ -33,12 +37,36 @@
                         @method('PUT')
 
                         <div>
-                            <x-input-label for="font_url" :value="__('Google Font URL')" />
+                            <x-input-label for="font_url" :value="__('Google Font URL (Optional)')" />
                             <x-text-input id="font_url" class="block mt-1 w-full" type="url" name="font_url"
-                                :value="old('font_url', $currentFontUrl)" required autofocus />
+                                :value="old('font_url', $currentFontUrl)" />
                             <p class="mt-2 text-sm text-gray-500 ">
-                                Paste the full Google Font URL here. Example:
+                                Paste the full Google Font URL here if you want to load a hosted web font. Example:
                                 <code>https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap</code>
+                            </p>
+                            <p class="mt-1 text-sm text-gray-500 ">
+                                Leave this empty if you want to use a local system font stack instead.
+                            </p>
+                        </div>
+
+                        <div class="mt-4">
+                            <x-input-label for="font_family" :value="__('Font Family / CSS Font Stack')" />
+                            <x-text-input id="font_family" class="block mt-1 w-full" type="text" name="font_family"
+                                :value="old('font_family', $currentFontFamily)" required autofocus />
+                            <div class="mt-3 flex flex-wrap items-center gap-3">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                                    onclick="document.getElementById('font_family').value = @js($productHuntSystemStack); document.getElementById('font_url').value = '';">
+                                    Use Product Hunt System UI Stack
+                                </button>
+                                <span class="text-xs text-gray-500">
+                                    This also clears the Google Font URL field.
+                                </span>
+                            </div>
+                            <p class="mt-1 text-sm text-gray-500 ">
+                                Enter a single font name like <code>Inter</code> or a full stack like
+                                <code>system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"</code>
                             </p>
                             <p class="mt-1 text-sm text-gray-500 ">
                                 Current active font family: <strong>{{ $currentFontFamily }}</strong>
@@ -61,7 +89,7 @@
                                         @endforeach
                                     </select>
                                     <p class="mt-2 text-sm text-gray-600">
-                                        The selected font will be applied as the default throughout the site.
+                                        If this Google Font URL contains multiple families, the selected one will be applied as the default throughout the site.
                                     </p>
                                 </div>
 

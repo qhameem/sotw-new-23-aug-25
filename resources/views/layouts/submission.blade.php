@@ -227,7 +227,7 @@
     @if(config('theme.font_url'))
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="{{ config('theme.font_url') }}" rel="stylesheet">
-    @elseif($fontFamily === 'Inter')
+    @elseif(config('theme.font_family', 'Inter') === 'Inter')
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
@@ -236,6 +236,7 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Inter');
+        $fontCssStack = config('theme.font_css_stack', "'Inter', sans-serif");
         $siteFontColor = config('theme.font_color', '#111827');
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
         $primaryHexColor = config('theme.primary_color', '#3b82f6');
@@ -253,7 +254,7 @@
 
     <style>
         :root {
-            --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --font-family-sans: {!! $fontCssStack !!};
             --color-site-text: {{ $siteFontColor }};
             --color-site-body-text: {{ $siteBodyTextColor }};
             --color-primary-500:
