@@ -115,18 +115,18 @@
                     </button>
 
                     <div x-ref="mediaContainer" @scroll.debounce.100ms="updateScroll()"
-                        class="flex overflow-x-auto scroll-smooth no-scrollbar gap-4 mb-6 pb-2">
+                        class="flex items-start overflow-x-auto scroll-smooth no-scrollbar gap-4 mb-6 pb-2">
 
                         @if($product->video_url)
                             @php
                                 $embedUrl = $product->getEmbedUrl();
                                 $thumbnailUrl = 'https://img.youtube.com/vi/' . $product->getVideoId() . '/hqdefault.jpg';
                             @endphp
-                            <div class="flex-shrink-0 cursor-pointer"
+                            <div class="flex-shrink-0 self-start cursor-pointer"
                                 @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
                                 <div
                                     class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-                                    <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="w-full h-full object-cover"
+                                    <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="block w-full h-full object-cover"
                                         itemprop="image"
                                         loading="eager" decoding="async"
                                         sizes="(min-width: 768px) 280px, (min-width: 640px) 260px, 240px">
@@ -144,14 +144,14 @@
 
 
                         @foreach($product->media as $media)
-                            <div class="flex-shrink-0 cursor-pointer"
+                            <div class="flex-shrink-0 self-start cursor-pointer"
                                 @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
                                 <div
                                     class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                     <img src="{{ asset('storage/' . ($media->path_medium ?? $media->path)) }}" srcset="{{ $media->path_thumb ? asset('storage/' . $media->path_thumb) . ' 300w,' : '' }}
                                                                         {{ $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : '' }}
                                                                         {{ asset('storage/' . $media->path) }} 1200w"
-                                        alt="{{ $media->alt_text }}" class="w-full h-full object-cover"
+                                        alt="{{ $media->alt_text }}" class="block w-full h-full object-cover"
                                         itemprop="image"
                                         loading="{{ ($loop->first && !$product->video_url) ? 'eager' : 'lazy' }}"
                                         sizes="(min-width: 768px) 280px, (min-width: 640px) 260px, 240px">
