@@ -125,7 +125,7 @@
                             <div class="flex-shrink-0 self-start cursor-pointer"
                                 @click="open = true; mediaUrl = '{{ $embedUrl }}'; isVideo = true">
                                 <div
-                                    class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                                    class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-w-16 aspect-h-9 rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                     <img src="{{ $thumbnailUrl }}" alt="Video Thumbnail" class="block w-full h-full object-cover"
                                         itemprop="image"
                                         loading="eager" decoding="async"
@@ -147,7 +147,7 @@
                             <div class="flex-shrink-0 self-start cursor-pointer"
                                 @click="open = true; mediaUrl = '{{ asset('storage/' . $media->path) }}'; isVideo = false">
                                 <div
-                                    class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-video rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                                    class="relative w-[240px] sm:w-[260px] md:w-[280px] aspect-w-16 aspect-h-9 rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                                     <img src="{{ asset('storage/' . ($media->path_medium ?? $media->path)) }}" srcset="{{ $media->path_thumb ? asset('storage/' . $media->path_thumb) . ' 300w,' : '' }}
                                                                         {{ $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : '' }}
                                                                         {{ asset('storage/' . $media->path) }} 1200w"
