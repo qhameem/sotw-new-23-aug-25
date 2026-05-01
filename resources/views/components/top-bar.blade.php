@@ -4,8 +4,8 @@
     @endphp
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-        <div class="flex items-center justify-between h-14">
-            <div class="flex min-w-0 items-center gap-4 lg:gap-5">
+        <div class="flex items-center gap-4 lg:gap-6 h-14">
+            <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
                 <a href="{{ route('home') }}" class="shrink-0">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                 </a>
@@ -23,7 +23,9 @@
                         </button>
                     </div>
                 @endif
-                <div class="flex items-center space-x-4 shrink-0">
+            </div>
+            <div class="flex min-w-0 flex-1 justify-center px-2 lg:px-6">
+                <div class="flex items-center gap-6 lg:gap-9">
                     <div
                         x-data="{
                             open: false,
@@ -64,7 +66,7 @@
                         <button
                             x-ref="trigger"
                             type="button"
-                            class="text-sm flex items-center gap-1.5 transition-colors"
+                            class="flex items-center gap-1.5 text-sm font-semibold transition-colors"
                             @mouseenter="openMenu()"
                             @mouseleave="scheduleClose()"
                             @focus="openMenu()"
@@ -210,10 +212,10 @@
                             </div>
                         </div>
                     </div>
-                    <a href="{{ route('articles.index') }}" class="text-sm text-gray-900 hover:text-primary-500">Articles</a>
+                    <a href="{{ route('articles.index') }}" class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Articles</a>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex shrink-0 items-center gap-4">
                 @guest
                     <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
                 @else
