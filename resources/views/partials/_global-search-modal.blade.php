@@ -3,7 +3,7 @@
     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"
     @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()" x-cloak
-    x-init="$watch('searchModalOpen', open => { if (open) { $nextTick(() => document.getElementById('globalSearchInput')?.focus()); } else { document.getElementById('globalSearchInput')?.blur(); } })">
+    x-init="$watch('searchModalOpen', open => { const searchInput = document.getElementById('globalSearchInput'); if (open) { $nextTick(() => { if (searchInput) { searchInput.focus(); } }); } else if (searchInput) { searchInput.blur(); } })">
     <div class="mx-auto w-full max-w-5xl">
         <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
             <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 sm:px-8">

@@ -15,6 +15,18 @@
         showDefaultSearchContent() {
             return this.searchTerm.trim().length < 2;
         },
+        isTypingTarget(target) {
+            if (!target) {
+                return false;
+            }
+
+            const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+            const canCheckClosest = typeof target.closest === 'function';
+
+            return target.isContentEditable
+                || ['input', 'textarea', 'select'].includes(tagName)
+                || (canCheckClosest && target.closest('[contenteditable]'));
+        },
         resetSearchState() {
             if (this.searchController) {
                 this.searchController.abort();
@@ -32,6 +44,30 @@
         closeSearchModal() {
             this.searchModalOpen = false;
             this.resetSearchState();
+        },
+        handleSearchShortcut(event) {
+            const key = event.key ? event.key.toLowerCase() : '';
+
+            if (key !== 'k' || (!event.metaKey && !event.ctrlKey) || event.altKey || event.shiftKey) {
+                return;
+            }
+
+            if (this.isTypingTarget(event.target) && (!event.target || event.target.id !== 'globalSearchInput')) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (this.searchModalOpen) {
+                const searchInput = document.getElementById('globalSearchInput');
+
+                if (searchInput) {
+                    searchInput.focus();
+                }
+                return;
+            }
+
+            this.openSearchModal();
         },
         performSearch: async function(term) {
             const query = term.trim();
@@ -78,6 +114,7 @@
             console.log('Initial load on product page:', initialProductSlugMatch[1]);
         }
     }"
+    @keydown.window="handleSearchShortcut($event)"
     @open-search-modal.window="openSearchModal()"
     @close-search-modal-from-js.window="closeSearchModal()" @open-login-modal.window="
         fetch('/set-intended-url', {

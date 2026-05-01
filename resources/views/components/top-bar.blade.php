@@ -10,13 +10,16 @@
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                 </a>
                 @if(!request()->is('free-todo-list-tool'))
-                    <div class="w-[120px] lg:w-160px] xl:w-[200px] shrink-0">
-                        <button accesskey="k" type="button" @click="$dispatch('open-search-modal')"
-                            class="flex w-full items-center gap-3 rounded-md bg-gray-200 px-3 py-1 text-left transition hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30">
+                    <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
+                        <button type="button" @click="$dispatch('open-search-modal')"
+                            x-data="{ isMac: /Mac|iPhone|iPad|iPod/.test(navigator.platform) || /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) }"
+                            aria-keyshortcuts="Meta+K Control+K"
+                            x-bind:title="isMac ? 'Open search (Cmd + K)' : 'Open search (Ctrl + K)'"
+                            class="flex w-full items-center gap-3 rounded-md bg-gray-100 px-3 py-1 text-left transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z" />
                             </svg>
-                            <span class="truncate text-sm text-gray-500">Search</span>
+                            <span class="truncate text-sm text-gray-500" x-text="isMac ? 'Search (⌘ + K)' : 'Search (Ctrl + K)'"></span>
                         </button>
                     </div>
                 @endif
