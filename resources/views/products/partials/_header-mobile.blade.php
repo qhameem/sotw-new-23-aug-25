@@ -33,14 +33,14 @@
         @endif
     @endif
 
-    <h1 class="text-xl font-bold text-gray-900 ml-4">
+    <h1 class="site-heading-text text-xl font-bold text-gray-900 ml-4">
         {{ $product->name }}
     </h1>
 </div>
 
 {{-- Tagline --}}
 <div class="mt-3">
-    <p class="text-gray-800 text-sm leading-snug">
+    <p class="site-body-text text-gray-800 text-sm leading-snug">
         @if(isset($isAdminView) && $isAdminView)
             <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                 x-text="product_page_tagline"></span>

@@ -17,8 +17,8 @@
                 fetchpriority="{{ ProductLogo::fetchPriority($logoLoadPosition) }}"
                 decoding="async" />
             <div class="flex flex-col space-y-0">
-                <h2 class="text-sm font-semibold flex items-center leading-none">
-                    <span class="text-left text-black">{{ $product->name }}</span>
+                <h2 class="site-heading-text text-sm font-semibold flex items-center leading-none">
+                    <span class="site-heading-text text-left text-black">{{ $product->name }}</span>
                     <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
                         target="_blank" rel="noopener ugc" @click.stop
                         class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
@@ -31,7 +31,7 @@
                     </a>
                 </h2>
 
-                <p class="text-gray-900 text-sm line-clamp-2">{{ $product->tagline }}</p>
+                <p class="site-body-text text-gray-900 text-sm line-clamp-2">{{ $product->tagline }}</p>
 
                 <div class="flex flex-wrap gap-2 items-center">
                     <div class="flex flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2">
@@ -53,7 +53,7 @@
                     @endif
                 </div>
 
-                <div class="text-xs text-gray-600">
+                <div class="site-body-text text-xs text-gray-600">
                     @if(isset($product->price) && is_numeric($product->price) && $product->price > 0)
                         Price: <span>${{ number_format($product->price, 2) }}</span>
                     @elseif(isset($product->pricing_type) && strtolower($product->pricing_type ?? '') === 'free')

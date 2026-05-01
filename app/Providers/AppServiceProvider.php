@@ -7,6 +7,7 @@ use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth; // Add this line
 use App\Http\View\Composers\SeoComposer;
@@ -77,6 +78,11 @@ class AppServiceProvider extends ServiceProvider
             SeoComposer::class
         );
 
+        View::composer(['layouts.app', 'layouts.submission'], function ($view) {
+            $view->with('popularSearchProducts', $this->getPopularSearchProducts())
+                ->with('popularSearchCategories', $this->getPopularSearchCategories());
+        });
+
         View::composer('partials._right-sidebar', ScheduledProductsStatsComposer::class);
 
         $this->loadThemeSettings();
@@ -98,6 +104,12 @@ class AppServiceProvider extends ServiceProvider
                 }
                 if (!empty($settings['font_family'])) {
                     Config::set('theme.font_family', $settings['font_family']);
+                }
+                if (isset($settings['font_color'])) {
+                    Config::set('theme.font_color', $settings['font_color']);
+                }
+                if (isset($settings['body_text_color'])) {
+                    Config::set('theme.body_text_color', $settings['body_text_color']);
                 }
                 if (!empty($settings['primary_color'])) {
                     // Resolve color and set it
@@ -152,6 +164,56 @@ class AppServiceProvider extends ServiceProvider
 
             // Fallback to a default color
             return '#3b82f6';
+        });
+    }
+
+    protected function getPopularSearchProducts(): array
+    {
+        return Cache::remember('global_search.popular_products.v2', now()->addMinutes(30), function () {
+            return Product::query()
+                ->select(['id', 'name', 'slug', 'tagline', 'logo', 'link', 'votes_count', 'outbound_clicks_count', 'published_at'])
+                ->where('approved', true)
+                ->where('is_published', true)
+                ->orderByDesc('votes_count')
+                ->orderByDesc('outbound_clicks_count')
+                ->orderByDesc('published_at')
+                ->limit(6)
+                ->get()
+                ->map(fn (Product $product) => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'tagline' => $product->tagline,
+                    'logo_url' => $product->logo_url,
+                    'votes_count' => (int) $product->votes_count,
+                    'url' => route('products.show', ['product' => $product->slug]),
+                ])
+                ->values()
+                ->all();
+        });
+    }
+
+    protected function getPopularSearchCategories(): array
+    {
+        return Cache::remember('global_search.popular_categories', now()->addMinutes(30), function () {
+            return Category::query()
+                ->select(['id', 'name', 'slug'])
+                ->withCount([
+                    'products' => fn ($query) => $query
+                        ->where('approved', true)
+                        ->where('is_published', true),
+                ])
+                ->orderByDesc('products_count')
+                ->orderBy('name')
+                ->limit(8)
+                ->get()
+                ->map(fn (Category $category) => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'products_count' => (int) $category->products_count,
+                    'url' => route('categories.show', ['category' => $category->slug]),
+                ])
+                ->values()
+                ->all();
         });
     }
 }

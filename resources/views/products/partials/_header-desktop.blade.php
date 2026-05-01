@@ -37,7 +37,7 @@
 
     {{-- Content Area --}}
     <div class="ml-5 flex-1">
-        <h1 class="text-2xl font-bold text-gray-900">
+        <h1 class="site-heading-text text-2xl font-bold text-gray-900">
             @if(isset($isAdminView) && $isAdminView)
                 <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
                 <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
@@ -48,7 +48,7 @@
         </h1>
 
         {{-- Tagline --}}
-        <p class="text-gray-800 text-base leading-snug">
+        <p class="site-body-text text-gray-800 text-base leading-snug">
             @if(isset($isAdminView) && $isAdminView)
                 <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                     x-text="product_page_tagline"></span>

@@ -3,7 +3,7 @@
 @section('title', $meta_title ?? 'Software on the Web')
 
 @section('header-title')
-    <span class="text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
+    <span class="site-heading-text text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
 @endsection
 
 @section('canonical')

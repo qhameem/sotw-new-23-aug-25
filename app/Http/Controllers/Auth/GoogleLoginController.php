@@ -1,73 +1,106 @@
 <?php
 
-    namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Auth;
 
-    use App\Http\Controllers\Controller;
-    use App\Models\User;
-    use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Auth;
-    use Illuminate\Support\Str;
-    use Laravel\Socialite\Facades\Socialite;
-    use Exception;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Exception;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
-    class GoogleLoginController extends Controller
+class GoogleLoginController extends Controller
+{
+    /**
+     * Redirect the user to the Google authentication page.
+     */
+    public function redirectToGoogle(Request $request): RedirectResponse
     {
-        /**
-         * Redirect the user to the Google authentication page.
-         */
-        public function redirectToGoogle()
-        {
-            return Socialite::driver('google')->redirect();
+        $intended = $this->normalizeRedirectTo($request->query('intended'));
+
+        if ($intended !== null) {
+            $request->session()->put('url.intended', $intended);
         }
 
-        /**
-         * Obtain the user information from Google.
-         */
-        public function handleGoogleCallback()
-        {
-            try {
-                $googleUser = Socialite::driver('google')->user();
+        return Socialite::driver('google')->redirect();
+    }
 
-                // Find user by google_id
-                $user = User::where('google_id', $googleUser->getId())->first();
+    /**
+     * Obtain the user information from Google.
+     */
+    public function handleGoogleCallback(): RedirectResponse
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
 
-                if ($user) {
-                    // User found by google_id, log them in
-                    Auth::login($user, true); // true for "remember me"
-                    return redirect()->intended('/')->with('auth_sync_event', 'signed-in'); // Redirect to home page
-                }
+            // Find user by google_id
+            $user = User::where('google_id', $googleUser->getId())->first();
 
-                // User not found by google_id, try to find by email
-                $user = User::where('email', $googleUser->getEmail())->first();
-
-                if ($user) {
-                    // User found by email, update their google_id and avatar
-                    $user->google_id = $googleUser->getId();
-                    $user->google_avatar = $googleUser->getAvatar();
-                    $user->save();
-                } else {
-                    // No user found by email, create a new user
-                    $user = User::create([
-                        'name' => $googleUser->getName() ?: Str::before($googleUser->getEmail(), '@'),
-                        'email' => $googleUser->getEmail(),
-                        'google_id' => $googleUser->getId(),
-                        'google_avatar' => $googleUser->getAvatar(),
-                        'password' => null,
-                        'email_verified_at' => now(), // Consider email verified via Google
-                    ]);
-                }
-
-                if (! $user->email_verified_at) {
-                    $user->forceFill(['email_verified_at' => now()])->save();
-                }
-
+            if ($user) {
                 Auth::login($user, true);
-                return redirect()->intended('/')->with('auth_sync_event', 'signed-in'); // Redirect to home page
 
-            } catch (Exception $e) {
-                // Log the error or show a generic error message
-                // \Log::error('Google authentication error: ' . $e->getMessage());
-                return redirect()->route('login')->withErrors(['email' => 'Unable to login using Google. Please try again.']);
+                return redirect()->intended('/')->with('auth_sync_event', 'signed-in');
             }
+
+            // User not found by google_id, try to find by email
+            $user = User::where('email', $googleUser->getEmail())->first();
+
+            if ($user) {
+                $user->google_id = $googleUser->getId();
+                $user->google_avatar = $googleUser->getAvatar();
+                $user->save();
+            } else {
+                $user = User::create([
+                    'name' => $googleUser->getName() ?: Str::before($googleUser->getEmail(), '@'),
+                    'email' => $googleUser->getEmail(),
+                    'google_id' => $googleUser->getId(),
+                    'google_avatar' => $googleUser->getAvatar(),
+                    'password' => null,
+                    'email_verified_at' => now(),
+                ]);
+            }
+
+            if (! $user->email_verified_at) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+
+            Auth::login($user, true);
+
+            return redirect()->intended('/')->with('auth_sync_event', 'signed-in');
+        } catch (Exception $e) {
+            return redirect()->route('login')->withErrors(['email' => 'Unable to login using Google. Please try again.']);
         }
     }
+
+    private function normalizeRedirectTo(?string $intended): ?string
+    {
+        if (blank($intended)) {
+            return null;
+        }
+
+        $appUrl = parse_url(config('app.url'));
+        $candidate = parse_url($intended);
+
+        if ($candidate === false) {
+            return null;
+        }
+
+        if (! isset($candidate['scheme'], $candidate['host'])) {
+            return str_starts_with($intended, '/') ? $intended : null;
+        }
+
+        if (
+            ($candidate['host'] ?? null) !== ($appUrl['host'] ?? null)
+            || ($candidate['scheme'] ?? null) !== ($appUrl['scheme'] ?? null)
+        ) {
+            return null;
+        }
+
+        $path = $candidate['path'] ?? '/';
+        $query = isset($candidate['query']) ? '?'.$candidate['query'] : '';
+
+        return $path.$query;
+    }
+}

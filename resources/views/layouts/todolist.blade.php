@@ -77,20 +77,26 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Inter');
+        $siteFontColor = config('theme.font_color', '#111827');
+        $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
     @endphp
 
     <style>
         :root {
             --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --color-site-text: {{ $siteFontColor }};
+            --color-site-body-text: {{ $siteBodyTextColor }};
         }
 
         html,
         body {
             font-family: var(--font-family-sans);
+            color: var(--color-site-body-text);
         }
     </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.theme.text-color-overrides')
     @livewireStyles
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')

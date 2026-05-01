@@ -23,7 +23,7 @@
                         class="mobile-favicon mr-2 w-10 h-10 md:hidden">
                 </a>
                 @if($hasTitle)
-                    <h1 class="text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
+                    <h1 class="site-heading-text text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
                 @endif
             </div>
         </div>

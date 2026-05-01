@@ -2,13 +2,75 @@
 @import "flatpickr/dist/flatpickr.css";
 /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap'); */ /* Removed: Font is now loaded dynamically via app.blade.php */
 @tailwind base;
+
+@layer base {
+  :root {
+    --color-site-text: #111827;
+    --color-site-body-text: #4b5563;
+  }
+}
+
 @tailwind components;
 @tailwind utilities;
 
-.no-scrollbar {
-  scrollbar-width: none;
-}
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  html,
+  body {
+    color: var(--color-site-body-text);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    color: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .site-heading-text,
+  .site-heading-text :is(span, strong, em, small) {
+    color: var(--color-site-text) !important;
+  }
+
+  :is(h1, h2, h3, h4, h5, h6) :is(span, strong, em, small) {
+    color: inherit !important;
+  }
+
+  p,
+  li,
+  dd,
+  dt,
+  td,
+  figcaption,
+  blockquote,
+  label,
+  small,
+  time,
+  .site-body-text,
+  .site-body-text :is(p, li, dd, dt, td, figcaption, blockquote, span, div, strong, em, small),
+  .product-detail-description,
+  .product-detail-description :is(p, li, dd, dt, td, figcaption, blockquote, span, div, strong, em, small),
+  p.text-gray-400,
+  p.text-gray-500,
+  p.text-gray-600,
+  p.text-gray-700,
+  p.text-gray-800,
+  p.text-gray-900,
+  div.site-body-text,
+  span.site-body-text {
+    color: var(--color-site-body-text) !important;
+  }
 }

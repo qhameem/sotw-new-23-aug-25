@@ -32,9 +32,9 @@
                 decoding="async"
                 itemprop="image" />
             <div class="flex-1">
-                <h2 class="text-sm font-semibold leading-tight flex items-center">
+                <h2 class="site-heading-text text-sm font-semibold leading-tight flex items-center">
                     @if(!$isPromoted)
-                        <span itemprop="name" class="text-left">{{ $product->name }}</span>
+                        <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                         <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
                             target="_blank" rel="noopener nofollow" @click.stop
                             class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
@@ -46,10 +46,10 @@
                             </svg>
                         </a>
                     @else
-                        <span itemprop="name" class="text-left">{{ $product->name }}</span>
+                        <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="text-gray-700 text-sm mb-0 line-clamp-2" itemprop="description">
+                <p class="site-body-text text-gray-700 text-sm mb-0 line-clamp-2" itemprop="description">
                     {{ $product->tagline }}
                 </p>
 
@@ -79,7 +79,7 @@
                                                     By: <span itemprop="name">{{ $product->user->name ?? 'Unknown Contributor' }}</span>
                                                 </div> -->
 
-                <div class="text-xs text-gray-600 mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <div class="site-body-text text-xs text-gray-600 mt-1" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                     <meta itemprop="priceCurrency" content="USD" />
                     <link itemprop="availability" href="https://schema.org/InStock" />
                     @if(isset($product->price) && is_numeric($product->price) && $product->price > 0)
@@ -93,7 +93,7 @@
                     @endif
                 </div>
 
-                <div class="text-xs text-gray-600 mt-1" itemprop="aggregateRating" itemscope
+                <div class="site-body-text text-xs text-gray-600 mt-1" itemprop="aggregateRating" itemscope
                     itemtype="https://schema.org/AggregateRating">
                     <meta itemprop="worstRating" content="1">
                     <meta itemprop="bestRating" content="5">

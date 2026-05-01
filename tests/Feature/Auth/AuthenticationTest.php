@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Ad;
 use App\Models\User;
 use App\Notifications\MagicLoginLinkNotification;
 use Illuminate\Support\Facades\Notification;
+use Laravel\Socialite\Facades\Socialite;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -31,6 +33,61 @@ test('existing users can request a magic login link and sign in', function () {
     $response = $this->get($loginUrl);
 
     $this->assertAuthenticatedAs($user->fresh());
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+    $response->assertRedirect('/dashboard');
+});
+
+test('ad impression requests do not overwrite the intended url in session', function () {
+    $ad = Ad::factory()->create();
+
+    $this->withSession(['url.intended' => '/dashboard'])
+        ->get(route('ads.impression', $ad), [
+            'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        ])
+        ->assertOk();
+
+    expect(session('url.intended'))->toBe('/dashboard');
+});
+
+test('google login start stores the requested intended url in session', function () {
+    $driver = \Mockery::mock();
+    $driver->shouldReceive('redirect')
+        ->once()
+        ->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));
+
+    Socialite::shouldReceive('driver')
+        ->once()
+        ->with('google')
+        ->andReturn($driver);
+
+    $response = $this->get(route('auth.google', ['intended' => url('/dashboard')]));
+
+    expect(session('url.intended'))->toBe('/dashboard');
+    $response->assertRedirect('https://accounts.google.com/o/oauth2/auth');
+});
+
+test('google login callback redirects authenticated users to their intended url', function () {
+    $user = User::factory()->unverified()->create();
+
+    $googleUser = \Mockery::mock();
+    $googleUser->shouldReceive('getId')->once()->andReturn('google-user-123');
+    $googleUser->shouldReceive('getEmail')->once()->andReturn($user->email);
+    $googleUser->shouldReceive('getAvatar')->once()->andReturn('https://example.com/avatar.jpg');
+
+    $driver = \Mockery::mock();
+    $driver->shouldReceive('user')->once()->andReturn($googleUser);
+
+    Socialite::shouldReceive('driver')
+        ->once()
+        ->with('google')
+        ->andReturn($driver);
+
+    $response = $this->withSession(['url.intended' => '/dashboard'])
+        ->get(route('auth.google.callback'));
+
+    $this->assertAuthenticatedAs($user->fresh());
+    expect($user->fresh()->google_id)->toBe('google-user-123');
+    expect($user->fresh()->google_avatar)->toBe('https://example.com/avatar.jpg');
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     $response->assertRedirect('/dashboard');
 });

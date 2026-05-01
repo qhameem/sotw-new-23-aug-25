@@ -32,7 +32,33 @@
 
     <title>@yield('title', 'Admin Panel')</title>
 
+    @if(config('theme.font_url'))
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="{{ config('theme.font_url') }}" rel="stylesheet">
+    @endif
+
+    @php
+        $fontFamily = config('theme.font_family', 'Inter');
+        $siteFontColor = config('theme.font_color', '#111827');
+        $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
+    @endphp
+
+    <style>
+        :root {
+            --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --color-site-text: {{ $siteFontColor }};
+            --color-site-body-text: {{ $siteBodyTextColor }};
+        }
+
+        html,
+        body {
+            font-family: var(--font-family-sans);
+            color: var(--color-site-body-text);
+        }
+    </style>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.theme.text-color-overrides')
     @livewireStyles
     @stack('styles')
 </head>

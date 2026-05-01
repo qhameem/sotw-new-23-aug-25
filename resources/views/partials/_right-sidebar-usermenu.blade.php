@@ -1,24 +1,20 @@
 <div class="flex items-center justify-between h-14 px-4">
-    @guest
-        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span aria-hidden="true">&rarr;</span></a>
-    @else
-        <div class="flex items-center">
-            
-        </div>
-        <div class="flex items-center w-full justify-between">
-            
+    <div class="flex items-center w-full gap-3">
+        @if(!request()->is('free-todo-list-tool'))
+            <div class="w-full">
+                <button type="button" @click="$dispatch('open-search-modal')"
+                    class="flex w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 text-left shadow-sm transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z" />
+                    </svg>
+                    <span class="truncate text-sm text-gray-500">Search products or categories...</span>
+                </button>
+            </div>
+        @endif
+        @guest
+            <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
+        @else
             @if(!request()->is('free-todo-list-tool'))
-                <div class="w-full">
-                    <div class="relative">
-                        <input type="text" id="sidebar-search-input" placeholder="Search..." class="w-full shadow-sm px-3 py-1 border border-gray-300 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-600 placeholder:text-sm">
-                        <button id="sidebar-search-clear" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600" style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <div id="sidebar-search-results" class="absolute right-0 z-50 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="display: none;"></div>
-                    </div>
-                </div>
                 @auth
                 <div class="mr-2">
                     <x-notification-bell />
@@ -98,6 +94,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    @endguest
+        @endguest
+    </div>
 </div>

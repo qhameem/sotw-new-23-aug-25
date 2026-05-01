@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class StorePreviousUrl
@@ -31,11 +30,22 @@ class StorePreviousUrl
             'auth.complete-profile.show',
             'auth.google',
             'auth.google.callback',
+            'ads.click',
+            'ads.impression',
+            'products.click',
         ];
 
-        if ($request->isMethod('GET') && !in_array($request->route()->getName(), $excludedRoutes) && !$request->ajax()) {
+        $acceptHeader = (string) $request->header('accept');
+        $expectsHtml = str_contains($acceptHeader, 'text/html')
+            || str_contains($acceptHeader, 'application/xhtml+xml');
+
+        if (
+            $request->isMethod('GET')
+            && ! in_array($request->route()?->getName(), $excludedRoutes, true)
+            && ! $request->ajax()
+            && $expectsHtml
+        ) {
             session(['url.intended' => url()->current()]);
-            Log::info('Stored intended URL: ' . url()->current());
         }
 
         return $next($request);

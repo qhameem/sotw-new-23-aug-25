@@ -16,7 +16,7 @@
             <div class="flex items-center gap-2">
                 <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
                     class="size-6 rounded-full border border-gray-100">
-                <div class="text-gray-800 text-sm font-medium">
+                <div class="site-body-text text-gray-800 text-sm font-medium">
                     {{ $product->user->name }}
                 </div>
             </div>
@@ -60,7 +60,7 @@
     @if($product->price > 0)
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Price</h3>
-            <p class="text-xs text-gray-700 font-medium">
+            <p class="site-body-text text-xs text-gray-700 font-medium">
                 {{ $product->currency }} {{ number_format($product->price, 2) }}
             </p>
         </div>
@@ -97,7 +97,7 @@
                         {{ $product->name }} vs {{ $similar->name }} →
                     </a>
                     @if(!empty($similar->match_summary))
-                        <p class="text-[11px] text-gray-400 mb-2">{{ $similar->match_summary }}</p>
+                        <p class="site-body-text text-[11px] text-gray-400 mb-2">{{ $similar->match_summary }}</p>
                     @endif
                 @endforeach
             </div>

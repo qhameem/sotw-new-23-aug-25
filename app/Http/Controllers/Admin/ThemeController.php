@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +28,8 @@ class ThemeController extends Controller
 
         $currentFontUrl = $settings['font_url'] ?? Config::get('theme.font_url');
         $currentFontFamily = $settings['font_family'] ?? Config::get('theme.font_family');
+        $currentFontColor = $settings['font_color'] ?? Config::get('theme.font_color', '#111827');
+        $currentBodyTextColor = $settings['body_text_color'] ?? Config::get('theme.body_text_color', '#4b5563');
         $availableFonts = $settings['font_families'] ?? [];
         $currentPrimaryColor = $settings['primary_color'] ?? Config::get('theme.primary_color');
         $currentLogoUrl = isset($settings['logo_url']) && $settings['logo_url'] ? Storage::url($settings['logo_url']) : null;
@@ -47,6 +48,8 @@ class ThemeController extends Controller
         return view('admin.theme.edit', compact(
             'currentFontUrl',
             'currentFontFamily',
+            'currentFontColor',
+            'currentBodyTextColor',
             'availableFonts',
             'currentPrimaryColor',
             'currentLogoUrl',
@@ -89,6 +92,8 @@ class ThemeController extends Controller
                     $fail('The ' . $attribute . ' must be a valid hex color or a Tailwind CSS color class (e.g., blue-500).');
                 },
             ],
+            'font_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'body_text_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
             // Removed 'image' rule to better support SVG. Mimes rule will handle type.
             'site_logo' => 'nullable|file|mimes:svg,png,jpg,jpeg,gif|max:2048',
             'logo_alt_text' => 'nullable|string|max:255',
@@ -107,7 +112,7 @@ class ThemeController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('admin.theme.edit')
+            return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -119,7 +124,7 @@ class ThemeController extends Controller
         $fontFamilies = $this->extractFontFamiliesFromUrl($fontUrl);
 
         if (empty($fontFamilies) && $fontUrl) { // only error if URL was provided but family extraction failed
-            return redirect()->route('admin.theme.edit')
+            return redirect()->back()
                 ->withErrors(['font_url' => 'Could not automatically extract font family name. Ensure a valid Google Font URL.'])
                 ->withInput();
         }
@@ -140,6 +145,8 @@ class ThemeController extends Controller
             $settings['font_family'] = null;
         }
         $settings['primary_color'] = $request->input('primary_color');
+        $settings['font_color'] = $request->input('font_color', '#111827');
+        $settings['body_text_color'] = $request->input('body_text_color', '#4b5563');
         $settings['primary_button_text_color'] = $request->input('primary_button_text_color');
         $settings['navbar_bg_color'] = $request->input('navbar_bg_color', '#ffffff');
         $settings['body_bg_color']   = $request->input('body_bg_color',   '#ffffff');
@@ -199,14 +206,10 @@ class ThemeController extends Controller
             // Update the tailwind-theme.json file
             $this->updateTailwindThemeConfig($settings['font_families'] ?? []);
 
-            Artisan::call('cache:clear');
-            Artisan::call('config:clear');
-            Artisan::call('config:cache');
-
-            return redirect()->route('admin.theme.edit')->with('success', 'Theme settings updated successfully.');
+            return redirect()->back()->with('success', 'Theme settings updated successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to update theme settings: ' . $e->getMessage());
-            return redirect()->route('admin.theme.edit')
+            return redirect()->back()
                 ->withErrors(['error' => 'Failed to save theme settings. Please check storage permissions and logs.'])
                 ->withInput();
         }
@@ -219,6 +222,8 @@ class ThemeController extends Controller
                 'font_url' => Config::get('theme.font_url'), // Default from config
                 'font_family' => Config::get('theme.font_family'),
                 'font_families' => [],
+                'font_color' => Config::get('theme.font_color', '#111827'),
+                'body_text_color' => Config::get('theme.body_text_color', '#4b5563'),
                 'primary_color' => Config::get('theme.primary_color', '#3b82f6'),
                 'primary_button_text_color' => Config::get('theme.primary_button_text_color'),
                 'logo_url' => null,
@@ -254,7 +259,7 @@ class ThemeController extends Controller
         }
     }
 
-    private function extractFontFamiliesFromUrl(string $url = null): array
+    private function extractFontFamiliesFromUrl(?string $url = null): array
     {
         if (empty($url)) {
             return [];

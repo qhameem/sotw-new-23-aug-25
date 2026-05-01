@@ -349,7 +349,115 @@
                             </p>
                         </div>
 
+                        {{-- Global Font Color --}}
+                        <div class="mt-8 pt-6 border-t border-gray-200" x-data="{
+                            fontColor: {{ Js::from(old('font_color', $currentFontColor ?? '#111827')) }},
+                            isValidHex(c) {
+                                return /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(c);
+                            },
+                            normalise(val) {
+                                val = val.trim();
+                                if (!val.startsWith('#')) val = '#' + val;
+                                return val;
+                            },
+                            applyFont(val) {
+                                val = this.normalise(val);
+                                if (this.isValidHex(val)) {
+                                    this.fontColor = val;
+                                    document.documentElement.style.setProperty('--color-site-text', val);
+                                    document.getElementById('font_color_picker').value = val;
+                                }
+                            },
+                            init() {
+                                if (this.isValidHex(this.fontColor)) {
+                                    document.getElementById('font_color_picker').value = this.fontColor;
+                                    document.documentElement.style.setProperty('--color-site-text', this.fontColor);
+                                }
+                            }
+                        }" x-init="init()">
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">Global Font Color</h3>
+                            <p class="text-sm text-gray-500 mb-5">This controls stronger text like headings, titles, and emphasized labels.</p>
 
+                            <div>
+                                <x-input-label for="font_color_text" :value="__('Site Font Color')" />
+                                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                                    <input type="color" id="font_color_picker"
+                                        class="w-12 h-10 p-0.5 border border-gray-300 rounded-md shadow-sm cursor-pointer"
+                                        @input="applyFont($event.target.value)">
+                                    <x-text-input id="font_color_text" type="text" class="block w-36 font-mono"
+                                        x-model="fontColor" placeholder="#111827"
+                                        @input="applyFont($event.target.value)"
+                                        @paste="$nextTick(() => applyFont($event.target.value))" />
+                                    <span class="inline-flex items-center gap-2 text-xs text-gray-500">
+                                        <span class="inline-block w-5 h-5 rounded border border-gray-300 flex-shrink-0"
+                                            :style="{ backgroundColor: fontColor }"></span>
+                                        Preview applied live to text
+                                    </span>
+                                </div>
+                                <input type="hidden" name="font_color" :value="fontColor">
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Current saved value: <strong>{{ $currentFontColor ?? '#111827' }}</strong>
+                                </p>
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Primary buttons, links, status colors, and body-copy colors keep their own theme colors.
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Body Text Color --}}
+                        <div class="mt-8 pt-6 border-t border-gray-200" x-data="{
+                            bodyTextColor: {{ Js::from(old('body_text_color', $currentBodyTextColor ?? '#4b5563')) }},
+                            isValidHex(c) {
+                                return /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(c);
+                            },
+                            normalise(val) {
+                                val = val.trim();
+                                if (!val.startsWith('#')) val = '#' + val;
+                                return val;
+                            },
+                            applyBodyText(val) {
+                                val = this.normalise(val);
+                                if (this.isValidHex(val)) {
+                                    this.bodyTextColor = val;
+                                    document.documentElement.style.setProperty('--color-site-body-text', val);
+                                    document.getElementById('body_text_color_picker').value = val;
+                                }
+                            },
+                            init() {
+                                if (this.isValidHex(this.bodyTextColor)) {
+                                    document.getElementById('body_text_color_picker').value = this.bodyTextColor;
+                                    document.documentElement.style.setProperty('--color-site-body-text', this.bodyTextColor);
+                                }
+                            }
+                        }" x-init="init()">
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">Body Text Color</h3>
+                            <p class="text-sm text-gray-500 mb-5">This controls paragraph text, descriptive copy, lists, table body text, and other reading content across the site.</p>
+
+                            <div>
+                                <x-input-label for="body_text_color_text" :value="__('Body Text Color')" />
+                                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                                    <input type="color" id="body_text_color_picker"
+                                        class="w-12 h-10 p-0.5 border border-gray-300 rounded-md shadow-sm cursor-pointer"
+                                        @input="applyBodyText($event.target.value)">
+                                    <x-text-input id="body_text_color_text" type="text" class="block w-36 font-mono"
+                                        x-model="bodyTextColor" placeholder="#4b5563"
+                                        @input="applyBodyText($event.target.value)"
+                                        @paste="$nextTick(() => applyBodyText($event.target.value))" />
+                                    <span class="inline-flex items-center gap-2 text-xs text-gray-500">
+                                        <span class="inline-block w-5 h-5 rounded border border-gray-300 flex-shrink-0"
+                                            :style="{ backgroundColor: bodyTextColor }"></span>
+                                        Preview applied live to body copy
+                                    </span>
+                                </div>
+                                <input type="hidden" name="body_text_color" :value="bodyTextColor">
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Current saved value: <strong>{{ $currentBodyTextColor ?? '#4b5563' }}</strong>
+                                </p>
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Headings and titles stay controlled by Global Font Color.
+                                </p>
+                            </div>
+                        </div>
 
                         {{-- =============================== --}}
                         {{-- Background Colors Section       --}}

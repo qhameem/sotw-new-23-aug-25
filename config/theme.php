@@ -17,6 +17,9 @@ return [
 
     'font_family' => env('THEME_FONT_FAMILY', 'Inter'),
 
+    'font_color' => env('THEME_FONT_COLOR', '#111827'),
+    'body_text_color' => env('THEME_BODY_TEXT_COLOR', '#4b5563'),
+
     'primary_color' => env('THEME_PRIMARY_COLOR', 'blue-500'), // Default to a Tailwind blue
 
     'logo_url' => null,

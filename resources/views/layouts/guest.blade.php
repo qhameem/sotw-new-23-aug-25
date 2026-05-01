@@ -61,11 +61,19 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Figtree'); // Default to Figtree for guest
+        $siteFontColor = config('theme.font_color', '#111827');
+        $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
         $primaryHexColor = config('theme.primary_color', '#3b82f6'); // Default to a blue hex
 
         // Basic validation for hex color format
         if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $primaryHexColor)) {
             $primaryHexColor = '#3b82f6'; // Fallback to default blue if format is invalid
+        }
+        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $siteFontColor)) {
+            $siteFontColor = '#111827';
+        }
+        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $siteBodyTextColor)) {
+            $siteBodyTextColor = '#4b5563';
         }
 
         // Determine intelligent default for button text color
@@ -82,6 +90,8 @@
     <style>
         :root {
             --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --color-site-text: {{ $siteFontColor }};
+            --color-site-body-text: {{ $siteBodyTextColor }};
             --color-primary-500:
                 {{ $primaryHexColor }}
             ;
@@ -101,6 +111,7 @@
         html,
         body {
             font-family: var(--font-family-sans);
+            color: var(--color-site-body-text);
         }
     </style>
 
@@ -131,6 +142,7 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.theme.text-color-overrides')
     @livewireStyles
 </head>
 

@@ -4,6 +4,7 @@
         open: false, // For mobile navigation
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
+        popularSearchContent: {{ Js::from(['products' => $popularSearchProducts ?? [], 'categories' => $popularSearchCategories ?? []]) }},
         searchResults: { products: [], categories: [] },
         searchTerm: '',
         searchLoading: false,
@@ -11,12 +12,34 @@
         hasSearchResults() {
             return this.searchResults.products.length > 0 || this.searchResults.categories.length > 0;
         },
+        showDefaultSearchContent() {
+            return this.searchTerm.trim().length < 2;
+        },
+        resetSearchState() {
+            if (this.searchController) {
+                this.searchController.abort();
+            }
+
+            this.searchController = null;
+            this.searchTerm = '';
+            this.searchResults = { products: [], categories: [] };
+            this.searchLoading = false;
+        },
+        openSearchModal() {
+            this.resetSearchState();
+            this.searchModalOpen = true;
+        },
+        closeSearchModal() {
+            this.searchModalOpen = false;
+            this.resetSearchState();
+        },
         performSearch: async function(term) {
             const query = term.trim();
 
             if (query.length < 2) {
                 this.searchResults = { products: [], categories: [] };
                 this.searchLoading = false;
+                this.searchController = null;
                 return;
             }
 
@@ -55,8 +78,8 @@
             console.log('Initial load on product page:', initialProductSlugMatch[1]);
         }
     }"
-    @open-search-modal.window="searchModalOpen = true; $nextTick(() => document.getElementById('globalSearchInput')?.focus())"
-    @close-search-modal-from-js.window="searchModalOpen = false" @open-login-modal.window="
+    @open-search-modal.window="openSearchModal()"
+    @close-search-modal-from-js.window="closeSearchModal()" @open-login-modal.window="
         fetch('/set-intended-url', {
             method: 'POST',
             headers: {
@@ -68,7 +91,7 @@
             $dispatch('open-modal', { name: 'login-required-modal' });
         });
     "
-    x-on:livewire:navigating.window="searchModalOpen = false; if(typeof closeProductModal === 'function') closeProductModal();">
+    x-on:livewire:navigating.window="closeSearchModal(); if(typeof closeProductModal === 'function') closeProductModal();">
 
 <head>
     <script>
@@ -213,6 +236,8 @@
 
     @php
         $fontFamily = config('theme.font_family', 'Inter');
+        $siteFontColor = config('theme.font_color', '#111827');
+        $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
         $primaryHexColor = config('theme.primary_color', '#3b82f6');
 
         // Determine intelligent default for button text color
@@ -229,6 +254,8 @@
     <style>
         :root {
             --font-family-sans: '{{ $fontFamily }}', sans-serif;
+            --color-site-text: {{ $siteFontColor }};
+            --color-site-body-text: {{ $siteBodyTextColor }};
             --color-primary-500:
                 {{ $primaryHexColor }}
             ;
@@ -246,6 +273,7 @@
         html,
         body {
             font-family: var(--font-family-sans);
+            color: var(--color-site-body-text);
         }
 
         [x-cloak] {
@@ -306,6 +334,7 @@
     {{-- End Google Analytics Code Injection --}}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.theme.text-color-overrides')
     @livewireStyles
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -391,76 +420,7 @@
 
     <x-mobile-categories-menu />
 
-    <div x-show="searchModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-[100] flex items-start justify-center pt-16 sm:pt-24 bg-gray-900 bg-opacity-75"
-        @keydown.escape.window="searchModalOpen = false" x-cloak
-        x-init="$watch('searchModalOpen', open => { if (open) { $nextTick(() => document.getElementById('globalSearchInput')?.focus()); } else { document.getElementById('globalSearchInput')?.blur(); } })">
-        <div class="bg-white  rounded-lg shadow-xl w-full max-w-2xl p-6" @click.outside="searchModalOpen = false">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800 ">Search Products and Categories</h2>
-                <button @click="searchModalOpen = false" class="text-gray-400 hover:text-gray-600  ">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="relative mb-4" @click.stop>
-                <input type="text" x-model="searchTerm" @input.debounce.30ms="performSearch(searchTerm)"
-                    x-ref="searchInput" id="globalSearchInput" placeholder="Search by name, tagline, or description..."
-                    class="w-full px-4 py-2 border border-gray-300  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent   placeholder-gray-400  placeholder:text-sm">
-                <button x-show="searchTerm.length > 0" @click="searchTerm = ''; performSearch('')"
-                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600  ">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="searchResultsContainer" class="max-h-[60vh] overflow-y-auto space-y-3">
-                <p x-show="searchTerm.trim().length < 2 && !searchLoading" class="text-center text-gray-500 py-4">
-                    Start typing to search for products or categories.
-                </p>
-                <p x-show="searchLoading" class="text-center text-gray-500 py-4">Searching...</p>
-                <p x-show="searchTerm.trim().length >= 2 && !searchLoading && !hasSearchResults()" class="text-center text-gray-500 py-4">
-                    No matching products or categories found.
-                </p>
-
-                <template x-if="searchResults.products.length > 0">
-                    <div class="overflow-hidden rounded-lg border border-gray-200">
-                        <div class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Products</div>
-                        <template x-for="product in searchResults.products" :key="`product-${product.id}`">
-                            <a :href="product.url" class="flex items-center gap-3 border-t border-gray-100 px-4 py-3 hover:bg-gray-50">
-                                <template x-if="product.logo_url">
-                                    <img :src="product.logo_url" :alt="product.name" class="h-10 w-10 rounded-md object-cover">
-                                </template>
-                                <template x-if="!product.logo_url">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 text-xs font-semibold text-gray-500" x-text="product.name.charAt(0)"></div>
-                                </template>
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-medium text-gray-900" x-text="product.name"></p>
-                                    <p class="truncate text-xs text-gray-500" x-text="product.tagline"></p>
-                                </div>
-                            </a>
-                        </template>
-                    </div>
-                </template>
-
-                <template x-if="searchResults.categories.length > 0">
-                    <div class="overflow-hidden rounded-lg border border-gray-200">
-                        <div class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Categories</div>
-                        <template x-for="category in searchResults.categories" :key="`category-${category.id}`">
-                            <a :href="category.url" class="block border-t border-gray-100 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50" x-text="category.name"></a>
-                        </template>
-                    </div>
-                </template>
-            </div>
-        </div>
-    </div>
+    @include('partials._global-search-modal')
     <template id="delayed-vendor-scripts">
         @livewireScripts
     </template>
