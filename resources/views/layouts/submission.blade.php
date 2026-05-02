@@ -246,6 +246,7 @@
 
     <meta name="application-name" content="Software on the Web">
     <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:url" content="{{ url()->current() }}">
     <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large')">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
