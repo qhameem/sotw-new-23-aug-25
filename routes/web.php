@@ -173,6 +173,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('settings/send-test-email', [\App\Http\Controllers\Admin\SettingsController::class, 'sendTestEmail'])->name('settings.sendTestEmail');
     Route::post('settings/store-premium-product-spots', [\App\Http\Controllers\Admin\SettingsController::class, 'storePremiumProductSpots'])->name('settings.storePremiumProductSpots');
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
+    Route::post('settings/store-footer-embed-codes', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFooterEmbedCodes'])->name('settings.storeFooterEmbedCodes');
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('settings.emailTemplates');
     Route::get('settings/screenshot-providers', [\App\Http\Controllers\Admin\SettingsController::class, 'screenshotProviders'])->name('settings.screenshotProviders');
     Route::post('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'storeEmailTemplates'])->name('settings.storeEmailTemplates');

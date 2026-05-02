@@ -33,7 +33,15 @@ class SettingsController extends Controller
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
-        return view('admin.settings.index', compact('googleAnalyticsCode', 'premiumProductSpots', 'productPublishTime', 'badgeImageUrl'));
+        $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
+
+        return view('admin.settings.index', compact(
+            'googleAnalyticsCode',
+            'premiumProductSpots',
+            'productPublishTime',
+            'badgeImageUrl',
+            'footerBadgeEmbedCodes'
+        ));
     }
 
     public function emailTemplates()
@@ -202,6 +210,40 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to save product publish time: ' . $e->getMessage());
             return back()->with('error', 'Failed to save product publish time. Please check logs.');
+        }
+    }
+
+    public function storeFooterEmbedCodes(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'footer_badge_embed_codes' => 'nullable|array',
+            'footer_badge_embed_codes.*' => 'nullable|string|max:20000',
+        ]);
+
+        $settings = [];
+        if (Storage::disk('local')->exists('settings.json')) {
+            $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+        }
+
+        $settings['footer_badge_embed_codes'] = collect($request->input('footer_badge_embed_codes', []))
+            ->map(fn ($code) => trim((string) $code))
+            ->filter()
+            ->values()
+            ->all();
+
+        try {
+            Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
+            Log::info('Footer embed codes updated by user: ' . Auth::id());
+
+            return back()->with('success', 'Footer embed codes saved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save footer embed codes: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save footer embed codes. Please check logs.');
         }
     }
 
@@ -403,5 +445,22 @@ class SettingsController extends Controller
             Log::error('Failed to upload badge image: ' . $e->getMessage());
             return back()->with('error', 'Failed to upload badge image. Please check logs.');
         }
+    }
+
+    private function normalizeFooterBadgeEmbedCodes(mixed $embedCodes): array
+    {
+        if (is_string($embedCodes)) {
+            $embedCodes = [$embedCodes];
+        }
+
+        if (!is_array($embedCodes)) {
+            return [];
+        }
+
+        return collect($embedCodes)
+            ->map(fn ($code) => trim((string) $code))
+            ->filter()
+            ->values()
+            ->all();
     }
 }

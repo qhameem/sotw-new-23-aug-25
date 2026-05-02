@@ -1,3 +1,22 @@
+@php
+    $footerBadgeEmbedCodes = [];
+
+    if (!request()->routeIs('admin.*') && Illuminate\Support\Facades\Storage::disk('local')->exists('settings.json')) {
+        $settings = json_decode(Illuminate\Support\Facades\Storage::disk('local')->get('settings.json'), true);
+        $footerBadgeEmbedCodes = $settings['footer_badge_embed_codes'] ?? [];
+    }
+
+    if (is_string($footerBadgeEmbedCodes)) {
+        $footerBadgeEmbedCodes = [$footerBadgeEmbedCodes];
+    }
+
+    $footerBadgeEmbedCodes = collect(is_array($footerBadgeEmbedCodes) ? $footerBadgeEmbedCodes : [])
+        ->map(fn ($code) => trim((string) $code))
+        ->filter()
+        ->values()
+        ->all();
+@endphp
+
 <footer class="w-full p-4 border-t md:flex md:items-center md:justify-center md:p-6">
     <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
         <a href="{{ route('about') }}" class="hover:underline">About</a> •
@@ -31,6 +50,15 @@
         <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a> •
         Contact us: <a href="mailto:hello@softwareontheweb.com" target="_blank" class="hover:underline">hello@softwareontheweb.com</a>
         <div class="h-2"></div>
+        @if (!empty($footerBadgeEmbedCodes))
+            <div class="mb-3 flex flex-wrap items-center justify-center gap-3">
+                @foreach ($footerBadgeEmbedCodes as $footerBadgeEmbedCode)
+                    <div class="flex items-center justify-center">
+                        {!! $footerBadgeEmbedCode !!}
+                    </div>
+                @endforeach
+            </div>
+        @endif
         <span class="text-gray-400 " x-data="{ time: new Date() }" x-init="setInterval(() => time = new Date(), 1000)">
             <span x-text="time.toLocaleString('en-GB', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })"></span> UTC
         </span> © {{ date('Y') }} Software on the web

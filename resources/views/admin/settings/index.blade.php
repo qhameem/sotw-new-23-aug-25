@@ -215,6 +215,95 @@
             </div>
         </div>
 
+        @php
+            $footerBadgeEmbedCodesInput = old('footer_badge_embed_codes', $footerBadgeEmbedCodes ?? []);
+
+            if (!is_array($footerBadgeEmbedCodesInput)) {
+                $footerBadgeEmbedCodesInput = [$footerBadgeEmbedCodesInput];
+            }
+
+            $footerBadgeEmbedCodesInput = array_values($footerBadgeEmbedCodesInput);
+
+            if (count(array_filter($footerBadgeEmbedCodesInput, fn ($code) => filled(trim((string) $code)))) === 0) {
+                $footerBadgeEmbedCodesInput = [''];
+            }
+        @endphp
+
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Footer Badge Embed Codes
+                </h3>
+                <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                    <p>Add one or more raw HTML embed codes to the public footer for trust badges or similar widgets.</p>
+                    <p class="mt-1">Each code is rendered as-is, so only paste embed code from sources you trust.</p>
+                </div>
+                <form action="{{ route('admin.settings.storeFooterEmbedCodes') }}" method="POST" class="mt-5">
+                    @csrf
+
+                    <div id="footer-embed-code-list" class="space-y-4">
+                        @foreach ($footerBadgeEmbedCodesInput as $index => $footerBadgeEmbedCode)
+                            <div class="rounded-lg border border-gray-200 p-4 footer-embed-code-item">
+                                <div class="flex items-center justify-between gap-4">
+                                    <label for="footer_badge_embed_codes_{{ $index }}" class="block text-sm font-medium text-gray-700">
+                                        Embed Code {{ $loop->iteration }}
+                                    </label>
+                                    <button type="button"
+                                        class="text-sm font-medium text-red-600 hover:text-red-700"
+                                        data-remove-footer-embed-code>
+                                        Remove
+                                    </button>
+                                </div>
+                                <div class="mt-3">
+                                    <textarea id="footer_badge_embed_codes_{{ $index }}" name="footer_badge_embed_codes[]" rows="5"
+                                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                        placeholder="<a href=&quot;...&quot;><img src=&quot;...&quot; alt=&quot;Badge&quot;></a>">{{ $footerBadgeEmbedCode }}</textarea>
+                                </div>
+                                @error("footer_badge_embed_codes.$index")
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @error('footer_badge_embed_codes')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    <template id="footer-embed-code-template">
+                        <div class="rounded-lg border border-gray-200 p-4 footer-embed-code-item">
+                            <div class="flex items-center justify-between gap-4">
+                                <label class="block text-sm font-medium text-gray-700" data-footer-embed-code-label>
+                                    Embed Code
+                                </label>
+                                <button type="button"
+                                    class="text-sm font-medium text-red-600 hover:text-red-700"
+                                    data-remove-footer-embed-code>
+                                    Remove
+                                </button>
+                            </div>
+                            <div class="mt-3">
+                                <textarea name="footer_badge_embed_codes[]" rows="5"
+                                    class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                    placeholder="<a href=&quot;...&quot;><img src=&quot;...&quot; alt=&quot;Badge&quot;></a>"></textarea>
+                            </div>
+                        </div>
+                    </template>
+
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <button type="button" id="add-footer-embed-code"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Add Another Embed Code
+                        </button>
+                        <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Save Footer Embed Codes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Badge Image Management Section -->
         <div class="mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
@@ -262,52 +351,112 @@
 
 @push('scripts')
     <script>
-                            document.addEventListener('DOMContentLoaded', function () {
-        var form = document.getElementById('test-email-form');
-                            var button = document.getElementById('send-test-email-btn');
-                            var logContainer = document.getElementById('email-log-container');
-                            var logElement = document.getElementById('email-log');
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('test-email-form');
+            var button = document.getElementById('send-test-email-btn');
+            var logContainer = document.getElementById('email-log-container');
+            var logElement = document.getElementById('email-log');
+            var footerEmbedCodeList = document.getElementById('footer-embed-code-list');
+            var footerEmbedCodeTemplate = document.getElementById('footer-embed-code-template');
+            var addFooterEmbedCodeButton = document.getElementById('add-footer-embed-code');
 
-                            if (form) {
-                                form.addEventListener('submit', function (event) {
-                                    event.preventDefault();
+            function updateFooterEmbedCodeLabels() {
+                if (!footerEmbedCodeList) {
+                    return;
+                }
 
-                                    button.disabled = true;
-                                    logContainer.style.display = 'block';
-                                    logElement.textContent = 'Sending...';
+                var items = footerEmbedCodeList.querySelectorAll('.footer-embed-code-item');
 
-                                    var formData = new FormData(form);
-                                    var actionUrl = form.action;
-                                    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                items.forEach(function (item, index) {
+                    var label = item.querySelector('label');
+                    var textarea = item.querySelector('textarea');
 
-                                    fetch(actionUrl, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': csrfToken,
-                                            'Accept': 'application/json',
-                                        },
-                                        body: formData
-                                    })
-                                        .then(function (response) {
-                                            return response.json().then(function (data) {
-                                                if (!response.ok) {
-                                                    var error = new Error(data.message || 'An unknown error occurred.');
-                                                    throw error;
-                                                }
-                                                return data;
-                                            });
-                                        })
-                                        .then(function (data) {
-                                            logElement.textContent = data.message;
-                                            button.disabled = false;
-                                        })
-                                        .catch(function (error) {
-                                            logElement.textContent = error.message || 'An error occurred while sending the email. Check the browser console and server logs for more details.';
-                                            button.disabled = false;
-                                            console.error('Email send error:', error);
-                                        });
-                                });
-        }
-    });
+                    if (label) {
+                        label.textContent = 'Embed Code ' + (index + 1);
+                        label.setAttribute('for', 'footer_badge_embed_codes_' + index);
+                    }
+
+                    if (textarea) {
+                        textarea.id = 'footer_badge_embed_codes_' + index;
+                    }
+                });
+            }
+
+            if (addFooterEmbedCodeButton && footerEmbedCodeList && footerEmbedCodeTemplate) {
+                addFooterEmbedCodeButton.addEventListener('click', function () {
+                    var templateContent = footerEmbedCodeTemplate.content.cloneNode(true);
+                    footerEmbedCodeList.appendChild(templateContent);
+                    updateFooterEmbedCodeLabels();
+                });
+
+                footerEmbedCodeList.addEventListener('click', function (event) {
+                    if (!event.target.matches('[data-remove-footer-embed-code]')) {
+                        return;
+                    }
+
+                    var item = event.target.closest('.footer-embed-code-item');
+
+                    if (!item) {
+                        return;
+                    }
+
+                    var items = footerEmbedCodeList.querySelectorAll('.footer-embed-code-item');
+
+                    if (items.length === 1) {
+                        var textarea = item.querySelector('textarea');
+                        if (textarea) {
+                            textarea.value = '';
+                        }
+                        return;
+                    }
+
+                    item.remove();
+                    updateFooterEmbedCodeLabels();
+                });
+
+                updateFooterEmbedCodeLabels();
+            }
+
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    button.disabled = true;
+                    logContainer.style.display = 'block';
+                    logElement.textContent = 'Sending...';
+
+                    var formData = new FormData(form);
+                    var actionUrl = form.action;
+                    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (data) {
+                                if (!response.ok) {
+                                    var error = new Error(data.message || 'An unknown error occurred.');
+                                    throw error;
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function (data) {
+                            logElement.textContent = data.message;
+                            button.disabled = false;
+                        })
+                        .catch(function (error) {
+                            logElement.textContent = error.message || 'An error occurred while sending the email. Check the browser console and server logs for more details.';
+                            button.disabled = false;
+                            console.error('Email send error:', error);
+                        });
+                });
+            }
+        });
     </script>
 @endpush
