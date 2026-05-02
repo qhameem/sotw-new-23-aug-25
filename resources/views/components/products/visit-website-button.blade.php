@@ -13,7 +13,7 @@
     $styleClasses = match ($styleVariant) {
         'default' => 'text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
         'primary' => 'text-white bg-primary-600 border border-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
-        'soft' => 'text-primary-700 bg-primary-50 border border-primary-200 rounded-lg shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+        'soft' => 'text-gray-700 bg-primary-50 border border-primary-200 rounded-lg shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
         default => 'text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
     };
 
