@@ -22,6 +22,7 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Route::post('login', [MagicLinkController::class, 'send'])->name('auth.email-link.send');
+    Route::post('auth/email-otp', [MagicLinkController::class, 'verify'])->name('auth.email-otp.verify');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

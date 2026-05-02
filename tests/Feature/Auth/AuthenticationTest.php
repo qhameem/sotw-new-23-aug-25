@@ -2,7 +2,7 @@
 
 use App\Models\Ad;
 use App\Models\User;
-use App\Notifications\MagicLoginLinkNotification;
+use App\Notifications\EmailOtpNotification;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -12,7 +12,7 @@ test('login screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('existing users can request a magic login link and sign in', function () {
+test('existing users can request an email otp and sign in', function () {
     Notification::fake();
 
     $user = User::factory()->unverified()->create();
@@ -20,17 +20,20 @@ test('existing users can request a magic login link and sign in', function () {
     $this->post('/login', [
         'email' => $user->email,
         'intended' => url('/dashboard'),
-    ])->assertSessionHas('status', 'magic-link-sent');
+    ])->assertSessionHas('status', 'otp-sent');
 
-    $loginUrl = null;
+    $otp = null;
 
-    Notification::assertSentOnDemand(MagicLoginLinkNotification::class, function ($notification, $channels, $notifiable) use ($user, &$loginUrl) {
-        $loginUrl = $notification->url();
+    Notification::assertSentOnDemand(EmailOtpNotification::class, function ($notification, $channels, $notifiable) use ($user, &$otp) {
+        $otp = $notification->otp();
 
         return $notifiable->routes['mail'] === $user->email;
     });
 
-    $response = $this->get($loginUrl);
+    $response = $this->post(route('auth.email-otp.verify'), [
+        'email' => $user->email,
+        'otp' => $otp,
+    ]);
 
     $this->assertAuthenticatedAs($user->fresh());
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
@@ -92,7 +95,7 @@ test('google login callback redirects authenticated users to their intended url'
     $response->assertRedirect('/dashboard');
 });
 
-test('users can logout after magic-link authentication', function () {
+test('users can logout after email otp authentication', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)->post('/logout');
@@ -101,7 +104,7 @@ test('users can logout after magic-link authentication', function () {
     $response->assertRedirect('/');
 });
 
-test('magic link auth keeps sessions configured for 30 days', function () {
+test('email otp auth keeps sessions configured for 30 days', function () {
     expect(config('session.lifetime'))->toBe(43200);
     expect(config('auth.guards.web.remember'))->toBe(43200);
 });

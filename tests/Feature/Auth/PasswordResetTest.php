@@ -1,6 +1,6 @@
 <?php
 
-test('forgot password routes redirect to the magic-link login flow', function () {
+test('forgot password routes redirect to the email-otp login flow', function () {
     $this->get('/forgot-password')
         ->assertRedirect(route('login'));
 
@@ -8,7 +8,7 @@ test('forgot password routes redirect to the magic-link login flow', function ()
         ->assertRedirect(route('login'));
 });
 
-test('reset password routes redirect to the magic-link login flow', function () {
+test('reset password routes redirect to the email-otp login flow', function () {
     $this->get('/reset-password/example-token')
         ->assertRedirect(route('login'));
 

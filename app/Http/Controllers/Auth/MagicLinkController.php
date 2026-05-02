@@ -5,13 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\AuthMagicLink;
 use App\Models\User;
-use App\Notifications\MagicLoginLinkNotification;
+use App\Notifications\EmailOtpNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -32,50 +31,80 @@ class MagicLinkController extends Controller
         ]);
 
         $email = Str::lower($validated['email']);
-        $throttleKey = Str::transliterate($email.'|'.$request->ip());
+        $throttleKey = $this->sendThrottleKey($email, $request);
 
-        if (RateLimiter::tooManyAttempts($throttleKey, self::THROTTLE_ATTEMPTS)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-
-            throw ValidationException::withMessages([
-                'email' => trans('auth.throttle', [
-                    'seconds' => $seconds,
-                    'minutes' => (int) ceil($seconds / 60),
-                ]),
-            ]);
-        }
-
+        $this->ensureNotRateLimited($throttleKey, 'email');
         RateLimiter::hit($throttleKey, self::THROTTLE_SECONDS);
 
         $user = User::where('email', $email)->first();
-        $plainToken = Str::random(64);
+        $otp = $this->generateOtp();
+
+        AuthMagicLink::query()
+            ->where('email', $email)
+            ->whereNull('consumed_at')
+            ->update(['consumed_at' => now()]);
 
         $magicLink = AuthMagicLink::create([
             'user_id' => $user?->id,
             'email' => $email,
-            'token_hash' => hash('sha256', $plainToken),
+            'token_hash' => hash('sha256', Str::uuid()->toString().Str::random(64)),
+            'otp_code_hash' => hash('sha256', $otp),
             'redirect_to' => $this->normalizeRedirectTo($validated['intended'] ?? null),
             'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
             'requested_ip' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
         ]);
 
-        $url = URL::temporarySignedRoute(
-            'auth.magic-link.consume',
-            $magicLink->expires_at,
-            [
-                'magic_link' => $magicLink->id,
-                'token' => $plainToken,
-            ]
-        );
-
         Notification::route('mail', $email)->notify(
-            new MagicLoginLinkNotification($url, self::EXPIRY_MINUTES)
+            new EmailOtpNotification($otp, self::EXPIRY_MINUTES)
         );
 
         return back()
-            ->with('status', 'magic-link-sent')
-            ->with('magic_link_email', $email);
+            ->with('status', 'otp-sent')
+            ->with('auth_email', $email);
+    }
+
+    public function verify(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'otp' => ['required', 'digits:6'],
+        ]);
+
+        $email = Str::lower($validated['email']);
+        $otp = (string) $validated['otp'];
+        $throttleKey = $this->verifyThrottleKey($email, $request);
+
+        $this->ensureNotRateLimited($throttleKey, 'otp');
+
+        $magicLink = AuthMagicLink::query()
+            ->where('email', $email)
+            ->whereNull('consumed_at')
+            ->latest('id')
+            ->first();
+
+        if (! $magicLink || $magicLink->isExpired()) {
+            RateLimiter::hit($throttleKey, self::THROTTLE_SECONDS);
+
+            throw ValidationException::withMessages([
+                'otp' => 'That one-time code has expired. Please request a new code.',
+            ]);
+        }
+
+        if (
+            blank($magicLink->otp_code_hash)
+            || ! hash_equals($magicLink->otp_code_hash, hash('sha256', $otp))
+        ) {
+            RateLimiter::hit($throttleKey, self::THROTTLE_SECONDS);
+
+            throw ValidationException::withMessages([
+                'otp' => 'That one-time code is invalid.',
+            ]);
+        }
+
+        RateLimiter::clear($throttleKey);
+
+        return $this->authenticate($request, $magicLink);
     }
 
     public function consume(Request $request, AuthMagicLink $magicLink): RedirectResponse
@@ -100,6 +129,33 @@ class MagicLinkController extends Controller
             ]);
         }
 
+        return $this->authenticate($request, $magicLink);
+    }
+
+    public function showCompleteProfile(Request $request): View|RedirectResponse
+    {
+        if (filled($request->user()->name)) {
+            return redirect()->route('home');
+        }
+
+        return view('auth.complete-profile');
+    }
+
+    public function completeProfile(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $request->user()->forceFill([
+            'name' => $validated['name'],
+        ])->save();
+
+        return redirect()->intended(route('home'))->with('status', 'profile-completed');
+    }
+
+    private function authenticate(Request $request, AuthMagicLink $magicLink): RedirectResponse
+    {
         $user = User::firstOrCreate(
             ['email' => $magicLink->email],
             [
@@ -138,26 +194,35 @@ class MagicLinkController extends Controller
             ->with('auth_sync_event', 'signed-in');
     }
 
-    public function showCompleteProfile(Request $request): View|RedirectResponse
+    private function ensureNotRateLimited(string $throttleKey, string $field): void
     {
-        if (filled($request->user()->name)) {
-            return redirect()->route('home');
+        if (! RateLimiter::tooManyAttempts($throttleKey, self::THROTTLE_ATTEMPTS)) {
+            return;
         }
 
-        return view('auth.complete-profile');
+        $seconds = RateLimiter::availableIn($throttleKey);
+
+        throw ValidationException::withMessages([
+            $field => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => (int) ceil($seconds / 60),
+            ]),
+        ]);
     }
 
-    public function completeProfile(Request $request): RedirectResponse
+    private function sendThrottleKey(string $email, Request $request): string
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        return 'auth-email-send:'.Str::transliterate($email.'|'.$request->ip());
+    }
 
-        $request->user()->forceFill([
-            'name' => $validated['name'],
-        ])->save();
+    private function verifyThrottleKey(string $email, Request $request): string
+    {
+        return 'auth-email-verify:'.Str::transliterate($email.'|'.$request->ip());
+    }
 
-        return redirect()->intended(route('home'))->with('status', 'profile-completed');
+    private function generateOtp(): string
+    {
+        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     private function normalizeRedirectTo(?string $intended): ?string

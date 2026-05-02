@@ -13,7 +13,7 @@ class PasswordResetLinkController extends Controller
      */
     public function create(): RedirectResponse
     {
-        return redirect()->route('login')->with('status', 'Use the email sign-in link to access your account.');
+        return redirect()->route('login')->with('status', 'Use the email sign-in code to access your account.');
     }
 
     /**
@@ -23,6 +23,6 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        return redirect()->route('login')->with('status', 'Use the email sign-in link to access your account.');
+        return redirect()->route('login')->with('status', 'Use the email sign-in code to access your account.');
     }
 }

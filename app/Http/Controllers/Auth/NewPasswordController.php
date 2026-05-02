@@ -13,7 +13,7 @@ class NewPasswordController extends Controller
      */
     public function create(Request $request): RedirectResponse
     {
-        return redirect()->route('login')->with('status', 'Password reset has been replaced by email sign-in links.');
+        return redirect()->route('login')->with('status', 'Password reset has been replaced by email sign-in codes.');
     }
 
     /**
@@ -23,6 +23,6 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        return redirect()->route('login')->with('status', 'Password reset has been replaced by email sign-in links.');
+        return redirect()->route('login')->with('status', 'Password reset has been replaced by email sign-in codes.');
     }
 }

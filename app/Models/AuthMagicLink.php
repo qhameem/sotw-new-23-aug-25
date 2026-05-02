@@ -11,6 +11,7 @@ class AuthMagicLink extends Model
         'user_id',
         'email',
         'token_hash',
+        'otp_code_hash',
         'redirect_to',
         'expires_at',
         'consumed_at',

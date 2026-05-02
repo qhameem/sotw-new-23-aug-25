@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\Notifications\MagicLoginLinkNotification;
+use App\Notifications\EmailOtpNotification;
 use Illuminate\Support\Facades\Notification;
 
 test('registration screen can be rendered', function () {
@@ -10,24 +10,27 @@ test('registration screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('new users can sign up with a magic link and complete their profile', function () {
+test('new users can sign up with an email otp and complete their profile', function () {
     Notification::fake();
 
     $email = 'test@example.com';
 
     $this->post('/register', [
         'email' => $email,
-    ])->assertSessionHas('status', 'magic-link-sent');
+    ])->assertSessionHas('status', 'otp-sent');
 
-    $loginUrl = null;
+    $otp = null;
 
-    Notification::assertSentOnDemand(MagicLoginLinkNotification::class, function ($notification, $channels, $notifiable) use ($email, &$loginUrl) {
-        $loginUrl = $notification->url();
+    Notification::assertSentOnDemand(EmailOtpNotification::class, function ($notification, $channels, $notifiable) use ($email, &$otp) {
+        $otp = $notification->otp();
 
         return $notifiable->routes['mail'] === $email;
     });
 
-    $response = $this->get($loginUrl);
+    $response = $this->post(route('auth.email-otp.verify'), [
+        'email' => $email,
+        'otp' => $otp,
+    ]);
 
     $user = User::where('email', $email)->first();
 
