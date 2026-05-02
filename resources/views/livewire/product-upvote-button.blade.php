@@ -16,7 +16,7 @@
                                                                             )">
                 {{-- START: Different design (customize this part later) --}}
                 <button type="button" @click.stop="toggleUpvote"
-                    class="flex flex-row items-center bg-primary-500 rounded-lg px-4 py-1.5 text-white text-sm font-semibold hover:bg-rose-600 transition-colors duration-200">
+                    class="flex flex-row items-center bg-primary-500 rounded-lg px-4 py-1.5 text-white text-sm font-semibold hover:bg-primary-600 transition-colors duration-200">
 
                     <span class="pr-2">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
