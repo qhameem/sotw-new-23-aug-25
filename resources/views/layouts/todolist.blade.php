@@ -34,6 +34,21 @@
 
     <title>@yield('title', 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', '')">
+    <meta name="application-name" content="Software on the Web">
+    <meta property="og:site_name" content="Software on the Web">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="@yield('title', 'Software on the Web')">
+    <meta property="og:description" content="@yield('meta_description', '')">
+    @php
+        $resolvedSocialImage = filled($meta_og_image ?? null) ? $meta_og_image : ($globalDefaultOgImageUrl ?? null);
+    @endphp
+    <meta name="twitter:card" content="{{ $resolvedSocialImage ? 'summary_large_image' : 'summary' }}">
+    <meta name="twitter:title" content="@yield('title', 'Software on the Web')">
+    <meta name="twitter:description" content="@yield('meta_description', '')">
+    @if($resolvedSocialImage)
+        <meta property="og:image" content="{{ $resolvedSocialImage }}">
+        <meta name="twitter:image" content="{{ $resolvedSocialImage }}">
+    @endif
 
     @php
         $customFaviconPath = config('theme.favicon_url');

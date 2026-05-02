@@ -8,6 +8,7 @@ use App\Services\TechStackDetectorService;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use App\Models\Category;
+use App\Models\PageMetaTag;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth; // Add this line
 use App\Http\View\Composers\SeoComposer;
@@ -81,6 +82,18 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['layouts.app', 'layouts.submission'], function ($view) {
             $view->with('popularSearchProducts', $this->getPopularSearchProducts())
                 ->with('popularSearchCategories', $this->getPopularSearchCategories());
+        });
+
+        View::composer(['layouts.app', 'layouts.submission', 'layouts.guest', 'layouts.todolist'], function ($view) {
+            $globalMeta = PageMetaTag::query()
+                ->select(['og_image_path'])
+                ->where('page_id', 'global_defaults')
+                ->first();
+
+            $view->with(
+                'globalDefaultOgImageUrl',
+                $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null
+            );
         });
 
         View::composer('partials._right-sidebar', ScheduledProductsStatsComposer::class);

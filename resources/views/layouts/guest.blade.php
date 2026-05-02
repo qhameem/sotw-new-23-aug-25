@@ -38,6 +38,16 @@
     <meta property="og:title" content="{{ config('app.name', 'Software on the Web') }}">
     <meta property="og:description" content="@yield('meta_description', config('app.name'))">
     @php
+        $resolvedSocialImage = $globalDefaultOgImageUrl ?? null;
+    @endphp
+    <meta name="twitter:card" content="{{ $resolvedSocialImage ? 'summary_large_image' : 'summary' }}">
+    <meta name="twitter:title" content="{{ config('app.name', 'Software on the Web') }}">
+    <meta name="twitter:description" content="@yield('meta_description', config('app.name'))">
+    @if($resolvedSocialImage)
+        <meta property="og:image" content="{{ $resolvedSocialImage }}">
+        <meta name="twitter:image" content="{{ $resolvedSocialImage }}">
+    @endif
+    @php
         $customLogoUrl = config('theme.logo_url');
         $siteLogo = $customLogoUrl ? \Illuminate\Support\Facades\Storage::url($customLogoUrl) : asset('favicon/apple-touch-icon.png');
     @endphp

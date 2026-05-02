@@ -25,10 +25,7 @@ class SettingsController extends Controller
      */
     public function index()
     {
-        $settings = [];
-        if (Storage::disk('local')->exists('settings.json')) {
-            $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-        }
+        $settings = $this->loadSettings();
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
@@ -462,5 +459,19 @@ class SettingsController extends Controller
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function loadSettings(): array
+    {
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return [];
+        }
+
+        return json_decode(Storage::disk('local')->get('settings.json'), true) ?: [];
+    }
+
+    private function saveSettings(array $settings): void
+    {
+        Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
     }
 }
