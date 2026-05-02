@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 
 class SeoApiController extends Controller
 {
+    private const GLOBAL_DEFAULTS_PAGE_ID = 'global_defaults';
+
     public function getPages()
     {
         try {
@@ -62,7 +64,7 @@ class SeoApiController extends Controller
             // Add the Global Fallback Defaults option at the very top
             array_unshift($formattedRoutes, [
                 'name' => '⭐ Global Fallback Defaults (Applies to all unconfigured pages)',
-                'id' => 'global_defaults',
+                'id' => self::GLOBAL_DEFAULTS_PAGE_ID,
                 'uri' => '*',
             ]);
 
@@ -79,14 +81,14 @@ class SeoApiController extends Controller
         $meta = PageMetaTag::where('page_id', $page_id)->first();
 
         if (!$meta) {
-            return response()->json(['meta_title' => '', 'meta_description' => '']);
+            return response()->json([
+                'meta_title' => '',
+                'meta_description' => '',
+                'og_image_path' => null,
+            ]);
         }
 
-        return response()->json([
-            'meta_title' => $meta->meta_title,
-            'meta_description' => $meta->meta_description,
-            'og_image_path' => $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null,
-        ]);
+        return response()->json($this->metaPayload($meta));
     }
 
     public function saveMeta(Request $request)
@@ -96,7 +98,7 @@ class SeoApiController extends Controller
             'path' => 'required|string|max:255',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
-            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -129,6 +131,13 @@ class SeoApiController extends Controller
 
             // Create an image resource from the uploaded file
             $sourceImage = imagecreatefromstring(file_get_contents($image->getRealPath()));
+
+            if (!$sourceImage) {
+                return response()->json([
+                    'message' => 'The uploaded image could not be processed. Please upload a JPG, PNG, or WEBP image.',
+                ], 422);
+            }
+
             $sourceWidth = imagesx($sourceImage);
             $sourceHeight = imagesy($sourceImage);
 
@@ -139,16 +148,33 @@ class SeoApiController extends Controller
             // Create a new true color image
             $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
 
-            // Resize and crop the image to the target dimensions
+            imagealphablending($targetImage, true);
+            imagesavealpha($targetImage, true);
+
+            $sourceAspectRatio = $sourceWidth / max($sourceHeight, 1);
+            $targetAspectRatio = $targetWidth / $targetHeight;
+
+            if ($sourceAspectRatio > $targetAspectRatio) {
+                $resizeHeight = $targetHeight;
+                $resizeWidth = (int) round($targetHeight * $sourceAspectRatio);
+            } else {
+                $resizeWidth = $targetWidth;
+                $resizeHeight = (int) round($targetWidth / max($sourceAspectRatio, 0.0001));
+            }
+
+            $destinationX = (int) floor(($targetWidth - $resizeWidth) / 2);
+            $destinationY = (int) floor(($targetHeight - $resizeHeight) / 2);
+
+            // Resize and crop the image to the target dimensions without distortion
             imagecopyresampled(
                 $targetImage,
                 $sourceImage,
+                $destinationX,
+                $destinationY,
                 0,
                 0,
-                0,
-                0,
-                $targetWidth,
-                $targetHeight,
+                $resizeWidth,
+                $resizeHeight,
                 $sourceWidth,
                 $sourceHeight
             );
@@ -165,6 +191,20 @@ class SeoApiController extends Controller
             $pageMetaTag->save();
         }
 
-        return response()->json(['message' => 'Meta tags saved successfully.', 'data' => $pageMetaTag]);
+        return response()->json([
+            'message' => 'Meta tags saved successfully.',
+            'data' => $this->metaPayload($pageMetaTag),
+        ]);
+    }
+
+    private function metaPayload(PageMetaTag $meta): array
+    {
+        return [
+            'page_id' => $meta->page_id,
+            'path' => $meta->path,
+            'meta_title' => $meta->meta_title,
+            'meta_description' => $meta->meta_description,
+            'og_image_path' => $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null,
+        ];
     }
 }
