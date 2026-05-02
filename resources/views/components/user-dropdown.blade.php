@@ -1,8 +1,8 @@
 <div x-data="{ open: false, adminSection: null, toggleAdminSection(section) { this.adminSection = this.adminSection === section ? null : section } }" class="relative flex items-center ms-auto sm:ms-2 z-50">
+    @auth
     <button type="button" @click.stop="open = !open"
         class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
         aria-haspopup="true" :aria-expanded="open ? 'true' : 'false'">
-        @auth
             @if (Auth::user()->google_avatar)
                 <img src="{{ Auth::user()->google_avatar }}" alt="{{ Auth::user()->name }}"
                     class="h-8 w-8 rounded-full object-cover" />
@@ -12,14 +12,25 @@
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </span>
             @endif
-        @else
-            <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
-                class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold">Log in <span
-                    aria-hidden="true">&rarr;</span></a>
-        @endauth
     </button>
+    @else
+    <button
+        type="button"
+        @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
+        aria-label="Log in"
+        title="Log in"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
+            <path d="M10 17l5-5-5-5" />
+            <path d="M15 12H4" />
+        </svg>
+    </button>
+    @endauth
 
     <!-- Sliding drawer-style dropdown -->
+    @auth
     <div x-show="open" x-transition.opacity.duration.150ms @click.outside="open = false"
         @keydown.escape.window="open = false"
         class="absolute top-full right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
@@ -149,5 +160,6 @@
             @endauth
         </div>
     </div>
+    @endauth
 
 </div>

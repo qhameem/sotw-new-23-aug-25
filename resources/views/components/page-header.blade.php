@@ -6,6 +6,7 @@
 @php
     $titleText = trim(strip_tags((string) $title));
     $hasTitle = $titleText !== '';
+    $hasActions = isset($actions) && trim((string) $actions) !== '';
 @endphp
 
 <div
@@ -28,6 +29,11 @@
             </div>
         </div>
         <div class="flex items-center space-x-4">
+            @unless($hasActions)
+                <div class="md:hidden">
+                    <x-add-product-button compact />
+                </div>
+            @endunless
             @if (isset($actions))
                 {!! $actions !!}
             @endif

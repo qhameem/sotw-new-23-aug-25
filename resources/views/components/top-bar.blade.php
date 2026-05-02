@@ -217,7 +217,10 @@
             </div>
             <div class="flex shrink-0 items-center gap-4">
                 @guest
-                    <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
+                    <div class="flex items-center gap-2">
+                        <x-add-product-button />
+                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
+                    </div>
                 @else
                     <div class="flex items-center">
                     <div class="flex items-center space-x-2">

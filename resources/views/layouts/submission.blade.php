@@ -139,7 +139,7 @@
         }
     </script>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <script>
@@ -424,14 +424,25 @@
                 <a href="{{ route('home') }}">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                 </a>
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2">
                     @guest
-                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
-                            class="text-sm bg-gray-900 text-white py-1.5 px-4 rounded-lg font-semibold">
-                            Log in <span aria-hidden="true">&rarr;</span>
-                        </a>
+                        <x-add-product-button compact />
+                        <button
+                            type="button"
+                            @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
+                            aria-label="Log in"
+                            title="Log in"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
+                                <path d="M10 17l5-5-5-5" />
+                                <path d="M15 12H4" />
+                            </svg>
+                        </button>
                     @else
                         <div class="flex items-center space-x-2">
+                            <x-add-product-button compact />
                             @auth
                                 <div id="mobile-notification-bell-app">
                                     <notification-bell :user-id="{{ Auth::id() }}"></notification-bell>
@@ -455,8 +466,6 @@
         <!-- Mobile navigation -->
         @include('partials._mobile-footer-menu')
     </div>
-
-    <x-mobile-categories-menu />
 
     @include('partials._global-search-modal')
     <template id="delayed-vendor-scripts">
