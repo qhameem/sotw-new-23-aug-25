@@ -8,6 +8,32 @@
 @section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow')
 
 @section('content')
+    @php
+        $breadcrumbSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                [
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Home',
+                    'item' => url('/'),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 2,
+                    'name' => $productA->name,
+                    'item' => route('products.show', $productA->slug),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 3,
+                    'name' => 'vs ' . $productB->name,
+                    'item' => route('pseo.compare', ['params' => $productA->slug . '-vs-' . $productB->slug]),
+                ],
+            ],
+        ];
+    @endphp
     <div class="py-4">
         @php
             $breadcrumbs = [
@@ -19,15 +45,7 @@
     </div>
 
     <script type="application/ld+json">
-    {
-        "@@context": "https://schema.org",
-        "@@type": "BreadcrumbList",
-        "itemListElement": [
-            {"@@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
-            {"@@type": "ListItem", "position": 2, "name": "{{ $productA->name }}", "item": "{{ route('products.show', $productA->slug) }}"},
-            {"@@type": "ListItem", "position": 3, "name": "vs {{ $productB->name }}"}
-        ]
-    }
+        {!! json_encode($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
     </script>
 
     <div class="bg-white rounded-lg py-6 md:py-8">

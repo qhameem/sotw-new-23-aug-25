@@ -66,20 +66,20 @@ class Breadcrumbs extends Component
                 }
             }
 
-            $url = $isLast ? null : url($currentPath);
+            $link = $isLast ? null : url($currentPath);
 
             // Special URL for "Submission Success" segment
             if ($segment === 'submission-success' && $index > 0 && $segments[$index - 1] === 'products') {
                 if ($request->user() && $request->user()->hasRole('admin')) {
-                    $url = route('admin.products.index');
+                    $link = route('admin.products.index');
                 } else {
-                    $url = route('products.my');
+                    $link = route('products.my');
                 }
             }
 
             $breadcrumbs[] = [
                 'label' => $label,
-                'url' => $url,
+                'link' => $link,
             ];
         }
 

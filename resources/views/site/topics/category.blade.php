@@ -18,6 +18,44 @@
 @endsection
 
 @section('content')
+    @php
+        $breadcrumbSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                [
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Home',
+                    'item' => url('/'),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 2,
+                    'name' => 'All Categories',
+                    'item' => route('categories.index'),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 3,
+                    'name' => $category->name,
+                    'item' => route('categories.show', $category->slug),
+                ],
+            ],
+        ];
+    @endphp
+
+    <div class="py-4">
+        <x-breadcrumbs :items="[
+            ['label' => 'All Categories', 'link' => route('categories.index')],
+            ['label' => $category->name],
+        ]" />
+    </div>
+
+    <script type="application/ld+json">
+        {!! json_encode($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+
     <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-6">
             <section class="md:col-span-12 col-span-1 min-w-0">

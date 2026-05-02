@@ -14,8 +14,21 @@
 
 @section('content')
     @include('products.partials._json-ld-product')
+    @php
+        $primaryCategory = $product->categories->first();
+        $breadcrumbs = [];
+
+        if ($primaryCategory) {
+            $breadcrumbs[] = [
+                'label' => $primaryCategory->name,
+                'link' => route('categories.show', $primaryCategory->slug),
+            ];
+        }
+
+        $breadcrumbs[] = ['label' => $product->name];
+    @endphp
     <div class="py-4">
-        <x-breadcrumbs :items="[['label' => $product->name]]" />
+        <x-breadcrumbs :items="$breadcrumbs" />
     </div>
 
     <div class="rounded-lg py-6 md:py-8"

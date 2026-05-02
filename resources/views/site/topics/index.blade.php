@@ -14,7 +14,33 @@
         $supercategories = $categoryGroups->reject(fn ($group) => $group['key'] === 'view-all');
         $allCategoriesGroup = $categoryGroups->firstWhere('key', 'view-all');
         $allCategories = collect($allCategoriesGroup['items'] ?? []);
+        $breadcrumbSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                [
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Home',
+                    'item' => url('/'),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 2,
+                    'name' => 'All Categories',
+                    'item' => route('categories.index'),
+                ],
+            ],
+        ];
     @endphp
+
+    <div class="py-4">
+        <x-breadcrumbs :items="[['label' => 'All Categories']]" />
+    </div>
+
+    <script type="application/ld+json">
+        {!! json_encode($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
     <div class="space-y-12 p-4">
         <section class="overflow-hidden rounded-[2rem] border border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100">
