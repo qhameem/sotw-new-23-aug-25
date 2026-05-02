@@ -11,13 +11,9 @@ class SeoComposer
     public function compose(View $view)
     {
         $routeName = Route::currentRouteName();
-        // Try to fetch specific page SEO
-        $meta = PageMetaTag::where('page_id', $routeName)->first();
-
-        // If not found, fallback to global SEO
-        if (!$meta) {
-            $meta = PageMetaTag::where('page_id', 'global_defaults')->first();
-        }
+        $routeMeta = PageMetaTag::where('page_id', $routeName)->first();
+        $globalMeta = PageMetaTag::where('page_id', 'global_defaults')->first();
+        $meta = $routeMeta ?: $globalMeta;
 
         $viewData = $view->getData();
 
@@ -38,7 +34,7 @@ class SeoComposer
             }
             
             if (!isset($viewData['meta_og_image'])) {
-                $view->with('meta_og_image', $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null);
+                $view->with('meta_og_image', $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null);
             }
         } else {
             // Absolute default if nothing is configured

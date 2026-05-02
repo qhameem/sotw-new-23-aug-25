@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <div class="p-6 border border-gray-200 rounded-lg">
                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Social Media Image (OG Image)</h3>
-                    <p class="text-sm text-gray-500 mb-4">Recommended dimensions: 1200x630px. Accepted formats: JPG, JPEG, PNG, WEBP. Maximum size: 2 MB. Uploaded images are normalized to WEBP for storage.</p>
+                    <p id="og-image-help" class="text-sm text-gray-500 mb-4">Recommended dimensions: 1200x630px. Accepted formats: JPG, JPEG, PNG, WEBP. Maximum size: 2 MB. Uploaded images are normalized to WEBP for storage.</p>
                     <div class="flex items-center space-x-6">
                         <div class="shrink-0">
                             <img id="og-image-preview" class="h-24 w-48 object-cover rounded-md border border-gray-200" src="${PLACEHOLDER_PREVIEW_URL}" alt="OG Image Preview">
@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const responseMessage = document.getElementById('response-message');
     const ogImageInput = document.getElementById('og-image');
     const ogImagePreview = document.getElementById('og-image-preview');
+    const ogImageHelp = document.getElementById('og-image-help');
     const setPreviewImage = (imageUrl) => {
         ogImagePreview.src = imageUrl || PLACEHOLDER_PREVIEW_URL;
     };
@@ -103,9 +104,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const isGlobalDefaults = (page.id || page.name) === GLOBAL_DEFAULTS_PAGE_ID;
+
         pageIdInput.value = page.id || page.name;
         pageSearchInput.value = page.name;
         currentPageLabel.textContent = page.name;
+        ogImageInput.disabled = !isGlobalDefaults;
+        ogImageHelp.textContent = isGlobalDefaults
+            ? 'Recommended dimensions: 1200x630px. Accepted formats: JPG, JPEG, PNG, WEBP. Maximum size: 2 MB. Uploaded images are normalized to WEBP for storage.'
+            : 'This page can override title and description, but the OG image is controlled globally from Global Fallback Defaults.';
     };
 
     const selectedPageFromId = (pageId) => allPages.find(page => (page.id || page.name) === pageId);

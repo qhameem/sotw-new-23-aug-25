@@ -7,7 +7,6 @@ use App\Models\TodoListItem;
 use App\Models\PageMetaTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Exports\TodoListExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -26,7 +25,6 @@ class TodoListController extends Controller
         $seoSettings = PageMetaTag::where('page_id', '/free-todo-list-tool')->first();
         $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
         $meta_description = $seoSettings->meta_description ?? '';
-        $meta_og_image = $seoSettings?->og_image_path ? Storage::url($seoSettings->og_image_path) : null;
         $lists = [];
         if (Auth::check()) {
             $lists = TodoList::where('user_id', Auth::id())->with('items')->get();
@@ -34,7 +32,7 @@ class TodoListController extends Controller
             $lists = session('todo_lists', []);
         }
 
-        return view('todolists.index', compact('meta_title', 'meta_description', 'meta_og_image', 'lists'));
+        return view('todolists.index', compact('meta_title', 'meta_description', 'lists'));
     }
 
     public function store(Request $request)

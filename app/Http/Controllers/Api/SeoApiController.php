@@ -79,16 +79,17 @@ class SeoApiController extends Controller
     public function getMeta($page_id)
     {
         $meta = PageMetaTag::where('page_id', $page_id)->first();
+        $globalMeta = PageMetaTag::where('page_id', self::GLOBAL_DEFAULTS_PAGE_ID)->first();
 
         if (!$meta) {
             return response()->json([
                 'meta_title' => '',
                 'meta_description' => '',
-                'og_image_path' => null,
+                'og_image_path' => $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null,
             ]);
         }
 
-        return response()->json($this->metaPayload($meta));
+        return response()->json($this->metaPayload($meta, $page_id === self::GLOBAL_DEFAULTS_PAGE_ID ? $meta : $globalMeta));
     }
 
     public function saveMeta(Request $request)
@@ -103,6 +104,12 @@ class SeoApiController extends Controller
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
+        }
+
+        if ($request->hasFile('og_image') && $request->input('page_id') !== self::GLOBAL_DEFAULTS_PAGE_ID) {
+            return response()->json([
+                'og_image' => ['The OG image can only be changed from Global Fallback Defaults.'],
+            ], 422);
         }
 
         $pageMetaTag = PageMetaTag::updateOrCreate(
@@ -193,18 +200,18 @@ class SeoApiController extends Controller
 
         return response()->json([
             'message' => 'Meta tags saved successfully.',
-            'data' => $this->metaPayload($pageMetaTag),
+            'data' => $this->metaPayload($pageMetaTag, $request->input('page_id') === self::GLOBAL_DEFAULTS_PAGE_ID ? $pageMetaTag : PageMetaTag::where('page_id', self::GLOBAL_DEFAULTS_PAGE_ID)->first()),
         ]);
     }
 
-    private function metaPayload(PageMetaTag $meta): array
+    private function metaPayload(PageMetaTag $meta, ?PageMetaTag $imageSource = null): array
     {
         return [
             'page_id' => $meta->page_id,
             'path' => $meta->path,
             'meta_title' => $meta->meta_title,
             'meta_description' => $meta->meta_description,
-            'og_image_path' => $meta->og_image_path ? \Illuminate\Support\Facades\Storage::url($meta->og_image_path) : null,
+            'og_image_path' => $imageSource?->og_image_path ? \Illuminate\Support\Facades\Storage::url($imageSource->og_image_path) : null,
         ];
     }
 }
