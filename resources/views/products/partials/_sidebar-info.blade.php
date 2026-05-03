@@ -10,9 +10,13 @@
             @endif
         @endforeach
     </div>
-    @unless($product->user->hasRole('admin'))
-        <div>
-            <h3 class="text-xs text-gray-500 mb-2">Publisher</h3>
+    <div>
+        <h3 class="text-xs text-gray-500 mb-2">Submitted by</h3>
+        @if($product->user->hasRole('admin'))
+            <div class="site-body-text text-gray-800 text-sm font-medium">
+                Software on the Web team
+            </div>
+        @else
             <div class="flex items-center gap-2">
                 <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
                     class="size-6 rounded-full border border-gray-100">
@@ -20,8 +24,34 @@
                     {{ $product->user->name }}
                 </div>
             </div>
+        @endif
+    </div>
+
+    @if(($canClaimProduct ?? false) && Auth::check())
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <h3 class="text-xs text-gray-500 mb-2">Ownership</h3>
+
+            @if(($currentUserClaim?->status ?? null) === \App\Models\ProductClaim::STATUS_PENDING)
+                <p class="text-sm text-gray-700">
+                    Your claim is pending admin review.
+                </p>
+                <a href="{{ route('products.claim.create', $product) }}" class="inline-flex items-center text-sm font-medium text-primary-600 hover:underline mt-2">
+                    Manage claim
+                </a>
+            @elseif(Auth::user()->hasVerifiedEmail())
+                <p class="text-sm text-gray-700">
+                    If you own this product, you can submit a claim and the admin can assign it to you after review.
+                </p>
+                <a href="{{ route('products.claim.create', $product) }}" class="inline-flex items-center text-sm font-medium text-primary-600 hover:underline mt-2">
+                    Claim this product
+                </a>
+            @else
+                <p class="text-sm text-gray-700">
+                    Verify your email first to submit a product claim.
+                </p>
+            @endif
         </div>
-    @endunless
+    @endif
 
     @if($bestForCategories->isNotEmpty())
         <div>

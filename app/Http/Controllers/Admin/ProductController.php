@@ -16,24 +16,17 @@ use App\Support\ProductMediaSeo;
 class ProductController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Product::with(['user', 'categories']); // Eager load categories for search
+        $query = Product::with(['user', 'categories']);
 
-        // Search functionality
-        $searchTerm = $request->input('q');
-        if ($searchTerm) {
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'LIKE', "%{$searchTerm}%")
-                    // ->orWhere('sku', 'LIKE', "%{$searchTerm}%") // SKU field does not exist
-                    ->orWhereHas('categories', function ($cq) use ($searchTerm) {
-                        $cq->where('name', 'LIKE', "%{$searchTerm}%");
-                    });
-            });
-        }
+        $searchTerm = trim((string) $request->input('q'));
+        $this->applySearch($query, $searchTerm);
+        $selectedProductId = $request->integer('selected_product_id');
 
         // Sorting functionality
         $sortBy = $request->input('sort_by', 'created_at'); // Default sort by creation date
@@ -52,9 +45,64 @@ class ProductController extends Controller
             }
         }
 
-        $products = $query->paginate(15)->withQueryString(); // withQueryString appends sort/search params to pagination links
+        $products = $query->paginate(15)->withQueryString();
+        $selectedProduct = null;
 
-        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir'));
+        if ($selectedProductId) {
+            $selectedProduct = Product::with(['user', 'categories'])->find($selectedProductId);
+        }
+
+        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct'));
+    }
+
+    public function autocomplete(Request $request)
+    {
+        $searchTerm = trim((string) $request->input('q'));
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        if (!in_array($sortBy, ['name', 'id', 'created_at', 'is_promoted'], true)) {
+            $sortBy = 'created_at';
+        }
+
+        if (!in_array($sortDir, ['asc', 'desc'], true)) {
+            $sortDir = 'desc';
+        }
+
+        if (mb_strlen($searchTerm) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::with('user')
+            ->select(['id', 'user_id', 'name', 'slug', 'tagline', 'link', 'logo'])
+            ->tap(fn ($query) => $this->applySearch($query, $searchTerm))
+            ->orderBy('is_promoted', 'desc')
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+
+        return response()->json($products->map(function (Product $product) use ($searchTerm, $sortBy, $sortDir) {
+            $domain = parse_url($product->link, PHP_URL_HOST);
+            $domain = is_string($domain) ? preg_replace('/^www\./i', '', $domain) : null;
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'tagline' => $product->tagline,
+                'domain' => $domain,
+                'logo_url' => $product->logo_url,
+                'owner_name' => $product->user?->name,
+                'owner_email' => $product->user?->email,
+                'admin_url' => route('admin.products.show', $product),
+                'select_url' => route('admin.products.index', [
+                    'q' => $searchTerm,
+                    'sort_by' => $sortBy,
+                    'sort_dir' => $sortDir,
+                    'selected_product_id' => $product->id,
+                ]) . '#selected-product-card',
+            ];
+        })->values());
     }
 
     /**
@@ -97,6 +145,28 @@ class ProductController extends Controller
         ];
 
         return view('admin.products.create', compact('displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'allTechStacksData'));
+    }
+
+    protected function applySearch($query, string $searchTerm): void
+    {
+        if ($searchTerm === '') {
+            return;
+        }
+
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('slug', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('tagline', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('product_page_tagline', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('link', 'LIKE', "%{$searchTerm}%")
+                ->orWhereHas('user', function ($uq) use ($searchTerm) {
+                    $uq->where('name', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('email', 'LIKE', "%{$searchTerm}%");
+                })
+                ->orWhereHas('categories', function ($cq) use ($searchTerm) {
+                    $cq->where('name', 'LIKE', "%{$searchTerm}%");
+                });
+        });
     }
 
     /**

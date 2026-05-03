@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Type;
 use App\Models\PremiumProduct;
 use App\Models\TechStack;
+use App\Models\ProductClaim;
 use App\Models\UserProductUpvote; // Added for upvote checking
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
@@ -1694,7 +1695,35 @@ class ProductController extends Controller
         $metaDescription = Str::limit($description, 160);
 
         $allCategories = Category::orderBy('name')->get();
-        return view('products.show', compact('product', 'title', 'pageTitle', 'pricingCategory', 'similarProducts', 'metaDescription', 'bestForCategories', 'allCategories'));
+        $currentUserClaim = null;
+        $canClaimProduct = false;
+
+        if (Auth::check()) {
+            /** @var \App\Models\User $currentUser */
+            $currentUser = Auth::user();
+            $canClaimProduct = $currentUser->id !== $product->user_id && !$currentUser->hasRole('admin');
+
+            if ($canClaimProduct) {
+                $currentUserClaim = ProductClaim::query()
+                    ->where('product_id', $product->id)
+                    ->where('user_id', $currentUser->id)
+                    ->latest()
+                    ->first();
+            }
+        }
+
+        return view('products.show', compact(
+            'product',
+            'title',
+            'pageTitle',
+            'pricingCategory',
+            'similarProducts',
+            'metaDescription',
+            'bestForCategories',
+            'allCategories',
+            'currentUserClaim',
+            'canClaimProduct'
+        ));
     }
 
     /**

@@ -64,6 +64,8 @@
                 <div x-show="adminSection === 'moderation'" x-transition.opacity.duration.150ms class="pb-1">
                     <a href="{{ route('admin.product-approvals.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-seal-check class="mr-2 h-4 w-4 text-gray-400" />Product Approvals</a>
+                    <a href="{{ route('admin.product-claims.index') }}"
+                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-user-plus class="mr-2 h-4 w-4 text-gray-400" />Product Claims</a>
                     <a href="{{ route('admin.products.pending-edits.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-pencil-simple class="mr-2 h-4 w-4 text-gray-400" />Pending Edits</a>
                     <a href="{{ route('admin.product-reviews.index') }}"
@@ -87,8 +89,6 @@
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-stack class="mr-2 h-4 w-4 text-gray-400" />Tech Stacks</a>
                     <a href="{{ route('admin.premium-products.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-medal class="mr-2 h-4 w-4 text-gray-400" />Premium Products</a>
-                    <a href="{{ route('admin.products.assign.index') }}"
-                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-user-plus class="mr-2 h-4 w-4 text-gray-400" />Assign Product</a>
                 </div>
                 <button type="button" @click="toggleAdminSection('content')"
                     class="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100">

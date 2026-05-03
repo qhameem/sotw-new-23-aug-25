@@ -11,6 +11,7 @@ use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
 use App\Helpers\HtmlHelper;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use App\Support\ProductMediaSeo;
 
@@ -259,6 +260,11 @@ class Product extends Model implements Sitemapable
     public function customCategorySubmissions()
     {
         return $this->hasMany(CustomCategorySubmission::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(ProductClaim::class);
     }
 
     public function getIsUpvotedByCurrentUserAttribute()

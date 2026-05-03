@@ -35,6 +35,7 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\AdInteractionController;
 use App\Http\Controllers\ArticleEditorController;
 use App\Http\Controllers\ProductInteractionController;
+use App\Http\Controllers\ProductClaimController;
 
 Route::get('/phpinfo', [ProductController::class, 'phpinfo']);
 
@@ -90,6 +91,12 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::post('/promote/update-date', [StripeController::class, 'updateDate'])->name('promote.update-date');
 });
 
+Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
+    Route::get('/product/{product:slug}/claim', [ProductClaimController::class, 'create'])->name('products.claim.create');
+    Route::post('/product/{product:slug}/claim', [ProductClaimController::class, 'store'])->name('products.claim.store');
+    Route::delete('/product/{product:slug}/claim', [ProductClaimController::class, 'destroy'])->name('products.claim.destroy');
+});
+
 Route::get('/stripe/cancel', [StripeController::class, 'cancel'])->name('stripe.cancel');
 Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
 Route::post('/stripe/product-review-checkout', [StripeController::class, 'productReviewCheckout'])->name('stripe.product-review.checkout');
@@ -110,11 +117,13 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::get('products/{product}/review-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'showEditDiff'])->name('products.review-edits');
     Route::post('products/{product}/approve-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approveEdits'])->name('products.approve-edits');
     Route::post('products/{product}/reject-edits', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'rejectEdits'])->name('products.reject-edits');
+    Route::get('product-claims', [\App\Http\Controllers\Admin\ProductClaimController::class, 'index'])->name('product-claims.index');
+    Route::post('product-claims/{productClaim}/approve', [\App\Http\Controllers\Admin\ProductClaimController::class, 'approve'])->name('product-claims.approve');
+    Route::post('product-claims/{productClaim}/reject', [\App\Http\Controllers\Admin\ProductClaimController::class, 'reject'])->name('product-claims.reject');
 
-    // Product Assignment (Must come BEFORE products resource)
-    Route::get('products/assign', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'index'])->name('products.assign.index');
+    // Product Assignment endpoints used inline on the products page
+    Route::get('products/autocomplete', [\App\Http\Controllers\Admin\ProductController::class, 'autocomplete'])->name('products.autocomplete');
     Route::post('products/assign', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'assign'])->name('products.assign.store');
-    Route::get('products-search-ajax', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'searchProducts'])->name('products.search.ajax');
     Route::get('users-search-ajax', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'searchUsers'])->name('users.search.ajax');
 
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last

@@ -266,16 +266,6 @@ if (document.querySelector('[data-article-editor-root]')) {
     });
 }
 
-// Mount the ProductAssignment component for admin
-if (document.getElementById('product-assignment-app')) {
-    import('./components/admin/ProductAssignment.vue').then((ProductAssignment) => {
-        import('vue').then(({ createApp }) => {
-            const assignmentApp = createApp(ProductAssignment.default);
-            assignmentApp.mount('#product-assignment-app');
-        });
-    });
-}
-
 // Make Datepicker available globally for inline scripts
 
 document.addEventListener('DOMContentLoaded', () => {

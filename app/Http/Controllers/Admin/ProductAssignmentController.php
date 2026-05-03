@@ -11,39 +11,6 @@ use Illuminate\Support\Facades\DB;
 class ProductAssignmentController extends Controller
 {
     /**
-     * Display the assignment form.
-     */
-    public function index()
-    {
-        return view('admin.products.assign');
-    }
-
-    /**
-     * Search products by name for the dynamic dropdown.
-     */
-    public function searchProducts(Request $request)
-    {
-        $query = $request->get('q');
-
-        if (!$query) {
-            return response()->json([]);
-        }
-
-        $products = Product::where('name', 'like', "%{$query}%")
-            ->limit(10)
-            ->get(['id', 'name', 'tagline', 'logo', 'link']); // Include 'link' for favicon fallback
-
-        return response()->json($products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'tagline' => $product->tagline,
-                'logo_url' => $product->logo_url,
-            ];
-        }));
-    }
-
-    /**
      * Search users by name, username, or email for the dynamic dropdown.
      */
     public function searchUsers(Request $request)
