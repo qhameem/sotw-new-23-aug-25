@@ -17,7 +17,7 @@
             <!-- Main Content -->
             <main
                 @class([
-                    'flex-1 w-full order-1 md:order-2 md:pt-[3.7rem] min-h-0',
+                    'flex-1 w-full min-w-0 order-1 md:order-2 md:pt-[3.7rem] min-h-0',
                     $mainPadding,
                     $mainContentMaxWidth,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
@@ -48,6 +48,7 @@
                     @endunless
                 </div>
                 <div @class([
+                    'min-w-0',
                     'md:flex-1 md:flex md:flex-col min-h-0' => $lockHeight,
                     'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search'),
                     'md:overflow-y-auto pb-32' => $lockHeight && request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')
