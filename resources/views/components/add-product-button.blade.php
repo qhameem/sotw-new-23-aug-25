@@ -10,6 +10,7 @@
 <a
     href="{{ $targetUrl }}"
     x-data="{ loading: false }"
+    x-bind:aria-busy="loading"
     @click.prevent="
         if (@js($isGuest)) {
             $dispatch('open-modal', { name: 'login-required-modal', url: @js($targetUrl) });
@@ -20,12 +21,15 @@
         window.location.href = @js($targetUrl);
     "
     {{ $attributes->class([
-        'inline-flex items-center justify-center gap-2 rounded-md border-2 border-gray-200 bg-white px-3 py-1 text-gray-700 shadow-sm transition duration-300 hover:bg-gray-50 hover:text-gray-900',
+        'relative inline-flex min-h-9 items-center justify-center gap-2 rounded-md border-2 border-gray-200 bg-white px-3 py-1 text-gray-700 shadow-sm transition duration-300 hover:bg-gray-50 hover:text-gray-900',
         'text-sm font-semibold' => $compact,
         'text-base font-semibold' => !$compact,
     ]) }}
 >
-    <span x-show="!loading" class="inline-flex items-center gap-2">
+    <span
+        class="inline-flex items-center gap-2 whitespace-nowrap transition-opacity duration-150"
+        :class="loading ? 'opacity-0' : 'opacity-100'"
+    >
         @if ($compact)
             <span>Submit</span>
         @else
@@ -52,11 +56,16 @@
         @endif
     </span>
 
-    <span x-show="loading" x-cloak class="inline-flex items-center gap-2" style="display: none;">
-        <span class="inline-flex items-center justify-center gap-[3px]">
-            <span class="h-2 w-2 animate-pulse rounded-full bg-[#ff5c5c] [animation-delay:-0.32s]"></span>
-            <span class="h-2 w-2 animate-pulse rounded-full bg-[#ff5c5c] [animation-delay:-0.16s]"></span>
-            <span class="h-2 w-2 animate-pulse rounded-full bg-[#ff5c5c]"></span>
+    <span
+        x-show="loading"
+        x-cloak
+        class="absolute inset-0 inline-flex items-center justify-center text-current"
+        style="display: none;"
+    >
+        <span class="inline-flex items-center justify-center gap-[3px]" aria-hidden="true">
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:-0.32s]"></span>
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:-0.16s]"></span>
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-current"></span>
         </span>
     </span>
 </a>

@@ -171,9 +171,31 @@
             <button
               type="button"
               @click="$emit('submit')"
-              class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+              :disabled="isLoading"
+              :class="{
+                'cursor-wait': isLoading,
+                'hover:bg-rose-700': !isLoading
+              }"
+              class="relative inline-flex min-h-12 items-center justify-center rounded-lg bg-rose-600 px-8 py-3 text-sm font-bold text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >
-              Save All Changes
+              <span
+                class="whitespace-nowrap transition-opacity duration-150"
+                :class="isLoading ? 'opacity-0' : 'opacity-100'"
+              >
+                Save All Changes
+              </span>
+              <span
+                v-if="isLoading"
+                class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
+                aria-live="polite"
+              >
+                <span class="flex items-center gap-1.5" aria-hidden="true">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                </span>
+                <span>Saving</span>
+              </span>
             </button>
           </div>
         </div>
@@ -264,9 +286,31 @@
             <button
               type="button"
               @click="$emit('submit')"
-              class="px-8 py-3 bg-rose-600 text-white font-bold rounded-lg shadow-md hover:bg-rose-700 transition-all focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+              :disabled="isLoading"
+              :class="{
+                'cursor-wait': isLoading,
+                'hover:bg-rose-700': !isLoading
+              }"
+              class="relative inline-flex min-h-12 items-center justify-center rounded-lg bg-rose-600 px-8 py-3 text-sm font-bold text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >
-              Save All Changes
+              <span
+                class="whitespace-nowrap transition-opacity duration-150"
+                :class="isLoading ? 'opacity-0' : 'opacity-100'"
+              >
+                Save All Changes
+              </span>
+              <span
+                v-if="isLoading"
+                class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
+                aria-live="polite"
+              >
+                <span class="flex items-center gap-1.5" aria-hidden="true">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                </span>
+                <span>Saving</span>
+              </span>
             </button>
           </div>
         </div>
