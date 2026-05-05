@@ -171,7 +171,8 @@ class ProductApprovalController extends Controller
 
         if ($product->user) {
             Log::info("ProductApprovalController: Approving product ID {$product->id} for user ID {$product->user->id}. Dispatching ProductApproved event.");
-            event(new ProductApproved($product, $product->user, false));
+            $shouldSendEmail = $product->user_id !== $request->user()?->id;
+            event(new ProductApproved($product, $product->user, $shouldSendEmail));
         } else {
             Log::warning("ProductApprovalController: Product ID {$product->id} has no associated user. Cannot dispatch ProductApproved event.");
         }
@@ -223,7 +224,8 @@ class ProductApprovalController extends Controller
                     // Dispatch event
                     if ($product->user) { // Ensure product has an associated user
                         Log::info("ProductApprovalController (Bulk): Approving product ID {$product->id} for user ID {$product->user->id}. Dispatching ProductApproved event.");
-                        event(new ProductApproved($product, $product->user, false));
+                        $shouldSendEmail = $product->user_id !== $request->user()?->id;
+                        event(new ProductApproved($product, $product->user, $shouldSendEmail));
                     } else {
                         Log::warning("ProductApprovalController (Bulk): Product ID {$product->id} has no associated user. Cannot dispatch ProductApproved event.");
                     }
