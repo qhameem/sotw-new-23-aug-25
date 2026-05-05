@@ -19,14 +19,16 @@ class ProductApproved
 
     public Product $product;
     public User $user;
+    public bool $sendEmail;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Product $product, User $user)
+    public function __construct(Product $product, User $user, bool $sendEmail = true)
     {
         $this->product = $product;
         $this->user = $user;
+        $this->sendEmail = $sendEmail;
     }
 
     /**

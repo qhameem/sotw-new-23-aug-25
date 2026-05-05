@@ -37,6 +37,17 @@ class SendProductApprovedNotification
             Log::error("Failed to send in-app notification for product ID {$product->id}: " . $e->getMessage());
         }
 
+        if (!$event->sendEmail) {
+            EmailLog::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'status' => 'skipped',
+                'message' => 'Approval email suppressed for admin action.'
+            ]);
+            Log::info("Email skipped for product ID {$product->id}: suppressed for admin action.");
+            return;
+        }
+
         // Email Notification Logic
         if (!$user->profile) {
             EmailLog::create([
