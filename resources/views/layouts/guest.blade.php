@@ -127,30 +127,7 @@
         }
     </style>
 
-    @php
-        $customFaviconPath = config('theme.favicon_url');
-        $faviconBasePath = $customFaviconPath ? Illuminate\Support\Facades\Storage::url(dirname($customFaviconPath)) : asset('favicon');
-        $mainFaviconUrl = $customFaviconPath ? Illuminate\Support\Facades\Storage::url($customFaviconPath) : asset('favicon/favicon.ico');
-        $originalFaviconExtension = $customFaviconPath ? pathinfo($customFaviconPath, PATHINFO_EXTENSION) : 'ico';
-        $canUseGeneratedPngVersions = $customFaviconPath && in_array(strtolower($originalFaviconExtension), ['png', 'jpg', 'jpeg', 'gif']);
-    @endphp
-
-    @if ($customFaviconPath)
-        <link rel="icon" href="{{ $mainFaviconUrl }}">
-        @if ($canUseGeneratedPngVersions)
-            <link rel="apple-touch-icon" sizes="180x180" href="{{ $faviconBasePath . '/apple-touch-icon.png' }}">
-            <link rel="icon" type="image/png" sizes="32x32" href="{{ $faviconBasePath . '/favicon-32x32.png' }}">
-            <link rel="icon" type="image/png" sizes="16x16" href="{{ $faviconBasePath . '/favicon-16x16.png' }}">
-        @else
-            <link rel="apple-touch-icon" sizes="180x180" href="{{ $mainFaviconUrl }}">
-        @endif
-    @else
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('favicon/apple-touch-icon.png') }}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon/favicon-32x32.png') }}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon/favicon-16x16.png') }}">
-        <link rel="icon" href="{{ asset('favicon/favicon.ico') }}">
-    @endif
-    <link rel="manifest" href="{{ asset('favicon/site.webmanifest') }}">
+    @include('partials.theme.favicon-links')
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])

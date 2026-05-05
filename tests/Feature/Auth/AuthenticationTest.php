@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuthMagicLink;
 use App\Models\Ad;
 use App\Models\User;
 use App\Notifications\EmailOtpNotification;
@@ -107,4 +108,40 @@ test('users can logout after email otp authentication', function () {
 test('email otp auth keeps sessions configured for 30 days', function () {
     expect(config('session.lifetime'))->toBe(43200);
     expect(config('auth.guards.web.remember'))->toBe(43200);
+});
+
+test('email otp requests are throttled per ip across different email addresses', function () {
+    Notification::fake();
+
+    $ipAddress = '203.0.113.10';
+
+    foreach (range(1, 10) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
+            ->post('/login', [
+                'email' => "person{$attempt}@example.com",
+            ])
+            ->assertSessionHas('status', 'otp-sent');
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
+        ->post('/login', [
+            'email' => 'person11@example.com',
+        ])
+        ->assertSessionHasErrors('email');
+
+    Notification::assertSentOnDemandTimes(EmailOtpNotification::class, 10);
+});
+
+test('email otp requests ignore honeypot submissions', function () {
+    Notification::fake();
+
+    $email = 'botlike@example.com';
+
+    $this->post('/login', [
+        'email' => $email,
+        'company_name' => 'Acme Inc',
+    ])->assertSessionHas('status', 'otp-sent');
+
+    Notification::assertNothingSent();
+    expect(AuthMagicLink::where('email', $email)->exists())->toBeFalse();
 });

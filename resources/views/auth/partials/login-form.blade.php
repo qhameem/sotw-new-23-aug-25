@@ -1,6 +1,10 @@
 <form method="POST" action="{{ route('auth.email-link.send') }}" class="space-y-5" @submit="emailSubmitting = true">
     @csrf
     <input type="hidden" name="intended" x-bind:value="intendedUrl">
+    <div class="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+        <label for="company_name">Company</label>
+        <input id="company_name" type="text" name="company_name" tabindex="-1" autocomplete="off">
+    </div>
     <div>
         <x-input-label for="email_modal_login" :value="__('Email')" />
         <x-text-input id="email_modal_login" x-ref="emailInput" class="block mt-1 w-full" type="email" name="email" x-model="otpEmail" :value="old('email')" required autofocus autocomplete="username" />

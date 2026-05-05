@@ -20,8 +20,7 @@
         <div>
             <div class="flex items-center">
                 <a href="{{ route('home') }}">
-                    <img src="{{ asset('favicon/logo.svg') }}" alt="Favicon" width="40" height="40"
-                        class="mobile-favicon mr-2 w-10 h-10 md:hidden">
+                    <x-application-logo class="mobile-favicon mr-2 w-10 h-10 md:hidden object-contain" />
                 </a>
                 @if($hasTitle)
                     <h1 class="site-heading-text text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>

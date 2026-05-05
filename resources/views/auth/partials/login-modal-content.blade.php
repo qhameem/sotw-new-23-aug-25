@@ -23,6 +23,11 @@
 
     <div x-show="!otpSent" class="mt-7 mb-3 space-y-4">
         @include('auth.partials.google-login-button')
+        <div class="flex items-center gap-4 px-2" aria-hidden="true">
+            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-gray-200"></div>
+            <span class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gray-400">or</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-gray-200"></div>
+        </div>
         @include('auth.partials.email-login-button')
 
         <div x-show="showEmail" x-transition.opacity.duration.200ms class="space-y-4" style="display: none;">

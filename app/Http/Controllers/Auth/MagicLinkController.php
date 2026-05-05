@@ -19,7 +19,9 @@ class MagicLinkController extends Controller
 {
     private const EXPIRY_MINUTES = 15;
 
-    private const THROTTLE_ATTEMPTS = 5;
+    private const EMAIL_THROTTLE_ATTEMPTS = 5;
+
+    private const IP_THROTTLE_ATTEMPTS = 10;
 
     private const THROTTLE_SECONDS = 300;
 
@@ -28,13 +30,24 @@ class MagicLinkController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
             'intended' => ['nullable', 'string', 'max:2000'],
+            'company_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $email = Str::lower($validated['email']);
-        $throttleKey = $this->sendThrottleKey($email, $request);
+        $emailThrottleKey = $this->sendThrottleKey($email, $request);
+        $ipThrottleKey = $this->sendIpThrottleKey($request);
 
-        $this->ensureNotRateLimited($throttleKey, 'email');
-        RateLimiter::hit($throttleKey, self::THROTTLE_SECONDS);
+        $this->ensureNotRateLimited($emailThrottleKey, self::EMAIL_THROTTLE_ATTEMPTS, 'email');
+        $this->ensureNotRateLimited($ipThrottleKey, self::IP_THROTTLE_ATTEMPTS, 'email');
+
+        if (filled($validated['company_name'] ?? null)) {
+            return back()
+                ->with('status', 'otp-sent')
+                ->with('auth_email', $email);
+        }
+
+        RateLimiter::hit($emailThrottleKey, self::THROTTLE_SECONDS);
+        RateLimiter::hit($ipThrottleKey, self::THROTTLE_SECONDS);
 
         $user = User::where('email', $email)->first();
         $otp = $this->generateOtp();
@@ -75,7 +88,7 @@ class MagicLinkController extends Controller
         $otp = (string) $validated['otp'];
         $throttleKey = $this->verifyThrottleKey($email, $request);
 
-        $this->ensureNotRateLimited($throttleKey, 'otp');
+        $this->ensureNotRateLimited($throttleKey, self::EMAIL_THROTTLE_ATTEMPTS, 'otp');
 
         $magicLink = AuthMagicLink::query()
             ->where('email', $email)
@@ -194,9 +207,9 @@ class MagicLinkController extends Controller
             ->with('auth_sync_event', 'signed-in');
     }
 
-    private function ensureNotRateLimited(string $throttleKey, string $field): void
+    private function ensureNotRateLimited(string $throttleKey, int $maxAttempts, string $field): void
     {
-        if (! RateLimiter::tooManyAttempts($throttleKey, self::THROTTLE_ATTEMPTS)) {
+        if (! RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             return;
         }
 
@@ -213,6 +226,11 @@ class MagicLinkController extends Controller
     private function sendThrottleKey(string $email, Request $request): string
     {
         return 'auth-email-send:'.Str::transliterate($email.'|'.$request->ip());
+    }
+
+    private function sendIpThrottleKey(Request $request): string
+    {
+        return 'auth-email-send-ip:'.Str::transliterate((string) $request->ip());
     }
 
     private function verifyThrottleKey(string $email, Request $request): string
