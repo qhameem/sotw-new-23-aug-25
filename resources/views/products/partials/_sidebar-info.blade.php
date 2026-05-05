@@ -269,7 +269,7 @@
                     <h3 class="text-xs text-gray-500 mb-2">Social Profiles</h3>
                     <div class="space-y-2">
                         @if($xProfileUrl)
-                            <a href="{{ $xProfileUrl }}" target="_blank" rel="noopener" 
+                            <a href="{{ $xProfileUrl }}" target="_blank" rel="nofollow noopener" 
                                class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group text-[11px] underline-offset-2">
                                 <svg class="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                                 <span>@ {{ $xHandle }}</span>
@@ -277,7 +277,7 @@
                         @endif
 
                         @foreach($socialLinks as $socialLink)
-                            <a href="{{ $socialLink['link'] }}" target="_blank" rel="noopener" 
+                            <a href="{{ $socialLink['link'] }}" target="_blank" rel="nofollow noopener" 
                                class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group truncate text-[11px] underline-offset-2">
                                 {!! $socialLink['icon'] !!}
                                 <span>{{ $socialLink['label'] }}</span>
@@ -301,7 +301,7 @@
                                 elseif (Str::contains($host, 'docs.')) $displayLink = 'Documentation';
                                 elseif (Str::contains($host, 'help.')) $displayLink = 'Help Center';
                             @endphp
-                            <a href="{{ $link }}" target="_blank" rel="noopener" 
+                            <a href="{{ $link }}" target="_blank" rel="nofollow noopener" 
                                class="flex items-center gap-2 text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium group truncate text-[11px] underline-offset-2">
                                 <svg class="size-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                 <span>{{ $displayLink }}</span>
