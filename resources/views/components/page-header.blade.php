@@ -7,6 +7,19 @@
     $titleText = trim(strip_tags((string) $title));
     $hasTitle = $titleText !== '';
     $hasActions = isset($actions) && trim((string) $actions) !== '';
+    $customFaviconPath = config('theme.favicon_url');
+    $publicDisk = \Illuminate\Support\Facades\Storage::disk('public');
+    $hasCustomFavicon = $customFaviconPath && $publicDisk->exists($customFaviconPath);
+    $customFaviconDirectory = $hasCustomFavicon ? dirname($customFaviconPath) : null;
+
+    $versionedStorageUrl = function (string $path) use ($publicDisk) {
+        return \Illuminate\Support\Facades\Storage::url($path) . '?v=' . $publicDisk->lastModified($path);
+    };
+
+    $generatedMobileFaviconPath = $customFaviconDirectory ? $customFaviconDirectory . '/favicon-32x32.png' : null;
+    $mobileFaviconUrl = $generatedMobileFaviconPath && $publicDisk->exists($generatedMobileFaviconPath)
+        ? $versionedStorageUrl($generatedMobileFaviconPath)
+        : ($hasCustomFavicon ? $versionedStorageUrl($customFaviconPath) : asset('favicon/favicon-32x32.png'));
 @endphp
 
 <div
@@ -20,7 +33,8 @@
         <div>
             <div class="flex items-center">
                 <a href="{{ route('home') }}">
-                    <x-application-logo class="mobile-favicon mr-2 w-10 h-10 md:hidden object-contain" />
+                    <img src="{{ $mobileFaviconUrl }}" alt="{{ config('theme.logo_alt_text', config('app.name', 'Logo')) }}"
+                        class="mobile-favicon mr-2 w-10 h-10 md:hidden object-contain">
                 </a>
                 @if($hasTitle)
                     <h1 class="site-heading-text text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
