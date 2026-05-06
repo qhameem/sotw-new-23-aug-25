@@ -36,10 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <label for="meta-title" class="block text-sm font-medium text-gray-700">Meta Title:</label>
                             <input type="text" id="meta-title" name="meta_title" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <p id="meta-title-count" class="mt-2 text-sm font-semibold" style="color: #ca8a04;">0 characters. Recommended: 50-60 characters.</p>
                         </div>
                         <div>
                             <label for="meta-description" class="block text-sm font-medium text-gray-700">Meta Description:</label>
                             <textarea id="meta-description" name="meta_description" rows="4" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                            <p id="meta-description-count" class="mt-2 text-sm font-semibold" style="color: #ca8a04;">0 characters. Recommended: 150-160 characters.</p>
                         </div>
                     </div>
                 </div>
@@ -78,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageSelector = document.getElementById('page-selector');
     const metaTitleInput = document.getElementById('meta-title');
     const metaDescriptionInput = document.getElementById('meta-description');
+    const metaTitleCount = document.getElementById('meta-title-count');
+    const metaDescriptionCount = document.getElementById('meta-description-count');
     const pageIdInput = document.getElementById('page-id');
     const currentPageLabel = document.getElementById('current-page-label');
     const seoForm = document.getElementById('seo-form');
@@ -97,6 +101,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let allPages = [];
+    const SEO_RECOMMENDATIONS = {
+        meta_title: { min: 50, max: 60, label: '50-60 characters' },
+        meta_description: { min: 150, max: 160, label: '150-160 characters' },
+    };
+
+    const CHARACTER_COUNT_STYLES = {
+        good: {
+            className: 'mt-2 text-sm font-semibold',
+            color: '#16a34a',
+        },
+        short: {
+            className: 'mt-2 text-sm font-semibold',
+            color: '#ca8a04',
+        },
+        long: {
+            className: 'mt-2 text-sm font-semibold',
+            color: '#dc2626',
+        },
+    };
+
+    const updateCharacterCount = (input, counter, recommendation) => {
+        if (!input || !counter || !recommendation) {
+            return;
+        }
+
+        const length = input.value.trim().length;
+        let statusClass = CHARACTER_COUNT_STYLES.short;
+        let statusLabel = 'Below recommended';
+
+        if (length > recommendation.max) {
+            statusClass = CHARACTER_COUNT_STYLES.long;
+            statusLabel = 'Over recommended';
+        } else if (length >= recommendation.min) {
+            statusClass = CHARACTER_COUNT_STYLES.good;
+            statusLabel = 'Perfect length';
+        }
+
+        counter.className = statusClass.className;
+        counter.style.color = statusClass.color;
+        counter.textContent = `${length} characters. Recommended: ${recommendation.label}. ${statusLabel}.`;
+    };
+
+    const refreshCharacterCounts = () => {
+        updateCharacterCount(metaTitleInput, metaTitleCount, SEO_RECOMMENDATIONS.meta_title);
+        updateCharacterCount(metaDescriptionInput, metaDescriptionCount, SEO_RECOMMENDATIONS.meta_description);
+    };
 
     const setCurrentPage = (page) => {
         if (!page) {
@@ -190,12 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             metaTitleInput.value = data.meta_title || '';
             metaDescriptionInput.value = data.meta_description || '';
+            refreshCharacterCounts();
             setPreviewImage(data.og_image_path || null);
             responseMessage.textContent = '';
         } catch (error) {
             console.error('Error fetching meta data:', error);
             metaTitleInput.value = '';
             metaDescriptionInput.value = '';
+            refreshCharacterCounts();
             setPreviewImage(null);
             responseMessage.textContent = 'Error loading meta data.';
             responseMessage.className = 'mt-4 text-sm text-red-600';
@@ -250,6 +302,10 @@ document.addEventListener('DOMContentLoaded', () => {
             responseMessage.className = 'mt-4 text-sm text-red-600';
         }
     });
+
+    metaTitleInput.addEventListener('input', refreshCharacterCounts);
+    metaDescriptionInput.addEventListener('input', refreshCharacterCounts);
+    refreshCharacterCounts();
 
     // Initial fetch
     fetchPages();
