@@ -12,8 +12,6 @@
         'sm' => 'text-xs',
         default => 'text-[0.65rem]',
     };
-    
-    $mobileDisplay = $hideOnMobile ? 'hidden sm:' : '';
 @endphp
 
 <div class="flex flex-wrap gap-2 items-center">
@@ -25,7 +23,7 @@
     @forelse($generalCategories as $category)
         <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
            @click.stop
-           class="{{ $mobileDisplay }}block inline-flex items-center text-gray-600 hover:text-gray-800 rounded {{ $sizeClasses }}">
+           class="@if($hideOnMobile) hidden sm:inline-flex @else inline-flex @endif items-center rounded text-gray-600 hover:text-gray-800 {{ $sizeClasses }}">
             <span class="hover:underline">{{ $category->name }}</span>
             
             @if($withCounts && isset($category->products_count))
@@ -36,7 +34,7 @@
         </a>
         
         @if(!$loop->last)
-            <span class="{{ $mobileDisplay }}inline text-gray-400">•</span>
+            <span class="@if($hideOnMobile) hidden sm:inline @else inline @endif text-gray-400">•</span>
         @endif
     @empty
         <!-- No categories to display -->
