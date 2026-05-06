@@ -250,7 +250,8 @@
 @endsection
 
 @section('right_sidebar_content')
-    <div class="hidden md:block">
+    <div class="hidden md:block space-y-6">
+        @include('partials._sidebar-ads')
         @include('products.partials._sidebar-info')
     </div>
 @endsection

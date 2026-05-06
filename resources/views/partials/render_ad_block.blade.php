@@ -1,5 +1,5 @@
 @if(isset($ad) && $ad)
-    <div class="my-4 p-4 bg-gray-50  rounded-lg ad-listing-item border border-gray-200 "> {{-- Removed shadow-md --}}
+    <div class="my-4 p-4 bg-stone-100 rounded-lg ad-listing-item border-l-4 transition-colors hover:bg-stone-200/70" style="border-left-color: var(--color-primary-500);"> {{-- Removed shadow-md --}}
         {{-- You can add a small "Advertisement" label if desired --}}
         {{-- <span class="text-xs text-gray-400  block mb-2 text-right">Advertisement</span> --}}
         @if($ad->type === 'image_banner')
@@ -12,7 +12,7 @@
                 </span>
             </a>
         @elseif($ad->type === 'product_listing_card')
-            <a href="{{ route('ads.click', ['ad' => $ad, 'zone' => $zoneSlug ?? $ad->adZones->first()?->slug]) }}" @if($ad->open_in_new_tab) target="_blank" rel="noopener noreferrer" @endif class="group flex items-center gap-3 rounded-lg p-1 hover:bg-stone-50" aria-label="Open {{ $ad->internal_name }} website">
+            <a href="{{ route('ads.click', ['ad' => $ad, 'zone' => $zoneSlug ?? $ad->adZones->first()?->slug]) }}" @if($ad->open_in_new_tab) target="_blank" rel="noopener noreferrer" @endif class="group flex items-center gap-3 rounded-lg p-1" aria-label="Open {{ $ad->internal_name }} website">
                 <img src="{{ $ad->image_url }}" alt="{{ $ad->internal_name }}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                 <div class="min-w-0">
                     <div class="flex items-center gap-1 text-sm font-semibold text-gray-900">
