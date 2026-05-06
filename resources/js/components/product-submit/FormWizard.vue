@@ -309,9 +309,20 @@ onUnmounted(() => {
 
 // Handle URL Fetch Action (formerly "Get Started")
 const handleUrlFetch = async (url) => {
+  if (isLoading.value) {
+    return;
+  }
+
   form.link = url;
+  isLoading.value = true;
+  loadingProgress.value = 3;
+  loadingMessage.value = 'Checking website URL...';
+
   await checkUrlExists(url);
   if (urlExistsError.value) {
+    isLoading.value = false;
+    loadingProgress.value = 0;
+    loadingMessage.value = '';
     return;
   }
 

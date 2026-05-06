@@ -41,15 +41,17 @@
         type="button"
         @click="performValidationAndFetch"
         :disabled="isLoading"
-        class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-md text-sm
-               flex items-center gap-2 transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 whitespace-nowrap"
+        :class="[
+          'px-6 py-2 text-white font-bold rounded-md text-sm flex items-center gap-2 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 whitespace-nowrap transition-all duration-200',
+          isLoading ? 'bg-sky-400 cursor-wait' : 'bg-sky-500 hover:bg-sky-600 hover:shadow-lg'
+        ]"
       >
         <span v-if="isLoading" class="flex items-center gap-2">
           <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Fetching...
+          {{ loadingProgress > 0 && loadingProgress < 10 ? 'Starting...' : 'Fetching...' }}
         </span>
         <span v-else class="flex items-center gap-2">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M7 7L5.5 5.5M15 7L16.5 5.5M5.5 16.5L7 15M11 5L11 3M5 11L3 11M17.1603 16.9887L21.0519 15.4659C21.4758 15.3001 21.4756 14.7003 21.0517 14.5346L11.6992 10.8799C11.2933 10.7213 10.8929 11.1217 11.0515 11.5276L14.7062 20.8801C14.8719 21.304 15.4717 21.3042 15.6375 20.8803L17.1603 16.9887Z" stroke="currentColor"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
