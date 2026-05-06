@@ -53,7 +53,7 @@ class ViewServiceProvider extends ServiceProvider
         });
 
         View::composer('partials._right-sidebar', RightSidebarComposer::class);
-        View::composer('*', SeoComposer::class);
+        View::composer(['layouts.app', 'layouts.submission', 'layouts.guest', 'layouts.todolist'], SeoComposer::class);
         View::composer(['todolists.index', 'layouts.app'], TodoListComposer::class);
     }
 }

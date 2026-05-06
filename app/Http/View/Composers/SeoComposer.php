@@ -9,11 +9,20 @@ use Illuminate\Support\Str;
 
 class SeoComposer
 {
+    private static array $routeMetaCache = [];
+    private static bool $globalMetaLoaded = false;
+    private static ?PageMetaTag $globalMeta = null;
+
     public function compose(View $view)
     {
         $routeName = Route::currentRouteName();
-        $routeMeta = PageMetaTag::where('page_id', $routeName)->first();
-        $globalMeta = PageMetaTag::where('page_id', 'global_defaults')->first();
+        $routeMeta = $routeName
+            ? (self::$routeMetaCache[$routeName] ??= PageMetaTag::query()
+                ->select(['page_id', 'meta_title', 'meta_description', 'og_image_path'])
+                ->where('page_id', $routeName)
+                ->first())
+            : null;
+        $globalMeta = $this->globalMeta();
         $meta = $routeMeta ?: $globalMeta;
 
         $viewData = $view->getData();
@@ -62,5 +71,18 @@ class SeoComposer
         }
 
         return url($value);
+    }
+
+    private function globalMeta(): ?PageMetaTag
+    {
+        if (!self::$globalMetaLoaded) {
+            self::$globalMeta = PageMetaTag::query()
+                ->select(['page_id', 'meta_title', 'meta_description', 'og_image_path'])
+                ->where('page_id', 'global_defaults')
+                ->first();
+            self::$globalMetaLoaded = true;
+        }
+
+        return self::$globalMeta;
     }
 }

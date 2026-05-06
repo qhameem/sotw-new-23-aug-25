@@ -272,35 +272,34 @@ class Product extends Model implements Sitemapable
         if (!Auth::check()) {
             return false;
         }
+
+        if ($this->relationLoaded('userUpvotes')) {
+            return $this->userUpvotes->contains('user_id', Auth::id());
+        }
+
         return $this->userUpvotes()->where('user_id', Auth::id())->exists();
     }
 
     public function recordImpressionAndAutoUpvote(): void
     {
-        DB::transaction(function () {
-            $lockedProduct = static::query()
-                ->whereKey($this->getKey())
-                ->lockForUpdate()
-                ->first();
+        $attributes = static::query()
+            ->whereKey($this->getKey())
+            ->tap(fn ($query) => static::withoutTimestamps(fn () => $query->update([
+                'impressions' => DB::raw('COALESCE(impressions, 0) + 1'),
+                'votes_count' => DB::raw(
+                    'GREATEST(1, COALESCE(votes_count, 0)) + CASE ' .
+                    'WHEN MOD(COALESCE(impressions, 0) + 1, ' . self::AUTO_UPVOTE_VIEW_THRESHOLD . ') = 0 THEN 1 ' .
+                    'ELSE 0 END'
+                ),
+            ])))
+            ->first(['impressions', 'votes_count']);
 
-            if (!$lockedProduct) {
-                return;
-            }
+        if (!$attributes) {
+            return;
+        }
 
-            $lockedProduct->impressions = (int) $lockedProduct->impressions + 1;
-            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
-
-            if ($lockedProduct->impressions % self::AUTO_UPVOTE_VIEW_THRESHOLD === 0) {
-                $lockedProduct->votes_count++;
-            }
-
-            static::withoutTimestamps(function () use ($lockedProduct) {
-                $lockedProduct->save();
-            });
-
-            $this->impressions = $lockedProduct->impressions;
-            $this->votes_count = $lockedProduct->votes_count;
-        });
+        $this->impressions = (int) $attributes->impressions;
+        $this->votes_count = (int) $attributes->votes_count;
     }
 
     public function recordOutboundClickAndAutoUpvote(): void

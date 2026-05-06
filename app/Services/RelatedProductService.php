@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class RelatedProductService
@@ -65,80 +66,86 @@ class RelatedProductService
     {
         $product->loadMissing('categories.types', 'techStacks');
 
-        $manualProducts = $this->getManualMatches($product, $mode);
-        $manualIds = $manualProducts->pluck('id');
-        $remainingLimit = max(0, $limit - $manualProducts->count());
+        return Cache::remember(
+            "products.related.{$mode}.{$product->id}.{$limit}",
+            now()->addMinutes(15),
+            function () use ($product, $limit, $mode) {
+                $manualProducts = $this->getManualMatches($product, $mode);
+                $manualIds = $manualProducts->pluck('id');
+                $remainingLimit = max(0, $limit - $manualProducts->count());
 
-        if ($remainingLimit === 0) {
-            return $manualProducts->take($limit);
-        }
-
-        $profile = $this->buildProfile($product);
-        $seedCategoryIds = collect()
-            ->merge($profile['softwareIds'])
-            ->merge($profile['bestForIds'])
-            ->merge($profile['pricingIds'])
-            ->unique()
-            ->values();
-        $seedTechIds = collect($profile['techStackIds'])->unique()->values();
-
-        if ($seedCategoryIds->isEmpty() && $seedTechIds->isEmpty()) {
-            return $manualProducts->take($limit)->values();
-        }
-
-        $candidates = Product::query()
-            ->where('id', '!=', $product->id)
-            ->where('approved', true)
-            ->where('is_published', true)
-            ->whereNotIn('id', $manualIds)
-            ->where(function ($query) use ($seedCategoryIds, $seedTechIds) {
-                if ($seedCategoryIds->isNotEmpty()) {
-                    $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $seedCategoryIds));
+                if ($remainingLimit === 0) {
+                    return $manualProducts->take($limit);
                 }
-                if ($seedTechIds->isNotEmpty()) {
-                    if ($seedCategoryIds->isNotEmpty()) {
-                        $query->orWhereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
-                    } else {
-                        $query->whereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
-                    }
+
+                $profile = $this->buildProfile($product);
+                $seedCategoryIds = collect()
+                    ->merge($profile['softwareIds'])
+                    ->merge($profile['bestForIds'])
+                    ->merge($profile['pricingIds'])
+                    ->unique()
+                    ->values();
+                $seedTechIds = collect($profile['techStackIds'])->unique()->values();
+
+                if ($seedCategoryIds->isEmpty() && $seedTechIds->isEmpty()) {
+                    return $manualProducts->take($limit)->values();
                 }
-            })
-            ->with(['categories.types', 'techStacks'])
-            ->orderByRaw('(votes_count + impressions) DESC')
-            ->orderByDesc('created_at')
-            ->take(250)
-            ->get()
-            ->map(function (Product $candidate) use ($product) {
-                $match = $this->calculateMatch($product, $candidate);
-                $candidate->setAttribute('match_score', $match['score']);
-                $candidate->setAttribute('match_summary', $match['summary']);
-                $candidate->setAttribute('match_reason_labels', $match['reasonLabels']);
-                $candidate->setAttribute('match_source', 'algorithmic');
 
-                return ['product' => $candidate, 'match' => $match];
-            })
-            ->filter(function (array $entry) use ($mode) {
-                return $mode === 'comparison'
-                    ? $entry['match']['qualifiesComparison']
-                    : $entry['match']['qualifiesAlternative'];
-            })
-            ->sortByDesc(function (array $entry) {
-                /** @var Product $product */
-                $product = $entry['product'];
-                $score = $entry['match']['score'];
-                $popularity = (int) ($product->votes_count ?? 0) + (int) ($product->impressions ?? 0);
+                $candidates = Product::query()
+                    ->where('id', '!=', $product->id)
+                    ->where('approved', true)
+                    ->where('is_published', true)
+                    ->whereNotIn('id', $manualIds)
+                    ->where(function ($query) use ($seedCategoryIds, $seedTechIds) {
+                        if ($seedCategoryIds->isNotEmpty()) {
+                            $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $seedCategoryIds));
+                        }
+                        if ($seedTechIds->isNotEmpty()) {
+                            if ($seedCategoryIds->isNotEmpty()) {
+                                $query->orWhereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
+                            } else {
+                                $query->whereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
+                            }
+                        }
+                    })
+                    ->with(['categories.types', 'techStacks'])
+                    ->orderByRaw('(votes_count + impressions) DESC')
+                    ->orderByDesc('created_at')
+                    ->take(250)
+                    ->get()
+                    ->map(function (Product $candidate) use ($product) {
+                        $match = $this->calculateMatch($product, $candidate);
+                        $candidate->setAttribute('match_score', $match['score']);
+                        $candidate->setAttribute('match_summary', $match['summary']);
+                        $candidate->setAttribute('match_reason_labels', $match['reasonLabels']);
+                        $candidate->setAttribute('match_source', 'algorithmic');
 
-                return ($score * 100000) + $popularity;
-            })
-            ->pluck('product')
-            ->values()
-            ->take($remainingLimit);
+                        return ['product' => $candidate, 'match' => $match];
+                    })
+                    ->filter(function (array $entry) use ($mode) {
+                        return $mode === 'comparison'
+                            ? $entry['match']['qualifiesComparison']
+                            : $entry['match']['qualifiesAlternative'];
+                    })
+                    ->sortByDesc(function (array $entry) {
+                        /** @var Product $product */
+                        $product = $entry['product'];
+                        $score = $entry['match']['score'];
+                        $popularity = (int) ($product->votes_count ?? 0) + (int) ($product->impressions ?? 0);
 
-        return $manualProducts
-            ->concat($candidates)
-            ->unique('id')
-            ->take($limit)
-            ->values();
+                        return ($score * 100000) + $popularity;
+                    })
+                    ->pluck('product')
+                    ->values()
+                    ->take($remainingLimit);
+
+                return $manualProducts
+                    ->concat($candidates)
+                    ->unique('id')
+                    ->take($limit)
+                    ->values();
+            }
+        );
     }
 
     private function getManualMatches(Product $product, string $mode): Collection

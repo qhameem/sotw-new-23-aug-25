@@ -221,6 +221,67 @@ if (document.getElementById('mobile-notification-bell-app')) {
     });
 }
 
+const prefetchedProductUrls = new Set();
+
+function prefetchProductPage(url) {
+    if (!url || prefetchedProductUrls.has(url)) {
+        return;
+    }
+
+    prefetchedProductUrls.add(url);
+
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.as = 'document';
+    link.href = url;
+    document.head.appendChild(link);
+}
+
+function isPrefetchableProductLink(anchor) {
+    if (!(anchor instanceof HTMLAnchorElement) || !anchor.href) {
+        return false;
+    }
+
+    const url = new URL(anchor.href, window.location.origin);
+
+    return url.origin === window.location.origin
+        && url.pathname.startsWith('/product/')
+        && !url.search
+        && !url.hash;
+}
+
+function warmProductPageNavigation() {
+    const handleIntent = (event) => {
+        const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
+
+        if (anchor && isPrefetchableProductLink(anchor)) {
+            prefetchProductPage(anchor.href);
+        }
+    };
+
+    document.addEventListener('mouseover', handleIntent, { passive: true });
+    document.addEventListener('focusin', handleIntent);
+    document.addEventListener('touchstart', handleIntent, { passive: true });
+
+    const scheduleIdle = 'requestIdleCallback' in window
+        ? window.requestIdleCallback.bind(window)
+        : (callback) => window.setTimeout(callback, 400);
+
+    scheduleIdle(() => {
+        document.querySelectorAll('a[href]').forEach((anchor) => {
+            if (prefetchedProductUrls.size >= 6) {
+                return;
+            }
+
+            if (isPrefetchableProductLink(anchor)) {
+                prefetchProductPage(anchor.href);
+            }
+        });
+    });
+}
+
+warmProductPageNavigation();
+
 // Mount mobile user dropdown
 if (document.getElementById('mobile-user-dropdown-app')) {
     const el = document.getElementById('mobile-user-dropdown-app');

@@ -3,6 +3,7 @@
 namespace App\Http\View\Composers;
 
 use App\Models\Article;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class RightSidebarComposer
@@ -15,13 +16,15 @@ class RightSidebarComposer
      */
     public function compose(View $view)
     {
-        $staffPicks = Article::where('staff_pick', true)
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
-            ->with('author', 'categories')
-            ->latest('published_at')
-            ->take(5)
-            ->get();
+        $staffPicks = Cache::remember('sidebar.staff_picks', now()->addMinutes(15), function () {
+            return Article::where('staff_pick', true)
+                ->where('status', 'published')
+                ->where('published_at', '<=', now())
+                ->with('author', 'categories')
+                ->latest('published_at')
+                ->take(5)
+                ->get();
+        });
 
         $view->with('staffPicks', $staffPicks);
     }

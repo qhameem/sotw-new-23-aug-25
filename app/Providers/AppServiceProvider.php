@@ -11,7 +11,6 @@ use App\Models\Category;
 use App\Models\PageMetaTag;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth; // Add this line
-use App\Http\View\Composers\SeoComposer;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
@@ -75,21 +74,18 @@ class AppServiceProvider extends ServiceProvider
                 ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
         });
 
-        View::composer(
-            'layouts.app',
-            SeoComposer::class
-        );
-
         View::composer(['layouts.app', 'layouts.submission'], function ($view) {
             $view->with('popularSearchProducts', $this->getPopularSearchProducts())
                 ->with('popularSearchCategories', $this->getPopularSearchCategories());
         });
 
         View::composer(['layouts.app', 'layouts.submission', 'layouts.guest', 'layouts.todolist'], function ($view) {
-            $globalMeta = PageMetaTag::query()
-                ->select(['og_image_path'])
-                ->where('page_id', 'global_defaults')
-                ->first();
+            $globalMeta = Cache::remember('page_meta_tags.global_defaults_og_image', now()->addMinutes(30), function () {
+                return PageMetaTag::query()
+                    ->select(['og_image_path'])
+                    ->where('page_id', 'global_defaults')
+                    ->first();
+            });
 
             $view->with(
                 'globalDefaultOgImageUrl',

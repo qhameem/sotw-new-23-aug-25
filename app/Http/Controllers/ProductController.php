@@ -1673,10 +1673,23 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product->load('categories.types', 'user', 'userUpvotes', 'techStacks');
+        $product->load([
+            'categories.types',
+            'user',
+            'techStacks',
+            'media',
+            'userUpvotes' => function ($query) {
+                if (Auth::check()) {
+                    $query->where('user_id', Auth::id());
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            },
+        ]);
 
-        // Record impression and grant automatic vote bonus every 4 views
-        $product->recordImpressionAndAutoUpvote();
+        app()->terminating(function () use ($product) {
+            $product->recordImpressionAndAutoUpvote();
+        });
 
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');
@@ -1694,7 +1707,9 @@ class ProductController extends Controller
         $description = strip_tags($product->description);
         $metaDescription = Str::limit($description, 160);
 
-        $allCategories = Category::orderBy('name')->get();
+        $allCategories = request()->routeIs('admin.*')
+            ? Category::orderBy('name')->get()
+            : collect();
         $currentUserClaim = null;
         $canClaimProduct = false;
 
