@@ -1,24 +1,15 @@
-@media (max-width: 768px) {
-    .mobile-favicon {
-        display: inline-block !important;
-        width: 16px;
-        height: 16px;
-        vertical-align: middle;
-    }
-}
 .ql-editor-content h1 {
-    font-size: 1.5rem; /* 36px */
+    font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
 }
 
 .ql-editor-content h2 {
-    font-size: 1.2rem; /* 30px */
+    font-size: 1.2rem;
     font-weight: 500;
     margin-bottom: 0.75rem;
 }
 
-/* Ensure line breaks and paragraphs are properly displayed in product descriptions */
 .ql-editor-content {
     line-height: 1.6;
 }
@@ -33,12 +24,10 @@
     margin-bottom: 1em;
 }
 
-/* Handle content without explicit paragraph tags */
 .ql-editor-content > * + * {
     margin-top: 1em;
 }
 
-/* Make sure lists have proper spacing */
 .ql-editor-content ul,
 .ql-editor-content ol {
     margin: 1em 0;
@@ -69,22 +58,22 @@
 }
 
 .product-detail-description > p:nth-of-type(2) {
+    max-width: 66ch;
+    margin-bottom: 1.4rem;
     font-size: clamp(1.05rem, 1.15vw, 1.18rem);
     line-height: 1.75;
     color: var(--color-site-body-text);
-    margin-bottom: 1.4rem;
-    max-width: 66ch;
 }
 
 .product-detail-description h1,
 .product-detail-description h2 {
-    font-size: clamp(1rem, 1.08vw, 1.16rem);
-    line-height: 1.25;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--color-site-text);
     margin-top: 2.2rem;
     margin-bottom: 0.95rem;
+    color: var(--color-site-text);
+    font-size: clamp(1rem, 1.08vw, 1.16rem);
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
     text-wrap: balance;
 }
 
@@ -129,9 +118,9 @@
 
 .product-detail-description dt {
     margin-top: 1rem;
+    color: var(--color-site-text);
     font-size: 1.02rem;
     font-weight: 700;
-    color: var(--color-site-text);
 }
 
 .product-detail-description dd {

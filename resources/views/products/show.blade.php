@@ -9,8 +9,9 @@
 @section('title', $pageTitle)
 @section('meta_description', $metaDescription)
 
-
-
+@push('styles')
+    @vite('resources/css/rich-content.css')
+@endpush
 
 @section('content')
     @include('products.partials._json-ld-product')

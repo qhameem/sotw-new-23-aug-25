@@ -84,10 +84,9 @@
         }
     </style>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/todo-vendor.css', 'resources/js/app.js'])
     @include('partials.theme.text-color-overrides')
     @livewireStyles
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @stack('styles')
 </head>
 

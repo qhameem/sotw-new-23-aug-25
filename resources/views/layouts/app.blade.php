@@ -354,7 +354,7 @@
     @endif
     {{-- End Google Analytics Code Injection --}}
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/public.css', 'resources/js/app.js'])
     @include('partials.theme.text-color-overrides')
     @livewireStyles
 
