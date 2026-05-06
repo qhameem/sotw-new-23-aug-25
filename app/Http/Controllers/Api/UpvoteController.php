@@ -58,7 +58,9 @@ class UpvoteController extends Controller
             ]);
             Log::info("Upvote store: After UserProductUpvote::create. Time elapsed: " . (microtime(true) - $startTime) . "s", ['product_id' => $lockedProduct->id]);
 
-            $lockedProduct->increment('votes_count');
+            Product::withoutTimestamps(function () use ($lockedProduct) {
+                $lockedProduct->increment('votes_count');
+            });
             // No need to Log::info for product->increment here, as votes_count is logged at the end of successful transaction.
             // $lockedProduct->refresh(); // Refresh to get the latest votes_count if needed before commit, but increment handles it.
 
@@ -148,13 +150,17 @@ class UpvoteController extends Controller
 
             // Decrement votes_count, ensuring the system vote floor of 1 is preserved
             if ($lockedProduct->votes_count > 1) {
-                $lockedProduct->decrement('votes_count');
+                Product::withoutTimestamps(function () use ($lockedProduct) {
+                    $lockedProduct->decrement('votes_count');
+                });
             } else {
                 // This case should ideally not be reached if data is consistent,
                 // but as a safeguard, ensure votes_count never drops below 1.
                 if ($lockedProduct->votes_count < 1) {
                     $lockedProduct->votes_count = 1;
-                    $lockedProduct->save();
+                    Product::withoutTimestamps(function () use ($lockedProduct) {
+                        $lockedProduct->save();
+                    });
                     Log::warning("Upvote destroy: Product votes_count was below the system vote floor. Reset to 1.", ['product_id' => $lockedProduct->id, 'original_votes_count' => $lockedProduct->getOriginal('votes_count')]);
                 }
             }

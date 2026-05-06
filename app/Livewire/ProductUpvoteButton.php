@@ -39,7 +39,9 @@ class ProductUpvoteButton extends Component
             $this->hasUpvoted = true;
         }
 
-        $this->product->update(['votes_count' => $this->votesCount]);
+        Product::withoutTimestamps(function () {
+            $this->product->update(['votes_count' => $this->votesCount]);
+        });
     }
 
     public function render()

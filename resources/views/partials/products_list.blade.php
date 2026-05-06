@@ -24,17 +24,23 @@
             itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
                 @click="window.open('{{ route('products.click', ['product' => $product->slug, 'surface' => 'promoted_listing_card']) }}', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
-            <img src="{{ $productLogo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
-                class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
-                width="48" height="48"
-                loading="{{ ProductLogo::loading($loopIndex) }}"
-                fetchpriority="{{ ProductLogo::fetchPriority($loopIndex) }}"
-                decoding="async"
-                itemprop="image" />
+            <meta itemprop="url" content="{{ route('products.show', $product->slug) }}" />
+            <a href="{{ route('products.show', $product->slug) }}" @click.stop class="flex-shrink-0">
+                <img src="{{ $productLogo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
+                    class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                    width="48" height="48"
+                    loading="{{ ProductLogo::loading($loopIndex) }}"
+                    fetchpriority="{{ ProductLogo::fetchPriority($loopIndex) }}"
+                    decoding="async"
+                    itemprop="image" />
+            </a>
             <div class="flex-1">
                 <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">
-                    @if(!$isPromoted)
+                    <a href="{{ route('products.show', $product->slug) }}" @click.stop
+                        class="site-heading-text text-left hover:underline">
                         <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
+                    </a>
+                    @if(!$isPromoted)
                         <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
                             target="_blank" rel="noopener nofollow" @click.stop
                             class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
@@ -45,13 +51,13 @@
                                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                         </a>
-                    @else
-                        <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                     @endif
                 </h2>
-                <p class="site-body-text text-base mb-0 line-clamp-2" itemprop="description">
-                    {{ $product->tagline }}
-                </p>
+                <a href="{{ route('products.show', $product->slug) }}" @click.stop class="block">
+                    <p class="site-body-text text-base mb-0 line-clamp-2" itemprop="description">
+                        {{ $product->tagline }}
+                    </p>
+                </a>
 
                 <div class="mt-0.5 flex flex-wrap gap-2 items-center">
                     @if($isPromoted)

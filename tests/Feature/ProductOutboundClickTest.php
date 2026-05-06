@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,10 +14,12 @@ class ProductOutboundClickTest extends TestCase
     /** @test */
     public function a_product_click_records_an_outbound_click_and_redirects_with_tracking_parameters()
     {
+        $originalUpdatedAt = Carbon::parse('2026-01-15 10:00:00');
         $product = Product::factory()->create([
             'link' => 'https://example.com/pricing?ref=abc',
             'outbound_clicks_count' => 0,
             'votes_count' => 1,
+            'updated_at' => $originalUpdatedAt,
         ]);
 
         $response = $this->get(route('products.click', ['product' => $product->slug, 'surface' => 'product_list']));
@@ -26,6 +29,7 @@ class ProductOutboundClickTest extends TestCase
 
         $this->assertEquals(1, $product->outbound_clicks_count);
         $this->assertEquals(1, $product->votes_count);
+        $this->assertTrue($product->updated_at->equalTo($originalUpdatedAt));
         $this->assertStringContainsString('ref=abc', $response->headers->get('Location'));
         $this->assertStringContainsString('utm_source=softwareontheweb.com', $response->headers->get('Location'));
         $this->assertStringContainsString('utm_medium=product_list', $response->headers->get('Location'));

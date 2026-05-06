@@ -11,6 +11,8 @@ use App\Models\ArticleTag;
 use App\Models\Product; // Added
 use App\Models\Category; // Added
 use App\Services\RelatedProductService;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 // It's good practice to also include your main app URL and other important static pages
 // use Carbon\Carbon; // Already imported in models, but good to be explicit if used directly here
 
@@ -37,45 +39,51 @@ class GenerateSitemap extends Command
     {
         $this->info('Generating sitemap...');
         $relatedProductService = app(RelatedProductService::class);
-
         $sitemapPath = public_path('sitemap.xml');
+        $sitemapDirectory = public_path('sitemaps');
+        $generatedAt = now();
+        $sitemapEntries = [];
 
-        $sitemap = Sitemap::create();
+        File::ensureDirectoryExists($sitemapDirectory);
+        foreach (File::glob($sitemapDirectory . DIRECTORY_SEPARATOR . '*.xml') as $existingSitemap) {
+            File::delete($existingSitemap);
+        }
 
-        // Add static pages if any (e.g., home page)
-        $sitemap->add(Url::create(route('home'))->setPriority(1.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
-        $sitemap->add(Url::create(route('articles.index'))->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
-        $sitemap->add(Url::create(route('about'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-        $sitemap->add(Url::create(route('faq'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-        $sitemap->add(Url::create(route('fast-track.index'))->setPriority(0.7)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        $sitemap->add(Url::create(route('legal'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-        $sitemap->add(Url::create(route('premium-spot.index'))->setPriority(0.7)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        $sitemap->add(Url::create(route('premium-spot.details'))->setPriority(0.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_NEVER));
-        $sitemap->add(Url::create(route('software-review'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-        $sitemap->add(Url::create(route('subscribe'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-        $sitemap->add(Url::create(route('topics.index'))->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        $staticPagesSitemap = Sitemap::create();
+        $staticPagesSitemap->add(Url::create(route('home'))->setPriority(1.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        $staticPagesSitemap->add(Url::create(route('articles.index'))->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        $staticPagesSitemap->add(Url::create(route('about'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        $staticPagesSitemap->add(Url::create(route('faq'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        $staticPagesSitemap->add(Url::create(route('fast-track.index'))->setPriority(0.7)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        $staticPagesSitemap->add(Url::create(route('legal'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        $staticPagesSitemap->add(Url::create(route('premium-spot.index'))->setPriority(0.7)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+        $staticPagesSitemap->add(Url::create(route('premium-spot.details'))->setPriority(0.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_NEVER));
+        $staticPagesSitemap->add(Url::create(route('software-review'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        $staticPagesSitemap->add(Url::create(route('subscribe'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+        $staticPagesSitemap->add(Url::create(route('topics.index'))->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        $this->writeChildSitemap($staticPagesSitemap, $sitemapDirectory . '/static.xml', $sitemapEntries, $generatedAt);
 
-        // Add Article models
-        // The toSitemapTag method in Article will be called for each instance
-        $sitemap->add(Article::where('status', 'published')->where('published_at', '<=', now())->get());
-
-        // Add BlogCategory models
-        $sitemap->add(ArticleCategory::all()->filter(function ($category) {
+        $contentSitemap = Sitemap::create();
+        $contentSitemap->add(Article::where('status', 'published')->where('published_at', '<=', now())->get());
+        $contentSitemap->add(ArticleCategory::all()->filter(function ($category) {
             return $category->articles()->where('status', 'published')->where('published_at', '<=', now())->exists();
         }));
-
-        // Add BlogTag models
-        $sitemap->add(ArticleTag::all()->filter(function ($tag) {
+        $contentSitemap->add(ArticleTag::all()->filter(function ($tag) {
             return $tag->articles()->where('status', 'published')->where('published_at', '<=', now())->exists();
         }));
+        $this->writeChildSitemap($contentSitemap, $sitemapDirectory . '/content.xml', $sitemapEntries, $generatedAt);
 
-        // Add Product models
-        $sitemap->add(Product::where('approved', true)->with('media')->get());
+        $productsSitemap = Sitemap::create();
+        $productsSitemap->add(Product::where('approved', true)->with('media')->get());
+        $this->writeChildSitemap($productsSitemap, $sitemapDirectory . '/products.xml', $sitemapEntries, $generatedAt);
 
-        // Add Product Category models (only if they have approved products)
-        $sitemap->add(Category::all()->filter(function ($category) {
+        $taxonomySitemap = Sitemap::create();
+        $taxonomySitemap->add(Category::all()->filter(function ($category) {
             return $category->products()->where('approved', true)->exists();
         }));
+        $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory . '/taxonomy.xml', $sitemapEntries, $generatedAt);
+
+        $archiveSitemap = Sitemap::create();
 
         // Add Archive URLs (Weeks)
         $activeWeeks = Product::where('approved', true)
@@ -85,7 +93,7 @@ class GenerateSitemap extends Command
             ->get();
 
         foreach ($activeWeeks as $activeWeek) {
-            $sitemap->add(Url::create(route('products.byWeek', ['year' => $activeWeek->year, 'week' => $activeWeek->week]))
+            $archiveSitemap->add(Url::create(route('products.byWeek', ['year' => $activeWeek->year, 'week' => $activeWeek->week]))
                 ->setPriority(0.4)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
         }
@@ -98,7 +106,7 @@ class GenerateSitemap extends Command
             ->get();
 
         foreach ($activeMonths as $activeMonth) {
-            $sitemap->add(Url::create(route('products.byMonth', ['year' => $activeMonth->year, 'month' => $activeMonth->month]))
+            $archiveSitemap->add(Url::create(route('products.byMonth', ['year' => $activeMonth->year, 'month' => $activeMonth->month]))
                 ->setPriority(0.4)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
         }
@@ -111,14 +119,16 @@ class GenerateSitemap extends Command
             ->get();
 
         foreach ($activeYears as $activeYear) {
-            $sitemap->add(Url::create(route('products.byYear', ['year' => $activeYear->year]))
+            $archiveSitemap->add(Url::create(route('products.byYear', ['year' => $activeYear->year]))
                 ->setPriority(0.3)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY));
         }
+        $this->writeChildSitemap($archiveSitemap, $sitemapDirectory . '/archives.xml', $sitemapEntries, $generatedAt);
 
 
         // --- pSEO Pages --- //
         $this->info('Adding pSEO routes...');
+        $pseoSitemap = Sitemap::create();
 
         // 1. Alternatives Pages
         foreach (Product::where('approved', true)->where('is_published', true)->with(['categories.types', 'techStacks'])->get() as $product) {
@@ -128,7 +138,7 @@ class GenerateSitemap extends Command
                 continue;
             }
 
-            $sitemap->add(Url::create(route('pseo.alternatives', $product->slug))
+            $pseoSitemap->add(Url::create(route('pseo.alternatives', $product->slug))
                 ->setPriority(0.8)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
         }
@@ -138,7 +148,7 @@ class GenerateSitemap extends Command
             ->whereHas('types', function($q) { $q->whereIn('name', ['Software', 'Software Categories']); })->get();
             
         foreach ($softwareCats as $category) {
-            $sitemap->add(Url::create(route('pseo.best', $category->slug))
+            $pseoSitemap->add(Url::create(route('pseo.best', $category->slug))
                 ->setPriority(0.8)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
         }
@@ -146,7 +156,7 @@ class GenerateSitemap extends Command
         // 3. Built-With (Tech Stack) Pages
         if (class_exists(\App\Models\TechStack::class)) {
             foreach (\App\Models\TechStack::whereHas('products', function($q) { $q->where('approved', true); })->get() as $stack) {
-                $sitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
+                $pseoSitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
                     ->setPriority(0.7)
                     ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
             }
@@ -156,13 +166,15 @@ class GenerateSitemap extends Command
         $pricingCategories = Category::whereHas('types', function($q) { $q->where('name', 'Pricing'); })
             ->whereHas('products', function($q) { $q->where('approved', true); })->get();
         foreach ($pricingCategories as $pricing) {
-            $sitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
+            $pseoSitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
                 ->setPriority(0.7)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
         }
+        $this->writeChildSitemap($pseoSitemap, $sitemapDirectory . '/pseo.xml', $sitemapEntries, $generatedAt);
 
         // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
         $this->info('Generating comparison URLs...');
+        $compareSitemap = Sitemap::create();
         $products = Product::where('approved', true)
             ->where('is_published', true)
             ->with(['categories.types', 'techStacks'])
@@ -179,7 +191,7 @@ class GenerateSitemap extends Command
                 $compareKey = $slugs[0] . '-vs-' . $slugs[1];
                 
                 if (!isset($addedComparisons[$compareKey])) {
-                    $sitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
+                    $compareSitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
                         ->setPriority(0.6)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
                     $addedComparisons[$compareKey] = true;
@@ -187,9 +199,44 @@ class GenerateSitemap extends Command
             }
         }
 
-        $sitemap->writeToFile($sitemapPath);
+        $this->writeChildSitemap($compareSitemap, $sitemapDirectory . '/compare.xml', $sitemapEntries, $generatedAt);
+        $this->writeSitemapIndex($sitemapPath, $sitemapEntries);
 
         $this->info("Sitemap generated successfully at {$sitemapPath}");
         return Command::SUCCESS;
+    }
+
+    protected function writeChildSitemap(Sitemap $sitemap, string $path, array &$indexEntries, $generatedAt): void
+    {
+        $sitemap->writeToFile($path);
+
+        $relativePath = Str::of($path)
+            ->after(public_path() . DIRECTORY_SEPARATOR)
+            ->replace(DIRECTORY_SEPARATOR, '/')
+            ->toString();
+
+        $indexEntries[] = [
+            'loc' => url($relativePath),
+            'lastmod' => $generatedAt->toAtomString(),
+        ];
+    }
+
+    protected function writeSitemapIndex(string $path, array $entries): void
+    {
+        $lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ];
+
+        foreach ($entries as $entry) {
+            $lines[] = '  <sitemap>';
+            $lines[] = '    <loc>' . htmlspecialchars($entry['loc'], ENT_XML1) . '</loc>';
+            $lines[] = '    <lastmod>' . htmlspecialchars($entry['lastmod'], ENT_XML1) . '</lastmod>';
+            $lines[] = '  </sitemap>';
+        }
+
+        $lines[] = '</sitemapindex>';
+
+        File::put($path, implode(PHP_EOL, $lines) . PHP_EOL);
     }
 }

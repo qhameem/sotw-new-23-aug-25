@@ -2885,9 +2885,13 @@ class ProductController extends Controller
             // Remove the upvote (toggle off)
             $existingUpvote->delete();
             if ($product->votes_count > 1) {
-                $product->decrement('votes_count');
+                Product::withoutTimestamps(function () use ($product) {
+                    $product->decrement('votes_count');
+                });
             } else {
-                $product->update(['votes_count' => 1]);
+                Product::withoutTimestamps(function () use ($product) {
+                    $product->update(['votes_count' => 1]);
+                });
             }
             $isUpvoted = false;
         } else {
@@ -2896,7 +2900,9 @@ class ProductController extends Controller
                 'user_id' => $user->id,
                 'product_id' => $product->id
             ]);
-            $product->increment('votes_count');
+            Product::withoutTimestamps(function () use ($product) {
+                $product->increment('votes_count');
+            });
             $isUpvoted = true;
         }
 

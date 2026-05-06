@@ -294,7 +294,9 @@ class Product extends Model implements Sitemapable
                 $lockedProduct->votes_count++;
             }
 
-            $lockedProduct->save();
+            static::withoutTimestamps(function () use ($lockedProduct) {
+                $lockedProduct->save();
+            });
 
             $this->impressions = $lockedProduct->impressions;
             $this->votes_count = $lockedProduct->votes_count;
@@ -320,7 +322,9 @@ class Product extends Model implements Sitemapable
                 $lockedProduct->votes_count++;
             }
 
-            $lockedProduct->save();
+            static::withoutTimestamps(function () use ($lockedProduct) {
+                $lockedProduct->save();
+            });
 
             $this->outbound_clicks_count = $lockedProduct->outbound_clicks_count;
             $this->votes_count = $lockedProduct->votes_count;
