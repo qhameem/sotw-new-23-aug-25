@@ -89,6 +89,7 @@ class ThemeController extends Controller
         $currentSubmissionBgUrl = isset($settings['submission_bg_url']) && $settings['submission_bg_url'] ? Storage::url($settings['submission_bg_url']) : null;
         $currentNavbarBgColor = $settings['navbar_bg_color'] ?? '#ffffff';
         $currentBodyBgColor   = $settings['body_bg_color']   ?? '#ffffff';
+        $currentFaviconAssets = $this->buildCurrentFaviconAssets($settings);
 
         // Define default/placeholder URLs if needed, e.g., for the view's x-data
         $defaultLogoUrl = ''; // e.g., asset('images/default-logo.png');
@@ -111,7 +112,8 @@ class ThemeController extends Controller
             'currentSubmissionBgUrl',
             'defaultSubmissionBgUrl',
             'currentNavbarBgColor',
-            'currentBodyBgColor'
+            'currentBodyBgColor',
+            'currentFaviconAssets'
         ));
     }
 
@@ -583,5 +585,43 @@ class ThemeController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to update tailwind-theme.json: ' . $e->getMessage());
         }
+    }
+
+    private function buildCurrentFaviconAssets(array $settings): array
+    {
+        $faviconPath = $settings['favicon_url'] ?? null;
+        if (!$faviconPath) {
+            return [];
+        }
+
+        $disk = Storage::disk('public');
+        $directory = dirname($faviconPath);
+
+        if ($directory === '.' || !$disk->exists($directory)) {
+            return [];
+        }
+
+        $priority = array_flip(array_keys(self::FAVICON_BUNDLE_SPECS));
+        $files = collect($disk->files($directory))
+            ->map(function (string $path) use ($disk, $settings, $priority) {
+                $filename = basename($path);
+
+                return [
+                    'name' => $filename,
+                    'path' => $path,
+                    'url' => Storage::url($path),
+                    'is_primary' => $path === ($settings['favicon_url'] ?? null),
+                    'is_manifest' => $path === ($settings['favicon_manifest_url'] ?? null),
+                    'sort' => $priority[$filename] ?? 999,
+                    'modified_at' => $disk->lastModified($path),
+                ];
+            })
+            ->sort(function (array $a, array $b) {
+                return [$a['sort'], $a['name']] <=> [$b['sort'], $b['name']];
+            })
+            ->values()
+            ->all();
+
+        return $files;
     }
 }

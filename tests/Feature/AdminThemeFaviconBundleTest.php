@@ -115,6 +115,13 @@ class AdminThemeFaviconBundleTest extends TestCase
             md5_file(Storage::disk('public')->path($settings['favicon_url'])),
             md5_file($this->publicFaviconPath)
         );
+
+        $editResponse = $this->actingAs($admin)->get(route('admin.theme.edit'));
+
+        $editResponse->assertOk();
+        $editResponse->assertSee('Active Favicon Files');
+        $editResponse->assertSee('favicon.ico');
+        $editResponse->assertSee('site.webmanifest');
     }
 
     public function test_favicon_bundle_rejects_unexpected_filenames(): void

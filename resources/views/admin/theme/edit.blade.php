@@ -771,6 +771,51 @@
                                     </p>
                                 </div>
 
+                                @if (!empty($currentFaviconAssets))
+                                    <div class="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-gray-900">{{ __('Active Favicon Files') }}</h4>
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    {{ __('These are the favicon assets currently being served by the site.') }}
+                                                </p>
+                                            </div>
+                                            <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                                                {{ count($currentFaviconAssets) }} {{ __('files') }}
+                                            </span>
+                                        </div>
+
+                                        <div class="mt-3 overflow-hidden rounded-md border border-gray-200">
+                                            <ul class="divide-y divide-gray-200 bg-gray-50">
+                                                @foreach ($currentFaviconAssets as $asset)
+                                                    <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                                                        <div class="min-w-0">
+                                                            <div class="flex flex-wrap items-center gap-2">
+                                                                <span class="font-medium text-gray-900">{{ $asset['name'] }}</span>
+                                                                @if ($asset['is_primary'])
+                                                                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                                        {{ __('Primary') }}
+                                                                    </span>
+                                                                @endif
+                                                                @if ($asset['is_manifest'])
+                                                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                                                        {{ __('Manifest') }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                            <p class="mt-1 truncate text-xs text-gray-500">{{ $asset['path'] }}</p>
+                                                        </div>
+                                                        <a href="{{ $asset['url'] }}" target="_blank" rel="noopener noreferrer"
+                                                            class="shrink-0 text-sm font-medium text-primary-700 hover:text-primary-800">
+                                                            {{ __('Open') }}
+                                                        </a>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <x-input-label for="site_favicon" :value="__('Single Favicon Upload')" class="mt-6" />
                                 <div class="mt-2 flex flex-col sm:flex-row sm:items-start sm:space-x-4">
                                     <div class="shrink-0 mb-4 sm:mb-0">
