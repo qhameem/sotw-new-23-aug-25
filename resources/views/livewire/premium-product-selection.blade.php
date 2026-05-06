@@ -4,7 +4,8 @@
             <h2 class="text-xl font-semibold mb-4">Select Products to Feature</h2>
             <p class="text-gray-600 mb-4">Select the products you want to feature. Each spot costs $149 per month.</p>
             <div class="mb-4">
-                <input type="text" wire:model.live.debounce.300ms="searchTerm" placeholder="Search your products..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                <label for="premium-product-search" class="sr-only">Search your products</label>
+                <input id="premium-product-search" type="text" wire:model.live.debounce.300ms="searchTerm" placeholder="Search your products..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
             </div>
             <div class="space-y-4 overflow-y-auto scrollbar-hide flex-grow">
                 @forelse($this->filteredProducts as $product)
@@ -17,7 +18,8 @@
                                 <p class="text-sm text-gray-500">{{ $product->tagline }}</p>
                             </div>
                         </div>
-                        <input type="checkbox" wire:model.live="selectedProducts" value="{{ $product->id }}" class="form-checkbox h-5 w-5 text-primary-600">
+                        <label class="sr-only" for="premium-product-{{ $product->id }}">Select {{ $product->name }}</label>
+                        <input id="premium-product-{{ $product->id }}" type="checkbox" wire:model.live="selectedProducts" value="{{ $product->id }}" class="form-checkbox h-5 w-5 text-primary-600">
                     </div>
                 @empty
                     <p class="text-gray-500">You have no products to feature.</p>

@@ -7,7 +7,8 @@
             </h2>
              {{-- Blog Search Form --}}
             <form action="{{ route('articles.search') }}" method="GET" class="flex">
-                <x-text-input type="search" name="query" placeholder="Search articles..." class="py-2 px-3 rounded-l-md" :value="$query" />
+                <label for="articles-search-query" class="sr-only">{{ __('Search articles') }}</label>
+                <x-text-input id="articles-search-query" type="search" name="query" placeholder="Search articles..." class="py-2 px-3 rounded-l-md" :value="$query" />
                 <x-primary-button type="submit" class="rounded-l-none">
                     {{ __('Search') }}
                 </x-primary-button>

@@ -10,7 +10,8 @@
 
 @section('actions')
     <form action="{{ route('articles.search') }}" method="GET" class="flex">
-        <x-text-input type="search" name="query" placeholder="Search articles..." class="py-2 px-3 rounded-l-md" :value="request('query')" />
+        <label for="tag-articles-search-query" class="sr-only">{{ __('Search articles') }}</label>
+        <x-text-input id="tag-articles-search-query" type="search" name="query" placeholder="Search articles..." class="py-2 px-3 rounded-l-md" :value="request('query')" />
         <x-primary-button type="submit" class="rounded-l-none">
             {{ __('Search') }}
         </x-primary-button>
