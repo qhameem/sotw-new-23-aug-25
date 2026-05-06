@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\PageMetaTag;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class SeoApiController extends Controller
 {
@@ -85,7 +86,7 @@ class SeoApiController extends Controller
             return response()->json([
                 'meta_title' => '',
                 'meta_description' => '',
-                'og_image_path' => $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null,
+                'og_image_path' => $globalMeta?->og_image_path ? $this->absoluteUrl(\Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path)) : null,
             ]);
         }
 
@@ -211,7 +212,20 @@ class SeoApiController extends Controller
             'path' => $meta->path,
             'meta_title' => $meta->meta_title,
             'meta_description' => $meta->meta_description,
-            'og_image_path' => $imageSource?->og_image_path ? \Illuminate\Support\Facades\Storage::url($imageSource->og_image_path) : null,
+            'og_image_path' => $imageSource?->og_image_path ? $this->absoluteUrl(\Illuminate\Support\Facades\Storage::url($imageSource->og_image_path)) : null,
         ];
+    }
+
+    private function absoluteUrl(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return url($value);
     }
 }

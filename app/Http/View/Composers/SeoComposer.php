@@ -5,6 +5,7 @@ namespace App\Http\View\Composers;
 use Illuminate\View\View;
 use App\Models\PageMetaTag;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 class SeoComposer
 {
@@ -34,7 +35,7 @@ class SeoComposer
             }
             
             if (!isset($viewData['meta_og_image'])) {
-                $view->with('meta_og_image', $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null);
+                $view->with('meta_og_image', $globalMeta?->og_image_path ? $this->absoluteUrl(\Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path)) : null);
             }
         } else {
             // Absolute default if nothing is configured
@@ -48,5 +49,18 @@ class SeoComposer
                 $view->with('meta_og_image', null);
             }
         }
+    }
+
+    private function absoluteUrl(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return url($value);
     }
 }

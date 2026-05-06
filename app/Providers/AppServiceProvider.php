@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 use App\Http\View\Composers\ScheduledProductsStatsComposer;
 use App\Services\CategoryNavigationService;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -92,7 +93,7 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with(
                 'globalDefaultOgImageUrl',
-                $globalMeta?->og_image_path ? \Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path) : null
+                $globalMeta?->og_image_path ? $this->absoluteUrl(\Illuminate\Support\Facades\Storage::url($globalMeta->og_image_path)) : null
             );
         });
 
@@ -157,6 +158,19 @@ class AppServiceProvider extends ServiceProvider
         Config::set('theme.font_css_stack', $this->normalizeFontFamilyForCss(
             Config::get('theme.font_family', 'Inter')
         ));
+    }
+
+    private function absoluteUrl(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return url($value);
     }
 
     private function normalizeFontFamilyForCss(?string $fontFamily): string
