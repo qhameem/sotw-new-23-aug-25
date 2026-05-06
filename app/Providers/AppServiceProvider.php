@@ -140,6 +140,9 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['favicon_url'])) { // Can be null if removed
                     Config::set('theme.favicon_url', $settings['favicon_url']);
                 }
+                if (isset($settings['favicon_manifest_url'])) {
+                    Config::set('theme.favicon_manifest_url', $settings['favicon_manifest_url']);
+                }
                 if (isset($settings['primary_button_text_color'])) { // Can be null
                     Config::set('theme.primary_button_text_color', $settings['primary_button_text_color']);
                 }

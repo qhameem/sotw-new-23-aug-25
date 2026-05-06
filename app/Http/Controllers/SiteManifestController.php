@@ -52,6 +52,8 @@ class SiteManifestController extends Controller
     {
         $directory = dirname($customFaviconPath);
         $paths = [
+            $directory . '/android-chrome-192x192.png',
+            $directory . '/android-chrome-512x512.png',
             $directory . '/apple-touch-icon.png',
             $directory . '/favicon-32x32.png',
             $directory . '/favicon-16x16.png',

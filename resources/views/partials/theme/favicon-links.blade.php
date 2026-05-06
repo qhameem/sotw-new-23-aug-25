@@ -31,6 +31,10 @@
         ?? ($hasCustomFavicon ? $mainFaviconUrl : asset('favicon/favicon-32x32.png'));
     $favicon16Url = $resolveGeneratedFaviconUrl('favicon-16x16.png')
         ?? ($hasCustomFavicon ? $mainFaviconUrl : asset('favicon/favicon-16x16.png'));
+    $customManifestPath = config('theme.favicon_manifest_url');
+    $manifestUrl = $customManifestPath && $publicDisk->exists($customManifestPath)
+        ? $versionedStorageUrl($customManifestPath)
+        : route('site.manifest');
 @endphp
 
 <link rel="icon" href="{{ $mainFaviconUrl }}">
@@ -38,4 +42,4 @@
 <link rel="apple-touch-icon" sizes="180x180" href="{{ $appleTouchIconUrl }}">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ $favicon32Url }}">
 <link rel="icon" type="image/png" sizes="16x16" href="{{ $favicon16Url }}">
-<link rel="manifest" href="{{ route('site.manifest') }}">
+<link rel="manifest" href="{{ $manifestUrl }}">

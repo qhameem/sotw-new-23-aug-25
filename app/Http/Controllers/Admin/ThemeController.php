@@ -15,6 +15,56 @@ use Illuminate\Support\Facades\Log;
 
 class ThemeController extends Controller
 {
+    private const FAVICON_BUNDLE_SPECS = [
+        'favicon.ico' => [
+            'extensions' => ['ico'],
+            'mime_types' => ['image/vnd.microsoft.icon', 'image/x-icon', 'application/octet-stream', 'application/ico', 'image/ico'],
+            'image' => false,
+        ],
+        'favicon-16x16.png' => [
+            'extensions' => ['png'],
+            'mime_types' => ['image/png'],
+            'image' => true,
+            'dimensions' => [16, 16],
+        ],
+        'favicon-32x32.png' => [
+            'extensions' => ['png'],
+            'mime_types' => ['image/png'],
+            'image' => true,
+            'dimensions' => [32, 32],
+        ],
+        'apple-touch-icon.png' => [
+            'extensions' => ['png'],
+            'mime_types' => ['image/png'],
+            'image' => true,
+            'dimensions' => [180, 180],
+        ],
+        'android-chrome-192x192.png' => [
+            'extensions' => ['png'],
+            'mime_types' => ['image/png'],
+            'image' => true,
+            'dimensions' => [192, 192],
+        ],
+        'android-chrome-512x512.png' => [
+            'extensions' => ['png'],
+            'mime_types' => ['image/png'],
+            'image' => true,
+            'dimensions' => [512, 512],
+        ],
+        'site.webmanifest' => [
+            'extensions' => ['webmanifest'],
+            'mime_types' => ['application/manifest+json', 'application/json', 'text/plain'],
+            'image' => false,
+        ],
+    ];
+
+    private const REQUIRED_FAVICON_BUNDLE_FILES = [
+        'favicon.ico',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+    ];
+
     private string $settingsPath;
 
     public function __construct()
@@ -104,6 +154,8 @@ class ThemeController extends Controller
             'logo_alt_text' => 'nullable|string|max:255',
             'remove_logo' => 'sometimes|boolean',
             'site_favicon' => 'nullable|file|mimes:ico,png,svg|max:100', // Max 100KB
+            'favicon_bundle' => 'nullable|array',
+            'favicon_bundle.*' => 'nullable|file|max:1024',
             'remove_favicon' => 'sometimes|boolean',
             'primary_button_text_color' => [
                 'nullable',
@@ -119,6 +171,21 @@ class ThemeController extends Controller
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
+                ->withInput();
+        }
+
+        $faviconBundleFiles = array_values(array_filter($request->file('favicon_bundle', [])));
+
+        if (!empty($faviconBundleFiles) && $request->hasFile('site_favicon')) {
+            return redirect()->back()
+                ->withErrors(['favicon_bundle' => 'Upload either a favicon bundle or a single favicon file, not both at the same time.'])
+                ->withInput();
+        }
+
+        $faviconBundleErrors = $this->validateFaviconBundle($faviconBundleFiles);
+        if ($faviconBundleErrors !== []) {
+            return redirect()->back()
+                ->withErrors($faviconBundleErrors)
                 ->withInput();
         }
 
@@ -175,26 +242,37 @@ class ThemeController extends Controller
 
         // Favicon Management
         if ($request->input('remove_favicon')) {
-            $this->deleteStoredFile($settings['favicon_url'] ?? null);
+            $this->deleteFaviconAssetSet($settings);
             $settings['favicon_url'] = null;
+            $settings['favicon_manifest_url'] = null;
+            $this->restorePublicRootFavicon();
+        } elseif (!empty($faviconBundleFiles)) {
+            $this->deleteFaviconAssetSet($settings);
+
+            $faviconBundle = $this->storeFaviconBundle($faviconBundleFiles);
+            $settings['favicon_url'] = $faviconBundle['favicon_url'];
+            $settings['favicon_manifest_url'] = $faviconBundle['favicon_manifest_url'];
+
+            $this->syncPublicRootFavicon($faviconBundle['favicon_url']);
         } elseif ($request->hasFile('site_favicon')) {
-            $this->deleteStoredFile($settings['favicon_url'] ?? null);
-            // Also delete previously generated versions if a new favicon is uploaded
-            $this->deleteGeneratedFaviconVersions($settings['favicon_url'] ?? null);
+            $this->deleteFaviconAssetSet($settings);
 
             $uploadedFaviconFile = $request->file('site_favicon');
-            $originalFaviconPath = $this->storeUploadedFile($uploadedFaviconFile, 'favicon', 'theme/branding');
+            $originalFaviconPath = $this->storeSingleFaviconSet($uploadedFaviconFile);
             $settings['favicon_url'] = $originalFaviconPath;
+            $settings['favicon_manifest_url'] = null;
 
             // Generate different sizes if it's a PNG
-            if ($uploadedFaviconFile->getClientOriginalExtension() === 'png') {
+            if (strtolower($uploadedFaviconFile->getClientOriginalExtension()) === 'png') {
                 try {
                     $this->generateFaviconVersions($uploadedFaviconFile, $originalFaviconPath);
                 } catch (\Exception $e) {
                     Log::error('Failed to generate favicon versions: ' . $e->getMessage());
-                    // Optionally, add a non-blocking error to the session for the user
-                    // session()->flash('warning', 'Original favicon saved, but failed to generate additional sizes. Please check logs.');
                 }
+            }
+
+            if (strtolower(pathinfo($originalFaviconPath, PATHINFO_EXTENSION)) === 'ico') {
+                $this->syncPublicRootFavicon($originalFaviconPath);
             }
         }
 
@@ -236,6 +314,7 @@ class ThemeController extends Controller
                 'logo_url' => null,
                 'logo_alt_text' => null,
                 'favicon_url' => null,
+                'favicon_manifest_url' => null,
                 'submission_bg_url' => null,
                 'navbar_bg_color' => Config::get('theme.navbar_bg_color', '#ffffff'),
                 'body_bg_color'   => Config::get('theme.body_bg_color',   '#ffffff'),
@@ -256,6 +335,11 @@ class ThemeController extends Controller
     {
         $fileName = $fileNamePrefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
         // Store in storage/app/public/{directory}
+        return $file->storeAs($directory, $fileName, 'public');
+    }
+
+    private function storeUploadedFileAs(UploadedFile $file, string $directory, string $fileName): string
+    {
         return $file->storeAs($directory, $fileName, 'public');
     }
 
@@ -304,6 +388,8 @@ class ThemeController extends Controller
             'favicon-16x16.png' => 16,
             'favicon-32x32.png' => 32,
             'apple-touch-icon.png' => 180, // Standard for modern Apple devices
+            'android-chrome-192x192.png' => 192,
+            'android-chrome-512x512.png' => 512,
         ];
 
         foreach ($sizes as $filename => $size) {
@@ -331,12 +417,159 @@ class ThemeController extends Controller
             $directory . '/favicon-16x16.png',
             $directory . '/favicon-32x32.png',
             $directory . '/apple-touch-icon.png',
+            $directory . '/android-chrome-192x192.png',
+            $directory . '/android-chrome-512x512.png',
+            $directory . '/site.webmanifest',
         ];
 
         foreach ($generatedFiles as $filePath) {
             if (Storage::disk('public')->exists($filePath)) {
                 Storage::disk('public')->delete($filePath);
             }
+        }
+    }
+
+    private function validateFaviconBundle(array $files): array
+    {
+        if ($files === []) {
+            return [];
+        }
+
+        $errors = [];
+        $uploadedNames = [];
+
+        foreach ($files as $file) {
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
+
+            $originalName = strtolower($file->getClientOriginalName());
+            $uploadedNames[] = $originalName;
+
+            if (!isset(self::FAVICON_BUNDLE_SPECS[$originalName])) {
+                $errors['favicon_bundle'][] = "Unexpected favicon bundle file: {$originalName}.";
+                continue;
+            }
+
+            if (count(array_keys($uploadedNames, $originalName, true)) > 1) {
+                $errors['favicon_bundle'][] = "Duplicate favicon bundle file detected: {$originalName}.";
+                continue;
+            }
+
+            $spec = self::FAVICON_BUNDLE_SPECS[$originalName];
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (!in_array($extension, $spec['extensions'], true)) {
+                $errors['favicon_bundle'][] = "{$originalName} must use the ." . implode(', .', $spec['extensions']) . ' extension.';
+                continue;
+            }
+
+            if ($originalName === 'site.webmanifest') {
+                $manifest = json_decode((string) file_get_contents($file->getRealPath()), true);
+                if (!is_array($manifest)) {
+                    $errors['favicon_bundle'][] = 'site.webmanifest must contain valid JSON.';
+                }
+                continue;
+            }
+
+            $mimeType = strtolower((string) $file->getMimeType());
+            if ($mimeType !== '' && !in_array($mimeType, $spec['mime_types'], true)) {
+                $errors['favicon_bundle'][] = "{$originalName} has an invalid file type.";
+                continue;
+            }
+
+            if (!empty($spec['image'])) {
+                $dimensions = @getimagesize($file->getRealPath());
+                if (!$dimensions || !isset($dimensions[0], $dimensions[1])) {
+                    $errors['favicon_bundle'][] = "{$originalName} must be a readable image file.";
+                    continue;
+                }
+
+                [$expectedWidth, $expectedHeight] = $spec['dimensions'];
+                if ($dimensions[0] !== $expectedWidth || $dimensions[1] !== $expectedHeight) {
+                    $errors['favicon_bundle'][] = "{$originalName} must be {$expectedWidth}x{$expectedHeight}px.";
+                }
+            }
+        }
+
+        foreach (self::REQUIRED_FAVICON_BUNDLE_FILES as $requiredFile) {
+            if (!in_array($requiredFile, $uploadedNames, true)) {
+                $errors['favicon_bundle'][] = "Missing required favicon bundle file: {$requiredFile}.";
+            }
+        }
+
+        return $errors;
+    }
+
+    private function storeFaviconBundle(array $files): array
+    {
+        $directory = 'theme/branding/favicon-set-' . uniqid();
+        Storage::disk('public')->makeDirectory($directory);
+
+        foreach ($files as $file) {
+            $fileName = strtolower($file->getClientOriginalName());
+            $this->storeUploadedFileAs($file, $directory, $fileName);
+        }
+
+        return [
+            'favicon_url' => $directory . '/favicon.ico',
+            'favicon_manifest_url' => Storage::disk('public')->exists($directory . '/site.webmanifest')
+                ? $directory . '/site.webmanifest'
+                : null,
+        ];
+    }
+
+    private function storeSingleFaviconSet(UploadedFile $file): string
+    {
+        $directory = 'theme/branding/favicon-set-' . uniqid();
+        Storage::disk('public')->makeDirectory($directory);
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        $fileName = $extension === 'ico' ? 'favicon.ico' : "favicon-source.{$extension}";
+
+        return $this->storeUploadedFileAs($file, $directory, $fileName);
+    }
+
+    private function deleteFaviconAssetSet(array $settings): void
+    {
+        $faviconPath = $settings['favicon_url'] ?? null;
+        $manifestPath = $settings['favicon_manifest_url'] ?? null;
+
+        $this->deleteStoredFile($faviconPath);
+        $this->deleteStoredFile($manifestPath);
+        $this->deleteGeneratedFaviconVersions($faviconPath);
+
+        if (!$faviconPath) {
+            return;
+        }
+
+        $directory = dirname($faviconPath);
+        if ($directory !== '.' && Storage::disk('public')->exists($directory)) {
+            Storage::disk('public')->deleteDirectory($directory);
+        }
+    }
+
+    private function syncPublicRootFavicon(?string $storedFaviconPath): void
+    {
+        if (!$storedFaviconPath || !Storage::disk('public')->exists($storedFaviconPath)) {
+            return;
+        }
+
+        if (strtolower(pathinfo($storedFaviconPath, PATHINFO_EXTENSION)) !== 'ico') {
+            return;
+        }
+
+        File::copy(
+            Storage::disk('public')->path($storedFaviconPath),
+            public_path('favicon.ico')
+        );
+    }
+
+    private function restorePublicRootFavicon(): void
+    {
+        $defaultRootFavicon = public_path('favicon/favicon.ico');
+
+        if (File::exists($defaultRootFavicon)) {
+            File::copy($defaultRootFavicon, public_path('favicon.ico'));
         }
     }
 

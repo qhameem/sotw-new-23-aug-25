@@ -757,7 +757,21 @@
                                         document.getElementById('remove_favicon_hidden').value = '1';
                                     }
                                 }" x-init="faviconPreviewUrl = '{{ $currentFaviconUrl ?? ($defaultFaviconUrl ?? '') }}'">
-                                <x-input-label for="site_favicon" :value="__('Site Favicon')" />
+                                <x-input-label for="favicon_bundle" :value="__('Favicon Bundle Upload')" />
+                                <div class="mt-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                                    <input id="favicon_bundle" name="favicon_bundle[]" type="file" multiple
+                                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                                        accept=".ico,.png,.webmanifest,image/vnd.microsoft.icon,image/x-icon,image/png,application/manifest+json"
+                                        aria-describedby="favicon_bundle_help">
+                                    <p class="mt-2 text-xs text-gray-500" id="favicon_bundle_help">
+                                        {{ __('Upload the generated favicon bundle files together. Accepted filenames: favicon.ico, favicon-16x16.png, favicon-32x32.png, apple-touch-icon.png, android-chrome-192x192.png, android-chrome-512x512.png, site.webmanifest.') }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        {{ __('The required files are favicon.ico, favicon-16x16.png, favicon-32x32.png, and apple-touch-icon.png. If you upload a bundle, it takes priority over the single favicon upload below.') }}
+                                    </p>
+                                </div>
+
+                                <x-input-label for="site_favicon" :value="__('Single Favicon Upload')" class="mt-6" />
                                 <div class="mt-2 flex flex-col sm:flex-row sm:items-start sm:space-x-4">
                                     <div class="shrink-0 mb-4 sm:mb-0">
                                         {{-- Mock browser tab preview --}}
@@ -790,7 +804,7 @@
                                             @change="handleFaviconChange($event)">
                                         <input type="hidden" name="remove_favicon" id="remove_favicon_hidden" value="0">
                                         <p class="mt-1 text-xs text-gray-500 " id="site_favicon_help">
-                                            {{ __('ICO, PNG, SVG (Max. 100KB). Recommended: 32x32px or SVG.') }}
+                                            {{ __('ICO, PNG, SVG (Max. 100KB). Use this only when you want the system to build the favicon set from one source file.') }}
                                         </p>
                                         <button type="button" @click="removeFavicon()"
                                             x-show="faviconPreviewUrl && faviconPreviewUrl !== '{{ $defaultFaviconUrl ?? '' }}'"
@@ -800,7 +814,7 @@
                                     </div>
                                 </div>
                                 <p class="mt-3 text-sm text-gray-500 ">
-                                    {{ __('For PNG/SVG, common sizes (16x16, 32x32, apple-touch-icon) may be auto-generated. ICO files should ideally contain multiple sizes.') }}
+                                    {{ __('For a single PNG/SVG upload, the system auto-generates 16x16, 32x32, apple-touch-icon, and Android icon sizes. For best control, upload the full favicon bundle above.') }}
                                 </p>
                             </div>
                         </div>
