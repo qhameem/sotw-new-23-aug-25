@@ -7,16 +7,19 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         @foreach ($badges as $badge)
+            @php
+                $badgeAltText = trim($badge->alt_text ?: ($badge->title . ' badge'));
+            @endphp
             <div class="bg-white shadow-md rounded-lg p-6">
                 <h2 class="text-xl font-bold mb-2">{{ $badge->title }}</h2>
                 <div class="mb-4">
-                    <img src="{{ url($badge->path) }}" alt="{{ $badge->alt_text }}" style="max-width:200px; height:auto; border:0;">
+                    <img src="{{ url($badge->path) }}" alt="{{ $badgeAltText }}" style="max-width:200px; height:auto; border:0;">
                 </div>
                 <div class="mb-4">
                     <label for="embed_code_{{ $badge->id }}" class="block text-gray-700 text-sm font-bold mb-2">Embed Code:</label>
                     <textarea id="embed_code_{{ $badge->id }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" rows="5" readonly><a href="{{ url('/') }}" target="_blank" rel="dofollow">
     <img src="{{ url($badge->path) }}" 
-         alt="{{ $badge->alt_text }}" 
+         alt="{{ $badgeAltText }}" 
          style="max-width:200px; height:auto; border:0;" />
 </a></textarea>
                 </div>

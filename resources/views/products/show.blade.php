@@ -164,7 +164,7 @@
                                     <img src="{{ asset('storage/' . ($media->path_medium ?? $media->path)) }}" srcset="{{ $media->path_thumb ? asset('storage/' . $media->path_thumb) . ' 300w,' : '' }}
                                                                         {{ $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : '' }}
                                                                         {{ asset('storage/' . $media->path) }} 1200w"
-                                        alt="{{ $media->alt_text }}" class="block w-full h-full object-cover"
+                                        alt="{{ $media->alt_text ?: $product->name . ' screenshot ' . $loop->iteration }}" class="block w-full h-full object-cover"
                                         itemprop="image"
                                         loading="{{ ($loop->first && !$product->video_url) ? 'eager' : 'lazy' }}"
                                         sizes="(min-width: 768px) 280px, (min-width: 640px) 260px, 240px">
