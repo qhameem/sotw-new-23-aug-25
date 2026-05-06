@@ -1,3 +1,8 @@
+@php
+    $hideSidebar = true;
+    $mainContentMaxWidth = 'max-w-none';
+    $containerMaxWidth = 'max-w-none';
+@endphp
 @extends('layouts.app')
 
 @section('title', 'Advertising Management')
@@ -7,7 +12,7 @@
 @endsection
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="{ activeTab: '{{ request('tab', 'ads') }}' }">
+<div class="w-full px-4 py-8 sm:px-6 lg:px-8" x-data="{ activeTab: '{{ request('tab', 'ads') }}' }">
     <div class="mb-6 border-b border-gray-200">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
             <li class="mr-2">

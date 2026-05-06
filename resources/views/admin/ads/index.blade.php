@@ -1,4 +1,4 @@
-<div class="container mx-auto">
+<div class="w-full">
     <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
         <div>
             <h2 class="text-xl font-semibold text-gray-800">Ads</h2>
@@ -25,14 +25,140 @@
         </div>
     @endif
 
-    <div class="bg-white shadow-md rounded-lg overflow-x-auto">
-        <table class="min-w-full leading-normal">
+    <div class="space-y-4 md:hidden">
+        @forelse ($ads as $ad)
+            <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-gray-900">{{ $ad->internal_name }}</h3>
+                        <p class="mt-1 text-xs text-gray-500">{{ ucwords(str_replace('_', ' ', $ad->type)) }}</p>
+                        @if($ad->tagline)
+                            <p class="mt-2 text-sm text-gray-600">{{ $ad->tagline }}</p>
+                        @endif
+                    </div>
+                    @php
+                        $statusStyles = [
+                            'active' => 'bg-green-100 text-green-800',
+                            'scheduled' => 'bg-yellow-100 text-yellow-800',
+                            'expired' => 'bg-gray-200 text-gray-700',
+                            'inactive' => 'bg-red-100 text-red-800',
+                        ];
+                    @endphp
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $statusStyles[$ad->effective_status] ?? 'bg-gray-100 text-gray-800' }}">
+                        {{ ucfirst($ad->effective_status) }}
+                    </span>
+                </div>
+
+                <div class="mt-4">
+                    @if($ad->type === 'image_banner' && $ad->image_url)
+                        <img src="{{ $ad->image_url }}" alt="{{ $ad->internal_name }}" class="h-24 w-full rounded-lg object-cover border border-gray-200">
+                    @elseif($ad->type === 'product_listing_card' && $ad->image_url)
+                        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                            <img src="{{ $ad->image_url }}" alt="{{ $ad->internal_name }}" class="h-12 w-12 rounded-xl object-cover border border-gray-100">
+                            <div class="min-w-0">
+                                <div class="truncate text-sm font-semibold text-gray-900">{{ $ad->internal_name }}</div>
+                                @if($ad->tagline)
+                                    <div class="mt-1 text-xs text-gray-500 line-clamp-2">{{ $ad->tagline }}</div>
+                                @endif
+                            </div>
+                        </div>
+                    @elseif($ad->type === 'text_link')
+                        <div class="rounded-lg bg-gray-50 p-3 text-sm text-blue-600">{{ $ad->content }}</div>
+                    @else
+                        <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">{{ strip_tags($ad->content) }}</div>
+                    @endif
+                </div>
+
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Target</dt>
+                        <dd class="mt-1 text-gray-900">
+                            @if($ad->target_url)
+                                <a href="{{ $ad->target_url }}" target="_blank" rel="noopener noreferrer" class="break-all text-blue-600">{{ $ad->target_url }}</a>
+                            @else
+                                <span class="text-gray-400">No outbound URL</span>
+                            @endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Zones</dt>
+                        <dd class="mt-2 space-y-2">
+                            @forelse($ad->adZones as $zone)
+                                <div class="rounded-lg bg-gray-100 px-3 py-2">
+                                    <div class="font-medium text-gray-800">{{ $zone->name }}</div>
+                                    <div class="text-xs text-gray-500">{{ $zone->slug }} · {{ $zone->render_location ?: $zone->description }}</div>
+                                </div>
+                            @empty
+                                <span class="text-gray-400">Unassigned</span>
+                            @endforelse
+                        </dd>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="rounded-lg bg-gray-50 px-3 py-3">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Impressions</dt>
+                            <dd class="mt-1 text-base font-semibold text-gray-900 tabular-nums">{{ number_format($ad->impressions_count) }}</dd>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 px-3 py-3">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Clicks</dt>
+                            <dd class="mt-1 text-base font-semibold text-gray-900 tabular-nums">{{ number_format($ad->clicks_count) }}</dd>
+                        </div>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Schedule</dt>
+                        <dd class="mt-1 text-gray-900">
+                            @if($ad->start_date)
+                                <div>Starts {{ $ad->start_date->format('Y-m-d H:i') }}</div>
+                            @endif
+                            @if($ad->end_date)
+                                <div>Ends {{ $ad->end_date->format('Y-m-d H:i') }}</div>
+                            @endif
+                            @if(!$ad->start_date && !$ad->end_date)
+                                <div>Always on</div>
+                            @endif
+                            @if($ad->is_house_ad)
+                                <div class="mt-2 text-xs text-gray-500">House ad fallback enabled</div>
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="mt-4 flex flex-wrap gap-3 text-sm">
+                    <form action="{{ route('admin.ads.toggle-active', $ad) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="font-medium text-indigo-600 hover:text-indigo-900">
+                            {{ $ad->is_active ? 'Deactivate' : 'Activate' }}
+                        </button>
+                    </form>
+                    <form action="{{ route('admin.ads.duplicate', $ad) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="font-medium text-slate-700 hover:text-slate-900">Duplicate</button>
+                    </form>
+                    <a href="{{ route('admin.ads.edit', $ad) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Edit</a>
+                    <form action="{{ route('admin.ads.destroy', $ad) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this ad?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="font-medium text-red-600 hover:text-red-900">Delete</button>
+                    </form>
+                </div>
+            </article>
+        @empty
+            <div class="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-10 text-center text-gray-500">
+                No ads found.
+            </div>
+        @endforelse
+    </div>
+
+    <div class="hidden w-full bg-white shadow-md rounded-lg overflow-x-auto md:block">
+        <table class="w-full min-w-[1200px] leading-normal">
             <thead>
                 <tr>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Preview</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ad</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Target</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Zones</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Impressions</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Clicks</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Schedule</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -73,9 +199,6 @@
                             @else
                                 <span class="text-gray-400">No outbound URL</span>
                             @endif
-                            <div class="text-xs text-gray-500 mt-2">
-                                Impressions {{ number_format($ad->impressions_count) }} · Clicks {{ number_format($ad->clicks_count) }}
-                            </div>
                         </td>
                         <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-900">
                             @forelse($ad->adZones as $zone)
@@ -86,6 +209,12 @@
                             @empty
                                 <span class="text-gray-400">Unassigned</span>
                             @endforelse
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-900 text-right font-medium tabular-nums">
+                            {{ number_format($ad->impressions_count) }}
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-900 text-right font-medium tabular-nums">
+                            {{ number_format($ad->clicks_count) }}
                         </td>
                         <td class="px-5 py-4 border-b border-gray-200 text-sm">
                             @php
@@ -138,7 +267,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-10 text-gray-500">
+                        <td colspan="9" class="text-center py-10 text-gray-500">
                             No ads found.
                         </td>
                     </tr>
