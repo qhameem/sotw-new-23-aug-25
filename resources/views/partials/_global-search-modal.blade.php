@@ -21,6 +21,7 @@
                 </div>
 
                 <div class="relative mt-5">
+                    <label for="globalSearchInput" class="sr-only">Search products and categories</label>
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z" />
