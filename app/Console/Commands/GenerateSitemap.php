@@ -23,7 +23,7 @@ class GenerateSitemap extends Command
      *
      * @var string
      */
-    protected $signature = 'sitemap:generate';
+    protected $signature = 'sitemap:generate {--with-pseo : Include pSEO and compare sitemap files}';
 
     /**
      * The console command description.
@@ -38,11 +38,11 @@ class GenerateSitemap extends Command
     public function handle()
     {
         $this->info('Generating sitemap...');
-        $relatedProductService = app(RelatedProductService::class);
         $sitemapPath = public_path('sitemap.xml');
         $sitemapDirectory = public_path('sitemaps');
         $generatedAt = now();
         $sitemapEntries = [];
+        $includePseo = (bool) $this->option('with-pseo');
 
         File::ensureDirectoryExists($sitemapDirectory);
         foreach (File::glob($sitemapDirectory . DIRECTORY_SEPARATOR . '*.xml') as $existingSitemap) {
@@ -126,80 +126,87 @@ class GenerateSitemap extends Command
         $this->writeChildSitemap($archiveSitemap, $sitemapDirectory . '/archives.xml', $sitemapEntries, $generatedAt);
 
 
-        // --- pSEO Pages --- //
-        $this->info('Adding pSEO routes...');
-        $pseoSitemap = Sitemap::create();
+        if ($includePseo) {
+            $relatedProductService = app(RelatedProductService::class);
 
-        // 1. Alternatives Pages
-        foreach (Product::where('approved', true)->where('is_published', true)->with(['categories.types', 'techStacks'])->get() as $product) {
-            $alternatives = $relatedProductService->getAlternatives($product, 15);
+            // --- pSEO Pages --- //
+            $this->info('Adding pSEO routes...');
+            $pseoSitemap = Sitemap::create();
 
-            if ($relatedProductService->shouldNoindexAlternatives($product, $alternatives)) {
-                continue;
+            // 1. Alternatives Pages
+            foreach (Product::where('approved', true)->where('is_published', true)->with(['categories.types', 'techStacks'])->get() as $product) {
+                $alternatives = $relatedProductService->getAlternatives($product, 15);
+
+                if ($relatedProductService->shouldNoindexAlternatives($product, $alternatives)) {
+                    continue;
+                }
+
+                $pseoSitemap->add(Url::create(route('pseo.alternatives', $product->slug))
+                    ->setPriority(0.8)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
             }
 
-            $pseoSitemap->add(Url::create(route('pseo.alternatives', $product->slug))
-                ->setPriority(0.8)
-                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        }
+            // 2. Best-Of Category Pages
+            $softwareCats = Category::whereHas('products', function($q) { $q->where('approved', true); })
+                ->whereHas('types', function($q) { $q->whereIn('name', ['Software', 'Software Categories']); })->get();
+                
+            foreach ($softwareCats as $category) {
+                $pseoSitemap->add(Url::create(route('pseo.best', $category->slug))
+                    ->setPriority(0.8)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+            }
 
-        // 2. Best-Of Category Pages
-        $softwareCats = Category::whereHas('products', function($q) { $q->where('approved', true); })
-            ->whereHas('types', function($q) { $q->whereIn('name', ['Software', 'Software Categories']); })->get();
-            
-        foreach ($softwareCats as $category) {
-            $pseoSitemap->add(Url::create(route('pseo.best', $category->slug))
-                ->setPriority(0.8)
-                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        }
+            // 3. Built-With (Tech Stack) Pages
+            if (class_exists(\App\Models\TechStack::class)) {
+                foreach (\App\Models\TechStack::whereHas('products', function($q) { $q->where('approved', true); })->get() as $stack) {
+                    $pseoSitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
+                        ->setPriority(0.7)
+                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
+                }
+            }
 
-        // 3. Built-With (Tech Stack) Pages
-        if (class_exists(\App\Models\TechStack::class)) {
-            foreach (\App\Models\TechStack::whereHas('products', function($q) { $q->where('approved', true); })->get() as $stack) {
-                $pseoSitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
+            // 4. Pricing Pages
+            $pricingCategories = Category::whereHas('types', function($q) { $q->where('name', 'Pricing'); })
+                ->whereHas('products', function($q) { $q->where('approved', true); })->get();
+            foreach ($pricingCategories as $pricing) {
+                $pseoSitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
                     ->setPriority(0.7)
                     ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
             }
-        }
+            $this->writeChildSitemap($pseoSitemap, $sitemapDirectory . '/pseo.xml', $sitemapEntries, $generatedAt);
 
-        // 4. Pricing Pages
-        $pricingCategories = Category::whereHas('types', function($q) { $q->where('name', 'Pricing'); })
-            ->whereHas('products', function($q) { $q->where('approved', true); })->get();
-        foreach ($pricingCategories as $pricing) {
-            $pseoSitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
-                ->setPriority(0.7)
-                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        }
-        $this->writeChildSitemap($pseoSitemap, $sitemapDirectory . '/pseo.xml', $sitemapEntries, $generatedAt);
-
-        // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
-        $this->info('Generating comparison URLs...');
-        $compareSitemap = Sitemap::create();
-        $products = Product::where('approved', true)
-            ->where('is_published', true)
-            ->with(['categories.types', 'techStacks'])
-            ->get();
-        $addedComparisons = [];
-        
-        foreach ($products as $product) {
-            $similarProducts = $relatedProductService->getComparisons($product, 3);
+            // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
+            $this->info('Generating comparison URLs...');
+            $compareSitemap = Sitemap::create();
+            $products = Product::where('approved', true)
+                ->where('is_published', true)
+                ->with(['categories.types', 'techStacks'])
+                ->get();
+            $addedComparisons = [];
             
-            foreach ($similarProducts as $similar) {
-                // Ensure alphabetical order so A-vs-B is the same as B-vs-A
-                $slugs = [$product->slug, $similar->slug];
-                sort($slugs);
-                $compareKey = $slugs[0] . '-vs-' . $slugs[1];
+            foreach ($products as $product) {
+                $similarProducts = $relatedProductService->getComparisons($product, 3);
                 
-                if (!isset($addedComparisons[$compareKey])) {
-                    $compareSitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
-                        ->setPriority(0.6)
-                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
-                    $addedComparisons[$compareKey] = true;
+                foreach ($similarProducts as $similar) {
+                    // Ensure alphabetical order so A-vs-B is the same as B-vs-A
+                    $slugs = [$product->slug, $similar->slug];
+                    sort($slugs);
+                    $compareKey = $slugs[0] . '-vs-' . $slugs[1];
+                    
+                    if (!isset($addedComparisons[$compareKey])) {
+                        $compareSitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
+                            ->setPriority(0.6)
+                            ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
+                        $addedComparisons[$compareKey] = true;
+                    }
                 }
             }
+
+            $this->writeChildSitemap($compareSitemap, $sitemapDirectory . '/compare.xml', $sitemapEntries, $generatedAt);
+        } else {
+            $this->info('Skipping pSEO and compare sitemap generation for the default cron-safe run.');
         }
 
-        $this->writeChildSitemap($compareSitemap, $sitemapDirectory . '/compare.xml', $sitemapEntries, $generatedAt);
         $this->writeSitemapIndex($sitemapPath, $sitemapEntries);
 
         $this->info("Sitemap generated successfully at {$sitemapPath}");
