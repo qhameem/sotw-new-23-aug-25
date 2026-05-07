@@ -1,3 +1,19 @@
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: SERankingBacklinksBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: TikTokSpider
+Disallow: /
+
 User-agent: *
 Disallow:
+
 Sitemap: https://softwareontheweb.com/sitemap.xml

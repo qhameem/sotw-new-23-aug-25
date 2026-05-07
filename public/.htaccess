@@ -48,6 +48,10 @@
 
     RewriteEngine On
 
+    # Block selected crawlers that add little value and create analytics noise.
+    RewriteCond %{HTTP_USER_AGENT} (AhrefsBot|SemrushBot|SERankingBacklinksBot|Bytespider|TikTokSpider) [NC]
+    RewriteRule .* - [F,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
