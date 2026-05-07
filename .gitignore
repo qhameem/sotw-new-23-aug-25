@@ -5,8 +5,11 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/app/sync-backups
+/storage/app/sync-temp
 /vendor
 .env
+.env.live-sync
 .env.backup
 .env.production
 .phpactor.json
