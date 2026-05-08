@@ -70,14 +70,14 @@
 </div>
 
 {{-- Interaction Buttons --}}
-<div class="flex flex-row items-center mt-6 gap-3">
+<div class="flex flex-row items-stretch mt-6 mb-6 gap-3">
     @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
         <a href="{{ route('admin.products.edit', $product) }}"
             class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-lg shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
             Edit Product
         </a>
     @endif
-    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="flex-1" />
+    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="flex-1 min-h-[48px]" />
     @unless(isset($isAdminView) && $isAdminView)
         <div class="flex-1">
             @livewire('product-upvote-button', ['product' => $product])
