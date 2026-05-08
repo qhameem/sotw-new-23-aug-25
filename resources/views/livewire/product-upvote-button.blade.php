@@ -16,7 +16,7 @@
                                                                             )" class="w-full md:w-auto">
                 {{-- START: Different design (customize this part later) --}}
                 <button type="button" @click.stop="toggleUpvote"
-                    class="flex min-h-[48px] w-full flex-row items-center justify-center rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-600 md:w-auto md:py-1.5">
+                    class="flex min-h-[48px] w-full flex-row items-center justify-center rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-600 md:min-h-0 md:w-auto md:py-2">
 
                     <span class="pr-2">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
