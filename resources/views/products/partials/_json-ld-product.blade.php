@@ -94,13 +94,13 @@
     ];
 
     // Add primary category to breadcrumb if available
-    $primaryCategory = $product->categories->first();
-    if ($primaryCategory) {
+    $primaryBreadcrumbCategory = $primaryBreadcrumbCategory ?? $product->primaryBreadcrumbCategory();
+    if ($primaryBreadcrumbCategory) {
         $breadcrumbs[] = [
             "@type" => "ListItem",
             "position" => 2,
-            "name" => $primaryCategory->name,
-            "item" => route('categories.show', $primaryCategory->slug)
+            "name" => $primaryBreadcrumbCategory->name,
+            "item" => route('categories.show', $primaryBreadcrumbCategory->slug)
         ];
         $productPosition = 3;
     } else {

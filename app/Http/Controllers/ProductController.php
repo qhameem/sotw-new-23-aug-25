@@ -1763,6 +1763,7 @@ class ProductController extends Controller
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');
         });
+        $primaryBreadcrumbCategory = $product->primaryBreadcrumbCategory();
 
         $bestForCategories = $product->categories->filter(function ($category) {
             return $category->types->contains('name', 'Best for');
@@ -1801,6 +1802,7 @@ class ProductController extends Controller
             'title',
             'pageTitle',
             'pricingCategory',
+            'primaryBreadcrumbCategory',
             'similarProducts',
             'metaDescription',
             'bestForCategories',

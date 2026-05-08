@@ -219,6 +219,30 @@ class Product extends Model implements Sitemapable
         return $this->belongsToMany(Category::class);
     }
 
+    public function primaryBreadcrumbCategory(): ?Category
+    {
+        $categories = $this->relationLoaded('categories')
+            ? $this->categories
+            : $this->categories()->with('types')->get();
+
+        $categories->loadMissing('types');
+
+        $softwareCategory = $categories->first(function (Category $category) {
+            return $category->types->contains('name', 'Category');
+        });
+
+        if ($softwareCategory) {
+            return $softwareCategory;
+        }
+
+        $nonPricingOrBestForCategory = $categories->first(function (Category $category) {
+            return ! $category->types->contains('name', 'Pricing')
+                && ! $category->types->contains('name', 'Best for');
+        });
+
+        return $nonPricingOrBestForCategory ?: $categories->first();
+    }
+
     public function softwareCategories()
     {
         return $this->belongsToMany(Category::class)

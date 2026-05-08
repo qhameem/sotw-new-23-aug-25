@@ -16,13 +16,12 @@
 @section('content')
     @include('products.partials._json-ld-product')
     @php
-        $primaryCategory = $product->categories->first();
         $breadcrumbs = [];
 
-        if ($primaryCategory) {
+        if ($primaryBreadcrumbCategory) {
             $breadcrumbs[] = [
-                'label' => $primaryCategory->name,
-                'link' => route('categories.show', $primaryCategory->slug),
+                'label' => $primaryBreadcrumbCategory->name,
+                'link' => route('categories.show', $primaryBreadcrumbCategory->slug),
             ];
         }
 
