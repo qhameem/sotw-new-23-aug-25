@@ -162,42 +162,194 @@
         
         <!-- Show pricing options only when creating a new product (no ID) -->
         <div v-else-if="!isAdmin">
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">Pricing Options</h3>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Submission</h3>
           <div v-if="progress.completed < progress.total" class="text-xs font-semibold text-gray-400 mb-4 transition-all duration-300">
             {{ progress.completed }} of {{ progress.total }} total required fields filled
           </div>
-          <div class="flex flex-wrap gap-6 items-stretch">
-            <FreeSubmissionOption
-              id="free-option"
-              name="pricing-option"
-              value="free"
-              :modelValue="selectedPricingOption"
-              :isAllRequiredFilled="isAllRequiredFilled"
-              :isEditMode="!!modelValue.id"
-              @update:modelValue="selectedPricingOption = $event"
-              title="Free Submission"
-              price="$0"
-              description="Launch your product for free with a badge"
-              :features="freeLaunchFeatures"
-              :isLoading="isLoading"
-              @submit="handlePricingOptionSubmit"
-            />
-            
-            <BadgeSubmissionOption
-              id="badge-option"
-              name="pricing-option"
-              value="badge"
-              :modelValue="selectedPricingOption"
-              :isAllRequiredFilled="isAllRequiredFilled"
-              :isEditMode="!!modelValue.id"
-              @update:modelValue="selectedPricingOption = $event"
-              title="Premium Launch (100% free)"
-              price="Free"
-              description="A do-follow backlink if you share our badge"
-              :features="badgeLaunchFeatures"
-              :isLoading="isLoading"
-              @submit="handlePricingOptionSubmit"
-            />
+          <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-6">
+              <div class="space-y-4">
+                <div>
+                  <div class="flex items-center gap-3">
+                    <h4 class="text-2xl font-semibold text-gray-900">Free Submission</h4>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">$0</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-700">
+                    Current queue time ~10 weeks or <strong>add our badge to skip the wait</strong>
+                  </p>
+                </div>
+
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li v-for="(feature, index) in freeLaunchFeatures" :key="index" class="flex items-start">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="ml-2">{{ feature }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
+                <div class="flex items-start gap-3">
+                  <input
+                    id="badge-opt-in"
+                    type="checkbox"
+                    :checked="wantsBadgeLaunch"
+                    @change="toggleBadgeLaunch($event.target.checked)"
+                    class="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                  >
+                  <div class="min-w-0 flex-1">
+                    <label for="badge-opt-in" class="text-sm font-semibold text-gray-900">
+                      Add our badge to skip the wait
+                    </label>
+                    <p class="mt-1 text-sm text-gray-600">
+                      If your badge is verified, you can choose a launch week and we’ll publish on that week’s Monday.
+                    </p>
+                    <a
+                      href="/get-the-badge"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="mt-3 inline-flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                    >
+                      Open badge instructions
+                    </a>
+                  </div>
+                </div>
+
+                <div v-if="wantsBadgeLaunch" class="mt-5 space-y-5 border-t border-emerald-200 pt-5">
+                  <div v-if="badgeSnippet" class="rounded-xl border border-emerald-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-3">
+                      <p class="text-sm font-semibold text-gray-900">Badge code</p>
+                      <button
+                        type="button"
+                        @click="copyBadgeSnippet"
+                        class="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                      >
+                        Copy code
+                      </button>
+                    </div>
+                    <pre class="mt-3 overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-950 px-4 py-3 text-xs text-emerald-100">{{ badgeSnippet }}</pre>
+                  </div>
+
+                  <div>
+                    <label for="badge-placement-url" class="block text-sm font-semibold text-gray-700 mb-2">
+                      Badge page URL
+                    </label>
+                    <div class="flex flex-col gap-3 md:flex-row">
+                      <input
+                        id="badge-placement-url"
+                        type="url"
+                        :value="modelValue.badge_placement_url || ''"
+                        @input="handleBadgeUrlInput($event.target.value)"
+                        placeholder="https://your-site.com/page-with-badge"
+                        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 placeholder-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      >
+                      <button
+                        type="button"
+                        @click="verifyBadgePlacement"
+                        :disabled="isVerifyingBadge || !badgePlacementUrlReady"
+                        :class="{
+                          'cursor-wait': isVerifyingBadge,
+                          'opacity-50 cursor-not-allowed': !badgePlacementUrlReady && !isVerifyingBadge,
+                          'hover:bg-emerald-600': badgePlacementUrlReady && !isVerifyingBadge
+                        }"
+                        class="relative inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                      >
+                        <span
+                          class="whitespace-nowrap transition-opacity duration-150"
+                          :class="isVerifyingBadge ? 'opacity-0' : 'opacity-100'"
+                        >
+                          Verify Badge
+                        </span>
+                        <span
+                          v-if="isVerifyingBadge"
+                          class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
+                          aria-live="polite"
+                        >
+                          <span class="flex items-center gap-1.5" aria-hidden="true">
+                            <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
+                            <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
+                            <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                          </span>
+                          <span>Verifying</span>
+                        </span>
+                      </button>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                      Use the exact page where the badge appears.
+                    </p>
+                  </div>
+
+                  <div
+                    v-if="badgeVerificationMessage"
+                    :class="badgeVerificationSuccess ? 'border-emerald-200 bg-emerald-100 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'"
+                    class="rounded-xl border px-4 py-3 text-sm"
+                  >
+                    {{ badgeVerificationMessage }}
+                  </div>
+
+                  <div>
+                    <label for="badge-week-start" class="block text-sm font-semibold text-gray-700 mb-2">
+                      Launch week
+                    </label>
+                    <select
+                      id="badge-week-start"
+                      :value="modelValue.badge_week_start || ''"
+                      @change="updateField('badge_week_start', $event.target.value)"
+                      :disabled="!modelValue.badge_verified"
+                      class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      <option value="">Select a week</option>
+                      <option v-for="week in launchWeekOptions" :key="week.value" :value="week.value">
+                        {{ week.label }}
+                      </option>
+                    </select>
+                    <p class="mt-2 text-xs text-gray-500">
+                      {{ modelValue.badge_verified ? 'Your product will publish on Monday of the selected week.' : 'Verify the badge first to unlock week selection.' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-start gap-4">
+                <div v-if="!isAllRequiredFilled" class="text-sm font-medium text-amber-600">
+                  Fill all required fields before submitting.
+                </div>
+                <div v-else-if="wantsBadgeLaunch && (!modelValue.badge_verified || !modelValue.badge_week_start)" class="text-sm font-medium text-amber-600">
+                  Verify the badge and choose a week to skip the wait.
+                </div>
+                <button
+                  type="button"
+                  @click="handleSubmission"
+                  :disabled="submitButtonDisabled"
+                  :class="{
+                    'opacity-50 cursor-not-allowed': submitButtonDisabled && !isLoading,
+                    'cursor-wait': isLoading,
+                    'hover:bg-gray-50': !submitButtonDisabled && !isLoading
+                  }"
+                  class="relative inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-gray-700 bg-white px-6 py-3 text-sm font-bold text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+                >
+                  <span
+                    class="whitespace-nowrap transition-opacity duration-150"
+                    :class="isLoading ? 'opacity-0' : 'opacity-100'"
+                  >
+                    {{ submitButtonLabel }}
+                  </span>
+                  <span
+                    v-if="isLoading"
+                    class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
+                    aria-live="polite"
+                  >
+                    <span class="flex items-center gap-1.5" aria-hidden="true">
+                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
+                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
+                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                    </span>
+                    <span>Processing</span>
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -281,9 +433,8 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
-import FreeSubmissionOption from './FreeSubmissionOption.vue';
-import BadgeSubmissionOption from './BadgeSubmissionOption.vue';
+import axios from 'axios';
+import { computed, onMounted, ref, watch } from 'vue';
 import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
@@ -303,6 +454,11 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'submit']);
 
 const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
+const wantsBadgeLaunch = ref(!!props.modelValue.badge_opt_in || props.modelValue.submission_type === 'badge');
+const isVerifyingBadge = ref(false);
+const badgeVerificationMessage = ref('');
+const badgeVerificationSuccess = ref(false);
+const badgeSnippet = ref('');
 
 // Tech Stack search + toggle
 const techSearch = ref('');
@@ -365,20 +521,31 @@ function updateField(field, value) {
   emit('update:modelValue', { ...props.modelValue, [field]: value });
 }
 
-// Initialize selected pricing option with default value 'free'
-const selectedPricingOption = ref('free');
-const freeSubmissionOptionRef = ref(null);
-const paidSubmissionOptionRef = ref(null);
+watch(
+  () => props.modelValue.submission_type,
+  (value) => {
+    wantsBadgeLaunch.value = !!props.modelValue.badge_opt_in || value === 'badge';
+  },
+  { immediate: true }
+);
 
-// Watch for changes in selectedPricingOption and update modelValue accordingly
-// Note: We should NOT overwrite the actual pricing categories with submission option
-watch(selectedPricingOption, (newValue) => {
- // Keep the existing pricing categories and add submission option as separate field
-  emit('update:modelValue', {
-    ...props.modelValue,
-    submissionOption: newValue // Add submission option as separate field
- });
-}, { immediate: true });
+watch(
+  () => props.modelValue.badge_verified,
+  (value) => {
+    if (value) {
+      badgeVerificationSuccess.value = true;
+      if (!badgeVerificationMessage.value) {
+        badgeVerificationMessage.value = 'Badge verified. You can now choose a launch week.';
+      }
+      return;
+    }
+
+    if (badgeVerificationSuccess.value) {
+      badgeVerificationSuccess.value = false;
+      badgeVerificationMessage.value = 'Badge URL changed. Verify again to unlock week selection.';
+    }
+  }
+);
 
 // Check if all required fields are filled
 const isAllRequiredFilled = computed(() => {
@@ -403,43 +570,215 @@ const isAllRequiredFilled = computed(() => {
   return requiredFields.every(field => field);
 });
 
-// Define optional fields
-const optionalFields = computed(() => [
-  { key: 'maker_links', value: !!(props.modelValue.maker_links && props.modelValue.maker_links.length > 0), label: 'Makers\' links' },
- { key: 'tech_stack', value: !!(props.modelValue.tech_stack && props.modelValue.tech_stack.length > 0), label: 'Tech stack' },
- { key: 'sell_product', value: !!props.modelValue.sell_product, label: 'Selling product' },
-]);
-
-// Define pricing option features
 const freeLaunchFeatures = [
- 'Free submission',
- 'Badge required on your site',
-  'Potential waiting period for approval'
+  'Free to submit',
+  'Join the standard review queue',
+  'Skip the wait by sharing our badge and verifying it'
 ];
 
-const badgeLaunchFeatures = [
-  'Skip the wait. Launch next Monday',
-  'Up to 3x more exposure',
-  'Featured on homepage',
-  'Guaranteed dofollow backlink'
-];
+const badgePlacementUrlReady = computed(() => {
+  const value = (props.modelValue.badge_placement_url || '').trim();
+  return /^https?:\/\//i.test(value);
+});
 
+const launchWeekOptions = computed(() => {
+  const weeks = [];
+  const today = new Date();
+  const nextMonday = new Date(today);
+  const daysUntilNextMonday = ((8 - nextMonday.getDay()) % 7) || 7;
+  nextMonday.setDate(nextMonday.getDate() + daysUntilNextMonday);
+  nextMonday.setHours(0, 0, 0, 0);
 
-// Handle pricing option submit (when user clicks the button in either option)
-const handlePricingOptionSubmit = (optionValue) => {
-  // Update the selected pricing option when user submits from either option
-  selectedPricingOption.value = optionValue;
-  // Update the model value to include the submission type
+  for (let i = 0; i < 12; i += 1) {
+    const start = new Date(nextMonday);
+    start.setDate(nextMonday.getDate() + (i * 7));
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    weeks.push({
+      value: formatLocalDateValue(start),
+      label: formatWeekLabel(start, end),
+    });
+  }
+
+  return weeks;
+});
+
+const submitButtonDisabled = computed(() => {
+  if (props.isLoading || isVerifyingBadge.value || !isAllRequiredFilled.value) {
+    return true;
+  }
+
+  if (!wantsBadgeLaunch.value) {
+    return false;
+  }
+
+  return !props.modelValue.badge_verified || !props.modelValue.badge_week_start;
+});
+
+const submitButtonLabel = computed(() => {
+  if (wantsBadgeLaunch.value && props.modelValue.badge_verified) {
+    return 'Submit And Schedule Week';
+  }
+
+  return 'Submit For Free';
+});
+
+const formatLocalDateValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatWeekLabel = (start, end) => {
+  const startLabel = start.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const endLabel = end.toLocaleDateString('en-US', {
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return `${startLabel} - ${endLabel}`;
+};
+
+const loadBadgeSnippet = async () => {
+  if (badgeSnippet.value) {
+    return;
+  }
+
+  try {
+    const response = await axios.get('/api/badge-snippet-preview');
+    badgeSnippet.value = response.data?.snippet || '';
+  } catch (error) {
+    console.error('Failed to load badge snippet preview:', error);
+  }
+};
+
+const copyBadgeSnippet = async () => {
+  if (!badgeSnippet.value) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(badgeSnippet.value);
+    badgeVerificationSuccess.value = true;
+    badgeVerificationMessage.value = 'Badge code copied. Add it to your site, then verify the page URL below.';
+  } catch (error) {
+    console.error('Failed to copy badge snippet:', error);
+  }
+};
+
+const toggleBadgeLaunch = (checked) => {
+  wantsBadgeLaunch.value = checked;
+
+  if (checked) {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      badge_opt_in: true,
+      submissionOption: props.modelValue.badge_verified ? 'badge' : 'free',
+      submission_type: props.modelValue.badge_verified ? 'badge' : 'free',
+      badge_placement_url: props.modelValue.badge_placement_url || props.modelValue.link || '',
+    });
+    loadBadgeSnippet();
+    return;
+  }
+
+  badgeVerificationSuccess.value = false;
+  badgeVerificationMessage.value = '';
   emit('update:modelValue', {
     ...props.modelValue,
-    submissionOption: optionValue,
-    submission_type: optionValue, // 'free' or 'badge'
-    tech_stack_custom: props.modelValue.tech_stack_custom
+    badge_opt_in: false,
+    submissionOption: 'free',
+    submission_type: 'free',
+    badge_placement_url: '',
+    badge_week_start: '',
+    badge_verified: false,
   });
-  
-  // Then call the original submit logic
+};
+
+const handleBadgeUrlInput = (value) => {
+  const badgeUrlChanged = (props.modelValue.badge_placement_url || '') !== value;
+  emit('update:modelValue', {
+    ...props.modelValue,
+    badge_placement_url: value,
+    badge_verified: badgeUrlChanged ? false : props.modelValue.badge_verified,
+    badge_week_start: badgeUrlChanged ? '' : props.modelValue.badge_week_start,
+  });
+
+  if (badgeUrlChanged) {
+    badgeVerificationSuccess.value = false;
+    badgeVerificationMessage.value = '';
+  }
+};
+
+const verifyBadgePlacement = async () => {
+  if (!badgePlacementUrlReady.value) {
+    badgeVerificationSuccess.value = false;
+    badgeVerificationMessage.value = 'Enter the full badge page URL, including https://.';
+    return;
+  }
+
+  isVerifyingBadge.value = true;
+  badgeVerificationSuccess.value = false;
+  badgeVerificationMessage.value = '';
+
+  try {
+    const response = await axios.post('/api/verify-badge-placement', {
+      url: props.modelValue.badge_placement_url,
+    });
+
+    badgeVerificationSuccess.value = true;
+    badgeVerificationMessage.value = response.data?.message || 'Badge verified. You can now choose a launch week.';
+
+    emit('update:modelValue', {
+      ...props.modelValue,
+      badge_opt_in: true,
+      submissionOption: 'badge',
+      submission_type: 'badge',
+      badge_placement_url: response.data?.checked_url || props.modelValue.badge_placement_url,
+      badge_verified: true,
+    });
+  } catch (error) {
+    badgeVerificationSuccess.value = false;
+    badgeVerificationMessage.value = error.response?.data?.message || 'We could not verify the badge on that page yet.';
+    emit('update:modelValue', {
+      ...props.modelValue,
+      submissionOption: 'free',
+      submission_type: 'free',
+      badge_verified: false,
+      badge_week_start: '',
+    });
+  } finally {
+    isVerifyingBadge.value = false;
+  }
+};
+
+const handleSubmission = () => {
+  const isBadgeSubmission = wantsBadgeLaunch.value && props.modelValue.badge_verified;
+
+  emit('update:modelValue', {
+    ...props.modelValue,
+    badge_opt_in: wantsBadgeLaunch.value,
+    submissionOption: isBadgeSubmission ? 'badge' : 'free',
+    submission_type: isBadgeSubmission ? 'badge' : 'free',
+    badge_week_start: isBadgeSubmission ? props.modelValue.badge_week_start : '',
+    badge_placement_url: wantsBadgeLaunch.value ? props.modelValue.badge_placement_url : '',
+    badge_verified: isBadgeSubmission,
+    tech_stack_custom: props.modelValue.tech_stack_custom,
+  });
+
   emit('submit');
 };
+
+onMounted(() => {
+  if (wantsBadgeLaunch.value) {
+    loadBadgeSnippet();
+  }
+});
 
 
 // Handle field click - navigate to the corresponding form field

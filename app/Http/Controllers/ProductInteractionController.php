@@ -17,7 +17,7 @@ class ProductInteractionController extends Controller
         return redirect()->away($this->appendUtmParameters(
             $product->link,
             $request->string('surface')->toString()
-        ));
+        ))->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 
     protected function appendUtmParameters(string $url, string $surface = ''): string

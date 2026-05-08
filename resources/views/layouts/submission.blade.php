@@ -244,8 +244,8 @@
         <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
     @endif
 
-    <meta name="application-name" content="Software on the Web">
-    <meta property="og:site_name" content="Software on the Web">
+    <meta name="application-name" content="{{ config('app.name', 'Software on the Web') }}">
+    <meta property="og:site_name" content="{{ config('app.name', 'Software on the Web') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large')">
     <meta property="og:type" content="@yield('og_type', 'website')">
@@ -357,16 +357,16 @@
     @stack('styles')
 
     <!-- Schema markup -->
-    @verbatim
-        <script type="application/ld+json">
-                    {
-                        "@context": "https://schema.org",
-                        "@type": "WebSite",
-                        "name": "Software on the Web",
-                        "url": "https://softwareontheweb.com"
-                    }
-                    </script>
-    @endverbatim
+    @php
+        $websiteSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => config('app.name', 'Software on the Web'),
+            'alternateName' => ['softwareontheweb.com', 'SOTW'],
+            'url' => rtrim(config('app.url', 'https://softwareontheweb.com'), '/'),
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
 
     @php

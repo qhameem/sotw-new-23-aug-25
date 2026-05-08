@@ -23,7 +23,7 @@
     <div class="w-full md:w-2/3 px-3 order-2">
       <h3 class="text-2xl md:text-3xl font-semibold text-gray-800 mb-2">Fast-track your launch</h3>
       <span class="font-semibold text-gray-700 block">
-        Launch your product on <i>Software on the web</i> the day you choose—no more waiting.
+        Launch your product on <i>{{ config('app.name', 'Software on the Web') }}</i> the day you choose—no more waiting.
       </span>
 
       <!-- Price on mobile -->
@@ -32,7 +32,7 @@
       <ul class="space-y-3 text-gray-700 text-sm mt-3">
         <li class="flex items-start gap-2">
           <div class="text-primary-500 text-sm font-extrabold">✓</div>
-          <div>Your product stays listed on <span class="font-noto-serif italic">Software on the web</span> permanently and earns a lifetime backlink—regardless of how your launch performs.</div>
+          <div>Your product stays listed on <span class="font-noto-serif italic">{{ config('app.name', 'Software on the Web') }}</span> permanently and earns a lifetime backlink—regardless of how your launch performs.</div>
         </li>
         <li class="flex items-start gap-2">
           <div class="text-primary-500 text-sm font-extrabold">✓</div>

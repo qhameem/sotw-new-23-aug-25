@@ -15,7 +15,7 @@
     <h1 class="text-3xl font-bold mb-4">Premium Spot</h1>
 
     <p class="text-lg font-bold mb-4">Get a Premium Spot – $149/month</p>
-    <p class="text-gray-700 mb-6">Put your product front and center on Software on the web. With a Premium Spot, you’ll get prime visibility that drives real results.</p>
+    <p class="text-gray-700 mb-6">Put your product front and center on {{ config('app.name', 'Software on the Web') }}. With a Premium Spot, you’ll get prime visibility that drives real results.</p>
 
     <hr class="my-6">
 
@@ -63,10 +63,10 @@
 
     <h2 class="text-2xl font-bold mb-4">✅ Reserve Your Premium Spot</h2>
 
-    <p class="text-gray-700 mb-4">Don’t let your product get lost in the crowd. Boost your reach, get seen by the right people, and grow faster with a Premium Spot on Software on the web.</p>
+    <p class="text-gray-700 mb-4">Don’t let your product get lost in the crowd. Boost your reach, get seen by the right people, and grow faster with a Premium Spot on {{ config('app.name', 'Software on the Web') }}.</p>
 
     <blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600">
-        <strong>Software on the web</strong> is a fair launch platform made for tech creators — a strong alternative to Product Hunt.<br>
+        <strong>{{ config('app.name', 'Software on the Web') }}</strong> is a fair launch platform made for tech creators — a strong alternative to Product Hunt.<br>
         Launch your product. Get seen. Build momentum.
     </blockquote>
 </div>

@@ -78,7 +78,7 @@
 
         <p>To keep your listing active, please ensure the following HTML snippet is placed on your website:</p>
 
-        <div class="badge-code">&lt;a href="{{ url('/product/' . $product->slug) }}" rel="dofollow"&gt;
+        <div class="badge-code">&lt;a href="{{ url('/') }}" rel="dofollow"&gt;
             &lt;img src="{{ url('/images/badge.png') }}" alt="Featured on Software on the Web"&gt;
             &lt;/a&gt;</div>
 

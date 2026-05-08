@@ -2,14 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Models\Product;
 use App\Mail\BadgeWarningMail;
+use App\Models\Product;
+use App\Services\BadgeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -42,54 +42,16 @@ class VerifyBadgePlacement implements ShouldQueue
         }
 
         try {
-            $response = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            ])->timeout(15)->get($urlToCheck);
+            $verification = app(BadgeService::class)->verifyPlacementUrl($urlToCheck);
 
-            if ($response->failed()) {
-                $this->recordFailure($product, "HTTP request failed with status: {$response->status()}");
-                return;
-            }
-
-            $html = $response->body();
-            $expectedUrl = url("/product/{$product->slug}");
-            $expectedDomain = 'softwareontheweb.com/product/' . $product->slug;
-
-            // Check for the backlink in the HTML
-            $badgeFound = $this->checkForBacklink($html, $expectedUrl, $expectedDomain);
-
-            if ($badgeFound) {
+            if ($verification['verified']) {
                 $this->recordSuccess($product);
             } else {
-                $this->recordFailure($product, 'Backlink not found in page HTML');
+                $this->recordFailure($product, $verification['message']);
             }
         } catch (\Exception $e) {
             $this->recordFailure($product, "Exception: {$e->getMessage()}");
         }
-    }
-
-    private function checkForBacklink(string $html, string $expectedUrl, string $expectedDomain): bool
-    {
-        $doc = new \DOMDocument();
-        @$doc->loadHTML($html);
-
-        $links = $doc->getElementsByTagName('a');
-
-        foreach ($links as $link) {
-            $href = $link->getAttribute('href');
-
-            // Check if the link points to our product page
-            if (str_contains($href, $expectedDomain) || str_contains($href, $expectedUrl)) {
-                $rel = strtolower($link->getAttribute('rel'));
-
-                // It's a dofollow link if rel doesn't contain "nofollow"
-                if (!str_contains($rel, 'nofollow')) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     private function recordSuccess(Product $product): void

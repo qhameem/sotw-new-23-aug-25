@@ -245,8 +245,8 @@
 
     @yield('preloads')
 
-    <meta name="application-name" content="Software on the Web">
-    <meta property="og:site_name" content="Software on the Web">
+    <meta name="application-name" content="{{ config('app.name', 'Software on the Web') }}">
+    <meta property="og:site_name" content="{{ config('app.name', 'Software on the Web') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
@@ -360,16 +360,16 @@
 
     @stack('styles')
     <!-- Schema markup -->
-    @verbatim
-        <script type="application/ld+json">
-                                                                            {
-                                                                              "@context": "https://schema.org",
-                                                                              "@type": "WebSite",
-                                                                              "name": "Software on the Web",
-                                                                              "url": "https://softwareontheweb.com"
-                                                                            }
-                                                                            </script>
-    @endverbatim
+    @php
+        $websiteSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => config('app.name', 'Software on the Web'),
+            'alternateName' => ['softwareontheweb.com', 'SOTW'],
+            'url' => rtrim(config('app.url', 'https://softwareontheweb.com'), '/'),
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
 
     @php

@@ -95,7 +95,7 @@ class ArticleController extends Controller
 
         return view('articles.index', [
             'posts' => $posts,
-            'title' => 'Articles - Software on the web',
+            'title' => 'Articles - ' . config('app.name', 'Software on the Web'),
             'feed' => $feed,
             'featuredPosts' => $articleDiscoveryService->featuredArticles(),
             'popularPosts' => $articleDiscoveryService->popularArticles(),

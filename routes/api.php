@@ -65,23 +65,27 @@ Route::get('/categories', [ProductController::class, 'getCategories']);
 Route::get('/tech-stacks', [ProductController::class, 'getTechStacks']);
 Route::post('/generate-ai-content', [ProductController::class, 'generateAiContent']);
 Route::post('/detect-categories', [ProductController::class, 'detectCategories']);
+Route::post('/verify-badge-placement', [ProductController::class, 'verifyBadgePlacement']);
 
 // Badge snippet API
-Route::get('/badge-snippet/{product}', function (\App\Models\Product $product) {
-    $settings = [];
-    if (\Illuminate\Support\Facades\Storage::disk('local')->exists('settings.json')) {
-        $settings = json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get('settings.json'), true);
-    }
-    $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
-    $productUrl = url('/product/' . $product->slug);
-
-    $snippet = '<a href="' . $productUrl . '" rel="dofollow">' . "\n"
-        . '  <img src="' . $badgeImageUrl . '" alt="Featured on Software on the Web" width="200">' . "\n"
-        . '</a>';
+Route::get('/badge-snippet-preview', function () {
+    $badgeService = app(\App\Services\BadgeService::class);
+    $embedData = $badgeService->getEmbedData();
 
     return response()->json([
-        'snippet' => $snippet,
-        'product_url' => $productUrl,
-        'badge_image_url' => $badgeImageUrl,
+        'snippet' => $embedData['snippet'],
+        'site_url' => $embedData['destination_url'],
+        'badge_image_url' => $embedData['badge_image_url'],
+    ]);
+});
+
+Route::get('/badge-snippet/{product}', function (\App\Models\Product $product) {
+    $badgeService = app(\App\Services\BadgeService::class);
+    $embedData = $badgeService->getEmbedData();
+
+    return response()->json([
+        'snippet' => $embedData['snippet'],
+        'product_url' => $embedData['destination_url'],
+        'badge_image_url' => $embedData['badge_image_url'],
     ]);
 });

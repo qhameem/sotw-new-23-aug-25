@@ -339,7 +339,12 @@ export function useProductForm() {
     form.sell_product = false;
     form.asking_price = null;
     form.x_account = '';
-    form.submissionOption = null;
+    form.submissionOption = 'free';
+    form.submission_type = 'free';
+    form.badge_opt_in = false;
+    form.badge_placement_url = '';
+    form.badge_week_start = '';
+    form.badge_verified = false;
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = Array(3).fill(null);
   };
@@ -358,16 +363,8 @@ export function useProductForm() {
       return false;
     }
 
-    // Check if the selected submission option is 'free' or 'badge' to bypass the modal
-    if (form.submissionOption === 'free' || form.submissionOption === 'badge' || globalFormState.isAdmin.value) {
-      // Directly submit the product without showing modal
-      confirmSubmit();
-      return true;
-    } else {
-      // Show the preview modal for other submission options (like paid)
-      globalFormState.showPreviewModal.value = true;
-      return true;
-    }
+    confirmSubmit();
+    return true;
   };
 
   const confirmSubmit = async () => {
@@ -524,6 +521,14 @@ export function useProductForm() {
         formData.append('submission_type', form.submission_type);
       }
 
+      if (form.badge_placement_url) {
+        formData.append('badge_placement_url', form.badge_placement_url);
+      }
+
+      if (form.badge_week_start) {
+        formData.append('badge_week_start', form.badge_week_start);
+      }
+
       // Admin-only curated related-product overrides
       if (globalFormState.isAdmin.value) {
         formData.append('comparison_overrides_input', form.comparison_overrides_input || '');
@@ -621,7 +626,10 @@ export function useProductForm() {
     } catch (error) {
       console.error('Error submitting product:', error);
       showErrorMessage.value = true;
-      errorMessage.value = error.response?.data?.message || 'Failed to submit product. Please try again.';
+      const firstValidationError = error.response?.data?.errors
+        ? Object.values(error.response.data.errors).flat()[0]
+        : null;
+      errorMessage.value = firstValidationError || error.response?.data?.message || 'Failed to submit product. Please try again.';
       return false;
     } finally {
       // Always reset loading state after submission
@@ -697,6 +705,26 @@ export function useProductForm() {
       showErrorMessage.value = true;
       errorMessage.value = 'A logo is required.';
       return false;
+    }
+
+    if (form.submission_type === 'badge') {
+      if (!form.badge_placement_url) {
+        showErrorMessage.value = true;
+        errorMessage.value = 'Add the badge URL on your site before submitting.';
+        return false;
+      }
+
+      if (!form.badge_verified) {
+        showErrorMessage.value = true;
+        errorMessage.value = 'Verify your badge placement before submitting for a scheduled week.';
+        return false;
+      }
+
+      if (!form.badge_week_start) {
+        showErrorMessage.value = true;
+        errorMessage.value = 'Choose a launch week after badge verification.';
+        return false;
+      }
     }
 
     showErrorMessage.value = false;

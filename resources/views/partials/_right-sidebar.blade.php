@@ -46,10 +46,10 @@
                                             @php
                                                 $faviconUrl = config('theme.favicon_url') ? Illuminate\Support\Facades\Storage::url(config('theme.favicon_url')) : asset('favicon/favicon.ico');
                                             @endphp
-                                            <img src="{{ $faviconUrl }}" alt="Software on the web"
+                                            <img src="{{ $faviconUrl }}" alt="{{ config('app.name', 'Software on the Web') }}"
                                                 class="h-6 w-6 rounded-full object-cover mr-2">
                                             <span class="text-sm text-gray-600">
-                                                In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by Software on the web
+                                                In {{ $pick->categories->first()->name ?? 'Uncategorized' }} by {{ config('app.name', 'Software on the Web') }}
                                             </span>
                                         @else
                                             <img src="{{ $pick->author->google_avatar ?? 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($pick->author->email ?? ''))) . '?d=mp' }}"

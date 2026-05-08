@@ -182,6 +182,31 @@ class ProductController extends Controller
             'submissionBgUrl'
         ));
     }
+
+    public function verifyBadgePlacement(Request $request)
+    {
+        $validated = $request->validate([
+            'url' => 'required|url|max:2048',
+        ]);
+
+        $checkedUrl = Product::normalizeLink($validated['url']);
+        $verification = $this->badgeService->verifyPlacementUrl($checkedUrl);
+
+        if (!$verification['verified']) {
+            return response()->json([
+                'verified' => false,
+                'checked_url' => $checkedUrl,
+                'message' => $verification['message'],
+            ], 422);
+        }
+
+        return response()->json([
+            'verified' => true,
+            'checked_url' => $checkedUrl,
+            'message' => $verification['message'],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -196,6 +221,9 @@ class ProductController extends Controller
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
             'x_account' => 'nullable|string|max:255',
+            'submission_type' => 'nullable|in:free,badge',
+            'badge_placement_url' => 'nullable|url|max:2048',
+            'badge_week_start' => 'nullable|date_format:Y-m-d',
             'categories' => [
                 function ($attribute, $value, $fail) use ($request) {
                     $hasExisting = is_array($value) && count($value) > 0;
@@ -223,6 +251,9 @@ class ProductController extends Controller
         $validated['link'] = Product::normalizeLink($validated['link']);
         if (!empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
+        }
+        if (!empty($validated['badge_placement_url'])) {
+            $validated['badge_placement_url'] = Product::normalizeLink($validated['badge_placement_url']);
         }
 
         // Check if a product with this URL already exists
@@ -262,19 +293,57 @@ class ProductController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 1;
 
+        $submissionError = function (string $field, string $message) use ($request) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'errors' => [$field => [$message]],
+                ], 422);
+            }
+
+            return back()->withErrors([$field => $message])->withInput();
+        };
+
         // Handle submission type: 'badge' submissions get instant approval
         $submissionType = $request->input('submission_type', 'free');
         $validated['submission_type'] = in_array($submissionType, ['free', 'badge']) ? $submissionType : 'free';
 
         if ($submissionType === 'badge') {
-            $launchDate = $this->badgeService->getNextMondayLaunchDate();
+            $badgePlacementUrl = $validated['badge_placement_url'] ?? $validated['link'];
+            $selectedWeekStart = $request->input('badge_week_start');
+
+            if (empty($badgePlacementUrl)) {
+                return $submissionError('badge_placement_url', 'Add the page URL where your badge is placed.');
+            }
+
+            if (empty($selectedWeekStart)) {
+                return $submissionError('badge_week_start', 'Choose a launch week after badge verification.');
+            }
+
+            try {
+                $launchDate = $this->badgeService->resolveBadgeLaunchDate($selectedWeekStart);
+            } catch (\InvalidArgumentException $exception) {
+                return $submissionError('badge_week_start', $exception->getMessage());
+            }
+
+            $verification = $this->badgeService->verifyPlacementUrl($badgePlacementUrl);
+            if (!$verification['verified']) {
+                return $submissionError('badge_placement_url', $verification['message']);
+            }
+
             $validated['approved'] = true;
             $validated['is_published'] = false; // Scheduled, not instant
             $validated['published_at'] = $launchDate;
-            $validated['badge_placement_url'] = $request->input('badge_placement_url') ?: $request->input('link');
+            $validated['badge_placement_url'] = $badgePlacementUrl;
+            $validated['badge_verified'] = true;
+            $validated['badge_verified_at'] = now();
+            $validated['badge_consecutive_failures'] = 0;
+            $validated['badge_warning_sent_at'] = null;
         } else {
             $validated['approved'] = false;
         }
+        unset($validated['badge_week_start']);
         $validated['description'] = $this->ensureProperParagraphStructure($this->addNofollowToLinks($request->input('description')));
 
         // Handle optional fields
@@ -465,7 +534,7 @@ class ProductController extends Controller
         }
 
         $submissionDate = Carbon::now();
-        $tentativeLiveDate = $submissionDate->copy()->addWeeks(2);
+        $tentativeLiveDate = $submissionDate->copy()->addWeeks(10);
         $daysToLive = $submissionDate->diffInDays($tentativeLiveDate);
 
         $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
@@ -1145,7 +1214,7 @@ class ProductController extends Controller
 
         if ($isHomepage) {
             $title = 'Top Products of the Day';
-            $pageTitle = 'Top Products - Software on the web';
+            $pageTitle = 'Top Products - ' . config('app.name', 'Software on the Web');
         } else {
             $title = 'Top Products';
             $pageTitle = 'Top Products';
@@ -1320,7 +1389,7 @@ class ProductController extends Controller
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
-        $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | Software on the web'; // For <title> tag
+        $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1460,7 +1529,7 @@ class ProductController extends Controller
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfMonth->toDateString();
         $title = 'on ' . $startOfMonth->format('F Y'); // For potential in-page display
-        $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | Software on the web'; // For <title> tag
+        $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1583,7 +1652,7 @@ class ProductController extends Controller
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfYear->toDateString();
         $title = 'in ' . $year; // For potential in-page display
-        $pageTitle = 'Best of ' . $year . ' | Software on the web'; // For <title> tag
+        $pageTitle = 'Best of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 

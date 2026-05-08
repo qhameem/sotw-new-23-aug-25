@@ -15,7 +15,7 @@
       <div class="h-2"></div>
 
       <div class="font-semibold text-gray-700 tracking-tight">
-        Promote your product on <i>Software on the web</i>
+        Promote your product on <i>{{ config('app.name', 'Software on the Web') }}</i>
       </div>
 
       <div class="h-3"></div>

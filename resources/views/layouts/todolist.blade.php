@@ -34,8 +34,8 @@
 
     <title>@yield('title', 'Software on the Web')</title>
     <meta name="description" content="@yield('meta_description', '')">
-    <meta name="application-name" content="Software on the Web">
-    <meta property="og:site_name" content="Software on the Web">
+    <meta name="application-name" content="{{ config('app.name', 'Software on the Web') }}">
+    <meta property="og:site_name" content="{{ config('app.name', 'Software on the Web') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('title', 'Software on the Web')">

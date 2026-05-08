@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Product Review - Software on the web')
+@section('title', 'Product Review - ' . config('app.name', 'Software on the Web'))
 
 @section('header-title')
     <h1 class="text-xl font-semibold text-gray-700 py-[1px]">

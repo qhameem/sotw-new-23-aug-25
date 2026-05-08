@@ -61,6 +61,6 @@
         @endif
         <span class="text-gray-400 " x-data="{ time: new Date() }" x-init="setInterval(() => time = new Date(), 1000)">
             <span x-text="time.toLocaleString('en-GB', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })"></span> UTC
-        </span> © {{ date('Y') }} Software on the web
+        </span> © {{ date('Y') }} {{ config('app.name', 'Software on the Web') }}
     </div>
 </footer>

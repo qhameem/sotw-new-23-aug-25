@@ -51,17 +51,17 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">What Happens Next</h3>
                 <ol class="space-y-2 text-sm text-gray-700 list-decimal list-inside">
                     <li>Your placement is already approved.</li>
-                    <li>Add the badge snippet to your website so verification can pass before launch day.</li>
-                    <li>We run automatic badge checks before launch.</li>
+                    <li>Your badge was verified successfully and your launch week is reserved.</li>
+                    <li>Keep the badge live on your website so our automatic checks continue to pass.</li>
                     <li>Your listing goes live on <strong>{{ $launchDateFormatted }}</strong>.</li>
                 </ol>
             </div>
 
             {{-- Badge Snippet Section --}}
             <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Place This Badge On Your Site</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Keep This Badge On Your Site</h3>
                 <p class="text-sm text-gray-600 mb-4">
-                    Copy the HTML snippet below and paste it anywhere on your website. We'll verify it before your launch day.
+                    Keep this badge on your website so your scheduled launch stays verified.
                     This gives you a guaranteed <strong>dofollow backlink</strong>.
                 </p>
 
@@ -78,7 +78,7 @@
                 <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p class="text-xs text-blue-800">
                         <strong>Tip:</strong> Place this in your site's footer, homepage, or an "As Seen On" section.
-                        We'll check for the badge before your Monday launch.
+                        We'll continue checking for the badge automatically.
                     </p>
                 </div>
             </div>
