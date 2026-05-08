@@ -36,7 +36,7 @@ class DescriptionRewriterService
         $context = mb_substr(strip_tags($pageTextContext), 0, 8000); // 70B can handle more context
 
         $prompt = <<<PROMPT
-You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, and easy to trust.
+You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
 
 Raw information: "{$rawDescription}"
 
@@ -46,6 +46,7 @@ OBJECTIVE:
 - Make the description sound like a real person wrote it.
 - Explain what the product does, why it matters, and who it helps.
 - Keep the writing grounded, specific, and easy to scan.
+- Make the page more citation-friendly for AI Overviews, ChatGPT, Perplexity, and similar engines.
 
 HUMAN WRITING RULES:
 - Write like a real person explaining a tool to another person.
@@ -57,18 +58,37 @@ HUMAN WRITING RULES:
 - Be honest. If the source material is limited, stay specific to what is supported and avoid inventing claims.
 - You may add at most 1-2 subtle, natural phrases that make the copy feel less mechanical, but do not become chatty.
 
+ANTI-SLOP QUALITY RULES:
+- Avoid generic AI-marketing words and phrases such as "cutting-edge", "revolutionary", "seamless", "robust", "comprehensive", "transformative", "game-changing", "in today's landscape", "it's worth noting", and "furthermore".
+- Prefer plain language over inflated vocabulary. Say "use" instead of "utilize", "help" instead of "facilitate", and "show" instead of "showcase" when possible.
+- Every paragraph and section should contain concrete, product-specific information that would sound wrong if pasted onto a different tool.
+- Do not pad sections with filler transitions, generic summaries, or empty closing lines.
+- Do not force every list item into the same rhythm or wording pattern. Keep the phrasing natural.
+- If a section cannot be made specific with supported facts, keep it short and conservative rather than generic.
+
+AEO / AI SEARCH RULES:
+- The first visible paragraph must work as a direct answer snippet that clearly explains what "{$productName}" is, who it is for, and its main benefit.
+- The first paragraph should be about 40-60 words so it can be extracted cleanly by AI engines.
+- Put the most important factual answer first. Do not bury the core explanation later in the page.
+- Use question-based headings because AI engines extract answers more reliably from question-format sections.
+- Make the FAQ questions sound like real user search queries.
+- Prefer concrete entities and attributes when supported by the source material, such as product category, target users, integrations, workflows, pricing model, and notable alternatives.
+- Do not invent claims, integrations, pricing details, customer results, or competitor comparisons that are not supported by the provided information.
+- If pricing, support, integrations, or alternatives are not clearly supported by the source material, avoid mentioning specific details about them.
+
 STRUCTURE RULES:
 - Preserve the exact HTML structure, section order, headings, and list types shown below.
 - Do not add, remove, rename, merge, or reorder sections.
 - Return ONLY HTML. No markdown fences, no commentary, no labels.
 - Keep the first two lines as exactly two separate <p> paragraphs.
-- Keep each list item concise and focused on user value.
 - Mention "{$productName}" naturally in the opening paragraph.
+- Keep each list item concise, specific, and focused on user value.
+- Use question-style H2 headings exactly as shown below.
 
-<p><strong>[Write a single, punchy headline that captures the core value proposition. This entire line MUST be wrapped in <strong> tags.]</strong></p>
-<p>[Write a second sentence that elaborates on how the product solves a main pain point. Do NOT bold this line.]</p>
+<p><strong>[Write a 40-60 word Quick Answer that directly explains what {$productName} is, who it helps, and why someone would choose it. This entire line MUST be wrapped in <strong> tags and must read like a standalone answer snippet.]</strong></p>
+<p>[Write a second sentence that expands on the main workflow, category, or differentiator without hype. Do NOT bold this line.]</p>
 
-<h2><strong>Key Features</strong></h2>
+<h2><strong>What are the key features of {$productName}?</strong></h2>
 <ul>
   <li>[Feature 1: Focus on the BENEFIT, e.g. "Automated workflows that save 10+ hours weekly" rather than "Has automation."]</li>
   <li>[Feature 2: Focus on technical impact or user experience.]</li>
@@ -77,49 +97,52 @@ STRUCTURE RULES:
   <li>[Feature 5: Impact-driven feature.]</li>
 </ul>
 
-<h2><strong>Ideal For</strong></h2>
+<h2><strong>Who is {$productName} best for?</strong></h2>
 <ul>
   <li>[Specific audience 1, e.g. "Founders scaling their first GTM team"]</li>
   <li>[Specific audience 2]</li>
   <li>[Specific audience 3]</li>
 </ul>
 
-<h2><strong>Top Use Cases</strong></h2>
+<h2><strong>What are the top use cases for {$productName}?</strong></h2>
 <ul>
   <li>[Specific "Problem -> Solution" use case 1, e.g. "Automating invoice data entry for accounting teams"]</li>
   <li>[Specific "Problem -> Solution" use case 2]</li>
   <li>[Specific "Problem -> Solution" use case 3]</li>
 </ul>
 
-<h2><strong>Known Alternatives</strong></h2>
+<h2><strong>How does {$productName} compare to alternatives?</strong></h2>
 <ul>
-  <li>[Alternative 1: Name the tool and a brief reason to choose this product instead, e.g. "A lightweight, privacy-focused alternative to Google Analytics."]</li>
+  <li>[Alternative 1: Name the tool and a brief, grounded reason to choose this product instead.]</li>
   <li>[Alternative 2]</li>
 </ul>
 
-<h2><strong>Integrations & Ecosystem</strong></h2>
+<h2><strong>What integrations and ecosystem support does {$productName} offer?</strong></h2>
 <ul>
-  <li>[List integrations, APIs, or platforms it works with, e.g. "Integrates seamlessly with Slack, Notion, and Zapier."]</li>
+  <li>[List integrations, APIs, or platforms it works with, e.g. "Integrates with Slack, Notion, and Zapier."]</li>
 </ul>
 
-<h2><strong>Pros & Cons</strong></h2>
+<h2><strong>What are the pros and limitations of {$productName}?</strong></h2>
 <ul>
   <li><strong>Pros:</strong> [List 2-3 key advantages]</li>
   <li><strong>Limitations:</strong> [List 1-2 honest limitations, e.g. "Not ideal for enterprise-level teams requiring custom SLAs."]</li>
 </ul>
 
-<h2><strong>Frequently Asked Questions</strong></h2>
+<h2><strong>Frequently asked questions about {$productName}</strong></h2>
 <dl>
-  <dt><strong>[Common question 1 about the product?]</strong></dt>
-  <dd>[Direct 1-2 sentence answer.]</dd>
-  <dt><strong>[Common question 2 about the product?]</strong></dt>
-  <dd>[Direct 1-2 sentence answer.]</dd>
+  <dt><strong>[Question 1 written like a real user search, starting with What, How, Who, Does, or Is. Prefer safe factual questions about what the product does, who it is for, how it works, or what workflows it supports.]</strong></dt>
+  <dd>[Direct 1-2 sentence answer based only on supported facts from the source material.]</dd>
+  <dt><strong>[Question 2 written like a real user search, starting with What, How, Who, Does, or Is. Do NOT ask about pricing, customer support, integrations, or alternatives unless the source material clearly supports those details.]</strong></dt>
+  <dd>[Direct 1-2 sentence answer based only on supported facts from the source material.]</dd>
 </dl>
 
 STYLE CHECK BEFORE YOU RESPOND:
 - Does it sound human, plainspoken, and useful?
+- Does the first paragraph work as a direct answer snippet?
 - Is the structure exactly preserved?
 - Are the claims grounded in the provided information?
+- Are the FAQ questions and answers limited to facts that are clearly supported?
+- Does each section include concrete details that are specific to {$productName} rather than generic SaaS filler?
 - Is the writing free from obvious AI-style hype and repetition?
 PROMPT;
 
