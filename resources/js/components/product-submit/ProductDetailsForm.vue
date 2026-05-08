@@ -62,7 +62,20 @@
     <div class="relative" :class="{'opacity-50 pointer-events-none': loadingStates.description}">
         <div class="flex items-center justify-between mb-2">
           <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
-          <div v-if="loadingStates.description" class="flex items-center text-xs text-sky-600">
+          <button
+            v-if="showRewriteDescriptionButton"
+            type="button"
+            :disabled="loadingStates.description || !modelValue.link"
+            @click="$emit('rewrite-description')"
+            class="inline-flex items-center gap-1 rounded-md border border-sky-200 px-2.5 py-1 text-[11px] font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+          >
+            <svg v-if="loadingStates.description" class="h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ loadingStates.description ? 'Rewriting...' : 'Rewrite product description' }}
+          </button>
+          <div v-else-if="loadingStates.description" class="flex items-center text-xs text-sky-600">
              <svg class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
              Generating...
           </div>
@@ -351,10 +364,11 @@ const props = defineProps({
   allBestFor: { type: Array, default: () => [] },
   allPricing: { type: Array, default: () => [] },
   loadingStates: { type: Object, default: () => ({}) },
-  extractionErrors: { type: Object, default: () => ({}) }
+  extractionErrors: { type: Object, default: () => ({}) },
+  isAdmin: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'rewrite-description']);
 
 onMounted(() => {
   console.log('[ProductDetailsForm] Mounted. Initial modelValue:', props.modelValue);
@@ -457,6 +471,8 @@ watch(makerLinks, (newVal) => {
 const generatedSlug = computed(() => {
   return props.modelValue.name ? generateSlug(props.modelValue.name) : '';
 });
+
+const showRewriteDescriptionButton = computed(() => props.isAdmin && !!props.modelValue.id);
 
 function generateSlug(text) {
   return text.toString().toLowerCase().trim()

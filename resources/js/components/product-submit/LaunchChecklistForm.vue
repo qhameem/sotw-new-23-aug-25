@@ -6,49 +6,9 @@
         
       </div>
       
-      <!-- Makers & Extras Section -->
+      <!-- Extras Section -->
       <section>
-        
-        
         <div class="space-y-6">
-          <!-- Makers' Links Section -->
-          <div>
-            <h4 class="text-xs font-bold text-gray-900 mb-3">Makers' Links</h4>
-            
-            <!-- Dynamic maker links -->
-            <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center mb-3">
-              <input
-                type="url"
-                :id="`maker-link-${index}`"
-                :value="link"
-                @input="updateMakerLink(index, $event.target.value)"
-                :placeholder="`Link to maker ${index + 1} (e.g., https://twitter.com/username)`"
-                class="flex-1 px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
-              >
-              <button
-                v-if="makerLinks.length > 1"
-                type="button"
-                @click="removeMakerLink(index)"
-                class="ml-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800"
-              >
-                Remove
-              </button>
-            </div>
-            
-            <!-- Add more links button (visible if less than 10 links) -->
-            <div v-if="makerLinks.length < 10">
-              <button
-                type="button"
-                @click="addMakerLink"
-                class="mt-2 text-sm font-medium text-sky-600 hover:text-sky-800 flex items-center"
-              >
-                <span>+ Add more links</span>
-              </button>
-              <p v-if="makerLinks.length >= 9" class="text-xs text-gray-500 mt-1">Maximum 10 links allowed</p>
-            </div>
-          
-          </div>
-          
           <!-- Tech Stack Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
@@ -344,16 +304,6 @@ const emit = defineEmits(['update:modelValue', 'submit']);
 
 const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
 
-// Initialize maker links from modelValue
-const makerLinks = ref(props.modelValue.maker_links?.length ? [...props.modelValue.maker_links] : []);
-
-// Watch for external changes to maker_links (e.g. from Step 2 or restoration)
-watch(() => props.modelValue.maker_links, (newVal) => {
-  if (JSON.stringify(newVal) !== JSON.stringify(makerLinks.value.filter(l => l.trim() !== ''))) {
-    makerLinks.value = newVal?.length ? [...newVal] : [];
-  }
-}, { deep: true });
-
 // Tech Stack search + toggle
 const techSearch = ref('');
 
@@ -409,29 +359,6 @@ function removeCustomTechStack(customTechStackId) {
   const currentCustomTechStacks = props.modelValue.tech_stack_custom || [];
   const updatedCustomTechStacks = currentCustomTechStacks.filter(ts => ts.id !== customTechStackId);
   updateField('tech_stack_custom', updatedCustomTechStacks);
-}
-
-// Sync local changes to modelValue
-watch(makerLinks, (newVal) => {
-  const filtered = newVal.filter(link => link.trim() !== '');
-  if (JSON.stringify(filtered) !== JSON.stringify(props.modelValue.maker_links)) {
-    emit('update:modelValue', {
-      ...props.modelValue,
-      maker_links: filtered
-    });
-  }
-}, { deep: true });
-
-function addMakerLink() {
-  makerLinks.value.push('');
-}
-
-function removeMakerLink(index) {
-  makerLinks.value.splice(index, 1);
-}
-
-function updateMakerLink(index, value) {
-  makerLinks.value[index] = value;
 }
 
 function updateField(field, value) {

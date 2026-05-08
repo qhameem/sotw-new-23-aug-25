@@ -778,7 +778,81 @@ export function useProductForm() {
     }
   };
 
-  const fetchRemainingData = async (explicitLogoExtraction = false, urlOverride = null) => {
+  const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, onProgress = null }) => {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    const response = await fetch('/api/process-url-stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, application/x-ndjson',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+      },
+      body: JSON.stringify({
+        url,
+        name,
+        tagline,
+        fetch_content: fetchContent,
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalData = {};
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+
+        try {
+          const streamData = JSON.parse(line);
+
+          if (streamData.data) {
+            finalData = streamData.data;
+          }
+
+          if (onProgress) {
+            onProgress(streamData);
+          }
+        } catch (error) {
+          console.error('Error parsing stream chunk', error, line);
+        }
+      }
+    }
+
+    if (buffer.trim()) {
+      try {
+        const streamData = JSON.parse(buffer);
+        if (streamData.data) {
+          finalData = streamData.data;
+        }
+        if (onProgress) {
+          onProgress(streamData);
+        }
+      } catch (error) {
+        console.error('Error parsing final stream chunk', error, buffer);
+      }
+    }
+
+    return finalData;
+  };
+
+  const fetchRemainingData = async (explicitLogoExtraction = false, urlOverride = null, options = {}) => {
     console.log('fetchRemainingData called', {
       explicitLogoExtraction,
       urlOverride,
@@ -788,19 +862,23 @@ export function useProductForm() {
       name: form.name
     });
 
+    const forceContentFetch = options.forceContentFetch === true;
+    const forceDescriptionOverwrite = options.forceDescriptionOverwrite === true;
+    const contentOnly = options.contentOnly === true;
+
     // We should fetch content if description is missing, OR if we don't have a detailed tagline.
     // The previous logic (!tagline && !detailed && !description) was too strict because initial data provides a tagline.
-    const shouldFetchContent = !form.description || !form.tagline_detailed;
+    const shouldFetchContent = forceContentFetch || !form.description || !form.tagline_detailed;
 
     // Always fetch categories if they are empty
-    const shouldFetchCategoriesAndBestFor = !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0;
+    const shouldFetchCategoriesAndBestFor = !contentOnly && (!form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0);
 
     // Use urlOverride if available, otherwise fall back to form.link
     const linkValue = urlOverride || form.link;
 
     // Always fetch logos if we have a link and name, regardless of other content
     // If explicitLogoExtraction is true, always attempt to fetch logos even if they exist
-    const shouldFetchLogos = linkValue && (explicitLogoExtraction || (!form.logos || form.logos.length === 0));
+    const shouldFetchLogos = !contentOnly && linkValue && (explicitLogoExtraction || (!form.logos || form.logos.length === 0));
 
     console.log('Should fetch checks:', { shouldFetchContent, shouldFetchCategoriesAndBestFor, shouldFetchLogos });
 
@@ -860,65 +938,23 @@ export function useProductForm() {
 
       updateAutofillProgress('Connecting for detailed analysis...', 35);
 
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-      const response = await fetch('/api/process-url-stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, application/x-ndjson',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
-        },
-        body: JSON.stringify({
-          url: linkValue,
-          name: nameValue,
-          tagline: taglineValue,
-          fetch_content: shouldFetchContent,
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let data = {};
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop(); // Keep the last incomplete line
-
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const streamData = JSON.parse(line);
-              if (streamData.message) {
-                globalFormState.loadingMessage.value = streamData.message;
-              }
-              if (streamData.progress) {
-                // Map 0-100 from stream to 30-100 overall
-                updateAutofillProgress(
-                  streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...',
-                  30 + (streamData.progress * 0.7)
-                );
-              }
-              if (streamData.data) {
-                // We got the final payload
-                data = streamData.data;
-              }
-            } catch (e) {
-              console.error('Error parsing stream chunk', e, line);
-            }
+      const data = await processUrlStreamRequest({
+        url: linkValue,
+        name: nameValue,
+        tagline: taglineValue,
+        fetchContent: shouldFetchContent,
+        onProgress: (streamData) => {
+          if (streamData.message) {
+            globalFormState.loadingMessage.value = streamData.message;
+          }
+          if (streamData.progress) {
+            updateAutofillProgress(
+              streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...',
+              30 + (streamData.progress * 0.7)
+            );
           }
         }
-      }
+      });
 
       console.log('fetchRemainingData: Stream finished. Extracted data object:', data);
       console.log('fetchRemainingData: Extracted data object:', data);
@@ -930,19 +966,19 @@ export function useProductForm() {
 
         // The streaming endpoint uses TaglineRewriterService (AI rewrite),
         // so its taglines should ALWAYS override the initial heuristic ones.
-        if (data.tagline && data.tagline.trim() !== '') {
+        if (!contentOnly && data.tagline && data.tagline.trim() !== '') {
           const tagline = data.tagline.length > 140 ? data.tagline.substring(0, 137) + '...' : data.tagline;
           console.log('fetchRemainingData: Setting AI-rewritten tagline to:', tagline);
           form.tagline = tagline;
         }
 
-        if (data.tagline_detailed && data.tagline_detailed.trim() !== '') {
+        if (!contentOnly && data.tagline_detailed && data.tagline_detailed.trim() !== '') {
           const detailed = data.tagline_detailed.length > 160 ? data.tagline_detailed.substring(0, 157) + '...' : data.tagline_detailed;
           console.log('fetchRemainingData: Setting AI-rewritten tagline_detailed to:', detailed);
           form.tagline_detailed = detailed;
         }
 
-        if (!form.description || form.description.trim() === '' || form.description === '<p></p>') {
+        if (forceDescriptionOverwrite || !form.description || form.description.trim() === '' || form.description === '<p></p>') {
           console.log('fetchRemainingData: Setting description to:', data.description);
           form.description = data.description || form.description;
         }
@@ -996,24 +1032,26 @@ export function useProductForm() {
       }
 
       // 3. Update screenshot if available (refresh with viewport-specific version)
-      if (data.screenshot_url) {
-        globalFormState.galleryPreviews.value[0] = data.screenshot_url;
-      }
+      if (!contentOnly) {
+        if (data.screenshot_url) {
+          globalFormState.galleryPreviews.value[0] = data.screenshot_url;
+        }
 
-      // 3.5. Update pricing page url if available
-      if (data.pricing_page_url && (!form.pricing_page_url || form.pricing_page_url.trim() === '')) {
-        form.pricing_page_url = data.pricing_page_url;
-        console.log('fetchRemainingData: Auto-filled pricing_page_url with:', data.pricing_page_url);
-      }
+        // 3.5. Update pricing page url if available
+        if (data.pricing_page_url && (!form.pricing_page_url || form.pricing_page_url.trim() === '')) {
+          form.pricing_page_url = data.pricing_page_url;
+          console.log('fetchRemainingData: Auto-filled pricing_page_url with:', data.pricing_page_url);
+        }
 
-      applyAutofillLinks(data);
+        applyAutofillLinks(data);
 
-      // 4. Update logos if available
-      if (data.logos && data.logos.length > 0) {
-        form.logos = data.logos;
-        // If we don't have a logo preview yet, or it's just the favicon, set it to the best logo
-        if (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon) {
-          globalFormState.logoPreview.value = data.logos[0];
+        // 4. Update logos if available
+        if (data.logos && data.logos.length > 0) {
+          form.logos = data.logos;
+          // If we don't have a logo preview yet, or it's just the favicon, set it to the best logo
+          if (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon) {
+            globalFormState.logoPreview.value = data.logos[0];
+          }
         }
       }
 
@@ -1080,6 +1118,41 @@ export function useProductForm() {
   const extractLogos = async () => {
     console.log('extractLogos called');
     await fetchRemainingData(true);
+  };
+
+  const rewriteProductDescription = async (urlOverride = null) => {
+    const linkValue = urlOverride || form.link;
+
+    if (!linkValue || linkValue.trim() === '') {
+      extractionErrors.description = 'Product URL is required to rewrite the description.';
+      return;
+    }
+
+    showErrorMessage.value = false;
+    extractionErrors.description = '';
+    loadingStates.description = true;
+    globalFormState.isLoading.value = true;
+    beginAutofillProgress('Preparing description rewrite...', 35, 'fullAutofill');
+
+    try {
+      await fetchRemainingData(false, linkValue, {
+        forceContentFetch: true,
+        forceDescriptionOverwrite: true,
+        contentOnly: true,
+      });
+    } catch (error) {
+      console.error('Error rewriting product description:', error);
+      extractionErrors.description = 'Failed to rewrite description.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'Failed to rewrite the product description. Please try again.';
+    } finally {
+      loadingStates.description = false;
+      const anyLoadingActive = Object.values(loadingStates).some((loading) => loading === true);
+      if (!anyLoadingActive) {
+        completeAutofillProgress();
+        globalFormState.isLoading.value = false;
+      }
+    }
   };
 
   const updateForm = async (field, value) => {
@@ -1883,6 +1956,7 @@ export function useProductForm() {
     fetchInitialData,
     fetchRemainingData,
     extractLogos,
+    rewriteProductDescription,
     updateForm,
     updateFormMultiple,
     resetForm,

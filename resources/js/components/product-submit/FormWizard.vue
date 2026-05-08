@@ -108,11 +108,13 @@
                   <ProductDetailsForm
                     :modelValue="form"
                     @update:modelValue="handleFormDetailUpdate"
+                    @rewrite-description="handleDescriptionRewrite"
                     :allCategories="allCategories"
                     :allBestFor="allBestFor"
                     :allPricing="allPricing"
                     :loadingStates="loadingStates"
                     :extractionErrors="extractionErrors"
+                    :isAdmin="isAdmin"
                   />
                 </div>
 
@@ -226,6 +228,7 @@ const {
   fetchInitialData,
   checkUrlExists,
   extractLogos,
+  rewriteProductDescription,
   allCategories,
   allBestFor,
   allPricing,
@@ -357,6 +360,14 @@ const clearForm = () => {
 const handleFormDetailUpdate = (updatedForm) => {
   // We must mutate the reactive form object, not replace it
   Object.assign(form, updatedForm);
+};
+
+const handleDescriptionRewrite = async () => {
+  if (loadingStates.description || isLoading.value) {
+    return;
+  }
+
+  await rewriteProductDescription();
 };
 
 const openLogoPicker = async () => {
