@@ -39,4 +39,37 @@ class ProductBreadcrumbCategoryTest extends TestCase
 
         $this->assertSame($softwareCategory->id, $product->primaryBreadcrumbCategory()?->id);
     }
+
+    public function test_product_prefers_topical_category_over_platform_categories_for_breadcrumbs(): void
+    {
+        $categoryType = Type::create(['name' => 'Category']);
+
+        $iosCategory = Category::factory()->create([
+            'name' => 'iOS',
+            'slug' => 'ios',
+        ]);
+        $iosCategory->types()->attach($categoryType);
+
+        $androidCategory = Category::factory()->create([
+            'name' => 'Android',
+            'slug' => 'android',
+        ]);
+        $androidCategory->types()->attach($categoryType);
+
+        $topicalCategory = Category::factory()->create([
+            'name' => 'Mental Health',
+            'slug' => 'mental-health',
+        ]);
+        $topicalCategory->types()->attach($categoryType);
+
+        $product = Product::factory()->create([
+            'name' => 'Ube',
+            'slug' => 'ube',
+        ]);
+        $product->categories()->attach([$iosCategory->id, $androidCategory->id, $topicalCategory->id]);
+
+        $product->load('categories.types');
+
+        $this->assertSame($topicalCategory->id, $product->primaryBreadcrumbCategory()?->id);
+    }
 }

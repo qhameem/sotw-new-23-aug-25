@@ -227,12 +227,20 @@ class Product extends Model implements Sitemapable
 
         $categories->loadMissing('types');
 
-        $softwareCategory = $categories->first(function (Category $category) {
+        $softwareCategories = $categories->filter(function (Category $category) {
             return $category->types->contains('name', 'Category');
         });
 
-        if ($softwareCategory) {
-            return $softwareCategory;
+        $preferredSoftwareCategory = $softwareCategories->first(function (Category $category) {
+            return ! $this->isPlatformBreadcrumbCategory($category);
+        });
+
+        if ($preferredSoftwareCategory) {
+            return $preferredSoftwareCategory;
+        }
+
+        if ($softwareCategories->isNotEmpty()) {
+            return $softwareCategories->first();
         }
 
         $nonPricingOrBestForCategory = $categories->first(function (Category $category) {
@@ -241,6 +249,30 @@ class Product extends Model implements Sitemapable
         });
 
         return $nonPricingOrBestForCategory ?: $categories->first();
+    }
+
+    protected function isPlatformBreadcrumbCategory(Category $category): bool
+    {
+        $platformCategoryNames = [
+            'android',
+            'android app',
+            'browser',
+            'chrome',
+            'firefox',
+            'ios',
+            'ipad',
+            'iphone',
+            'linux',
+            'mac',
+            'mac app',
+            'macos',
+            'safari',
+            'web',
+            'web app',
+            'windows',
+        ];
+
+        return in_array(Str::lower(trim($category->name)), $platformCategoryNames, true);
     }
 
     public function softwareCategories()
