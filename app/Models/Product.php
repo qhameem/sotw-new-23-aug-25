@@ -227,28 +227,9 @@ class Product extends Model implements Sitemapable
 
         $categories->loadMissing('types');
 
-        $softwareCategories = $categories->filter(function (Category $category) {
-            return $category->types->contains('name', 'Category');
-        });
-
-        $preferredSoftwareCategory = $softwareCategories->first(function (Category $category) {
-            return ! $this->isPlatformBreadcrumbCategory($category);
-        });
-
-        if ($preferredSoftwareCategory) {
-            return $preferredSoftwareCategory;
-        }
-
-        if ($softwareCategories->isNotEmpty()) {
-            return $softwareCategories->first();
-        }
-
-        $nonPricingOrBestForCategory = $categories->first(function (Category $category) {
-            return ! $category->types->contains('name', 'Pricing')
-                && ! $category->types->contains('name', 'Best for');
-        });
-
-        return $nonPricingOrBestForCategory ?: $categories->first();
+        return $categories
+            ->sortByDesc(fn (Category $category) => $this->breadcrumbCategoryPriority($category))
+            ->first();
     }
 
     protected function isPlatformBreadcrumbCategory(Category $category): bool
@@ -273,6 +254,23 @@ class Product extends Model implements Sitemapable
         ];
 
         return in_array(Str::lower(trim($category->name)), $platformCategoryNames, true);
+    }
+
+    protected function breadcrumbCategoryPriority(Category $category): int
+    {
+        $isPricing = $category->types->contains('name', 'Pricing');
+        $isCategory = $category->types->contains('name', 'Category');
+        $isBestFor = $category->types->contains('name', 'Best for');
+        $isPlatform = $this->isPlatformBreadcrumbCategory($category);
+
+        return match (true) {
+            $isCategory && ! $isPlatform => 500,
+            ! $isPricing && ! $isPlatform && $isBestFor => 400,
+            ! $isPricing && ! $isPlatform => 300,
+            $isCategory && $isPlatform => 200,
+            ! $isPricing => 100,
+            default => 0,
+        };
     }
 
     public function softwareCategories()

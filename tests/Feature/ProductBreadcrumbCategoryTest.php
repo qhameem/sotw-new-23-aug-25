@@ -43,6 +43,7 @@ class ProductBreadcrumbCategoryTest extends TestCase
     public function test_product_prefers_topical_category_over_platform_categories_for_breadcrumbs(): void
     {
         $categoryType = Type::create(['name' => 'Category']);
+        $bestForType = Type::create(['name' => 'Best for']);
 
         $iosCategory = Category::factory()->create([
             'name' => 'iOS',
@@ -60,7 +61,7 @@ class ProductBreadcrumbCategoryTest extends TestCase
             'name' => 'Mental Health',
             'slug' => 'mental-health',
         ]);
-        $topicalCategory->types()->attach($categoryType);
+        $topicalCategory->types()->attach($bestForType);
 
         $product = Product::factory()->create([
             'name' => 'Ube',
