@@ -8,7 +8,7 @@
         <div v-if="!showForm" key="landing" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <!-- Left Column: Entry Options -->
           <div class="lg:col-span-8 space-y-6">
-            <h1 class="text-4xl font-extrabold text-gray-900 mb-8">Submit a Project</h1>
+            <h1 class="text-2xl font-bold text-gray-800 mb-8">Submit a Project</h1>
             
             <!-- URL Input Block -->
             <ProductURLInput
