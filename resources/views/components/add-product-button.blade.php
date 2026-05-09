@@ -21,9 +21,9 @@
         window.location.href = @js($targetUrl);
     "
     {{ $attributes->class([
-        'relative inline-flex min-h-9 items-center justify-center gap-2 rounded-md border-2 border-gray-200 bg-white px-3 py-1 text-gray-700 shadow-sm transition duration-300 hover:bg-gray-50 hover:text-gray-900',
+        'relative inline-flex min-h-8 items-center justify-center gap-2 rounded-md bg-primary-500 px-3 py-1 text-white transition duration-300 hover:bg-primary-600',
         'text-sm font-semibold' => $compact,
-        'text-base font-semibold' => !$compact,
+        'text-sm font-semibold' => !$compact,
     ]) }}
 >
     <span
@@ -42,7 +42,7 @@
                         <desc>Cricled Plus Icon.</desc>
                         <defs></defs>
                         <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-179.000000, -600.000000)" fill="#4d4d4d">
+                            <g transform="translate(-179.000000, -600.000000)" fill="#ffffff">
                                 <g transform="translate(56.000000, 160.000000)">
                                     <path d="M137.7,450 C137.7,450.552 137.2296,451 136.65,451 L134.55,451 L134.55,453 C134.55,453.552 134.0796,454 133.5,454 C132.9204,454 132.45,453.552 132.45,453 L132.45,451 L130.35,451 C129.7704,451 129.3,450.552 129.3,450 C129.3,449.448 129.7704,449 130.35,449 L132.45,449 L132.45,447 C132.45,446.448 132.9204,446 133.5,446 C134.0796,446 134.55,446.448 134.55,447 L134.55,449 L136.65,449 C137.2296,449 137.7,449.448 137.7,450 M133.5,458 C128.86845,458 125.1,454.411 125.1,450 C125.1,445.589 128.86845,442 133.5,442 C138.13155,442 141.9,445.589 141.9,450 C141.9,454.411 138.13155,458 133.5,458 M133.5,440 C127.70085,440 123,444.477 123,450 C123,455.523 127.70085,460 133.5,460 C139.29915,460 144,455.523 144,450 C144,444.477 139.29915,440 133.5,440"></path>
                                 </g>

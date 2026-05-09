@@ -285,6 +285,34 @@
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
         $primaryHexColor = config('theme.primary_color', '#3b82f6');
 
+        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $primaryHexColor)) {
+            $primaryHexColor = '#3b82f6';
+        }
+
+        if (strlen($primaryHexColor) === 4) {
+            $primaryHexColor = '#' . $primaryHexColor[1] . $primaryHexColor[1]
+                . $primaryHexColor[2] . $primaryHexColor[2]
+                . $primaryHexColor[3] . $primaryHexColor[3];
+        }
+
+        $darkenHex = static function (string $hexColor, float $amount): string {
+            $channels = [
+                hexdec(substr($hexColor, 1, 2)),
+                hexdec(substr($hexColor, 3, 2)),
+                hexdec(substr($hexColor, 5, 2)),
+            ];
+
+            $darkenedChannels = array_map(
+                static fn (int $channel): int => max(0, min(255, (int) round($channel * (1 - $amount)))),
+                $channels
+            );
+
+            return sprintf('#%02X%02X%02X', $darkenedChannels[0], $darkenedChannels[1], $darkenedChannels[2]);
+        };
+
+        $primaryHexColor600 = $darkenHex($primaryHexColor, 0.08);
+        $primaryHexColor700 = $darkenHex($primaryHexColor, 0.16);
+
         // Determine intelligent default for button text color
         $primaryButtonTextColor = config('theme.primary_button_text_color');
         if (!$primaryButtonTextColor) {
@@ -305,10 +333,10 @@
                 {{ $primaryHexColor }}
             ;
             --color-primary-600:
-                {{ $primaryHexColor }}
+                {{ $primaryHexColor600 }}
             ;
             --color-primary-700:
-                {{ $primaryHexColor }}
+                {{ $primaryHexColor700 }}
             ;
             --color-primary-button-text:
                 {{ $primaryButtonTextColor }}
