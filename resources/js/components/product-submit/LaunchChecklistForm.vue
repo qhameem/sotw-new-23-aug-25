@@ -223,12 +223,26 @@
                       <button
                         type="button"
                         @click="copyBadgeSnippet"
-                        class="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                        class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
                       >
-                        Copy code
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16h8M8 12h8m-8-4h8M8 8V6a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2h-2m-4 0H6a2 2 0 01-2-2V8a2 2 0 012-2h8a2 2 0 012 2v10z" />
+                        </svg>
+                        <span>{{ hasCopiedBadgeSnippet ? 'Copied' : 'Copy code' }}</span>
                       </button>
                     </div>
                     <pre class="mt-3 overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-950 px-4 py-3 text-xs text-emerald-100">{{ badgeSnippet }}</pre>
+                    <div class="mt-3 space-y-2 text-xs text-gray-600">
+                      <p v-if="hasCopiedBadgeSnippet" class="font-semibold text-emerald-700">
+                        Badge code copied. Paste it onto your homepage, then verify the homepage URL below.
+                      </p>
+                      <p>
+                        Paste this on your homepage. The easiest placements are inside your site footer, inside your header, or in an "As Seen On" section.
+                      </p>
+                      <p class="font-medium text-gray-700">
+                        Recommended: add it to your homepage footer so it stays visible and easy for us to verify.
+                      </p>
+                    </div>
                   </div>
 
                   <div>
@@ -241,7 +255,7 @@
                         type="url"
                         :value="modelValue.badge_placement_url || ''"
                         @input="handleBadgeUrlInput($event.target.value)"
-                        placeholder="https://your-site.com/page-with-badge"
+                        placeholder="https://your-site.com/"
                         class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 placeholder-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                       >
                       <button
@@ -276,7 +290,7 @@
                       </button>
                     </div>
                     <p class="mt-2 text-xs text-gray-500">
-                      Use the exact page where the badge appears.
+                      Put the badge on your homepage, then enter your homepage URL here so we can verify it.
                     </p>
                   </div>
 
@@ -297,6 +311,7 @@
                       :value="modelValue.badge_week_start || ''"
                       @change="updateField('badge_week_start', $event.target.value)"
                       :disabled="!modelValue.badge_verified"
+                      style="color-scheme: light;"
                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       <option value="">Select a week</option>
@@ -459,6 +474,7 @@ const isVerifyingBadge = ref(false);
 const badgeVerificationMessage = ref('');
 const badgeVerificationSuccess = ref(false);
 const badgeSnippet = ref('');
+const hasCopiedBadgeSnippet = ref(false);
 
 // Tech Stack search + toggle
 const techSearch = ref('');
@@ -633,16 +649,18 @@ const formatLocalDateValue = (date) => {
 };
 
 const formatWeekLabel = (start, end) => {
-  const startLabel = start.toLocaleDateString('en-US', {
+  const startMonthLabel = start.toLocaleDateString('en-US', {
     month: 'short',
-    day: 'numeric',
   });
-  const endLabel = end.toLocaleDateString('en-US', {
-    day: 'numeric',
-    year: 'numeric',
+  const endMonthLabel = end.toLocaleDateString('en-US', {
+    month: 'short',
   });
 
-  return `${startLabel} - ${endLabel}`;
+  if (startMonthLabel === endMonthLabel) {
+    return `${startMonthLabel} ${start.getDate()} - ${end.getDate()}, ${end.getFullYear()}`;
+  }
+
+  return `${startMonthLabel} ${start.getDate()} - ${endMonthLabel} ${end.getDate()}, ${end.getFullYear()}`;
 };
 
 const loadBadgeSnippet = async () => {
@@ -665,8 +683,12 @@ const copyBadgeSnippet = async () => {
 
   try {
     await navigator.clipboard.writeText(badgeSnippet.value);
+    hasCopiedBadgeSnippet.value = true;
     badgeVerificationSuccess.value = true;
     badgeVerificationMessage.value = 'Badge code copied. Add it to your site, then verify the page URL below.';
+    window.setTimeout(() => {
+      hasCopiedBadgeSnippet.value = false;
+    }, 2000);
   } catch (error) {
     console.error('Failed to copy badge snippet:', error);
   }

@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\Badge;
+use App\Services\BadgeService;
 
 class BadgeController extends Controller
 {
@@ -13,7 +12,10 @@ class BadgeController extends Controller
      */
     public function index()
     {
-        $badges = Badge::all();
-        return view('site.badges.index', compact('badges'));
+        $badgeService = app(BadgeService::class);
+        $currentBadge = Badge::first();
+        $embedData = $badgeService->getEmbedData();
+
+        return view('site.badges.index', compact('currentBadge', 'embedData'));
     }
 }

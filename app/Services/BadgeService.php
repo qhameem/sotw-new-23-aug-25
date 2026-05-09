@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Badge;
 use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class BadgeService
 {
@@ -21,13 +22,18 @@ class BadgeService
      */
     public function getBadgeImageUrl(): string
     {
+        $settingsBadgeUrl = $this->getSettingsBadgeImageUrl();
+        if ($settingsBadgeUrl) {
+            return $this->appendCacheBustToPublicImageUrl($settingsBadgeUrl);
+        }
+
         $badge = Badge::first();
 
         if ($badge && $badge->path) {
             return asset('storage/' . $badge->path);
         }
 
-        return url('/images/badge.png');
+        return $this->appendCacheBustToPublicImageUrl(url('/images/badge.png'));
     }
 
     public function getBadgeDestinationUrl(): string
@@ -158,6 +164,35 @@ class BadgeService
         });
 
         return array_values(array_unique(array_filter($paths)));
+    }
+
+    private function getSettingsBadgeImageUrl(): ?string
+    {
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return null;
+        }
+
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+        $badgeImageUrl = $settings['badge_image_url'] ?? null;
+
+        return is_string($badgeImageUrl) && $badgeImageUrl !== '' ? $badgeImageUrl : null;
+    }
+
+    private function appendCacheBustToPublicImageUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!$path) {
+            return $url;
+        }
+
+        $publicFilePath = public_path(ltrim($path, '/'));
+        if (!is_file($publicFilePath)) {
+            return $url;
+        }
+
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        return $url . $separator . 'v=' . filemtime($publicFilePath);
     }
 
     private function linkContainsExpectedBadgeImage(\DOMElement $link, array $allowedBadgePaths): bool
