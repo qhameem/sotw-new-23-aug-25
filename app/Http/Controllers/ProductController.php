@@ -209,6 +209,24 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
+        $isAdminSandbox = $user && $user->hasRole('admin') && $request->boolean('sandbox_mode');
+
+        if ($isAdminSandbox) {
+            $message = 'Sandbox submission complete. No product was saved to the database.';
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'sandbox' => true,
+                    'message' => $message,
+                ]);
+            }
+
+            return back()->with('status', $message);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'required|string|max:255',

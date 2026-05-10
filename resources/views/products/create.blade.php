@@ -53,7 +53,7 @@
                 <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore
                     data-display-data="{{ json_encode($displayData ?? []) }}"
                     data-submission-bg-url="{{ $submissionBgUrl }}"
-                    data-is-admin="{{ (isset($product) && Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
+                    data-is-admin="{{ (Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
                     data-pricing-categories="{{ json_encode($pricingCategories->toArray() ?? []) }}"
                     data-selected-best-for-categories="{{ json_encode($selectedBestForCategories ?? []) }}"></div>
             </div>

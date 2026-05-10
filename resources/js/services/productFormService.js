@@ -57,6 +57,7 @@ const initialFormState = {
   badge_placement_url: '',
   badge_week_start: '',
   badge_verified: false,
+  sandbox_mode: false,
   comparison_overrides_input: '',
   alternative_overrides_input: '',
   fromSource: null,
@@ -87,6 +88,7 @@ export const createProductFormState = () => {
     isRestored: ref(false),
     isMounted: ref(false),
     isLoading: ref(false),
+    submitState: ref('idle'),
     loadingProgress: ref(0),
     loadingMessage: ref(''),
     loadingTargetProgress: ref(0),
@@ -94,6 +96,7 @@ export const createProductFormState = () => {
     loadingStartedAt: ref(null),
     urlExistsError: ref(false),
     existingProduct: ref(null),
+    sandboxNotice: ref(''),
     showPreviewModal: ref(false),
     submissionBgUrl: ref(''),
     extractionErrors: reactive({

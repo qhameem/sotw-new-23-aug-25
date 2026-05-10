@@ -8,13 +8,24 @@
         <div v-if="!showForm" key="landing" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <!-- Left Column: Entry Options -->
           <div class="lg:col-span-8 space-y-6">
-            <h1 class="text-2xl font-bold text-gray-800 mb-8">Submit a Project</h1>
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <h1 class="text-2xl font-bold text-gray-800">Submit a Project</h1>
+              <div v-if="showAdminSandboxControls" class="md:max-w-sm md:flex-shrink-0">
+                <AdminSandboxBanner
+                  :modelValue="form"
+                  :sandboxNotice="sandboxNotice"
+                  :isLoading="isLoading"
+                  @update:modelValue="handleFormDetailUpdate"
+                />
+              </div>
+            </div>
             
             <!-- URL Input Block -->
             <ProductURLInput
               :modelValue="form.link"
               @update:modelValue="handleUrlInputUpdate"
               :isLoading="isLoading"
+              :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
               :loadingMessage="loadingMessage"
               :isUrlInvalid="isUrlInvalid"
@@ -59,7 +70,17 @@
           <!-- Left Main Column (Form Fields) -->
           <div class="lg:col-span-8 space-y-10">
             <div>
-              <h1 class="text-3xl font-bold text-gray-900 mb-6">Submit a Project</h1>
+              <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <h1 class="text-3xl font-bold text-gray-900">Submit a Project</h1>
+                <div v-if="showAdminSandboxControls" class="md:max-w-sm md:flex-shrink-0">
+                  <AdminSandboxBanner
+                    :modelValue="form"
+                    :sandboxNotice="sandboxNotice"
+                    :isLoading="isLoading"
+                    @update:modelValue="handleFormDetailUpdate"
+                  />
+                </div>
+              </div>
 
               <!-- Submission Error Message -->
               <transition name="fade">
@@ -93,6 +114,7 @@
                     :modelValue="form.link"
                     @update:modelValue="handleUrlInputUpdate"
                     :isLoading="isLoading"
+                    :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
                     :loadingProgress="loadingProgress"
                     :loadingMessage="loadingMessage"
                     :isUrlInvalid="isUrlInvalid"
@@ -143,6 +165,7 @@
                     :allTechStacks="allTechStacks"
                     :isAdmin="isAdmin"
                     :isLoading="isLoading"
+                    :submitState="submitState"
                     @submit="submitProduct"
                   />
                 </div>
@@ -195,6 +218,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import ProductMediaForm from './ProductMediaForm.vue';
@@ -226,6 +250,7 @@ const {
   galleryPreviews,
   submitProduct,
   fetchInitialData,
+  simulateSandboxAutofill,
   checkUrlExists,
   extractLogos,
   rewriteProductDescription,
@@ -238,12 +263,16 @@ const {
   urlTrimSuggestion,
   initializeFormData,
   isLoading,
+  submitState,
+  sandboxNotice,
   loadingProgress,
   loadingMessage,
   errorMessage,
   showErrorMessage,
   isRestored
 } = useProductForm(props.initialProduct);
+
+const showAdminSandboxControls = computed(() => isAdmin.value && !form.id);
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {
@@ -313,6 +342,12 @@ onUnmounted(() => {
 // Handle URL Fetch Action (formerly "Get Started")
 const handleUrlFetch = async (url) => {
   if (isLoading.value) {
+    return;
+  }
+
+  if (showAdminSandboxControls.value && form.sandbox_mode) {
+    await simulateSandboxAutofill();
+    showForm.value = true;
     return;
   }
 

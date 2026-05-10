@@ -333,44 +333,20 @@
                 <div v-else-if="wantsBadgeLaunch && (!modelValue.badge_verified || !modelValue.badge_week_start)" class="text-sm font-medium text-amber-600">
                   Verify the badge and choose a week to skip the wait.
                 </div>
-                <button
-                  type="button"
-                  @click="handleSubmission"
+                <AnimatedSubmitButton
+                  :label="submitButtonLabel"
+                  :state="submitButtonVisualState"
                   :disabled="submitButtonDisabled"
-                  :class="{
-                    'opacity-50 cursor-not-allowed': submitButtonDisabled && !isLoading,
-                    'cursor-wait': isLoading,
-                    'hover:bg-gray-50': !submitButtonDisabled && !isLoading
-                  }"
-                  class="relative inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-gray-700 bg-white px-6 py-3 text-sm font-bold text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
-                >
-                  <span
-                    class="whitespace-nowrap transition-opacity duration-150"
-                    :class="isLoading ? 'opacity-0' : 'opacity-100'"
-                  >
-                    {{ submitButtonLabel }}
-                  </span>
-                  <span
-                    v-if="isLoading"
-                    class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
-                    aria-live="polite"
-                  >
-                    <span class="flex items-center gap-1.5" aria-hidden="true">
-                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
-                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
-                      <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
-                    </span>
-                    <span>Processing</span>
-                  </span>
-                </button>
+                  @click="handleSubmission"
+                />
               </div>
             </div>
           </div>
         </div>
         
-        <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">Save Changes</h3>
-          <p class="text-sm text-gray-600 mb-6">As an admin, you can save your edits directly without selecting a pricing option.</p>
+        <div v-else-if="!!modelValue.id" class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Admin Controls</h3>
+          <p class="text-sm text-gray-600 mb-6">{{ adminDescription }}</p>
           <div v-if="!!modelValue.id" class="space-y-4 mb-6">
             <div>
               <label for="comparison-overrides" class="block text-sm font-semibold text-gray-700 mb-1">
@@ -407,12 +383,23 @@
             </div>
           </div>
           <div class="flex flex-col items-start gap-4">
-            <div v-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
+            <div v-if="isSandboxAvailable && modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
+              Sandbox mode ignores all required fields and keeps this run out of the database.
+            </div>
+            <div v-else-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
               Note: Some required fields are missing, but you can still save as admin.
             </div>
+            <AnimatedSubmitButton
+              v-if="isSandboxAvailable && modelValue.sandbox_mode"
+              :label="adminActionLabel"
+              :state="submitButtonVisualState"
+              :disabled="isLoading"
+              @click="emitAdminSubmit"
+            />
             <button
+              v-else
               type="button"
-              @click="$emit('submit')"
+              @click="emitAdminSubmit"
               :disabled="isLoading"
               :class="{
                 'cursor-wait': isLoading,
@@ -441,6 +428,59 @@
             </button>
           </div>
         </div>
+        
+        <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Admin Submission</h3>
+          <p class="text-sm text-gray-600 mb-6">
+            Submit the product from the bottom of the form. Use Sandbox mode from the top of the page if you only want to test button states.
+          </p>
+          <div class="flex flex-col items-start gap-4">
+            <div v-if="modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
+              Sandbox mode is active, so this button will simulate submission without saving anything.
+            </div>
+            <div v-else-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
+              Fill the required fields to submit this product.
+            </div>
+            <AnimatedSubmitButton
+              v-if="modelValue.sandbox_mode"
+              :label="adminCreateActionLabel"
+              :state="submitButtonVisualState"
+              :disabled="isLoading"
+              @click="emitAdminSubmit"
+            />
+            <button
+              v-else
+              type="button"
+              @click="emitAdminSubmit"
+              :disabled="isLoading || !isAllRequiredFilled"
+              :class="{
+                'opacity-50 cursor-not-allowed': !isAllRequiredFilled && !isLoading,
+                'cursor-wait': isLoading,
+                'hover:bg-primary-600': isAllRequiredFilled && !isLoading
+              }"
+              class="relative inline-flex min-h-12 items-center justify-center rounded-lg bg-primary-500 px-8 py-3 text-sm font-bold text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              <span
+                class="whitespace-nowrap transition-opacity duration-150"
+                :class="isLoading ? 'opacity-0' : 'opacity-100'"
+              >
+                Submit Product
+              </span>
+              <span
+                v-if="isLoading"
+                class="absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-current"
+                aria-live="polite"
+              >
+                <span class="flex items-center gap-1.5" aria-hidden="true">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.3s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse [animation-delay:-0.15s]"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                </span>
+                <span>Submitting</span>
+              </span>
+            </button>
+          </div>
+        </div>
       </section> <!-- End Pricing Options / Save Button -->
       
     </div>
@@ -450,6 +490,7 @@
 <script setup>
 import axios from 'axios';
 import { computed, onMounted, ref, watch } from 'vue';
+import AnimatedSubmitButton from './AnimatedSubmitButton.vue';
 import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
@@ -464,6 +505,10 @@ const props = defineProps({
   allTechStacks: Array,
   isAdmin: Boolean,
   isLoading: Boolean,
+  submitState: {
+    type: String,
+    default: 'idle',
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'submit']);
@@ -633,6 +678,36 @@ const submitButtonDisabled = computed(() => {
   return !props.modelValue.badge_verified || !props.modelValue.badge_week_start;
 });
 
+const submitButtonVisualState = computed(() => {
+  if (props.submitState === 'loading' || props.submitState === 'success') {
+    return props.submitState;
+  }
+
+  return 'idle';
+});
+
+const isSandboxAvailable = computed(() => !props.modelValue.id);
+
+const adminDescription = computed(() => {
+  if (isSandboxAvailable.value) {
+    return 'As an admin, you can save directly here, and Sandbox mode can be controlled from the top of the page.';
+  }
+
+  return 'As an admin, you can save your edits directly without selecting a pricing option.';
+});
+
+const adminActionLabel = computed(() => {
+  if (props.modelValue.sandbox_mode) {
+    return props.modelValue.id ? 'Run Sandbox Save' : 'Run Sandbox Submit';
+  }
+
+  return 'Save All Changes';
+});
+
+const adminCreateActionLabel = computed(() => (
+  props.modelValue.sandbox_mode ? 'Run Sandbox Submit' : 'Submit Product'
+));
+
 const submitButtonLabel = computed(() => {
   if (wantsBadgeLaunch.value && props.modelValue.badge_verified) {
     return 'Submit And Schedule Week';
@@ -793,6 +868,10 @@ const handleSubmission = () => {
     tech_stack_custom: props.modelValue.tech_stack_custom,
   });
 
+  emit('submit');
+};
+
+const emitAdminSubmit = () => {
   emit('submit');
 };
 

@@ -70,6 +70,65 @@ export function useProductForm() {
     return merged.slice(0, 10);
   };
 
+  const delay = (ms) => new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
+  const createSandboxSvgDataUrl = ({ background, accent, label, textColor = '#ffffff' }) => {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${background}" />
+            <stop offset="100%" stop-color="${accent}" />
+          </linearGradient>
+        </defs>
+        <rect width="1200" height="630" rx="32" fill="url(#bg)" />
+        <circle cx="190" cy="170" r="72" fill="rgba(255,255,255,0.16)" />
+        <rect x="310" y="124" width="580" height="82" rx="18" fill="rgba(255,255,255,0.14)" />
+        <rect x="310" y="244" width="430" height="28" rx="14" fill="rgba(255,255,255,0.18)" />
+        <rect x="310" y="292" width="360" height="28" rx="14" fill="rgba(255,255,255,0.14)" />
+        <rect x="310" y="372" width="200" height="64" rx="32" fill="rgba(255,255,255,0.22)" />
+        <text x="310" y="176" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" fill="${textColor}">${label}</text>
+        <text x="310" y="420" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600" fill="${textColor}">Sandbox autofill preview</text>
+      </svg>
+    `;
+
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  };
+
+  const buildSandboxAutofillPayload = () => {
+    const fallbackCategoryId = globalFormState.allCategories.value?.[0]?.id || null;
+    const fallbackBestForId = globalFormState.allBestFor.value?.[0]?.id || null;
+    const fallbackPricingId = globalFormState.allPricing.value?.[0]?.id || null;
+
+    return {
+      link: 'https://sandbox-preview.test',
+      name: 'Sandbox Project',
+      tagline: 'A simulated product used to test AI auto-fill states.',
+      tagline_detailed: 'Sandbox preview for testing autofill animations, progress states, and form transitions without using a real URL.',
+      description: '<p>This is a sandbox-only autofill result for admins. It simulates a successful AI extraction so you can verify loading states, transitions, and preview behavior without touching production data.</p><p>No URL was fetched, and no submission will be stored while sandbox mode remains active.</p>',
+      categories: fallbackCategoryId ? [fallbackCategoryId] : [],
+      bestFor: fallbackBestForId ? [fallbackBestForId] : [],
+      pricing: fallbackPricingId ? [fallbackPricingId] : [],
+      pricing_page_url: 'https://sandbox-preview.test/pricing',
+      x_account: '@sandbox_preview',
+      maker_links: ['https://www.linkedin.com/company/sandbox-preview'],
+      logos: [
+        createSandboxSvgDataUrl({
+          background: '#0f172a',
+          accent: '#2563eb',
+          label: 'Sandbox',
+        }),
+      ],
+      screenshot: createSandboxSvgDataUrl({
+        background: '#0f766e',
+        accent: '#14b8a6',
+        label: 'Sandbox Project',
+      }),
+    };
+  };
+
   const getLoadingProfile = () => {
     const sessionType = globalFormState.loadingSessionType.value;
     return LOADING_PROFILES[sessionType] || null;
@@ -360,6 +419,7 @@ export function useProductForm() {
     }
 
     if (!validateForm()) {
+      globalFormState.submitState.value = 'idle';
       return false;
     }
 
@@ -373,12 +433,20 @@ export function useProductForm() {
     }
 
     if (!validateForm()) {
+      globalFormState.submitState.value = 'idle';
       return false;
     }
+
+    let didSucceed = false;
+    const isSandboxSubmission = globalFormState.isAdmin.value && form.sandbox_mode;
 
     try {
       // Set loading state to show the loader
       globalFormState.isLoading.value = true;
+      globalFormState.submitState.value = 'loading';
+      if (!isSandboxSubmission) {
+        globalFormState.sandboxNotice.value = '';
+      }
 
       // Prepare form data for submission
       const formData = new FormData();
@@ -529,6 +597,8 @@ export function useProductForm() {
         formData.append('badge_week_start', form.badge_week_start);
       }
 
+      formData.append('sandbox_mode', form.sandbox_mode ? '1' : '0');
+
       // Admin-only curated related-product overrides
       if (globalFormState.isAdmin.value) {
         formData.append('comparison_overrides_input', form.comparison_overrides_input || '');
@@ -597,6 +667,18 @@ export function useProductForm() {
       // Clear form data after successful submission
       productFormService.clearFormData();
 
+      if (response.data?.sandbox) {
+        didSucceed = true;
+        globalFormState.submitState.value = 'success';
+        globalFormState.sandboxNotice.value = response.data.message || 'Sandbox submission complete. No product was saved.';
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 650);
+        });
+        globalFormState.isLoading.value = false;
+        globalFormState.submitState.value = 'idle';
+        return true;
+      }
+
       // Dispatch an event to notify other components of successful submission
       document.dispatchEvent(new CustomEvent('product-submitted', {
         detail: {
@@ -604,6 +686,12 @@ export function useProductForm() {
           message: 'Product submitted successfully'
         }
       }));
+
+      didSucceed = true;
+      globalFormState.submitState.value = 'success';
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 650);
+      });
 
       // Redirect to success page
       if (response.data && typeof response.data === 'object' && response.data.redirect_url) {
@@ -625,6 +713,7 @@ export function useProductForm() {
       return true;
     } catch (error) {
       console.error('Error submitting product:', error);
+      globalFormState.submitState.value = 'idle';
       showErrorMessage.value = true;
       const firstValidationError = error.response?.data?.errors
         ? Object.values(error.response.data.errors).flat()[0]
@@ -632,8 +721,9 @@ export function useProductForm() {
       errorMessage.value = firstValidationError || error.response?.data?.message || 'Failed to submit product. Please try again.';
       return false;
     } finally {
-      // Always reset loading state after submission
-      globalFormState.isLoading.value = false;
+      if (!didSucceed) {
+        globalFormState.isLoading.value = false;
+      }
       globalFormState.showPreviewModal.value = false;
     }
   };
@@ -643,6 +733,12 @@ export function useProductForm() {
   };
 
   const validateForm = () => {
+    if (globalFormState.isAdmin.value && form.sandbox_mode) {
+      showErrorMessage.value = false;
+      errorMessage.value = '';
+      return true;
+    }
+
     if (!form.link) {
       showErrorMessage.value = true;
       errorMessage.value = 'Product URL is required.';
@@ -1146,6 +1242,90 @@ export function useProductForm() {
   const extractLogos = async () => {
     console.log('extractLogos called');
     await fetchRemainingData(true);
+  };
+
+  const simulateSandboxAutofill = async () => {
+    if (globalFormState.isLoading.value) {
+      return false;
+    }
+
+    const sandboxPayload = buildSandboxAutofillPayload();
+    globalFormState.sandboxNotice.value = '';
+    globalFormState.urlExistsError.value = false;
+    globalFormState.existingProduct.value = null;
+    showErrorMessage.value = false;
+    errorMessage.value = '';
+
+    loadingStates.name = true;
+    loadingStates.description = true;
+    loadingStates.categories = true;
+    loadingStates.bestFor = true;
+    loadingStates.logos = true;
+
+    beginAutofillProgress('Checking website URL...', 5, 'fullAutofill');
+
+    try {
+      await delay(260);
+      form.link = sandboxPayload.link;
+      updateAutofillProgress('Fetching basic metadata and taking screenshot...', 10);
+
+      await delay(420);
+      form.name = sandboxPayload.name;
+      form.tagline = sandboxPayload.tagline;
+      form.tagline_detailed = sandboxPayload.tagline_detailed;
+      form.favicon = sandboxPayload.logos[0];
+      globalFormState.logoPreview.value = sandboxPayload.logos[0];
+      globalFormState.galleryPreviews.value[0] = sandboxPayload.screenshot;
+      loadingStates.name = false;
+      updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
+
+      await delay(520);
+      updateAutofillProgress('Connecting for detailed analysis...', 35);
+
+      await delay(420);
+      updateAutofillProgress('Reading page content and rewriting product summary...', 56);
+
+      await delay(420);
+      form.description = sandboxPayload.description;
+      loadingStates.description = false;
+      updateAutofillProgress('Mapping categories, pricing, and tags...', 74);
+
+      await delay(420);
+      form.categories = sandboxPayload.categories;
+      form.bestFor = sandboxPayload.bestFor;
+      form.pricing = sandboxPayload.pricing;
+      form.pricing_page_url = sandboxPayload.pricing_page_url;
+      form.x_account = sandboxPayload.x_account;
+      form.maker_links = sandboxPayload.maker_links;
+      loadingStates.categories = false;
+      loadingStates.bestFor = false;
+      updateAutofillProgress('Finishing logo and media suggestions...', 92);
+
+      await delay(360);
+      form.logos = sandboxPayload.logos;
+      loadingStates.logos = false;
+      completeAutofillProgress();
+      globalFormState.isLoading.value = false;
+      globalFormState.loadingTargetProgress.value = 0;
+      globalFormState.loadingStartedAt.value = null;
+      return true;
+    } catch (error) {
+      console.error('Sandbox autofill simulation failed:', error);
+      showErrorMessage.value = true;
+      errorMessage.value = 'Sandbox autofill failed. Please try again.';
+      globalFormState.isLoading.value = false;
+      globalFormState.loadingTargetProgress.value = 0;
+      globalFormState.loadingStartedAt.value = null;
+      stopLoadingAnimation();
+      return false;
+    } finally {
+      Object.keys(loadingStates).forEach((key) => {
+        loadingStates[key] = false;
+      });
+      globalFormState.loadingMessage.value = '';
+      globalFormState.loadingProgress.value = 0;
+      globalFormState.loadingSessionType.value = null;
+    }
   };
 
   const rewriteProductDescription = async (urlOverride = null) => {
@@ -1951,8 +2131,10 @@ export function useProductForm() {
     isRestored: globalFormState.isRestored,
     isMounted: globalFormState.isMounted,
     isLoading: globalFormState.isLoading,
+    submitState: globalFormState.submitState,
     urlExistsError: globalFormState.urlExistsError,
     existingProduct: globalFormState.existingProduct,
+    sandboxNotice: globalFormState.sandboxNotice,
     showPreviewModal: globalFormState.showPreviewModal,
     submissionBgUrl: globalFormState.submissionBgUrl,
     extractionErrors: globalFormState.extractionErrors,
@@ -1983,6 +2165,7 @@ export function useProductForm() {
     validateForm,
     fetchInitialData,
     fetchRemainingData,
+    simulateSandboxAutofill,
     extractLogos,
     rewriteProductDescription,
     updateForm,

@@ -42,7 +42,7 @@
         @click="performValidationAndFetch"
         :disabled="isLoading"
         :class="[
-          'px-6 py-2 text-white font-bold rounded-md text-sm flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 whitespace-nowrap transition-all duration-200',
+          'w-[168px] px-6 py-2 text-white font-bold rounded-md text-sm flex items-center justify-center gap-2 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 whitespace-nowrap transition-all duration-200',
           isLoading ? 'bg-primary-500 cursor-wait' : 'bg-primary-500 hover:bg-primary-600 hover:shadow-sm'
         ]"
       >
@@ -69,6 +69,15 @@
         ]"
       >
         {{ clipboardFeedback }}
+      </p>
+    </transition>
+
+    <transition name="fade">
+      <p
+        v-if="isSandboxMode && !isLoading"
+        class="mt-3 text-xs text-amber-700"
+      >
+        Sandbox mode: click AI Auto-fill to run a simulated product autofill without using a real URL.
       </p>
     </transition>
 
@@ -151,6 +160,10 @@ const props = defineProps({
   urlExistsError: Boolean,
   existingProduct: Object,
   submissionBgUrl: String,
+  isSandboxMode: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'getStarted', 'clear']);
@@ -191,6 +204,12 @@ const performValidationAndFetch = async (explicitValue = null) => {
     return;
   }
   console.log('[ProductURLInput] Step 1 passed: Nothing is loading');
+
+  if (props.isSandboxMode) {
+    console.log('[ProductURLInput] Sandbox mode active, skipping URL validation');
+    emit('getStarted', inputValue || '__sandbox__');
+    return;
+  }
   
   // Step 2: Check if URL is valid
   console.log('[ProductURLInput] Step 2: Checking if URL is valid...');
