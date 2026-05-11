@@ -34,6 +34,7 @@ use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
 use App\Support\ProductMediaSeo;
+use App\Support\ProductPublishSchedule;
 use DOMDocument;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -1079,12 +1080,7 @@ class ProductController extends Controller
             ->pluck('product')
             ->shuffle();
 
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
+        $nextLaunchTime = $this->getNextLaunchTimeIso();
 
         return view('home', compact(
             'category',
@@ -1253,12 +1249,7 @@ class ProductController extends Controller
         $dayOfYear = $date->dayOfYear;
         $fullDate = $date->format('d F, Y');
 
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
+        $nextLaunchTime = $this->getNextLaunchTimeIso();
 
         return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture'));
     }
@@ -1411,12 +1402,7 @@ class ProductController extends Controller
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
+        $nextLaunchTime = $this->getNextLaunchTimeIso();
 
         $weekOfYear = $week;
 
@@ -1551,12 +1537,7 @@ class ProductController extends Controller
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
+        $nextLaunchTime = $this->getNextLaunchTimeIso();
 
         return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
@@ -1674,12 +1655,7 @@ class ProductController extends Controller
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
-        $now = Carbon::now('UTC');
-        $nextLaunchTime = Carbon::today('UTC')->setHour(7);
-        if ($nextLaunchTime->isPast()) {
-            $nextLaunchTime->addDay();
-        }
-        $nextLaunchTime = $nextLaunchTime->toIso8601String();
+        $nextLaunchTime = $this->getNextLaunchTimeIso();
 
         return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
@@ -3080,6 +3056,11 @@ class ProductController extends Controller
             ),
             'type' => $type === 'image' && $isExternalPath ? 'screenshot' : $type,
         ]);
+    }
+
+    protected function getNextLaunchTimeIso(): string
+    {
+        return ProductPublishSchedule::nextLaunchTime()->toIso8601String();
     }
 
     private function resolveUrl($baseUrl, $relativeUrl)

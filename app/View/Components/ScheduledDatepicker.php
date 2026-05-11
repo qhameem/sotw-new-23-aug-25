@@ -4,6 +4,7 @@ namespace App\View\Components;
 
 use Illuminate\View\Component;
 use Illuminate\Support\Carbon;
+use App\Support\ProductPublishSchedule;
 
 class ScheduledDatepicker extends Component
 {
@@ -22,7 +23,8 @@ class ScheduledDatepicker extends Component
         $this->value = $value;
 
         $now = Carbon::now('UTC');
-        $publishingTimeToday = Carbon::today('UTC')->setTime(7, 0, 0);
+        [$hour, $minute] = ProductPublishSchedule::getPublishHourMinute();
+        $publishingTimeToday = Carbon::today('UTC')->setTime($hour, $minute, 0);
 
         if ($now->greaterThan($publishingTimeToday)) {
             $this->minDate = Carbon::tomorrow('UTC')->toDateString();

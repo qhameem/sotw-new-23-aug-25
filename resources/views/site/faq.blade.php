@@ -32,7 +32,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">When are submitted software products published?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Submitted software products are published daily at 7:00 AM UTC (GMT), which corresponds to 12:00 AM PDT on the same day.
+                        Submitted software products are published daily at the configured UTC launch time shown in the admin settings.
                     </p>
                 </div>
             </div>

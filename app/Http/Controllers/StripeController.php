@@ -7,6 +7,7 @@ use App\Mail\PaymentConfirmation;
 use App\Mail\ProductScheduled;
 use App\Models\PremiumProduct;
 use App\Models\User;
+use App\Support\ProductPublishSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -93,7 +94,9 @@ class StripeController extends Controller
                     foreach ($products as $product) {
                         $product->approved = true;
                         $publishDate = $publishDates[$product->id] ?? null;
-                        $publishDateTime = $publishDate ? \Carbon\Carbon::parse($publishDate, 'UTC')->startOfDay()->addHours(7) : now()->utc()->setTime(7, 0, 0);
+                        $publishDateTime = $publishDate
+                            ? ProductPublishSchedule::forDate($publishDate)
+                            : ProductPublishSchedule::forDate(now()->utc());
                         $product->published_at = $publishDateTime;
                         if ($publishDateTime->isPast()) {
                             $product->is_published = true;

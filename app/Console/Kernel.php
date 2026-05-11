@@ -8,7 +8,7 @@ use App\Console\Commands\BackfillProductEditorialContent;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\PruneMagicLoginLinks;
-use Illuminate\Support\Facades\Storage;
+use App\Support\ProductPublishSchedule;
 
 class Kernel extends ConsoleKernel
 {
@@ -35,9 +35,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('sitemap:generate')->daily();
-        $settings = Storage::disk('local')->exists('settings.json') ? json_decode(Storage::disk('local')->get('settings.json'), true) : [];
-        $publishTime = $settings['product_publish_time'] ?? '07:00';
-        $schedule->command('products:publish-scheduled')->dailyAt($publishTime);
+        $schedule->command('products:publish-scheduled')->dailyAt(ProductPublishSchedule::getPublishTime());
         $schedule->command('reminders:send-deadline')->everyMinute();
         $schedule->command('badge:verify')->weekly()->mondays()->at('09:00');
         $schedule->command('auth:prune-magic-links')->daily();

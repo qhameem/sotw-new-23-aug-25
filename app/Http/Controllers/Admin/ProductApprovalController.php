@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log; // Added for logging
 use Illuminate\Support\Facades\Storage; // Added for file operations
 use Illuminate\Support\Str; // Added for string operations
+use App\Support\ProductPublishSchedule;
 
 class ProductApprovalController extends Controller
 {
@@ -79,7 +80,7 @@ class ProductApprovalController extends Controller
                 $publishDate = $request->input('published_at');
                 if (!empty($publishDate)) {
                     try {
-                        $parsedDate = \Carbon\Carbon::parse($publishDate)->setTime(7, 0, 0);
+                        $parsedDate = ProductPublishSchedule::forDate($publishDate);
                         $product->published_at = $parsedDate;
 
                         // If the selected date is today or in the past, publish immediately
@@ -107,25 +108,8 @@ class ProductApprovalController extends Controller
                 $product->is_published = true;
                 break;
             case 'next_launch':
-                $settings = ['product_publish_time' => '07:00']; // Default value
-                $fileContents = Storage::get('settings.json');
-                if ($fileContents) {
-                    $decodedSettings = json_decode($fileContents, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSettings)) {
-                        $settings = array_merge($settings, $decodedSettings);
-                    } else {
-                        Log::warning('ProductApprovalController: settings.json exists but is invalid JSON or not an array in approve method. Using default settings.');
-                    }
-                } else {
-                    Log::info('ProductApprovalController: settings.json not found in approve method. Using default settings.');
-                }
-                $publishTime = $settings['product_publish_time'] ?? '07:00'; // Use product_publish_time as per context
-                [$hour, $minute] = explode(':', $publishTime);
                 $now = now()->utc();
-                $nextLaunch = now()->utc()->setTime($hour, $minute, 0);
-                if ($now->gt($nextLaunch)) {
-                    $nextLaunch->addDay();
-                }
+                $nextLaunch = ProductPublishSchedule::nextLaunchTime($now);
                 $product->published_at = $nextLaunch;
                 $product->is_published = false;
                 break;
@@ -203,7 +187,7 @@ class ProductApprovalController extends Controller
 
                     if (!empty($bulkPublishDate)) {
                         try {
-                            $product->published_at = \Carbon\Carbon::parse($bulkPublishDate)->setTime(7, 0, 0);
+                            $product->published_at = ProductPublishSchedule::forDate($bulkPublishDate);
                             $product->is_published = false; // Scheduled
                         } catch (\Exception $e) {
                             $product->published_at = now()->utc();

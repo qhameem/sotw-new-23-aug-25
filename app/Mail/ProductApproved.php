@@ -9,7 +9,6 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Mail\Mailables\Address;
 
 class ProductApproved extends Mailable
@@ -72,17 +71,9 @@ class ProductApproved extends Mailable
         $productUrl = route('products.show', $this->product->slug);
         $siteName = config('app.name');
 
-        // Get product publish time from settings.json
-        $productPublishTime = '07:00'; // Default value
-        if (Storage::disk('local')->exists('settings.json')) {
-            $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-            $productPublishTime = $settings['product_publish_time'] ?? '07:00';
-        }
-
-        // Format the product's published_at date with the retrieved time
         $productPublishDatetime = $this->product->published_at
-                                    ? $this->product->published_at->format('Y-m-d') . ' ' . $productPublishTime . ' UTC'
-                                    : 'N/A';
+            ? $this->product->published_at->copy()->timezone('UTC')->format('Y-m-d H:i') . ' UTC'
+            : 'N/A';
 
         return str_replace(
             ['{{ user_name }}', '{{ product_name }}', '{{ product_url }}', '{{ site_name }}', '{{ product_publish_datetime }}'],
