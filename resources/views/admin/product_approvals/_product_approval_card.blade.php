@@ -17,7 +17,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">
-                        <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow"
+                        <a href="{{ $product->link }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}"
                             class="hover:underline">{{ $product->name }}</a>
                     </h2>
                     <div class="text-xs text-gray-500 mt-1">
@@ -55,7 +55,7 @@
 
             {{-- Description --}}
             <div class="prose prose-sm max-w-none mt-4 text-sm text-gray-700">
-                {!! $product->description !!}
+                {!! \App\Support\OutboundLink::sanitizeHtml($product->description, 'product_description') !!}
             </div>
 
             {{-- Media --}}

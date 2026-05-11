@@ -43,7 +43,7 @@
 
                     {{-- Rich Text Content --}}
                     <div class="prose  max-w-none text-gray-800  text-lg leading-relaxed">
-                        {!! $post->content !!} {{-- Make sure content is sanitized if it comes from untrusted WYSIWYG --}}
+                        {!! \App\Support\OutboundLink::sanitizeHtml($post->content, 'article') !!}
                     </div>
 
                     <hr class="my-8 border-gray-200 ">

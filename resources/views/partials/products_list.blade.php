@@ -42,7 +42,7 @@
                     </a>
                     @if(!$isPromoted)
                         <a href="{{ route('products.click', ['product' => $product->slug, 'surface' => 'product_list']) }}"
-                            target="_blank" rel="noopener nofollow" @click.stop
+                            target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}" @click.stop
                             class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full text-gray-600 hover:text-rose-500 hover:bg-rose-50"
                             aria-label="Open product link in new tab">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"

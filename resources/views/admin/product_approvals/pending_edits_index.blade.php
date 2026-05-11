@@ -32,7 +32,7 @@
                     @foreach ($productsWithPendingEdits as $product)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 ">
-                                <a href="{{ $product->link }}" target="_blank" class="hover:underline">{{ $product->name }}</a>
+                                <a href="{{ $product->link }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}" class="hover:underline">{{ $product->name }}</a>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ">{{ $product->user->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ">{{ $product->updated_at->format('M d, Y H:i') }}</td>

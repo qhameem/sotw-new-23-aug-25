@@ -74,7 +74,7 @@
                         <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Target</dt>
                         <dd class="mt-1 text-gray-900">
                             @if($ad->target_url)
-                                <a href="{{ $ad->target_url }}" target="_blank" rel="noopener noreferrer" class="break-all text-blue-600">{{ $ad->target_url }}</a>
+                                <a href="{{ $ad->target_url }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($ad->target_url, 'ad') }}" class="break-all text-blue-600">{{ $ad->target_url }}</a>
                             @else
                                 <span class="text-gray-400">No outbound URL</span>
                             @endif
@@ -195,7 +195,7 @@
                         </td>
                         <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-900">
                             @if($ad->target_url)
-                                <a href="{{ $ad->target_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 break-all">{{ $ad->target_url }}</a>
+                                <a href="{{ $ad->target_url }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($ad->target_url, 'ad') }}" class="text-blue-600 break-all">{{ $ad->target_url }}</a>
                             @else
                                 <span class="text-gray-400">No outbound URL</span>
                             @endif

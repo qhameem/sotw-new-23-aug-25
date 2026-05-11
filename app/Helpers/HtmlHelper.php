@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use App\Services\OutboundLinkPolicyService;
+
 class HtmlHelper
 {
     /**
@@ -15,14 +17,8 @@ class HtmlHelper
         if (empty($html)) {
             return '';
         }
-        
-        return preg_replace_callback(
-            '/<a\s+(?:[^>]*?\s+)?href="([^"]*)"/',
-            function ($matches) {
-                return '<a href="' . $matches[1] . '" rel="ugc nofollow"';
-            },
-            $html
-        );
+
+        return app(OutboundLinkPolicyService::class)->sanitizeHtml($html, 'product_description');
     }
 
     /**

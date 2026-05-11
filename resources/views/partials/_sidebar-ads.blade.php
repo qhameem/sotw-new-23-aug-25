@@ -54,7 +54,7 @@
         <ul class="space-y-4">
             @foreach($sponsors as $sponsor)
                 <li>
-                    <a href="{{ route('ads.click', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" target="_blank" rel="noopener noreferrer" class="group flex items-center space-x-3 rounded-lg p-2" aria-label="Open {{ $sponsor->internal_name }} website">
+                    <a href="{{ route('ads.click', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($sponsor->target_url, 'ad') }}" class="group flex items-center space-x-3 rounded-lg p-2" aria-label="Open {{ $sponsor->internal_name }} website">
                         <img src="{{ $sponsor->image_url }}" alt="{{ $sponsor->internal_name }}"
                             class="w-10 h-10 rounded-xl object-cover">
                         <div class="min-w-0">

@@ -6,7 +6,7 @@
 @endsection
 
 @section('content')
-<div class="mx-auto max-w-[1700px] px-4 py-10 sm:px-6 lg:px-10">
+<div class="mx-auto w-full max-w-none px-4 py-10 sm:px-6 lg:px-8">
     @if(session('success'))
         <div class="mb-6 flex items-center gap-3 rounded-2xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
@@ -117,7 +117,7 @@
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div class="rounded-[28px] border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="inline-flex items-center">
@@ -148,24 +148,33 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-[1180px] w-full divide-y divide-slate-200">
+                <table class="w-full table-fixed divide-y divide-slate-200">
+                    <colgroup>
+                        <col class="w-[5%]">
+                        <col class="w-[25%]">
+                        <col class="w-[14%]">
+                        <col class="w-[22%]">
+                        <col class="w-[13%]">
+                        <col class="w-[10%]">
+                        <col class="w-[11%]">
+                    </colgroup>
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Select</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Select</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                 <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'name', 'sort_direction' => $sortBy === 'name' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:text-slate-700">
                                     Product {!! $sortArrow('name') !!}
                                 </a>
                             </th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">User</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Categories</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">User</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Categories</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                 <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'published_at', 'sort_direction' => $sortBy === 'published_at' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:text-slate-700">
                                     Publish Date {!! $sortArrow('published_at') !!}
                                 </a>
                             </th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white">
@@ -174,7 +183,7 @@
                                 $isScheduled = !$product->is_published && !is_null($product->published_at);
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/80">
-                                <td class="px-4 py-4">
+                                <td class="px-3 py-4">
                                     @if($isScheduled)
                                         <input type="checkbox" name="products[]" value="{{ $product->id }}"
                                             class="scheduled-product-checkbox h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -183,27 +192,27 @@
                                         <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-400">-</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4">
-                                    <div class="flex min-w-[320px] items-start gap-3">
+                                <td class="px-3 py-4">
+                                    <div class="flex items-start gap-3">
                                         <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="Logo" class="mt-0.5 h-10 w-10 flex-shrink-0 rounded-xl border bg-gray-100 object-cover">
-                                        <div>
+                                        <div class="min-w-0">
                                             <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="font-semibold text-slate-900 hover:underline">{{ $product->name }}</a>
-                                            <p class="mt-1 text-sm text-slate-600">{{ Str::limit($product->tagline, 90) }}</p>
+                                            <p class="mt-1 break-words text-sm text-slate-600">{{ Str::limit($product->tagline, 90) }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 text-sm text-slate-700">
-                                    <div class="font-medium text-slate-900">{{ $product->user->name ?? 'N/A' }}</div>
-                                    <div class="mt-1 text-xs text-slate-500">{{ $product->user->email ?? 'No email' }}</div>
+                                <td class="px-3 py-4 text-sm text-slate-700">
+                                    <div class="break-words font-medium text-slate-900">{{ $product->user->name ?? 'N/A' }}</div>
+                                    <div class="mt-1 break-all text-xs text-slate-500">{{ $product->user->email ?? 'No email' }}</div>
                                 </td>
-                                <td class="px-4 py-4">
-                                    <div class="flex max-w-[280px] flex-wrap gap-2">
+                                <td class="px-3 py-4">
+                                    <div class="flex flex-wrap gap-2">
                                         @foreach($product->categories as $cat)
                                             <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $cat->name }}</span>
                                         @endforeach
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 text-sm text-slate-700">
+                                <td class="px-3 py-4 text-sm text-slate-700">
                                     @if($product->published_at)
                                         <div class="font-medium text-slate-900">{{ $product->published_at->copy()->timezone('UTC')->format('M d, Y') }}</div>
                                         <div class="mt-1 text-xs text-slate-500">{{ $product->published_at->copy()->timezone('UTC')->format('H:i') }} UTC</div>
@@ -211,15 +220,15 @@
                                         <span class="text-slate-400">Not set</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4">
+                                <td class="px-3 py-4">
                                     @if($isScheduled)
                                         <span class="inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-700">Scheduled</span>
                                     @else
                                         <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Published</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4">
-                                    <div class="flex flex-wrap items-center gap-3 text-sm">
+                                <td class="px-3 py-4">
+                                    <div class="flex flex-col items-start gap-2 text-sm">
                                         <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals" class="font-medium text-indigo-600 hover:underline">Edit</a>
                                         <form action="{{ route('admin.product-approvals.disapprove', $product) }}" method="POST" class="inline">
                                             @csrf

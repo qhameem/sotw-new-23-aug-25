@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 use App\Http\View\Composers\ScheduledProductsStatsComposer;
 use App\Services\CategoryNavigationService;
+use App\Services\OutboundLinkPolicyService;
 use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
@@ -35,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CategoryNavigationService::class, function ($app) {
             return new CategoryNavigationService();
+        });
+
+        $this->app->singleton(OutboundLinkPolicyService::class, function ($app) {
+            return new OutboundLinkPolicyService();
         });
     }
 

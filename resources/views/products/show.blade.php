@@ -217,7 +217,7 @@
                         @keydown.enter="updateProduct(); editingDescription = false"
                         @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
                 @else
-                    {!! $product->description !!}
+                    {!! \App\Support\OutboundLink::sanitizeHtml($product->description, 'product_description') !!}
                 @endif
             </div>
 

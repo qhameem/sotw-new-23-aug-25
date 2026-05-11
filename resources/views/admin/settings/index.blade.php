@@ -215,6 +215,27 @@
             </div>
         </div>
 
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Outbound Link Policy
+                </h3>
+                <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                    <p>All outbound links now default to nofollow. Use the rules page to create dofollow exceptions, and the discovered links page to find URLs from articles, products, ads, and embeds in one place.</p>
+                </div>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <a href="{{ route('admin.outbound-links.rules.index') }}"
+                        class="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                        Manage Rules
+                    </a>
+                    <a href="{{ route('admin.outbound-links.occurrences.index') }}"
+                        class="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Browse Discovered Links
+                    </a>
+                </div>
+            </div>
+        </div>
+
         @php
             $footerBadgeEmbedCodesInput = old('footer_badge_embed_codes', $footerBadgeEmbedCodes ?? []);
 
@@ -236,7 +257,7 @@
                 </h3>
                 <div class="mt-2 max-w-2xl text-sm text-gray-500">
                     <p>Add one or more raw HTML embed codes to the public footer for trust badges or similar widgets.</p>
-                    <p class="mt-1">Each code is rendered as-is, so only paste embed code from sources you trust.</p>
+                    <p class="mt-1">Outbound links inside the embed code will still follow the outbound link policy, so only paste embed code from sources you trust.</p>
                 </div>
                 <form action="{{ route('admin.settings.storeFooterEmbedCodes') }}" method="POST" class="mt-5">
                     @csrf

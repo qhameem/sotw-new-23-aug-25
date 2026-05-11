@@ -47,14 +47,14 @@
                 <a href="{{ route('todolists.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To-Do List</a>
             </div>
         </span> •
-        <a href="https://x.com/software_on_web" target="_blank" class="hover:underline">X.com</a> •
+        <a href="https://x.com/software_on_web" target="_blank" rel="{{ \App\Support\OutboundLink::rel('https://x.com/software_on_web', 'system_view') }}" class="hover:underline">X.com</a> •
         Contact us: <a href="mailto:hello@softwareontheweb.com" target="_blank" class="hover:underline">hello@softwareontheweb.com</a>
         <div class="h-2"></div>
         @if (!empty($footerBadgeEmbedCodes))
             <div class="mb-3 flex flex-wrap items-center justify-center gap-3">
                 @foreach ($footerBadgeEmbedCodes as $footerBadgeEmbedCode)
                     <div class="flex items-center justify-center">
-                        {!! $footerBadgeEmbedCode !!}
+                        {!! \App\Support\OutboundLink::sanitizeHtml($footerBadgeEmbedCode, 'footer_embed') !!}
                     </div>
                 @endforeach
             </div>

@@ -28,7 +28,7 @@
 <a
     href="{{ route('products.click', ['product' => $product->slug, 'surface' => $surface]) }}"
     target="_blank"
-    rel="noopener ugc noreferrer"
+    rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}"
     aria-label="{{ $resolvedLabel }}"
     data-cta="visit-website"
     data-label-variant="{{ $labelVariant }}"

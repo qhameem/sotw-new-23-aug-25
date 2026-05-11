@@ -34,7 +34,7 @@ class AdZoneSeeder extends Seeder
                 'render_location' => 'Top of the right sidebar',
                 'placement_type' => 'sidebar',
                 'supported_ad_types' => ['image_banner', 'product_listing_card', 'text_link'],
-                'max_ads' => 1,
+                'max_ads' => 6,
                 'rotation_mode' => 'priority',
                 'device_scope' => 'all',
                 'fallback_mode' => 'empty',

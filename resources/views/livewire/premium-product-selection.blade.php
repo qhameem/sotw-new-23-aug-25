@@ -14,7 +14,7 @@
                             <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="{{ $product->name }} logo" class="w-10 h-10 mr-4 rounded-md object-cover">
                             <div>
                                 <h3 class="font-semibold">{{ $product->name }}</h3>
-                                <a href="{{ $product->link }}" target="_blank" class="text-sm text-blue-500 hover:underline">{{ $product->link }}</a>
+                                <a href="{{ $product->link }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}" class="text-sm text-blue-500 hover:underline">{{ $product->link }}</a>
                                 <p class="text-sm text-gray-500">{{ $product->tagline }}</p>
                             </div>
                         </div>

@@ -351,3 +351,9 @@ test('sidebar top product listing card ads render on the home page sidebar', fun
         ->assertSee('Compact Product Ad')
         ->assertSee('Looks like a listing card');
 });
+
+test('sidebar top zone allows up to six ads in admin configuration', function () {
+    $zone = AdZone::query()->where('slug', 'sidebar-top')->firstOrFail();
+
+    expect($zone->max_ads)->toBe(6);
+});

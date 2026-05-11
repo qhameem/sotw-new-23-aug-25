@@ -177,7 +177,7 @@
                 <h3 class="text-sm font-semibold text-gray-800 mb-2">Makers</h3>
                 <ul class="mt-2 space-y-2">
                   <li v-for="(link, index) in product.maker_links" :key="index" class="text-gray-700">
-                    <a :href="link" target="_blank" class="text-sky-600 hover:text-sky-800 underline break-all">{{ link }}</a>
+                    <a :href="link" target="_blank" rel="nofollow ugc noopener noreferrer" class="text-sky-600 hover:text-sky-800 underline break-all">{{ link }}</a>
                   </li>
                 </ul>
               </div>

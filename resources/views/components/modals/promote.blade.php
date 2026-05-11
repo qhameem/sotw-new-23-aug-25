@@ -87,6 +87,7 @@
                                 <div class="flex-grow">
                                     <p class="font-semibold" x-text="product.name"></p>
                                     <a :href="product.link" target="_blank"
+                                       rel="nofollow ugc noopener noreferrer"
                                        class="text-sm text-gray-500 hover:underline"
                                        x-text="product.link"></a>
                                 </div>

@@ -78,7 +78,7 @@
                         <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Product Link</label>
-                                <p class="text-sm text-blue-600 break-all"><a href="{{ $product->link }}" target="_blank"
+                                <p class="text-sm text-blue-600 break-all"><a href="{{ $product->link }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}"
                                         class="hover:underline">{{ $product->link }}</a></p>
                             </div>
                             <div>

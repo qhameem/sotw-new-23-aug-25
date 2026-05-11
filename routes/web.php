@@ -190,6 +190,13 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::get('settings/screenshot-providers', [\App\Http\Controllers\Admin\SettingsController::class, 'screenshotProviders'])->name('settings.screenshotProviders');
     Route::post('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'storeEmailTemplates'])->name('settings.storeEmailTemplates');
     Route::post('settings/store-badge-image', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeImage'])->name('settings.storeBadgeImage');
+    Route::get('settings/outbound-links/rules', [\App\Http\Controllers\Admin\OutboundLinkRuleController::class, 'index'])->name('outbound-links.rules.index');
+    Route::post('settings/outbound-links/rules', [\App\Http\Controllers\Admin\OutboundLinkRuleController::class, 'store'])->name('outbound-links.rules.store');
+    Route::put('settings/outbound-links/rules/{rule}', [\App\Http\Controllers\Admin\OutboundLinkRuleController::class, 'update'])->name('outbound-links.rules.update');
+    Route::delete('settings/outbound-links/rules/{rule}', [\App\Http\Controllers\Admin\OutboundLinkRuleController::class, 'destroy'])->name('outbound-links.rules.destroy');
+    Route::get('settings/outbound-links/discovered', [\App\Http\Controllers\Admin\OutboundLinkOccurrenceController::class, 'index'])->name('outbound-links.occurrences.index');
+    Route::post('settings/outbound-links/discovered/rescan', [\App\Http\Controllers\Admin\OutboundLinkOccurrenceController::class, 'rescan'])->name('outbound-links.occurrences.rescan');
+    Route::post('settings/outbound-links/discovered/quick-allow', [\App\Http\Controllers\Admin\OutboundLinkOccurrenceController::class, 'quickAllow'])->name('outbound-links.occurrences.quick-allow');
 
     // SEO Meta Tag Management
     Route::get('seo', function () {

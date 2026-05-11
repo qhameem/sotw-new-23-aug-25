@@ -15,7 +15,7 @@
         @forelse ($productReviews as $review)
             <div class="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 truncate">
-                    <a href="{{ $review->product_url }}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+                    <a href="{{ $review->product_url }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($review->product_url, 'product_link') }}" class="hover:underline">
                         {{ $review->product_url }}
                     </a>
                 </h2>

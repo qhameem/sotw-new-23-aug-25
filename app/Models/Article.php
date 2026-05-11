@@ -15,7 +15,7 @@ use Carbon\Carbon;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Illuminate\Support\Facades\Log; // Added Log facade
-use DOMDocument;
+use App\Services\OutboundLinkPolicyService;
 
 class Article extends Model implements Feedable, Sitemapable
 {
@@ -182,12 +182,6 @@ class Article extends Model implements Feedable, Sitemapable
         });
     }
 
-    /**
-     * Set the content attribute, adding rel="nofollow" to all <a> tags.
-     *
-     * @param  string  $value
-     * @return void
-     */
     public function setContentAttribute($value)
     {
         if (empty($value)) {
@@ -195,25 +189,7 @@ class Article extends Model implements Feedable, Sitemapable
             return;
         }
 
-        $dom = new DOMDocument();
-        // Suppress warnings for malformed HTML
-        libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $value, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-        libxml_clear_errors();
-
-        $links = $dom->getElementsByTagName('a');
-
-        foreach ($links as $link) {
-            // If the link already has a 'rel' attribute, don't touch it.
-            // This will preserve the "dofollow" set from the editor.
-            if ($link->hasAttribute('rel')) {
-                continue;
-            }
-            // If no 'rel' attribute is present, add 'nofollow'.
-            $link->setAttribute('rel', 'nofollow');
-        }
-
-        $this->attributes['content'] = $dom->saveHTML();
+        $this->attributes['content'] = app(OutboundLinkPolicyService::class)->sanitizeHtml($value, 'article');
     }
 
     /**

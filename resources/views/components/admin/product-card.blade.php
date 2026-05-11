@@ -36,7 +36,7 @@
             </p>
             <p class="text-sm text-gray-600 mt-2">
                 <strong>URL:</strong>
-                <a href="{{ $product->link }}" target="_blank" class="text-blue-600 hover:underline">{{ Str::limit($product->link, 30) }}</a>
+                <a href="{{ $product->link }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->link, 'product_link') }}" class="text-blue-600 hover:underline">{{ Str::limit($product->link, 30) }}</a>
             </p>
         </div>
 

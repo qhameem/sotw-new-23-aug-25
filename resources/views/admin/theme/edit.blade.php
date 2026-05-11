@@ -805,7 +805,7 @@
                                                             </div>
                                                             <p class="mt-1 truncate text-xs text-gray-500">{{ $asset['path'] }}</p>
                                                         </div>
-                                                        <a href="{{ $asset['url'] }}" target="_blank" rel="noopener noreferrer"
+                                                        <a href="{{ $asset['url'] }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($asset['url'], 'system_view') ?? 'noopener noreferrer' }}"
                                                             class="shrink-0 text-sm font-medium text-primary-700 hover:text-primary-800">
                                                             {{ __('Open') }}
                                                         </a>
