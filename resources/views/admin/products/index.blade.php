@@ -17,6 +17,10 @@
     1
 @endsection
 
+@push('styles')
+    @vite('resources/css/app.css')
+@endpush
+
 @section('content')
     <div class="w-full py-6 space-y-6">
         <div>
