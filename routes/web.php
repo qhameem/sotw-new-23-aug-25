@@ -146,6 +146,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('product-approvals/generate-category-seo', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'generateCategorySeo'])->name('product-approvals.generate-category-seo');
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
     Route::post('product-approvals/bulk-approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'bulkApprove'])->name('product-approvals.bulk-approve');
+    Route::post('product-approvals/publish-scheduled-now', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'publishScheduledNow'])->name('product-approvals.publish-scheduled-now');
     // Route::post('products/bulk-delete', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->name('products.bulk-delete'); // Commented out original
     // Custom category submissions routes
     Route::get('custom-category-submissions', [\App\Http\Controllers\Admin\CustomCategorySubmissionController::class, 'index'])->name('custom-category-submissions.index');

@@ -6,138 +6,240 @@
 @endsection
 
 @section('content')
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="mx-auto max-w-[1700px] px-4 py-10 sm:px-6 lg:px-10">
     @if(session('success'))
-        <div class="flex items-center gap-3 rounded-lg border border-green-400 bg-green-50 px-4 py-3">
-          <!-- Icon -->
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
-            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-
-          <!-- Text -->
-          <div class="flex flex-col">
-            <span class="font-semibold text-gray-900">Congratulations!</span>
-            <span class="text-gray-600 text-sm">{{ session('success') }}</span>
-          </div>
+        <div class="mb-6 flex items-center gap-3 rounded-2xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+                <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-semibold text-gray-900">Success</span>
+                <span class="text-sm text-gray-600">{{ session('success') }}</span>
+            </div>
         </div>
-        
     @endif
 
-    
+    @if(session('error'))
+        <div class="mb-6 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500">
+                <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z" />
+                </svg>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-semibold text-gray-900">Action needed</span>
+                <span class="text-sm text-gray-600">{{ session('error') }}</span>
+            </div>
+        </div>
+    @endif
 
-    <div class="mb-10 mt-2">
-        <h2 class="text-lg font-semibold mb-3">Pending Approval</h2>
+    <div class="mb-8 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900">Product Approvals</h1>
+                <p class="mt-1 text-sm text-slate-600">Review pending submissions, manage scheduled launches, and publish approved products faster.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Pending</div>
+                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ $pendingProducts->count() }}</div>
+                </div>
+                <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Scheduled</div>
+                    <div class="mt-1 text-2xl font-semibold text-sky-900">{{ $scheduledProductsCount }}</div>
+                </div>
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Shown</div>
+                    <div class="mt-1 text-2xl font-semibold text-emerald-900">{{ $approvedProducts->count() }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-10">
+        <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Pending Approval</h2>
+                <p class="text-sm text-slate-500">Approve individually or schedule multiple products in one pass.</p>
+            </div>
+        </div>
+
         @if($pendingProducts->count() > 0)
-            {{-- Bulk Approve Form (moved outside individual product cards) --}}
-            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form">
+            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form" class="mb-5 rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
                 @csrf
-                <div class="mb-4 flex items-center gap-4">
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                        <span class="text-sm font-medium text-gray-700">Select All</span>
-                    </label>
-                    <x-scheduled-datepicker name="bulk_published_at" />
-                    <button type="submit" class="px-4 py-1 border border-sky-500 text-sky-600 rounded-md hover:bg-sky-50 text-sm font-medium">Approve Selected</button>
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Bulk approve pending products</h3>
+                        <p class="text-sm text-slate-500">Pick a launch date, then approve every checked card below.</p>
+                    </div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <label class="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                            <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+                            <span>Select all pending</span>
+                        </label>
+                        <x-scheduled-datepicker name="bulk_published_at" />
+                        <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700">Approve selected</button>
+                    </div>
                 </div>
             </form>
+
             <div class="space-y-6">
                 @foreach($pendingProducts as $product)
                     @include('admin.product_approvals._product_approval_card', ['product' => $product])
                 @endforeach
             </div>
         @else
-            <div class="text-gray-500 text-center py-10">
+            <div class="rounded-[24px] border border-dashed border-slate-300 bg-white py-10 text-center text-gray-500 shadow-sm">
                 <p>No products are currently pending approval.</p>
             </div>
         @endif
     </div>
-    <div>
-        <h2 class="text-lg font-semibold mb-3">Approved Products</h2>
 
-        <div class="mb-4 flex justify-between items-center">
+    @php
+        $scheduledOnPageCount = $approvedProducts->getCollection()
+            ->filter(fn ($product) => !$product->is_published && !is_null($product->published_at))
+            ->count();
+        $linkParams = ['per_page' => $perPage];
+        $sortArrow = fn($column) => ($sortBy === $column ? ($sortDirection === 'asc' ? '&uarr;' : '&darr;') : '');
+    @endphp
+
+    <div>
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="inline-flex items-center">
-                    <label for="per_page" class="mr-2 text-sm">Show:</label>
-                    <select name="per_page" id="per_page" class="border-gray-300 rounded-md shadow-sm text-sm" onchange="this.form.submit()">
-                        <option value="20" {{ $perPage == 20 ? 'selected' : '' }}>20</option>
-                        <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
-                        <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100</option>
-                    </select>
-                    <input type="hidden" name="sort_by" value="{{ $sortBy }}">
-                    <input type="hidden" name="sort_direction" value="{{ $sortDirection }}">
-                </form>
+                <h2 class="text-lg font-semibold text-slate-900">Approved Products</h2>
+                <p class="text-sm text-slate-500">Scheduled products can be published immediately in bulk from here.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <span class="font-semibold text-slate-900">{{ $scheduledProductsCount }}</span> scheduled total,
+                <span class="font-semibold text-slate-900">{{ $scheduledOnPageCount }}</span> on this page
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border rounded">
-                <thead>
-                    <tr>
-                        @php
-                            $linkParams = ['per_page' => $perPage];
-                            $sortArrow = fn($column) => ($sortBy === $column ? ($sortDirection === 'asc' ? '&uarr;' : '&darr;') : '');
-                        @endphp
-                        <th class="px-4 py-2 border-b text-left">
-                            <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'name', 'sort_direction' => $sortBy === 'name' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:underline">
-                                Product {!! $sortArrow('name') !!}
-                            </a>
-                        </th>
-                        <th class="px-4 py-2 border-b text-left">User</th>
-                        <th class="px-4 py-2 border-b text-left">Categories</th>
-                        <th class="px-4 py-2 border-b text-left">
-                             <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'published_at', 'sort_direction' => $sortBy === 'published_at' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:underline">
-                                Publish Date {!! $sortArrow('published_at') !!}
-                            </a>
-                        </th>
-                        <th class="px-4 py-2 border-b text-left">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($approvedProducts as $product)
+        <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="inline-flex items-center">
+                        <label for="per_page" class="mr-2 text-sm font-medium text-slate-600">Show:</label>
+                        <select name="per_page" id="per_page" class="rounded-xl border-slate-300 text-sm shadow-sm" onchange="this.form.submit()">
+                            <option value="20" {{ $perPage == 20 ? 'selected' : '' }}>20</option>
+                            <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100</option>
+                        </select>
+                        <input type="hidden" name="sort_by" value="{{ $sortBy }}">
+                        <input type="hidden" name="sort_direction" value="{{ $sortDirection }}">
+                    </form>
+
+                    <form action="{{ route('admin.product-approvals.publish-scheduled-now') }}" method="POST" id="bulk-publish-now-form" class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                        @csrf
+                        <label class="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                            <input type="checkbox" id="select-all-scheduled" class="mr-2 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Select scheduled on this page</span>
+                        </label>
+                        <button type="submit" name="publish_scope" value="selected" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50" onclick="return confirm('Publish the selected scheduled products immediately?')" {{ $scheduledOnPageCount === 0 ? 'disabled' : '' }}>
+                            Publish selected scheduled now
+                        </button>
+                        <button type="submit" name="publish_scope" value="all" class="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition enabled:hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50" onclick="return confirm('Publish all scheduled products immediately?')" {{ $scheduledProductsCount === 0 ? 'disabled' : '' }}>
+                            Publish all scheduled now
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-[1180px] w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
                         <tr>
-                            <td class="px-4 py-2 border-b align-top">
-                                <div class="flex items-center">
-                                    <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="Logo" class="w-8 h-8 rounded object-cover bg-gray-100 flex-shrink-0 border mr-3">
-                                    <div>
-                                        <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="font-semibold hover:underline">{{ $product->name }}</a>
-                                        <p class="text-xs text-gray-600">{{ Str::limit($product->tagline, 70) }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-2 border-b align-top">{{ $product->user->name ?? 'N/A' }}</td>
-                            <td class="px-4 py-2 border-b align-top">
-                                @foreach($product->categories as $cat)
-                                    <span class="inline-block bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs mr-1 mb-1">{{ $cat->name }}</span>
-                                @endforeach
-                            </td>
-                            <td class="px-4 py-2 border-b align-top">
-                                {{ $product->published_at ? $product->published_at->format('M d, Y') : 'Not Set' }}
-                                @if($product->published_at && $product->published_at->isFuture())
-                                    <span class="text-xs text-blue-500 block">(Scheduled)</span>
-                                @elseif($product->published_at)
-                                    <span class="text-xs text-green-500 block">(Published)</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-2 border-b align-top">
-                                <div class="flex items-center space-x-2">
-                                    <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals" class="text-indigo-600 hover:underline text-sm">Edit</a>
-                                    <form action="{{ route('admin.product-approvals.disapprove', $product) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-red-600 hover:underline text-sm" onclick="return confirm('Are you sure you want to disapprove this product?')">Disapprove</button>
-                                    </form>
-                                </div>
-                            </td>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Select</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'name', 'sort_direction' => $sortBy === 'name' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:text-slate-700">
+                                    Product {!! $sortArrow('name') !!}
+                                </a>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">User</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Categories</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                <a href="{{ route('admin.product-approvals.index', array_merge($linkParams, ['sort_by' => 'published_at', 'sort_direction' => $sortBy === 'published_at' && $sortDirection === 'asc' ? 'desc' : 'asc'])) }}" class="hover:text-slate-700">
+                                    Publish Date {!! $sortArrow('published_at') !!}
+                                </a>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
                         </tr>
-                    @empty
-                        <tr><td colspan="5" class="text-gray-400 text-center py-4">No approved products found.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="mt-6">
-            {{ $approvedProducts->links() }}
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white">
+                        @forelse($approvedProducts as $product)
+                            @php
+                                $isScheduled = !$product->is_published && !is_null($product->published_at);
+                            @endphp
+                            <tr class="align-top transition hover:bg-slate-50/80">
+                                <td class="px-4 py-4">
+                                    @if($isScheduled)
+                                        <input type="checkbox" name="products[]" value="{{ $product->id }}"
+                                            class="scheduled-product-checkbox h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            form="bulk-publish-now-form">
+                                    @else
+                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex min-w-[320px] items-start gap-3">
+                                        <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}" alt="Logo" class="mt-0.5 h-10 w-10 flex-shrink-0 rounded-xl border bg-gray-100 object-cover">
+                                        <div>
+                                            <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="font-semibold text-slate-900 hover:underline">{{ $product->name }}</a>
+                                            <p class="mt-1 text-sm text-slate-600">{{ Str::limit($product->tagline, 90) }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-slate-700">
+                                    <div class="font-medium text-slate-900">{{ $product->user->name ?? 'N/A' }}</div>
+                                    <div class="mt-1 text-xs text-slate-500">{{ $product->user->email ?? 'No email' }}</div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex max-w-[280px] flex-wrap gap-2">
+                                        @foreach($product->categories as $cat)
+                                            <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $cat->name }}</span>
+                                        @endforeach
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-slate-700">
+                                    @if($product->published_at)
+                                        <div class="font-medium text-slate-900">{{ $product->published_at->copy()->timezone('UTC')->format('M d, Y') }}</div>
+                                        <div class="mt-1 text-xs text-slate-500">{{ $product->published_at->copy()->timezone('UTC')->format('H:i') }} UTC</div>
+                                    @else
+                                        <span class="text-slate-400">Not set</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if($isScheduled)
+                                        <span class="inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-700">Scheduled</span>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Published</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex flex-wrap items-center gap-3 text-sm">
+                                        <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals" class="font-medium text-indigo-600 hover:underline">Edit</a>
+                                        <form action="{{ route('admin.product-approvals.disapprove', $product) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="font-medium text-red-600 hover:underline" onclick="return confirm('Are you sure you want to disapprove this product?')">Disapprove</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-gray-400">No approved products found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border-t border-slate-200 px-5 py-4 sm:px-6">
+                {{ $approvedProducts->links() }}
+            </div>
         </div>
     </div>
 </div>
@@ -146,11 +248,21 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.product-checkbox');
-    selectAll?.addEventListener('change', function() {
-        checkboxes.forEach(cb => cb.checked = selectAll.checked);
-    });
+    const bindSelectAll = (masterId, checkboxSelector) => {
+        const master = document.getElementById(masterId);
+        const checkboxes = document.querySelectorAll(checkboxSelector);
+
+        master?.addEventListener('change', function() {
+            checkboxes.forEach(cb => {
+                if (!cb.disabled) {
+                    cb.checked = master.checked;
+                }
+            });
+        });
+    };
+
+    bindSelectAll('select-all', '.product-checkbox');
+    bindSelectAll('select-all-scheduled', '.scheduled-product-checkbox');
 });
 </script>
 @endpush

@@ -18,6 +18,10 @@ class ProductApprovalController extends Controller
     public function index(Request $request)
     {
         $pendingProducts = Product::with(['user', 'categories'])->where('approved', false)->orderByDesc('id')->get();
+        $scheduledProductsCount = Product::where('approved', true)
+            ->where('is_published', false)
+            ->whereNotNull('published_at')
+            ->count();
 
         // Approved Products Logic
         $perPage = $request->input('per_page', 20);
@@ -67,7 +71,7 @@ class ProductApprovalController extends Controller
             Log::info('ProductApprovalController: settings.json not found. Using default settings.');
         }
 
-        return view('admin.product_approvals.index', compact('pendingProducts', 'approvedProducts', 'perPage', 'sortBy', 'sortDirection', 'settings'));
+        return view('admin.product_approvals.index', compact('pendingProducts', 'approvedProducts', 'perPage', 'sortBy', 'sortDirection', 'settings', 'scheduledProductsCount'));
     }
 
     public function approve(Request $request, Product $product)
@@ -237,6 +241,57 @@ class ProductApprovalController extends Controller
             }
         }
         return back()->with('success', 'No products selected or found for approval.');
+    }
+
+    public function publishScheduledNow(Request $request)
+    {
+        $scope = $request->input('publish_scope', 'selected');
+
+        $scheduledProductsQuery = Product::where('approved', true)
+            ->where('is_published', false)
+            ->whereNotNull('published_at');
+
+        if ($scope !== 'all') {
+            $productIds = collect($request->input('products', []))
+                ->filter(fn ($id) => is_numeric($id))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            if ($productIds->isEmpty()) {
+                return back()->with('error', 'Select at least one scheduled product to publish immediately.');
+            }
+
+            $scheduledProductsQuery->whereIn('id', $productIds);
+        }
+
+        $products = $scheduledProductsQuery->get();
+
+        if ($products->isEmpty()) {
+            return back()->with('error', 'No matching scheduled products were found.');
+        }
+
+        $oldWeekKeys = $products
+            ->filter(fn (Product $product) => $product->published_at)
+            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->unique()
+            ->values()
+            ->all();
+
+        $publishTimestamp = now()->utc();
+
+        foreach ($products as $product) {
+            $product->published_at = $publishTimestamp->copy();
+            $product->is_published = true;
+            $product->save();
+        }
+
+        $this->clearPublishedProductCaches($products, $oldWeekKeys);
+
+        return back()->with('success', sprintf(
+            '%d scheduled product(s) published immediately.',
+            $products->count()
+        ));
     }
 
     public function pendingEditsIndex()
@@ -493,6 +548,26 @@ class ProductApprovalController extends Controller
             return $parts[0];
         } catch (\Exception $e) {
             return $url;
+        }
+    }
+
+    private function clearPublishedProductCaches($products, array $extraWeekKeys = []): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_categories_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
+        \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+
+        $weekKeys = collect($products)
+            ->filter(fn (Product $product) => $product->published_at)
+            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->merge($extraWeekKeys)
+            ->unique();
+
+        foreach ($weekKeys as $weekKey) {
+            $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+            \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
         }
     }
 }
