@@ -11,7 +11,12 @@
         'category_id' => $sidebarCategoryId,
     ]);
 
-    $sidebarTopAd = $sidebarTopAd ?? $adDelivery->oneForZone('sidebar-top', $sidebarAdContext);
+    $sidebarTopAds = collect($sidebarTopAds ?? (isset($sidebarTopAd) && $sidebarTopAd ? [$sidebarTopAd] : []));
+
+    if ($sidebarTopAds->isEmpty()) {
+        $sidebarTopAds = $adDelivery->forZone('sidebar-top', $sidebarAdContext);
+    }
+
     $sponsors = $sponsors ?? $adDelivery->forZone(
         'sponsors',
         $sidebarAdContext,
@@ -25,7 +30,9 @@
             'category_id' => $sidebarCategoryId,
         ]);
 
-        $sidebarTopAd ??= $adDelivery->oneForZone('sidebar-top', $fallbackContext);
+        if ($sidebarTopAds->isEmpty()) {
+            $sidebarTopAds = $adDelivery->forZone('sidebar-top', $fallbackContext);
+        }
 
         if ($sponsors->isEmpty()) {
             $sponsors = $adDelivery->forZone(
@@ -37,15 +44,17 @@
     }
 @endphp
 
-@if($sidebarTopAd || $sponsors->isNotEmpty())
+@if($sidebarTopAds->isNotEmpty() || $sponsors->isNotEmpty())
     <div class="px-4 pb-1">
         <h3 class="text-sm font-semibold text-gray-800">Featured</h3>
     </div>
 @endif
 
-@if($sidebarTopAd)
-    <div class="p-4 pt-2">
-        @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top'])
+@if($sidebarTopAds->isNotEmpty())
+    <div class="space-y-4 p-4 pt-2">
+        @foreach($sidebarTopAds as $sidebarTopAd)
+            @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top'])
+        @endforeach
     </div>
 @endif
 

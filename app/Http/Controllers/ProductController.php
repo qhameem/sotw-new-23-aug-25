@@ -1056,7 +1056,7 @@ class ProductController extends Controller
             'page_type' => 'category',
         ]);
         $headerAd = $adDeliveryService->oneForZone('header-above-calendar', $adContext);
-        $sidebarTopAd = $adDeliveryService->oneForZone('sidebar-top', $adContext);
+        $sidebarTopAds = $adDeliveryService->forZone('sidebar-top', $adContext);
         $belowProductListingPlacement = $adDeliveryService->placementForZone('below-product-listing', $adContext);
         $belowProductListingAd = $belowProductListingPlacement['ads']->first();
         $belowProductListingAdPosition = $belowProductListingPlacement['position'];
@@ -1090,7 +1090,7 @@ class ProductController extends Controller
             'regularProducts',
             'premiumProducts',
             'headerAd',
-            'sidebarTopAd',
+            'sidebarTopAds',
             'belowProductListingAd',
             'belowProductListingAdPosition',
             'title',

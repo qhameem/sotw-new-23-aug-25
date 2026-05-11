@@ -352,6 +352,39 @@ test('sidebar top product listing card ads render on the home page sidebar', fun
         ->assertSee('Looks like a listing card');
 });
 
+test('sidebar top zone renders multiple ads up to its configured limit', function () {
+    $zone = AdZone::query()->where('slug', 'sidebar-top')->firstOrFail();
+    $zone->update([
+        'supported_ad_types' => ['image_banner'],
+        'rotation_mode' => 'priority',
+        'max_ads' => 2,
+    ]);
+
+    $firstAd = Ad::factory()->create([
+        'internal_name' => 'Sidebar First',
+        'type' => 'image_banner',
+        'content' => 'ads/sidebar-first.png',
+        'target_url' => 'https://example.com/sidebar-first',
+        'priority' => 200,
+    ]);
+
+    $secondAd = Ad::factory()->create([
+        'internal_name' => 'Sidebar Second',
+        'type' => 'image_banner',
+        'content' => 'ads/sidebar-second.png',
+        'target_url' => 'https://example.com/sidebar-second',
+        'priority' => 150,
+    ]);
+
+    $zone->ads()->sync([$firstAd->id, $secondAd->id]);
+
+    $response = $this->get(route('home'));
+
+    $response->assertOk()
+        ->assertSee('Sidebar First')
+        ->assertSee('Sidebar Second');
+});
+
 test('sidebar top zone allows up to six ads in admin configuration', function () {
     $zone = AdZone::query()->where('slug', 'sidebar-top')->firstOrFail();
 
