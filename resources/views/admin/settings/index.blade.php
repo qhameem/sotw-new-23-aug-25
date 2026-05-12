@@ -346,6 +346,9 @@
                             @if(!empty($badgeImagePngUrl))
                                 <p>PNG: <a href="{{ $badgeImagePngUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700">{{ $badgeImagePngUrl }}</a></p>
                             @endif
+                            @if(!empty($badgeImageWebpUrl))
+                                <p>WEBP: <a href="{{ $badgeImageWebpUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700">{{ $badgeImageWebpUrl }}</a></p>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -400,7 +403,7 @@
                                 Upload PNG Fallback
                             </label>
                             <p class="mt-2 text-sm text-gray-500">
-                                Optional, but recommended so the default share code has a reliable fallback.
+                                Optional, but recommended so the default share code has a reliable fallback and the old <code>/images/badge.webp</code> badge can be regenerated automatically.
                             </p>
                             <div class="mt-2">
                                 <input type="file" id="badge_image_png" name="badge_image_png"
@@ -412,7 +415,7 @@
                             @enderror
                         </div>
                         <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                            Upload either one by itself, or upload both together. When both are available, the default badge code will use the SVG first and the PNG as fallback.
+                            Upload either one by itself, or upload both together. When both are available, the default badge code will use the SVG first and the PNG as fallback. Any time you upload a new PNG badge, we will also regenerate <code>/images/badge.webp</code> for older sites already using that badge URL.
                         </div>
                     </div>
                     <div class="mt-4">

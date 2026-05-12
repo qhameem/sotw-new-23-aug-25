@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -12,11 +13,28 @@ class AdminBadgeEmbedCodeTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?string $originalBadgePngContents = null;
+    private ?string $originalBadgeWebpContents = null;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         Storage::fake('local');
+
+        $badgePngPath = public_path('images/badge.png');
+        $badgeWebpPath = public_path('images/badge.webp');
+
+        $this->originalBadgePngContents = is_file($badgePngPath) ? file_get_contents($badgePngPath) : null;
+        $this->originalBadgeWebpContents = is_file($badgeWebpPath) ? file_get_contents($badgeWebpPath) : null;
+    }
+
+    protected function tearDown(): void
+    {
+        $this->restorePublicBadgeAsset('badge.png', $this->originalBadgePngContents);
+        $this->restorePublicBadgeAsset('badge.webp', $this->originalBadgeWebpContents);
+
+        parent::tearDown();
     }
 
     public function test_admin_can_save_custom_badge_share_code(): void
@@ -80,16 +98,36 @@ class AdminBadgeEmbedCodeTest extends TestCase
         $response = $this->getJson('/api/badge-snippet-preview')
             ->assertOk();
 
-        $this->assertSame('https://example.test/images/badge.svg', $response->json('badge_image_url'));
-        $this->assertSame('https://example.test/images/badge.svg', $response->json('badge_image_svg_url'));
+        $this->assertStringStartsWith('https://example.test/images/badge.svg', $response->json('badge_image_url'));
+        $this->assertStringStartsWith('https://example.test/images/badge.svg', $response->json('badge_image_svg_url'));
         $this->assertStringStartsWith('https://example.test/images/badge.png', $response->json('badge_image_png_url'));
 
         $snippet = $response->json('snippet');
 
         $this->assertStringContainsString('<picture>', $snippet);
-        $this->assertStringContainsString('<source srcset="https://example.test/images/badge.svg" type="image/svg+xml">', $snippet);
+        $this->assertStringContainsString('<source srcset="https://example.test/images/badge.svg', $snippet);
+        $this->assertStringContainsString('" type="image/svg+xml">', $snippet);
         $this->assertStringContainsString('<img src="https://example.test/images/badge.png', $snippet);
         $this->assertStringContainsString('alt="Featured on Software on the Web" width="200">', $snippet);
+    }
+
+    public function test_png_badge_upload_regenerates_legacy_webp_badge(): void
+    {
+        $admin = $this->createAdmin();
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.storeBadgeImage'), [
+            'badge_image_png' => UploadedFile::fake()->image('badge.png', 300, 120),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Badge asset upload saved for: PNG and WEBP.');
+
+        $savedSettings = json_decode(Storage::disk('local')->get('settings.json'), true);
+
+        $this->assertSame(url('/images/badge.png'), $savedSettings['badge_image_png_url'] ?? null);
+        $this->assertSame(url('/images/badge.webp'), $savedSettings['badge_image_webp_url'] ?? null);
+        $this->assertFileExists(public_path('images/badge.png'));
+        $this->assertFileExists(public_path('images/badge.webp'));
     }
 
     private function createAdmin(): User
@@ -100,5 +138,20 @@ class AdminBadgeEmbedCodeTest extends TestCase
         $admin->assignRole('admin');
 
         return $admin;
+    }
+
+    private function restorePublicBadgeAsset(string $filename, ?string $contents): void
+    {
+        $path = public_path('images/' . $filename);
+
+        if ($contents === null) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            return;
+        }
+
+        file_put_contents($path, $contents);
     }
 }

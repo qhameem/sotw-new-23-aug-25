@@ -48,6 +48,7 @@ class BadgeService
         $badgeImageUrl = $this->getBadgeImageUrl();
         $badgeImageSvgUrl = $this->getBadgeSvgUrl();
         $badgeImagePngUrl = $this->getBadgePngUrl();
+        $badgeImageWebpUrl = $this->getBadgeWebpUrl();
         $destinationUrl = $this->getBadgeDestinationUrl();
 
         return [
@@ -55,6 +56,7 @@ class BadgeService
             'badge_image_url' => $badgeImageUrl,
             'badge_image_svg_url' => $badgeImageSvgUrl,
             'badge_image_png_url' => $badgeImagePngUrl,
+            'badge_image_webp_url' => $badgeImageWebpUrl,
             'destination_url' => $destinationUrl,
         ];
     }
@@ -160,6 +162,7 @@ class BadgeService
         $paths[] = parse_url($this->getBadgeImageUrl(), PHP_URL_PATH);
         $paths[] = parse_url($this->getBadgeSvgUrl() ?? '', PHP_URL_PATH);
         $paths[] = parse_url($this->getBadgePngUrl() ?? '', PHP_URL_PATH);
+        $paths[] = parse_url($this->getBadgeWebpUrl() ?? '', PHP_URL_PATH);
 
         Badge::query()->pluck('path')->each(function ($path) use (&$paths) {
             $resolvedPath = parse_url(url($path), PHP_URL_PATH);
@@ -185,12 +188,20 @@ class BadgeService
         return $settingsBadgeImageUrls['png'] ?? null;
     }
 
+    private function getBadgeWebpUrl(): ?string
+    {
+        $settingsBadgeImageUrls = $this->getSettingsBadgeImageUrls();
+
+        return $settingsBadgeImageUrls['webp'] ?? null;
+    }
+
     private function getSettingsBadgeImageUrls(): array
     {
         if (!Storage::disk('local')->exists('settings.json')) {
             return [
                 'svg' => null,
                 'png' => null,
+                'webp' => $this->normalizeBadgeAssetUrl($this->publicBadgeAssetUrlIfExists('badge.webp')),
                 'legacy' => null,
             ];
         }
@@ -198,6 +209,7 @@ class BadgeService
         $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
         $badgeImageSvgUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_svg_url'] ?? null);
         $badgeImagePngUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_png_url'] ?? null);
+        $badgeImageWebpUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_webp_url'] ?? null);
         $legacyBadgeImageUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_url'] ?? null);
 
         if (!$badgeImageSvgUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.svg')) {
@@ -208,11 +220,27 @@ class BadgeService
             $badgeImagePngUrl = $legacyBadgeImageUrl;
         }
 
+        if (!$badgeImageWebpUrl) {
+            $badgeImageWebpUrl = $this->normalizeBadgeAssetUrl($this->publicBadgeAssetUrlIfExists('badge.webp'));
+        }
+
+        if (!$badgeImageWebpUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.webp')) {
+            $badgeImageWebpUrl = $legacyBadgeImageUrl;
+        }
+
         return [
             'svg' => $badgeImageSvgUrl,
             'png' => $badgeImagePngUrl,
+            'webp' => $badgeImageWebpUrl,
             'legacy' => $legacyBadgeImageUrl,
         ];
+    }
+
+    private function publicBadgeAssetUrlIfExists(string $filename): ?string
+    {
+        $path = public_path('images/' . $filename);
+
+        return is_file($path) ? url('/images/' . $filename) : null;
     }
 
     private function normalizeBadgeAssetUrl(mixed $url): ?string

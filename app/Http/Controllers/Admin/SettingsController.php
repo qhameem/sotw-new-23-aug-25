@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\ImageManager;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
@@ -35,6 +38,7 @@ class SettingsController extends Controller
         $badgeImageUrl = $embedData['badge_image_url'];
         $badgeImageSvgUrl = $embedData['badge_image_svg_url'] ?? null;
         $badgeImagePngUrl = $embedData['badge_image_png_url'] ?? null;
+        $badgeImageWebpUrl = $embedData['badge_image_webp_url'] ?? null;
         $badgeEmbedCode = $embedData['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
 
@@ -45,6 +49,7 @@ class SettingsController extends Controller
             'badgeImageUrl',
             'badgeImageSvgUrl',
             'badgeImagePngUrl',
+            'badgeImageWebpUrl',
             'badgeEmbedCode',
             'footerBadgeEmbedCodes'
         ));
@@ -482,7 +487,9 @@ class SettingsController extends Controller
                 $pngFile = $request->file('badge_image_png');
                 $pngFile->move(public_path('images'), 'badge.png');
                 $settings['badge_image_png_url'] = url('/images/badge.png');
+                $settings['badge_image_webp_url'] = $this->generateBadgeWebpFromPng(public_path('images/badge.png'));
                 $uploadedFormats[] = 'PNG';
+                $uploadedFormats[] = 'WEBP';
             }
 
             $settings['badge_image_url'] = $settings['badge_image_svg_url']
@@ -494,6 +501,7 @@ class SettingsController extends Controller
             Log::info('Badge image updated by user: ' . Auth::id(), [
                 'badge_image_svg_url' => $settings['badge_image_svg_url'] ?? null,
                 'badge_image_png_url' => $settings['badge_image_png_url'] ?? null,
+                'badge_image_webp_url' => $settings['badge_image_webp_url'] ?? null,
             ]);
 
             return back()->with('success', 'Badge asset upload saved for: ' . implode(' and ', $uploadedFormats) . '.');
@@ -532,5 +540,17 @@ class SettingsController extends Controller
     private function saveSettings(array $settings): void
     {
         Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
+    }
+
+    private function generateBadgeWebpFromPng(string $pngPath): string
+    {
+        $imageManager = new ImageManager(new GdDriver());
+        $webpPath = public_path('images/badge.webp');
+
+        $image = $imageManager->read($pngPath);
+
+        file_put_contents($webpPath, (string) $image->encode(new WebpEncoder(85)));
+
+        return url('/images/badge.webp');
     }
 }

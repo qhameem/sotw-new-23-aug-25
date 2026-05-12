@@ -78,6 +78,7 @@ Route::get('/badge-snippet-preview', function () {
         'badge_image_url' => $embedData['badge_image_url'],
         'badge_image_svg_url' => $embedData['badge_image_svg_url'] ?? null,
         'badge_image_png_url' => $embedData['badge_image_png_url'] ?? null,
+        'badge_image_webp_url' => $embedData['badge_image_webp_url'] ?? null,
     ]);
 });
 
@@ -91,5 +92,6 @@ Route::get('/badge-snippet/{product}', function (\App\Models\Product $product) {
         'badge_image_url' => $embedData['badge_image_url'],
         'badge_image_svg_url' => $embedData['badge_image_svg_url'] ?? null,
         'badge_image_png_url' => $embedData['badge_image_png_url'] ?? null,
+        'badge_image_webp_url' => $embedData['badge_image_webp_url'] ?? null,
     ]);
 });
