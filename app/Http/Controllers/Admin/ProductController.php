@@ -18,33 +18,91 @@ class ProductController extends Controller
 {
     use AuthorizesRequests;
 
+    protected function sortOptions(): array
+    {
+        return [
+            'created_at' => 'Created date',
+            'name' => 'Name',
+            'id' => 'Product ID',
+            'is_promoted' => 'Promotion',
+            'votes_count' => 'Total votes',
+            'user_upvotes_count' => 'Manual upvotes',
+            'view_upvotes' => 'View upvotes',
+            'click_upvotes' => 'Link-click upvotes',
+            'auto_upvotes_total' => 'Auto upvotes total',
+            'impressions' => 'Views',
+            'outbound_clicks_count' => 'Link clicks',
+        ];
+    }
+
+    protected function normalizeSortBy(?string $sortBy): string
+    {
+        $sortBy = (string) $sortBy;
+
+        return array_key_exists($sortBy, $this->sortOptions()) ? $sortBy : 'created_at';
+    }
+
+    protected function normalizeSortDir(?string $sortDir): string
+    {
+        return in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
+    }
+
+    protected function applySort($query, string $sortBy, string $sortDir): void
+    {
+        if ($sortBy === 'is_promoted') {
+            $query->orderBy('promoted_position', $sortDir);
+            return;
+        }
+
+        if (in_array($sortBy, ['created_at', 'name', 'id', 'votes_count', 'user_upvotes_count', 'impressions', 'outbound_clicks_count'], true)) {
+            $query->orderBy($sortBy, $sortDir);
+            return;
+        }
+
+        if (in_array($sortBy, ['view_upvotes', 'click_upvotes', 'auto_upvotes_total'], true)) {
+            $query->orderBy($sortBy, $sortDir);
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Product::with(['user', 'categories'])->withCount('userUpvotes');
+        $query = Product::with(['user', 'categories'])
+            ->select('products.*')
+            ->selectRaw(
+                '((COALESCE(impressions, 0) - (COALESCE(impressions, 0) % ?)) / ?) as view_upvotes',
+                [Product::AUTO_UPVOTE_VIEW_THRESHOLD, Product::AUTO_UPVOTE_VIEW_THRESHOLD]
+            )
+            ->selectRaw(
+                '((COALESCE(outbound_clicks_count, 0) - (COALESCE(outbound_clicks_count, 0) % ?)) / ?) as click_upvotes',
+                [Product::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD, Product::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD]
+            )
+            ->selectRaw(
+                '(((COALESCE(impressions, 0) - (COALESCE(impressions, 0) % ?)) / ?) + ((COALESCE(outbound_clicks_count, 0) - (COALESCE(outbound_clicks_count, 0) % ?)) / ?)) as auto_upvotes_total',
+                [
+                    Product::AUTO_UPVOTE_VIEW_THRESHOLD,
+                    Product::AUTO_UPVOTE_VIEW_THRESHOLD,
+                    Product::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD,
+                    Product::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD,
+                ]
+            )
+            ->withCount('userUpvotes');
 
         $searchTerm = trim((string) $request->input('q'));
         $this->applySearch($query, $searchTerm);
         $selectedProductId = $request->integer('selected_product_id');
 
         // Sorting functionality
-        $sortBy = $request->input('sort_by', 'created_at'); // Default sort by creation date
-        $sortDir = $request->input('sort_dir', 'desc'); // Default sort direction
+        $sortOptions = $this->sortOptions();
+        $sortBy = $this->normalizeSortBy($request->input('sort_by'));
+        $sortDir = $this->normalizeSortDir($request->input('sort_dir'));
 
         // Always prioritize promoted products
         $query->orderBy('is_promoted', 'desc');
 
-        // Then, sort by the specified column
-        if (in_array($sortBy, ['name', 'id', 'created_at', 'is_promoted'])) {
-            if ($sortBy === 'is_promoted') {
-                // If sorting by promotion, also sort by position
-                $query->orderBy('promoted_position', $sortDir);
-            } else {
-                $query->orderBy($sortBy, $sortDir);
-            }
-        }
+        $this->applySort($query, $sortBy, $sortDir);
 
         $products = $query->paginate(15)->withQueryString();
         $selectedProduct = null;
@@ -53,22 +111,14 @@ class ProductController extends Controller
             $selectedProduct = Product::with(['user', 'categories'])->withCount('userUpvotes')->find($selectedProductId);
         }
 
-        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct'));
+        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct', 'sortOptions'));
     }
 
     public function autocomplete(Request $request)
     {
         $searchTerm = trim((string) $request->input('q'));
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortDir = $request->input('sort_dir', 'desc');
-
-        if (!in_array($sortBy, ['name', 'id', 'created_at', 'is_promoted'], true)) {
-            $sortBy = 'created_at';
-        }
-
-        if (!in_array($sortDir, ['asc', 'desc'], true)) {
-            $sortDir = 'desc';
-        }
+        $sortBy = $this->normalizeSortBy($request->input('sort_by'));
+        $sortDir = $this->normalizeSortDir($request->input('sort_dir'));
 
         if (mb_strlen($searchTerm) < 2) {
             return response()->json([]);

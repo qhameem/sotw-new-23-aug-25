@@ -9,6 +9,12 @@
     $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc';
     $showingFrom = $products->firstItem() ?? 0;
     $showingTo = $products->lastItem() ?? 0;
+    $activeSortLabel = $sortOptions[$sortBy] ?? ucfirst(str_replace('_', ' ', $sortBy));
+    $sortTagBaseParams = array_filter([
+        'q' => $searchTerm ?: null,
+        'sort_dir' => $sortDir,
+        'selected_product_id' => request()->integer('selected_product_id') ?: null,
+    ], fn ($value) => $value !== null && $value !== '');
 @endphp
 
 @section('title', 'Admin Products')
@@ -140,14 +146,13 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-3 lg:grid-cols-[180px_160px_auto]">
+                        <div class="grid gap-3 lg:grid-cols-[240px_160px_auto]">
                             <div class="space-y-2">
                                 <label for="admin-sort-by" class="dashboard-label block">Sort by</label>
                                 <select id="admin-sort-by" name="sort_by" x-model="sortBy" class="dashboard-select">
-                                    <option value="created_at">Created date</option>
-                                    <option value="name">Name</option>
-                                    <option value="id">Product ID</option>
-                                    <option value="is_promoted">Promotion</option>
+                                    @foreach ($sortOptions as $sortKey => $sortLabel)
+                                        <option value="{{ $sortKey }}">{{ $sortLabel }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -212,7 +217,7 @@
 
                             <div class="dashboard-metric">
                                 <p class="dashboard-section-label">Sort</p>
-                                <p class="dashboard-emphasis mt-2 text-base font-semibold">{{ ucfirst(str_replace('_', ' ', $sortBy)) }}</p>
+                                <p class="dashboard-emphasis mt-2 text-base font-semibold">{{ $activeSortLabel }}</p>
                                 <p class="dashboard-muted mt-1 text-sm">{{ $sortDir === 'asc' ? 'Ascending order' : 'Descending order' }}</p>
                             </div>
                         </div>
@@ -260,12 +265,38 @@
                     </p>
                 </div>
 
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     @if ($searchTerm ?? null)
                         <span class="dashboard-badge">Search: {{ $searchTerm }}</span>
                     @endif
-                    <span class="dashboard-badge">Sort: {{ ucfirst(str_replace('_', ' ', $sortBy)) }}</span>
-                    <span class="dashboard-badge">{{ $sortDir === 'asc' ? 'Ascending' : 'Descending' }}</span>
+
+                    <span class="dashboard-section-label !text-[10px]">Sort by</span>
+                    @foreach ($sortOptions as $sortKey => $sortLabel)
+                        <a href="{{ route('admin.products.index', array_merge($sortTagBaseParams, ['sort_by' => $sortKey])) }}"
+                            @class([
+                                'dashboard-badge transition hover:border-slate-300 hover:text-slate-950',
+                                'border-slate-900 bg-slate-900 text-white hover:border-slate-900 hover:text-white' => $sortBy === $sortKey,
+                            ])>
+                            {{ $sortLabel }}
+                        </a>
+                    @endforeach
+
+                    <span class="dashboard-section-label !text-[10px]">Order</span>
+                    <a href="{{ route('admin.products.index', array_merge($sortTagBaseParams, ['sort_by' => $sortBy, 'sort_dir' => 'desc'])) }}"
+                        @class([
+                            'dashboard-badge transition hover:border-slate-300 hover:text-slate-950',
+                            'border-slate-900 bg-slate-900 text-white hover:border-slate-900 hover:text-white' => $sortDir === 'desc',
+                        ])>
+                        Descending
+                    </a>
+                    <a href="{{ route('admin.products.index', array_merge($sortTagBaseParams, ['sort_by' => $sortBy, 'sort_dir' => 'asc'])) }}"
+                        @class([
+                            'dashboard-badge transition hover:border-slate-300 hover:text-slate-950',
+                            'border-slate-900 bg-slate-900 text-white hover:border-slate-900 hover:text-white' => $sortDir === 'asc',
+                        ])>
+                        Ascending
+                    </a>
+
                     <span class="dashboard-badge">Page {{ $products->currentPage() }} of {{ $products->lastPage() }}</span>
                 </div>
             </div>

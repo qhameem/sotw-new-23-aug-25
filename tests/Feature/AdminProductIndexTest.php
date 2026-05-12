@@ -181,4 +181,79 @@ class AdminProductIndexTest extends TestCase
         $response->assertSee('8 views');
         $response->assertSee('4 link clicks');
     }
+
+    public function test_admin_products_can_sort_by_manual_upvotes(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $lowest = Product::factory()->create(['name' => 'Lowest Manual Upvotes']);
+        $highest = Product::factory()->create(['name' => 'Highest Manual Upvotes']);
+
+        UserProductUpvote::create([
+            'user_id' => User::factory()->create()->id,
+            'product_id' => $highest->id,
+        ]);
+
+        UserProductUpvote::create([
+            'user_id' => User::factory()->create()->id,
+            'product_id' => $highest->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.products.index', [
+            'sort_by' => 'user_upvotes_count',
+            'sort_dir' => 'desc',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Manual upvotes');
+        $this->assertSame(
+            ['Highest Manual Upvotes', 'Lowest Manual Upvotes'],
+            $response->viewData('products')->getCollection()->take(2)->pluck('name')->all()
+        );
+    }
+
+    public function test_admin_products_can_sort_by_view_and_click_upvote_sources(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $viewLeader = Product::factory()->create([
+            'name' => 'View Vote Leader',
+            'impressions' => 8,
+            'outbound_clicks_count' => 0,
+        ]);
+
+        $clickLeader = Product::factory()->create([
+            'name' => 'Click Vote Leader',
+            'impressions' => 0,
+            'outbound_clicks_count' => 6,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.products.index', [
+            'sort_by' => 'view_upvotes',
+            'sort_dir' => 'desc',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('View upvotes');
+        $this->assertSame(
+            'View Vote Leader',
+            $response->viewData('products')->getCollection()->first()->name
+        );
+
+        $response = $this->actingAs($admin)->get(route('admin.products.index', [
+            'sort_by' => 'click_upvotes',
+            'sort_dir' => 'desc',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Link-click upvotes');
+        $this->assertSame(
+            'Click Vote Leader',
+            $response->viewData('products')->getCollection()->first()->name
+        );
+    }
 }
