@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\BadgeService;
 use App\Services\ScreenshotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -30,6 +31,7 @@ class SettingsController extends Controller
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
+        $badgeEmbedCode = app(BadgeService::class)->getEmbedData()['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
 
         return view('admin.settings.index', compact(
@@ -37,6 +39,7 @@ class SettingsController extends Controller
             'premiumProductSpots',
             'productPublishTime',
             'badgeImageUrl',
+            'badgeEmbedCode',
             'footerBadgeEmbedCodes'
         ));
     }
@@ -241,6 +244,37 @@ class SettingsController extends Controller
             Log::error('Failed to save footer embed codes: ' . $e->getMessage());
 
             return back()->with('error', 'Failed to save footer embed codes. Please check logs.');
+        }
+    }
+
+    public function storeBadgeEmbedCode(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'badge_embed_code' => 'nullable|string|max:20000',
+        ]);
+
+        $settings = $this->loadSettings();
+        $badgeEmbedCode = trim((string) $request->input('badge_embed_code', ''));
+
+        if ($badgeEmbedCode === '') {
+            unset($settings['badge_embed_code']);
+        } else {
+            $settings['badge_embed_code'] = $badgeEmbedCode;
+        }
+
+        try {
+            $this->saveSettings($settings);
+            Log::info('Badge embed code updated by user: ' . Auth::id());
+
+            return back()->with('success', 'Badge share code saved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save badge embed code: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save badge share code. Please check logs.');
         }
     }
 

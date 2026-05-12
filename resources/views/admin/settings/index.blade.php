@@ -341,6 +341,32 @@
                         <img src="{{ $badgeImageUrl }}" alt="Current badge" class="max-h-20 border border-gray-200 rounded p-1">
                     </div>
                 @endif
+                <form action="{{ route('admin.settings.storeBadgeEmbedCode') }}" method="POST" class="mt-5">
+                    @csrf
+                    <div>
+                        <label for="badge_embed_code" class="block text-sm font-medium text-gray-700">
+                            Badge Share Code
+                        </label>
+                        <p class="mt-2 text-sm text-gray-500">
+                            This is the code other people will copy and paste on their sites to share the badge.
+                            Leave it empty any time you want us to fall back to the default generated badge code.
+                        </p>
+                        <div class="mt-3">
+                            <textarea id="badge_embed_code" name="badge_embed_code" rows="8"
+                                class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                placeholder="<a href=&quot;...&quot; rel=&quot;dofollow&quot;>...">{{ old('badge_embed_code', $badgeEmbedCode ?? '') }}</textarea>
+                        </div>
+                        @error('badge_embed_code')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Save Badge Code
+                        </button>
+                    </div>
+                </form>
                 <form action="{{ route('admin.settings.storeBadgeImage') }}" method="POST" enctype="multipart/form-data"
                     class="mt-5">
                     @csrf

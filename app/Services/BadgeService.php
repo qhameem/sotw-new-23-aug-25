@@ -45,12 +45,9 @@ class BadgeService
     {
         $badgeImageUrl = $this->getBadgeImageUrl();
         $destinationUrl = $this->getBadgeDestinationUrl();
-        $altText = 'Featured on Software on the Web';
 
         return [
-            'snippet' => '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
-                . '  <img src="' . $badgeImageUrl . '" alt="' . $altText . '" width="200">' . "\n"
-                . '</a>',
+            'snippet' => $this->getBadgeEmbedCode($badgeImageUrl, $destinationUrl),
             'badge_image_url' => $badgeImageUrl,
             'destination_url' => $destinationUrl,
         ];
@@ -176,6 +173,41 @@ class BadgeService
         $badgeImageUrl = $settings['badge_image_url'] ?? null;
 
         return is_string($badgeImageUrl) && $badgeImageUrl !== '' ? $badgeImageUrl : null;
+    }
+
+    private function getBadgeEmbedCode(?string $badgeImageUrl = null, ?string $destinationUrl = null): string
+    {
+        $savedBadgeEmbedCode = $this->getSavedBadgeEmbedCode();
+
+        if ($savedBadgeEmbedCode) {
+            return $savedBadgeEmbedCode;
+        }
+
+        return $this->buildDefaultBadgeEmbedCode(
+            $badgeImageUrl ?? $this->getBadgeImageUrl(),
+            $destinationUrl ?? $this->getBadgeDestinationUrl()
+        );
+    }
+
+    private function getSavedBadgeEmbedCode(): ?string
+    {
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return null;
+        }
+
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+        $badgeEmbedCode = trim((string) ($settings['badge_embed_code'] ?? ''));
+
+        return $badgeEmbedCode !== '' ? $badgeEmbedCode : null;
+    }
+
+    private function buildDefaultBadgeEmbedCode(string $badgeImageUrl, string $destinationUrl): string
+    {
+        $altText = 'Featured on Software on the Web';
+
+        return '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
+            . '  <img src="' . $badgeImageUrl . '" alt="' . $altText . '" width="200">' . "\n"
+            . '</a>';
     }
 
     private function appendCacheBustToPublicImageUrl(string $url): string
