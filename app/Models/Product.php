@@ -21,6 +21,7 @@ class Product extends Model implements Sitemapable
 
     public const AUTO_UPVOTE_VIEW_THRESHOLD = 4;
     public const AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD = 2;
+    public const PASSIVE_AUTO_UPVOTE_WINDOW_DAYS = 14;
 
     protected $fillable = [
         'name',
@@ -296,6 +297,88 @@ class Product extends Model implements Sitemapable
         return $this->hasMany(UserProductUpvote::class);
     }
 
+    public function voteBreakdown(): array
+    {
+        $totalVotes = max(1, (int) ($this->votes_count ?? 0));
+        $manualUpvotes = $this->manualUpvotesCountForBreakdown();
+        $viewDrivenVotes = intdiv(max(0, (int) ($this->impressions ?? 0)), self::AUTO_UPVOTE_VIEW_THRESHOLD);
+        $clickDrivenVotes = intdiv(max(0, (int) ($this->outbound_clicks_count ?? 0)), self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD);
+        $baseVotes = 1;
+
+        $sources = [
+            [
+                'label' => 'Upvote button',
+                'count' => $manualUpvotes,
+                'description' => 'Votes from actual user upvote clicks.',
+            ],
+            [
+                'label' => 'Views',
+                'count' => $viewDrivenVotes,
+                'description' => 'Auto-votes earned at 1 vote per 4 views.',
+            ],
+            [
+                'label' => 'Link clicks',
+                'count' => $clickDrivenVotes,
+                'description' => 'Auto-votes earned at 1 vote per 2 outbound clicks.',
+            ],
+            [
+                'label' => 'Base vote',
+                'count' => $baseVotes,
+                'description' => 'The built-in system vote floor.',
+            ],
+        ];
+
+        $attributedVotes = array_sum(array_column($sources, 'count'));
+        $unattributedVotes = max(0, $totalVotes - $attributedVotes);
+
+        if ($unattributedVotes > 0) {
+            $sources[] = [
+                'label' => 'Other',
+                'count' => $unattributedVotes,
+                'description' => 'Votes present in the total without a tracked source match.',
+            ];
+        }
+
+        $sources = array_map(function (array $source) use ($totalVotes) {
+            $percentage = $totalVotes > 0 ? round(($source['count'] / $totalVotes) * 100, 1) : 0.0;
+            $source['percentage'] = $percentage;
+            $source['percentage_label'] = rtrim(rtrim(number_format($percentage, 1), '0'), '.') . '%';
+
+            return $source;
+        }, $sources);
+
+        return [
+            'total' => $totalVotes,
+            'sources' => $sources,
+        ];
+    }
+
+    protected function manualUpvotesCountForBreakdown(): int
+    {
+        if (array_key_exists('user_upvotes_count', $this->attributes)) {
+            return (int) $this->attributes['user_upvotes_count'];
+        }
+
+        if ($this->relationLoaded('userUpvotes')) {
+            return $this->userUpvotes->count();
+        }
+
+        return $this->userUpvotes()->count();
+    }
+
+    public function passiveAutoUpvotesAreAllowed(?Carbon $referenceTime = null): bool
+    {
+        $eligibleFrom = $this->published_at ?? $this->created_at;
+
+        if (! $eligibleFrom) {
+            return true;
+        }
+
+        $cutoff = ($referenceTime ?? now())->copy()->subDays(self::PASSIVE_AUTO_UPVOTE_WINDOW_DAYS);
+
+        return $eligibleFrom->greaterThanOrEqualTo($cutoff);
+    }
+
     public function premiumSpot()
     {
         return $this->hasOne(PremiumProduct::class);
@@ -336,24 +419,33 @@ class Product extends Model implements Sitemapable
 
     public function recordImpressionAndAutoUpvote(): void
     {
-        $attributes = static::query()
-            ->whereKey($this->getKey())
-            ->tap(fn ($query) => static::withoutTimestamps(fn () => $query->update([
-                'impressions' => DB::raw('COALESCE(impressions, 0) + 1'),
-                'votes_count' => DB::raw(
-                    'GREATEST(1, COALESCE(votes_count, 0)) + CASE ' .
-                    'WHEN MOD(COALESCE(impressions, 0) + 1, ' . self::AUTO_UPVOTE_VIEW_THRESHOLD . ') = 0 THEN 1 ' .
-                    'ELSE 0 END'
-                ),
-            ])))
-            ->first(['impressions', 'votes_count']);
+        DB::transaction(function () {
+            $lockedProduct = static::query()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->first();
 
-        if (!$attributes) {
-            return;
-        }
+            if (! $lockedProduct) {
+                return;
+            }
 
-        $this->impressions = (int) $attributes->impressions;
-        $this->votes_count = (int) $attributes->votes_count;
+            $lockedProduct->impressions = (int) $lockedProduct->impressions + 1;
+            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
+
+            if (
+                $lockedProduct->passiveAutoUpvotesAreAllowed()
+                && $lockedProduct->impressions % self::AUTO_UPVOTE_VIEW_THRESHOLD === 0
+            ) {
+                $lockedProduct->votes_count++;
+            }
+
+            static::withoutTimestamps(function () use ($lockedProduct) {
+                $lockedProduct->save();
+            });
+
+            $this->impressions = $lockedProduct->impressions;
+            $this->votes_count = $lockedProduct->votes_count;
+        });
     }
 
     public function recordOutboundClickAndAutoUpvote(): void
@@ -371,7 +463,10 @@ class Product extends Model implements Sitemapable
             $lockedProduct->outbound_clicks_count = (int) $lockedProduct->outbound_clicks_count + 1;
             $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
 
-            if ($lockedProduct->outbound_clicks_count % self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD === 0) {
+            if (
+                $lockedProduct->passiveAutoUpvotesAreAllowed()
+                && $lockedProduct->outbound_clicks_count % self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD === 0
+            ) {
                 $lockedProduct->votes_count++;
             }
 

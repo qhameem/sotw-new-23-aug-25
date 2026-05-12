@@ -71,4 +71,21 @@ class ImpressionRecordingTest extends TestCase
         $this->assertEquals(4, $product->impressions);
         $this->assertEquals(2, $product->votes_count);
     }
+
+    /** @test */
+    public function products_older_than_two_weeks_do_not_gain_view_based_auto_upvotes()
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create([
+            'published_at' => now()->subDays(15),
+            'impressions' => 3,
+            'votes_count' => 1,
+        ]);
+
+        $this->actingAs($user)->get(route('products.show', $product));
+
+        $product->refresh();
+        $this->assertEquals(4, $product->impressions);
+        $this->assertEquals(1, $product->votes_count);
+    }
 }

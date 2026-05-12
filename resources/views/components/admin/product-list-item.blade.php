@@ -11,6 +11,8 @@
     $productDomain = parse_url($product->link, PHP_URL_HOST);
     $productDomain = is_string($productDomain) ? preg_replace('/^www\./i', '', $productDomain) : null;
     $visibleCategories = $product->categories->take(3);
+    $showVoteBreakdown = $product->approved && $product->is_published;
+    $voteBreakdown = $showVoteBreakdown ? $product->voteBreakdown() : null;
 @endphp
 
 <article x-data="adminProductOwnerManager({ productId: {{ $product->id }} })"
@@ -97,6 +99,43 @@
         </div>
 
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            @if ($showVoteBreakdown && $voteBreakdown)
+                <section class="dashboard-subpanel p-3 xl:col-span-2">
+                    <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <p class="dashboard-section-label">Upvote sources</p>
+                            <h3 class="mt-1 text-sm font-semibold text-slate-950 sm:text-base">
+                                Where {{ number_format($voteBreakdown['total']) }} votes came from
+                            </h3>
+                            <p class="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                                Auto-votes are added every 4 views and every 2 outbound link clicks.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-1.5 lg:max-w-[360px] lg:justify-end">
+                            <span class="dashboard-badge px-2 py-0.5 text-[11px]">{{ number_format((int) ($product->impressions ?? 0)) }} views</span>
+                            <span class="dashboard-badge px-2 py-0.5 text-[11px]">{{ number_format((int) ($product->outbound_clicks_count ?? 0)) }} link clicks</span>
+                            <span class="dashboard-badge px-2 py-0.5 text-[11px]">{{ number_format($voteBreakdown['total']) }} total votes</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        @foreach ($voteBreakdown['sources'] as $source)
+                            <div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                                <p class="dashboard-section-label">{{ $source['label'] }}</p>
+                                <div class="mt-1 flex items-end justify-between gap-3">
+                                    <p class="dashboard-emphasis text-xl font-semibold tracking-tight sm:text-2xl">
+                                        {{ number_format($source['count']) }}
+                                    </p>
+                                    <p class="dashboard-muted text-xs text-right">{{ $source['percentage_label'] }} of votes</p>
+                                </div>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-400 sm:text-xs">{{ $source['description'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             <section class="dashboard-subpanel p-4">
                 <div class="space-y-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

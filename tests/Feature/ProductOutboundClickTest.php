@@ -64,4 +64,21 @@ class ProductOutboundClickTest extends TestCase
         $response->assertRedirect();
         $this->assertStringContainsString('utm_medium=promoted_listing_card', $response->headers->get('Location'));
     }
+
+    /** @test */
+    public function products_older_than_two_weeks_do_not_gain_click_based_auto_upvotes()
+    {
+        $product = Product::factory()->create([
+            'published_at' => now()->subDays(15),
+            'outbound_clicks_count' => 1,
+            'votes_count' => 1,
+        ]);
+
+        $this->get(route('products.click', ['product' => $product->slug, 'surface' => 'product_details']))->assertRedirect();
+
+        $product->refresh();
+
+        $this->assertEquals(2, $product->outbound_clicks_count);
+        $this->assertEquals(1, $product->votes_count);
+    }
 }

@@ -23,7 +23,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['user', 'categories']);
+        $query = Product::with(['user', 'categories'])->withCount('userUpvotes');
 
         $searchTerm = trim((string) $request->input('q'));
         $this->applySearch($query, $searchTerm);
@@ -50,7 +50,7 @@ class ProductController extends Controller
         $selectedProduct = null;
 
         if ($selectedProductId) {
-            $selectedProduct = Product::with(['user', 'categories'])->find($selectedProductId);
+            $selectedProduct = Product::with(['user', 'categories'])->withCount('userUpvotes')->find($selectedProductId);
         }
 
         return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct'));

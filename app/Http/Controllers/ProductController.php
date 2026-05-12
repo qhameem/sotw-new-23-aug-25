@@ -1750,9 +1750,7 @@ class ProductController extends Controller
             },
         ]);
 
-        app()->terminating(function () use ($product) {
-            $product->recordImpressionAndAutoUpvote();
-        });
+        $product->recordImpressionAndAutoUpvote();
 
         $pricingCategory = $product->categories->first(function ($category) {
             return $category->types->contains('name', 'Pricing');
