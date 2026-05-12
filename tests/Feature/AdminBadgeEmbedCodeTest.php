@@ -69,6 +69,29 @@ class AdminBadgeEmbedCodeTest extends TestCase
         $this->assertStringContainsString('<img src="', $snippet);
     }
 
+    public function test_badge_snippet_preview_uses_svg_with_png_fallback_when_both_assets_exist(): void
+    {
+        Storage::disk('local')->put('settings.json', json_encode([
+            'badge_image_svg_url' => 'https://example.test/images/badge.svg',
+            'badge_image_png_url' => 'https://example.test/images/badge.png',
+            'badge_embed_code' => '',
+        ], JSON_PRETTY_PRINT));
+
+        $response = $this->getJson('/api/badge-snippet-preview')
+            ->assertOk();
+
+        $this->assertSame('https://example.test/images/badge.svg', $response->json('badge_image_url'));
+        $this->assertSame('https://example.test/images/badge.svg', $response->json('badge_image_svg_url'));
+        $this->assertStringStartsWith('https://example.test/images/badge.png', $response->json('badge_image_png_url'));
+
+        $snippet = $response->json('snippet');
+
+        $this->assertStringContainsString('<picture>', $snippet);
+        $this->assertStringContainsString('<source srcset="https://example.test/images/badge.svg" type="image/svg+xml">', $snippet);
+        $this->assertStringContainsString('<img src="https://example.test/images/badge.png', $snippet);
+        $this->assertStringContainsString('alt="Featured on Software on the Web" width="200">', $snippet);
+    }
+
     private function createAdmin(): User
     {
         Role::firstOrCreate(['name' => 'admin']);

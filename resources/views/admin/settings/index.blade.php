@@ -339,6 +339,14 @@
                     <div class="mt-4">
                         <p class="text-sm font-medium text-gray-700 mb-2">Current Badge:</p>
                         <img src="{{ $badgeImageUrl }}" alt="Current badge" class="max-h-20 border border-gray-200 rounded p-1">
+                        <div class="mt-3 space-y-1 text-xs text-gray-500">
+                            @if(!empty($badgeImageSvgUrl))
+                                <p>SVG: <a href="{{ $badgeImageSvgUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700">{{ $badgeImageSvgUrl }}</a></p>
+                            @endif
+                            @if(!empty($badgeImagePngUrl))
+                                <p>PNG: <a href="{{ $badgeImagePngUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700">{{ $badgeImagePngUrl }}</a></p>
+                            @endif
+                        </div>
                     </div>
                 @endif
                 <form action="{{ route('admin.settings.storeBadgeEmbedCode') }}" method="POST" class="mt-5">
@@ -370,24 +378,47 @@
                 <form action="{{ route('admin.settings.storeBadgeImage') }}" method="POST" enctype="multipart/form-data"
                     class="mt-5">
                     @csrf
-                    <div>
-                        <label for="badge_image" class="block text-sm font-medium text-gray-700">
-                            Upload New Badge Image
-                        </label>
-                        <div class="mt-1">
-                            <input type="file" id="badge_image" name="badge_image"
-                                accept="image/png,image/svg+xml,image/jpeg,image/webp"
-                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-                                required>
+                    <div class="space-y-5">
+                        <div>
+                            <label for="badge_image_svg" class="block text-sm font-medium text-gray-700">
+                                Upload SVG Badge
+                            </label>
+                            <p class="mt-2 text-sm text-gray-500">
+                                Recommended as the primary format because it stays sharp at any size.
+                            </p>
+                            <div class="mt-2">
+                                <input type="file" id="badge_image_svg" name="badge_image_svg"
+                                    accept=".svg,image/svg+xml"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                            </div>
+                            @error('badge_image_svg')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
-                        @error('badge_image')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <div>
+                            <label for="badge_image_png" class="block text-sm font-medium text-gray-700">
+                                Upload PNG Fallback
+                            </label>
+                            <p class="mt-2 text-sm text-gray-500">
+                                Optional, but recommended so the default share code has a reliable fallback.
+                            </p>
+                            <div class="mt-2">
+                                <input type="file" id="badge_image_png" name="badge_image_png"
+                                    accept=".png,image/png"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                            </div>
+                            @error('badge_image_png')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                            Upload either one by itself, or upload both together. When both are available, the default badge code will use the SVG first and the PNG as fallback.
+                        </div>
                     </div>
                     <div class="mt-4">
                         <button type="submit"
                             class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                            Upload Badge
+                            Save Badge Assets
                         </button>
                     </div>
                 </form>

@@ -22,9 +22,11 @@ class BadgeService
      */
     public function getBadgeImageUrl(): string
     {
-        $settingsBadgeUrl = $this->getSettingsBadgeImageUrl();
-        if ($settingsBadgeUrl) {
-            return $this->appendCacheBustToPublicImageUrl($settingsBadgeUrl);
+        $settingsBadgeImageUrls = $this->getSettingsBadgeImageUrls();
+        $preferredSettingsBadgeUrl = $settingsBadgeImageUrls['svg'] ?? $settingsBadgeImageUrls['png'] ?? $settingsBadgeImageUrls['legacy'];
+
+        if ($preferredSettingsBadgeUrl) {
+            return $preferredSettingsBadgeUrl;
         }
 
         $badge = Badge::first();
@@ -44,11 +46,15 @@ class BadgeService
     public function getEmbedData(): array
     {
         $badgeImageUrl = $this->getBadgeImageUrl();
+        $badgeImageSvgUrl = $this->getBadgeSvgUrl();
+        $badgeImagePngUrl = $this->getBadgePngUrl();
         $destinationUrl = $this->getBadgeDestinationUrl();
 
         return [
-            'snippet' => $this->getBadgeEmbedCode($badgeImageUrl, $destinationUrl),
+            'snippet' => $this->getBadgeEmbedCode($destinationUrl, $badgeImageSvgUrl, $badgeImagePngUrl, $badgeImageUrl),
             'badge_image_url' => $badgeImageUrl,
+            'badge_image_svg_url' => $badgeImageSvgUrl,
+            'badge_image_png_url' => $badgeImagePngUrl,
             'destination_url' => $destinationUrl,
         ];
     }
@@ -152,6 +158,8 @@ class BadgeService
         $paths = [];
 
         $paths[] = parse_url($this->getBadgeImageUrl(), PHP_URL_PATH);
+        $paths[] = parse_url($this->getBadgeSvgUrl() ?? '', PHP_URL_PATH);
+        $paths[] = parse_url($this->getBadgePngUrl() ?? '', PHP_URL_PATH);
 
         Badge::query()->pluck('path')->each(function ($path) use (&$paths) {
             $resolvedPath = parse_url(url($path), PHP_URL_PATH);
@@ -163,19 +171,65 @@ class BadgeService
         return array_values(array_unique(array_filter($paths)));
     }
 
-    private function getSettingsBadgeImageUrl(): ?string
+    private function getBadgeSvgUrl(): ?string
+    {
+        $settingsBadgeImageUrls = $this->getSettingsBadgeImageUrls();
+
+        return $settingsBadgeImageUrls['svg'] ?? null;
+    }
+
+    private function getBadgePngUrl(): ?string
+    {
+        $settingsBadgeImageUrls = $this->getSettingsBadgeImageUrls();
+
+        return $settingsBadgeImageUrls['png'] ?? null;
+    }
+
+    private function getSettingsBadgeImageUrls(): array
     {
         if (!Storage::disk('local')->exists('settings.json')) {
-            return null;
+            return [
+                'svg' => null,
+                'png' => null,
+                'legacy' => null,
+            ];
         }
 
         $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-        $badgeImageUrl = $settings['badge_image_url'] ?? null;
+        $badgeImageSvgUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_svg_url'] ?? null);
+        $badgeImagePngUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_png_url'] ?? null);
+        $legacyBadgeImageUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_url'] ?? null);
 
-        return is_string($badgeImageUrl) && $badgeImageUrl !== '' ? $badgeImageUrl : null;
+        if (!$badgeImageSvgUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.svg')) {
+            $badgeImageSvgUrl = $legacyBadgeImageUrl;
+        }
+
+        if (!$badgeImagePngUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.png')) {
+            $badgeImagePngUrl = $legacyBadgeImageUrl;
+        }
+
+        return [
+            'svg' => $badgeImageSvgUrl,
+            'png' => $badgeImagePngUrl,
+            'legacy' => $legacyBadgeImageUrl,
+        ];
     }
 
-    private function getBadgeEmbedCode(?string $badgeImageUrl = null, ?string $destinationUrl = null): string
+    private function normalizeBadgeAssetUrl(mixed $url): ?string
+    {
+        if (!is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        return $this->appendCacheBustToPublicImageUrl(trim($url));
+    }
+
+    private function getBadgeEmbedCode(
+        ?string $destinationUrl = null,
+        ?string $badgeImageSvgUrl = null,
+        ?string $badgeImagePngUrl = null,
+        ?string $badgeImageUrl = null
+    ): string
     {
         $savedBadgeEmbedCode = $this->getSavedBadgeEmbedCode();
 
@@ -184,8 +238,10 @@ class BadgeService
         }
 
         return $this->buildDefaultBadgeEmbedCode(
-            $badgeImageUrl ?? $this->getBadgeImageUrl(),
-            $destinationUrl ?? $this->getBadgeDestinationUrl()
+            $destinationUrl ?? $this->getBadgeDestinationUrl(),
+            $badgeImageSvgUrl ?? $this->getBadgeSvgUrl(),
+            $badgeImagePngUrl ?? $this->getBadgePngUrl(),
+            $badgeImageUrl ?? $this->getBadgeImageUrl()
         );
     }
 
@@ -201,9 +257,23 @@ class BadgeService
         return $badgeEmbedCode !== '' ? $badgeEmbedCode : null;
     }
 
-    private function buildDefaultBadgeEmbedCode(string $badgeImageUrl, string $destinationUrl): string
+    private function buildDefaultBadgeEmbedCode(
+        string $destinationUrl,
+        ?string $badgeImageSvgUrl,
+        ?string $badgeImagePngUrl,
+        string $badgeImageUrl
+    ): string
     {
         $altText = 'Featured on Software on the Web';
+
+        if ($badgeImageSvgUrl && $badgeImagePngUrl) {
+            return '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
+                . '  <picture>' . "\n"
+                . '    <source srcset="' . $badgeImageSvgUrl . '" type="image/svg+xml">' . "\n"
+                . '    <img src="' . $badgeImagePngUrl . '" alt="' . $altText . '" width="200">' . "\n"
+                . '  </picture>' . "\n"
+                . '</a>';
+        }
 
         return '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
             . '  <img src="' . $badgeImageUrl . '" alt="' . $altText . '" width="200">' . "\n"

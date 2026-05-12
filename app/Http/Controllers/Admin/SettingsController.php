@@ -30,8 +30,12 @@ class SettingsController extends Controller
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
-        $badgeImageUrl = $settings['badge_image_url'] ?? url('/images/badge.png');
-        $badgeEmbedCode = app(BadgeService::class)->getEmbedData()['snippet'];
+        $badgeService = app(BadgeService::class);
+        $embedData = $badgeService->getEmbedData();
+        $badgeImageUrl = $embedData['badge_image_url'];
+        $badgeImageSvgUrl = $embedData['badge_image_svg_url'] ?? null;
+        $badgeImagePngUrl = $embedData['badge_image_png_url'] ?? null;
+        $badgeEmbedCode = $embedData['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
 
         return view('admin.settings.index', compact(
@@ -39,6 +43,8 @@ class SettingsController extends Controller
             'premiumProductSpots',
             'productPublishTime',
             'badgeImageUrl',
+            'badgeImageSvgUrl',
+            'badgeImagePngUrl',
             'badgeEmbedCode',
             'footerBadgeEmbedCodes'
         ));
@@ -451,27 +457,46 @@ class SettingsController extends Controller
         }
 
         $request->validate([
-            'badge_image' => 'required|image|mimes:png,svg,jpeg,webp|max:2048',
+            'badge_image_svg' => 'nullable|file|mimes:svg|max:2048',
+            'badge_image_png' => 'nullable|file|mimes:png|max:2048',
         ]);
 
+        if (!$request->hasFile('badge_image_svg') && !$request->hasFile('badge_image_png')) {
+            return back()
+                ->withErrors(['badge_image_svg' => 'Upload an SVG, a PNG, or both.'])
+                ->withInput();
+        }
+
         try {
-            // Store the badge image in public/images/
-            $file = $request->file('badge_image');
-            $filename = 'badge.' . $file->getClientOriginalExtension();
-            $file->move(public_path('images'), $filename);
+            $settings = $this->loadSettings();
+            $uploadedFormats = [];
 
-            $badgeUrl = url('/images/' . $filename);
-
-            // Save to settings.json
-            $settings = [];
-            if (Storage::disk('local')->exists('settings.json')) {
-                $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+            if ($request->hasFile('badge_image_svg')) {
+                $svgFile = $request->file('badge_image_svg');
+                $svgFile->move(public_path('images'), 'badge.svg');
+                $settings['badge_image_svg_url'] = url('/images/badge.svg');
+                $uploadedFormats[] = 'SVG';
             }
-            $settings['badge_image_url'] = $badgeUrl;
-            Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
 
-            Log::info('Badge image updated by user: ' . Auth::id(), ['url' => $badgeUrl]);
-            return back()->with('success', 'Badge image uploaded successfully.');
+            if ($request->hasFile('badge_image_png')) {
+                $pngFile = $request->file('badge_image_png');
+                $pngFile->move(public_path('images'), 'badge.png');
+                $settings['badge_image_png_url'] = url('/images/badge.png');
+                $uploadedFormats[] = 'PNG';
+            }
+
+            $settings['badge_image_url'] = $settings['badge_image_svg_url']
+                ?? $settings['badge_image_png_url']
+                ?? ($settings['badge_image_url'] ?? url('/images/badge.png'));
+
+            $this->saveSettings($settings);
+
+            Log::info('Badge image updated by user: ' . Auth::id(), [
+                'badge_image_svg_url' => $settings['badge_image_svg_url'] ?? null,
+                'badge_image_png_url' => $settings['badge_image_png_url'] ?? null,
+            ]);
+
+            return back()->with('success', 'Badge asset upload saved for: ' . implode(' and ', $uploadedFormats) . '.');
         } catch (\Exception $e) {
             Log::error('Failed to upload badge image: ' . $e->getMessage());
             return back()->with('error', 'Failed to upload badge image. Please check logs.');
