@@ -259,9 +259,15 @@ class Product extends Model implements Sitemapable
 
     protected function breadcrumbCategoryPriority(Category $category): int
     {
-        $isPricing = $category->types->contains('name', 'Pricing');
-        $isCategory = $category->types->contains('name', 'Category');
-        $isBestFor = $category->types->contains('name', 'Best for');
+        $typeNames = $category->types
+            ->pluck('name')
+            ->map(fn ($name) => Str::lower(trim((string) $name)));
+
+        $isPricing = $typeNames->contains('pricing');
+        $isCategory = $typeNames->contains('category')
+            || $typeNames->contains('software categories')
+            || $typeNames->contains('software');
+        $isBestFor = $typeNames->contains('best for');
         $isPlatform = $this->isPlatformBreadcrumbCategory($category);
 
         return match (true) {
