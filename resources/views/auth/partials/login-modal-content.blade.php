@@ -1,6 +1,7 @@
 <div
     x-data="{
         intendedUrl: '',
+        googleSubmitting: false,
         showEmail: {{ $errors->has('email') && session('status') !== 'otp-sent' && ! $errors->has('otp') ? 'true' : 'false' }},
         emailSubmitting: false,
         otpSubmitting: false,
@@ -51,7 +52,7 @@
         @include('auth.partials.otp-form')
         <button
             type="button"
-            @click="otpSent = false; showEmail = true; emailSubmitting = false; otpSubmitting = false; $nextTick(() => $refs.emailInput?.focus())"
+            @click="otpSent = false; showEmail = true; googleSubmitting = false; emailSubmitting = false; otpSubmitting = false; $nextTick(() => $refs.emailInput?.focus())"
             class="mt-5 inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-50 hover:border-gray-300"
         >
             Use another email
