@@ -12,12 +12,15 @@ use App\Models\Product; // Added
 use App\Models\Category; // Added
 use App\Services\RelatedProductService;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 // It's good practice to also include your main app URL and other important static pages
 // use Carbon\Carbon; // Already imported in models, but good to be explicit if used directly here
 
 class GenerateSitemap extends Command
 {
+    protected const RECENT_LAUNCH_WINDOW_DAYS = 30;
+
     /**
      * The name and signature of the console command.
      *
@@ -73,9 +76,19 @@ class GenerateSitemap extends Command
         }));
         $this->writeChildSitemap($contentSitemap, $sitemapDirectory . '/content.xml', $sitemapEntries, $generatedAt);
 
+        $productsQuery = Product::approvedAndPublished()->with('media');
+
         $productsSitemap = Sitemap::create();
-        $productsSitemap->add(Product::where('approved', true)->with('media')->get());
+        $productsSitemap->add((clone $productsQuery)->get());
         $this->writeChildSitemap($productsSitemap, $sitemapDirectory . '/products.xml', $sitemapEntries, $generatedAt);
+
+        $recentLaunchesSitemap = Sitemap::create();
+        $recentLaunchesSitemap->add(
+            (clone $productsQuery)
+                ->whereRaw('COALESCE(published_at, created_at) >= ?', [$generatedAt->copy()->subDays(self::RECENT_LAUNCH_WINDOW_DAYS)])
+                ->get()
+        );
+        $this->writeChildSitemap($recentLaunchesSitemap, $sitemapDirectory . '/recent-launches.xml', $sitemapEntries, $generatedAt);
 
         $taxonomySitemap = Sitemap::create();
         $taxonomySitemap->add(Category::all()->filter(function ($category) {
@@ -86,9 +99,10 @@ class GenerateSitemap extends Command
         $archiveSitemap = Sitemap::create();
 
         // Add Archive URLs (Weeks)
-        $activeWeeks = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year, WEEK(COALESCE(published_at, created_at), 3) as week')
+        $dateExpressions = $this->productDateExpressions();
+
+        $activeWeeks = Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week')
             ->groupBy('year', 'week')
             ->get();
 
@@ -99,9 +113,8 @@ class GenerateSitemap extends Command
         }
 
         // Add Archive URLs (Months)
-        $activeMonths = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year, MONTH(COALESCE(published_at, created_at)) as month')
+        $activeMonths = Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['month'] . ' as month')
             ->groupBy('year', 'month')
             ->get();
 
@@ -112,9 +125,8 @@ class GenerateSitemap extends Command
         }
 
         // Add Archive URLs (Years)
-        $activeYears = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw('YEAR(COALESCE(published_at, created_at)) as year')
+        $activeYears = Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'] . ' as year')
             ->groupBy('year')
             ->get();
 
@@ -245,5 +257,22 @@ class GenerateSitemap extends Command
         $lines[] = '</sitemapindex>';
 
         File::put($path, implode(PHP_EOL, $lines) . PHP_EOL);
+    }
+
+    protected function productDateExpressions(): array
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return [
+                'year' => "CAST(strftime('%Y', COALESCE(published_at, created_at)) AS INTEGER)",
+                'week' => "CAST(strftime('%W', COALESCE(published_at, created_at)) AS INTEGER)",
+                'month' => "CAST(strftime('%m', COALESCE(published_at, created_at)) AS INTEGER)",
+            ];
+        }
+
+        return [
+            'year' => 'YEAR(COALESCE(published_at, created_at))',
+            'week' => 'WEEK(COALESCE(published_at, created_at), 3)',
+            'month' => 'MONTH(COALESCE(published_at, created_at))',
+        ];
     }
 }
