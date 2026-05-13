@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\UserProductUpvote;
+use App\Services\ProductMetricsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,7 @@ class UpvoteController extends Controller
     /**
      * Store a newly created upvote in storage.
      */
-    public function store(Request $request, Product $product): JsonResponse
+    public function store(Request $request, Product $product, ProductMetricsService $metricsService): JsonResponse
     {
         $startTime = microtime(true);
         $user = Auth::user();
@@ -61,6 +62,7 @@ class UpvoteController extends Controller
             Product::withoutTimestamps(function () use ($lockedProduct) {
                 $lockedProduct->increment('votes_count');
             });
+            $metricsService->recordManualUpvote($lockedProduct, 1);
             // No need to Log::info for product->increment here, as votes_count is logged at the end of successful transaction.
             // $lockedProduct->refresh(); // Refresh to get the latest votes_count if needed before commit, but increment handles it.
 
@@ -113,7 +115,7 @@ class UpvoteController extends Controller
     /**
      * Remove the specified upvote from storage.
      */
-    public function destroy(Product $product): JsonResponse // Changed $productRouteBinding to $product
+    public function destroy(Product $product, ProductMetricsService $metricsService): JsonResponse // Changed $productRouteBinding to $product
     {
         $startTime = microtime(true);
         $user = Auth::user();
@@ -164,6 +166,7 @@ class UpvoteController extends Controller
                     Log::warning("Upvote destroy: Product votes_count was below the system vote floor. Reset to 1.", ['product_id' => $lockedProduct->id, 'original_votes_count' => $lockedProduct->getOriginal('votes_count')]);
                 }
             }
+            $metricsService->recordManualUpvote($lockedProduct, -1);
             // $lockedProduct->refresh(); // Refresh to get the latest votes_count if needed before commit
 
             DB::commit();

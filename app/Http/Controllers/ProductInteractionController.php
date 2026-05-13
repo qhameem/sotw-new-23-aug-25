@@ -3,16 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Services\ProductMetricsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ProductInteractionController extends Controller
 {
-    public function click(Product $product, Request $request): RedirectResponse
+    public function click(Product $product, Request $request, ProductMetricsService $metricsService): RedirectResponse
     {
         abort_unless($product->approved && $product->is_published && $product->link, 404);
 
         $product->recordOutboundClickAndAutoUpvote();
+        $metricsService->recordOutboundClick($product);
 
         return redirect()->away($this->appendUtmParameters(
             $product->link,

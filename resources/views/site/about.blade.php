@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'About Us | Software on the Web')
-
 @section('content')
-@section('title', 'About Us | Software on the Web')
-@section('header-title', 'About Us')
-
 <div class="p-4">
     <div class="prose max-w-none">
+        <section class="mb-10">
+            <h1 class="site-heading-text text-4xl md:text-5xl font-bold text-gray-900 text-left mb-4">About Us</h1>
+        </section>
+
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Discover Better Digital Tools, Every Day</h2>
             <p class="text-gray-700 leading-relaxed">
@@ -68,6 +68,18 @@
             <p class="text-gray-700 leading-relaxed">
                 We don’t accept pay-to-play listings or hidden promotions. Every product is featured because it meets our standards—not because it paid to be there.
                 <strong>You can trust what you see.</strong>
+            </p>
+        </section>
+
+        <section class="mb-10">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">How Rankings Work</h2>
+            <p class="text-gray-700 leading-relaxed">
+                Our rankings are designed to reward genuine interest, not shortcuts. We look at a blend of real engagement signals,
+                such as how people interact with products over time, while also giving newly published products a fair chance to be seen.
+            </p>
+            <p class="text-gray-700 mt-2 leading-relaxed">
+                We also actively separate organic rankings from promotional placement, monitor for suspicious behavior, and avoid relying on
+                any single public metric alone. That helps keep rankings useful for honest makers and trustworthy for people discovering products.
             </p>
         </section>
 

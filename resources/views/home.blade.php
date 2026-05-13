@@ -75,6 +75,12 @@
         <x-week-header :week="$weekOfYear" :year="$year" :start-date="$startOfWeek" :end-date="$endOfWeek" />
     @endif
 
+    @if(isset($rankingExplanation) && (!isset($isFuture) || !$isFuture))
+        <div class="px-4 pb-3">
+            <p class="site-body-text text-xs text-gray-500">{{ $rankingExplanation }}</p>
+        </div>
+    @endif
+
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
         <div class="px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
             <p class="text-sm text-gray-800">{{ $category->description }}</p>

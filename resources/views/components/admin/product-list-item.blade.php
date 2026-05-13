@@ -108,7 +108,7 @@
                                 Where {{ number_format($voteBreakdown['total']) }} votes came from
                             </h3>
                             <p class="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                                Auto-votes are added every 4 views and every 2 outbound link clicks.
+                                Views and outbound clicks are tracked separately now. Any non-manual remainder is legacy vote history.
                             </p>
                         </div>
 

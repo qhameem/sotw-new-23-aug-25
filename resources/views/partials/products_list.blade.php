@@ -5,6 +5,7 @@
         $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
         $adDisplayed = false;
         $productCountForAd = count($finalProductList); // Count of products to display for ad logic
+        $organicRank = 0;
     @endphp
 
     @if($productCountForAd === 0 && $shouldDisplayAd)
@@ -18,9 +19,26 @@
             $loopIndex = $loop->iteration;
             $productLogo = ProductLogo::url($product);
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
+            $itemNumber = null;
+            if (!$isPromoted) {
+                $organicRank++;
+                $itemNumber = $organicRank;
+            }
+            $impressionSurface = match (true) {
+                request()->routeIs('home') => 'home_list',
+                request()->routeIs('products.byWeek') => 'week_list',
+                request()->routeIs('products.byDate') => 'date_list',
+                request()->routeIs('products.byMonth') => 'month_list',
+                request()->routeIs('products.byYear') => 'year_list',
+                request()->routeIs('categories.show') => 'category_list',
+                default => 'product_list',
+            };
         @endphp
         <article
             class="p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
+            data-product-id="{{ $product->id }}"
+            data-track-impression="true"
+            data-impression-surface="{{ $impressionSurface }}"
             itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
                 @click="window.open('{{ route('products.click', ['product' => $product->slug, 'surface' => 'promoted_listing_card']) }}', '_blank')"
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
@@ -37,7 +55,10 @@
             <div class="flex-1">
                 <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">
                     <a href="{{ route('products.show', $product->slug) }}" @click.stop
-                        class="site-heading-text text-left hover:underline">
+                        class="site-heading-text text-left hover:underline flex items-center gap-1">
+                        @if(!$isPromoted && $itemNumber)
+                            <span class="site-heading-text text-left text-base font-semibold text-black">{{ $itemNumber }}.</span>
+                        @endif
                         <span itemprop="name" class="site-heading-text text-left">{{ $product->name }}</span>
                     </a>
                     @if(!$isPromoted)

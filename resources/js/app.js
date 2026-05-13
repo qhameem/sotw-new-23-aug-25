@@ -282,6 +282,149 @@ function warmProductPageNavigation() {
 
 warmProductPageNavigation();
 
+const seenProductImpressions = new Set();
+const pendingProductImpressions = new Map();
+let productImpressionFlushTimer = null;
+
+function scheduleProductImpressionFlush() {
+    if (productImpressionFlushTimer) {
+        return;
+    }
+
+    productImpressionFlushTimer = window.setTimeout(() => {
+        flushProductImpressions();
+    }, 500);
+}
+
+function queueProductImpression(productId, surface) {
+    if (!productId || !surface) {
+        return;
+    }
+
+    const key = `${surface}:${productId}`;
+
+    if (seenProductImpressions.has(key)) {
+        return;
+    }
+
+    seenProductImpressions.add(key);
+
+    if (!pendingProductImpressions.has(surface)) {
+        pendingProductImpressions.set(surface, new Set());
+    }
+
+    pendingProductImpressions.get(surface).add(Number(productId));
+    scheduleProductImpressionFlush();
+}
+
+function flushProductImpressions() {
+    if (productImpressionFlushTimer) {
+        window.clearTimeout(productImpressionFlushTimer);
+        productImpressionFlushTimer = null;
+    }
+
+    if (pendingProductImpressions.size === 0) {
+        return;
+    }
+
+    const payloads = Array.from(pendingProductImpressions.entries()).map(([surface, productIds]) => ({
+        surface,
+        products: Array.from(productIds),
+    }));
+
+    pendingProductImpressions.clear();
+
+    payloads.forEach(({ surface, products }) => {
+        fetch('/api/impressions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                surface,
+                products,
+            }),
+            keepalive: true,
+        }).catch((error) => {
+            console.error('Failed to record product impressions:', error);
+        });
+    });
+}
+
+function trackVisibleProductCards() {
+    const cards = document.querySelectorAll('[data-track-impression="true"][data-product-id][data-impression-surface]');
+
+    if (!cards.length || !('IntersectionObserver' in window)) {
+        return;
+    }
+
+    const visibilityTimers = new WeakMap();
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            const element = entry.target;
+
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+                if (visibilityTimers.has(element)) {
+                    return;
+                }
+
+                const timer = window.setTimeout(() => {
+                    queueProductImpression(
+                        element.dataset.productId,
+                        element.dataset.impressionSurface
+                    );
+                    observer.unobserve(element);
+                    visibilityTimers.delete(element);
+                }, 800);
+
+                visibilityTimers.set(element, timer);
+            } else if (visibilityTimers.has(element)) {
+                window.clearTimeout(visibilityTimers.get(element));
+                visibilityTimers.delete(element);
+            }
+        });
+    }, {
+        threshold: [0.6],
+    });
+
+    cards.forEach((card) => observer.observe(card));
+}
+
+function trackProductDetailView() {
+    const detailMetrics = document.getElementById('product-detail-metrics');
+
+    if (!detailMetrics?.dataset?.productId) {
+        return;
+    }
+
+    const sendDetailView = () => {
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+
+        window.setTimeout(() => {
+            if (document.visibilityState === 'visible') {
+                queueProductImpression(detailMetrics.dataset.productId, 'product_detail');
+            }
+        }, 1200);
+    };
+
+    if (document.visibilityState === 'visible') {
+        sendDetailView();
+        return;
+    }
+
+    const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+            sendDetailView();
+            document.removeEventListener('visibilitychange', handleVisibility);
+        }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+}
+
 // Mount mobile user dropdown
 if (document.getElementById('mobile-user-dropdown-app')) {
     const el = document.getElementById('mobile-user-dropdown-app');
@@ -337,6 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     console.log('[app.js] DOMContentLoaded: Flowbite, Alpine initialized. Main script logic follows.');
+    trackVisibleProductCards();
+    trackProductDetailView();
 
     // Inline loader logic for "Add your product" buttons (only run if buttons exist)
     const addProductButtons = [

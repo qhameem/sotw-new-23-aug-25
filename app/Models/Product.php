@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use App\Helpers\HtmlHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 use App\Support\ProductMediaSeo;
 
@@ -303,12 +304,20 @@ class Product extends Model implements Sitemapable
         return $this->hasMany(UserProductUpvote::class);
     }
 
+    public function weekStats(): HasMany
+    {
+        return $this->hasMany(ProductWeekStat::class);
+    }
+
+    public function launchStat(): HasOne
+    {
+        return $this->hasOne(ProductLaunchStat::class);
+    }
+
     public function voteBreakdown(): array
     {
         $totalVotes = max(1, (int) ($this->votes_count ?? 0));
         $manualUpvotes = $this->manualUpvotesCountForBreakdown();
-        $viewDrivenVotes = intdiv(max(0, (int) ($this->impressions ?? 0)), self::AUTO_UPVOTE_VIEW_THRESHOLD);
-        $clickDrivenVotes = intdiv(max(0, (int) ($this->outbound_clicks_count ?? 0)), self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD);
         $baseVotes = 1;
 
         $sources = [
@@ -318,19 +327,9 @@ class Product extends Model implements Sitemapable
                 'description' => 'Votes from actual user upvote clicks.',
             ],
             [
-                'label' => 'Views',
-                'count' => $viewDrivenVotes,
-                'description' => 'Auto-votes earned at 1 vote per 4 views.',
-            ],
-            [
-                'label' => 'Link clicks',
-                'count' => $clickDrivenVotes,
-                'description' => 'Auto-votes earned at 1 vote per 2 outbound clicks.',
-            ],
-            [
                 'label' => 'Base vote',
                 'count' => $baseVotes,
-                'description' => 'The built-in system vote floor.',
+                'description' => 'Legacy system vote floor kept for backward compatibility.',
             ],
         ];
 
@@ -385,6 +384,51 @@ class Product extends Model implements Sitemapable
         return $eligibleFrom->greaterThanOrEqualTo($cutoff);
     }
 
+    public function rankingWeekStart(): Carbon
+    {
+        $reference = ($this->published_at ?? $this->created_at ?? now())->copy();
+
+        return $reference->startOfWeek(Carbon::MONDAY);
+    }
+
+    public function launchWindowStart(): Carbon
+    {
+        return ($this->published_at ?? $this->created_at ?? now())->copy();
+    }
+
+    public function launchWindowEnd(): Carbon
+    {
+        return $this->launchWindowStart()->copy()->addHours(12);
+    }
+
+    public function isInLaunchWindow(?Carbon $referenceTime = null): bool
+    {
+        $at = ($referenceTime ?? now())->copy();
+
+        return $at->betweenIncluded($this->launchWindowStart(), $this->launchWindowEnd());
+    }
+
+    public function weekRankingCacheKey(): string
+    {
+        return 'ranking:week:' . $this->rankingWeekStart()->toDateString() . ':organic';
+    }
+
+    public function rankingCacheKeys(): array
+    {
+        $publishedOn = ($this->published_at ?? $this->created_at ?? now())->copy();
+        $weekStart = $publishedOn->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $dayStart = $publishedOn->copy()->startOfDay()->toDateString();
+        $monthStart = $publishedOn->copy()->startOfMonth()->toDateString();
+        $yearStart = $publishedOn->copy()->startOfYear()->toDateString();
+
+        return [
+            'ranking:date:' . $dayStart . ':organic',
+            'ranking:week:' . $weekStart . ':organic',
+            'ranking:month:' . $monthStart . ':organic',
+            'ranking:year:' . $yearStart . ':organic',
+        ];
+    }
+
     public function premiumSpot()
     {
         return $this->hasOne(PremiumProduct::class);
@@ -436,21 +480,12 @@ class Product extends Model implements Sitemapable
             }
 
             $lockedProduct->impressions = (int) $lockedProduct->impressions + 1;
-            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
-
-            if (
-                $lockedProduct->passiveAutoUpvotesAreAllowed()
-                && $lockedProduct->impressions % self::AUTO_UPVOTE_VIEW_THRESHOLD === 0
-            ) {
-                $lockedProduct->votes_count++;
-            }
 
             static::withoutTimestamps(function () use ($lockedProduct) {
                 $lockedProduct->save();
             });
 
             $this->impressions = $lockedProduct->impressions;
-            $this->votes_count = $lockedProduct->votes_count;
         });
     }
 
@@ -467,21 +502,12 @@ class Product extends Model implements Sitemapable
             }
 
             $lockedProduct->outbound_clicks_count = (int) $lockedProduct->outbound_clicks_count + 1;
-            $lockedProduct->votes_count = max(1, (int) $lockedProduct->votes_count);
-
-            if (
-                $lockedProduct->passiveAutoUpvotesAreAllowed()
-                && $lockedProduct->outbound_clicks_count % self::AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD === 0
-            ) {
-                $lockedProduct->votes_count++;
-            }
 
             static::withoutTimestamps(function () use ($lockedProduct) {
                 $lockedProduct->save();
             });
 
             $this->outbound_clicks_count = $lockedProduct->outbound_clicks_count;
-            $this->votes_count = $lockedProduct->votes_count;
         });
     }
 

@@ -27,6 +27,7 @@
 
         $breadcrumbs[] = ['label' => $product->name];
     @endphp
+    <div id="product-detail-metrics" data-product-id="{{ $product->id }}" hidden></div>
     <div class="py-4">
         <x-breadcrumbs :items="$breadcrumbs" />
     </div>

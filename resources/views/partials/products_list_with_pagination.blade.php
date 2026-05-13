@@ -29,18 +29,23 @@
 
 @php
     $isPaginator = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator;
-    $baseNumber = $isPaginator ? $regularProductsList->firstItem() : 1;
+    $organicRank = $isPaginator ? (($regularProductsList->currentPage() - 1) * $regularProductsList->perPage()) : 0;
 @endphp
 @forelse($finalProductList as $loopIndexActual => $product)
     @php
         $loopIndex = $loop->iteration;
         $isPromoted = $product->is_promoted ?? ($product->is_premium ?? false);
+        $itemNumber = null;
+        if (!$isPromoted) {
+            $organicRank++;
+            $itemNumber = $organicRank;
+        }
     @endphp
 
     @if ($isPromoted)
-        @include('partials._promoted_product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index, 'logoLoadPosition' => $loop->iteration])
+        @include('partials._promoted_product_item', ['product' => $product, 'itemNumber' => $itemNumber, 'logoLoadPosition' => $loop->iteration])
     @else
-        @include('partials._product_item', ['product' => $product, 'itemNumber' => $baseNumber + $loop->index, 'logoLoadPosition' => $loop->iteration])
+        @include('partials._product_item', ['product' => $product, 'itemNumber' => $itemNumber, 'logoLoadPosition' => $loop->iteration])
     @endif
     @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
         @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
