@@ -15,7 +15,6 @@ use App\Http\Controllers\Admin\AdController;
 use App\Http\Controllers\Admin\AdvertisingController;
 use App\Http\Controllers\Admin\AdZoneController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\ChangelogController as AdminChangelogController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\ArticleController; // Added for public articles
 use App\Http\Controllers\ProductController;
@@ -208,7 +207,6 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::get('product-reviews', [ProductReviewController::class, 'index'])->name('product-reviews.index');
     Route::patch('product-reviews/{product_review}', [ProductReviewController::class, 'update'])->name('product-reviews.update');
     Route::delete('premium-products/{premium_product}', [\App\Http\Controllers\Admin\PremiumProductController::class, 'destroy'])->name('premium-products.destroy');
-    Route::resource('changelogs', AdminChangelogController::class)->except(['show']);
     Route::resource('badges', AdminBadgeController::class)->except(['show', 'edit', 'update']);
 }); // End of admin prefix group
 
@@ -330,6 +328,15 @@ Route::get('/software-review', function () {
 })->name('software-review');
 
 Route::get('/changelog', [App\Http\Controllers\ChangelogController::class, 'index'])->name('changelog.index');
+Route::post('/changelog', [App\Http\Controllers\ChangelogController::class, 'store'])
+    ->middleware(['auth', 'profile.complete', 'role:admin'])
+    ->name('changelog.store');
+Route::patch('/changelog/{changelog}', [App\Http\Controllers\ChangelogController::class, 'update'])
+    ->middleware(['auth', 'profile.complete', 'role:admin'])
+    ->name('changelog.update');
+Route::delete('/changelog/{changelog}', [App\Http\Controllers\ChangelogController::class, 'destroy'])
+    ->middleware(['auth', 'profile.complete', 'role:admin'])
+    ->name('changelog.destroy');
 
 Route::get('/premium-spot-details', [\App\Http\Controllers\PremiumSpotController::class, 'details'])->name('premium-spot.details');
 

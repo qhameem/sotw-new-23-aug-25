@@ -102,8 +102,6 @@
                 <div x-show="adminSection === 'content'" x-transition.opacity.duration.150ms class="pb-1">
                     <a href="{{ route('admin.articles.posts.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-file-text class="mr-2 h-4 w-4 text-gray-400" />Articles</a>
-                    <a href="{{ route('admin.changelogs.index') }}"
-                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-scroll class="mr-2 h-4 w-4 text-gray-400" />Changelog</a>
                     <a href="{{ route('admin.advertising.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-megaphone class="mr-2 h-4 w-4 text-gray-400" />Advertising</a>
                     <a href="{{ route('admin.seo.index') }}"
