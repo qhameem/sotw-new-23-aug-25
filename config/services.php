@@ -50,6 +50,13 @@ return [
         'key' => env('GROQ_API_KEY'),
     ],
 
+    'indexnow' => [
+        'enabled' => env('INDEXNOW_ENABLED', false),
+        'key' => env('INDEXNOW_KEY'),
+        'endpoint' => env('INDEXNOW_ENDPOINT', 'https://api.indexnow.org/indexnow'),
+        'timeout' => (int) env('INDEXNOW_TIMEOUT', 10),
+    ],
+
     'screenshot' => [
         'providers' => array_values(array_filter(array_map(
             static fn (string $provider): string => trim(strtolower($provider)),

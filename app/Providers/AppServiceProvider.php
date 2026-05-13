@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 use App\Http\View\Composers\ScheduledProductsStatsComposer;
+use App\Models\ProductMedia;
 use App\Services\CategoryNavigationService;
+use App\Observers\ProductObserver;
+use App\Observers\ProductMediaObserver;
 use App\Services\OutboundLinkPolicyService;
 use Illuminate\Support\Str;
 
@@ -48,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Product::observe(ProductObserver::class);
+        ProductMedia::observe(ProductMediaObserver::class);
+
         if (class_exists('Spatie\\Permission\\PermissionServiceProvider')) {
             Blade::if('role', function ($role) {
                 return Auth::check() && Auth::user()->hasRole($role);
