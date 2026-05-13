@@ -19,9 +19,9 @@ Usage:
 What it does:
   1. Creates a backup of your local MySQL database.
   2. Creates a MySQL dump on the live server.
-  3. Downloads that dump into this project.
+  3. Downloads that dump into this project with live progress output.
   4. Wipes the local database and imports the live dump.
-  5. Syncs product upload folders from live storage/app/public.
+  5. Syncs product upload folders from live storage/app/public with live progress output.
 
 Required local files:
   .env
@@ -77,6 +77,12 @@ run_ssh() {
 
     ssh -p "$LIVE_SYNC_SSH_PORT" "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}" \
         "bash -lc $(shell_quote "$remote_script")"
+}
+
+rsync_with_progress() {
+    rsync \
+        -avhP \
+        "$@"
 }
 
 confirm_destructive_step() {
@@ -168,7 +174,7 @@ EOF
 run_ssh "$REMOTE_DUMP_SCRIPT"
 
 log "Downloading live database dump"
-rsync -av -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+rsync_with_progress -e "ssh -p $LIVE_SYNC_SSH_PORT" \
     "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}:${REMOTE_DUMP_FILE}" \
     "$LOCAL_DUMP_FILE"
 
@@ -182,7 +188,7 @@ MYSQL_PWD="$LOCAL_DB_PASSWORD" mysql \
     --user="$LOCAL_DB_USERNAME" \
     "$LOCAL_DB_DATABASE" < "$LOCAL_DUMP_FILE"
 
-RSYNC_FLAGS=(-av)
+RSYNC_FLAGS=()
 if [[ "$LIVE_SYNC_USE_DELETE" == "1" ]]; then
     RSYNC_FLAGS+=(--delete)
 fi
@@ -192,7 +198,7 @@ for media_dir in $LIVE_SYNC_MEDIA_DIRS; do
     mkdir -p "$local_target"
 
     log "Syncing $media_dir"
-    rsync "${RSYNC_FLAGS[@]}" -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+    rsync_with_progress "${RSYNC_FLAGS[@]}" -e "ssh -p $LIVE_SYNC_SSH_PORT" \
         "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}:${LIVE_SYNC_REMOTE_STORAGE_ROOT}/${media_dir}/" \
         "$local_target/"
 done

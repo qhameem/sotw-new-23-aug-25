@@ -5,6 +5,7 @@
 - Pulls the live MySQL database into local
 - Syncs uploaded product files from live `storage/app/public`
 - Creates a local database backup before replacing anything
+- Shows live `rsync` progress for the SQL download and media file sync
 
 ## Files added
 
@@ -39,6 +40,9 @@ scripts/sync-live-to-local.sh --yes
 ## Notes
 
 - This script expects your local Laravel app to use MySQL.
+- The live dump creation step runs first on the server, so it does not have a true percentage progress display.
+- The SQL download shows a live percentage because it is one file.
+- The media sync shows live per-file progress, not one single overall percentage for all folders combined.
 - By default it syncs:
   - `logos`
   - `product_media`
