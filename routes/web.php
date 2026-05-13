@@ -48,7 +48,10 @@ Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('
 Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
 Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
 Route::get('/site.webmanifest', SiteManifestController::class)->name('site.manifest');
-Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key');
+Route::get('/{key}.txt', IndexNowKeyController::class)
+    ->where('key', '[A-Za-z0-9\-]{8,128}')
+    ->name('indexnow.key');
+Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key.legacy');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
 
