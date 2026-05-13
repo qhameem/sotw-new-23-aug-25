@@ -219,7 +219,13 @@
                 @guest
                     <div class="flex items-center gap-2">
                         <x-add-product-button />
-                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
+                        <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="inline-flex min-h-8 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-gray-300 bg-white px-4 py-1 text-sm font-semibold text-gray-700 transition duration-300 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M17 4.25A2.25 2.25 0 0 0 14.75 2h-5.5A2.25 2.25 0 0 0 7 4.25v2a.75.75 0 0 0 1.5 0v-2a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 .75.75v11.5a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1-.75-.75v-2a.75.75 0 0 0-1.5 0v2A2.25 2.25 0 0 0 9.25 18h5.5A2.25 2.25 0 0 0 17 15.75V4.25Z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M1 10a.75.75 0 0 1 .75-.75h9.546l-1.048-.943a.75.75 0 1 1 1.004-1.114l2.5 2.25a.75.75 0 0 1 0 1.114l-2.5 2.25a.75.75 0 1 1-1.004-1.114l1.048-.943H1.75A.75.75 0 0 1 1 10Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Sign in</span>
+                        </a>
                     </div>
                 @else
                     <div class="flex items-center">
