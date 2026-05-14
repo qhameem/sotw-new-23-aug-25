@@ -1953,10 +1953,6 @@ class ProductController extends Controller
         }
     }
 
-    public function phpinfo()
-    {
-        phpinfo();
-    }
     public function fetchInitialMetadata(Request $request)
     {
         // Increase maximum execution time for scraping

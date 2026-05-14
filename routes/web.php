@@ -38,8 +38,6 @@ use App\Http\Controllers\ProductClaimController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\IndexNowKeyController;
 
-Route::get('/phpinfo', [ProductController::class, 'phpinfo']);
-
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
@@ -107,9 +105,6 @@ Route::get('/stripe/cancel', [StripeController::class, 'cancel'])->name('stripe.
 Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
 Route::post('/stripe/product-review-checkout', [StripeController::class, 'productReviewCheckout'])->name('stripe.product-review.checkout');
 Route::get('/stripe/product-review/success', [StripeController::class, 'productReviewSuccess'])->name('stripe.product-review.success');
-
-// TEMPORARY TEST ROUTE - REMOVE ADMIN GROUPING
-Route::any('/temporary-bulk-delete-test-no-name', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->middleware('auth'); // Changed to Route::any for diagnostics
 
 Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', CategoryController::class);
