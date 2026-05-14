@@ -33,6 +33,7 @@ use App\Services\BadgeService;
 use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
+use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
 use DOMDocument;
@@ -1760,6 +1761,12 @@ class ProductController extends Controller
         }
 
         try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        try {
             $response = Http::withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             ])->get($url);
@@ -1840,6 +1847,12 @@ class ProductController extends Controller
         }
 
         try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        try {
             $response = Http::get($url);
             $html = $response->body();
 
@@ -1874,6 +1887,12 @@ class ProductController extends Controller
 
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         }
 
         try {
@@ -1961,6 +1980,12 @@ class ProductController extends Controller
         $url = $request->input('url');
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         }
 
         $metadataResponse = $this->fetchMetadata($request);
@@ -2266,6 +2291,13 @@ class ProductController extends Controller
                 return;
             }
 
+            try {
+                $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+            } catch (\InvalidArgumentException $e) {
+                $sendUpdate($e->getMessage(), 0, ['error' => $e->getMessage()]);
+                return;
+            }
+
             $name = $request->input('name');
             $tagline = $request->input('tagline');
             $fetchContent = $request->input('fetch_content', true);
@@ -2489,6 +2521,12 @@ class ProductController extends Controller
         $url = $request->input('url');
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         }
 
         $name = $request->input('name');

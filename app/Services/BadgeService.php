@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Badge;
 use App\Models\Product;
+use App\Support\PublicUrlGuard;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -101,6 +102,15 @@ class BadgeService
 
     public function verifyPlacementUrl(string $url): array
     {
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            return [
+                'verified' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
         $response = \Illuminate\Support\Facades\Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ])->timeout(15)->get($url);

@@ -41,7 +41,7 @@ use App\Http\Controllers\IndexNowKeyController;
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
-Route::post('/fetch-videos', [VideoController::class, 'fetch'])->name('fetch-videos');
+Route::post('/fetch-videos', [VideoController::class, 'fetch'])->middleware('throttle:20,1')->name('fetch-videos');
 Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');
 Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
 Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
@@ -214,7 +214,7 @@ Route::get('/get-the-badge', [BadgeController::class, 'index'])->name('badges.in
 
 Route::get('/api/product-meta', ProductMetaController::class);
 Route::get('/check-product-url', [ProductController::class, 'checkUrl']);
-Route::get('/fetch-url-data', [ProductController::class, 'fetchUrlData'])->name('fetch-url-data');
+Route::get('/fetch-url-data', [ProductController::class, 'fetchUrlData'])->middleware('throttle:20,1')->name('fetch-url-data');
 
 // Topics page to display all categories
 Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');

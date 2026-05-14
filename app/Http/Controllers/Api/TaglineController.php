@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\PublicUrlGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,9 +18,15 @@ class TaglineController extends Controller
             'url' => 'required|url',
         ]);
 
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $request->input('url'));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
         $apiKey = config('services.google.api_key');
         if (!$apiKey) {
-            return $this->fallbackToMetadata($request->input('url'));
+            return $this->fallbackToMetadata($url);
         }
 
         try {
@@ -61,7 +68,7 @@ class TaglineController extends Controller
 
         } catch (\Exception $e) {
             Log::error('AI tagline generation failed, falling back to metadata.', ['error' => $e->getMessage()]);
-            return $this->fallbackToMetadata($request->input('url'));
+            return $this->fallbackToMetadata($url);
         }
     }
 

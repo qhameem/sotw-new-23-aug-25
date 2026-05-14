@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\PublicUrlGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -12,6 +13,12 @@ class VideoController extends Controller
         $url = $request->input('url');
         if (!$url) {
             return response()->json(['error' => 'URL is required.'], 400);
+        }
+
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         }
 
         $video = $this->getVideoDetails($url);
@@ -25,24 +32,30 @@ class VideoController extends Controller
 
     private function getVideoDetails($url)
     {
-        if (strpos($url, 'youtube.com') !== false || strpos($url, 'youtu.be') !== false) {
+        $host = PublicUrlGuard::extractHost($url);
+        if ($host === null) {
+            return null;
+        }
+
+        if (PublicUrlGuard::hostMatchesAny($host, ['youtube.com', 'youtu.be'])) {
             return $this->getYouTubeDetails($url);
         }
-        if (strpos($url, 'vimeo.com') !== false) {
+        if (PublicUrlGuard::hostMatchesAny($host, ['vimeo.com'])) {
             return $this->getVimeoDetails($url);
         }
-        if (strpos($url, 'reddit.com') !== false) {
+        if (PublicUrlGuard::hostMatchesAny($host, ['reddit.com'])) {
             return $this->getRedditDetails($url);
         }
-        if (strpos($url, 'tiktok.com') !== false) {
+        if (PublicUrlGuard::hostMatchesAny($host, ['tiktok.com'])) {
             return $this->getTikTokDetails($url);
         }
-        if (strpos($url, 'facebook.com') !== false) {
+        if (PublicUrlGuard::hostMatchesAny($host, ['facebook.com'])) {
             return $this->getFacebookDetails($url);
         }
-        if (strpos($url, 'twitter.com') !== false || strpos($url, 'x.com') !== false) {
+        if (PublicUrlGuard::hostMatchesAny($host, ['twitter.com', 'x.com'])) {
             return $this->getTwitterDetails($url);
         }
+
         return null;
     }
 

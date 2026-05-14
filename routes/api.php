@@ -49,23 +49,23 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/seo/meta', [SeoApiController::class, 'saveMeta'])->name('api.seo.saveMeta');
 });
 Route::get('/get-cached-logos', [\App\Http\Controllers\Api\ProductMetaController::class, 'getCachedLogos']);
-Route::get('/tech-stack/detect', [TechStackController::class, 'detect']);
+Route::get('/tech-stack/detect', [TechStackController::class, 'detect'])->middleware('throttle:20,1');
 Route::get('/sidebar-search', [\App\Http\Controllers\Api\SearchController::class, 'sidebarSearch'])->name('sidebar.search');
 
 Route::post('/impressions', [\App\Http\Controllers\ImpressionController::class, 'store']);
 
-Route::post('/fetch-product-data', [ProductController::class, 'fetchProductData']);
-Route::post('/fetch-metadata', [\App\Http\Controllers\ProductController::class, 'fetchMetadata']);
-Route::post('/fetch-initial-metadata', [\App\Http\Controllers\ProductController::class, 'fetchInitialMetadata']);
-Route::post('/process-url', [\App\Http\Controllers\ProductController::class, 'processUrl']);
-Route::post('/process-url-stream', [\App\Http\Controllers\ProductController::class, 'processUrlStream']);
+Route::post('/fetch-product-data', [ProductController::class, 'fetchProductData'])->middleware('throttle:20,1');
+Route::post('/fetch-metadata', [\App\Http\Controllers\ProductController::class, 'fetchMetadata'])->middleware('throttle:20,1');
+Route::post('/fetch-initial-metadata', [\App\Http\Controllers\ProductController::class, 'fetchInitialMetadata'])->middleware('throttle:10,1');
+Route::post('/process-url', [\App\Http\Controllers\ProductController::class, 'processUrl'])->middleware('throttle:10,1');
+Route::post('/process-url-stream', [\App\Http\Controllers\ProductController::class, 'processUrlStream'])->middleware('throttle:10,1');
 Route::post('/check-product-url', [ProductController::class, 'checkUrl']);
-Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate']);
+Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate'])->middleware('throttle:20,1');
 Route::get('/categories', [ProductController::class, 'getCategories']);
 Route::get('/tech-stacks', [ProductController::class, 'getTechStacks']);
 Route::post('/generate-ai-content', [ProductController::class, 'generateAiContent']);
 Route::post('/detect-categories', [ProductController::class, 'detectCategories']);
-Route::post('/verify-badge-placement', [ProductController::class, 'verifyBadgePlacement']);
+Route::post('/verify-badge-placement', [ProductController::class, 'verifyBadgePlacement'])->middleware('throttle:10,1');
 
 // Badge snippet API
 Route::get('/badge-snippet-preview', function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\PublicUrlGuard;
 use Illuminate\Http\Request;
 use App\Services\TechStackDetectorService;
 use App\Models\TechStack;
@@ -19,7 +20,12 @@ class TechStackController extends Controller
     public function detect(Request $request)
     {
         $request->validate(['url' => 'required|url']);
-        $url = $request->input('url');
+
+        try {
+            $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $request->input('url'));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
 
         $detectedNames = $this->detector->detect($url);
 
