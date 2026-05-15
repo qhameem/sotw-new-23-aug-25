@@ -163,7 +163,7 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const toMultiplyWith = 15;
+            const toMultiplyWith = 5;
             fetch('/api/analytics/total-sessions')
                 .then(response => response.json())
                 .then(data => {
