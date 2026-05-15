@@ -55,7 +55,9 @@
                     data-submission-bg-url="{{ $submissionBgUrl }}"
                     data-is-admin="{{ (Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
                     data-pricing-categories="{{ json_encode($pricingCategories->toArray() ?? []) }}"
-                    data-selected-best-for-categories="{{ json_encode($selectedBestForCategories ?? []) }}"></div>
+                    data-platform-categories="{{ json_encode($platformCategories->toArray() ?? []) }}"
+                    data-selected-best-for-categories="{{ json_encode($selectedBestForCategories ?? []) }}"
+                    data-selected-platform-categories="{{ json_encode($selectedPlatformCategories ?? []) }}"></div>
             </div>
         </div>
 @endsection

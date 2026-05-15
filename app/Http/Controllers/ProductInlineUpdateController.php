@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\CategoryTypeRegistry;
 use App\Support\ProductMediaSeo;
 
 class ProductInlineUpdateController extends Controller
@@ -171,8 +172,8 @@ class ProductInlineUpdateController extends Controller
     {
         $selected = collect($selectedIds)->map(fn($id) => (int) $id);
 
-        $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
-        $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
+        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
+        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
 
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();

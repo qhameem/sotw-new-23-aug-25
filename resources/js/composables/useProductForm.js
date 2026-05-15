@@ -99,6 +99,7 @@ export function useProductForm() {
 
   const buildSandboxAutofillPayload = () => {
     const fallbackCategoryId = globalFormState.allCategories.value?.[0]?.id || null;
+    const fallbackPlatformId = globalFormState.allPlatforms.value?.[0]?.id || null;
     const fallbackBestForId = globalFormState.allBestFor.value?.[0]?.id || null;
     const fallbackPricingId = globalFormState.allPricing.value?.[0]?.id || null;
 
@@ -109,6 +110,7 @@ export function useProductForm() {
       tagline_detailed: 'Sandbox preview for testing autofill animations, progress states, and form transitions without using a real URL.',
       description: '<p>This is a sandbox-only autofill result for admins. It simulates a successful AI extraction so you can verify loading states, transitions, and preview behavior without touching production data.</p><p>No URL was fetched, and no submission will be stored while sandbox mode remains active.</p>',
       categories: fallbackCategoryId ? [fallbackCategoryId] : [],
+      platforms: fallbackPlatformId ? [fallbackPlatformId] : [],
       bestFor: fallbackBestForId ? [fallbackBestForId] : [],
       pricing: fallbackPricingId ? [fallbackPricingId] : [],
       pricing_page_url: 'https://sandbox-preview.test/pricing',
@@ -126,6 +128,49 @@ export function useProductForm() {
         accent: '#14b8a6',
         label: 'Sandbox Project',
       }),
+    };
+  };
+
+  const parseCategoryIdList = (rawValue) => {
+    try {
+      return JSON.parse(rawValue || '[]').map((item) => parseInt(item.id ?? item, 10)).filter((item) => !Number.isNaN(item));
+    } catch (error) {
+      console.error('Error parsing category ID list:', error);
+      return [];
+    }
+  };
+
+  const splitSelectedCategoryIds = (allCategoryIds = [], options = {}) => {
+    const parsedAllCategoryIds = (allCategoryIds || []).map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id));
+    const pricingIds = new Set(parseCategoryIdList(options.pricingCategories));
+    const platformIds = new Set(parseCategoryIdList(options.platformCategories));
+
+    let bestForIds = [];
+    try {
+      bestForIds = JSON.parse(options.selectedBestForCategories || '[]')
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id));
+    } catch (error) {
+      console.error('Error parsing selected best-for categories:', error);
+    }
+
+    let selectedPlatformIds = [];
+    try {
+      selectedPlatformIds = JSON.parse(options.selectedPlatformCategories || '[]')
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id));
+    } catch (error) {
+      console.error('Error parsing selected platform categories:', error);
+    }
+
+    const bestForIdSet = new Set(bestForIds);
+    const selectedPlatformIdSet = new Set(selectedPlatformIds);
+
+    return {
+      pricing: parsedAllCategoryIds.filter((id) => pricingIds.has(id)),
+      bestFor: parsedAllCategoryIds.filter((id) => bestForIdSet.has(id)),
+      platforms: parsedAllCategoryIds.filter((id) => platformIds.has(id) || selectedPlatformIdSet.has(id)),
+      categories: parsedAllCategoryIds.filter((id) => !pricingIds.has(id) && !bestForIdSet.has(id) && !platformIds.has(id) && !selectedPlatformIdSet.has(id)),
     };
   };
 
@@ -388,7 +433,11 @@ export function useProductForm() {
     form.favicon = '';
     form.logos = [];
     form.categories = [];
+    form.categories_custom = [];
+    form.platforms = [];
+    form.platforms_custom = [];
     form.bestFor = [];
+    form.bestFor_custom = [];
     form.pricing = [];
     form.tech_stack = [];
     form.logo = null;
@@ -476,6 +525,11 @@ export function useProductForm() {
         allCategories.push(...validCategories);
       }
 
+      if (form.platforms && form.platforms.length > 0) {
+        const validPlatforms = form.platforms.filter(id => id !== null && id !== undefined && id !== '');
+        allCategories.push(...validPlatforms);
+      }
+
       // Add bestFor categories
       if (form.bestFor && form.bestFor.length > 0) {
         const validBestFor = form.bestFor.filter(id => id !== null && id !== undefined && id !== '');
@@ -507,6 +561,14 @@ export function useProductForm() {
         form.bestFor_custom.forEach((customTag, index) => {
           formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][name]`, customTag.name);
           formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][type]`, 'best_for');
+        });
+      }
+
+      if (form.platforms_custom && form.platforms_custom.length > 0) {
+        const offset = (form.categories_custom ? form.categories_custom.length : 0) + (form.bestFor_custom ? form.bestFor_custom.length : 0);
+        form.platforms_custom.forEach((customPlatform, index) => {
+          formData.append(`custom_categories[${index + offset}][name]`, customPlatform.name);
+          formData.append(`custom_categories[${index + offset}][type]`, 'platform');
         });
       }
 
@@ -995,7 +1057,9 @@ export function useProductForm() {
     const shouldFetchContent = forceContentFetch || !form.description || !form.tagline_detailed;
 
     // Always fetch categories if they are empty
-    const shouldFetchCategoriesAndBestFor = !contentOnly && (!form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0);
+    const shouldFetchCategoriesAndBestFor = !contentOnly && (
+      !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0 || !form.platforms || form.platforms.length === 0
+    );
 
     // Use urlOverride if available, otherwise fall back to form.link
     const linkValue = urlOverride || form.link;
@@ -1114,6 +1178,7 @@ export function useProductForm() {
       if (shouldFetchCategoriesAndBestFor) {
         console.log('fetchRemainingData: Updating categories/bestFor/pricing...', {
           categories: data.categories,
+          platforms: data.platforms,
           bestFor: data.bestFor,
           pricing: data.pricing,
           suggestedCategories: data.suggestedCategories
@@ -1129,6 +1194,11 @@ export function useProductForm() {
         if (data.bestFor && data.bestFor.length > 0 && (!form.bestFor || form.bestFor.length === 0)) {
           form.bestFor = data.bestFor;
           console.log('fetchRemainingData: Set bestFor to:', data.bestFor);
+        }
+
+        if (data.platforms && data.platforms.length > 0 && (!form.platforms || form.platforms.length === 0)) {
+          form.platforms = data.platforms;
+          console.log('fetchRemainingData: Set platforms to:', data.platforms);
         }
 
         // Set pricing from classifier
@@ -1292,6 +1362,7 @@ export function useProductForm() {
 
       await delay(420);
       form.categories = sandboxPayload.categories;
+      form.platforms = sandboxPayload.platforms;
       form.bestFor = sandboxPayload.bestFor;
       form.pricing = sandboxPayload.pricing;
       form.pricing_page_url = sandboxPayload.pricing_page_url;
@@ -1428,6 +1499,7 @@ export function useProductForm() {
       ]);
 
       globalFormState.allCategories.value = categoriesResponse.data.categories;
+      globalFormState.allPlatforms.value = categoriesResponse.data.platforms || [];
       globalFormState.allBestFor.value = categoriesResponse.data.bestFor;
       globalFormState.allPricing.value = categoriesResponse.data.pricing;
       globalFormState.allTechStacks.value = techStackResponse.data;
@@ -1527,9 +1599,11 @@ export function useProductForm() {
       const displayData = element.getAttribute('data-display-data');
       const isAdmin = element.getAttribute('data-is-admin');
       const allPricing = element.getAttribute('data-pricing-categories');
+      const allPlatforms = element.getAttribute('data-platform-categories');
       const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+      const selectedPlatformCategories = element.getAttribute('data-selected-platform-categories');
 
-      console.log('Data attributes:', { displayData, isAdmin, allPricing, selectedBestForCategories });
+      console.log('Data attributes:', { displayData, isAdmin, allPricing, allPlatforms, selectedBestForCategories, selectedPlatformCategories });
 
       if (displayData) {
         try {
@@ -1540,72 +1614,14 @@ export function useProductForm() {
           if (isAdmin === 'true') {
             console.log('Loading data for admin user');
 
-            // Load the original product data
-            // The current_categories from the controller contains all categories (regular, pricing, bestFor)
-            // We need to separate them based on their types
-            let allCategoryIds = initialData.current_categories || [];
-            let pricingCategoryIds = [];
-            let regularCategoryIds = [];
-            let bestForCategoryIds = [];
+            const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+              pricingCategories: allPricing,
+              platformCategories: allPlatforms,
+              selectedBestForCategories,
+              selectedPlatformCategories,
+            });
 
-            if (allCategoryIds.length > 0) {
-              try {
-                // Separate categories by type only if allPricing is available
-                if (allPricing) {
-                  const pricingCats = JSON.parse(allPricing);
-                  const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-
-                  // Parse selected bestFor categories to identify them separately
-                  let parsedBestFor = [];
-                  try {
-                    parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                  } catch (e) {
-                    console.error('Error parsing selectedBestForCategories:', e);
-                    parsedBestFor = [];
-                  }
-
-                  // Separate pricing, bestFor, and regular categories
-                  pricingCategoryIds = allCategoryIds.filter(catId =>
-                    pricingCatIds.includes(parseInt(catId))
-                  );
-
-                  bestForCategoryIds = allCategoryIds.filter(catId =>
-                    parsedBestFor.includes(parseInt(catId))
-                  );
-
-                  // Regular categories are those that are neither pricing nor bestFor
-                  regularCategoryIds = allCategoryIds.filter(catId => {
-                    const catIntId = parseInt(catId);
-                    return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
-                  });
-                } else {
-                  // If no pricing categories info, we need to use a different approach
-                  // Since we don't know which are pricing, we'll assume none are pricing
-                  // and all are regular categories (excluding known bestFor which are handled separately)
-                  try {
-                    const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                    // Separate bestFor from regular categories
-                    bestForCategoryIds = allCategoryIds.filter(catId =>
-                      parsedBestFor.includes(parseInt(catId))
-                    );
-                    regularCategoryIds = allCategoryIds.filter(catId =>
-                      !parsedBestFor.includes(parseInt(catId))
-                    );
-                  } catch (e) {
-                    console.error('Error parsing selectedBestForCategories:', e);
-                    regularCategoryIds = allCategoryIds;
-                  }
-                }
-              } catch (e) {
-                console.error('Error parsing pricing categories:', e);
-                // If parsing fails, treat all as regular categories
-                regularCategoryIds = allCategoryIds;
-              }
-            } else {
-              regularCategoryIds = allCategoryIds;
-            }
-
-            console.log('Category IDs - Regular:', regularCategoryIds, 'Pricing:', pricingCategoryIds, 'BestFor:', bestForCategoryIds);
+            console.log('Category IDs - Regular:', separatedCategories.categories, 'Pricing:', separatedCategories.pricing, 'BestFor:', separatedCategories.bestFor, 'Platforms:', separatedCategories.platforms);
 
             // Format the logo preview URL if it's a relative path
             let logoUrl = initialData.logo_url || initialData.logo;
@@ -1647,9 +1663,10 @@ export function useProductForm() {
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',
               link: initialData.link || '',
-              categories: regularCategoryIds.map(id => parseInt(id)),
-              bestFor: JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id)),
-              pricing: pricingCategoryIds.map(id => parseInt(id)),
+              categories: separatedCategories.categories,
+              platforms: separatedCategories.platforms,
+              bestFor: separatedCategories.bestFor,
+              pricing: separatedCategories.pricing,
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
@@ -1700,98 +1717,15 @@ export function useProductForm() {
               logoUrl = `/storage/${logoUrl}`;
             }
 
-            // For regular users, load data as appropriate
-            // Need to separate categories like we do for admin users
-            let allCategoryIds = initialData.current_categories || [];
-            let pricingCategoryIds = [];
-            let regularCategoryIds = [];
-            let bestForCategoryIds = [];
+            const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+              pricingCategories: allPricing,
+              platformCategories: allPlatforms,
+              selectedBestForCategories,
+              selectedPlatformCategories,
+            });
 
-            console.log('All category IDs:', allCategoryIds);
-
-            if (allCategoryIds.length > 0) {
-              try {
-                // Separate categories by type only if allPricing is available
-                if (allPricing) {
-                  const pricingCats = JSON.parse(allPricing);
-                  console.log('Parsed pricing categories:', pricingCats);
-                  const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-
-                  // Parse selected bestFor categories to identify them separately
-                  let parsedBestFor = [];
-                  try {
-                    parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                    console.log('Parsed best for categories:', parsedBestFor);
-                  } catch (e) {
-                    console.error('Error parsing selectedBestForCategories:', e);
-                    parsedBestFor = [];
-                  }
-
-                  // Separate pricing, bestFor, and regular categories
-                  pricingCategoryIds = allCategoryIds.filter(catId =>
-                    pricingCatIds.includes(parseInt(catId))
-                  );
-
-                  bestForCategoryIds = allCategoryIds.filter(catId =>
-                    parsedBestFor.includes(parseInt(catId))
-                  );
-
-                  // Regular categories are those that are neither pricing nor bestFor
-                  regularCategoryIds = allCategoryIds.filter(catId => {
-                    const catIntId = parseInt(catId);
-                    return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
-                  });
-
-                  console.log('Pricing category IDs:', pricingCategoryIds);
-                  console.log('Regular category IDs:', regularCategoryIds);
-                  console.log('BestFor category IDs:', bestForCategoryIds);
-                } else {
-                  // If no pricing categories info, we need to use a different approach
-                  // Since we don't know which are pricing, we'll assume none are pricing
-                  // and all are regular categories (excluding known bestFor which are handled separately)
-                  try {
-                    const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                    // Separate bestFor from regular categories
-                    bestForCategoryIds = allCategoryIds.filter(catId =>
-                      parsedBestFor.includes(parseInt(catId))
-                    );
-                    regularCategoryIds = allCategoryIds.filter(catId =>
-                      !parsedBestFor.includes(parseInt(catId))
-                    );
-                    console.log('Using separated bestFor and regular categories');
-                  } catch (e) {
-                    console.error('Error parsing selectedBestForCategories:', e);
-                    regularCategoryIds = allCategoryIds;
-                    console.log('Using all categories as regular categories');
-                  }
-                }
-              } catch (e) {
-                console.error('Error parsing pricing categories for regular user:', e);
-                // If parsing fails, treat all as regular categories
-                regularCategoryIds = allCategoryIds;
-              }
-            } else {
-              regularCategoryIds = allCategoryIds;
-            }
-
-            // Parse selectedBestForCategories safely (this was already done above, but keeping for consistency)
-            let parsedBestFor = [];
-            try {
-              parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-              if (!bestForCategoryIds || bestForCategoryIds.length === 0) {
-                // If bestForCategoryIds wasn't set in the main logic above, set it here
-                bestForCategoryIds = allCategoryIds.filter(catId =>
-                  parsedBestFor.includes(parseInt(catId))
-                );
-              }
-              console.log('Parsed best for categories:', parsedBestFor);
-            } catch (e) {
-              console.error('Error parsing selectedBestForCategories:', e);
-              parsedBestFor = [];
-              if (!bestForCategoryIds) {
-                bestForCategoryIds = [];
-              }
-            }
+            console.log('All category IDs:', initialData.current_categories || []);
+            console.log('Separated category IDs:', separatedCategories);
 
             // Parse video URL if it's in JSON format
             let parsedVideoUrl = initialData.video_url;
@@ -1825,9 +1759,10 @@ export function useProductForm() {
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',
               link: initialData.link || '',
-              categories: regularCategoryIds.map(id => parseInt(id)),
-              bestFor: bestForCategoryIds.map(id => parseInt(id)),
-              pricing: pricingCategoryIds.map(id => parseInt(id)),
+              categories: separatedCategories.categories,
+              platforms: separatedCategories.platforms,
+              bestFor: separatedCategories.bestFor,
+              pricing: separatedCategories.pricing,
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
@@ -1879,69 +1814,22 @@ export function useProductForm() {
           if (element) {
             const displayData = element.getAttribute('data-display-data');
             const isAdmin = element.getAttribute('data-is-admin');
+            const allPricing = element.getAttribute('data-pricing-categories');
+            const allPlatforms = element.getAttribute('data-platform-categories');
             const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
+            const selectedPlatformCategories = element.getAttribute('data-selected-platform-categories');
 
             if (displayData) {
               try {
                 const initialData = JSON.parse(displayData);
+                const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+                  pricingCategories: allPricing,
+                  platformCategories: allPlatforms,
+                  selectedBestForCategories,
+                  selectedPlatformCategories,
+                });
+
                 if (isAdmin === 'true') {
-                  // For fallback, we need to try to separate categories as well
-                  let allCategoryIds = initialData.current_categories || [];
-                  let pricingCategoryIds = [];
-                  let regularCategoryIds = [];
-                  let bestForCategoryIds = [];
-
-                  if (allCategoryIds.length > 0) {
-                    try {
-                      if (allPricing) {
-                        const pricingCats = JSON.parse(allPricing);
-                        const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-
-                        let parsedBestFor = [];
-                        try {
-                          parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                        } catch (e) {
-                          console.error('Error parsing selectedBestForCategories in fallback:', e);
-                          parsedBestFor = [];
-                        }
-
-                        // Separate pricing, bestFor, and regular categories
-                        pricingCategoryIds = allCategoryIds.filter(catId =>
-                          pricingCatIds.includes(parseInt(catId))
-                        );
-
-                        bestForCategoryIds = allCategoryIds.filter(catId =>
-                          parsedBestFor.includes(parseInt(catId))
-                        );
-
-                        // Regular categories are those that are neither pricing nor bestFor
-                        regularCategoryIds = allCategoryIds.filter(catId => {
-                          const catIntId = parseInt(catId);
-                          return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
-                        });
-                      } else {
-                        // If no pricing categories info, separate bestFor from regular
-                        try {
-                          const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                          bestForCategoryIds = allCategoryIds.filter(catId =>
-                            parsedBestFor.includes(parseInt(catId))
-                          );
-                          regularCategoryIds = allCategoryIds.filter(catId =>
-                            !parsedBestFor.includes(parseInt(catId))
-                          );
-                        } catch (e) {
-                          console.error('Error parsing selectedBestForCategories in fallback:', e);
-                          regularCategoryIds = allCategoryIds;
-                        }
-                      }
-                    } catch (e) {
-                      console.error('Error in fallback category separation:', e);
-                      regularCategoryIds = allCategoryIds;
-                    }
-                  } else {
-                    regularCategoryIds = allCategoryIds;
-                  }
-
                   let parsedVideoUrl = initialData.video_url || '';
                   if (typeof parsedVideoUrl === 'string' && (parsedVideoUrl.startsWith('{') || parsedVideoUrl.startsWith('"'))) {
                     try {
@@ -1972,9 +1860,10 @@ export function useProductForm() {
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
                     description: initialData.description || '',
                     link: initialData.link || '',
-                    categories: regularCategoryIds,
-                    bestFor: bestForCategoryIds,
-                    pricing: pricingCategoryIds,
+                    categories: separatedCategories.categories,
+                    platforms: separatedCategories.platforms,
+                    bestFor: separatedCategories.bestFor,
+                    pricing: separatedCategories.pricing,
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: parsedVideoUrl,
                     fromSource: fromParam || null,
@@ -1982,64 +1871,6 @@ export function useProductForm() {
                     alternative_overrides_input: initialData.alternative_overrides_input || '',
                   });
                 } else {
-                  // Also handle regular users in fallback
-                  // Apply the same category separation logic for consistency
-                  let allCategoryIds = initialData.current_categories || [];
-                  let pricingCategoryIds = [];
-                  let regularCategoryIds = [];
-                  let bestForCategoryIds = [];
-
-                  if (allCategoryIds.length > 0) {
-                    try {
-                      if (allPricing) {
-                        const pricingCats = JSON.parse(allPricing);
-                        const pricingCatIds = pricingCats.map(cat => parseInt(cat.id));
-
-                        let parsedBestFor = [];
-                        try {
-                          parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                        } catch (e) {
-                          console.error('Error parsing selectedBestForCategories in fallback:', e);
-                          parsedBestFor = [];
-                        }
-
-                        // Separate pricing, bestFor, and regular categories
-                        pricingCategoryIds = allCategoryIds.filter(catId =>
-                          pricingCatIds.includes(parseInt(catId))
-                        );
-
-                        bestForCategoryIds = allCategoryIds.filter(catId =>
-                          parsedBestFor.includes(parseInt(catId))
-                        );
-
-                        // Regular categories are those that are neither pricing nor bestFor
-                        regularCategoryIds = allCategoryIds.filter(catId => {
-                          const catIntId = parseInt(catId);
-                          return !pricingCatIds.includes(catIntId) && !parsedBestFor.includes(catIntId);
-                        });
-                      } else {
-                        // If no pricing categories info, separate bestFor from regular
-                        try {
-                          const parsedBestFor = JSON.parse(selectedBestForCategories || '[]').map(id => parseInt(id));
-                          bestForCategoryIds = allCategoryIds.filter(catId =>
-                            parsedBestFor.includes(parseInt(catId))
-                          );
-                          regularCategoryIds = allCategoryIds.filter(catId =>
-                            !parsedBestFor.includes(parseInt(catId))
-                          );
-                        } catch (e) {
-                          console.error('Error parsing selectedBestForCategories in fallback:', e);
-                          regularCategoryIds = allCategoryIds;
-                        }
-                      }
-                    } catch (e) {
-                      console.error('Error in fallback category separation:', e);
-                      regularCategoryIds = allCategoryIds;
-                    }
-                  } else {
-                    regularCategoryIds = allCategoryIds;
-                  }
-
                   // Capture the from parameter if present in URL
                   const urlParams = new URLSearchParams(window.location.search);
                   const fromParam = urlParams.get('from');
@@ -2050,9 +1881,10 @@ export function useProductForm() {
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
                     description: initialData.description || '',
                     link: initialData.link || '',
-                    categories: regularCategoryIds,
-                    bestFor: bestForCategoryIds,
-                    pricing: pricingCategoryIds,
+                    categories: separatedCategories.categories,
+                    platforms: separatedCategories.platforms,
+                    bestFor: separatedCategories.bestFor,
+                    pricing: separatedCategories.pricing,
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: initialData.video_url || '',
                     id: initialData.id, // Set the product ID
@@ -2144,6 +1976,7 @@ export function useProductForm() {
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,
     allCategories: globalFormState.allCategories,
+    allPlatforms: globalFormState.allPlatforms,
     allBestFor: globalFormState.allBestFor,
     allPricing: globalFormState.allPricing,
     allTechStacks: globalFormState.allTechStacks,

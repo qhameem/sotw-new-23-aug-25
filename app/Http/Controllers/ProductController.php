@@ -33,6 +33,7 @@ use App\Services\BadgeService;
 use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
+use App\Support\CategoryTypeRegistry;
 use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
@@ -94,18 +95,12 @@ class ProductController extends Controller
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
-        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
-        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
-        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
-        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-
-        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
-        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
-        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-
-        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
-        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
-        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+        [
+            'regularCategories' => $regularCategories,
+            'pricingCategories' => $pricingCategories,
+            'bestForCategories' => $bestForCategories,
+            'platformCategories' => $platformCategories,
+        ] = $this->loadProductCategoryGroups();
 
         $oldInput = session()->getOldInput();
         $displayData = [
@@ -134,6 +129,7 @@ class ProductController extends Controller
             'regularCategories',
             'bestForCategories',
             'pricingCategories',
+            'platformCategories',
             'allTechStacksData',
             'types'
         ));
@@ -144,18 +140,12 @@ class ProductController extends Controller
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
-        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
-        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
-        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
-        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-
-        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
-        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
-        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-
-        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
-        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
-        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+        [
+            'regularCategories' => $regularCategories,
+            'pricingCategories' => $pricingCategories,
+            'bestForCategories' => $bestForCategories,
+            'platformCategories' => $platformCategories,
+        ] = $this->loadProductCategoryGroups();
 
         $oldInput = session()->getOldInput();
         $displayData = [
@@ -179,6 +169,7 @@ class ProductController extends Controller
             'regularCategories',
             'bestForCategories',
             'pricingCategories',
+            'platformCategories',
             'allTechStacksData',
             'types',
             'submissionBgUrl'
@@ -255,9 +246,9 @@ class ProductController extends Controller
                 },
             ],
             'categories.*' => 'nullable|exists:categories,id',
-            'custom_categories' => 'nullable|array|max:3',
+            'custom_categories' => 'nullable|array|max:11',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,best_for',
+            'custom_categories.*.type' => 'required|in:category,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
@@ -288,19 +279,16 @@ class ProductController extends Controller
 
         $validated['slug'] = $this->slugService->generateUniqueSlug($validated['name'], $existsCheck);
 
-        $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
-        $softwareType = Type::where('name', 'Software Categories')->with('categories')->first();
-        $bestForType = Type::where('id', 3)->with('categories')->first();
+        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
+        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
-        $bestForIds = $bestForType ? $bestForType->categories->pluck('id') : collect();
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing'); // Note: Assuming users don't submit custom pricing types, but theoretically could
         $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
-        $hasCustomBestFor = collect($customCategories)->contains('type', 'best_for');
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
@@ -594,18 +582,12 @@ class ProductController extends Controller
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
-        $categoryTypes = json_decode(Storage::get('category_types.json'), true);
-        $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
-        $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
-        $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-
-        $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
-        $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
-        $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-
-        $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get();
-        $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get();
-        $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get();
+        [
+            'regularCategories' => $regularCategories,
+            'pricingCategories' => $pricingCategories,
+            'bestForCategories' => $bestForCategories,
+            'platformCategories' => $platformCategories,
+        ] = $this->loadProductCategoryGroups();
 
         $product->load(['categories', 'proposedCategories', 'techStacks', 'media']);
 
@@ -660,13 +642,9 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
 
         // Get the selected bestFor categories to pass to the JavaScript component
-        $selectedBestForCategories = $product->categories()
-            ->whereHas('types', function ($query) {
-                $query->where('types.id', 3); // Best for type ID
-            })
-            ->pluck('categories.id')
-            ->map(fn($id) => (string) $id)
-            ->toArray();
+        $useProposedCategories = $product->approved && $product->has_pending_edits;
+        $selectedBestForCategories = $this->selectedCategoryIdsForType($product, CategoryTypeRegistry::BEST_FOR, $useProposedCategories);
+        $selectedPlatformCategories = $this->selectedCategoryIdsForType($product, CategoryTypeRegistry::PLATFORM, $useProposedCategories);
 
         // Debug: Log the display data to see what's being passed
         \Log::info('Product edit displayData', [
@@ -684,9 +662,11 @@ class ProductController extends Controller
             'regularCategories',
             'bestForCategories',
             'pricingCategories',
+            'platformCategories',
             'allTechStacksData',
             'types',
             'selectedBestForCategories',
+            'selectedPlatformCategories',
             'submissionBgUrl'
         ));
     }
@@ -718,9 +698,9 @@ class ProductController extends Controller
                 },
             ],
             'categories.*' => 'nullable|exists:categories,id',
-            'custom_categories' => 'nullable|array|max:3',
+            'custom_categories' => 'nullable|array|max:11',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,best_for',
+            'custom_categories.*.type' => 'required|in:category,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|string|max:2048',
@@ -743,19 +723,16 @@ class ProductController extends Controller
         // Category validation (ensure at least one from each required type is selected)
         // This logic can be kept or adjusted based on whether proposed edits should also adhere to it.
         // For simplicity, we'll assume it applies.
-        $pricingType = Type::where('name', 'Pricing')->with('categories')->first();
-        $softwareType = Type::where('name', 'Software Categories')->with('categories')->first(); // Assuming this type name
-        $bestForType = Type::where('id', 3)->with('categories')->first();
+        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
+        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
-        $bestForIds = $bestForType ? $bestForType->categories->pluck('id') : collect();
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');
         $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
-        $hasCustomBestFor = collect($customCategories)->contains('type', 'best_for');
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             // Return JSON response for API calls
@@ -1495,6 +1472,10 @@ class ProductController extends Controller
             return $category->types->contains('name', 'Best for');
         });
 
+        $platformCategories = $product->categories->filter(function ($category) {
+            return $category->types->contains('name', CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::PLATFORM));
+        });
+
         $similarProducts = $this->relatedProductService->getComparisons($product, 3);
 
         $title = $product->name;
@@ -1532,6 +1513,7 @@ class ProductController extends Controller
             'similarProducts',
             'metaDescription',
             'bestForCategories',
+            'platformCategories',
             'allCategories',
             'currentUserClaim',
             'canClaimProduct'
@@ -1939,32 +1921,18 @@ class ProductController extends Controller
     public function getCategories()
     {
         try {
-            $categoryTypes = json_decode(Storage::disk('local')->get('category_types.json'), true);
-            if (!$categoryTypes) {
-                // Fallback or error if the JSON file is missing or invalid
-                $categoryTypes = [
-                    ['type_id' => 1, 'type_name' => 'Category'],
-                    ['type_id' => 2, 'type_name' => 'Pricing'],
-                    ['type_id' => 3, 'type_name' => 'Best for'],
-                ];
-            }
-
-            $categoryTypeId = collect($categoryTypes)->firstWhere('type_name', 'Category')['type_id'] ?? 1;
-            $pricingTypeId = collect($categoryTypes)->firstWhere('type_name', 'Pricing')['type_id'] ?? 2;
-            $bestForTypeId = collect($categoryTypes)->firstWhere('type_name', 'Best for')['type_id'] ?? 3;
-
-            $regularCategoryIds = DB::table('category_types')->where('type_id', $categoryTypeId)->pluck('category_id');
-            $pricingCategoryIds = DB::table('category_types')->where('type_id', $pricingTypeId)->pluck('category_id');
-            $bestForCategoryIds = DB::table('category_types')->where('type_id', $bestForTypeId)->pluck('category_id');
-
-            $regularCategories = Category::whereIn('id', $regularCategoryIds)->orderBy('name')->get(['id', 'name']);
-            $pricingCategories = Category::whereIn('id', $pricingCategoryIds)->orderBy('name')->get(['id', 'name']);
-            $bestForCategories = Category::whereIn('id', $bestForCategoryIds)->orderBy('name')->get(['id', 'name']);
+            [
+                'regularCategories' => $regularCategories,
+                'pricingCategories' => $pricingCategories,
+                'bestForCategories' => $bestForCategories,
+                'platformCategories' => $platformCategories,
+            ] = $this->loadProductCategoryGroups(['id', 'name']);
 
             return response()->json([
                 'categories' => $regularCategories,
                 'bestFor' => $bestForCategories,
                 'pricing' => $pricingCategories,
+                'platforms' => $platformCategories,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch categories for API: ' . $e->getMessage());
@@ -2321,6 +2289,7 @@ class ProductController extends Controller
                         'categories' => [],
                         'bestFor' => [],
                         'pricing' => [],
+                        'platforms' => [],
                         'pricing_page_url' => null,
                         'x_account' => null,
                         'maker_links' => [],
@@ -2464,10 +2433,12 @@ class ProductController extends Controller
                 $categories = $classificationResult['categories'] ?? [];
                 $bestFor = $classificationResult['best_for'] ?? [];
                 $pricing = $classificationResult['pricing'] ?? [];
+                $platforms = $classificationResult['platforms'] ?? [];
 
                 $categoryIds = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
                 $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
                 $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
+                $platformIds = !empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
 
                 // Find category names the classifier suggested but that don't exist in DB
                 $matchedCategoryNames = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
@@ -2481,6 +2452,7 @@ class ProductController extends Controller
                     'categories' => $categoryIds,
                     'bestFor' => $bestForIds,
                     'pricing' => $pricingIds,
+                    'platforms' => $platformIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'screenshot_url' => $this->screenshotService->capture($url),
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
@@ -2499,6 +2471,7 @@ class ProductController extends Controller
                     'categories' => [],
                     'bestFor' => [],
                     'pricing' => [],
+                    'platforms' => [],
                     'pricing_page_url' => null,
                     'x_account' => null,
                     'maker_links' => [],
@@ -2720,6 +2693,7 @@ class ProductController extends Controller
             $categories = $classificationResult['categories'] ?? [];
             $bestFor = $classificationResult['best_for'] ?? [];
             $pricing = $classificationResult['pricing'] ?? [];
+            $platforms = $classificationResult['platforms'] ?? [];
 
             // Convert category names to IDs
             $categoryIds = [];
@@ -2740,6 +2714,11 @@ class ProductController extends Controller
                 $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
             }
 
+            $platformIds = [];
+            if (!empty($platforms)) {
+                $platformIds = Category::whereIn('name', $platforms)->pluck('id')->toArray();
+            }
+
             $responseData = [
                 'description' => $description,
                 'logos' => $logos,
@@ -2748,6 +2727,7 @@ class ProductController extends Controller
                 'categories' => $categoryIds,
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,
+                'platforms' => $platformIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'screenshot_url' => $this->screenshotService->capture($url),
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
@@ -2773,6 +2753,7 @@ class ProductController extends Controller
                 'categories' => [],
                 'bestFor' => [],
                 'pricing' => [],
+                'platforms' => [],
                 'pricing_page_url' => null,
                 'x_account' => null,
                 'maker_links' => [],
@@ -2904,6 +2885,44 @@ class ProductController extends Controller
             ),
             'type' => $type === 'image' && $isExternalPath ? 'screenshot' : $type,
         ]);
+    }
+
+    private function productCategoryGroupQueries(): array
+    {
+        return [
+            'regularCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE));
+            })->orderBy('name'),
+            'pricingCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING));
+            })->orderBy('name'),
+            'bestForCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR));
+            })->orderBy('name'),
+            'platformCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM));
+            })->orderBy('name'),
+        ];
+    }
+
+    private function loadProductCategoryGroups(array $columns = ['*']): array
+    {
+        return collect($this->productCategoryGroupQueries())
+            ->map(fn ($query) => $query->get($columns))
+            ->all();
+    }
+
+    private function selectedCategoryIdsForType(Product $product, string $bucket, bool $useProposed = false): array
+    {
+        $relation = $useProposed ? $product->proposedCategories() : $product->categories();
+
+        return $relation
+            ->whereHas('types', function ($query) use ($bucket) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor($bucket));
+            })
+            ->pluck('categories.id')
+            ->map(fn ($id) => (string) $id)
+            ->toArray();
     }
 
     protected function getNextLaunchTimeIso(): string

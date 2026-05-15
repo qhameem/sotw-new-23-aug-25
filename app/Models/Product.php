@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use App\Support\CategoryTypeRegistry;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
@@ -236,26 +237,15 @@ class Product extends Model implements Sitemapable
 
     protected function isPlatformBreadcrumbCategory(Category $category): bool
     {
-        $platformCategoryNames = [
-            'android',
-            'android app',
-            'browser',
-            'chrome',
-            'firefox',
-            'ios',
-            'ipad',
-            'iphone',
-            'linux',
-            'mac',
-            'mac app',
-            'macos',
-            'safari',
-            'web',
-            'web app',
-            'windows',
-        ];
+        $typeNames = $category->types
+            ->pluck('name')
+            ->map(fn ($name) => Str::lower(trim((string) $name)));
 
-        return in_array(Str::lower(trim($category->name)), $platformCategoryNames, true);
+        if ($typeNames->contains(Str::lower(CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::PLATFORM)))) {
+            return true;
+        }
+
+        return in_array(Str::lower(trim($category->name)), CategoryTypeRegistry::platformCategoryNames(), true);
     }
 
     protected function breadcrumbCategoryPriority(Category $category): int

@@ -17,7 +17,9 @@
 <div class="flex flex-wrap gap-2 items-center">
     @php
         $generalCategories = $categories->filter(function ($cat) {
-            return !$cat->types->contains('name', 'Pricing') && !$cat->types->contains('name', 'Best for');
+            return !$cat->types->contains('name', 'Pricing')
+                && !$cat->types->contains('name', 'Best for')
+                && !$cat->types->contains('name', 'Platform');
         });
     @endphp
     @forelse($generalCategories as $category)

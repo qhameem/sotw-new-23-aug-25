@@ -3,10 +3,12 @@
      data-regular-categories="{{ json_encode($regularCategories ?? []) }}"
      data-best-for-categories="{{ json_encode($bestForCategories ?? []) }}"
      data-pricing-categories="{{ json_encode($pricingCategories ?? []) }}"
+     data-platform-categories="{{ json_encode($platformCategories ?? []) }}"
      data-all-tech-stacks-data="{{ json_encode($allTechStacksData ?? []) }}"
      data-product="{{ json_encode($product ?? null) }}"
      data-all-categories="{{ json_encode($allCategories ?? []) }}"
      data-types="{{ json_encode($types ?? []) }}"
      data-selected-best-for-categories="{{ json_encode($selectedBestForCategories ?? []) }}"
+     data-selected-platform-categories="{{ json_encode($selectedPlatformCategories ?? []) }}"
      data-is-admin="true">
 </div>

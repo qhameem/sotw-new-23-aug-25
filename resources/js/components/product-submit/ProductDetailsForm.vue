@@ -166,6 +166,82 @@
        </div>
     </div>
 
+    <!-- Platform (Chip Selection) -->
+    <div>
+       <div class="flex items-center justify-between mb-3">
+          <label class="block text-xs font-bold text-gray-900">Platform <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+       </div>
+
+       <div class="relative mb-3">
+         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+           <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+           </svg>
+         </div>
+         <input
+           type="text"
+           v-model="platformSearch"
+           placeholder="Search platforms..."
+           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+           :class="{'pr-32': showAddPlatformButton, 'pr-8': !showAddPlatformButton && platformSearch.length >= 2}"
+         >
+         <button
+           v-if="platformSearch.length >= 2 && !showAddPlatformButton"
+           type="button"
+           @click="platformSearch = ''"
+           class="absolute inset-y-0 right-0 px-2.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+         >
+           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+         </button>
+         <button
+           v-if="showAddPlatformButton"
+           type="button"
+           @click="addCustomPlatformFromSearch"
+           class="absolute inset-y-0 right-0 px-3 flex items-center text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors"
+         >
+           + Add "{{ platformSearch.trim() }}"
+         </button>
+       </div>
+
+       <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+          <button
+            v-for="platform in filteredPlatforms"
+            :key="platform.id"
+            type="button"
+            @click="togglePlatform(platform.id)"
+            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+            :class="modelValue.platforms.includes(platform.id)
+              ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
+              : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'"
+          >
+            {{ platform.name }}
+            <svg v-if="modelValue.platforms.includes(platform.id)" class="ml-1.5 h-3 w-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+          <div v-if="filteredPlatforms.length === 0 && !showAddPlatformButton" class="w-full py-4 text-center text-xs text-gray-400 italic">
+             No platforms found matching "{{ platformSearch }}"
+          </div>
+       </div>
+
+       <div v-if="modelValue.platforms_custom && modelValue.platforms_custom.length > 0" class="flex flex-wrap gap-2 mt-2">
+         <span
+           v-for="customPlatform in modelValue.platforms_custom"
+           :key="customPlatform.id"
+           class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-purple-50 border border-purple-200 text-purple-700"
+         >
+           {{ customPlatform.name }} (pending)
+           <button
+             type="button"
+             @click="removeCustomPlatform(customPlatform.id)"
+             class="ml-2 text-purple-500 hover:text-purple-700"
+           >
+             &times;
+           </button>
+         </span>
+       </div>
+    </div>
+
 
 
     <!-- Best For / Tags (Chip Selection) -->
@@ -351,6 +427,8 @@ const props = defineProps({
       description: '',
       categories: [],
       categories_custom: [], // Custom categories
+      platforms: [],
+      platforms_custom: [],
       bestFor: [],
       bestFor_custom: [], // Custom bestFor
       pricing: [],
@@ -361,6 +439,7 @@ const props = defineProps({
     })
   },
   allCategories: { type: Array, default: () => [] },
+  allPlatforms: { type: Array, default: () => [] },
   allBestFor: { type: Array, default: () => [] },
   allPricing: { type: Array, default: () => [] },
   loadingStates: { type: Object, default: () => ({}) },
@@ -388,6 +467,7 @@ watch(() => props.modelValue, (newVal) => {
 const nameInput = ref(null);
 const makerLinks = ref(props.modelValue.maker_links?.length ? [...props.modelValue.maker_links] : ['']);
 const categorySearch = ref('');
+const platformSearch = ref('');
 const tagSearch = ref('');
 const techStackSearch = ref(''); // For tech stack search
 // Computed: show "Add as custom" button when search text has no exact match
@@ -408,6 +488,14 @@ const showAddTagButton = computed(() => {
   if (props.modelValue.bestFor_custom?.some(t => t.name.toLowerCase() === search.toLowerCase())) return false;
   if ((props.modelValue.bestFor_custom?.length || 0) >= 5) return false;
   return !props.allBestFor?.some(item => item.name.toLowerCase() === search.toLowerCase());
+});
+
+const showAddPlatformButton = computed(() => {
+  const search = platformSearch.value.trim();
+  if (!search) return false;
+  if (props.modelValue.platforms_custom?.some(p => p.name.toLowerCase() === search.toLowerCase())) return false;
+  if ((props.modelValue.platforms_custom?.length || 0) >= 3) return false;
+  return !props.allPlatforms?.some(item => item.name.toLowerCase() === search.toLowerCase());
 });
 
 // Computed filtered categories
@@ -446,6 +534,23 @@ const filteredBestFor = computed(() => {
     .sort((a, b) => {
       const aSelected = props.modelValue.bestFor.includes(a.id);
       const bSelected = props.modelValue.bestFor.includes(b.id);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return a.name.localeCompare(b.name);
+    });
+});
+
+const filteredPlatforms = computed(() => {
+  if (!props.allPlatforms) return [];
+
+  const search = platformSearch.value.toLowerCase().trim();
+  const existingCustomPlatforms = (props.modelValue.platforms_custom || []).map((item) => item.name.toLowerCase());
+
+  return props.allPlatforms
+    .filter((item) => item.name.toLowerCase().includes(search) && !existingCustomPlatforms.includes(item.name.toLowerCase()))
+    .sort((a, b) => {
+      const aSelected = props.modelValue.platforms.includes(a.id);
+      const bSelected = props.modelValue.platforms.includes(b.id);
       if (aSelected && !bSelected) return -1;
       if (!aSelected && bSelected) return 1;
       return a.name.localeCompare(b.name);
@@ -521,6 +626,19 @@ function toggleBestFor(id) {
     tagSearch.value = ''; // Clear search after selection
 }
 
+function togglePlatform(id) {
+    const current = [...props.modelValue.platforms];
+    const index = current.indexOf(id);
+    if (index === -1) {
+        if (current.length >= 3) return;
+        current.push(id);
+    } else {
+        current.splice(index, 1);
+    }
+    updateField('platforms', current);
+    platformSearch.value = '';
+}
+
 // Card Logic for Pricing
 function togglePricing(id) {
     const current = [...props.modelValue.pricing];
@@ -563,6 +681,27 @@ function addCustomCategoryFromSearch() {
 function removeCustomCategory(customCategoryId) {
   const updatedCustomCategories = props.modelValue.categories_custom.filter(cat => cat.id !== customCategoryId);
   emit('update:modelValue', { ...props.modelValue, categories_custom: updatedCustomCategories });
+}
+
+function addCustomPlatformFromSearch() {
+  const name = platformSearch.value.trim();
+  if (!name) return;
+  if ((props.modelValue.platforms_custom?.length || 0) >= 3) return;
+
+  const newCustomPlatform = {
+    id: `custom-${Date.now()}`,
+    name,
+    is_custom: true
+  };
+
+  const updatedCustomPlatforms = [...(props.modelValue.platforms_custom || []), newCustomPlatform];
+  emit('update:modelValue', { ...props.modelValue, platforms_custom: updatedCustomPlatforms });
+  platformSearch.value = '';
+}
+
+function removeCustomPlatform(customPlatformId) {
+  const updatedCustomPlatforms = (props.modelValue.platforms_custom || []).filter(platform => platform.id !== customPlatformId);
+  emit('update:modelValue', { ...props.modelValue, platforms_custom: updatedCustomPlatforms });
 }
 
 // Functions to handle custom tags/bestFor (triggered from search inline button)

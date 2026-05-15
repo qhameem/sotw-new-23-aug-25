@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log; // Added for logging
 use Illuminate\Support\Facades\Storage; // Added for file operations
 use Illuminate\Support\Str; // Added for string operations
+use App\Support\CategoryTypeRegistry;
 use App\Support\ProductPublishSchedule;
 
 class ProductApprovalController extends Controller
@@ -507,7 +508,7 @@ class ProductApprovalController extends Controller
             return;
         }
 
-        if ($submission->type === 'category' || $submission->type === 'best_for') {
+        if (in_array($submission->type, ['category', 'best_for', 'platform'], true)) {
             $category = \App\Models\Category::firstOrCreate(
                 ['name' => $submission->name],
                 [
@@ -519,8 +520,13 @@ class ProductApprovalController extends Controller
 
             $product->categories()->syncWithoutDetaching([$category->id]);
 
-            $typeId = $submission->type === 'best_for' ? 3 : 1;
-            $type = \App\Models\Type::find($typeId);
+            $typeNames = match ($submission->type) {
+                'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
+                'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
+                default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),
+            };
+
+            $type = \App\Models\Type::whereIn('name', $typeNames)->first();
             if ($type) {
                 $category->types()->syncWithoutDetaching([$type->id]);
             }

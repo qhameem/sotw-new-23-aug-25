@@ -30,9 +30,9 @@ class ViewServiceProvider extends ServiceProvider
     {
         // Using a view composer to share the top categories with the navigation view
         View::composer('layouts.navigation', function ($view) {
-            // Fetch top 5 "Software" categories (those not of type 'Pricing')
+            // Fetch top 5 software categories (excluding pricing and platform-only taxonomy buckets)
             $softwareCategories = Category::whereDoesntHave('types', function ($query) {
-                $query->where('name', 'Pricing');
+                $query->whereIn('name', ['Pricing', 'Platform']);
             })
             ->withCount('products')
             ->orderBy('products_count', 'desc')

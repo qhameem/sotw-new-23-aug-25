@@ -11,7 +11,7 @@ class CustomCategorySubmission extends Model
 
     protected $fillable = [
         'product_id',
-        'type', // 'category', 'best_for', 'tech_stack'
+        'type', // 'category', 'best_for', 'platform', 'tech_stack'
         'name',
         'status', // 'pending', 'approved', 'rejected'
     ];

@@ -9,6 +9,9 @@ Analyze the following website content and determine the most relevant "Category"
 **Available Pricing Models:**
 {available_pricing_models}
 
+**Available Platforms:**
+{available_platforms}
+
 **Website Content:**
 {website_content}
 
@@ -16,11 +19,13 @@ Analyze the following website content and determine the most relevant "Category"
 1.  From the "Available Categories" list, identify up to 3 that best describe the product.
 2.  From the "Available 'Best for' Tags" list, identify up to 3 that best describe the target audience or use case for the product.
 3.  From the "Available Pricing Models" list, identify up to 2 that best describe the product's pricing model.
-4.  Return the results in JSON format, with the keys "categories", "best_for", and "pricing".
+4.  From the "Available Platforms" list, identify up to 3 that best describe where the product runs or is available.
+5.  Return the results in JSON format, with the keys "categories", "best_for", "pricing", and "platforms".
 
 **Example Output:**
 {
   "categories": ["Project Management", "Task Management"],
   "best_for": ["Small businesses", "Remote teams"],
-  "pricing": ["Freemium", "Subscription"]
+  "pricing": ["Freemium", "Subscription"],
+  "platforms": ["Web", "iOS"]
 }

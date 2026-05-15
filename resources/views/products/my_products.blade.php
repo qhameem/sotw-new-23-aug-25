@@ -349,15 +349,23 @@
                                                 </template>
                                             </div>
                                         </div>
+                                        <div>
+                                            <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Platform</p>
+                                            <div class="flex flex-wrap gap-2 mt-1">
+                                                <template x-for="catId in getPlatformCats()" :key="catId">
+                                                    <span class="text-gray-600 text-[0.65rem] border px-1.5 py-0.5 rounded" x-text="getCategoryName(catId)"></span>
+                                                </template>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div x-show="editingField === 'categories'" class="mt-2 space-y-4 bg-gray-50 p-3 rounded border">
-                                        @foreach(['Software Categories' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for'] as $title => $typeName)
+                                        @foreach(['Software Categories' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for', 'Platform' => 'Platform'] as $title => $typeName)
                                             <div>
                                                 <p class="text-[0.7rem] font-bold text-gray-500 mb-1">{{ $title }}</p>
                                                 <div class="flex flex-wrap gap-1.5">
                                                     @foreach($allCategories as $cat)
-                                                        @if(($typeName === 'Software' && ($cat->types->contains('name', 'Software') || $cat->types->contains('name', 'Category') || $cat->types->isEmpty())) || ($cat->types->contains('name', $typeName)))
+                                                        @if(($typeName === 'Software' && ($cat->types->contains('name', 'Software') || $cat->types->contains('name', 'Software Categories') || $cat->types->contains('name', 'Category') || $cat->types->isEmpty())) || ($cat->types->contains('name', $typeName)))
                                                             <label class="flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-gray-200 cursor-pointer text-[0.7rem] hover:bg-blue-50">
                                                                 <input type="checkbox" :value="{{ $cat->id }}" x-model="tempValue" class="size-3 rounded border-gray-300 text-blue-600">
                                                                 {{ $cat->name }}
@@ -484,7 +492,7 @@
                 getSoftwareCats() {
                     return this.categories.filter(id => {
                         const types = this.allCategories[id]?.types || [];
-                        return types.includes('Software') || types.includes('Category') || types.length === 0;
+                        return types.includes('Software') || types.includes('Software Categories') || types.includes('Category') || types.length === 0;
                     });
                 },
                 getPricingCats() {
@@ -492,6 +500,9 @@
                 },
                 getBestForCats() {
                     return this.categories.filter(id => (this.allCategories[id]?.types || []).includes('Best for'));
+                },
+                getPlatformCats() {
+                    return this.categories.filter(id => (this.allCategories[id]?.types || []).includes('Platform'));
                 },
 
                 async save(field) {

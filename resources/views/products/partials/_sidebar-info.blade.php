@@ -76,6 +76,20 @@
         </div>
     @endif
 
+    @if(isset($platformCategories) && $platformCategories->isNotEmpty())
+        <div>
+            <h3 class="text-xs text-gray-500 mb-2">Available on</h3>
+            <div class="flex flex-wrap gap-1.5">
+                @foreach($platformCategories as $category)
+                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                        class="text-xs text-gray-700 hover:text-gray-900 font-medium">
+                        {{ $category->name }}@if(!$loop->last)<span class="text-gray-300 ml-1.5">•</span>@endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if($product->pricing_page_url)
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Pricing Page</h3>

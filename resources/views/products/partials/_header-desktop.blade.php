@@ -64,7 +64,9 @@
         <div class="flex flex-wrap items-center mt-2.5">
             @php
                 $generalCategories = $product->categories->filter(function ($cat) {
-                    return !$cat->types->contains('name', 'Pricing') && !$cat->types->contains('name', 'Best for');
+                    return !$cat->types->contains('name', 'Pricing')
+                        && !$cat->types->contains('name', 'Best for')
+                        && !$cat->types->contains('name', 'Platform');
                 });
             @endphp
             @foreach($generalCategories as $category)

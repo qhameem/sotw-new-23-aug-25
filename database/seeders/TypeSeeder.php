@@ -16,6 +16,8 @@ class TypeSeeder extends Seeder
         $types = [
             ['name' => 'Pricing', 'description' => 'How the product is priced.'],
             ['name' => 'Software Categories', 'description' => 'The category of the software.'],
+            ['name' => 'Best for', 'description' => 'The audience or use case the product fits best.'],
+            ['name' => 'Platform', 'description' => 'Where the product runs or is available.'],
         ];
 
         foreach ($types as $type) {

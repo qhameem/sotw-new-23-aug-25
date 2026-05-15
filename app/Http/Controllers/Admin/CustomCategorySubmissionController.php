@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomCategorySubmission;
 use App\Models\Category;
 use App\Models\TechStack;
+use App\Support\CategoryTypeRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -29,7 +30,7 @@ class CustomCategorySubmissionController extends Controller
             'meta_description' => 'required|string',
         ]);
 
-        if ($submission->type === 'category' || $submission->type === 'best_for') {
+        if (in_array($submission->type, ['category', 'best_for', 'platform'], true)) {
             // Create the actual category in the database
             $newCategory = Category::create([
                 'name' => $submission->name,
@@ -38,19 +39,15 @@ class CustomCategorySubmissionController extends Controller
                 'meta_description' => $request->meta_description,
             ]);
 
-            // If it's a best_for type, we need to assign it to the correct type
-            if ($submission->type === 'best_for') {
-                $bestForTypeId = 3; // Assuming Best For type ID is 3
-                $type = \App\Models\Type::find($bestForTypeId);
-                if ($type) {
-                    $newCategory->types()->attach($type->id);
-                }
-            } elseif ($submission->type === 'category') {
-                $categoryId = 1; // Assuming Category type ID is 1
-                $type = \App\Models\Type::find($categoryId);
-                if ($type) {
-                    $newCategory->types()->attach($type->id);
-                }
+            $typeNames = match ($submission->type) {
+                'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
+                'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
+                default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),
+            };
+
+            $type = \App\Models\Type::whereIn('name', $typeNames)->first();
+            if ($type) {
+                $newCategory->types()->attach($type->id);
             }
 
             // Associate the new category with the product
