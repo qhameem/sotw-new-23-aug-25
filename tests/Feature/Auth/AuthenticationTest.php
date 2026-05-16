@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Notifications\EmailOtpNotification;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -144,4 +145,28 @@ test('email otp requests ignore honeypot submissions', function () {
 
     Notification::assertNothingSent();
     expect(AuthMagicLink::where('email', $email)->exists())->toBeFalse();
+});
+
+test('email otp send failures are returned as validation errors', function () {
+    $email = 'broken-mailer@example.com';
+
+    Notification::partialMock()
+        ->shouldReceive('send')
+        ->once()
+        ->andThrow(new TransportException('SMTP credentials rejected.'));
+
+    $this->from('/login')
+        ->post('/login', [
+            'email' => $email,
+        ])
+        ->assertRedirect('/login')
+        ->assertSessionHasErrors([
+            'email' => 'We could not send the sign-in code right now. Please try again in a moment.',
+        ]);
+
+    expect(
+        AuthMagicLink::where('email', $email)
+            ->whereNull('consumed_at')
+            ->exists()
+    )->toBeFalse();
 });

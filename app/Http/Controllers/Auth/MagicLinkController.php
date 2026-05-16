@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class MagicLinkController extends Controller
 {
@@ -46,9 +47,6 @@ class MagicLinkController extends Controller
                 ->with('auth_email', $email);
         }
 
-        RateLimiter::hit($emailThrottleKey, self::THROTTLE_SECONDS);
-        RateLimiter::hit($ipThrottleKey, self::THROTTLE_SECONDS);
-
         $user = User::where('email', $email)->first();
         $otp = $this->generateOtp();
 
@@ -68,9 +66,24 @@ class MagicLinkController extends Controller
             'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
         ]);
 
-        Notification::route('mail', $email)->notify(
-            new EmailOtpNotification($otp, self::EXPIRY_MINUTES)
-        );
+        try {
+            Notification::route('mail', $email)->notify(
+                new EmailOtpNotification($otp, self::EXPIRY_MINUTES)
+            );
+        } catch (TransportExceptionInterface $exception) {
+            $magicLink->forceFill([
+                'consumed_at' => now(),
+            ])->save();
+
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'email' => 'We could not send the sign-in code right now. Please try again in a moment.',
+            ]);
+        }
+
+        RateLimiter::hit($emailThrottleKey, self::THROTTLE_SECONDS);
+        RateLimiter::hit($ipThrottleKey, self::THROTTLE_SECONDS);
 
         return back()
             ->with('status', 'otp-sent')
