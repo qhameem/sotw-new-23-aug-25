@@ -1257,8 +1257,17 @@ class ProductController extends Controller
             ->whereIn('id', $regularProductIdsOnPage);
 
         if ($regularProductIdsOnPage->isNotEmpty()) {
-            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
-            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+            if (DB::connection()->getDriverName() === 'mysql') {
+                $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
+                $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+            } else {
+                $caseStatements = $regularProductIdsOnPage
+                    ->values()
+                    ->map(fn ($id, $index) => "WHEN {$id} THEN {$index}")
+                    ->implode(' ');
+
+                $regularProductsOnPageQuery->orderByRaw("CASE id {$caseStatements} END");
+            }
         }
         $regularProductsOnPage = $regularProductsOnPageQuery->get();
 

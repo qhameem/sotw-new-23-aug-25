@@ -1,6 +1,8 @@
 @extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'headerPadding' => 'px-4 md:pt-4'])
 
-@section('title', $meta_title ?? 'Software on the Web')
+@if (!request()->routeIs('home'))
+    @section('title', $meta_title ?? $pageTitle ?? 'Software on the Web')
+@endif
 
 @section('header-title')
     <span class="site-heading-text text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
