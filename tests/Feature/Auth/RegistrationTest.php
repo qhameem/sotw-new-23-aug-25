@@ -46,3 +46,35 @@ test('new users can sign up with an email otp and complete their profile', funct
 
     expect($user->fresh()->name)->toBe('Test User');
 });
+
+test('new users completing their profile are redirected to the requested destination instead of stale session intent', function () {
+    Notification::fake();
+
+    $email = 'fresh-home@example.com';
+
+    $this->withSession(['url.intended' => '/product/appwrite'])
+        ->post('/register', [
+            'email' => $email,
+            'intended' => '/',
+        ])
+        ->assertSessionHas('status', 'otp-sent');
+
+    $otp = null;
+
+    Notification::assertSentOnDemand(EmailOtpNotification::class, function ($notification, $channels, $notifiable) use ($email, &$otp) {
+        $otp = $notification->otp();
+
+        return $notifiable->routes['mail'] === $email;
+    });
+
+    $this->post(route('auth.email-otp.verify'), [
+        'email' => $email,
+        'otp' => $otp,
+    ])->assertRedirect(route('auth.complete-profile.show'));
+
+    $user = User::where('email', $email)->firstOrFail();
+
+    $this->actingAs($user)
+        ->post(route('auth.complete-profile.store'), ['name' => 'Home User'])
+        ->assertRedirect('/');
+});

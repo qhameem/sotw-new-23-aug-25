@@ -334,17 +334,22 @@ function flushProductImpressions() {
 
     pendingProductImpressions.clear();
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
     payloads.forEach(({ surface, products }) => {
         fetch('/api/impressions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify({
                 surface,
                 products,
             }),
+            credentials: 'same-origin',
             keepalive: true,
         }).catch((error) => {
             console.error('Failed to record product impressions:', error);

@@ -18,6 +18,8 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class MagicLinkController extends Controller
 {
+    private const POST_PROFILE_REDIRECT_SESSION_KEY = 'auth.post_profile_redirect_to';
+
     private const EXPIRY_MINUTES = 15;
 
     private const EMAIL_THROTTLE_ATTEMPTS = 5;
@@ -177,7 +179,9 @@ class MagicLinkController extends Controller
             'name' => $validated['name'],
         ])->save();
 
-        return redirect()->intended(route('home'))->with('status', 'profile-completed');
+        $redirectTo = $request->session()->pull(self::POST_PROFILE_REDIRECT_SESSION_KEY, route('home'));
+
+        return redirect()->to($redirectTo)->with('status', 'profile-completed');
     }
 
     private function authenticate(Request $request, AuthMagicLink $magicLink): RedirectResponse
@@ -210,6 +214,11 @@ class MagicLinkController extends Controller
         $request->session()->regenerate();
 
         if (blank($user->name)) {
+            $request->session()->put(
+                self::POST_PROFILE_REDIRECT_SESSION_KEY,
+                $magicLink->redirect_to ?: route('home')
+            );
+
             return redirect()
                 ->route('auth.complete-profile.show')
                 ->with('auth_sync_event', 'signed-in');
