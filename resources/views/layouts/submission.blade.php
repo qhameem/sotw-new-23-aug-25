@@ -479,7 +479,7 @@
     @stack('scripts')
     @stack('form-scripts')
 
-    <x-modal name="login-required-modal" :show="session('status') === 'otp-sent' || $errors->has('email') || $errors->has('otp')" maxWidth="md" focusable>
+    <x-modal name="login-required-modal" :show="session('status') === 'otp-sent' || $errors->has('email') || $errors->has('otp')" maxWidth="lg" :scrollable="false" :hideScrollbar="true" viewportPadding="compact" focusable>
         @include('auth.partials.login-modal-content')
     </x-modal>
 

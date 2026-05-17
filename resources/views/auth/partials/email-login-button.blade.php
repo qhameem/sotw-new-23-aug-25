@@ -1,6 +1,6 @@
 <button
     type="button"
-    @click="showEmail = true; $nextTick(() => $refs.emailInput?.focus())"
+    @click="openEmailLogin()"
     class="flex items-center justify-center w-full px-4 py-3 border border-gray-200 rounded-full text-sm font-semibold tracking-wide text-gray-800 bg-white shadow-sm transition-colors hover:bg-gray-50 hover:border-gray-300"
 >
     <svg class="h-6 w-6 mr-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -6,7 +6,19 @@
         emailSubmitting: false,
         otpSubmitting: false,
         otpSent: {{ session('status') === 'otp-sent' || $errors->has('otp') ? 'true' : 'false' }},
-        otpEmail: @js(old('email', session('auth_email')))
+        otpEmail: @js(old('email', session('auth_email'))),
+        openEmailLogin() {
+            if (this.showEmail) {
+                this.$nextTick(() => this.$refs.emailInput?.focus());
+                return;
+            }
+
+            this.showEmail = true;
+
+            this.$nextTick(() => {
+                this.$refs.emailInput?.focus();
+            });
+        }
     }"
     x-init="intendedUrl = window.location.href"
     class="px-8 py-5 sm:px-10 sm:py-6"
@@ -22,17 +34,35 @@
         <div class="text-xs text-gray-500 w-72 text-center">Use Google or continue with email. New users are created automatically the first time they sign in.</div>
     </div>
 
-    <div x-show="!otpSent" class="mt-7 mb-3 space-y-4">
-        @include('auth.partials.google-login-button')
-        <div class="flex items-center gap-4 px-2" aria-hidden="true">
-            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-gray-200"></div>
-            <span class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gray-400">or</span>
-            <div class="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-gray-200"></div>
-        </div>
-        @include('auth.partials.email-login-button')
+    <div x-show="!otpSent" class="mt-7 mb-3">
+        <div class="space-y-4">
+            <div>
+                @include('auth.partials.google-login-button')
+            </div>
 
-        <div x-show="showEmail" x-transition.opacity.duration.200ms class="space-y-4" style="display: none;">
-            @include('auth.partials.login-form')
+            <div class="flex items-center gap-4 px-2" aria-hidden="true">
+                <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-gray-200"></div>
+                <span class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gray-400">or</span>
+                <div class="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-gray-200"></div>
+            </div>
+
+            <div class="space-y-4">
+                @include('auth.partials.email-login-button')
+
+                <div
+                    x-show="showEmail"
+                    x-transition:enter="transition ease-[cubic-bezier(0.22,1,0.36,1)] duration-300"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="space-y-4 origin-top"
+                    style="display: none;"
+                >
+                    @include('auth.partials.login-form')
+                </div>
+            </div>
         </div>
     </div>
 
