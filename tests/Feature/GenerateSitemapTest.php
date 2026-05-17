@@ -90,3 +90,36 @@ it('generates a recent launches sitemap and excludes unpublished products from p
         ->not->toContain(route('products.show', $olderProduct->slug))
         ->not->toContain(route('products.show', $scheduledProduct->slug));
 });
+
+it('excludes the current week archive URL from the archives sitemap because it redirects home', function () {
+    Product::factory()->create([
+        'name' => 'Current Week Launch',
+        'slug' => 'current-week-launch',
+        'approved' => true,
+        'is_published' => true,
+        'published_at' => now()->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->addDay(),
+    ]);
+
+    $olderWeekStart = now()->copy()->subWeek()->startOfWeek(\Carbon\Carbon::MONDAY);
+    Product::factory()->create([
+        'name' => 'Older Week Launch',
+        'slug' => 'older-week-launch',
+        'approved' => true,
+        'is_published' => true,
+        'published_at' => $olderWeekStart->copy()->addDay(),
+    ]);
+
+    $this->artisan('sitemap:generate')->assertExitCode(0);
+
+    $archivesSitemap = File::get(public_path('sitemaps/archives.xml'));
+
+    expect($archivesSitemap)
+        ->not->toContain(route('products.byWeek', [
+            'year' => now()->year,
+            'week' => now()->weekOfYear,
+        ]))
+        ->toContain(route('products.byWeek', [
+            'year' => $olderWeekStart->year,
+            'week' => $olderWeekStart->weekOfYear,
+        ]));
+});

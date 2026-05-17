@@ -97,6 +97,8 @@ class GenerateSitemap extends Command
         $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory . '/taxonomy.xml', $sitemapEntries, $generatedAt);
 
         $archiveSitemap = Sitemap::create();
+        $currentWeekYear = now()->year;
+        $currentWeekNumber = now()->weekOfYear;
 
         // Add Archive URLs (Weeks)
         $dateExpressions = $this->productDateExpressions();
@@ -107,6 +109,10 @@ class GenerateSitemap extends Command
             ->get();
 
         foreach ($activeWeeks as $activeWeek) {
+            if ((int) $activeWeek->year === (int) $currentWeekYear && (int) $activeWeek->week === (int) $currentWeekNumber) {
+                continue;
+            }
+
             $archiveSitemap->add(Url::create(route('products.byWeek', ['year' => $activeWeek->year, 'week' => $activeWeek->week]))
                 ->setPriority(0.4)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));

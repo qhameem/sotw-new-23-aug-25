@@ -1296,22 +1296,9 @@ class ProductController extends Controller
 
         $weekOfYear = $week;
 
-        // For MySQL, we need to use mode 3 to get ISO 8601 week numbers (week starting Monday, week 1 has Jan 4)
-        if (DB::connection()->getDriverName() === 'mysql') {
-            $activeWeeks = Product::where('approved', true)
-                ->where('is_published', true)
-                ->selectRaw('DISTINCT CONCAT(YEAR(COALESCE(published_at, created_at)), "-", WEEK(COALESCE(published_at, created_at), 3)) as week')
-                ->pluck('week')
-                ->toArray();
-        } else {
-            $activeWeeks = Product::where('approved', true)
-                ->where('is_published', true)
-                ->selectRaw("DISTINCT strftime('%Y-%W', COALESCE(published_at, created_at)) as week")
-                ->pluck('week')
-                ->toArray();
-        }
+        $weekNavigationItems = $this->buildWeekNavigationItems($year, $week);
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'activeWeeks', 'startOfWeek', 'endOfWeek', 'isFuture', 'rankingExplanation'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'rankingExplanation'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1742,6 +1729,51 @@ class ProductController extends Controller
         \Log::info("findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks");
         // If no week with products was found, return null
         return null;
+    }
+
+    private function buildWeekNavigationItems(int $selectedYear, int $selectedWeek): array
+    {
+        $now = Carbon::now();
+        $dateExpressions = $this->productDateExpressions();
+
+        return Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week')
+            ->groupBy('year', 'week')
+            ->orderBy('year')
+            ->orderBy('week')
+            ->get()
+            ->map(function ($activeWeek) use ($selectedYear, $selectedWeek, $now) {
+                $year = (int) $activeWeek->year;
+                $week = (int) $activeWeek->week;
+
+                return [
+                    'year' => $year,
+                    'week' => $week,
+                    'url' => route('products.byWeek', ['year' => $year, 'week' => $week]),
+                    'label' => 'Week ' . $week,
+                    'isSelected' => $year === $selectedYear && $week === $selectedWeek,
+                    'isCurrent' => $year === (int) $now->year && $week === (int) $now->weekOfYear,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function productDateExpressions(): array
+    {
+        if (DB::connection()->getDriverName() === 'mysql') {
+            return [
+                'year' => 'YEAR(COALESCE(published_at, created_at))',
+                'week' => 'WEEK(COALESCE(published_at, created_at), 3)',
+                'month' => 'MONTH(COALESCE(published_at, created_at))',
+            ];
+        }
+
+        return [
+            'year' => "CAST(strftime('%Y', COALESCE(published_at, created_at)) AS INTEGER)",
+            'week' => "CAST(strftime('%W', COALESCE(published_at, created_at)) AS INTEGER)",
+            'month' => "CAST(strftime('%m', COALESCE(published_at, created_at)) AS INTEGER)",
+        ];
     }
 
     public function fetchUrlData(Request $request)

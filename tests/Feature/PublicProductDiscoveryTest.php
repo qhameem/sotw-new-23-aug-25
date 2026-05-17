@@ -31,6 +31,62 @@ class PublicProductDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function week_archive_pages_render_direct_html_links_to_other_active_weeks()
+    {
+        $olderWeekStart = now()->copy()->subWeeks(2)->startOfWeek(Carbon::MONDAY);
+        $selectedWeekStart = now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY);
+
+        Product::factory()->create([
+            'slug' => 'older-week-product',
+            'published_at' => $olderWeekStart->copy()->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        Product::factory()->create([
+            'slug' => 'selected-week-product',
+            'published_at' => $selectedWeekStart->copy()->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.byWeek', [
+            'year' => $selectedWeekStart->year,
+            'week' => $selectedWeekStart->weekOfYear,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee(route('products.byWeek', [
+            'year' => $olderWeekStart->year,
+            'week' => $olderWeekStart->weekOfYear,
+        ]), false);
+    }
+
+    /** @test */
+    public function week_archive_pages_output_a_self_referencing_canonical_tag()
+    {
+        $weekStart = now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY);
+
+        Product::factory()->create([
+            'slug' => 'canonical-week-product',
+            'published_at' => $weekStart->copy()->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.byWeek', [
+            'year' => $weekStart->year,
+            'week' => $weekStart->weekOfYear,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee(
+            '<link rel="canonical" href="' . route('products.byWeek', [
+                'year' => $weekStart->year,
+                'week' => $weekStart->weekOfYear,
+            ]) . '" />',
+            false
+        );
+    }
+
+    /** @test */
     public function viewing_a_product_page_records_an_impression_without_changing_the_editorial_last_modified_timestamp()
     {
         $originalUpdatedAt = Carbon::parse('2026-01-20 09:30:00');
