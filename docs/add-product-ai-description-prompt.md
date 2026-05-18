@@ -10,8 +10,9 @@
 1. Updated the live prompt used by `App\Services\DescriptionRewriterService`.
 2. Added AEO-focused instructions for answer-snippet openings, question-based headings, and safer FAQ generation.
 3. Added a compact anti-slop quality layer to reduce generic AI phrasing without removing the existing human-writing guidance.
-4. Kept the existing HTML response structure intact.
-5. Added a unit test to verify the prompt and structure instructions are still sent to the AI API.
+4. Made the FAQ, alternatives, and integrations blocks conditional so thin source pages do not get synthetic sections by default.
+5. Kept the shared core HTML structure intact for the sections that remain.
+6. Added unit coverage for thin-source, rich-source, and mixed-signal prompt variants.
 
 ## Live Integration Path
 
@@ -19,12 +20,15 @@
 2. Used by:
 - `app/Http/Controllers/ProductController.php`
 - `app/Jobs/FetchBasicInfo.php`
-3. Active API endpoint: Groq chat completions at `https://api.groq.com/openai/v1/chat/completions`
+3. Active provider order:
+- Primary: Gemini via `GOOGLE_API_KEY`
+- Fallback: Groq via `GROQ_API_KEY`
 
 ## Important Note
 
 1. `resources/prompts/description_prompt.txt` is not the live `/add-product` prompt source right now.
 2. The production prompt is defined directly inside `app/Services/DescriptionRewriterService.php`.
+3. Description generation now prefers the Gemini API when `GOOGLE_API_KEY` is present, and falls back to Groq only if Gemini is unavailable or fails.
 
 ## Prompt Goals
 
@@ -32,8 +36,17 @@
 2. Avoid robotic AI phrasing, generic marketing hype, and reusable SaaS filler.
 3. Make the content easier for AI search engines to extract and cite.
 4. Preserve the exact HTML skeleton already expected by the product submission flow.
+5. Avoid defaulting to FAQ, alternatives, or integrations content when the scraped source is too thin to support grounded answers.
+6. Make limitations source-backed, preferring explicit constraints over plausible guesses.
+7. Keep descriptions compact and decision-friendly, with a stronger "what it is" section and fewer mandatory sections.
 
 ## Current Live Prompt
+
+The live prompt is now assembled dynamically:
+
+1. A shared base prompt always covers the intro, a plain-English "what it is" section, features, audience, and pros/limitations sections.
+2. Conditional alternatives, integrations, and FAQ blocks are only appended when `DescriptionRewriterService` detects enough grounded support signals in the scraped source.
+3. Thin or generic source pages now get explicit "do not add this section" instructions instead of forced template filler.
 
 ```text
 You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
@@ -152,6 +165,22 @@ STYLE CHECK BEFORE YOU RESPOND:
 2. This is slightly higher than before to make the copy feel more natural without making the structure unstable.
 3. The response is still expected to be HTML only.
 4. The prompt now combines humanizing rules, AEO rules, and a compact anti-slop quality layer in a single generation pass.
+5. Section eligibility is decided in code before the prompt is sent:
+ - FAQ stays enabled only when the source appears detailed enough to support grounded user questions.
+ - Alternatives stay enabled only when the source contains explicit comparison language or named alternatives.
+ - Integrations stay enabled only when the source contains explicit ecosystem, API, or integration details.
+ - If those signals are weak, the prompt explicitly forbids adding those sections instead of letting the model fill them with generic copy.
+6. Limitations are now instructed to stay factual:
+ - Prefer explicit constraints like platform availability, early-access status, manual workflow steps, or integrations marked "coming soon".
+ - Avoid guessed drawbacks like resource usage, scale limits, or workflow problems unless the source states them directly.
+7. The base structure is now shorter and closer to an editorial snapshot:
+ - Quick answer
+ - One supporting sentence
+ - What it is
+ - Key features
+ - Best for
+ - Pros and limitations
+ - Optional deeper sections only when supported
 
 ## Verification
 
@@ -167,5 +196,5 @@ CACHE_STORE=array php artisan test tests/Unit/DescriptionRewriterServiceTest.php
 ## Future Update Checklist
 
 1. If the prompt changes, update this file and `app/Services/DescriptionRewriterService.php` together.
-2. If the HTML structure changes, update the unit test too.
+2. If any section heuristic changes, update the unit tests for the thin-source, rich-source, and mixed-signal prompt paths.
 3. If `/add-product` is later switched to `resources/prompts/description_prompt.txt`, update this document to reflect that.
