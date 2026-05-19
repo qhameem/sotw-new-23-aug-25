@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\GlobalSearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,6 +23,14 @@ class SearchController extends Controller
     public function sidebarSearch(Request $request)
     {
         return $this->search($request);
+    }
+
+    public function defaults(GlobalSearchService $globalSearchService)
+    {
+        return response()->json([
+            'products' => $globalSearchService->getPopularProducts(),
+            'categories' => $globalSearchService->getPopularCategories(),
+        ]);
     }
 
     private function buildResults(Request $request): array

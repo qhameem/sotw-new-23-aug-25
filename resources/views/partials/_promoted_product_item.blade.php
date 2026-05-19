@@ -75,6 +75,6 @@
         </a>
     </div>
     <div class="flex-shrink-0 flex items-center gap-2">
-        @livewire('product-upvote-button', ['product' => $product], key($product->id))
+        @include('partials.product-upvote-button', ['product' => $product])
     </div>
 </article>

@@ -4,7 +4,9 @@
         open: false, // For mobile navigation
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
-        popularSearchContent: {{ Js::from(['products' => $popularSearchProducts ?? [], 'categories' => $popularSearchCategories ?? []]) }},
+        popularSearchContent: { products: [], categories: [] },
+        popularSearchLoaded: false,
+        popularSearchLoading: false,
         searchResults: { products: [], categories: [] },
         searchTerm: '',
         searchLoading: false,
@@ -40,10 +42,37 @@
         openSearchModal() {
             this.resetSearchState();
             this.searchModalOpen = true;
+            this.loadPopularSearchContent();
         },
         closeSearchModal() {
             this.searchModalOpen = false;
             this.resetSearchState();
+        },
+        loadPopularSearchContent: async function() {
+            if (this.popularSearchLoaded || this.popularSearchLoading) {
+                return;
+            }
+
+            this.popularSearchLoading = true;
+
+            try {
+                const response = await fetch('/api/search/defaults');
+                if (!response.ok) {
+                    throw new Error('Failed to load search defaults.');
+                }
+
+                const data = await response.json();
+                this.popularSearchContent = {
+                    products: Array.isArray(data.products) ? data.products : [],
+                    categories: Array.isArray(data.categories) ? data.categories : [],
+                };
+                this.popularSearchLoaded = true;
+            } catch (error) {
+                console.error('Popular search defaults error:', error);
+                this.popularSearchContent = { products: [], categories: [] };
+            } finally {
+                this.popularSearchLoading = false;
+            }
         },
         handleSearchShortcut(event) {
             const key = event.key ? event.key.toLowerCase() : '';

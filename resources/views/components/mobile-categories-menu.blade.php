@@ -3,11 +3,15 @@
         open: false,
         screen: 'groups',
         activeGroup: '{{ $defaultCategoryNavigationGroupKey ?? 'ai-automation' }}',
-        groups: {{ \Illuminate\Support\Js::from($categoryNavigationGroups ?? []) }},
+        summaries: {{ \Illuminate\Support\Js::from($categoryNavigationSummaries ?? []) }},
+        groups: [],
+        groupsLoaded: false,
+        groupsLoading: false,
         openMenu() {
             this.open = true;
             this.screen = 'groups';
             this.activeGroup = '{{ $defaultCategoryNavigationGroupKey ?? 'ai-automation' }}';
+            this.loadGroups();
         },
         closeMenu() {
             this.open = false;
@@ -16,9 +20,40 @@
         showGroup(key) {
             this.activeGroup = key;
             this.screen = 'items';
+            this.loadGroups();
+        },
+        async loadGroups() {
+            if (this.groupsLoaded || this.groupsLoading) {
+                return;
+            }
+
+            this.groupsLoading = true;
+
+            try {
+                const response = await fetch('/api/navigation/categories');
+                if (!response.ok) {
+                    throw new Error('Failed to load category navigation.');
+                }
+
+                const data = await response.json();
+                this.groups = Array.isArray(data.groups) ? data.groups : [];
+                this.groupsLoaded = true;
+
+                if (!this.activeGroup && data.default_group_key) {
+                    this.activeGroup = data.default_group_key;
+                }
+            } catch (error) {
+                console.error('Category navigation error:', error);
+                this.groups = [];
+            } finally {
+                this.groupsLoading = false;
+            }
         },
         get activeGroupData() {
-            return this.groups.find((group) => group.key === this.activeGroup) ?? this.groups[0] ?? { items: [] };
+            return this.groups.find((group) => group.key === this.activeGroup)
+                ?? this.summaries.find((group) => group.key === this.activeGroup)
+                ?? this.summaries[0]
+                ?? { items: [] };
         },
     }"
     x-init="$watch('open', value => {
@@ -58,7 +93,7 @@
                         </div>
 
                         <div class="flex-1 space-y-2 px-4 pb-24">
-                            <template x-for="group in groups" :key="group.key">
+                            <template x-for="group in summaries" :key="group.key">
                                 <button
                                     type="button"
                                     class="flex w-full items-center justify-between rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50"
@@ -103,7 +138,13 @@
                         </div>
 
                         <div class="flex-1 space-y-2 px-4 pb-24">
-                            <template x-if="activeGroupData.items && activeGroupData.items.length">
+                            <template x-if="groupsLoading && !groupsLoaded">
+                                <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
+                                    <p class="text-sm font-medium text-gray-900">Loading categories...</p>
+                                </div>
+                            </template>
+
+                            <template x-if="groupsLoaded && activeGroupData.items && activeGroupData.items.length">
                                 <div class="space-y-2">
                                     <template x-for="item in activeGroupData.items" :key="item.slug">
                                         <a
@@ -128,7 +169,7 @@
                                 </div>
                             </template>
 
-                            <template x-if="!activeGroupData.items || !activeGroupData.items.length">
+                            <template x-if="groupsLoaded && (!activeGroupData.items || !activeGroupData.items.length)">
                                 <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
                                     <p class="text-sm font-medium text-gray-900">No categories are here yet.</p>
                                     <p class="mt-2 text-sm text-gray-600">Go back and use the alphabetical view to browse everything.</p>

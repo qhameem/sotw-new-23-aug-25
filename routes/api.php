@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UpvoteController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\NavigationController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeoApiController;
 use App\Http\Controllers\Api\TechStackController;
@@ -41,6 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/ga-stats', [AnalyticsController::class, 'getStats'])->name('api.ga-stats');
 Route::get('/analytics/total-sessions', [AnalyticsController::class, 'getTotalSessions']);
 Route::get('/search', [SearchController::class, 'search'])->name('api.search');
+Route::get('/search/defaults', [SearchController::class, 'defaults'])->name('api.search.defaults');
+Route::get('/navigation/categories', [NavigationController::class, 'categories'])->name('api.navigation.categories');
 
 // SEO API Routes
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {

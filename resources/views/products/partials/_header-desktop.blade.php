@@ -90,7 +90,7 @@
     <x-products.visit-website-button :product="$product" surface="product_details" />
     @unless(isset($isAdminView) && $isAdminView)
         <div>
-            @livewire('product-upvote-button', ['product' => $product])
+            @include('partials.product-upvote-button', ['product' => $product])
         </div>
     @endunless
 </div>

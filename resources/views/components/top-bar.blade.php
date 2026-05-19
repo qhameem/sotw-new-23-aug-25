@@ -31,7 +31,10 @@
                             open: false,
                             closeTimer: null,
                             activeGroup: '{{ $defaultCategoryNavigationGroupKey ?? 'ai-automation' }}',
-                            groups: {{ \Illuminate\Support\Js::from($categoryNavigationGroups ?? []) }},
+                            summaries: {{ \Illuminate\Support\Js::from($categoryNavigationSummaries ?? []) }},
+                            groups: [],
+                            groupsLoaded: false,
+                            groupsLoading: false,
                             clearCloseTimer() {
                                 if (this.closeTimer) {
                                     clearTimeout(this.closeTimer);
@@ -41,6 +44,7 @@
                             openMenu() {
                                 this.clearCloseTimer();
                                 this.open = true;
+                                this.loadGroups();
                             },
                             scheduleClose() {
                                 this.clearCloseTimer();
@@ -55,8 +59,38 @@
 
                                 this.openMenu();
                             },
+                            async loadGroups() {
+                                if (this.groupsLoaded || this.groupsLoading) {
+                                    return;
+                                }
+
+                                this.groupsLoading = true;
+
+                                try {
+                                    const response = await fetch('/api/navigation/categories');
+                                    if (!response.ok) {
+                                        throw new Error('Failed to load category navigation.');
+                                    }
+
+                                    const data = await response.json();
+                                    this.groups = Array.isArray(data.groups) ? data.groups : [];
+                                    this.groupsLoaded = true;
+
+                                    if (!this.activeGroup && data.default_group_key) {
+                                        this.activeGroup = data.default_group_key;
+                                    }
+                                } catch (error) {
+                                    console.error('Category navigation error:', error);
+                                    this.groups = [];
+                                } finally {
+                                    this.groupsLoading = false;
+                                }
+                            },
                             get activeGroupData() {
-                                return this.groups.find((group) => group.key === this.activeGroup) ?? this.groups[0] ?? { items: [] };
+                                return this.groups.find((group) => group.key === this.activeGroup)
+                                    ?? this.summaries.find((group) => group.key === this.activeGroup)
+                                    ?? this.summaries[0]
+                                    ?? { items: [] };
                             },
                         }"
                         class="relative"
@@ -111,7 +145,7 @@
 
                                 <div class="grid grid-cols-[15rem_minmax(0,1fr)]">
                                     <div class="border-r border-gray-100 bg-slate-50/70 p-3">
-                                        @foreach (($categoryNavigationGroups ?? []) as $group)
+                                        @foreach (($categoryNavigationSummaries ?? []) as $group)
                                             <button
                                                 type="button"
                                                 class="flex w-full items-start justify-between gap-3 rounded-2xl px-4 py-3 text-left transition"
@@ -175,7 +209,13 @@
                                             </div>
                                         </div>
 
-                                        <template x-if="activeGroupData.items && activeGroupData.items.length">
+                                        <template x-if="groupsLoading && !groupsLoaded">
+                                            <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                                <p class="text-sm font-medium text-gray-900">Loading categories...</p>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="groupsLoaded && activeGroupData.items && activeGroupData.items.length">
                                             <div class="max-h-[24rem] overflow-y-auto pr-2">
                                                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                                     <template x-for="item in activeGroupData.items" :key="item.slug">
@@ -201,7 +241,7 @@
                                             </div>
                                         </template>
 
-                                        <template x-if="!activeGroupData.items || !activeGroupData.items.length">
+                                        <template x-if="groupsLoaded && (!activeGroupData.items || !activeGroupData.items.length)">
                                             <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                                                 <p class="text-sm font-medium text-gray-900">No categories are in this section yet.</p>
                                                 <p class="mt-2 text-sm text-gray-600">Use the alphabetical directory to browse everything that is available right now.</p>

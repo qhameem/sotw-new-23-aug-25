@@ -212,6 +212,30 @@ class CategoryNavigationService
             ->all();
     }
 
+    public function getMenuGroupSummaries(): array
+    {
+        $softwareGroups = $this->buildSoftwareGroups();
+        $allCategoriesCount = $this->categories()->count();
+
+        return collect(self::GROUPS)
+            ->map(function (array $group, string $key) use ($softwareGroups, $allCategoriesCount) {
+                $itemCount = $key === 'view-all'
+                    ? $allCategoriesCount
+                    : ($softwareGroups[$key]?->count() ?? 0);
+
+                return [
+                    'key' => $key,
+                    'label' => $group['label'],
+                    'eyebrow' => $group['eyebrow'],
+                    'description' => $group['description'],
+                    'icon' => $group['icon'],
+                    'item_count' => $itemCount,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     public function getDefaultGroupKey(): string
     {
         return 'ai-automation';

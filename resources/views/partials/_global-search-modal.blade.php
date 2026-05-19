@@ -46,7 +46,12 @@
                         <h3 class="mt-1 text-sm font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Browse leading spaces' : 'Category results'"></h3>
                     </div>
 
-                    <div class="space-y-2" x-show="showDefaultSearchContent()">
+                    <div x-show="showDefaultSearchContent() && popularSearchLoading"
+                        class="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
+                        Loading categories...
+                    </div>
+
+                    <div class="space-y-2" x-show="showDefaultSearchContent() && popularSearchContent.categories.length > 0">
                         <template x-for="category in popularSearchContent.categories" :key="`popular-category-${category.id}`">
                             <a :href="category.url" class="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
                                 <span class="min-w-0">
@@ -58,6 +63,11 @@
                                 </svg>
                             </a>
                         </template>
+                    </div>
+
+                    <div x-show="showDefaultSearchContent() && !popularSearchLoading && popularSearchContent.categories.length === 0"
+                        class="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
+                        No popular categories available right now.
                     </div>
 
                     <div class="space-y-2" x-show="!showDefaultSearchContent() && searchResults.categories.length > 0">
@@ -89,7 +99,12 @@
                         </div>
                     </div>
 
-                    <div x-show="showDefaultSearchContent()" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div x-show="showDefaultSearchContent() && popularSearchLoading"
+                        class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
+                        <p class="text-sm text-gray-600">Loading popular products...</p>
+                    </div>
+
+                    <div x-show="showDefaultSearchContent() && popularSearchContent.products.length > 0" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <template x-for="product in popularSearchContent.products" :key="`popular-product-${product.id}`">
                             <a :href="product.url" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
                                 <template x-if="product.logo_url">
@@ -105,6 +120,11 @@
                                 </span>
                             </a>
                         </template>
+                    </div>
+
+                    <div x-show="showDefaultSearchContent() && !popularSearchLoading && popularSearchContent.products.length === 0"
+                        class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
+                        <p class="text-sm text-gray-600">No popular products available right now.</p>
                     </div>
 
                     <div x-show="!showDefaultSearchContent() && !searchLoading && searchResults.products.length > 0"

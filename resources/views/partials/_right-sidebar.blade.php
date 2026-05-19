@@ -5,7 +5,7 @@
             @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
                 @include('partials._sidebar-ads')
 
-                <div class="p-4">
+                <div class="p-4" data-analytics-stats-card>
                     <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
                         <div class="relative group inline-block">
                             <span class="cursor-default text-gray-900 font-semibold">&#9432;</span>
@@ -163,40 +163,60 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const toMultiplyWith = 5;
-            fetch('/api/analytics/total-sessions')
-                .then(response => response.json())
-                .then(data => {
-                    const totalVisitsElement = document.getElementById('total-visits');
-                    const totalPageviewsElement = document.getElementById('total-pageviews');
+            const statsCard = document.querySelector('[data-analytics-stats-card]');
+            const totalVisitsElement = document.getElementById('total-visits');
+            const totalPageviewsElement = document.getElementById('total-pageviews');
 
-                    if (totalVisitsElement) {
+            if (!statsCard || !totalVisitsElement || !totalPageviewsElement) {
+                return;
+            }
+
+            let hasLoaded = false;
+
+            const loadStats = () => {
+                if (hasLoaded) {
+                    return;
+                }
+
+                hasLoaded = true;
+
+                fetch('/api/analytics/total-sessions')
+                    .then(response => response.json())
+                    .then(data => {
+                        const toMultiplyWith = 5;
+
                         if (data.sessions !== null && data.sessions !== undefined) {
                             totalVisitsElement.textContent = (data.sessions * toMultiplyWith).toLocaleString();
                         } else {
                             totalVisitsElement.textContent = 'N/A';
                         }
-                    }
 
-                    if (totalPageviewsElement) {
                         if (data.screenPageViews !== null && data.screenPageViews !== undefined) {
                             totalPageviewsElement.textContent = (data.screenPageViews * toMultiplyWith).toLocaleString();
                         } else {
                             totalPageviewsElement.textContent = 'N/A';
                         }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching analytics data:', error);
-                    const totalVisitsElement = document.getElementById('total-visits');
-                    const totalPageviewsElement = document.getElementById('total-pageviews');
-                    if (totalVisitsElement) {
+                    })
+                    .catch(error => {
+                        console.error('Error fetching analytics data:', error);
                         totalVisitsElement.textContent = 'Error';
-                    }
-                    if (totalPageviewsElement) {
                         totalPageviewsElement.textContent = 'Error';
+                    });
+            };
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries.some((entry) => entry.isIntersecting)) {
+                        observer.disconnect();
+                        loadStats();
                     }
-                });
+                }, { rootMargin: '200px 0px' });
+
+                observer.observe(statsCard);
+                return;
+            }
+
+            loadStats();
         });
     </script>
 @endpush

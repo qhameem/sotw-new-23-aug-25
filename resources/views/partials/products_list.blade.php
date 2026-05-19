@@ -135,7 +135,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                @livewire('product-upvote-button', ['product' => $product], key($product->id))
+                @include('partials.product-upvote-button', ['product' => $product])
             </div>
         </article>
 

@@ -20,6 +20,7 @@ use App\Services\CategoryNavigationService;
 use App\Observers\ProductObserver;
 use App\Observers\ProductMediaObserver;
 use App\Services\OutboundLinkPolicyService;
+use App\Services\GlobalSearchService;
 use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
@@ -43,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(OutboundLinkPolicyService::class, function ($app) {
             return new OutboundLinkPolicyService();
+        });
+
+        $this->app->singleton(GlobalSearchService::class, function ($app) {
+            return new GlobalSearchService();
         });
     }
 
@@ -74,20 +79,15 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('pendingApprovalCount', Product::where('approved', false)->count());
             }
 
-            $view->with('categoryNavigationGroups', $categoryNavigation->getMenuGroups())
+            $view->with('categoryNavigationSummaries', $categoryNavigation->getMenuGroupSummaries())
                 ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
         });
 
         View::composer(['partials._mobile-footer-menu', 'components.mobile-categories-menu'], function ($view) {
             $categoryNavigation = app(CategoryNavigationService::class);
 
-            $view->with('categoryNavigationGroups', $categoryNavigation->getMenuGroups())
+            $view->with('categoryNavigationSummaries', $categoryNavigation->getMenuGroupSummaries())
                 ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
-        });
-
-        View::composer(['layouts.app', 'layouts.submission'], function ($view) {
-            $view->with('popularSearchProducts', $this->getPopularSearchProducts())
-                ->with('popularSearchCategories', $this->getPopularSearchCategories());
         });
 
         View::composer(['layouts.app', 'layouts.submission', 'layouts.guest', 'layouts.todolist'], function ($view) {
@@ -261,56 +261,6 @@ class AppServiceProvider extends ServiceProvider
 
             // Fallback to a default color
             return '#3b82f6';
-        });
-    }
-
-    protected function getPopularSearchProducts(): array
-    {
-        return Cache::remember('global_search.popular_products.v2', now()->addMinutes(30), function () {
-            return Product::query()
-                ->select(['id', 'name', 'slug', 'tagline', 'logo', 'link', 'votes_count', 'outbound_clicks_count', 'published_at'])
-                ->where('approved', true)
-                ->where('is_published', true)
-                ->orderByDesc('votes_count')
-                ->orderByDesc('outbound_clicks_count')
-                ->orderByDesc('published_at')
-                ->limit(6)
-                ->get()
-                ->map(fn (Product $product) => [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'tagline' => $product->tagline,
-                    'logo_url' => $product->logo_url,
-                    'votes_count' => (int) $product->votes_count,
-                    'url' => route('products.show', ['product' => $product->slug]),
-                ])
-                ->values()
-                ->all();
-        });
-    }
-
-    protected function getPopularSearchCategories(): array
-    {
-        return Cache::remember('global_search.popular_categories', now()->addMinutes(30), function () {
-            return Category::query()
-                ->select(['id', 'name', 'slug'])
-                ->withCount([
-                    'products' => fn ($query) => $query
-                        ->where('approved', true)
-                        ->where('is_published', true),
-                ])
-                ->orderByDesc('products_count')
-                ->orderBy('name')
-                ->limit(8)
-                ->get()
-                ->map(fn (Category $category) => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'products_count' => (int) $category->products_count,
-                    'url' => route('categories.show', ['category' => $category->slug]),
-                ])
-                ->values()
-                ->all();
         });
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 class ProductLogo
 {
     public const EAGER_LIMIT = 8;
-    public const PRELOAD_LIMIT = 6;
+    public const PRELOAD_LIMIT = 2;
 
     public static function url($product): ?string
     {
