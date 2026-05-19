@@ -152,7 +152,6 @@
 
     <!-- Scripts -->
     @vite(['resources/css/public.css', 'resources/js/app.js'])
-    @include('partials.theme.text-color-overrides')
     @livewireStyles
 </head>
 

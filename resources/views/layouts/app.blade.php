@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{
         searchModalOpen: false,
+        searchModalLoaded: false,
+        searchModalLoading: false,
+        searchModalError: '',
         open: false, // For mobile navigation
         initialPath: window.location.pathname, // Store the initial path
         intendedUrl: '',
@@ -39,14 +42,47 @@
             this.searchResults = { products: [], categories: [] };
             this.searchLoading = false;
         },
+        loadSearchModalContent: async function() {
+            if (this.searchModalLoaded || this.searchModalLoading) {
+                return;
+            }
+
+            this.searchModalLoading = true;
+            this.searchModalError = '';
+
+            try {
+                const response = await fetch('{{ route('search.modal-content') }}', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load search modal.');
+                }
+
+                this.$refs.searchModalContent.innerHTML = await response.text();
+                window.Alpine?.initTree(this.$refs.searchModalContent);
+                this.searchModalLoaded = true;
+
+                this.$nextTick(() => {
+                    document.getElementById('globalSearchInput')?.focus();
+                });
+            } catch (error) {
+                console.error('Search modal loading error:', error);
+                this.searchModalError = 'Unable to load search right now.';
+            } finally {
+                this.searchModalLoading = false;
+            }
+        },
         openSearchModal() {
             this.resetSearchState();
             this.searchModalOpen = true;
+            this.loadSearchModalContent();
             this.loadPopularSearchContent();
         },
         closeSearchModal() {
             this.searchModalOpen = false;
             this.resetSearchState();
+            this.searchModalError = '';
         },
         loadPopularSearchContent: async function() {
             if (this.popularSearchLoaded || this.popularSearchLoading) {
@@ -417,7 +453,6 @@
     @include('partials.theme.favicon-links')
 
     @vite(['resources/css/public.css', 'resources/js/app.js'])
-    @include('partials.theme.text-color-overrides')
     @livewireStyles
 
     @stack('styles')
@@ -500,7 +535,30 @@
         @endif
     </x-main-content-layout>
 
-    @include('partials._global-search-modal')
+    <div x-show="searchModalOpen && searchModalLoading && !searchModalLoaded" x-cloak
+        class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"
+        @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()">
+        <div class="mx-auto w-full max-w-lg">
+            <div class="rounded-3xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
+                <p class="text-sm font-medium text-gray-900">Loading search...</p>
+                <p class="mt-2 text-sm text-gray-500">Preparing products and categories.</p>
+            </div>
+        </div>
+    </div>
+    <div x-show="searchModalOpen && searchModalError" x-cloak
+        class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"
+        @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()">
+        <div class="mx-auto w-full max-w-lg">
+            <div class="rounded-3xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
+                <p class="text-sm font-medium text-gray-900" x-text="searchModalError"></p>
+                <button type="button" @click="closeSearchModal()"
+                    class="mt-4 inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    <div x-ref="searchModalContent"></div>
 
     @stack('scripts')
     @stack('form-scripts')

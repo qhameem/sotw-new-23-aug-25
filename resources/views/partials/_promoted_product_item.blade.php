@@ -13,8 +13,7 @@
         default => 'product_list',
     };
 @endphp
-<article wire:key="product-{{ $product->id }}"
-    class="product-card p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-stone-50 rounded-lg"
+<article class="product-card p-4 flex items-center gap-2 md:gap-1 transition relative group hover:bg-stone-50 rounded-lg"
     data-product-id="{{ $product->id }}"
     data-track-impression="true"
     data-impression-surface="{{ $impressionSurface }}">

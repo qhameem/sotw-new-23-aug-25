@@ -35,6 +35,7 @@ use App\Http\Controllers\AdInteractionController;
 use App\Http\Controllers\ArticleEditorController;
 use App\Http\Controllers\ProductInteractionController;
 use App\Http\Controllers\ProductClaimController;
+use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\IndexNowKeyController;
 use App\Http\Controllers\Auth\LoginModalContentController;
@@ -42,6 +43,7 @@ use App\Http\Controllers\Auth\LoginModalContentController;
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
+Route::get('/search-modal-content', SearchModalContentController::class)->name('search.modal-content');
 Route::get('/auth/login-modal-content', LoginModalContentController::class)->name('auth.login-modal-content');
 Route::post('/fetch-videos', [VideoController::class, 'fetch'])->middleware('throttle:20,1')->name('fetch-videos');
 Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');

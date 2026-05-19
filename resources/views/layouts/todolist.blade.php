@@ -85,7 +85,6 @@
     </style>
 
     @vite(['resources/css/app.css', 'resources/css/todo-vendor.css', 'resources/js/app.js'])
-    @include('partials.theme.text-color-overrides')
     @livewireStyles
     @stack('styles')
 </head>
