@@ -90,7 +90,7 @@ $viewportPadding = [
     x-init="$watch('show', value => {
         if (value) {
             lockBodyScroll();
-            {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable().focus(), 100)' : '' }}
+            {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable()?.focus(), 100)' : '' }}
         } else {
             unlockBodyScroll();
         }

@@ -172,62 +172,74 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <script>
+        window.appendDelayedHtml = function (container, html) {
+            if (!container || !html) {
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            const div = document.createElement('div');
+            div.innerHTML = html;
+
+            Array.from(div.childNodes).forEach(node => {
+                if (node.nodeName === 'SCRIPT') {
+                    const newScript = document.createElement('script');
+                    Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(node.innerHTML));
+                    fragment.appendChild(newScript);
+                } else {
+                    fragment.appendChild(node.cloneNode(true));
+                }
+            });
+
+            container.appendChild(fragment);
+        };
+
+        window.processDelayedTemplate = function (template) {
+            if (!template || template.dataset.processed === 'true') {
+                return;
+            }
+
+            template.dataset.processed = 'true';
+            window.appendDelayedHtml(template.parentElement, template.innerHTML);
+        };
+
+        window.fetchDelayedAssets = async function () {
+            if (window.delayedAssetsLoaded || window.delayedAssetsLoading) return;
+
+            window.delayedAssetsLoading = true;
+
+            try {
+                const routeName = document.body?.dataset?.routeName || '';
+                const path = window.location.pathname || '/';
+                const response = await fetch(`/api/deferred-assets?route_name=${encodeURIComponent(routeName)}&path=${encodeURIComponent(path)}`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to load deferred assets.');
+                }
+
+                const data = await response.json();
+
+                if (data.ga_code) {
+                    window.appendDelayedHtml(document.head, data.ga_code);
+                }
+
+                (data.head_snippets || []).forEach((html) => window.appendDelayedHtml(document.head, html));
+                (data.body_snippets || []).forEach((html) => window.appendDelayedHtml(document.body, html));
+            } catch (error) {
+                console.error('Deferred asset loading error:', error);
+            } finally {
+                window.delayedAssetsLoading = false;
+            }
+        };
+
         window.loadDelayedScripts = function () {
             if (window.delayedScriptsLoaded) return;
             window.delayedScriptsLoaded = true;
 
-            // Load Google Analytics/Tag Manager
-            const gaTemplate = document.getElementById('delayed-ga-code');
-            if (gaTemplate) {
-                const div = document.createElement('div');
-                div.innerHTML = gaTemplate.innerHTML;
-                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    document.head.appendChild(newScript);
-                });
-            }
-
-            // Load Head Snippets
-            document.querySelectorAll('template.delayed-head-snippet').forEach(template => {
-                const container = template.parentElement;
-                const fragment = document.createDocumentFragment();
-                const div = document.createElement('div');
-                div.innerHTML = template.innerHTML;
-
-                Array.from(div.childNodes).forEach(node => {
-                    if (node.nodeName === 'SCRIPT') {
-                        const newScript = document.createElement('script');
-                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(node.innerHTML));
-                        fragment.appendChild(newScript);
-                    } else {
-                        fragment.appendChild(node.cloneNode(true));
-                    }
-                });
-                container.appendChild(fragment);
-            });
-
-            // Load Body Snippets
-            document.querySelectorAll('template.delayed-body-snippet').forEach(template => {
-                const container = template.parentElement;
-                const fragment = document.createDocumentFragment();
-                const div = document.createElement('div');
-                div.innerHTML = template.innerHTML;
-
-                Array.from(div.childNodes).forEach(node => {
-                    if (node.nodeName === 'SCRIPT') {
-                        const newScript = document.createElement('script');
-                        Array.from(node.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(node.innerHTML));
-                        fragment.appendChild(newScript);
-                    } else {
-                        fragment.appendChild(node.cloneNode(true));
-                    }
-                });
-                container.appendChild(fragment);
-            });
+            window.fetchDelayedAssets();
+            document.querySelectorAll('template.delayed-head-snippet').forEach(window.processDelayedTemplate);
+            document.querySelectorAll('template.delayed-body-snippet').forEach(window.processDelayedTemplate);
 
             // Load jQuery/Select2/Livewire
             const genericTemplate = document.getElementById('delayed-vendor-scripts');
@@ -393,20 +405,6 @@
 
     @include('partials.theme.favicon-links')
 
-
-    {{-- Google Analytics Code Injection --}}
-    @php
-        $gaCode = '';
-        if (Illuminate\Support\Facades\Storage::disk('local')->exists('settings.json')) {
-            $settings = json_decode(Illuminate\Support\Facades\Storage::disk('local')->get('settings.json'), true);
-            $gaCode = $settings['google_analytics_code'] ?? '';
-        }
-    @endphp
-    @if(!empty($gaCode) && !Auth::check())
-        <template id="delayed-ga-code">{!! $gaCode !!}</template>
-    @endif
-    {{-- End Google Analytics Code Injection --}}
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.theme.text-color-overrides')
     @livewireStyles
@@ -425,30 +423,12 @@
     @endphp
     <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
-
-    @php
-        $headSnippets = \App\Models\CodeSnippet::where('location', 'head')->get();
-        $page = \Illuminate\Support\Facades\Route::currentRouteName();
-    @endphp
-    @foreach ($headSnippets as $snippet)
-        @if ($snippet->shouldRenderFor(request()))
-            <template class="delayed-head-snippet">{!! html_entity_decode($snippet->code) !!}</template>
-        @endif
-    @endforeach
 </head>
 
 <body class="font-sans antialiased bg-white" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
     data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}" data-auth-sync-event="{{ session('auth_sync_event', '') }}"
-    data-auth-session-state="{{ Auth::check() ? 'authenticated' : 'guest' }}">
-    @php
-        $bodySnippets = \App\Models\CodeSnippet::where('location', 'body')->get();
-        $page = \Illuminate\Support\Facades\Route::currentRouteName();
-    @endphp
-    @foreach ($bodySnippets as $snippet)
-        @if ($snippet->shouldRenderFor(request()))
-            <template class="delayed-body-snippet">{!! html_entity_decode($snippet->code) !!}</template>
-        @endif
-    @endforeach
+    data-auth-session-state="{{ Auth::check() ? 'authenticated' : 'guest' }}"
+    data-route-name="{{ Route::currentRouteName() }}">
 
     <div class="flex flex-col min-h-screen bg-white">
         <x-top-bar />
@@ -508,8 +488,54 @@
     @stack('scripts')
     @stack('form-scripts')
 
-    <x-modal name="login-required-modal" :show="session('status') === 'otp-sent' || $errors->has('email') || $errors->has('otp')" maxWidth="lg" :scrollable="false" :hideScrollbar="true" viewportPadding="compact" focusable>
-        @include('auth.partials.login-modal-content')
+    @php
+        $shouldEagerLoadLoginModal = session('status') === 'otp-sent' || $errors->has('email') || $errors->has('otp');
+    @endphp
+    <x-modal name="login-required-modal" :show="$shouldEagerLoadLoginModal" maxWidth="lg" :scrollable="false" :hideScrollbar="true" viewportPadding="compact" focusable>
+        @if($shouldEagerLoadLoginModal)
+            @include('auth.partials.login-modal-content')
+        @else
+            <div
+                x-data="{
+                    loaded: false,
+                    loading: false,
+                    async load() {
+                        if (this.loaded || this.loading) {
+                            return;
+                        }
+
+                        this.loading = true;
+
+                        try {
+                            const response = await fetch('{{ route('auth.login-modal-content') }}', {
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Failed to load login modal.');
+                            }
+
+                            this.$refs.content.innerHTML = await response.text();
+                            window.Alpine?.initTree(this.$refs.content);
+                            this.loaded = true;
+
+                            this.$nextTick(() => {
+                                this.$refs.content.querySelector('a, button, input:not([type=&quot;hidden&quot;]), textarea, select, [tabindex]:not([tabindex=&quot;-1&quot;])')?.focus();
+                            });
+                        } catch (error) {
+                            console.error('Login modal loading error:', error);
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }"
+                @open-modal.window="if ($event.detail.name === 'login-required-modal') load()"
+                class="px-8 py-6 sm:px-10"
+            >
+                <div x-show="loading" class="py-12 text-center text-sm text-gray-500">Loading sign-in options...</div>
+                <div x-ref="content"></div>
+            </div>
+        @endif
     </x-modal>
 
     <script>

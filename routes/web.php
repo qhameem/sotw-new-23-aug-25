@@ -37,10 +37,12 @@ use App\Http\Controllers\ProductInteractionController;
 use App\Http\Controllers\ProductClaimController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\IndexNowKeyController;
+use App\Http\Controllers\Auth\LoginModalContentController;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
+Route::get('/auth/login-modal-content', LoginModalContentController::class)->name('auth.login-modal-content');
 Route::post('/fetch-videos', [VideoController::class, 'fetch'])->middleware('throttle:20,1')->name('fetch-videos');
 Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');
 Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
