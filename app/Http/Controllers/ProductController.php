@@ -2399,7 +2399,9 @@ class ProductController extends Controller
                     $rawBodyText = trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
                     $textContent .= "\n\nBODY CONTENT:\n" . mb_substr($rawBodyText, 0, 4000);
 
-                    $productNameForAI = $name ?: ($title ?: 'this product');
+                    $productNameForAI = trim((string) $name) !== ''
+                        ? $name
+                        : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
 
                     $sendUpdate('Generating AI taglines...', 40);
                     try {
@@ -2636,7 +2638,9 @@ class ProductController extends Controller
                 }
                 $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
 
-                $productNameForAI = $name ?: ($title ?: 'this product');
+                $productNameForAI = trim((string) $name) !== ''
+                    ? $name
+                    : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
 
                 // --- AI Tagline Generation (primary source) ---
                 try {

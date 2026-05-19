@@ -13,7 +13,7 @@ class NameExtractorService
     public function extract(string $title, string $url = ''): string
     {
         if (trim($title) === '') {
-            return '';
+            return $this->extractFromUrl($url);
         }
 
         // 1. Initial cleaning: Remove common trailing noise like " - Home", " | Official Site"
@@ -59,6 +59,45 @@ class NameExtractorService
         // Sort by score descending
         usort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
 
-        return $candidates[0]['text'];
+        $best = $candidates[0]['text'];
+        $urlCandidate = $this->extractFromUrl($url);
+
+        if ($this->looksLikeTagline($best) && $urlCandidate !== '') {
+            return $urlCandidate;
+        }
+
+        return $best;
+    }
+
+    private function looksLikeTagline(string $candidate): bool
+    {
+        $candidate = trim($candidate);
+
+        if ($candidate === '') {
+            return true;
+        }
+
+        return str_word_count($candidate) > 5 || strlen($candidate) > 40;
+    }
+
+    private function extractFromUrl(string $url): string
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (!is_string($host) || trim($host) === '') {
+            return '';
+        }
+
+        $host = preg_replace('/^www\./i', '', $host) ?? $host;
+        $label = explode('.', $host)[0] ?? '';
+        $label = trim($label);
+
+        if ($label === '') {
+            return '';
+        }
+
+        return implode(' ', array_map(static function (string $part) {
+            return ucfirst(strtolower($part));
+        }, array_filter(explode('-', $label))));
     }
 }

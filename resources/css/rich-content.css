@@ -109,7 +109,7 @@
 }
 
 .product-detail-description li::marker {
-    color: #f43f5e;
+    color: var(--color-primary-500, #3b82f6);
 }
 
 .product-detail-description dl {
