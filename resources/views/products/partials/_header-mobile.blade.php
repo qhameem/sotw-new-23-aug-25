@@ -1,3 +1,9 @@
+@php
+    use App\Support\ProductLogo;
+
+    $productLogo = ProductLogo::storedUrl($product);
+@endphp
+
 {{-- Logo and Name Row --}}
 <div class="flex items-center flex-shrink-0">
     @if(isset($isAdminView) && $isAdminView)
@@ -24,12 +30,13 @@
             </template>
         </div>
     @else
-        @if($product->logo)
-            <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
+        @if($productLogo)
+            <img src="{{ $productLogo }}"
                 alt="{{ $product->name }} logo" class="w-14 h-14 object-contain rounded-xl">
-        @elseif($product->link)
-            <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-                alt="{{ $product->name }} favicon" class="w-14 h-14 object-contain rounded-xl">
+        @else
+            <div class="flex w-14 h-14 rounded-xl bg-gray-100 text-gray-500 items-center justify-center text-lg font-semibold">
+                {{ ProductLogo::initial($product) }}
+            </div>
         @endif
     @endif
 

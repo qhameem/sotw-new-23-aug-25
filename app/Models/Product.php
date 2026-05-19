@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\Support\CategoryTypeRegistry;
+use App\Support\ProductLogo;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
@@ -192,16 +193,12 @@ class Product extends Model implements Sitemapable
     {
         if ($this->logo) {
             if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
-                return $this->logo;
+                return ProductLogo::isBlockedExternalFaviconUrl($this->logo)
+                    ? null
+                    : $this->logo;
             }
 
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($this->logo)) {
-                return \Illuminate\Support\Facades\Storage::url($this->logo);
-            }
-        }
-
-        if ($this->link) {
-            return 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($this->link);
+            return \Illuminate\Support\Facades\Storage::url($this->logo);
         }
 
         return null;

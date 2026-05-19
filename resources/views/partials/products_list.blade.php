@@ -44,13 +44,20 @@
             @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
             <meta itemprop="url" content="{{ route('products.show', $product->slug) }}" />
             <a href="{{ route('products.show', $product->slug) }}" @click.stop class="flex-shrink-0">
-                <img src="{{ $productLogo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
-                    class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
-                    width="48" height="48"
-                    loading="{{ ProductLogo::loading($loopIndex) }}"
-                    fetchpriority="{{ ProductLogo::fetchPriority($loopIndex) }}"
-                    decoding="async"
-                    itemprop="image" />
+                @if($productLogo)
+                    <img src="{{ $productLogo }}" alt="{{ $product->name }} logo"
+                        class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                        width="48" height="48"
+                        loading="{{ ProductLogo::loading($loopIndex) }}"
+                        fetchpriority="{{ ProductLogo::fetchPriority($loopIndex) }}"
+                        decoding="async"
+                        itemprop="image" />
+                @else
+                    <div class="flex w-12 h-12 rounded-xl bg-gray-100 text-gray-500 items-center justify-center flex-shrink-0 text-sm font-semibold"
+                        aria-label="{{ $product->name }} logo placeholder">
+                        {{ ProductLogo::initial($product) }}
+                    </div>
+                @endif
             </a>
             <div class="flex-1">
                 <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">

@@ -1,3 +1,9 @@
+@php
+    use App\Support\ProductLogo;
+
+    $productLogo = ProductLogo::storedUrl($product);
+@endphp
+
 <div class="flex flex-row items-start mb-4">
     {{-- Logo --}}
     <div class="flex-shrink-0">
@@ -25,12 +31,13 @@
                 </template>
             </div>
         @else
-            @if($product->logo)
-                <img src="{{ Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo) }}"
+            @if($productLogo)
+                <img src="{{ $productLogo }}"
                     alt="{{ $product->name }} logo" class="w-[100px] h-[100px] object-contain rounded-xl">
-            @elseif($product->link)
-                <img src="{{ 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link) }}"
-                    alt="{{ $product->name }} favicon" class="w-[100px] h-[100px] object-contain rounded-xl">
+            @else
+                <div class="flex w-[100px] h-[100px] rounded-xl bg-gray-100 text-gray-500 items-center justify-center text-3xl font-semibold">
+                    {{ ProductLogo::initial($product) }}
+                </div>
             @endif
         @endif
     </div>

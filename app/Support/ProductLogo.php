@@ -10,7 +10,7 @@ class ProductLogo
     public const EAGER_LIMIT = 8;
     public const PRELOAD_LIMIT = 2;
 
-    public static function url($product): ?string
+    public static function storedUrl($product): ?string
     {
         if (!$product) {
             return null;
@@ -19,14 +19,40 @@ class ProductLogo
         $logoUrl = $product->logo_url ?? null;
 
         if (is_string($logoUrl) && $logoUrl !== '') {
-            return $logoUrl;
+            return self::isBlockedExternalFaviconUrl($logoUrl)
+                ? null
+                : $logoUrl;
         }
 
-        $link = $product->link ?? null;
+        $rawLogo = $product->logo ?? null;
 
-        return $link
-            ? 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($link)
-            : null;
+        if (!is_string($rawLogo) || $rawLogo === '') {
+            return null;
+        }
+
+        if (filter_var($rawLogo, FILTER_VALIDATE_URL)) {
+            return self::isBlockedExternalFaviconUrl($rawLogo)
+                ? null
+                : $rawLogo;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($rawLogo);
+    }
+
+    public static function url($product): ?string
+    {
+        return self::storedUrl($product);
+    }
+
+    public static function initial($product): string
+    {
+        $name = trim((string) ($product->name ?? ''));
+
+        if ($name === '') {
+            return '?';
+        }
+
+        return strtoupper(function_exists('mb_substr') ? mb_substr($name, 0, 1) : substr($name, 0, 1));
     }
 
     public static function loading(int $position): string
@@ -56,6 +82,23 @@ class ProductLogo
         }
 
         return $urls;
+    }
+
+    public static function isBlockedExternalFaviconUrl(?string $url): bool
+    {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+
+        $parts = parse_url($url);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $path = strtolower((string) ($parts['path'] ?? ''));
+
+        if (!in_array($host, ['www.google.com', 'google.com'], true)) {
+            return false;
+        }
+
+        return str_starts_with($path, '/s2/favicons');
     }
 
     public static function productListItems($regularProducts, $promotedProducts): array

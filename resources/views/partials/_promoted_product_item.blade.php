@@ -19,12 +19,18 @@
     data-impression-surface="{{ $impressionSurface }}">
     <div class="flex items-center gap-3 flex-1">
         <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
-            <img src="{{ $logo ?? asset('favicon/favicon-32x32.png') }}" alt="{{ $product->name }} logo"
-                class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
-                width="48" height="48"
-                loading="{{ ProductLogo::loading($logoLoadPosition) }}"
-                fetchpriority="{{ ProductLogo::fetchPriority($logoLoadPosition) }}"
-                decoding="async" />
+            @if($logo)
+                <img src="{{ $logo }}" alt="{{ $product->name }} logo"
+                    class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                    width="48" height="48"
+                    loading="{{ ProductLogo::loading($logoLoadPosition) }}"
+                    fetchpriority="{{ ProductLogo::fetchPriority($logoLoadPosition) }}"
+                    decoding="async" />
+            @else
+                <div class="flex w-12 h-12 rounded-xl bg-gray-100 text-gray-500 items-center justify-center flex-shrink-0 text-sm font-semibold">
+                    {{ ProductLogo::initial($product) }}
+                </div>
+            @endif
             <div class="flex flex-col space-y-0">
                 <h2 class="site-heading-text text-sm font-semibold flex items-center leading-none">
                     <span class="site-heading-text text-left text-black">{{ $product->name }}</span>
