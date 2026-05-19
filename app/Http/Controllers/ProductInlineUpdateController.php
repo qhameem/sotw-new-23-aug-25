@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Support\CategoryTypeRegistry;
+use App\Support\SocialLinkValidator;
 use App\Support\ProductMediaSeo;
 
 class ProductInlineUpdateController extends Controller
@@ -60,7 +61,15 @@ class ProductInlineUpdateController extends Controller
                 break;
             case 'maker_links':
                 $rules['value'] = 'nullable|array';
-                $rules['value.*'] = 'url|max:2048';
+                $rules['value.*'] = [
+                    'url',
+                    'max:2048',
+                    function ($attribute, $value, $fail) {
+                        if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                            $fail('Only social or profile links like GitHub, LinkedIn, and similar social platforms are allowed.');
+                        }
+                    },
+                ];
                 break;
             case 'categories':
                 $rules['value'] = 'required|array';

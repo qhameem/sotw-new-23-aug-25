@@ -1058,7 +1058,10 @@ export function useProductForm() {
 
     // Always fetch categories if they are empty
     const shouldFetchCategoriesAndBestFor = !contentOnly && (
-      !form.categories || form.categories.length === 0 || !form.bestFor || form.bestFor.length === 0 || !form.platforms || form.platforms.length === 0
+      !form.categories || form.categories.length === 0 ||
+      !form.bestFor || form.bestFor.length === 0 ||
+      !form.platforms || form.platforms.length === 0 ||
+      !form.tech_stack || form.tech_stack.length === 0
     );
 
     // Use urlOverride if available, otherwise fall back to form.link
@@ -1181,6 +1184,7 @@ export function useProductForm() {
           platforms: data.platforms,
           bestFor: data.bestFor,
           pricing: data.pricing,
+          techStacks: data.tech_stacks,
           suggestedCategories: data.suggestedCategories
         });
 
@@ -1199,6 +1203,11 @@ export function useProductForm() {
         if (data.platforms && data.platforms.length > 0 && (!form.platforms || form.platforms.length === 0)) {
           form.platforms = data.platforms;
           console.log('fetchRemainingData: Set platforms to:', data.platforms);
+        }
+
+        if (data.tech_stacks && data.tech_stacks.length > 0 && (!form.tech_stack || form.tech_stack.length === 0)) {
+          form.tech_stack = data.tech_stacks;
+          console.log('fetchRemainingData: Set tech_stack to:', data.tech_stacks);
         }
 
         // Set pricing from classifier

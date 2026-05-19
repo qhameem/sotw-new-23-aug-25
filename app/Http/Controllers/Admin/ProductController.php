@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use App\Support\CategoryTypeRegistry;
+use App\Support\SocialLinkValidator;
 use App\Support\ProductMediaSeo;
 
 class ProductController extends Controller
@@ -370,7 +371,15 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'video_url' => 'nullable|string',
             'maker_links' => 'nullable|array',
-            'maker_links.*' => 'url|max:2048',
+            'maker_links.*' => [
+                'url',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                        $fail('Only social or profile links like GitHub, LinkedIn, and similar social platforms are allowed.');
+                    }
+                },
+            ],
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',

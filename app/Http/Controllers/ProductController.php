@@ -34,6 +34,7 @@ use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
 use App\Jobs\FetchOgImage;
 use App\Support\CategoryTypeRegistry;
+use App\Support\SocialLinkValidator;
 use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
@@ -227,7 +228,15 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'link' => 'required|url|max:255',
             'maker_links' => 'nullable|array',
-            'maker_links.*' => 'url|max:2048',
+            'maker_links.*' => [
+                'url',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                        $fail('Only social or profile links like GitHub, LinkedIn, and similar social platforms are allowed.');
+                    }
+                },
+            ],
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
@@ -709,7 +718,15 @@ class ProductController extends Controller
             'custom_tech_stacks' => 'nullable|array|max:3',
             'custom_tech_stacks.*.name' => 'required|string|max:100',
             'maker_links' => 'nullable|array',
-            'maker_links.*' => 'url|max:2048',
+            'maker_links.*' => [
+                'url',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                        $fail('Only social or profile links like GitHub, LinkedIn, and similar social platforms are allowed.');
+                    }
+                },
+            ],
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
@@ -2237,41 +2254,7 @@ class ProductController extends Controller
 
     protected function isResourceLinkCandidate(string $pageUrl, string $candidateUrl, string $text): bool
     {
-        $candidateParts = parse_url($candidateUrl);
-        $pageParts = parse_url($pageUrl);
-
-        if ($candidateParts === false || $pageParts === false || empty($candidateParts['host']) || empty($pageParts['host'])) {
-            return false;
-        }
-
-        $candidateHost = $this->normalizeAutofillHost($candidateParts['host']);
-        $pageHost = $this->normalizeAutofillHost($pageParts['host']);
-        $sameHost = $candidateHost === $pageHost
-            || str_ends_with($candidateHost, '.' . $pageHost)
-            || str_ends_with($pageHost, '.' . $candidateHost);
-
-        $socialAndResourceHosts = [
-            'github.com',
-            'linkedin.com',
-            'facebook.com',
-            'instagram.com',
-            'youtube.com',
-            'youtu.be',
-            'discord.com',
-            'discord.gg',
-            'reddit.com',
-            'tiktok.com',
-            'medium.com',
-            'substack.com',
-        ];
-
-        foreach ($socialAndResourceHosts as $host) {
-            if ($candidateHost === $host || str_ends_with($candidateHost, '.' . $host)) {
-                return true;
-            }
-        }
-
-        return !$sameHost;
+        return SocialLinkValidator::isAllowedMakerLinkUrl($candidateUrl);
     }
 
     protected function normalizeAutofillHost(string $host): string
@@ -2331,6 +2314,7 @@ class ProductController extends Controller
                         'bestFor' => [],
                         'pricing' => [],
                         'platforms' => [],
+                        'tech_stacks' => [],
                         'pricing_page_url' => null,
                         'x_account' => null,
                         'maker_links' => [],
@@ -2482,6 +2466,19 @@ class ProductController extends Controller
                 $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
                 $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
                 $platformIds = !empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
+                $techStackIds = [];
+
+                try {
+                    $techStackNames = $this->techStackDetector->detect($url);
+                    $techStackIds = !empty($techStackNames)
+                        ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
+                        : [];
+                } catch (\Throwable $techStackError) {
+                    \Illuminate\Support\Facades\Log::warning('Tech stack detection failed during processUrlStream.', [
+                        'url' => $url,
+                        'error' => $techStackError->getMessage(),
+                    ]);
+                }
 
                 // Find category names the classifier suggested but that don't exist in DB
                 $matchedCategoryNames = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
@@ -2496,6 +2493,7 @@ class ProductController extends Controller
                     'bestFor' => $bestForIds,
                     'pricing' => $pricingIds,
                     'platforms' => $platformIds,
+                    'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'screenshot_url' => $this->screenshotService->capture($url),
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
@@ -2515,6 +2513,7 @@ class ProductController extends Controller
                     'bestFor' => [],
                     'pricing' => [],
                     'platforms' => [],
+                    'tech_stacks' => [],
                     'pricing_page_url' => null,
                     'x_account' => null,
                     'maker_links' => [],
@@ -2568,6 +2567,8 @@ class ProductController extends Controller
                     'categories' => [],
                     'bestFor' => [],
                     'pricing' => [],
+                    'platforms' => [],
+                    'tech_stacks' => [],
                     'pricing_page_url' => null,
                     'x_account' => null,
                     'maker_links' => [],
@@ -2764,6 +2765,19 @@ class ProductController extends Controller
                 $platformIds = Category::whereIn('name', $platforms)->pluck('id')->toArray();
             }
 
+            $techStackIds = [];
+            try {
+                $techStackNames = $this->techStackDetector->detect($url);
+                $techStackIds = !empty($techStackNames)
+                    ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
+                    : [];
+            } catch (\Throwable $techStackError) {
+                Log::warning('Tech stack detection failed during processUrl.', [
+                    'url' => $url,
+                    'error' => $techStackError->getMessage(),
+                ]);
+            }
+
             $responseData = [
                 'description' => $description,
                 'logos' => $logos,
@@ -2773,6 +2787,7 @@ class ProductController extends Controller
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,
                 'platforms' => $platformIds,
+                'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'screenshot_url' => $this->screenshotService->capture($url),
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
@@ -2799,6 +2814,7 @@ class ProductController extends Controller
                 'bestFor' => [],
                 'pricing' => [],
                 'platforms' => [],
+                'tech_stacks' => [],
                 'pricing_page_url' => null,
                 'x_account' => null,
                 'maker_links' => [],

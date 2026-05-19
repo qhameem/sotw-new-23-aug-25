@@ -385,19 +385,20 @@
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
          <div class="mt-4">
              <div class="flex justify-between items-center mb-2">
-                 <label class="block text-xs font-bold text-gray-900">Other Links (GitHub, LinkedIn, etc.)</label>
+                 <label class="block text-xs font-bold text-gray-900">Other Social / Profile Links</label>
                  <button type="button" @click="addMoreLink" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center">
                     <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Add Link
                  </button>
              </div>
+             <p class="mb-2 text-xs text-gray-500">Use social or profile links only, like GitHub, LinkedIn, YouTube, Discord, or similar profiles.</p>
              <div class="space-y-2">
                  <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center gap-2">
                     <input
                       type="url"
                       :value="link"
                       @input="updateMakerLink(index, $event.target.value)"
-                      placeholder="https://..."
+                      placeholder="https://github.com/username"
                       class="block flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
                     >
                     <button type="button" @click="removeLink(index)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
