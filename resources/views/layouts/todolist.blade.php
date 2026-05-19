@@ -12,19 +12,6 @@
         window.loadDelayedScripts = function () {
             if (window.delayedScriptsLoaded) return;
             window.delayedScriptsLoaded = true;
-
-            // Load Livewire Scripts
-            const livewireTemplate = document.getElementById('delayed-livewire-scripts');
-            if (livewireTemplate && window.Livewire === undefined) {
-                const div = document.createElement('div');
-                div.innerHTML = livewireTemplate.innerHTML;
-                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    document.body.appendChild(newScript);
-                });
-            }
         };
 
         ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
@@ -85,7 +72,6 @@
     </style>
 
     @vite(['resources/css/app.css', 'resources/css/todo-vendor.css', 'resources/js/app.js'])
-    @livewireStyles
     @stack('styles')
 </head>
 
@@ -114,7 +100,6 @@
         @include('auth.partials.login-modal-content')
     </x-modal>
 
-    <template id="delayed-livewire-scripts">@livewireScripts</template>
     @stack('scripts')
     <script>
         const bodyData = document.body.dataset;

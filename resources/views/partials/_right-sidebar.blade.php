@@ -118,8 +118,7 @@
                         <template x-for="product in results.products" :key="product.id">
                             <li>
                                 <a :href="`/product/${product.slug}`"
-                                    class="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                                    wire:navigate>
+                                    class="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
                                     <template x-if="product.logo_url">
                                         <img :src="product.logo_url" :alt="product.name"
                                             class="w-8 h-8 mr-3 rounded-xl object-cover">

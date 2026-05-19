@@ -192,8 +192,7 @@
         }).then(() => {
             $dispatch('open-modal', { name: 'login-required-modal' });
         });
-    "
-    x-on:livewire:navigating.window="closeSearchModal(); if(typeof closeProductModal === 'function') closeProductModal();">
+    ">
 
 <head>
     <script>
@@ -284,18 +283,6 @@
             document.querySelectorAll('template.delayed-head-snippet').forEach(window.processDelayedTemplate);
             document.querySelectorAll('template.delayed-body-snippet').forEach(window.processDelayedTemplate);
 
-            // Load Livewire Scripts
-            const livewireTemplate = document.getElementById('delayed-livewire-scripts');
-            if (livewireTemplate && window.Livewire === undefined) {
-                const div = document.createElement('div');
-                div.innerHTML = livewireTemplate.innerHTML;
-                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    document.body.appendChild(newScript);
-                });
-            }
         };
 
         ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
@@ -453,7 +440,6 @@
     @include('partials.theme.favicon-links')
 
     @vite(['resources/css/public.css', 'resources/js/app.js'])
-    @livewireStyles
 
     @stack('styles')
     <!-- Schema markup -->
@@ -562,7 +548,6 @@
 
     @stack('scripts')
     @stack('form-scripts')
-    <template id="delayed-livewire-scripts">@livewireScripts</template>
 
     @php
         $shouldEagerLoadLoginModal = session('status') === 'otp-sent' || $errors->has('email') || $errors->has('otp');

@@ -192,8 +192,7 @@
         }).then(() => {
             $dispatch('open-modal', { name: 'login-required-modal' });
         });
-    "
-    x-on:livewire:navigating.window="closeSearchModal(); if(typeof closeProductModal === 'function') closeProductModal();">
+    ">
 
 <head>
     <script>
@@ -277,20 +276,6 @@
             document.querySelectorAll('template.delayed-head-snippet').forEach(window.processDelayedTemplate);
             document.querySelectorAll('template.delayed-body-snippet').forEach(window.processDelayedTemplate);
 
-            // Load jQuery/Select2/Livewire
-            const genericTemplate = document.getElementById('delayed-vendor-scripts');
-            if (genericTemplate) {
-                const div = document.createElement('div');
-                div.innerHTML = genericTemplate.innerHTML;
-                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    if (oldScript.innerHTML) {
-                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    }
-                    document.body.appendChild(newScript);
-                });
-            }
         };
 
         ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
@@ -442,7 +427,6 @@
     @include('partials.theme.favicon-links')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @stack('styles')
 
@@ -540,9 +524,6 @@
         </div>
     </div>
     <div x-ref="searchModalContent"></div>
-    <template id="delayed-vendor-scripts">
-        @livewireScripts
-    </template>
     @stack('scripts')
     @stack('form-scripts')
 
