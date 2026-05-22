@@ -45,13 +45,13 @@
 @endphp
 
 @if($sidebarTopAds->isNotEmpty() || $sponsors->isNotEmpty())
-    <div class="px-4 pb-0">
+    <div class="pb-0">
         <h3 class="text-base font-semibold text-gray-800">Featured</h3>
     </div>
 @endif
 
 @if($sidebarTopAds->isNotEmpty())
-    <div class="space-y-4 p-4 pt-0">
+    <div class="space-y-4 pt-0">
         @foreach($sidebarTopAds as $sidebarTopAd)
             @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top'])
         @endforeach
