@@ -39,8 +39,10 @@
              @input="updateField('tagline', $event.target.value)" 
              maxlength="140" 
              rows="2" 
+             placeholder="Short Product Hunt-style one-liner"
              class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
            ></textarea>
+           <p class="mt-1 text-[11px] text-gray-500">Keep it short and clear. Explain what the product does in one punchy line.</p>
         </div>
         <div>
            <div class="flex justify-between mb-1">
@@ -53,8 +55,10 @@
              @input="updateField('tagline_detailed', $event.target.value)" 
              maxlength="160" 
              rows="2" 
+             placeholder="A slightly fuller one-liner for the product page"
              class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
            ></textarea>
+           <p class="mt-1 text-[11px] text-gray-500">This can be a bit fuller than the tagline, but it should still feel like one crisp sentence.</p>
         </div>
      </div>
 

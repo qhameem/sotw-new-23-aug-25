@@ -11,6 +11,11 @@ use Illuminate\Support\Str;
 
 class TaglineController extends Controller
 {
+    private const TAGLINE_SOFT_MAX = 88;
+    private const TAGLINE_HARD_MAX = 140;
+    private const TAGLINE_DETAILED_SOFT_MAX = 120;
+    private const TAGLINE_DETAILED_HARD_MAX = 160;
+
     public function generate(Request $request)
     {
         $request->validate([
@@ -38,7 +43,7 @@ class TaglineController extends Controller
                             [
                                 'parts' => [
                                     [
-                                        'text' => "Based on the product description \"{$request->input('description')}\", generate two taglines in JSON format: a 'short' one (between 60-140 chars, must clearly describe what the product does in your own words — NEVER copy-paste from the description, always rewrite and improve) and a 'detailed' one (between 100-160 chars, a complete sentence elaborating the value proposition). Return only the JSON object with keys 'short' and 'detailed'."
+                                        'text' => "Based on the product description \"{$request->input('description')}\", generate two product taglines in JSON format. Write like a human product copywriter, not an AI assistant. Both lines must be punchy, natural, and immediately explain what the product does. The 'short' tagline should ideally be 35-85 characters and never exceed 140. The 'detailed' tagline should ideally be 45-110 characters and never exceed 160. The detailed line can be slightly fuller, but it must still be a one-line explanation, not a mini paragraph. Avoid hype, slogans, rhetorical questions, ad-style openings like 'Meet...' or 'Your X shouldn't...'. Do not copy whole lines from the description, but if it contains a short, distinctive positioning phrase that is clearly the best explanation of the product, you may keep that phrase. Preserve strong hooks from the source when they are specific and useful, such as 'one-person company', instead of flattening them into generic terms like 'business', 'company', 'platform', or 'tool'. Prefer the source's clearest native terminology, so do not replace 'AI agents' with broader wording like 'AI team' unless the source clearly does that. Mention pricing, 'no subscription', 'free', or 'one-time purchase' only when the source clearly presents that as a meaningful differentiator or buyer reason to choose the product, especially in categories where recurring subscriptions are the norm. Return only the JSON object with keys 'short' and 'detailed'."
                                     ]
                                 ]
                             ]
@@ -62,8 +67,8 @@ class TaglineController extends Controller
             }
 
             return response()->json([
-                'tagline' => $taglines['short'],
-                'tagline_detailed' => $taglines['detailed']
+                'tagline' => $this->normalizeGeneratedLine((string) $taglines['short'], self::TAGLINE_SOFT_MAX, self::TAGLINE_HARD_MAX),
+                'tagline_detailed' => $this->normalizeGeneratedLine((string) $taglines['detailed'], self::TAGLINE_DETAILED_SOFT_MAX, self::TAGLINE_DETAILED_HARD_MAX),
             ]);
 
         } catch (\Exception $e) {
@@ -94,12 +99,64 @@ class TaglineController extends Controller
             }
 
             return response()->json([
-                'tagline' => Str::limit(trim($title), 140),
-                'tagline_detailed' => Str::limit(trim($description), 160)
+                'tagline' => $this->normalizeGeneratedLine(trim($title), self::TAGLINE_SOFT_MAX, self::TAGLINE_HARD_MAX),
+                'tagline_detailed' => $this->normalizeGeneratedLine(trim($description), self::TAGLINE_DETAILED_SOFT_MAX, self::TAGLINE_DETAILED_HARD_MAX),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch metadata for tagline fallback.', ['url' => $url, 'error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to fetch metadata.'], 500);
         }
+    }
+
+    private function normalizeGeneratedLine(string $text, int $softMax, int $hardMax): string
+    {
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
+        $text = trim($text, " \t\n\r\0\x0B\"'`");
+
+        if ($text === '') {
+            return '';
+        }
+
+        $text = $this->dropPromotionalLeadIn($text);
+
+        if (mb_strlen($text) > $softMax) {
+            $text = Str::limit($text, $softMax, '...');
+        } elseif (mb_strlen($text) > $hardMax) {
+            $text = Str::limit($text, $hardMax, '...');
+        }
+
+        return trim(rtrim($text, " .!?,;:-"));
+    }
+
+    private function dropPromotionalLeadIn(string $text): string
+    {
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        if (!is_array($sentences) || count($sentences) < 2) {
+            return $text;
+        }
+
+        $firstSentence = mb_strtolower(trim($sentences[0]));
+        $leadIns = [
+            'meet ',
+            'say hello',
+            'introducing ',
+            'finally',
+            'your ',
+            'stop ',
+            'forget ',
+            'no more ',
+            'why ',
+            'tired of ',
+        ];
+
+        foreach ($leadIns as $leadIn) {
+            if (str_starts_with($firstSentence, $leadIn)) {
+                return trim(implode(' ', array_slice($sentences, 1)));
+            }
+        }
+
+        return $text;
     }
 }

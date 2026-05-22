@@ -107,8 +107,8 @@ export function useProductForm() {
     return {
       link: 'https://sandbox-preview.test',
       name: 'Sandbox Project',
-      tagline: 'A simulated product used to test AI auto-fill states.',
-      tagline_detailed: 'Sandbox preview for testing autofill animations, progress states, and form transitions without using a real URL.',
+      tagline: 'Sandbox autofill for testing the submission flow',
+      tagline_detailed: 'Preview AI autofill states without submitting a real product',
       description: '<p>This is a sandbox-only autofill result for admins. It simulates a successful AI extraction so you can verify loading states, transitions, and preview behavior without touching production data.</p><p>No URL was fetched, and no submission will be stored while sandbox mode remains active.</p>',
       categories: fallbackCategoryId ? [fallbackCategoryId] : [],
       useCases: fallbackUseCaseId ? [fallbackUseCaseId] : [],
