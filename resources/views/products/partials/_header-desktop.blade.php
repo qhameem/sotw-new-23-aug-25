@@ -46,24 +46,24 @@
     <div class="ml-5 flex-1">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 flex-1 max-w-4xl">
-                <h1 class="site-heading-text text-2xl font-bold text-gray-900">
-                    @if(isset($isAdminView) && $isAdminView)
-                        <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
-                        <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
-                            @keydown.escape="editingName = false" class="form-input">
-                    @else
-                        {{ $product->name }}
-                    @endif
-                </h1>
-            </div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <h1 class="site-heading-text text-2xl font-bold text-gray-900">
+                        @if(isset($isAdminView) && $isAdminView)
+                            <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
+                            <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
+                                @keydown.escape="editingName = false" class="form-input">
+                        @else
+                            {{ $product->name }}
+                        @endif
+                    </h1>
 
-            <div class="hidden md:flex shrink-0 items-center justify-end gap-3">
-                @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
-                    <a href="{{ route('admin.products.edit', $product) }}"
-                        class="inline-flex h-11 items-center justify-center rounded-lg border border-gray-900 bg-gray-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
-                        Edit Product
-                    </a>
-                @endif
+                    @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
+                        <a href="{{ route('admin.products.edit', $product) }}"
+                            class="text-sm font-medium text-primary-600 underline decoration-transparent underline-offset-4 transition hover:decoration-current focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-sm">
+                            Edit
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
 

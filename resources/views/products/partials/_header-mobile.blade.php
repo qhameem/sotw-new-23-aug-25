@@ -40,9 +40,18 @@
         @endif
     @endif
 
-    <h1 class="site-heading-text text-xl font-bold text-gray-900 ml-4">
-        {{ $product->name }}
-    </h1>
+    <div class="ml-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <h1 class="site-heading-text text-xl font-bold text-gray-900">
+            {{ $product->name }}
+        </h1>
+
+        @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
+            <a href="{{ route('admin.products.edit', $product) }}"
+                class="text-sm font-medium text-primary-600 underline decoration-transparent underline-offset-4 transition hover:decoration-current focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-sm">
+                Edit
+            </a>
+        @endif
+    </div>
 </div>
 
 {{-- Tagline --}}
@@ -80,12 +89,6 @@
 
 {{-- Interaction Buttons --}}
 <div class="flex flex-row items-stretch mt-6 mb-6 gap-3">
-    @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
-        <a href="{{ route('admin.products.edit', $product) }}"
-            class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-lg shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
-            Edit Product
-        </a>
-    @endif
     <x-products.visit-website-button :product="$product" surface="product_details" full-width class="flex-1 min-h-[48px]" />
     @unless(isset($isAdminView) && $isAdminView)
         <div class="flex-1">
