@@ -27,6 +27,19 @@
         @endif
     </div>
 
+    @if(($idealForItems ?? collect())->isNotEmpty())
+        <div>
+            <h3 class="text-xs text-gray-500 mb-2">Ideal for</h3>
+            <div class="flex flex-wrap gap-2">
+                @foreach($idealForItems as $idealForItem)
+                    <span class="inline-flex items-center text-xs text-gray-700 font-medium bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                        {{ $idealForItem }}
+                    </span>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if(($canClaimProduct ?? false) && Auth::check())
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <h3 class="text-xs text-gray-500 mb-2">Ownership</h3>

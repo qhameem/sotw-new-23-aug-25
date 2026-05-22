@@ -38,10 +38,10 @@
             trim(strip_tags((string) ($product->description ?: $product->product_page_tagline ?: $product->tagline))),
             260
         );
+        $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
         $quickFacts = collect([
             ['label' => 'Pricing', 'value' => $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null)],
             ['label' => 'Use Cases', 'value' => $useCaseCategories->isNotEmpty() ? $useCaseCategories->pluck('name')->take(2)->implode(', ') : null],
-            ['label' => 'Ideal For', 'value' => $bestForCategories->isNotEmpty() ? $bestForCategories->pluck('name')->take(2)->implode(', ') : null],
             ['label' => 'Platforms', 'value' => $platformCategories->isNotEmpty() ? $platformCategories->pluck('name')->take(2)->implode(', ') : null],
         ])->filter(fn($item) => filled($item['value']))->values();
         $sectionNavItems = array_values(array_filter([
