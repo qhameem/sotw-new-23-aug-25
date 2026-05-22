@@ -1,7 +1,10 @@
-Analyze the following website content and determine the most relevant "Category" and "Best for" tags for the product described.
+Analyze the following website content and determine the most relevant software categories, use cases, audience tags, pricing models, and platforms for the product described.
 
 **Available Categories:**
 {available_categories}
+
+**Available Use Cases:**
+{available_use_cases}
 
 **Available "Best for" Tags:**
 {available_best_for_tags}
@@ -17,14 +20,16 @@ Analyze the following website content and determine the most relevant "Category"
 
 **Instructions:**
 1.  From the "Available Categories" list, identify up to 3 that best describe the product.
-2.  From the "Available 'Best for' Tags" list, identify up to 3 that best describe the target audience or use case for the product.
-3.  From the "Available Pricing Models" list, identify up to 2 that best describe the product's pricing model.
-4.  From the "Available Platforms" list, identify up to 3 that best describe where the product runs or is available.
-5.  Return the results in JSON format, with the keys "categories", "best_for", "pricing", and "platforms".
+2.  From the "Available Use Cases" list, identify up to 3 short job-to-be-done labels that best match what the product helps users accomplish.
+3.  From the "Available 'Best for' Tags" list, identify up to 3 that best describe the target audience. Do not put use cases in this field.
+4.  From the "Available Pricing Models" list, identify up to 2 that best describe the product's pricing model.
+5.  From the "Available Platforms" list, identify up to 3 that best describe where the product runs or is available.
+6.  Return the results in JSON format, with the keys "categories", "use_cases", "best_for", "pricing", and "platforms".
 
 **Example Output:**
 {
   "categories": ["Project Management", "Task Management"],
+  "use_cases": ["Meeting Summaries", "Task Automation"],
   "best_for": ["Small businesses", "Remote teams"],
   "pricing": ["Freemium", "Subscription"],
   "platforms": ["Web", "iOS"]

@@ -4,7 +4,7 @@
     $productLogo = ProductLogo::storedUrl($product);
 @endphp
 
-<div class="flex flex-row items-start mb-4">
+<div class="flex flex-row items-start mb-6">
     {{-- Logo --}}
     <div class="flex-shrink-0">
         @if(isset($isAdminView) && $isAdminView)
@@ -44,28 +44,49 @@
 
     {{-- Content Area --}}
     <div class="ml-5 flex-1">
-        <h1 class="site-heading-text text-2xl font-bold text-gray-900">
-            @if(isset($isAdminView) && $isAdminView)
-                <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
-                <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
-                    @keydown.escape="editingName = false" class="form-input">
-            @else
-                {{ $product->name }}
-            @endif
-        </h1>
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0 flex-1 max-w-4xl">
+                <h1 class="site-heading-text text-2xl font-bold text-gray-900">
+                    @if(isset($isAdminView) && $isAdminView)
+                        <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
+                        <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
+                            @keydown.escape="editingName = false" class="form-input">
+                    @else
+                        {{ $product->name }}
+                    @endif
+                </h1>
+            </div>
 
-        {{-- Tagline --}}
-        <p class="site-body-text text-gray-800 text-base leading-snug">
-            @if(isset($isAdminView) && $isAdminView)
-                <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
-                    x-text="product_page_tagline"></span>
-                <input x-show="editingProductPageTagline" x-model="product_page_tagline"
-                    @keydown.enter="updateProduct(); editingProductPageTagline = false"
-                    @keydown.escape="editingProductPageTagline = false" class="form-input">
-            @else
-                {{ $product->product_page_tagline }}
-            @endif
-        </p>
+            <div class="hidden md:flex shrink-0 items-center justify-end gap-3">
+                @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
+                    <a href="{{ route('admin.products.edit', $product) }}"
+                        class="inline-flex h-11 items-center justify-center rounded-lg border border-gray-900 bg-gray-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+                        Edit Product
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        <div class="mt-2 flex items-start justify-between gap-6">
+            <div class="min-w-0 flex-1 max-w-4xl">
+                {{-- Tagline --}}
+                <p class="site-body-text text-gray-800 text-base leading-snug">
+                    @if(isset($isAdminView) && $isAdminView)
+                        <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
+                            x-text="product_page_tagline"></span>
+                        <input x-show="editingProductPageTagline" x-model="product_page_tagline"
+                            @keydown.enter="updateProduct(); editingProductPageTagline = false"
+                            @keydown.escape="editingProductPageTagline = false" class="form-input">
+                    @else
+                        {{ $product->product_page_tagline }}
+                    @endif
+                </p>
+            </div>
+
+            <div class="shrink-0">
+                <x-products.visit-website-button :product="$product" surface="product_details" class="min-h-7 whitespace-nowrap text-base font-semibold" />
+            </div>
+        </div>
 
         {{-- Tags --}}
         <div class="flex flex-wrap items-center mt-2.5">
@@ -85,19 +106,4 @@
             @endforeach
         </div>
     </div>
-</div>
-
-<div class="flex flex-row items-center justify-end mb-6 gap-3">
-    @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
-        <a href="{{ route('admin.products.edit', $product) }}"
-            class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-lg shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
-            Edit Product
-        </a>
-    @endif
-    <x-products.visit-website-button :product="$product" surface="product_details" />
-    @unless(isset($isAdminView) && $isAdminView)
-        <div>
-            @include('partials.product-upvote-button', ['product' => $product])
-        </div>
-    @endunless
 </div>

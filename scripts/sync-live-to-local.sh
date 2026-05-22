@@ -15,6 +15,8 @@ usage() {
     cat <<'EOF'
 Usage:
   scripts/sync-live-to-local.sh [--yes]
+  scripts/sync-live-to-local.sh --media-only
+  scripts/sync-live-to-local.sh --media-only --yes
 
 What it does:
   1. Creates a backup of your local MySQL database.
@@ -22,6 +24,10 @@ What it does:
   3. Downloads that dump into this project with live progress output.
   4. Wipes the local database and imports the live dump.
   5. Syncs product upload folders from live storage/app/public with live progress output.
+
+Media-only mode:
+  - Skips the database backup, dump, download, wipe, and import steps.
+  - Only syncs the media directories from live storage/app/public.
 
 Required local files:
   .env
@@ -85,23 +91,59 @@ rsync_with_progress() {
         "$@"
 }
 
+run_media_rsync() {
+    local remote_path="$1"
+    local local_target="$2"
+
+    if [[ "$LIVE_SYNC_USE_DELETE" == "1" ]]; then
+        rsync_with_progress --delete -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+            "$remote_path" \
+            "$local_target"
+        return
+    fi
+
+    rsync_with_progress -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+        "$remote_path" \
+        "$local_target"
+}
+
 confirm_destructive_step() {
     local answer
 
-    if [[ "${1:-}" == "--yes" ]]; then
+    if [[ "${AUTO_YES:-0}" == "1" ]]; then
         return 0
     fi
 
-    printf 'This will replace your local database with the live database. Continue? [y/N] '
+    if [[ "${MEDIA_ONLY_MODE:-0}" == "1" ]]; then
+        printf 'This will sync live media files into your local storage folders. Continue? [y/N] '
+    else
+        printf 'This will replace your local database with the live database. Continue? [y/N] '
+    fi
     read -r answer
 
     [[ "$answer" == "y" || "$answer" == "Y" ]]
 }
 
-[[ "${1:-}" == "--help" ]] && {
-    usage
-    exit 0
-}
+AUTO_YES=0
+MEDIA_ONLY_MODE=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --help)
+            usage
+            exit 0
+            ;;
+        --yes)
+            AUTO_YES=1
+            ;;
+        --media-only)
+            MEDIA_ONLY_MODE=1
+            ;;
+        *)
+            fail "Unknown option: $arg"
+            ;;
+    esac
+done
 
 mkdir -p "$TMP_DIR" "$BACKUP_DIR"
 
@@ -144,23 +186,26 @@ LOCAL_DB_PASSWORD="$(env_get "$LOCAL_ENV_FILE" DB_PASSWORD || true)"
 [[ -n "$LOCAL_DB_DATABASE" ]] || fail "DB_DATABASE is missing from $LOCAL_ENV_FILE"
 [[ -n "$LOCAL_DB_USERNAME" ]] || fail "DB_USERNAME is missing from $LOCAL_ENV_FILE"
 
-if ! confirm_destructive_step "${1:-}"; then
+if ! confirm_destructive_step; then
     fail "Cancelled."
 fi
 
-LOCAL_BACKUP_FILE="$BACKUP_DIR/local-${TIMESTAMP}.sql"
+LOCAL_BACKUP_FILE=""
 
-log "Creating local database backup at $LOCAL_BACKUP_FILE"
-MYSQL_PWD="$LOCAL_DB_PASSWORD" mysqldump \
-    --host="$LOCAL_DB_HOST" \
-    --port="$LOCAL_DB_PORT" \
-    --user="$LOCAL_DB_USERNAME" \
-    --single-transaction \
-    --quick \
-    "$LOCAL_DB_DATABASE" > "$LOCAL_BACKUP_FILE"
+if [[ "$MEDIA_ONLY_MODE" != "1" ]]; then
+    LOCAL_BACKUP_FILE="$BACKUP_DIR/local-${TIMESTAMP}.sql"
 
-log "Creating live database dump on the server"
-REMOTE_DUMP_SCRIPT=$(cat <<EOF
+    log "Creating local database backup at $LOCAL_BACKUP_FILE"
+    MYSQL_PWD="$LOCAL_DB_PASSWORD" mysqldump \
+        --host="$LOCAL_DB_HOST" \
+        --port="$LOCAL_DB_PORT" \
+        --user="$LOCAL_DB_USERNAME" \
+        --single-transaction \
+        --quick \
+        "$LOCAL_DB_DATABASE" > "$LOCAL_BACKUP_FILE"
+
+    log "Creating live database dump on the server"
+    REMOTE_DUMP_SCRIPT=$(cat <<EOF
 set -euo pipefail
 MYSQL_PWD=$(shell_quote "$LIVE_SYNC_REMOTE_DB_PASSWORD") mysqldump \
   --host=$(shell_quote "$LIVE_SYNC_REMOTE_DB_HOST") \
@@ -170,27 +215,25 @@ MYSQL_PWD=$(shell_quote "$LIVE_SYNC_REMOTE_DB_PASSWORD") mysqldump \
   --quick \
   $(shell_quote "$LIVE_SYNC_REMOTE_DB_DATABASE") > $(shell_quote "$REMOTE_DUMP_FILE")
 EOF
-)
-run_ssh "$REMOTE_DUMP_SCRIPT"
+    )
+    run_ssh "$REMOTE_DUMP_SCRIPT"
 
-log "Downloading live database dump"
-rsync_with_progress -e "ssh -p $LIVE_SYNC_SSH_PORT" \
-    "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}:${REMOTE_DUMP_FILE}" \
-    "$LOCAL_DUMP_FILE"
+    log "Downloading live database dump"
+    rsync_with_progress -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+        "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}:${REMOTE_DUMP_FILE}" \
+        "$LOCAL_DUMP_FILE"
 
-log "Wiping local database tables"
-(cd "$PROJECT_ROOT" && php artisan db:wipe --force)
+    log "Wiping local database tables"
+    (cd "$PROJECT_ROOT" && php artisan db:wipe --force)
 
-log "Importing live database into local MySQL"
-MYSQL_PWD="$LOCAL_DB_PASSWORD" mysql \
-    --host="$LOCAL_DB_HOST" \
-    --port="$LOCAL_DB_PORT" \
-    --user="$LOCAL_DB_USERNAME" \
-    "$LOCAL_DB_DATABASE" < "$LOCAL_DUMP_FILE"
-
-RSYNC_FLAGS=()
-if [[ "$LIVE_SYNC_USE_DELETE" == "1" ]]; then
-    RSYNC_FLAGS+=(--delete)
+    log "Importing live database into local MySQL"
+    MYSQL_PWD="$LOCAL_DB_PASSWORD" mysql \
+        --host="$LOCAL_DB_HOST" \
+        --port="$LOCAL_DB_PORT" \
+        --user="$LOCAL_DB_USERNAME" \
+        "$LOCAL_DB_DATABASE" < "$LOCAL_DUMP_FILE"
+else
+    log "Media-only mode enabled; skipping database sync"
 fi
 
 for media_dir in $LIVE_SYNC_MEDIA_DIRS; do
@@ -198,13 +241,17 @@ for media_dir in $LIVE_SYNC_MEDIA_DIRS; do
     mkdir -p "$local_target"
 
     log "Syncing $media_dir"
-    rsync_with_progress "${RSYNC_FLAGS[@]}" -e "ssh -p $LIVE_SYNC_SSH_PORT" \
+    run_media_rsync \
         "${LIVE_SYNC_SSH_USER}@${LIVE_SYNC_SSH_HOST}:${LIVE_SYNC_REMOTE_STORAGE_ROOT}/${media_dir}/" \
         "$local_target/"
 done
 
-log "Cleaning up temp dump files"
-rm -f "$LOCAL_DUMP_FILE"
-run_ssh "rm -f $(shell_quote "$REMOTE_DUMP_FILE")"
+if [[ "$MEDIA_ONLY_MODE" != "1" ]]; then
+    log "Cleaning up temp dump files"
+    rm -f "$LOCAL_DUMP_FILE"
+    run_ssh "rm -f $(shell_quote "$REMOTE_DUMP_FILE")"
 
-log "Done. Local DB backup saved at $LOCAL_BACKUP_FILE"
+    log "Done. Local DB backup saved at $LOCAL_BACKUP_FILE"
+else
+    log "Done. Media sync completed."
+fi

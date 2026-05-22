@@ -99,6 +99,7 @@ export function useProductForm() {
 
   const buildSandboxAutofillPayload = () => {
     const fallbackCategoryId = globalFormState.allCategories.value?.[0]?.id || null;
+    const fallbackUseCaseId = globalFormState.allUseCases.value?.[0]?.id || null;
     const fallbackPlatformId = globalFormState.allPlatforms.value?.[0]?.id || null;
     const fallbackBestForId = globalFormState.allBestFor.value?.[0]?.id || null;
     const fallbackPricingId = globalFormState.allPricing.value?.[0]?.id || null;
@@ -110,6 +111,7 @@ export function useProductForm() {
       tagline_detailed: 'Sandbox preview for testing autofill animations, progress states, and form transitions without using a real URL.',
       description: '<p>This is a sandbox-only autofill result for admins. It simulates a successful AI extraction so you can verify loading states, transitions, and preview behavior without touching production data.</p><p>No URL was fetched, and no submission will be stored while sandbox mode remains active.</p>',
       categories: fallbackCategoryId ? [fallbackCategoryId] : [],
+      useCases: fallbackUseCaseId ? [fallbackUseCaseId] : [],
       platforms: fallbackPlatformId ? [fallbackPlatformId] : [],
       bestFor: fallbackBestForId ? [fallbackBestForId] : [],
       pricing: fallbackPricingId ? [fallbackPricingId] : [],
@@ -142,8 +144,18 @@ export function useProductForm() {
 
   const splitSelectedCategoryIds = (allCategoryIds = [], options = {}) => {
     const parsedAllCategoryIds = (allCategoryIds || []).map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id));
+    const useCaseIds = new Set(parseCategoryIdList(options.useCaseCategories));
     const pricingIds = new Set(parseCategoryIdList(options.pricingCategories));
     const platformIds = new Set(parseCategoryIdList(options.platformCategories));
+
+    let selectedUseCaseIds = [];
+    try {
+      selectedUseCaseIds = JSON.parse(options.selectedUseCaseCategories || '[]')
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id));
+    } catch (error) {
+      console.error('Error parsing selected use-case categories:', error);
+    }
 
     let bestForIds = [];
     try {
@@ -163,14 +175,16 @@ export function useProductForm() {
       console.error('Error parsing selected platform categories:', error);
     }
 
+    const selectedUseCaseIdSet = new Set(selectedUseCaseIds);
     const bestForIdSet = new Set(bestForIds);
     const selectedPlatformIdSet = new Set(selectedPlatformIds);
 
     return {
       pricing: parsedAllCategoryIds.filter((id) => pricingIds.has(id)),
+      useCases: parsedAllCategoryIds.filter((id) => useCaseIds.has(id) || selectedUseCaseIdSet.has(id)),
       bestFor: parsedAllCategoryIds.filter((id) => bestForIdSet.has(id)),
       platforms: parsedAllCategoryIds.filter((id) => platformIds.has(id) || selectedPlatformIdSet.has(id)),
-      categories: parsedAllCategoryIds.filter((id) => !pricingIds.has(id) && !bestForIdSet.has(id) && !platformIds.has(id) && !selectedPlatformIdSet.has(id)),
+      categories: parsedAllCategoryIds.filter((id) => !pricingIds.has(id) && !useCaseIds.has(id) && !selectedUseCaseIdSet.has(id) && !bestForIdSet.has(id) && !platformIds.has(id) && !selectedPlatformIdSet.has(id)),
     };
   };
 
@@ -434,6 +448,8 @@ export function useProductForm() {
     form.logos = [];
     form.categories = [];
     form.categories_custom = [];
+    form.useCases = [];
+    form.useCases_custom = [];
     form.platforms = [];
     form.platforms_custom = [];
     form.bestFor = [];
@@ -516,13 +532,18 @@ export function useProductForm() {
       formData.append('link', form.link);
       // User ID is automatically set by the backend based on the authenticated user
 
-      // Add categories - combine all category types (regular, bestFor, and pricing) into one array as expected by backend
+      // Add categories - combine all taxonomy selections into one array as expected by backend
       const allCategories = [];
 
       // Add regular categories
       if (form.categories && form.categories.length > 0) {
         const validCategories = form.categories.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validCategories);
+      }
+
+      if (form.useCases && form.useCases.length > 0) {
+        const validUseCases = form.useCases.filter(id => id !== null && id !== undefined && id !== '');
+        allCategories.push(...validUseCases);
       }
 
       if (form.platforms && form.platforms.length > 0) {
@@ -564,8 +585,18 @@ export function useProductForm() {
         });
       }
 
-      if (form.platforms_custom && form.platforms_custom.length > 0) {
+      if (form.useCases_custom && form.useCases_custom.length > 0) {
         const offset = (form.categories_custom ? form.categories_custom.length : 0) + (form.bestFor_custom ? form.bestFor_custom.length : 0);
+        form.useCases_custom.forEach((customUseCase, index) => {
+          formData.append(`custom_categories[${index + offset}][name]`, customUseCase.name);
+          formData.append(`custom_categories[${index + offset}][type]`, 'use_case');
+        });
+      }
+
+      if (form.platforms_custom && form.platforms_custom.length > 0) {
+        const offset = (form.categories_custom ? form.categories_custom.length : 0)
+          + (form.bestFor_custom ? form.bestFor_custom.length : 0)
+          + (form.useCases_custom ? form.useCases_custom.length : 0);
         form.platforms_custom.forEach((customPlatform, index) => {
           formData.append(`custom_categories[${index + offset}][name]`, customPlatform.name);
           formData.append(`custom_categories[${index + offset}][type]`, 'platform');
@@ -1099,6 +1130,7 @@ export function useProductForm() {
       loadingStates.categories = true;
       loadingStates.bestFor = true;
       extractionErrors.categories = '';
+      extractionErrors.useCases = '';
       extractionErrors.bestFor = '';
       console.log('Setting categories and bestFor loading states to true');
     }
@@ -1179,8 +1211,9 @@ export function useProductForm() {
 
       // 2. Categories
       if (shouldFetchCategoriesAndBestFor) {
-        console.log('fetchRemainingData: Updating categories/bestFor/pricing...', {
+        console.log('fetchRemainingData: Updating categories/useCases/bestFor/pricing...', {
           categories: data.categories,
+          useCases: data.useCases,
           platforms: data.platforms,
           bestFor: data.bestFor,
           pricing: data.pricing,
@@ -1192,6 +1225,11 @@ export function useProductForm() {
         if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
           form.categories = data.categories;
           console.log('fetchRemainingData: Set categories to:', data.categories);
+        }
+
+        if (data.useCases && data.useCases.length > 0 && (!form.useCases || form.useCases.length === 0)) {
+          form.useCases = data.useCases;
+          console.log('fetchRemainingData: Set useCases to:', data.useCases);
         }
 
         // Set bestFor from classifier (only if not already user-selected)
@@ -1232,6 +1270,23 @@ export function useProductForm() {
             console.log('fetchRemainingData: Auto-added suggested custom categories:', newCustomCategories.map(c => c.name));
           }
         }
+
+        if (data.suggestedUseCases && data.suggestedUseCases.length > 0) {
+          const existingCustomNames = (form.useCases_custom || []).map(c => c.name.toLowerCase());
+          const newCustomUseCases = data.suggestedUseCases
+            .filter(name => !existingCustomNames.includes(name.toLowerCase()))
+            .slice(0, 3)
+            .map(name => ({
+              id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              name,
+              is_custom: true
+            }));
+
+          if (newCustomUseCases.length > 0) {
+            form.useCases_custom = [...(form.useCases_custom || []), ...newCustomUseCases].slice(0, 3);
+            console.log('fetchRemainingData: Auto-added suggested custom use cases:', newCustomUseCases.map(c => c.name));
+          }
+        }
       }
 
       // 3. Update screenshot if available (refresh with viewport-specific version)
@@ -1270,6 +1325,7 @@ export function useProductForm() {
       }
       if (shouldFetchCategoriesAndBestFor) {
         extractionErrors.categories = 'Failed to extract categories.';
+        extractionErrors.useCases = 'Failed to extract use cases.';
         extractionErrors.bestFor = 'Failed to extract "best for" labels.';
       }
 
@@ -1367,10 +1423,11 @@ export function useProductForm() {
       await delay(420);
       form.description = sandboxPayload.description;
       loadingStates.description = false;
-      updateAutofillProgress('Mapping categories, pricing, and tags...', 74);
+      updateAutofillProgress('Mapping categories, use cases, pricing, and tags...', 74);
 
       await delay(420);
       form.categories = sandboxPayload.categories;
+      form.useCases = sandboxPayload.useCases;
       form.platforms = sandboxPayload.platforms;
       form.bestFor = sandboxPayload.bestFor;
       form.pricing = sandboxPayload.pricing;
@@ -1508,6 +1565,7 @@ export function useProductForm() {
       ]);
 
       globalFormState.allCategories.value = categoriesResponse.data.categories;
+      globalFormState.allUseCases.value = categoriesResponse.data.useCases || [];
       globalFormState.allPlatforms.value = categoriesResponse.data.platforms || [];
       globalFormState.allBestFor.value = categoriesResponse.data.bestFor;
       globalFormState.allPricing.value = categoriesResponse.data.pricing;
@@ -1607,12 +1665,14 @@ export function useProductForm() {
       // Get data attributes from the element
       const displayData = element.getAttribute('data-display-data');
       const isAdmin = element.getAttribute('data-is-admin');
+      const allUseCases = element.getAttribute('data-use-case-categories');
       const allPricing = element.getAttribute('data-pricing-categories');
       const allPlatforms = element.getAttribute('data-platform-categories');
+      const selectedUseCaseCategories = element.getAttribute('data-selected-use-case-categories');
       const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
       const selectedPlatformCategories = element.getAttribute('data-selected-platform-categories');
 
-      console.log('Data attributes:', { displayData, isAdmin, allPricing, allPlatforms, selectedBestForCategories, selectedPlatformCategories });
+      console.log('Data attributes:', { displayData, isAdmin, allUseCases, allPricing, allPlatforms, selectedUseCaseCategories, selectedBestForCategories, selectedPlatformCategories });
 
       if (displayData) {
         try {
@@ -1624,13 +1684,15 @@ export function useProductForm() {
             console.log('Loading data for admin user');
 
             const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+              useCaseCategories: allUseCases,
               pricingCategories: allPricing,
               platformCategories: allPlatforms,
+              selectedUseCaseCategories,
               selectedBestForCategories,
               selectedPlatformCategories,
             });
 
-            console.log('Category IDs - Regular:', separatedCategories.categories, 'Pricing:', separatedCategories.pricing, 'BestFor:', separatedCategories.bestFor, 'Platforms:', separatedCategories.platforms);
+            console.log('Category IDs - Regular:', separatedCategories.categories, 'UseCases:', separatedCategories.useCases, 'Pricing:', separatedCategories.pricing, 'BestFor:', separatedCategories.bestFor, 'Platforms:', separatedCategories.platforms);
 
             // Format the logo preview URL if it's a relative path
             let logoUrl = initialData.logo_url || initialData.logo;
@@ -1673,6 +1735,7 @@ export function useProductForm() {
               description: initialData.description || '',
               link: initialData.link || '',
               categories: separatedCategories.categories,
+              useCases: separatedCategories.useCases,
               platforms: separatedCategories.platforms,
               bestFor: separatedCategories.bestFor,
               pricing: separatedCategories.pricing,
@@ -1717,7 +1780,9 @@ export function useProductForm() {
           } else {
             console.log('Loading data for regular user');
             console.log('Initial data:', initialData);
+            console.log('All use case categories (raw):', allUseCases);
             console.log('All pricing categories (raw):', allPricing);
+            console.log('Selected use case categories (raw):', selectedUseCaseCategories);
             console.log('Selected best for categories (raw):', selectedBestForCategories);
 
             // Format the logo preview URL if it's a relative path
@@ -1727,8 +1792,10 @@ export function useProductForm() {
             }
 
             const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+              useCaseCategories: allUseCases,
               pricingCategories: allPricing,
               platformCategories: allPlatforms,
+              selectedUseCaseCategories,
               selectedBestForCategories,
               selectedPlatformCategories,
             });
@@ -1769,6 +1836,7 @@ export function useProductForm() {
               description: initialData.description || '',
               link: initialData.link || '',
               categories: separatedCategories.categories,
+              useCases: separatedCategories.useCases,
               platforms: separatedCategories.platforms,
               bestFor: separatedCategories.bestFor,
               pricing: separatedCategories.pricing,
@@ -1823,8 +1891,10 @@ export function useProductForm() {
           if (element) {
             const displayData = element.getAttribute('data-display-data');
             const isAdmin = element.getAttribute('data-is-admin');
+            const allUseCases = element.getAttribute('data-use-case-categories');
             const allPricing = element.getAttribute('data-pricing-categories');
             const allPlatforms = element.getAttribute('data-platform-categories');
+            const selectedUseCaseCategories = element.getAttribute('data-selected-use-case-categories');
             const selectedBestForCategories = element.getAttribute('data-selected-best-for-categories');
             const selectedPlatformCategories = element.getAttribute('data-selected-platform-categories');
 
@@ -1832,8 +1902,10 @@ export function useProductForm() {
               try {
                 const initialData = JSON.parse(displayData);
                 const separatedCategories = splitSelectedCategoryIds(initialData.current_categories || [], {
+                  useCaseCategories: allUseCases,
                   pricingCategories: allPricing,
                   platformCategories: allPlatforms,
+                  selectedUseCaseCategories,
                   selectedBestForCategories,
                   selectedPlatformCategories,
                 });
@@ -1870,6 +1942,7 @@ export function useProductForm() {
                     description: initialData.description || '',
                     link: initialData.link || '',
                     categories: separatedCategories.categories,
+                    useCases: separatedCategories.useCases,
                     platforms: separatedCategories.platforms,
                     bestFor: separatedCategories.bestFor,
                     pricing: separatedCategories.pricing,
@@ -1891,6 +1964,7 @@ export function useProductForm() {
                     description: initialData.description || '',
                     link: initialData.link || '',
                     categories: separatedCategories.categories,
+                    useCases: separatedCategories.useCases,
                     platforms: separatedCategories.platforms,
                     bestFor: separatedCategories.bestFor,
                     pricing: separatedCategories.pricing,
@@ -1985,6 +2059,7 @@ export function useProductForm() {
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,
     allCategories: globalFormState.allCategories,
+    allUseCases: globalFormState.allUseCases,
     allPlatforms: globalFormState.allPlatforms,
     allBestFor: globalFormState.allBestFor,
     allPricing: globalFormState.allPricing,

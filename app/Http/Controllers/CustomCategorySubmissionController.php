@@ -16,7 +16,7 @@ class CustomCategorySubmissionController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'type' => 'required|in:category,best_for,platform,tech_stack',
+            'type' => 'required|in:category,use_case,best_for,platform,tech_stack',
             'name' => 'required|string|max:255',
         ]);
 
@@ -40,7 +40,7 @@ class CustomCategorySubmissionController extends Controller
 
         // Check if the same category already exists in the database (case-insensitive, trimmed)
         $existingCategory = null;
-        if (in_array($request->type, ['category', 'best_for', 'platform'], true)) {
+        if (in_array($request->type, ['category', 'use_case', 'best_for', 'platform'], true)) {
             $existingCategory = Category::whereRaw('LOWER(name) = ?', [strtolower(trim($request->name))])->first();
         } elseif ($request->type === 'tech_stack') {
             $existingCategory = TechStack::whereRaw('LOWER(name) = ?', [strtolower(trim($request->name))])->first();

@@ -8,6 +8,7 @@ use App\Console\Commands\BackfillProductEditorialContent;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\PruneMagicLoginLinks;
+use App\Console\Commands\RepairBlockedProductLogos;
 use App\Support\ProductPublishSchedule;
 
 class Kernel extends ConsoleKernel
@@ -22,6 +23,7 @@ class Kernel extends ConsoleKernel
         GenerateSitemap::class,
         PublishScheduledProducts::class,
         PruneMagicLoginLinks::class,
+        RepairBlockedProductLogos::class,
         \App\Console\Commands\AddNofollowToProductDescriptions::class,
     ];
 

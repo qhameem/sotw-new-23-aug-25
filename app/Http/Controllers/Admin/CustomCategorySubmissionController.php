@@ -30,7 +30,7 @@ class CustomCategorySubmissionController extends Controller
             'meta_description' => 'required|string',
         ]);
 
-        if (in_array($submission->type, ['category', 'best_for', 'platform'], true)) {
+        if (in_array($submission->type, ['category', 'use_case', 'best_for', 'platform'], true)) {
             // Create the actual category in the database
             $newCategory = Category::create([
                 'name' => $submission->name,
@@ -40,6 +40,7 @@ class CustomCategorySubmissionController extends Controller
             ]);
 
             $typeNames = match ($submission->type) {
+                'use_case' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE),
                 'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
                 'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
                 default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),

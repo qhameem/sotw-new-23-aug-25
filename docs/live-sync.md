@@ -37,12 +37,25 @@ Skip the confirmation prompt:
 scripts/sync-live-to-local.sh --yes
 ```
 
+Media only:
+
+```bash
+scripts/sync-live-to-local.sh --media-only
+```
+
+Media only without the confirmation prompt:
+
+```bash
+scripts/sync-live-to-local.sh --media-only --yes
+```
+
 ## Notes
 
 - This script expects your local Laravel app to use MySQL.
 - The live dump creation step runs first on the server, so it does not have a true percentage progress display.
 - The SQL download shows a live percentage because it is one file.
 - The media sync shows live per-file progress, not one single overall percentage for all folders combined.
+- `--media-only` skips all database steps and only syncs uploaded files.
 - By default it syncs:
   - `logos`
   - `product_media`

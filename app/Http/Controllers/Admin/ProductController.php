@@ -26,6 +26,9 @@ class ProductController extends Controller
             'regularCategories' => Category::whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE));
             })->orderBy('name')->get(),
+            'useCaseCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE));
+            })->orderBy('name')->get(),
             'pricingCategories' => Category::whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING));
             })->orderBy('name')->get(),
@@ -183,6 +186,7 @@ class ProductController extends Controller
     {
         [
             'regularCategories' => $regularCategories,
+            'useCaseCategories' => $useCaseCategories,
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
@@ -209,7 +213,7 @@ class ProductController extends Controller
             'video_url' => old('video_url'),
         ];
 
-        return view('admin.products.create', compact('displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'platformCategories', 'allTechStacksData'));
+        return view('admin.products.create', compact('displayData', 'regularCategories', 'useCaseCategories', 'bestForCategories', 'pricingCategories', 'platformCategories', 'allTechStacksData'));
     }
 
     protected function applySearch($query, string $searchTerm): void
@@ -297,6 +301,7 @@ class ProductController extends Controller
 
         [
             'regularCategories' => $regularCategories,
+            'useCaseCategories' => $useCaseCategories,
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
@@ -341,6 +346,14 @@ class ProductController extends Controller
             ->map(fn($id) => (string) $id)
             ->toArray();
 
+        $selectedUseCaseCategories = $product->categories()
+            ->whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE));
+            })
+            ->pluck('categories.id')
+            ->map(fn($id) => (string) $id)
+            ->toArray();
+
         $selectedPlatformCategories = $product->categories()
             ->whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM));
@@ -349,7 +362,7 @@ class ProductController extends Controller
             ->map(fn($id) => (string) $id)
             ->toArray();
 
-        return view('admin.products.edit', compact('product', 'displayData', 'regularCategories', 'bestForCategories', 'pricingCategories', 'platformCategories', 'allTechStacksData', 'allCategories', 'types', 'selectedBestForCategories', 'selectedPlatformCategories'));
+        return view('admin.products.edit', compact('product', 'displayData', 'regularCategories', 'useCaseCategories', 'bestForCategories', 'pricingCategories', 'platformCategories', 'allTechStacksData', 'allCategories', 'types', 'selectedUseCaseCategories', 'selectedBestForCategories', 'selectedPlatformCategories'));
     }
 
     /**

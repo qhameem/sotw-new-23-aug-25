@@ -2,6 +2,7 @@
     @if (!$product->is_promoted)
         @php
             $isProductPage = request()->is('product/' . $product->slug);
+            $compact = $compact ?? false;
         @endphp
 
         @if ($isProductPage)
@@ -14,7 +15,9 @@
                 '{{ csrf_token() }}'
             )" class="w-full md:w-auto">
                 <button type="button" @click.stop="toggleUpvote"
-                    class="flex min-h-[48px] w-full flex-row items-center justify-center rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-600 md:min-h-0 md:w-auto md:py-2">
+                    class="{{ $compact
+                        ? 'flex min-h-8 w-full flex-row items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-500 border border-gray-300 transition-colors duration-200 hover:bg-gray-100 md:w-auto'
+                        : 'flex min-h-[48px] w-full flex-row items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-gray-100 md:min-h-0 md:w-auto md:py-2' }}">
 
                     <span class="pr-2">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -25,8 +28,8 @@
                     </span>
 
                     <span class="pr-1">Upvote</span>
-                    <div class="mx-2 h-6 w-px bg-white/20"></div>
-                    <span x-text="votesCount" class="pl-1.5 text-sm text-white"></span>
+                    <div class="mx-2 h-4 w-px bg-gray-500"></div>
+                    <span x-text="votesCount" class="pl-1 text-sm text-gray-500"></span>
                 </button>
                 <p x-show="errorMessage" x-text="errorMessage" class="mt-1 text-xs text-red-500"></p>
             </div>

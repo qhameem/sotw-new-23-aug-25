@@ -132,6 +132,7 @@
                     @update:modelValue="handleFormDetailUpdate"
                     @rewrite-description="handleDescriptionRewrite"
                     :allCategories="allCategories"
+                    :allUseCases="allUseCases"
                     :allPlatforms="allPlatforms"
                     :allBestFor="allBestFor"
                     :allPricing="allPricing"
@@ -256,6 +257,7 @@ const {
   extractLogos,
   rewriteProductDescription,
   allCategories,
+  allUseCases,
   allPlatforms,
   allBestFor,
   allPricing,

@@ -28,10 +28,12 @@ use App\Services\TechStackDetectorService;
 use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
+use App\Services\ProductLogoResolver;
 use App\Services\ScreenshotService;
 use App\Services\BadgeService;
 use App\Services\AdDeliveryService;
 use App\Services\RelatedProductService;
+use App\Services\ProductEditorialContentService;
 use App\Jobs\FetchOgImage;
 use App\Support\CategoryTypeRegistry;
 use App\Support\SocialLinkValidator;
@@ -49,18 +51,20 @@ class ProductController extends Controller
     protected TechStackDetectorService $techStackDetector;
     protected NameExtractorService $nameExtractor;
     protected LogoExtractorService $logoExtractor;
+    protected ProductLogoResolver $productLogoResolver;
     protected \App\Services\CategoryClassifier $categoryClassifier;
     protected ScreenshotService $screenshotService;
     protected BadgeService $badgeService;
     protected RelatedProductService $relatedProductService;
 
-    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService, RelatedProductService $relatedProductService)
+    public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService, RelatedProductService $relatedProductService, ProductLogoResolver $productLogoResolver)
     {
         $this->faviconExtractor = $faviconExtractor;
         $this->slugService = $slugService;
         $this->techStackDetector = $techStackDetector;
         $this->nameExtractor = $nameExtractor;
         $this->logoExtractor = $logoExtractor;
+        $this->productLogoResolver = $productLogoResolver;
         $this->categoryClassifier = $categoryClassifier;
         $this->screenshotService = $screenshotService;
         $this->badgeService = $badgeService;
@@ -98,6 +102,7 @@ class ProductController extends Controller
 
         [
             'regularCategories' => $regularCategories,
+            'useCaseCategories' => $useCaseCategories,
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
@@ -128,6 +133,7 @@ class ProductController extends Controller
         return view('products.create', compact(
             'displayData',
             'regularCategories',
+            'useCaseCategories',
             'bestForCategories',
             'pricingCategories',
             'platformCategories',
@@ -143,6 +149,7 @@ class ProductController extends Controller
 
         [
             'regularCategories' => $regularCategories,
+            'useCaseCategories' => $useCaseCategories,
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
@@ -168,6 +175,7 @@ class ProductController extends Controller
         return view('products.create', compact(
             'displayData',
             'regularCategories',
+            'useCaseCategories',
             'bestForCategories',
             'pricingCategories',
             'platformCategories',
@@ -255,9 +263,9 @@ class ProductController extends Controller
                 },
             ],
             'categories.*' => 'nullable|exists:categories,id',
-            'custom_categories' => 'nullable|array|max:11',
+            'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,best_for,platform',
+            'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
@@ -305,7 +313,7 @@ class ProductController extends Controller
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        // bestFor is optional — no validation needed
+        // use cases and bestFor are optional — no validation needed
 
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 1;
@@ -420,7 +428,11 @@ class ProductController extends Controller
                     $validated['logo'] = $logoUrl;
                 }
             } else {
-                $validated['logo'] = $logoUrl;
+                $resolvedLogoUrl = $this->productLogoResolver->resolvePreferredLogoUrl($request->input('link'), $logoUrl);
+
+                if ($resolvedLogoUrl) {
+                    $validated['logo'] = $resolvedLogoUrl;
+                }
             }
         }
         unset($validated['logo_url']);
@@ -593,6 +605,7 @@ class ProductController extends Controller
 
         [
             'regularCategories' => $regularCategories,
+            'useCaseCategories' => $useCaseCategories,
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
@@ -653,6 +666,7 @@ class ProductController extends Controller
         // Get the selected bestFor categories to pass to the JavaScript component
         $useProposedCategories = $product->approved && $product->has_pending_edits;
         $selectedBestForCategories = $this->selectedCategoryIdsForType($product, CategoryTypeRegistry::BEST_FOR, $useProposedCategories);
+        $selectedUseCaseCategories = $this->selectedCategoryIdsForType($product, CategoryTypeRegistry::USE_CASE, $useProposedCategories);
         $selectedPlatformCategories = $this->selectedCategoryIdsForType($product, CategoryTypeRegistry::PLATFORM, $useProposedCategories);
 
         // Debug: Log the display data to see what's being passed
@@ -669,11 +683,13 @@ class ProductController extends Controller
             'product',
             'displayData',
             'regularCategories',
+            'useCaseCategories',
             'bestForCategories',
             'pricingCategories',
             'platformCategories',
             'allTechStacksData',
             'types',
+            'selectedUseCaseCategories',
             'selectedBestForCategories',
             'selectedPlatformCategories',
             'submissionBgUrl'
@@ -707,9 +723,9 @@ class ProductController extends Controller
                 },
             ],
             'categories.*' => 'nullable|exists:categories,id',
-            'custom_categories' => 'nullable|array|max:11',
+            'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,best_for,platform',
+            'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|string|max:2048',
@@ -773,7 +789,7 @@ class ProductController extends Controller
             }
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        // bestFor is optional — no validation needed
+        // use cases and bestFor are optional — no validation needed
 
         // Prepare data for update
         $updateData = [
@@ -1485,11 +1501,20 @@ class ProductController extends Controller
             return $category->types->contains('name', 'Best for');
         });
 
+        $useCaseCategories = $product->categories->filter(function ($category) {
+            return $category->types->contains('name', CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::USE_CASE));
+        });
+
         $platformCategories = $product->categories->filter(function ($category) {
             return $category->types->contains('name', CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::PLATFORM));
         });
 
-        $similarProducts = $this->relatedProductService->getComparisons($product, 3);
+        $productEditorialService = app(ProductEditorialContentService::class);
+        $productEditorial = $productEditorialService->extract($product);
+        $alternativeProducts = $this->relatedProductService->getAlternatives($product, 3)
+            ->map(fn(Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
+            ->values();
+        $hasEditorialSections = $this->productEditorialHasSections($productEditorial);
 
         $title = $product->name;
         $pageTitle = $product->name . ': ' . $product->product_page_tagline . ' - Software on the Web';
@@ -1523,14 +1548,67 @@ class ProductController extends Controller
             'pageTitle',
             'pricingCategory',
             'primaryBreadcrumbCategory',
-            'similarProducts',
             'metaDescription',
             'bestForCategories',
+            'useCaseCategories',
             'platformCategories',
             'allCategories',
             'currentUserClaim',
-            'canClaimProduct'
+            'canClaimProduct',
+            'productEditorial',
+            'alternativeProducts',
+            'hasEditorialSections'
         ));
+    }
+
+    protected function decorateProductDetailAlternative(Product $alternative, ProductEditorialContentService $productEditorialContentService): Product
+    {
+        $alternative->loadMissing('categories.types', 'techStacks');
+
+        $editorial = $productEditorialContentService->extract($alternative);
+        $softwareCategories = $this->categoryNamesForTypes($alternative, ['Software', 'Software Categories', 'Category']);
+        $bestForCategories = $this->categoryNamesForTypes($alternative, ['Best for']);
+        $pricingCategories = $this->categoryNamesForTypes($alternative, ['Pricing']);
+
+        $fallbackTake = trim(strip_tags((string) ($alternative->product_page_tagline ?: $alternative->tagline ?: $alternative->description)));
+
+        $alternative->setAttribute('primary_category_label', $softwareCategories[0] ?? null);
+        $alternative->setAttribute('best_for_label', !empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
+        $alternative->setAttribute('pricing_label', !empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
+        $alternative->setAttribute('feature_highlights', array_slice($editorial['key_features'] ?? [], 0, 3));
+        $alternative->setAttribute('editorial_take', $editorial['summary'] ?? $editorial['headline'] ?? Str::limit($fallbackTake, 160));
+
+        return $alternative;
+    }
+
+    protected function productEditorialHasSections(array $productEditorial): bool
+    {
+        foreach (['key_features', 'ideal_for', 'top_use_cases', 'integrations', 'pros', 'limitations', 'faq'] as $key) {
+            if (!empty($productEditorial[$key])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function categoryNamesForTypes(Product $product, array $typeNames): array
+    {
+        $normalizedTypeNames = collect($typeNames)
+            ->map(fn(string $typeName) => Str::lower($typeName))
+            ->values();
+
+        return $product->categories
+            ->filter(function ($category) use ($normalizedTypeNames) {
+                return $category->types
+                    ->pluck('name')
+                    ->map(fn($typeName) => Str::lower((string) $typeName))
+                    ->intersect($normalizedTypeNames)
+                    ->isNotEmpty();
+            })
+            ->pluck('name')
+            ->values()
+            ->all();
     }
 
     /**
@@ -1848,8 +1926,11 @@ class ProductController extends Controller
             if (!empty($logos)) {
                 $ogImage = $logos[0];
             } else {
-                // Last ditch fallback to Google Favicon API
-                $logos[] = 'https://www.google.com/s2/favicons?sz=128&domain_url=' . urlencode($url);
+                $fallbackLogo = $this->productLogoResolver->discoverReplacementLogoUrl($url);
+
+                if ($fallbackLogo) {
+                    $logos[] = $fallbackLogo;
+                }
             }
 
 
@@ -1957,7 +2038,7 @@ class ProductController extends Controller
 
             }
 
-            $faviconUrl = 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($url);
+            $faviconUrl = $this->productLogoResolver->discoverReplacementLogoUrl($url);
 
             return response()->json([
                 'name' => $this->nameExtractor->extract(trim($title), $url),
@@ -1981,17 +2062,19 @@ class ProductController extends Controller
         try {
             [
                 'regularCategories' => $regularCategories,
+                'useCaseCategories' => $useCaseCategories,
                 'pricingCategories' => $pricingCategories,
                 'bestForCategories' => $bestForCategories,
                 'platformCategories' => $platformCategories,
             ] = $this->loadProductCategoryGroups(['id', 'name']);
 
-            return response()->json([
-                'categories' => $regularCategories,
-                'bestFor' => $bestForCategories,
-                'pricing' => $pricingCategories,
-                'platforms' => $platformCategories,
-            ]);
+        return response()->json([
+            'categories' => $regularCategories,
+            'useCases' => $useCaseCategories,
+            'bestFor' => $bestForCategories,
+            'pricing' => $pricingCategories,
+            'platforms' => $platformCategories,
+        ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch categories for API: ' . $e->getMessage());
             return response()->json(['error' => 'Could not retrieve categories.'], 500);
@@ -2311,6 +2394,7 @@ class ProductController extends Controller
                         'tagline' => $tagline,
                         'tagline_detailed' => '',
                         'categories' => [],
+                        'useCases' => [],
                         'bestFor' => [],
                         'pricing' => [],
                         'platforms' => [],
@@ -2458,11 +2542,13 @@ class ProductController extends Controller
                 $sendUpdate('Classifying features and categories...', 95);
                 $classificationResult = $this->categoryClassifier->classify($htmlContent);
                 $categories = $classificationResult['categories'] ?? [];
+                $useCases = $classificationResult['use_cases'] ?? [];
                 $bestFor = $classificationResult['best_for'] ?? [];
                 $pricing = $classificationResult['pricing'] ?? [];
                 $platforms = $classificationResult['platforms'] ?? [];
 
                 $categoryIds = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
+                $useCaseIds = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('id')->toArray() : [];
                 $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
                 $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
                 $platformIds = !empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
@@ -2483,6 +2569,8 @@ class ProductController extends Controller
                 // Find category names the classifier suggested but that don't exist in DB
                 $matchedCategoryNames = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
                 $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
+                $matchedUseCaseNames = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
+                $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
                 $responseData = [
                     'description' => $description,
@@ -2490,11 +2578,13 @@ class ProductController extends Controller
                     'tagline' => $extractedTagline ?: $tagline,
                     'tagline_detailed' => $extractedTaglineDetailed,
                     'categories' => $categoryIds,
+                    'useCases' => $useCaseIds,
                     'bestFor' => $bestForIds,
                     'pricing' => $pricingIds,
                     'platforms' => $platformIds,
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
+                    'suggestedUseCases' => $unmatchedUseCases,
                     'screenshot_url' => $this->screenshotService->capture($url),
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
                     'x_account' => $autofillLinks['x_account'],
@@ -2510,6 +2600,7 @@ class ProductController extends Controller
                     'tagline' => $tagline,
                     'tagline_detailed' => '',
                     'categories' => [],
+                    'useCases' => [],
                     'bestFor' => [],
                     'pricing' => [],
                     'platforms' => [],
@@ -2565,6 +2656,7 @@ class ProductController extends Controller
                     'tagline' => $tagline,
                     'tagline_detailed' => '',
                     'categories' => [],
+                    'useCases' => [],
                     'bestFor' => [],
                     'pricing' => [],
                     'platforms' => [],
@@ -2737,6 +2829,7 @@ class ProductController extends Controller
             // Classify categories and bestFor from the HTML content
             $classificationResult = $this->categoryClassifier->classify($htmlContent);
             $categories = $classificationResult['categories'] ?? [];
+            $useCases = $classificationResult['use_cases'] ?? [];
             $bestFor = $classificationResult['best_for'] ?? [];
             $pricing = $classificationResult['pricing'] ?? [];
             $platforms = $classificationResult['platforms'] ?? [];
@@ -2749,6 +2842,14 @@ class ProductController extends Controller
                 $matchedCategoryNames = Category::whereIn('name', $categories)->pluck('name')->toArray();
             }
             $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
+
+            $useCaseIds = [];
+            $matchedUseCaseNames = [];
+            if (!empty($useCases)) {
+                $useCaseIds = Category::whereIn('name', $useCases)->pluck('id')->toArray();
+                $matchedUseCaseNames = Category::whereIn('name', $useCases)->pluck('name')->toArray();
+            }
+            $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
             $bestForIds = [];
             if (!empty($bestFor)) {
@@ -2784,11 +2885,13 @@ class ProductController extends Controller
                 'tagline' => $extractedTagline ?: $tagline, // Use extracted tagline, fallback to provided tagline
                 'tagline_detailed' => $extractedTaglineDetailed, // Use extracted detailed tagline
                 'categories' => $categoryIds,
+                'useCases' => $useCaseIds,
                 'bestFor' => $bestForIds,
                 'pricing' => $pricingIds,
                 'platforms' => $platformIds,
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
+                'suggestedUseCases' => $unmatchedUseCases,
                 'screenshot_url' => $this->screenshotService->capture($url),
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
@@ -2811,6 +2914,7 @@ class ProductController extends Controller
                 'tagline' => $tagline,
                 'tagline_detailed' => '',
                 'categories' => [],
+                'useCases' => [],
                 'bestFor' => [],
                 'pricing' => [],
                 'platforms' => [],
@@ -2953,6 +3057,9 @@ class ProductController extends Controller
         return [
             'regularCategories' => Category::whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE));
+            })->orderBy('name'),
+            'useCaseCategories' => Category::whereHas('types', function ($query) {
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE));
             })->orderBy('name'),
             'pricingCategories' => Category::whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING));

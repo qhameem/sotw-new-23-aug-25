@@ -11,9 +11,9 @@
 @php
     // Keep CTA variants centralized so future A/B tests only need to update this component.
     $styleClasses = match ($styleVariant) {
-        'default' => 'text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+        'default' => 'text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
         'primary' => 'text-white bg-primary-600 border border-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
-        'soft' => 'text-gray-700 bg-primary-50 border border-gray-600 rounded-lg shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+        'soft' => 'text-gray-700 bg-white border border-gray-400 py-1.5 rounded-md hover:bg-gray-50',
         default => 'text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
     };
 
@@ -34,7 +34,7 @@
     data-label-variant="{{ $labelVariant }}"
     data-style-variant="{{ $styleVariant }}"
     {{ $attributes->class([
-        'inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold',
+        'inline-flex items-center justify-center gap-1.5 px-4 py-1 text-sm font-semibold',
         $styleClasses,
         'w-full' => $fullWidth,
     ]) }}

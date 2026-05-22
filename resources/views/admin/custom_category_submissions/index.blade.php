@@ -46,9 +46,10 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                          {{ $submission->type === 'category' ? 'bg-blue-100 text-blue-800' : 
+                                            ($submission->type === 'use_case' ? 'bg-indigo-100 text-indigo-800' :
                                             ($submission->type === 'best_for' ? 'bg-green-100 text-green-800' : 
                                             ($submission->type === 'platform' ? 'bg-amber-100 text-amber-800' :
-                                            'bg-purple-100 text-purple-800')) }}">
+                                            'bg-purple-100 text-purple-800'))) }}">
                                 {{ ucfirst(str_replace('_', ' ', $submission->type)) }}
                             </span>
                         </td>

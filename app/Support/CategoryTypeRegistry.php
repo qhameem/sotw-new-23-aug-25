@@ -7,6 +7,7 @@ class CategoryTypeRegistry
     public const SOFTWARE = 'software';
     public const PRICING = 'pricing';
     public const BEST_FOR = 'best_for';
+    public const USE_CASE = 'use_case';
     public const PLATFORM = 'platform';
 
     public static function namesFor(string $bucket): array
@@ -15,6 +16,7 @@ class CategoryTypeRegistry
             self::SOFTWARE => ['Software Categories', 'Software', 'Category'],
             self::PRICING => ['Pricing'],
             self::BEST_FOR => ['Best for'],
+            self::USE_CASE => ['Use Case', 'Use Cases'],
             self::PLATFORM => ['Platform'],
             default => [],
         };
