@@ -49,6 +49,19 @@ export function useProductForm() {
     return productFormService.getUrlTrimSuggestion(form.link);
   });
 
+  const markManualLogoChosen = (chosen = true) => {
+    globalFormState.manualLogoChosen.value = chosen;
+  };
+
+  const markManualScreenshotChosen = (chosen = true) => {
+    globalFormState.manualScreenshotChosen.value = chosen;
+  };
+
+  const resetManualMediaChoices = () => {
+    globalFormState.manualLogoChosen.value = false;
+    globalFormState.manualScreenshotChosen.value = false;
+  };
+
   const mergeAutofillLinks = (existingLinks = [], fetchedLinks = []) => {
     const merged = [];
     const seen = new Set();
@@ -426,6 +439,7 @@ export function useProductForm() {
     form.link = '';
     globalFormState.urlExistsError.value = false;
     globalFormState.existingProduct.value = null;
+    resetManualMediaChoices();
     // Also reset any URL-related validation state
     errorMessage.value = '';
   };
@@ -457,7 +471,7 @@ export function useProductForm() {
     form.pricing = [];
     form.tech_stack = [];
     form.logo = null;
-    form.gallery = Array(3).fill(null);
+    form.gallery = [null];
     form.video_url = '';
     form.maker_links = [];
     form.sell_product = false;
@@ -470,7 +484,8 @@ export function useProductForm() {
     form.badge_week_start = '';
     form.badge_verified = false;
     globalFormState.logoPreview.value = null;
-    globalFormState.galleryPreviews.value = Array(3).fill(null);
+    globalFormState.galleryPreviews.value = [null];
+    resetManualMediaChoices();
   };
 
   const goToNextStep = (tabId) => {
@@ -628,17 +643,13 @@ export function useProductForm() {
         formData.append('logo_url', globalFormState.logoPreview.value);
       }
 
-      // Add gallery images if available
-      if (globalFormState.galleryPreviews.value && globalFormState.galleryPreviews.value.length > 0) {
-        globalFormState.galleryPreviews.value.forEach((preview, index) => {
-          const galleryFile = form.gallery[index];
-          if (galleryFile instanceof File) {
-            formData.append(`media[${index}]`, galleryFile);
-          } else if (typeof preview === 'string' && preview && preview.startsWith('http')) {
-            // If it's a URL (like an automated screenshot), send it as media_url
-            formData.append(`media_urls[${index}]`, preview);
-          }
-        });
+      // Submit only the single product screenshot slot.
+      const screenshotPreview = globalFormState.galleryPreviews.value?.[0];
+      const screenshotFile = form.gallery?.[0];
+      if (screenshotFile instanceof File) {
+        formData.append('media[0]', screenshotFile);
+      } else if (typeof screenshotPreview === 'string' && screenshotPreview && screenshotPreview.startsWith('http')) {
+        formData.append('media_urls[0]', screenshotPreview);
       }
 
       // Add video URL if available
@@ -879,6 +890,14 @@ export function useProductForm() {
       return false;
     }
 
+    const validUseCases = (form.useCases || []).filter(id => id !== null && id !== undefined && id !== '');
+    const customUseCases = (form.useCases_custom || []).filter(useCase => useCase && useCase.name && useCase.name.trim() !== '');
+    if (validUseCases.length === 0 && customUseCases.length === 0) {
+      showErrorMessage.value = true;
+      errorMessage.value = 'At least one use case is required.';
+      return false;
+    }
+
     // bestFor/Tags is optional — no validation needed
 
     // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
@@ -948,7 +967,7 @@ export function useProductForm() {
       applyAutofillLinks(data);
 
       // Auto-set screenshot as first gallery item if available
-      if (data.screenshot_url) {
+      if (data.screenshot_url && !globalFormState.manualScreenshotChosen.value) {
         globalFormState.galleryPreviews.value[0] = data.screenshot_url;
       }
 
@@ -959,9 +978,9 @@ export function useProductForm() {
       });
 
       // Prioritize the best logo found by our extractor over the favicon
-      if (data.logos && data.logos.length > 0) {
+      if (data.logos && data.logos.length > 0 && !globalFormState.manualLogoChosen.value) {
         globalFormState.logoPreview.value = data.logos[0];
-      } else if (data.favicon) {
+      } else if (data.favicon && !globalFormState.manualLogoChosen.value) {
         globalFormState.logoPreview.value = data.favicon;
       }
 
@@ -1090,6 +1109,7 @@ export function useProductForm() {
     // Always fetch categories if they are empty
     const shouldFetchCategoriesAndBestFor = !contentOnly && (
       !form.categories || form.categories.length === 0 ||
+      !form.useCases || form.useCases.length === 0 ||
       !form.bestFor || form.bestFor.length === 0 ||
       !form.platforms || form.platforms.length === 0 ||
       !form.tech_stack || form.tech_stack.length === 0
@@ -1291,7 +1311,7 @@ export function useProductForm() {
 
       // 3. Update screenshot if available (refresh with viewport-specific version)
       if (!contentOnly) {
-        if (data.screenshot_url) {
+        if (data.screenshot_url && !globalFormState.manualScreenshotChosen.value) {
           globalFormState.galleryPreviews.value[0] = data.screenshot_url;
         }
 
@@ -1307,7 +1327,10 @@ export function useProductForm() {
         if (data.logos && data.logos.length > 0) {
           form.logos = data.logos;
           // If we don't have a logo preview yet, or it's just the favicon, set it to the best logo
-          if (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon) {
+          if (
+            !globalFormState.manualLogoChosen.value &&
+            (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon)
+          ) {
             globalFormState.logoPreview.value = data.logos[0];
           }
         }
@@ -1409,8 +1432,12 @@ export function useProductForm() {
       form.tagline = sandboxPayload.tagline;
       form.tagline_detailed = sandboxPayload.tagline_detailed;
       form.favicon = sandboxPayload.logos[0];
-      globalFormState.logoPreview.value = sandboxPayload.logos[0];
-      globalFormState.galleryPreviews.value[0] = sandboxPayload.screenshot;
+      if (!globalFormState.manualLogoChosen.value) {
+        globalFormState.logoPreview.value = sandboxPayload.logos[0];
+      }
+      if (!globalFormState.manualScreenshotChosen.value) {
+        globalFormState.galleryPreviews.value[0] = sandboxPayload.screenshot;
+      }
       loadingStates.name = false;
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
 
@@ -1549,7 +1576,8 @@ export function useProductForm() {
     Object.assign(form, { ...createProductFormState().form });
     form.fromSource = preservedFromSource;
     globalFormState.logoPreview.value = null;
-    globalFormState.galleryPreviews.value = Array(3).fill(null);
+    globalFormState.galleryPreviews.value = [null];
+    resetManualMediaChoices();
     // Reset URL validation state when form is reset
     globalFormState.urlExistsError.value = false;
     globalFormState.existingProduct.value = null;
@@ -1762,9 +1790,9 @@ export function useProductForm() {
 
             // Populate gallery previews from initial data
             if (initialData.gallery && Array.isArray(initialData.gallery)) {
-              const galleryPreviews = Array(3).fill(null);
+              const galleryPreviews = [null];
               initialData.gallery.forEach((url, index) => {
-                if (index < 3) galleryPreviews[index] = url;
+                if (index < 1) galleryPreviews[index] = url;
               });
               globalFormState.galleryPreviews.value = galleryPreviews;
               console.log('Set galleryPreviews to:', globalFormState.galleryPreviews.value);
@@ -1870,9 +1898,9 @@ export function useProductForm() {
 
             // Populate gallery previews from initial data
             if (initialData.gallery && Array.isArray(initialData.gallery)) {
-              const galleryPreviews = Array(3).fill(null);
+              const galleryPreviews = [null];
               initialData.gallery.forEach((url, index) => {
-                if (index < 3) galleryPreviews[index] = url;
+                if (index < 1) galleryPreviews[index] = url;
               });
               globalFormState.galleryPreviews.value = galleryPreviews;
             }
@@ -2025,7 +2053,9 @@ export function useProductForm() {
       if (savedData.link) {
         await updateFormMultiple(savedData);
         globalFormState.logoPreview.value = savedData.logoPreview || null;
-        globalFormState.galleryPreviews.value = savedData.galleryPreviews || Array(3).fill(null);
+        globalFormState.galleryPreviews.value = savedData.galleryPreviews
+          ? [savedData.galleryPreviews[0] || null]
+          : [null];
         if (savedData.name) {
           globalFormState.step.value = 2;
         }
@@ -2092,6 +2122,9 @@ export function useProductForm() {
     loadSavedData,
     saveFormData,
     clearSavedData,
-    checkUrlExists
+    checkUrlExists,
+    markManualLogoChosen,
+    markManualScreenshotChosen,
+    resetManualMediaChoices
   };
 }

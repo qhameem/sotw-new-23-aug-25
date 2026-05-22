@@ -56,6 +56,7 @@
               :allCategories="allCategories"
               @open-logo-picker="openLogoPicker"
               @remove-logo="removeSelectedLogo"
+              @upload-screenshot="uploadScreenshotFile"
             />
             <FormProgress 
               :form="form" 
@@ -142,24 +143,26 @@
                   />
                 </div>
 
-                <!-- Section 3: Media -->
-                <div id="media-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
-                  <h2 class="text-xl font-bold text-gray-800 mb-4">Media</h2>
-                  <ProductMediaForm
-                    :modelValue="form"
-                    @update:modelValue="handleFormDetailUpdate"
+                <div class="lg:hidden">
+                  <ProductPreviewCard
+                    :form="form"
                     :logoPreview="logoPreview"
                     :galleryPreviews="galleryPreviews"
-                    :loadingStates="loadingStates"
-                    @update:logoPreview="logoPreview = $event"
-                    @update:galleryPreviews="galleryPreviews = $event"
+                    :allCategories="allCategories"
                     @open-logo-picker="openLogoPicker"
+                    @remove-logo="removeSelectedLogo"
+                    @upload-screenshot="uploadScreenshotFile"
                   />
                 </div>
 
-                <!-- Section 4: Launch Checklist & Submit -->
                 <div id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
                   <h2 class="text-xl font-bold text-gray-800 mb-4">Additional Info</h2>
+                  <div class="mb-8">
+                    <ProductMediaForm
+                      :modelValue="form"
+                      @update:modelValue="handleFormDetailUpdate"
+                    />
+                  </div>
                   <LaunchChecklistForm
                     :modelValue="form"
                     @update:modelValue="handleFormDetailUpdate"
@@ -190,6 +193,7 @@
                  :allCategories="allCategories"
                  @open-logo-picker="openLogoPicker"
                  @remove-logo="removeSelectedLogo"
+                 @upload-screenshot="uploadScreenshotFile"
                />
                <FormProgress 
                  :form="form" 
@@ -273,7 +277,10 @@ const {
   loadingMessage,
   errorMessage,
   showErrorMessage,
-  isRestored
+  isRestored,
+  markManualLogoChosen,
+  markManualScreenshotChosen,
+  resetManualMediaChoices
 } = useProductForm(props.initialProduct);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && !form.id);
@@ -303,7 +310,6 @@ watch(() => form.link, (newVal) => {
 const steps = [
   { id: 'url-section', name: 'Start' },
   { id: 'details-section', name: 'Details' },
-  { id: 'media-section', name: 'Media' },
   { id: 'launch-section', name: 'Launch' },
 ];
 
@@ -349,6 +355,8 @@ const handleUrlFetch = async (url) => {
     return;
   }
 
+  resetManualMediaChoices();
+
   if (showAdminSandboxControls.value && form.sandbox_mode) {
     await simulateSandboxAutofill();
     showForm.value = true;
@@ -393,6 +401,7 @@ const handleUrlInputUpdate = (val) => {
 const clearForm = () => {
     form.link = '';
     checkUrlExists('');
+    resetManualMediaChoices();
     // Reset other fields if needed, but keeping it simple for now as per previous logic
 };
 
@@ -422,12 +431,14 @@ const closeLogoPicker = () => {
 };
 
 const applySelectedLogo = (logoUrl) => {
+  markManualLogoChosen();
   form.logo = logoUrl;
   logoPreview.value = logoUrl;
   isLogoPickerOpen.value = false;
 };
 
 const uploadLogoFile = (file) => {
+  markManualLogoChosen();
   form.logo = file;
 
   const reader = new FileReader();
@@ -438,7 +449,19 @@ const uploadLogoFile = (file) => {
   reader.readAsDataURL(file);
 };
 
+const uploadScreenshotFile = (file) => {
+  markManualScreenshotChosen();
+  form.gallery = [file];
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    galleryPreviews.value = [event.target.result];
+  };
+  reader.readAsDataURL(file);
+};
+
 const restoreFaviconLogo = () => {
+  markManualLogoChosen(false);
   const restoredLogo = form.favicon || originalFavicon.value;
   if (!restoredLogo) {
     return;
@@ -451,11 +474,11 @@ const restoreFaviconLogo = () => {
 };
 
 const removeSelectedLogo = () => {
+  markManualLogoChosen();
   form.logo = null;
   form.favicon = null;
   logoPreview.value = null;
 };
-
 
 // Calculate Overall Progress (Simplified for demo)
 const overallProgress = computed(() => {

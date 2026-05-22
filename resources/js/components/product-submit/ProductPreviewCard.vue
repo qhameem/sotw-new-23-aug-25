@@ -4,7 +4,10 @@
       <div class="relative group">
         <button
           type="button"
-          class="relative flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-gray-50 transition hover:border-gray-200 hover:bg-gray-100/70"
+          :class="logoPreview || form.favicon
+            ? 'border border-gray-100 bg-gray-50 hover:border-gray-200 hover:bg-gray-100/70'
+            : 'border-2 border-dashed border-gray-300 bg-transparent hover:border-gray-400'"
+          class="relative flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl transition"
           @click="emit('open-logo-picker')"
         >
           <img
@@ -33,10 +36,10 @@
           </div>
 
           <div v-if="!logoPreview && !form.favicon" class="text-center text-gray-400">
-            <svg class="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="mx-auto h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4" />
             </svg>
-            <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.12em]">Choose</span>
+            <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.12em] text-gray-400">Choose</span>
           </div>
         </button>
 
@@ -59,13 +62,61 @@
       </div>
     </div>
 
-    <div class="relative mb-4 flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50 group">
-      <img v-if="galleryPreviews && galleryPreviews[0]" :src="galleryPreviews[0]" class="h-full w-full object-cover">
-      <div v-else class="text-center p-4">
-        <div class="mx-auto mb-2 h-8 w-12 rounded bg-gray-200"></div>
-        <div class="mx-auto mb-1 h-2 w-20 rounded bg-gray-200"></div>
-        <div class="mx-auto h-2 w-12 rounded bg-gray-200"></div>
+    <div class="mb-4">
+      <input
+        ref="screenshotInput"
+        type="file"
+        :accept="supportedImageAcceptList"
+        class="hidden"
+        @change="onScreenshotChange"
+      >
+
+      <div class="relative group">
+        <button
+          type="button"
+          :class="screenshotPreview
+            ? 'border border-gray-100 bg-gray-50 hover:border-gray-200 hover:bg-gray-100/70'
+            : 'min-h-[220px] border-2 border-dashed border-gray-300 bg-transparent hover:border-gray-400'"
+          class="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl transition"
+          @click="openScreenshotPicker"
+        >
+          <img
+            v-if="screenshotPreview"
+            :src="screenshotPreview"
+            alt="Product screenshot"
+            class="h-full w-full object-cover transition duration-200 group-hover:scale-[0.985] group-hover:opacity-20"
+          >
+
+          <div
+            v-if="screenshotPreview"
+            class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 opacity-0 transition duration-200 group-hover:opacity-100"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7h18M3 12h18M3 17h18" />
+            </svg>
+            <span class="mt-1 text-[10px] font-medium uppercase tracking-[0.12em]">Change</span>
+          </div>
+
+          <div
+            v-if="!screenshotPreview"
+            class="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-gray-400"
+          >
+            <svg class="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-9-8h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" />
+            </svg>
+            <p class="mt-4 text-sm font-medium text-gray-500">
+              We’ll try to auto-fetch a screenshot first, or
+              <span class="text-gray-500 underline underline-offset-2">browse</span>
+            </p>
+            <p class="mt-2 text-xs text-gray-400">
+              Supports JPG, JPEG, PNG, GIF, SVG, WEBP, and AVIF
+            </p>
+          </div>
+        </button>
+
       </div>
+
+      <p v-if="screenshotUploadError" class="mt-3 text-sm text-red-600">{{ screenshotUploadError }}</p>
     </div>
 
     <div class="flex flex-wrap gap-2">
@@ -81,7 +132,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed, ref } from 'vue';
+
+const props = defineProps({
   form: {
     type: Object,
     required: true,
@@ -100,5 +153,50 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['open-logo-picker', 'remove-logo']);
+const emit = defineEmits(['open-logo-picker', 'remove-logo', 'upload-screenshot']);
+
+const screenshotInput = ref(null);
+const screenshotUploadError = ref('');
+const supportedImageAcceptList = 'image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif';
+const supportedImageMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/svg+xml',
+  'image/webp',
+  'image/avif',
+  'image/avif-sequence',
+];
+const supportedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
+
+const screenshotPreview = computed(() => props.galleryPreviews?.[0] || '');
+
+const openScreenshotPicker = () => {
+  screenshotInput.value?.click();
+};
+
+const onScreenshotChange = (event) => {
+  const file = event.target.files?.[0];
+  screenshotUploadError.value = '';
+
+  if (!file) {
+    return;
+  }
+
+  const normalizedMimeType = (file.type || '').toLowerCase();
+  const fileName = file.name || '';
+  const normalizedExtension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+  const isSupportedFile =
+    supportedImageMimeTypes.includes(normalizedMimeType) ||
+    supportedImageExtensions.includes(normalizedExtension);
+
+  if (!isSupportedFile) {
+    screenshotUploadError.value = 'Unsupported image format. Please upload JPG, PNG, GIF, SVG, WEBP, or AVIF.';
+    event.target.value = '';
+    return;
+  }
+
+  emit('upload-screenshot', file);
+  event.target.value = '';
+};
 </script>

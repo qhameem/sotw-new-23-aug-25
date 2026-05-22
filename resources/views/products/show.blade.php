@@ -437,12 +437,7 @@
 @endsection
 
 @section('right_sidebar_content')
-    <div class="hidden md:block space-y-6">
-        @unless(isset($isAdminView) && $isAdminView)
-            <div class="mt-[5.25rem] rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                @include('partials.product-upvote-button', ['product' => $product, 'compact' => true])
-            </div>
-        @endunless
+    <div class="hidden md:block space-y-6 md:pt-16">
         @include('partials._sidebar-ads')
         @include('products.partials._sidebar-info')
     </div>

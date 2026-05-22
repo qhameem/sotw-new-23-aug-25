@@ -269,7 +269,10 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
+            'media' => 'nullable|array|max:1',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
+            'media_urls' => 'nullable|array|max:1',
+            'media_urls.*' => 'nullable|string|max:2048',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'custom_tech_stacks' => 'nullable|array|max:3',
@@ -298,14 +301,19 @@ class ProductController extends Controller
 
         $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
         $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
+        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
+        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing'); // Note: Assuming users don't submit custom pricing types, but theoretically could
         $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
+        $hasCustomUseCase = collect($customCategories)->contains(function ($category) {
+            return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
+        });
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
@@ -313,7 +321,10 @@ class ProductController extends Controller
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        // use cases and bestFor are optional — no validation needed
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
+            return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
+        }
+        // bestFor remains optional
 
         $validated['user_id'] = Auth::id();
         $validated['votes_count'] = 1;
@@ -635,7 +646,7 @@ class ProductController extends Controller
                 'x_account' => $oldInput['x_account'] ?? ($product->proposed_x_account ?? $product->x_account),
                 'id' => $product->id,
                 'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->take(1)->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         } else {
             // When no pending edits, use original values
@@ -657,7 +668,7 @@ class ProductController extends Controller
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
                 'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->take(1)->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
             ];
         }
 
@@ -758,14 +769,19 @@ class ProductController extends Controller
         // For simplicity, we'll assume it applies.
         $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
         $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
+        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
+        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');
         $hasCustomSoftware = collect($customCategories)->contains('type', 'category');
+        $hasCustomUseCase = collect($customCategories)->contains(function ($category) {
+            return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
+        });
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             // Return JSON response for API calls
@@ -789,7 +805,17 @@ class ProductController extends Controller
             }
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        // use cases and bestFor are optional — no validation needed
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one use case.',
+                    'errors' => ['categories' => ['Please select at least one use case.']]
+                ], 422);
+            }
+            return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
+        }
+        // bestFor remains optional
 
         // Prepare data for update
         $updateData = [

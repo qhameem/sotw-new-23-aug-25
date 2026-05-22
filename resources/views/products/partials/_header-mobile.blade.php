@@ -87,12 +87,7 @@
     @endforeach
 </div>
 
-{{-- Interaction Buttons --}}
-<div class="flex flex-row items-stretch mt-6 mb-6 gap-3">
-    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="flex-1 min-h-[48px]" />
-    @unless(isset($isAdminView) && $isAdminView)
-        <div class="flex-1">
-            @include('partials.product-upvote-button', ['product' => $product])
-        </div>
-    @endunless
+{{-- Primary Action --}}
+<div class="mt-6 mb-6">
+    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px]" />
 </div>

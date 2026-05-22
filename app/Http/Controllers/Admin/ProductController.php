@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage; // Added Storage facade
@@ -256,6 +257,14 @@ class ProductController extends Controller
             'video_url' => 'nullable|string',
         ]);
 
+        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
+        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn($id) => (int) $id);
+        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty()) {
+            return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
+        }
+
         if ($request->hasFile('logo')) {
             $validated['logo'] = $request->file('logo')->store('logos', 'public');
         }
@@ -333,7 +342,7 @@ class ProductController extends Controller
             'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
             'id' => $product->id,
             'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-            'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->take(1)->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -399,10 +408,19 @@ class ProductController extends Controller
             'x_account' => 'nullable|string|max:255',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
+            'media' => 'nullable|array|max:1',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
             'comparison_overrides_input' => 'nullable|string|max:5000',
             'alternative_overrides_input' => 'nullable|string|max:5000',
         ]);
+
+        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
+        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn($id) => (int) $id);
+        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty()) {
+            return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
+        }
 
         // Handle logo removal
         if (($request->has('remove_logo') || $request->input('logo') === 'null') && $product->logo) {
@@ -467,9 +485,22 @@ class ProductController extends Controller
             $product->techStacks()->sync($validated['tech_stacks']);
         }
 
-        // Handle gallery images
+        // Replace the single screenshot image when a new one is uploaded.
         if ($request->hasFile('media')) {
             $manager = new ImageManager(new Driver());
+            $product->media()
+                ->whereIn('type', ['image', 'screenshot'])
+                ->get()
+                ->each(function ($media) {
+                    foreach ([$media->path, $media->path_thumb, $media->path_medium] as $path) {
+                        if ($path && !Str::startsWith($path, 'http')) {
+                            Storage::disk('public')->delete($path);
+                        }
+                    }
+
+                    $media->delete();
+                });
+
             $mediaPosition = $product->media()->count();
 
             foreach ($request->file('media') as $file) {

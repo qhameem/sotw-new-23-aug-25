@@ -48,7 +48,7 @@ const initialFormState = {
   tech_stack_custom: [],
   favicon: '',
   logo: null,
-  gallery: Array(3).fill(null),
+  gallery: [null],
   video_url: '',
   logos: [],
   maker_links: [],
@@ -114,7 +114,9 @@ export const createProductFormState = () => {
     }),
     loadingStates: { ...initialLoadingStates },
     logoPreview: ref(null),
-    galleryPreviews: ref(Array(3).fill(null)),
+    galleryPreviews: ref([null]),
+    manualLogoChosen: ref(false),
+    manualScreenshotChosen: ref(false),
     allCategories: ref([]),
     allUseCases: ref([]),
     allPlatforms: ref([]),
@@ -251,13 +253,14 @@ export const productFormService = {
 
     switch (step.id) {
       case 'mainInfo':
-        // Main info tab requires: name, tagline, tagline_detailed, description, categories, bestFor, pricing
+        // Main info tab requires: name, tagline, tagline_detailed, description, categories, use cases, pricing
         isCompleted = !!(
           form.name &&
           form.tagline &&
           form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+          (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0
         );
         break;
@@ -274,6 +277,7 @@ export const productFormService = {
           form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+          (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
           form.pricing && form.pricing.length > 0 &&
           (logoPreview || (form.logos && form.logos.length > 0))
         );
@@ -366,13 +370,14 @@ export const isTabCompleted = (step, form, logoPreview) => {
 
   switch (step.id) {
     case 'mainInfo':
-      // Main info tab requires: name, tagline, tagline_detailed, description, categories, bestFor, pricing
+      // Main info tab requires: name, tagline, tagline_detailed, description, categories, use cases, pricing
       isCompleted = !!(
         form.name &&
         form.tagline &&
         form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+        (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0
       );
       break;
@@ -389,6 +394,7 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
+        (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
         form.pricing && form.pricing.length > 0 &&
         (logoPreview || (form.logos && form.logos.length > 0))
       );
@@ -409,12 +415,13 @@ export const getTabProgress = (stepId, form, logoPreview) => {
 
   switch (stepId) {
     case 'mainInfo':
-      total = 6;
+      total = 7;
       if (form.name) completed++;
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
+      if (form.useCases?.length > 0 || form.useCases_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       break;
     case 'imagesAndMedia':
@@ -422,13 +429,14 @@ export const getTabProgress = (stepId, form, logoPreview) => {
       if (logoPreview) completed++;
       break;
     case 'launchChecklist':
-      total = 7; // 6 from mainInfo + logo
+      total = 8; // 7 from mainInfo + logo
       if (form.link) completed++;
       if (form.name) completed++;
       if (form.tagline) completed++;
       if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
+      if (form.useCases?.length > 0 || form.useCases_custom?.length > 0) completed++;
       if (form.pricing && form.pricing.length > 0) completed++;
       if (logoPreview || (form.logos && form.logos.length > 0)) completed++;
       break;

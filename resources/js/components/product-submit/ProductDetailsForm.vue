@@ -173,7 +173,7 @@
     <!-- Use Cases (Chip Selection) -->
     <div>
        <div class="flex items-center justify-between mb-3">
-          <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-gray-400 font-normal text-xs ml-1">(Optional, max 3)</span></label>
+          <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
        </div>
 
        <div class="relative mb-3">
@@ -242,6 +242,7 @@
            </button>
          </span>
        </div>
+       <p v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mt-2 text-xs text-gray-400">Please select at least one use case or add a custom one.</p>
        <p v-if="extractionErrors.useCases" class="mt-1 text-xs text-red-500">{{ extractionErrors.useCases }}</p>
     </div>
 
