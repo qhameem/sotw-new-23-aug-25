@@ -10,9 +10,9 @@
 @endphp
 
 @if($highlightCards->isNotEmpty())
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         @foreach($highlightCards as $card)
-            <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <article class="min-w-0">
                 <h3 class="text-sm font-semibold text-gray-900">{{ $card['title'] }}</h3>
                 <ul class="mt-3 space-y-2 text-sm leading-6 text-gray-600">
                     @foreach($card['items'] as $item)

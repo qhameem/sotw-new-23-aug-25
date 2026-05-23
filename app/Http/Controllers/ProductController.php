@@ -1537,6 +1537,11 @@ class ProductController extends Controller
 
         $productEditorialService = app(ProductEditorialContentService::class);
         $productEditorial = $productEditorialService->extract($product);
+        $descriptionContent = $this->splitDescriptionForOverview(
+            $product->description,
+            $product->product_page_tagline,
+            $product->tagline
+        );
         $alternativeProducts = $this->relatedProductService->getAlternatives($product, 3)
             ->map(fn(Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
             ->values();
@@ -1582,6 +1587,7 @@ class ProductController extends Controller
             'currentUserClaim',
             'canClaimProduct',
             'productEditorial',
+            'descriptionContent',
             'alternativeProducts',
             'hasEditorialSections'
         ));
@@ -1616,6 +1622,160 @@ class ProductController extends Controller
         }
 
         return false;
+    }
+
+    protected function splitDescriptionForOverview(?string $description, ?string $productPageTagline = null, ?string $tagline = null): array
+    {
+        $html = trim((string) $description);
+
+        if ($html === '') {
+            return [
+                'overview_blocks' => [],
+                'details_html' => null,
+            ];
+        }
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $previousLibxmlState = libxml_use_internal_errors(true);
+        $dom->loadHTML(
+            '<?xml encoding="utf-8" ?><div id="product-description-root">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlState);
+
+        $root = $dom->getElementById('product-description-root');
+
+        if (!$root) {
+            return [
+                'overview_blocks' => [],
+                'details_html' => $html,
+            ];
+        }
+
+        $contentRoot = $this->resolveDescriptionContentRoot($root);
+        $children = collect(iterator_to_array($contentRoot->childNodes))
+            ->filter(function ($node) {
+                if ($node instanceof \DOMText) {
+                    return trim((string) $node->textContent) !== '';
+                }
+
+                return true;
+            })
+            ->values()
+            ->all();
+
+        $overviewBlocks = [];
+        $splitIndex = null;
+
+        foreach ($children as $index => $node) {
+            $text = $this->normalizeDescriptionComparisonText((string) $node->textContent);
+
+            if ($text === '') {
+                continue;
+            }
+
+            if ($this->descriptionTextMatchesAny($text, [$productPageTagline, $tagline])) {
+                continue;
+            }
+
+            if (!$this->isOverviewDescriptionNode($node)) {
+                continue;
+            }
+
+            $overviewBlocks[] = $dom->saveHTML($node);
+            $splitIndex = $index;
+
+            if (count($overviewBlocks) >= 2) {
+                break;
+            }
+        }
+
+        if (empty($overviewBlocks) || $splitIndex === null) {
+            return [
+                'overview_blocks' => [],
+                'details_html' => $html,
+            ];
+        }
+
+        $detailsHtml = '';
+
+        for ($i = $splitIndex + 1; $i < count($children); $i++) {
+            $detailsHtml .= $dom->saveHTML($children[$i]);
+        }
+
+        return [
+            'overview_blocks' => $overviewBlocks,
+            'details_html' => trim($detailsHtml) !== '' ? $detailsHtml : null,
+        ];
+    }
+
+    protected function resolveDescriptionContentRoot(\DOMElement $root): \DOMElement
+    {
+        $elementChildren = collect(iterator_to_array($root->childNodes))
+            ->filter(fn($node) => $node instanceof \DOMElement)
+            ->values();
+
+        if ($elementChildren->count() !== 1) {
+            return $root;
+        }
+
+        /** @var \DOMElement $onlyChild */
+        $onlyChild = $elementChildren->first();
+        $childTag = strtolower($onlyChild->tagName);
+
+        if (in_array($childTag, ['div', 'section', 'article'], true) && $this->elementHasMultipleRenderableChildren($onlyChild)) {
+            return $onlyChild;
+        }
+
+        return $root;
+    }
+
+    protected function elementHasMultipleRenderableChildren(\DOMElement $element): bool
+    {
+        return collect(iterator_to_array($element->childNodes))
+            ->filter(function ($node) {
+                if ($node instanceof \DOMText) {
+                    return trim((string) $node->textContent) !== '';
+                }
+
+                return $node instanceof \DOMElement;
+            })
+            ->count() > 1;
+    }
+
+    protected function isOverviewDescriptionNode($node): bool
+    {
+        if ($node instanceof \DOMText) {
+            return trim((string) $node->textContent) !== '';
+        }
+
+        if (!$node instanceof \DOMElement) {
+            return false;
+        }
+
+        return in_array(strtolower($node->tagName), ['p', 'div', 'blockquote'], true);
+    }
+
+    protected function descriptionTextMatchesAny(string $text, array $candidates): bool
+    {
+        foreach ($candidates as $candidate) {
+            $normalizedCandidate = $this->normalizeDescriptionComparisonText((string) $candidate);
+
+            if ($normalizedCandidate !== '' && $text === $normalizedCandidate) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function normalizeDescriptionComparisonText(string $text): string
+    {
+        $text = strip_tags($text);
+        $text = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $text);
+
+        return Str::lower(trim((string) $text));
     }
 
     protected function categoryNamesForTypes(Product $product, array $typeNames): array

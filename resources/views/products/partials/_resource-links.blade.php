@@ -149,9 +149,9 @@
 @endphp
 
 @if($xProfileUrl || !empty($socialLinks) || !empty($resourceLinks))
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-8 md:grid-cols-2 md:gap-10">
         @if($xProfileUrl || !empty($socialLinks))
-            <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <article class="min-w-0">
                 <h3 class="text-sm font-semibold text-gray-900">Social Profiles</h3>
                 <div class="mt-4 space-y-3">
                     @if($xProfileUrl)
@@ -174,7 +174,7 @@
         @endif
 
         @if(!empty($resourceLinks))
-            <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <article class="min-w-0">
                 <h3 class="text-sm font-semibold text-gray-900">Useful Links</h3>
                 <div class="mt-4 space-y-3">
                     @foreach($resourceLinks as $resourceLink)
