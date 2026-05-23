@@ -107,4 +107,17 @@ class ProductMediaSeoTest extends TestCase
             ProductMediaSeo::productMediaAltText($product, 'image', 1)
         );
     }
+
+    public function test_product_media_alt_text_removes_generic_helpful_marketing_lead_ins(): void
+    {
+        $product = new Product([
+            'name' => 'Linear',
+            'product_page_tagline' => 'Linear helps teams build and launch products faster by automating workflows and streamlining collaboration.',
+        ]);
+
+        self::assertSame(
+            'Linear homepage showing product planning and workflow automation',
+            ProductMediaSeo::productMediaAltText($product, 'image', 1)
+        );
+    }
 }

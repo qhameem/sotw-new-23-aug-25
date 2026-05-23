@@ -106,12 +106,20 @@ class ProductMediaSeo
         }
 
         $descriptor = preg_replace('/^(helps you|help you|lets you|let you|allows you to|allow you to|allows|allow|enables you to|enable you to|enables|enable)\s+/i', '', $descriptor) ?? $descriptor;
+        $descriptor = preg_replace('/^(helps?|lets?|allows?|enables?)\s+(teams?|users?|companies|businesses|creators|developers|marketers|sales teams?|support teams?)\s+(?:to\s+)?/i', '', $descriptor) ?? $descriptor;
 
         if (preg_match('/^(identify|detect|find)\s+and\s+(resolve|fix)\s+(.+?)\s+issues?\s+before\b.*?\b(?:your|the)\s+([^,]+?)(?:,.*)?$/i', $descriptor, $matches)) {
             $descriptor = trim($matches[4] . ' ' . $matches[3] . ' monitoring');
         }
 
-        $descriptor = preg_split('/\b(before|ensuring|allowing|while|without|so that|so you can|and more|so users can)\b/i', $descriptor)[0] ?? $descriptor;
+        if (preg_match('/^(build|create)\s+and\s+(launch|ship)\s+(.+?)\s+faster\s+by\s+automating\s+workflows?.*$/i', $descriptor, $matches)) {
+            $subject = trim($matches[3]);
+            $descriptor = preg_match('/\bproducts?\b/i', $subject)
+                ? 'product planning and workflow automation'
+                : $subject . ' workflow automation';
+        }
+
+        $descriptor = preg_split('/\b(before|ensuring|allowing|while|without|so that|so you can|and more|so users can|by)\b/i', $descriptor)[0] ?? $descriptor;
         $descriptor = trim($descriptor, " \t\n\r\0\x0B,.;:-");
 
         $rewrites = [
