@@ -1514,21 +1514,46 @@ class ProductController extends Controller
             },
         ]);
 
-        $pricingCategory = $product->categories->first(function ($category) {
-            return $category->types->contains('name', 'Pricing');
+        $pricingTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))
+            ->map(fn(string $name) => Str::lower($name));
+        $bestForTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR))
+            ->map(fn(string $name) => Str::lower($name));
+        $useCaseTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))
+            ->map(fn(string $name) => Str::lower($name));
+        $platformTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM))
+            ->map(fn(string $name) => Str::lower($name));
+
+        $pricingCategory = $product->categories->first(function ($category) use ($pricingTypeNames) {
+            return $category->types
+                ->pluck('name')
+                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->intersect($pricingTypeNames)
+                ->isNotEmpty();
         });
         $primaryBreadcrumbCategory = $product->primaryBreadcrumbCategory();
 
-        $bestForCategories = $product->categories->filter(function ($category) {
-            return $category->types->contains('name', 'Best for');
+        $bestForCategories = $product->categories->filter(function ($category) use ($bestForTypeNames) {
+            return $category->types
+                ->pluck('name')
+                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->intersect($bestForTypeNames)
+                ->isNotEmpty();
         });
 
-        $useCaseCategories = $product->categories->filter(function ($category) {
-            return $category->types->contains('name', CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::USE_CASE));
+        $useCaseCategories = $product->categories->filter(function ($category) use ($useCaseTypeNames) {
+            return $category->types
+                ->pluck('name')
+                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->intersect($useCaseTypeNames)
+                ->isNotEmpty();
         });
 
-        $platformCategories = $product->categories->filter(function ($category) {
-            return $category->types->contains('name', CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::PLATFORM));
+        $platformCategories = $product->categories->filter(function ($category) use ($platformTypeNames) {
+            return $category->types
+                ->pluck('name')
+                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->intersect($platformTypeNames)
+                ->isNotEmpty();
         });
 
         $productEditorialService = app(ProductEditorialContentService::class);

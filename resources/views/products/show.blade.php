@@ -35,10 +35,13 @@
         $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
         $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
         $quickFacts = collect([
-            ['label' => 'Pricing', 'value' => $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null)],
             ['label' => 'Use Cases', 'value' => $useCaseCategories->isNotEmpty() ? $useCaseCategories->pluck('name')->take(2)->implode(', ') : null],
+            ['label' => 'Pricing', 'value' => $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null)],
             ['label' => 'Platforms', 'value' => $platformCategories->isNotEmpty() ? $platformCategories->pluck('name')->take(2)->implode(', ') : null],
-        ])->filter(fn($item) => filled($item['value']))->values();
+        ]);
+        $quickFacts = $quickFacts->contains(fn($item) => filled($item['value']))
+            ? $quickFacts->map(fn($item) => ['label' => $item['label'], 'value' => $item['value'] ?: 'Not listed yet'])->values()
+            : collect();
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
             ($hasEditorialSections || filled($detailDescriptionHtml)) ? ['id' => 'details', 'label' => 'Details'] : null,
@@ -99,7 +102,7 @@
                 </div>
 
                 @if($quickFacts->isNotEmpty())
-                    <div class="mt-8 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                    <div class="mt-8 overflow-hidden rounded-2xl">
                         <dl class="grid divide-y divide-gray-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
                             @foreach($quickFacts as $fact)
                                 <div class="px-4 py-4 sm:px-5">
@@ -246,21 +249,20 @@
                     </section>
                 @endif
 
-                <section id="details" class="scroll-mt-28 mt-8 pt-8" @class(['border-t border-gray-100' => !$hasMediaSection])>
+                <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Details</h2>
-                        <p class="mt-1 text-sm text-gray-500">A more scannable breakdown of features, audience fit, and product tradeoffs.</p>
                     </div>
 
                     @if($hasEditorialSections)
-                        <div class="mt-6">
+                        <div class="mt-1">
                             @include('products.partials._editorial-highlights', ['productEditorial' => $productEditorial])
                         </div>
 
                         @if(filled($detailDescriptionHtml))
-                            <details class="mt-6 rounded-2xl bg-gray-50 px-5 py-4">
+                            <details class="px-5 py-1">
                                 <summary class="cursor-pointer text-sm font-semibold text-gray-900">Read full editorial notes</summary>
-                                <div class="prose mt-4 max-w-none text-base ql-editor-content product-detail-description">
+                                <div class="prose mt-2 max-w-none text-sm ql-editor-content product-detail-description">
                                     @if(isset($isAdminView) && $isAdminView)
                                         <div x-show="!editingDescription" @click="editingDescription = true">
                                             {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
@@ -276,8 +278,8 @@
                         @endif
                     @else
                         @if(filled($detailDescriptionHtml))
-                            <div class="mt-6 rounded-2xl bg-gray-50 px-5 py-4">
-                                <div class="prose max-w-none text-base ql-editor-content product-detail-description">
+                            <div class="px-5 py-1">
+                                <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
                                     @if(isset($isAdminView) && $isAdminView)
                                         <div x-show="!editingDescription" @click="editingDescription = true">
                                             {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}

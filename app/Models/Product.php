@@ -272,7 +272,7 @@ class Product extends Model implements Sitemapable
     {
         return $this->belongsToMany(Category::class)
             ->whereHas('types', function ($query) {
-                $query->where('category_types.type_id', 1);
+                $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE));
             });
     }
 
