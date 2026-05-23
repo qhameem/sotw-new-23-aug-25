@@ -6,7 +6,9 @@
     <div class="flex-1 flex flex-col md:flex-row min-h-0 w-full relative z-0">
         <div
             @class([
-                'flex flex-col md:flex-row flex-1 md:overflow-hidden w-full mx-auto',
+                'flex flex-col md:flex-row flex-1 w-full mx-auto',
+                'md:overflow-visible' => request()->routeIs('products.show'),
+                'md:overflow-hidden' => !request()->routeIs('products.show'),
                 $containerMaxWidth,
                 'mx-0' => $hideSidebar,
             ])

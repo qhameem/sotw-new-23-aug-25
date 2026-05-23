@@ -89,7 +89,7 @@
                                                                                             }
                                                                                         @endif
         }">
-        <div class="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div class="overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm">
             <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
                 <div class="md:hidden">
                     @include('products.partials._header-mobile')
