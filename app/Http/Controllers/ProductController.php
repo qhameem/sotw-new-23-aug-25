@@ -1183,7 +1183,6 @@ class ProductController extends Controller
             $title = 'Top Products';
             $pageTitle = 'Top Products';
         }
-        $rankingExplanation = 'Ranked by engagement signals, with added launch exposure during the first 12 hours.';
 
         $activeDates = Product::where('approved', true)
             ->where('is_published', true)
@@ -1202,7 +1201,7 @@ class ProductController extends Controller
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture', 'rankingExplanation'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture'));
     }
     public function redirectToCurrentWeek()
     {
@@ -1347,7 +1346,6 @@ class ProductController extends Controller
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
-        $rankingExplanation = 'Ranked by engagement signals, with added launch exposure during the first 12 hours.';
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1357,7 +1355,7 @@ class ProductController extends Controller
 
         $weekNavigationItems = $this->buildWeekNavigationItems($year, $week);
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'rankingExplanation'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1385,13 +1383,12 @@ class ProductController extends Controller
         $displayDateString = $startOfMonth->toDateString();
         $title = 'on ' . $startOfMonth->format('F Y'); // For potential in-page display
         $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
-        $rankingExplanation = 'Ranked by engagement signals, with added launch exposure during the first 12 hours.';
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture', 'rankingExplanation'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
 
     public function productsByYear(Request $request, $year)
@@ -1419,13 +1416,12 @@ class ProductController extends Controller
         $displayDateString = $startOfYear->toDateString();
         $title = 'in ' . $year; // For potential in-page display
         $pageTitle = 'Best of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
-        $rankingExplanation = 'Ranked by engagement signals, with added launch exposure during the first 12 hours.';
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture', 'rankingExplanation'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
     }
 
     public function search(Request $request)
