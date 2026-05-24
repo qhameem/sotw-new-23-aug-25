@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage; // Added Storage facade
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ProductLogoStorageService;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use App\Support\CategoryTypeRegistry;
@@ -266,7 +267,8 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+            $validated['logo'] = app(ProductLogoStorageService::class)
+                ->storeUploadedFile($request->file('logo'));
         }
 
         $validated['user_id'] = Auth::id();
@@ -435,7 +437,8 @@ class ProductController extends Controller
             if ($product->logo && !Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
-            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+            $validated['logo'] = app(ProductLogoStorageService::class)
+                ->storeUploadedFile($request->file('logo'));
         }
 
         // Process description to ensure proper paragraph structure

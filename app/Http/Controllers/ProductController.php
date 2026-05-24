@@ -28,6 +28,7 @@ use App\Services\TechStackDetectorService;
 use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
+use App\Services\ProductLogoStorageService;
 use App\Services\ProductLogoResolver;
 use App\Services\ScreenshotService;
 use App\Services\BadgeService;
@@ -390,48 +391,18 @@ class ProductController extends Controller
         $validated['x_account'] = Product::normalizeXAccount($request->input('x_account'));
 
         if ($request->hasFile('logo')) {
-            $image = $request->file('logo');
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::uuid();
-            $path = 'logos/';
-
-            if ($extension === 'svg') {
-                $filenameWithExtension = $filename . '.svg';
-                $image->storePubliclyAs($path, $filenameWithExtension, 'public');
-                $validated['logo'] = $path . $filenameWithExtension;
-            } else {
-                $filenameWithExtension = $filename . '.webp';
-                // $img = Image::make($image->getRealPath());
-                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                // Storage::disk('public')->put($path . $filenameWithExtension, (string) $encodedImage);
-                // $validated['logo'] = $path . $filenameWithExtension;
-                $image->storePubliclyAs($path, $image->getClientOriginalName(), 'public');
-                $validated['logo'] = $path . $image->getClientOriginalName();
-            }
+            $validated['logo'] = app(ProductLogoStorageService::class)
+                ->storeUploadedFile($request->file('logo'));
         } elseif ($request->filled('logo_url')) {
             $logoUrl = $request->input('logo_url');
 
             // Handle Base64/Data URL
             if (Str::startsWith($logoUrl, 'data:image')) {
                 try {
-                    // Extract extension
-                    $extension = 'png';
-                    if (preg_match('/^data:image\/([\w\+\-\.]+);base64,/', $logoUrl, $matches)) {
-                        $extension = $matches[1];
-                        if ($extension === 'svg+xml') {
-                            $extension = 'svg';
-                        }
-                    }
+                    $storedLogo = app(ProductLogoStorageService::class)->storeDataUrl($logoUrl);
 
-                    // Decode data
-                    $base64Data = preg_replace('/^data:image\/[\w\+\-\.]+;base64,/', '', $logoUrl);
-                    $decodedData = base64_decode($base64Data);
-
-                    if ($decodedData) {
-                        $filename = Str::uuid() . '.' . $extension;
-                        $path = 'logos/' . $filename;
-                        Storage::disk('public')->put($path, $decodedData);
-                        $validated['logo'] = $path;
+                    if ($storedLogo) {
+                        $validated['logo'] = $storedLogo;
                     }
                 } catch (\Exception $e) {
                     Log::error('Failed to save base64 logo: ' . $e->getMessage());
@@ -442,7 +413,15 @@ class ProductController extends Controller
                 $resolvedLogoUrl = $this->productLogoResolver->resolvePreferredLogoUrl($request->input('link'), $logoUrl);
 
                 if ($resolvedLogoUrl) {
-                    $validated['logo'] = $resolvedLogoUrl;
+                    try {
+                        $validated['logo'] = app(ProductLogoStorageService::class)->storeRemoteUrl($resolvedLogoUrl) ?? $resolvedLogoUrl;
+                    } catch (\Throwable $throwable) {
+                        Log::warning('Failed to localize remote product logo; keeping external URL.', [
+                            'url' => $resolvedLogoUrl,
+                            'error' => $throwable->getMessage(),
+                        ]);
+                        $validated['logo'] = $resolvedLogoUrl;
+                    }
                 }
             }
         }
@@ -839,24 +818,8 @@ class ProductController extends Controller
         if ($request->boolean('remove_logo')) {
             $logoPath = null; // Explicitly set to null for removal
         } elseif ($request->hasFile('logo')) {
-            $image = $request->file('logo');
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::uuid();
-            $logoPath = 'logos/';
-
-            if ($extension === 'svg') {
-                $filenameWithExtension = $filename . '.svg';
-                $image->storePubliclyAs($logoPath, $filenameWithExtension, 'public');
-                $logoPath .= $filenameWithExtension;
-            } else {
-                $filenameWithExtension = $filename . '.webp';
-                // $img = Image::make($image->getRealPath());
-                // $encodedImage = $img->toWebp(80); // Convert to WebP with 80% quality
-                // Storage::disk('public')->put($logoPath . $filenameWithExtension, (string) $encodedImage);
-                // $logoPath .= $filenameWithExtension;
-                $image->storePubliclyAs($logoPath, $image->getClientOriginalName(), 'public');
-                $logoPath .= $image->getClientOriginalName();
-            }
+            $logoPath = app(ProductLogoStorageService::class)
+                ->storeUploadedFile($request->file('logo'));
         }
 
         $product->last_edited_by_id = Auth::id();

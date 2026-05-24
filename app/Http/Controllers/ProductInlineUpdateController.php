@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\ProductLogoStorageService;
 use App\Support\CategoryTypeRegistry;
 use App\Support\SocialLinkValidator;
 use App\Support\ProductMediaSeo;
@@ -208,21 +209,8 @@ class ProductInlineUpdateController extends Controller
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
         ]);
 
-        $image = $request->file('logo');
-        $extension = $image->getClientOriginalExtension();
-        $filename = Str::uuid();
-        $path = 'logos/';
-
-        $finalPath = '';
-        if ($extension === 'svg') {
-            $filenameWithExtension = $filename . '.svg';
-            $image->storePubliclyAs($path, $filenameWithExtension, 'public');
-            $finalPath = $path . $filenameWithExtension;
-        } else {
-            // Similar to existing logic
-            $image->storePubliclyAs($path, $image->getClientOriginalName(), 'public');
-            $finalPath = $path . $image->getClientOriginalName();
-        }
+        $finalPath = app(ProductLogoStorageService::class)
+            ->storeUploadedFile($request->file('logo'));
 
         if ($product->approved) {
             if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
