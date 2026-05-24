@@ -86,10 +86,9 @@
     <template id="delayed-livewire-scripts">@livewireScripts</template>
     @stack('scripts')
     <script>
-        const bodyData = document.body.dataset;
-        window.isAuthenticated = bodyData.isAuthenticated === '1';
-        window.loginUrl = bodyData.loginUrl;
-        window.csrfToken = bodyData.csrfToken;
+        window.isAuthenticated = document.body.dataset.isAuthenticated === '1';
+        window.loginUrl = document.body.dataset.loginUrl;
+        window.csrfToken = document.body.dataset.csrfToken;
     </script>
 </body>
 
