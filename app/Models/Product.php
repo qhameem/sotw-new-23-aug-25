@@ -198,7 +198,13 @@ class Product extends Model implements Sitemapable
                     : $this->logo;
             }
 
-            return \Illuminate\Support\Facades\Storage::url($this->logo);
+            $publicDisk = \Illuminate\Support\Facades\Storage::disk('public');
+
+            if ($publicDisk->exists($this->logo)) {
+                return \Illuminate\Support\Facades\Storage::url($this->logo);
+            }
+
+            return ProductLogo::fallbackUrl($this);
         }
 
         return null;

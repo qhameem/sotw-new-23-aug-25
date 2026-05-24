@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\GlobalSearchService;
+use App\Support\ProductLogo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -110,6 +111,7 @@ class SearchController extends Controller
             'slug' => $product->slug,
             'tagline' => $product->tagline,
             'logo_url' => $product->logo_url,
+            'fallback_logo_url' => ProductLogo::fallbackUrl($product),
             'url' => route('products.show', ['product' => $product->slug]),
         ])->values();
     }

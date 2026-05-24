@@ -44,6 +44,17 @@ class ProductLogo
         return self::storedUrl($product);
     }
 
+    public static function fallbackUrl($product): ?string
+    {
+        $link = trim((string) ($product->link ?? ''));
+
+        if ($link === '' || !filter_var($link, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($link);
+    }
+
     public static function initial($product): string
     {
         $name = trim((string) ($product->name ?? ''));

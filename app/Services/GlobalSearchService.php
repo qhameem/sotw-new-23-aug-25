@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\ProductLogo;
 use Illuminate\Support\Facades\Cache;
 
 class GlobalSearchService
 {
     public function getPopularProducts(): array
     {
-        return Cache::remember('global_search.popular_products.v2', now()->addMinutes(30), function () {
+        return Cache::remember('global_search.popular_products.v4', now()->addMinutes(30), function () {
             return Product::query()
                 ->select(['id', 'name', 'slug', 'tagline', 'logo', 'link', 'votes_count', 'outbound_clicks_count', 'published_at'])
                 ->where('approved', true)
@@ -25,6 +26,7 @@ class GlobalSearchService
                     'name' => $product->name,
                     'tagline' => $product->tagline,
                     'logo_url' => $product->logo_url,
+                    'fallback_logo_url' => ProductLogo::fallbackUrl($product),
                     'votes_count' => (int) $product->votes_count,
                     'url' => route('products.show', ['product' => $product->slug]),
                 ])

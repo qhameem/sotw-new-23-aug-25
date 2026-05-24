@@ -121,6 +121,7 @@
                                     class="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
                                     <template x-if="product.logo_url">
                                         <img :src="product.logo_url" :alt="product.name"
+                                            x-on:error="if (product.fallback_logo_url && $el.src !== product.fallback_logo_url) { $el.src = product.fallback_logo_url } else { product.logo_url = null }"
                                             class="w-8 h-8 mr-3 rounded-xl object-cover">
                                     </template>
                                     <template x-if="!product.logo_url">
