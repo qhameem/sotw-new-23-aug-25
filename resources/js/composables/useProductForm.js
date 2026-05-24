@@ -586,7 +586,11 @@ export function useProductForm() {
       const screenshotFile = form.gallery?.[0];
       if (screenshotFile instanceof File) {
         formData.append('media[0]', screenshotFile);
-      } else if (typeof screenshotPreview === 'string' && screenshotPreview && screenshotPreview.startsWith('http')) {
+      } else if (
+        typeof screenshotPreview === 'string'
+        && screenshotPreview
+        && (screenshotPreview.startsWith('http') || screenshotPreview.startsWith('/storage/'))
+      ) {
         formData.append('media_urls[0]', screenshotPreview);
       }
 
@@ -1728,6 +1732,11 @@ export function useProductForm() {
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
               logos: initialData.logos || [],
+              categories_custom: initialData.categories_custom || [],
+              useCases_custom: initialData.useCases_custom || [],
+              platforms_custom: initialData.platforms_custom || [],
+              bestFor_custom: initialData.bestFor_custom || [],
+              tech_stack_custom: initialData.tech_stack_custom || [],
             });
 
             if (logoUrl) {
@@ -1829,6 +1838,11 @@ export function useProductForm() {
               logo: initialData.logo || null,
               favicon: initialData.logo_url || logoUrl || null,
               logos: initialData.logos || [],
+              categories_custom: initialData.categories_custom || [],
+              useCases_custom: initialData.useCases_custom || [],
+              platforms_custom: initialData.platforms_custom || [],
+              bestFor_custom: initialData.bestFor_custom || [],
+              tech_stack_custom: initialData.tech_stack_custom || [],
             };
 
             console.log('Form updates:', formUpdates);
@@ -1926,6 +1940,11 @@ export function useProductForm() {
                     fromSource: fromParam || null,
                     comparison_overrides_input: initialData.comparison_overrides_input || '',
                     alternative_overrides_input: initialData.alternative_overrides_input || '',
+                    categories_custom: initialData.categories_custom || [],
+                    useCases_custom: initialData.useCases_custom || [],
+                    platforms_custom: initialData.platforms_custom || [],
+                    bestFor_custom: initialData.bestFor_custom || [],
+                    tech_stack_custom: initialData.tech_stack_custom || [],
                   });
                 } else {
                   // Capture the from parameter if present in URL
@@ -1956,6 +1975,11 @@ export function useProductForm() {
                     alternative_overrides_input: initialData.alternative_overrides_input || '',
                     logo: initialData.logo || null,
                     favicon: initialData.logo_url || null,
+                    categories_custom: initialData.categories_custom || [],
+                    useCases_custom: initialData.useCases_custom || [],
+                    platforms_custom: initialData.platforms_custom || [],
+                    bestFor_custom: initialData.bestFor_custom || [],
+                    tech_stack_custom: initialData.tech_stack_custom || [],
                   });
                 }
                 globalFormState.step.value = 2;

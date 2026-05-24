@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log; // Added for logging
 use Illuminate\Support\Facades\Storage; // Added for file operations
 use Illuminate\Support\Str; // Added for string operations
 use App\Support\CategoryTypeRegistry;
+use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
 
 class ProductApprovalController extends Controller
@@ -313,11 +314,11 @@ class ProductApprovalController extends Controller
             return redirect()->route('admin.products.pending-edits.index')->with('error', 'Product does not have pending edits or is not approved.');
         }
 
-        $product->load(['user', 'categories', 'proposedCategories', 'lastEditor', 'techStacks', 'proposedTechStacks', 'media']);
+        $product->load(['user', 'categories', 'proposedCategories', 'lastEditor', 'techStacks', 'proposedTechStacks', 'media', 'customCategorySubmissions']);
         return view('admin.product_approvals.show_edit_diff', compact('product'));
     }
 
-    public function approveEdits(Product $product)
+    public function approveEdits(Request $request, Product $product)
     {
         if (!$product->approved || !$product->has_pending_edits) {
             return back()->with('error', 'Product does not have pending edits to approve or is not an approved product.');
@@ -372,9 +373,28 @@ class ProductApprovalController extends Controller
         // Sync categories and tech stacks
         $product->categories()->sync($product->proposedCategories()->pluck('categories.id')->toArray());
         $product->techStacks()->sync($product->proposedTechStacks()->pluck('tech_stacks.id')->toArray());
+        $this->applyProposedScreenshot($product);
+
+        $pendingCustomSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
+        foreach ($pendingCustomSubmissions as $submission) {
+            $decision = $request->input('custom_category_' . $submission->id);
+
+            if ($decision === 'approve') {
+                $slug = $request->input('custom_category_' . $submission->id . '_slug') ?: Str::slug($submission->name);
+                $description = $request->input('custom_category_' . $submission->id . '_description') ?? $submission->name;
+                $metaDescription = $request->input('custom_category_' . $submission->id . '_meta_description') ?? $submission->name;
+
+                $this->persistCustomSubmission($product, $submission, $slug, $description, $metaDescription);
+            } elseif ($decision === 'reject') {
+                $submission->update(['status' => 'rejected']);
+            }
+        }
 
         // Clear all proposed data
         $product->proposed_logo_path = null;
+        $product->proposed_screenshot_path = null;
+        $product->proposed_screenshot_thumb_path = null;
+        $product->proposed_screenshot_medium_path = null;
         $product->proposed_tagline = null;
         $product->proposed_description = null;
         $product->proposed_name = null;
@@ -406,9 +426,13 @@ class ProductApprovalController extends Controller
         if ($product->proposed_logo_path) {
             Storage::disk('public')->delete($product->proposed_logo_path);
         }
+        $this->deleteProposedScreenshotFiles($product);
 
         // Clear all proposed data
         $product->proposed_logo_path = null;
+        $product->proposed_screenshot_path = null;
+        $product->proposed_screenshot_thumb_path = null;
+        $product->proposed_screenshot_medium_path = null;
         $product->proposed_tagline = null;
         $product->proposed_description = null;
         $product->proposed_name = null;
@@ -423,6 +447,7 @@ class ProductApprovalController extends Controller
 
         $product->proposedCategories()->detach();
         $product->proposedTechStacks()->detach();
+        $product->customCategorySubmissions()->where('status', 'pending')->update(['status' => 'rejected']);
         $product->has_pending_edits = false;
 
         $product->save();
@@ -541,6 +566,56 @@ class ProductApprovalController extends Controller
         }
 
         $submission->update(['status' => 'approved']);
+    }
+
+    private function applyProposedScreenshot(Product $product): void
+    {
+        if (!$product->proposed_screenshot_path) {
+            return;
+        }
+
+        $liveMedia = $product->media()
+            ->whereIn('type', ['image', 'screenshot'])
+            ->orderBy('id')
+            ->first();
+
+        if ($liveMedia) {
+            $this->deleteMediaFiles($liveMedia->path, $liveMedia->path_thumb, $liveMedia->path_medium);
+            $liveMedia->path = $product->proposed_screenshot_path;
+            $liveMedia->path_thumb = $product->proposed_screenshot_thumb_path;
+            $liveMedia->path_medium = $product->proposed_screenshot_medium_path;
+            $liveMedia->alt_text = ProductMediaSeo::productMediaAltText($product, 'screenshot', 1);
+            $liveMedia->type = 'screenshot';
+            $liveMedia->save();
+
+            return;
+        }
+
+        $product->media()->create([
+            'path' => $product->proposed_screenshot_path,
+            'path_thumb' => $product->proposed_screenshot_thumb_path,
+            'path_medium' => $product->proposed_screenshot_medium_path,
+            'alt_text' => ProductMediaSeo::productMediaAltText($product, 'screenshot', 1),
+            'type' => 'screenshot',
+        ]);
+    }
+
+    private function deleteProposedScreenshotFiles(Product $product): void
+    {
+        $this->deleteMediaFiles(
+            $product->proposed_screenshot_path,
+            $product->proposed_screenshot_thumb_path,
+            $product->proposed_screenshot_medium_path
+        );
+    }
+
+    private function deleteMediaFiles(?string ...$paths): void
+    {
+        foreach ($paths as $path) {
+            if ($path && !Str::startsWith($path, 'http')) {
+                Storage::disk('public')->delete($path);
+            }
+        }
     }
 
     private function extractNameFromUrl($url)

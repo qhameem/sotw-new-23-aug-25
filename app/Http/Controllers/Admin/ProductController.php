@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage; // Added Storage facade
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
@@ -287,17 +288,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $productController = new \App\Http\Controllers\ProductController(
-            app(\App\Services\FaviconExtractorService::class),
-            app(\App\Services\SlugService::class),
-            app(\App\Services\TechStackDetectorService::class),
-            app(\App\Services\NameExtractorService::class),
-            app(\App\Services\LogoExtractorService::class),
-            app(\App\Services\CategoryClassifier::class),
-            app(\App\Services\ScreenshotService::class),
-            app(\App\Services\BadgeService::class),
-            app(\App\Services\RelatedProductService::class)
-        );
+        $productController = app(\App\Http\Controllers\ProductController::class);
 
         $view = $productController->showProductPage($product);
         return $view->with('isAdminView', true);
@@ -392,7 +383,12 @@ class ProductController extends Controller
             'link' => 'required|url|max:255',
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
+            'custom_categories' => 'nullable|array|max:14',
+            'custom_categories.*.name' => 'required|string|max:100',
+            'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
+            'logo_url' => 'nullable|string',
+            'remove_logo' => 'nullable|boolean',
             'video_url' => 'nullable|string',
             'maker_links' => 'nullable|array',
             'maker_links.*' => [
@@ -412,6 +408,10 @@ class ProductController extends Controller
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'media' => 'nullable|array|max:1',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
+            'media_urls' => 'nullable|array|max:1',
+            'media_urls.*' => 'nullable|string|max:2048',
+            'custom_tech_stacks' => 'nullable|array|max:3',
+            'custom_tech_stacks.*.name' => 'required|string|max:100',
             'comparison_overrides_input' => 'nullable|string|max:5000',
             'alternative_overrides_input' => 'nullable|string|max:5000',
         ]);
@@ -419,8 +419,12 @@ class ProductController extends Controller
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn($id) => (int) $id);
         $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+        $customCategories = $request->input('custom_categories', []);
+        $hasCustomUseCase = collect($customCategories)->contains(function ($category) {
+            return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
+        });
 
-        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty()) {
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
             return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
         }
 
@@ -439,21 +443,16 @@ class ProductController extends Controller
             }
             $validated['logo'] = app(ProductLogoStorageService::class)
                 ->storeUploadedFile($request->file('logo'));
+        } elseif ($request->filled('logo_url')) {
+            $resolvedLogoPath = $this->resolveLogoPathFromInput((string) $request->input('logo_url'), (string) $request->input('link', $product->link));
+            if ($resolvedLogoPath) {
+                $validated['logo'] = $resolvedLogoPath;
+            }
         }
 
         // Process description to ensure proper paragraph structure
         if (isset($validated['description'])) {
-            $productController = new \App\Http\Controllers\ProductController(
-                app(\App\Services\FaviconExtractorService::class),
-                app(\App\Services\SlugService::class),
-                app(\App\Services\TechStackDetectorService::class),
-                app(\App\Services\NameExtractorService::class),
-                app(\App\Services\LogoExtractorService::class),
-                app(\App\Services\CategoryClassifier::class),
-                app(\App\Services\ScreenshotService::class),
-                app(\App\Services\BadgeService::class),
-                app(\App\Services\RelatedProductService::class)
-            );
+            $productController = app(\App\Http\Controllers\ProductController::class);
 
             $validated['description'] = $productController->ensureProperParagraphStructure(
                 $productController->addNofollowToLinks($validated['description'])
@@ -478,94 +477,350 @@ class ProductController extends Controller
         );
         unset($validated['comparison_overrides_input'], $validated['alternative_overrides_input']);
 
-        $product->update($validated);
-
-        if ($request->has('categories')) {
-            $product->categories()->sync($validated['categories']);
-        }
-
-        if ($request->has('tech_stacks')) {
-            $product->techStacks()->sync($validated['tech_stacks']);
-        }
-
-        // Replace the single screenshot image when a new one is uploaded.
-        if ($request->hasFile('media')) {
-            $manager = new ImageManager(new Driver());
-            $product->media()
-                ->whereIn('type', ['image', 'screenshot'])
-                ->get()
-                ->each(function ($media) {
-                    foreach ([$media->path, $media->path_thumb, $media->path_medium] as $path) {
-                        if ($path && !Str::startsWith($path, 'http')) {
-                            Storage::disk('public')->delete($path);
-                        }
-                    }
-
-                    $media->delete();
-                });
-
-            $mediaPosition = $product->media()->count();
-
-            foreach ($request->file('media') as $file) {
-                $mimeType = $file->getMimeType();
-                $type = \Illuminate\Support\Str::startsWith($mimeType, 'image') ? 'image' : 'video';
-                $mediaPosition++;
-                $extension = strtolower($file->getClientOriginalExtension()) ?: ($type === 'image' ? 'png' : 'bin');
-                $filename = ProductMediaSeo::productMediaFilename($product, $type, $extension, $mediaPosition);
-                $path = $file->storeAs('product_media', $filename, 'public');
-
-                $pathThumb = null;
-                $pathMedium = null;
-
-                if ($type === 'image') {
-                    try {
-                        $filename = basename($path);
-                        $directory = dirname($path);
-
-                        // Generate Thumbnail (300px width)
-                        $imageThumb = $manager->read($file->getRealPath());
-                        $imageThumb->scale(width: 300);
-                        $thumbFilename = 'thumb_' . $filename;
-                        $pathThumb = $directory . '/' . $thumbFilename;
-                        Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
-
-                        // Generate Medium (800px width)
-                        $imageMedium = $manager->read($file->getRealPath());
-                        $imageMedium->scale(width: 800);
-                        $mediumFilename = 'medium_' . $filename;
-                        $pathMedium = $directory . '/' . $mediumFilename;
-                        Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
-                    } catch (\Throwable $e) {
-                        // Fallback: if resizing fails, we just don't set the paths, keeping original behavior
-                        \Log::warning('Image resizing skipped: ' . $e->getMessage());
-                    }
-                }
-
-                $product->media()->create([
-                    'path' => $path,
-                    'path_thumb' => $pathThumb,
-                    'path_medium' => $pathMedium,
-                    'alt_text' => ProductMediaSeo::productMediaAltText($product, $type, $mediaPosition),
-                    'type' => $type,
-                ]);
-            }
-        }
-
-
         // Check if the user came from the product approvals page
         $fromApprovals = $request->input('from') === 'approvals';
 
+        if ($product->approved) {
+            $newCategories = $validated['categories'] ?? [];
+            $newTechStacks = $validated['tech_stacks'] ?? [];
+
+            if ($request->boolean('remove_logo')) {
+                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                    Storage::disk('public')->delete($product->proposed_logo_path);
+                }
+                $product->proposed_logo_path = null;
+            } elseif (isset($validated['logo'])) {
+                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                    Storage::disk('public')->delete($product->proposed_logo_path);
+                }
+                $product->proposed_logo_path = $validated['logo'];
+            }
+
+            $product->proposed_name = $validated['name'];
+            $product->proposed_link = Product::normalizeLink($validated['link']);
+            $product->proposed_tagline = $validated['tagline'];
+            $product->proposed_product_page_tagline = $validated['product_page_tagline'];
+            $product->proposed_description = $validated['description'] ?? null;
+            $product->proposed_video_url = $validated['video_url'] ?? null;
+            $product->proposed_maker_links = $validated['maker_links'] ?? [];
+            $product->proposed_sell_product = $validated['sell_product'] ?? false;
+            $product->proposed_asking_price = $validated['asking_price'] ?? null;
+            $product->proposed_pricing_page_url = $validated['pricing_page_url'] ?? null;
+            $product->proposed_x_account = $validated['x_account'] ?? null;
+            $product->comparison_product_ids = $validated['comparison_product_ids'] ?? [];
+            $product->alternative_product_ids = $validated['alternative_product_ids'] ?? [];
+            $product->proposedCategories()->sync($newCategories);
+            $product->proposedTechStacks()->sync($newTechStacks);
+            $product->has_pending_edits = true;
+            $product->last_edited_by_id = Auth::id();
+
+            $mediaUrl = collect((array) $request->input('media_urls', []))
+                ->filter(fn ($url) => filled($url))
+                ->first();
+
+            if ($request->hasFile('media')) {
+                $manager = new ImageManager(new Driver());
+                $this->storeProposedScreenshotMedia($product, $request->file('media')[0], $manager);
+            } elseif ($mediaUrl) {
+                $manager = new ImageManager(new Driver());
+                $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
+            }
+
+            $this->syncPendingCustomSubmissions($product, $request);
+            $product->save();
+
+            $redirectRoute = 'admin.products.pending-edits.index';
+            $message = 'Approved product changes were saved as pending edits for review.';
+        } else {
+            $product->update($validated);
+
+            if ($request->has('categories')) {
+                $product->categories()->sync($validated['categories']);
+            }
+
+            if ($request->has('tech_stacks')) {
+                $product->techStacks()->sync($validated['tech_stacks']);
+            }
+
+            $mediaUrl = collect((array) $request->input('media_urls', []))
+                ->filter(fn ($url) => filled($url))
+                ->first();
+
+            if ($request->hasFile('media')) {
+                $manager = new ImageManager(new Driver());
+                $this->replacePrimaryScreenshotMedia($product, $request->file('media')[0], $manager);
+            } elseif ($mediaUrl) {
+                $manager = new ImageManager(new Driver());
+                $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
+            }
+
+            $this->syncPendingCustomSubmissions($product, $request);
+
+            $redirectRoute = $fromApprovals ? 'admin.product-approvals.index' : 'admin.products.index';
+            $message = 'Product updated successfully.';
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
-            $redirectUrl = $fromApprovals ? route('admin.product-approvals.index') : route('admin.products.index');
+            $redirectUrl = route($redirectRoute);
             return response()->json([
                 'success' => true,
-                'message' => 'Product updated successfully.',
+                'message' => $message,
                 'redirect_url' => $redirectUrl
             ]);
         }
 
-        $redirectRoute = $fromApprovals ? 'admin.product-approvals.index' : 'admin.products.index';
-        return redirect()->route($redirectRoute)->with('success', 'Product updated successfully.');
+        return redirect()->route($redirectRoute)->with('success', $message);
+    }
+
+    private function syncPendingCustomSubmissions(Product $product, Request $request): void
+    {
+        $product->customCategorySubmissions()
+            ->where('status', 'pending')
+            ->whereIn('type', ['category', 'use_case', 'best_for', 'platform', 'tech_stack'])
+            ->delete();
+
+        foreach ($request->input('custom_categories', []) as $customCategory) {
+            \App\Models\CustomCategorySubmission::create([
+                'product_id' => $product->id,
+                'type' => $customCategory['type'],
+                'name' => $customCategory['name'],
+                'status' => 'pending',
+            ]);
+        }
+
+        foreach ($request->input('custom_tech_stacks', []) as $customTechStack) {
+            \App\Models\CustomCategorySubmission::create([
+                'product_id' => $product->id,
+                'type' => 'tech_stack',
+                'name' => $customTechStack['name'],
+                'status' => 'pending',
+            ]);
+        }
+    }
+
+    private function resolveLogoPathFromInput(string $logoInput, string $productLink): ?string
+    {
+        $logoInput = trim($logoInput);
+
+        if ($logoInput === '') {
+            return null;
+        }
+
+        $storageService = app(ProductLogoStorageService::class);
+
+        if (Str::startsWith($logoInput, 'data:image')) {
+            return $storageService->storeDataUrl($logoInput);
+        }
+
+        if (Str::startsWith($logoInput, '/storage/')) {
+            return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, '/storage/'), '/'));
+        }
+
+        if (filter_var($logoInput, FILTER_VALIDATE_URL)) {
+            $appUrl = rtrim((string) config('app.url'), '/');
+
+            if ($appUrl !== '' && Str::startsWith($logoInput, $appUrl . '/storage/')) {
+                return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, $appUrl . '/storage/'), '/'));
+            }
+
+            try {
+                return $storageService->storeRemoteUrl($logoInput) ?? $logoInput;
+            } catch (\Throwable $throwable) {
+                \Log::warning('Failed to localize remote product logo during admin update; keeping external URL.', [
+                    'url' => $logoInput,
+                    'error' => $throwable->getMessage(),
+                ]);
+
+                return $logoInput;
+            }
+        }
+
+        return null;
+    }
+
+    private function replacePrimaryScreenshotFromUrl(Product $product, string $url, ImageManager $manager): void
+    {
+        $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
+
+        if (!$downloadedPath) {
+            return;
+        }
+
+        $this->replacePrimaryScreenshotMedia($product, Storage::disk('public')->path($downloadedPath), $manager, true);
+        Storage::disk('public')->delete($downloadedPath);
+    }
+
+    private function replacePrimaryScreenshotMedia(Product $product, $file, ImageManager $manager, bool $isExternalPath = false): void
+    {
+        $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath);
+
+        if (!$storedMedia) {
+            return;
+        }
+
+        $liveMedia = $product->media()
+            ->whereIn('type', ['image', 'screenshot'])
+            ->orderBy('id')
+            ->first();
+
+        if ($liveMedia) {
+            $this->deleteMediaFiles($liveMedia->path, $liveMedia->path_thumb, $liveMedia->path_medium);
+            $liveMedia->path = $storedMedia['path'];
+            $liveMedia->path_thumb = $storedMedia['path_thumb'];
+            $liveMedia->path_medium = $storedMedia['path_medium'];
+            $liveMedia->alt_text = ProductMediaSeo::productMediaAltText($product, 'screenshot', 1);
+            $liveMedia->type = 'screenshot';
+            $liveMedia->save();
+
+            return;
+        }
+
+        $product->media()->create([
+            'path' => $storedMedia['path'],
+            'path_thumb' => $storedMedia['path_thumb'],
+            'path_medium' => $storedMedia['path_medium'],
+            'alt_text' => ProductMediaSeo::productMediaAltText($product, 'screenshot', 1),
+            'type' => 'screenshot',
+        ]);
+    }
+
+    private function storeProposedScreenshotFromUrl(Product $product, string $url, ImageManager $manager): void
+    {
+        $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
+
+        if (!$downloadedPath) {
+            return;
+        }
+
+        $this->storeProposedScreenshotMedia($product, Storage::disk('public')->path($downloadedPath), $manager, true);
+        Storage::disk('public')->delete($downloadedPath);
+    }
+
+    private function storeProposedScreenshotMedia(Product $product, $file, ImageManager $manager, bool $isExternalPath = false): void
+    {
+        $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath, 'proposed-');
+
+        if (!$storedMedia) {
+            return;
+        }
+
+        $this->deleteMediaFiles(
+            $product->proposed_screenshot_path,
+            $product->proposed_screenshot_thumb_path,
+            $product->proposed_screenshot_medium_path
+        );
+
+        $product->proposed_screenshot_path = $storedMedia['path'];
+        $product->proposed_screenshot_thumb_path = $storedMedia['path_thumb'];
+        $product->proposed_screenshot_medium_path = $storedMedia['path_medium'];
+    }
+
+    private function storeScreenshotAsset(Product $product, $file, ImageManager $manager, bool $isExternalPath = false, string $filenamePrefix = ''): ?array
+    {
+        if ($isExternalPath) {
+            $absolutePath = $file;
+            $mimeType = mime_content_type($file);
+        } else {
+            $mimeType = $file->getMimeType();
+        }
+
+        if (!Str::startsWith((string) $mimeType, 'image')) {
+            return null;
+        }
+
+        $extension = $isExternalPath
+            ? strtolower(pathinfo((string) $file, PATHINFO_EXTENSION)) ?: 'png'
+            : (strtolower($file->getClientOriginalExtension()) ?: 'png');
+
+        $filename = $filenamePrefix . ProductMediaSeo::productMediaFilename($product, 'screenshot', $extension, 1);
+        $path = 'product_media/' . $filename;
+
+        if ($isExternalPath) {
+            Storage::disk('public')->put($path, file_get_contents($absolutePath));
+        } else {
+            $path = $file->storeAs('product_media', $filename, 'public');
+            $absolutePath = Storage::disk('public')->path($path);
+        }
+
+        $pathThumb = null;
+        $pathMedium = null;
+
+        try {
+            $storedFilename = basename($path);
+            $directory = dirname($path);
+
+            $imageThumb = $manager->read($absolutePath);
+            $imageThumb->scale(width: 300);
+            $pathThumb = $directory . '/thumb_' . $storedFilename;
+            Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
+
+            $imageMedium = $manager->read($absolutePath);
+            $imageMedium->scale(width: 800);
+            $pathMedium = $directory . '/medium_' . $storedFilename;
+            Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
+        } catch (\Throwable $e) {
+            \Log::warning('Image resizing skipped: ' . $e->getMessage());
+        }
+
+        return [
+            'path' => $path,
+            'path_thumb' => $pathThumb,
+            'path_medium' => $pathMedium,
+        ];
+    }
+
+    private function downloadMediaUrlToTemporaryPublicPath(string $url): ?string
+    {
+        try {
+            $appUrl = config('app.url');
+            $isLocal = str_starts_with($url, $appUrl . '/storage/')
+                || str_starts_with($url, '/storage/')
+                || str_contains($url, '/storage/screenshots/');
+
+            if ($isLocal) {
+                $storagePath = preg_replace('#^.*?/storage/#', '', $url);
+
+                if (Storage::disk('public')->exists($storagePath)) {
+                    $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
+                    $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+                    Storage::disk('public')->copy($storagePath, $path);
+
+                    return $path;
+                }
+            }
+
+            $response = Http::get($url);
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $extension = 'jpg';
+            if (str_contains($url, '.png')) {
+                $extension = 'png';
+            } elseif (str_contains($url, '.webp')) {
+                $extension = 'webp';
+            } elseif (str_contains($url, '.avif')) {
+                $extension = 'avif';
+            }
+
+            $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
+        } catch (\Throwable $e) {
+            \Log::error('Failed to process media from URL: ' . $url . ' - ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    private function deleteMediaFiles(?string ...$paths): void
+    {
+        foreach ($paths as $path) {
+            if ($path && !Str::startsWith($path, 'http')) {
+                Storage::disk('public')->delete($path);
+            }
+        }
     }
 
     private function resolveRelatedProductOverrides(?string $rawInput, ?int $excludeProductId = null): array
