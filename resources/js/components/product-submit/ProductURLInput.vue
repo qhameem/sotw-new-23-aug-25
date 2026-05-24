@@ -90,9 +90,11 @@
       </div>
       <div class="w-full bg-sky-100 rounded-full h-1.5 mb-2 overflow-hidden">
         <div
-          class="bg-sky-500 h-1.5 rounded-full will-change-[width]"
+          class="relative h-1.5 rounded-full bg-sky-500 will-change-[width] overflow-hidden transition-[width] duration-300 ease-out"
           :style="{ width: `${loadingProgress || 0}%` }"
-        ></div>
+        >
+          <div class="progress-bar-shimmer absolute inset-0 opacity-70"></div>
+        </div>
       </div>
     </div>
 
@@ -314,5 +316,26 @@ onMounted(() => {
 .dot-three {
   animation: wave 1.2s infinite;
   animation-delay: 0.4s;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.progress-bar-shimmer {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.12) 35%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0.12) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: progress-shimmer 1.6s linear infinite;
 }
 </style>

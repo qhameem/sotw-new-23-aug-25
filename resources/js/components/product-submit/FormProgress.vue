@@ -45,6 +45,7 @@ const step1Items = computed(() => [
   { label: 'Logo', complete: !!(props.logoPreview || props.form.favicon) },
   { label: 'Product image', complete: !!(props.galleryPreviews && props.galleryPreviews.some(p => !!p)) },
   { label: 'Categories', complete: !!((props.form.categories && props.form.categories.length > 0) || (props.form.categories_custom && props.form.categories_custom.length > 0)) },
+  { label: 'Use Cases', complete: !!((props.form.useCases && props.form.useCases.length > 0) || (props.form.useCases_custom && props.form.useCases_custom.length > 0)) },
   { label: 'Pricing', complete: !!(props.form.pricing && props.form.pricing.length > 0) },
 ]);
 </script>

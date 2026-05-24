@@ -8,24 +8,6 @@ const globalFormState = createProductFormState();
 // Create shared reactive objects to ensure consistency across all components
 const sharedForm = reactive({ ...globalFormState.form });
 const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
-const LOADING_PROFILES = {
-  fullAutofill: {
-    checkpoints: [
-      { elapsed: 0, progress: 5 },
-      { elapsed: 1, progress: 10 },
-      { elapsed: 4, progress: 30 },
-      { elapsed: 5, progress: 35 },
-      { elapsed: 6, progress: 40.5 },
-      { elapsed: 7, progress: 44 },
-      { elapsed: 11, progress: 58 },
-      { elapsed: 17, progress: 75.5 },
-      { elapsed: 21, progress: 89.5 },
-      { elapsed: 23, progress: 96.5 },
-      { elapsed: 25, progress: 99 },
-    ],
-  },
-  logoExtraction: null,
-};
 
 let loadingAnimationFrameId = null;
 
@@ -201,53 +183,9 @@ export function useProductForm() {
     };
   };
 
-  const getLoadingProfile = () => {
-    const sessionType = globalFormState.loadingSessionType.value;
-    return LOADING_PROFILES[sessionType] || null;
-  };
-
-  const getExpectedProgressForElapsed = (elapsedSeconds, checkpoints = []) => {
-    if (!checkpoints.length) {
-      return null;
-    }
-
-    if (elapsedSeconds <= checkpoints[0].elapsed) {
-      return checkpoints[0].progress;
-    }
-
-    for (let i = 1; i < checkpoints.length; i += 1) {
-      const previous = checkpoints[i - 1];
-      const current = checkpoints[i];
-
-      if (elapsedSeconds <= current.elapsed) {
-        const elapsedSpan = current.elapsed - previous.elapsed || 1;
-        const elapsedOffset = elapsedSeconds - previous.elapsed;
-        const ratio = elapsedOffset / elapsedSpan;
-        return previous.progress + ((current.progress - previous.progress) * ratio);
-      }
-    }
-
-    return checkpoints[checkpoints.length - 1].progress;
-  };
-
-  const getAnimatedLoadingTarget = () => {
-    const actualTarget = globalFormState.loadingTargetProgress.value || 0;
-    if (!globalFormState.isLoading.value) {
-      return actualTarget;
-    }
-
-    const profile = getLoadingProfile();
-    if (!profile || !globalFormState.loadingStartedAt.value) {
-      return actualTarget;
-    }
-
-    const elapsedSeconds = Math.max((Date.now() - globalFormState.loadingStartedAt.value) / 1000, 0);
-    const timelineProgress = getExpectedProgressForElapsed(elapsedSeconds, profile.checkpoints);
-    if (timelineProgress === null) {
-      return actualTarget;
-    }
-
-    return Math.max(actualTarget, timelineProgress);
+  const mapStreamProgressToUi = (streamProgress) => {
+    const normalizedProgress = Math.max(0, Math.min(Number(streamProgress) || 0, 100));
+    return 35 + (normalizedProgress * 0.55);
   };
 
   const stopLoadingAnimation = () => {
@@ -258,19 +196,19 @@ export function useProductForm() {
   };
 
   const tickLoadingAnimation = () => {
-    const target = getAnimatedLoadingTarget();
+    const target = globalFormState.loadingTargetProgress.value || 0;
     const current = globalFormState.loadingProgress.value || 0;
     const delta = target - current;
 
     if (Math.abs(delta) <= 0.1) {
       globalFormState.loadingProgress.value = target;
     } else {
-      const step = Math.min(Math.max(delta * 0.1, 0.18), 2.5);
+      const step = Math.min(Math.max(delta * 0.18, 0.35), 4);
       globalFormState.loadingProgress.value = Math.min(target, current + step);
     }
 
     const shouldContinue = globalFormState.isLoading.value
-      ? globalFormState.loadingProgress.value < 99.9 || globalFormState.loadingTargetProgress.value < 100
+      ? globalFormState.loadingProgress.value + 0.1 < target
       : false;
 
     if (shouldContinue) {
@@ -1187,20 +1125,24 @@ export function useProductForm() {
         tagline: taglineValue,
         fetchContent: shouldFetchContent,
         onProgress: (streamData) => {
-          if (streamData.message) {
-            globalFormState.loadingMessage.value = streamData.message;
-          }
-          if (streamData.progress) {
+          if (streamData.progress !== undefined && streamData.progress !== null) {
+            const isFinalStreamStep = Number(streamData.progress) >= 100;
             updateAutofillProgress(
-              streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...',
-              30 + (streamData.progress * 0.7)
+              isFinalStreamStep
+                ? 'Applying extracted data to the form...'
+                : (streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...'),
+              isFinalStreamStep ? 90 : mapStreamProgressToUi(streamData.progress)
             );
+          } else if (streamData.message) {
+            globalFormState.loadingMessage.value = streamData.message;
           }
         }
       });
 
       console.log('fetchRemainingData: Stream finished. Extracted data object:', data);
       console.log('fetchRemainingData: Extracted data object:', data);
+
+      updateAutofillProgress('Applying extracted data to the form...', 91);
 
       // Update form data sequentially to give visual feedback
       // 1. Content (Description & Detailed Tagline)
@@ -1226,6 +1168,7 @@ export function useProductForm() {
           form.description = data.description || form.description;
         }
         loadingStates.description = false; // Turn off immediately for visual progress
+        updateAutofillProgress('Applying extracted product copy...', 94);
         await new Promise(r => setTimeout(r, 300)); // Small delay for visual effect
       }
 
@@ -1307,10 +1250,14 @@ export function useProductForm() {
             console.log('fetchRemainingData: Auto-added suggested custom use cases:', newCustomUseCases.map(c => c.name));
           }
         }
+
+        updateAutofillProgress('Applying categories, use cases, and pricing...', 97);
       }
 
       // 3. Update screenshot if available (refresh with viewport-specific version)
       if (!contentOnly) {
+        updateAutofillProgress('Finalizing media, links, and logo suggestions...', 99);
+
         if (data.screenshot_url && !globalFormState.manualScreenshotChosen.value) {
           globalFormState.galleryPreviews.value[0] = data.screenshot_url;
         }

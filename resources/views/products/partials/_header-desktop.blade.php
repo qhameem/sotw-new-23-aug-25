@@ -94,6 +94,8 @@
                 $generalCategories = $product->categories->filter(function ($cat) {
                     return !$cat->types->contains('name', 'Pricing')
                         && !$cat->types->contains('name', 'Best for')
+                        && !$cat->types->contains('name', 'Use Case')
+                        && !$cat->types->contains('name', 'Use Cases')
                         && !$cat->types->contains('name', 'Platform');
                 });
             @endphp

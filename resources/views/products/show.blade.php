@@ -29,23 +29,38 @@
 
         $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
         $hasMediaSection = $mediaAssetCount > 0;
-        $hasPricingSection = (bool) $pricingCategory || !empty($product->pricing_page_url) || (float) ($product->price ?? 0) > 0;
         $hasResourcesSection = !empty($product->pricing_page_url) || !empty($product->x_account) || !empty($product->maker_links ?? []);
         $overviewBlocks = $descriptionContent['overview_blocks'] ?? [];
         $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
         $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
+        $quickFactUseCases = $useCaseCategories->pluck('name')->take(2)->values();
+        $quickFactPlatforms = $platformCategories->pluck('name')->take(2)->values();
+        $pricingValue = $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null);
         $quickFacts = collect([
-            ['label' => 'Use Cases', 'value' => $useCaseCategories->isNotEmpty() ? $useCaseCategories->pluck('name')->take(2)->implode(', ') : null],
-            ['label' => 'Pricing', 'value' => $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null)],
-            ['label' => 'Platforms', 'value' => $platformCategories->isNotEmpty() ? $platformCategories->pluck('name')->take(2)->implode(', ') : null],
+            [
+                'label' => 'Use Cases',
+                'items' => $quickFactUseCases->isNotEmpty() ? $quickFactUseCases->all() : ['Not listed yet'],
+                'icon' => 'spark',
+            ],
+            [
+                'label' => 'Pricing',
+                'items' => [$pricingValue ?: 'Not listed yet'],
+                'icon' => 'pricing',
+            ],
+            [
+                'label' => 'Platforms',
+                'items' => $quickFactPlatforms->isNotEmpty() ? $quickFactPlatforms->all() : ['Not listed yet'],
+                'icon' => 'platform',
+            ],
         ]);
-        $quickFacts = $quickFacts->contains(fn($item) => filled($item['value']))
-            ? $quickFacts->map(fn($item) => ['label' => $item['label'], 'value' => $item['value'] ?: 'Not listed yet'])->values()
+        $quickFacts = $quickFacts->contains(function ($item) {
+            return !empty($item['items'] ?? []);
+        })
+            ? $quickFacts->values()
             : collect();
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
             ($hasEditorialSections || filled($detailDescriptionHtml)) ? ['id' => 'details', 'label' => 'Details'] : null,
-            $hasPricingSection ? ['id' => 'pricing', 'label' => 'Pricing'] : null,
             $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
             $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
             !empty($productEditorial['faq']) ? ['id' => 'faq', 'label' => 'FAQ'] : null,
@@ -102,12 +117,43 @@
                 </div>
 
                 @if($quickFacts->isNotEmpty())
-                    <div class="mt-8 overflow-hidden rounded-2xl">
-                        <dl class="grid divide-y divide-gray-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
+                    <div class="mt-8">
+                        <dl class="grid gap-4 lg:grid-cols-3">
                             @foreach($quickFacts as $fact)
-                                <div class="px-4 py-4 sm:px-5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $fact['label'] }}</dt>
-                                    <dd class="mt-1 text-sm font-medium text-gray-800">{{ $fact['value'] }}</dd>
+                                <div class="min-w-0 rounded-lg border border-gray-200 px-5 py-5 sm:px-6">
+                                    <dt class="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
+                                        @if($fact['icon'] === 'spark')
+                                            <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <path d="M10 2.75v4.5M10 12.75v4.5M2.75 10h4.5M12.75 10h4.5M4.9 4.9l3.18 3.18M11.92 11.92l3.18 3.18M15.1 4.9l-3.18 3.18M8.08 11.92L4.9 15.1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                        @elseif($fact['icon'] === 'pricing')
+                                            <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <path d="M10 2.75v14.5M13.75 5.5H8.875a2.375 2.375 0 1 0 0 4.75h2.25a2.375 2.375 0 1 1 0 4.75H5.75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                        @else
+                                            @php
+                                                $platformName = Str::lower((string) (($fact['items'][0] ?? null) ?: ''));
+                                            @endphp
+                                            @if(in_array($platformName, ['macos', 'mac', 'mac app'], true))
+                                                <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                    <path d="M16.37 12.47c.02 2.44 2.14 3.25 2.16 3.26-.02.06-.34 1.17-1.12 2.32-.68.99-1.38 1.98-2.49 2-.99.02-1.31-.58-2.44-.58-1.13 0-1.48.56-2.42.6-1 .04-1.77-1-2.45-1.98-1.39-2.01-2.46-5.69-1.03-8.18.71-1.23 1.97-2.02 3.34-2.04.98-.02 1.9.66 2.44.66.54 0 1.72-.82 2.9-.7.49.02 1.86.2 2.74 1.49-.07.04-1.64.96-1.63 2.85Zm-2.05-8.07c.57-.69.95-1.64.84-2.59-.82.03-1.82.54-2.41 1.23-.53.61-.99 1.58-.86 2.51.91.07 1.85-.47 2.43-1.15Z" />
+                                                </svg>
+                                            @else
+                                                <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                    <path d="M3.75 4.75A1.75 1.75 0 0 1 5.5 3h9A1.75 1.75 0 0 1 16.25 4.75v5.5A1.75 1.75 0 0 1 14.5 12h-9a1.75 1.75 0 0 1-1.75-1.75v-5.5ZM7.5 15.5h5M8.5 12v3.5M11.5 12v3.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                            @endif
+                                        @endif
+                                        <span>{{ $fact['label'] }}</span>
+                                    </dt>
+
+                                    <dd class="mt-5 flex flex-wrap gap-2">
+                                        @foreach($fact['items'] as $item)
+                                            <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-1 text-xs font-medium leading-none text-gray-500">
+                                                {{ $item }}
+                                            </span>
+                                        @endforeach
+                                    </dd>
                                 </div>
                             @endforeach
                         </dl>
@@ -295,53 +341,6 @@
                         @endif
                     @endif
                 </section>
-
-                @if($hasPricingSection)
-                    <section id="pricing" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Pricing</h2>
-                            <p class="mt-1 text-sm text-gray-500">The current pricing posture and the most useful pricing-related link we have for this product.</p>
-                        </div>
-
-                        <div class="mt-6 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
-                            <div class="grid divide-y divide-gray-200 md:grid-cols-3 md:divide-x md:divide-y-0">
-                                <article class="px-5 py-5">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Pricing Model</p>
-                                    <p class="mt-2 text-base font-semibold text-gray-900">
-                                        {{ $pricingCategory?->name ?: 'Not listed yet' }}
-                                    </p>
-                                </article>
-
-                                <article class="px-5 py-5">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Listed Price</p>
-                                    <p class="mt-2 text-base font-semibold text-gray-900">
-                                        @if((float) ($product->price ?? 0) > 0)
-                                            {{ $product->currency ?: 'USD' }} {{ number_format((float) $product->price, 2) }}
-                                        @else
-                                            Not listed yet
-                                        @endif
-                                    </p>
-                                </article>
-
-                                <article class="px-5 py-5">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Pricing Page</p>
-                                    @if($product->pricing_page_url)
-                                        <a href="{{ $product->pricing_page_url }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($product->pricing_page_url, 'pricing_page') }}"
-                                            class="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:underline">
-                                            <span>View Pricing</span>
-                                            <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                            </svg>
-                                        </a>
-                                    @else
-                                        <p class="mt-2 text-base font-semibold text-gray-900">Not listed yet</p>
-                                    @endif
-                                </article>
-                            </div>
-                        </div>
-                    </section>
-                @endif
 
                 @if($alternativeProducts->isNotEmpty())
                     <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">

@@ -508,7 +508,7 @@ class ProductApprovalController extends Controller
             return;
         }
 
-        if (in_array($submission->type, ['category', 'best_for', 'platform'], true)) {
+        if (in_array($submission->type, ['category', 'use_case', 'best_for', 'platform'], true)) {
             $category = \App\Models\Category::firstOrCreate(
                 ['name' => $submission->name],
                 [
@@ -521,14 +521,15 @@ class ProductApprovalController extends Controller
             $product->categories()->syncWithoutDetaching([$category->id]);
 
             $typeNames = match ($submission->type) {
+                'use_case' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE),
                 'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
                 'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
                 default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),
             };
 
-            $type = \App\Models\Type::whereIn('name', $typeNames)->first();
-            if ($type) {
-                $category->types()->syncWithoutDetaching([$type->id]);
+            $typeIds = \App\Models\Type::whereIn('name', $typeNames)->pluck('id');
+            if ($typeIds->isNotEmpty()) {
+                $category->types()->syncWithoutDetaching($typeIds->all());
             }
         } elseif ($submission->type === 'tech_stack') {
             $techStack = \App\Models\TechStack::firstOrCreate(
