@@ -106,11 +106,12 @@
                                                                                             window.location.reload();
                                                                                             }
                                                                                             });
-                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             }
                                                                                         @endif
         }">
         <div class="overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm">
             <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
+                <h1 class="sr-only">{{ $product->name }}</h1>
                 <div class="md:hidden">
                     @include('products.partials._header-mobile')
                 </div>

@@ -41,9 +41,9 @@
     @endif
 
     <div class="ml-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-        <h1 class="site-heading-text text-xl font-bold text-gray-900">
+        <div class="site-heading-text text-xl font-bold text-gray-900">
             {{ $product->name }}
-        </h1>
+        </div>
 
         @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
             <a href="{{ route('admin.products.edit', $product) }}"
