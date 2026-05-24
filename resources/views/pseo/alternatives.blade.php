@@ -130,7 +130,7 @@
                 <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="h-14 w-14 flex-shrink-0 rounded-xl border border-gray-100 object-cover">
                 <div class="min-w-0">
                     <p class="mb-0.5 text-xs font-semibold uppercase tracking-wide text-gray-400">You are comparing alternatives to</p>
-                    <a href="{{ route('products.show', $product->slug) }}" class="text-lg font-bold text-gray-900 hover:text-primary-600">{{ $product->name }}</a>
+                    <a href="{{ route('products.show', $product->slug) }}" wire:navigate.hover class="text-lg font-bold text-gray-900 hover:text-primary-600">{{ $product->name }}</a>
                     <p class="mt-1 text-sm text-gray-500">{{ $product->tagline }}</p>
                     @if($productSummary !== '')
                         <p class="mt-2 max-w-3xl text-sm text-gray-600">{{ \Illuminate\Support\Str::limit($productSummary, 200) }}</p>
@@ -159,7 +159,7 @@
                 <p class="mt-2 text-sm leading-6 text-blue-900">
                     The best {{ $product->name }} alternatives on this page start with
                     @foreach($alternatives->take(3) as $alt)
-                        <a href="{{ route('products.show', ['product' => $alt->slug]) }}" class="font-semibold text-blue-900 underline decoration-blue-300 underline-offset-2">{{ $alt->name }}</a>@if(!$loop->last), @endif
+                        <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="font-semibold text-blue-900 underline decoration-blue-300 underline-offset-2">{{ $alt->name }}</a>@if(!$loop->last), @endif
                     @endforeach.
                     Compare them side by side below to find the best fit for your audience, pricing needs, and workflow.
                 </p>
@@ -227,7 +227,7 @@
                                         <div class="flex items-start gap-3">
                                             <img src="{{ $alt->logo_url }}" alt="{{ $alt->name }}" class="h-10 w-10 rounded-lg border border-gray-100 object-cover">
                                             <div>
-                                                <a href="{{ route('products.show', ['product' => $alt->slug]) }}" class="text-sm font-semibold text-gray-900 hover:text-primary-600">{{ $alt->name }}</a>
+                                                <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="text-sm font-semibold text-gray-900 hover:text-primary-600">{{ $alt->name }}</a>
                                                 <p class="mt-1 text-xs text-gray-500">{{ \Illuminate\Support\Str::limit($alt->tagline, 80) }}</p>
                                             </div>
                                         </div>
@@ -264,7 +264,7 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                         <div class="min-w-0">
-                                            <a href="{{ route('products.show', ['product' => $alt->slug]) }}" class="text-base font-semibold text-gray-900 hover:text-primary-600">
+                                            <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="text-base font-semibold text-gray-900 hover:text-primary-600">
                                                 {{ $alt->name }}
                                             </a>
                                             <p class="mt-0.5 text-sm text-gray-500">{{ $alt->tagline }}</p>
@@ -333,7 +333,7 @@
                                     @endif
 
                                     <div class="mt-3 flex flex-wrap gap-4 text-xs font-medium">
-                                        <a href="{{ route('products.show', ['product' => $alt->slug]) }}" class="text-primary-600 hover:underline">
+                                        <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="text-primary-600 hover:underline">
                                             View {{ $alt->name }}
                                         </a>
                                         <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $alt->slug]) }}" class="text-primary-600 hover:underline">
@@ -383,7 +383,7 @@
             <p class="text-xs leading-5 text-gray-500">
                 {{ \Illuminate\Support\Str::limit(strip_tags((string) ($product->product_page_tagline ?: $product->tagline ?: $product->description)), 140) }}
             </p>
-            <a href="{{ route('products.show', ['product' => $product->slug]) }}" class="mt-3 block text-xs text-primary-600 hover:underline">
+            <a href="{{ route('products.show', ['product' => $product->slug]) }}" wire:navigate.hover class="mt-3 block text-xs text-primary-600 hover:underline">
                 View {{ $product->name }} &rarr;
             </a>
         </div>

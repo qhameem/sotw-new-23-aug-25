@@ -18,6 +18,7 @@
             // $loopIndex is now 1-based for ad logic, based on visible product sequence
             $loopIndex = $loop->iteration;
             $productLogo = ProductLogo::url($product);
+            $productShowUrl = route('products.show', $product->slug);
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $itemNumber = null;
             if (!$isPromoted) {
@@ -41,9 +42,11 @@
             data-impression-surface="{{ $impressionSurface }}"
             itemscope itemtype="https://schema.org/SoftwareApplication" x-data="{}" @if($isPromoted)
                 @click="window.open('{{ route('products.click', ['product' => $product->slug, 'surface' => 'promoted_listing_card']) }}', '_blank')"
-            @else @click="window.location.href = '{{ route('products.show', $product->slug) }}'" @endif>
-            <meta itemprop="url" content="{{ route('products.show', $product->slug) }}" />
-            <a href="{{ route('products.show', $product->slug) }}" @click.stop class="flex-shrink-0">
+            @else
+                @click="const link = $el.querySelector('[data-product-detail-link]'); if (link) { link.click(); }"
+            @endif>
+            <meta itemprop="url" content="{{ $productShowUrl }}" />
+            <a href="{{ $productShowUrl }}" wire:navigate.hover data-product-detail-link @click.stop class="flex-shrink-0">
                 @if($productLogo)
                     <img src="{{ $productLogo }}" alt="{{ $product->name }} logo"
                         class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
@@ -61,7 +64,7 @@
             </a>
             <div class="flex-1">
                 <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">
-                    <a href="{{ route('products.show', $product->slug) }}" @click.stop
+                    <a href="{{ $productShowUrl }}" wire:navigate.hover @click.stop
                         class="site-heading-text text-left hover:underline flex items-center gap-1">
                         @if(!$isPromoted && $itemNumber)
                             <span class="site-heading-text text-left text-base font-semibold text-black">{{ $itemNumber }}.</span>
@@ -81,7 +84,7 @@
                         </a>
                     @endif
                 </h2>
-                <a href="{{ route('products.show', $product->slug) }}" @click.stop class="block">
+                <a href="{{ $productShowUrl }}" wire:navigate.hover @click.stop class="block">
                     <p class="site-body-text text-base mb-0 line-clamp-2" itemprop="description">
                         {{ $product->tagline }}
                     </p>

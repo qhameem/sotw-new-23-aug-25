@@ -1,4 +1,6 @@
-<x-top-bar />
+@persist('site-top-bar')
+    <x-top-bar />
+@endpersist
 
 <div @class(['flex flex-col min-h-0', 'md:h-screen' => $lockHeight])>
 
@@ -86,9 +88,11 @@
     </div>
 
     <!-- Footer Container (Outside Body) -->
-    <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
-        <x-footer />
-        <!-- Mobile navigation -->
-        @include('partials._mobile-footer-menu')
-    </div>
+    @persist('site-footer')
+        <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
+            <x-footer />
+            <!-- Mobile navigation -->
+            @include('partials._mobile-footer-menu')
+        </div>
+    @endpersist
 </div>

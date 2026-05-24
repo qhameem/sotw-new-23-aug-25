@@ -18,7 +18,7 @@
     data-track-impression="true"
     data-impression-surface="{{ $impressionSurface }}">
     <div class="flex items-center gap-3 flex-1">
-        <a href="{{ route('products.show', $product->slug) }}" class="flex items-start md:items-center gap-2">
+        <a href="{{ route('products.show', $product->slug) }}" wire:navigate.hover class="flex items-start md:items-center gap-2">
             @if($logo)
                 <img src="{{ $logo }}" alt="{{ $product->name }} logo"
                     class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"

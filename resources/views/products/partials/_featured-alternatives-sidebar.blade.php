@@ -13,7 +13,7 @@
                     $alternativeLogo = ProductLogo::url($alternative);
                 @endphp
 
-                <a href="{{ route('products.show', ['product' => $alternative->slug]) }}"
+                <a href="{{ route('products.show', ['product' => $alternative->slug]) }}" wire:navigate.hover
                     class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 hover:text-primary-600">
                     <div class="flex min-w-0 items-center gap-3">
                         @if($alternativeLogo)

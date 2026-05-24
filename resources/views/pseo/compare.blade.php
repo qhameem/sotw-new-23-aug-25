@@ -76,7 +76,7 @@
                     <div class="flex items-center gap-3 mb-4">
                         <img src="{{ $p->logo_url }}" alt="{{ $p->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
                         <div>
-                            <a href="{{ route('products.show', $p->slug) }}" class="text-lg font-bold text-gray-900 hover:text-primary-600">
+                            <a href="{{ route('products.show', $p->slug) }}" wire:navigate.hover class="text-lg font-bold text-gray-900 hover:text-primary-600">
                                 {{ $p->name }}
                             </a>
                             <p class="text-sm text-gray-500">{{ $p->tagline }}</p>
@@ -132,7 +132,7 @@
                     </div>
 
                     <div class="mt-4 flex gap-2">
-                        <a href="{{ route('products.show', $p->slug) }}" class="flex-1 text-center text-xs font-medium text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity" style="background-color: var(--color-primary-500, #6366f1);">
+                        <a href="{{ route('products.show', $p->slug) }}" wire:navigate.hover class="flex-1 text-center text-xs font-medium text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity" style="background-color: var(--color-primary-500, #6366f1);">
                             View {{ $p->name }}
                         </a>
                         <a href="{{ route('pseo.alternatives', $p->slug) }}" class="flex-1 text-center text-xs font-medium border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">

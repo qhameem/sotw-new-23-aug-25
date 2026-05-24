@@ -15,7 +15,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Product</p>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
                     <p class="text-sm text-gray-600 mt-1">{{ $product->tagline }}</p>
-                    <a href="{{ route('products.show', $product) }}" class="text-sm text-primary-600 hover:underline mt-2 inline-block">
+                    <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="text-sm text-primary-600 hover:underline mt-2 inline-block">
                         View product page
                     </a>
                 </div>
@@ -120,7 +120,7 @@
                         <button type="submit" class="inline-flex items-center rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black">
                             Submit claim
                         </button>
-                        <a href="{{ route('products.show', $product) }}" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+                        <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="text-sm font-medium text-gray-600 hover:text-gray-900">
                             Back to product
                         </a>
                     </div>

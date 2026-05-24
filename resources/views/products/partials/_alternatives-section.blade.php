@@ -17,7 +17,7 @@
                     @endif
 
                     <div class="min-w-0">
-                        <a href="{{ route('products.show', ['product' => $alternative->slug]) }}"
+                        <a href="{{ route('products.show', ['product' => $alternative->slug]) }}" wire:navigate.hover
                             class="text-base font-semibold text-gray-900 hover:text-primary-600">
                             {{ $alternative->name }}
                         </a>
@@ -63,7 +63,7 @@
                 @endif
 
                 <div class="mt-5 flex gap-2">
-                    <a href="{{ route('products.show', ['product' => $alternative->slug]) }}"
+                    <a href="{{ route('products.show', ['product' => $alternative->slug]) }}" wire:navigate.hover
                         class="inline-flex flex-1 items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
                         View Product
                     </a>

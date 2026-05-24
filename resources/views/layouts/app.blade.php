@@ -417,6 +417,7 @@
     @include('partials.theme.favicon-links')
 
     @vite(['resources/css/public.css', 'resources/js/app.js'])
+    @livewireStyles
 
     @stack('styles')
     <!-- Schema markup -->
@@ -523,6 +524,7 @@
     </div>
     @include('partials._global-search-modal')
 
+    @livewireScripts
     @stack('scripts')
     @stack('form-scripts')
 

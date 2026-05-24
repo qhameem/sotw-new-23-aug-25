@@ -242,6 +242,10 @@ function isPrefetchableProductLink(anchor) {
         return false;
     }
 
+    if (anchor.hasAttribute('wire:navigate') || anchor.hasAttribute('wire:navigate.hover')) {
+        return false;
+    }
+
     const url = new URL(anchor.href, window.location.origin);
 
     return url.origin === window.location.origin
@@ -262,22 +266,6 @@ function warmProductPageNavigation() {
     document.addEventListener('mouseover', handleIntent, { passive: true });
     document.addEventListener('focusin', handleIntent);
     document.addEventListener('touchstart', handleIntent, { passive: true });
-
-    const scheduleIdle = 'requestIdleCallback' in window
-        ? window.requestIdleCallback.bind(window)
-        : (callback) => window.setTimeout(callback, 400);
-
-    scheduleIdle(() => {
-        document.querySelectorAll('a[href]').forEach((anchor) => {
-            if (prefetchedProductUrls.size >= 6) {
-                return;
-            }
-
-            if (isPrefetchableProductLink(anchor)) {
-                prefetchProductPage(anchor.href);
-            }
-        });
-    });
 }
 
 warmProductPageNavigation();
@@ -430,6 +418,11 @@ function trackProductDetailView() {
     document.addEventListener('visibilitychange', handleVisibility);
 }
 
+function bootstrapNavigatedPage() {
+    trackVisibleProductCards();
+    trackProductDetailView();
+}
+
 // Mount mobile user dropdown
 if (document.getElementById('mobile-user-dropdown-app')) {
     const el = document.getElementById('mobile-user-dropdown-app');
@@ -485,8 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     console.log('[app.js] DOMContentLoaded: Flowbite, Alpine initialized. Main script logic follows.');
-    trackVisibleProductCards();
-    trackProductDetailView();
+    bootstrapNavigatedPage();
 
     // Inline loader logic for "Add your product" buttons (only run if buttons exist)
     const addProductButtons = [
@@ -569,4 +561,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[app.js] Inline button loader setup complete.');
 
 
+});
+
+document.addEventListener('livewire:navigated', () => {
+    bootstrapNavigatedPage();
 });

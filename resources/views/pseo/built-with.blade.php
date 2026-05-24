@@ -47,7 +47,7 @@
                             <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="w-12 h-12 rounded-xl object-cover border border-gray-100">
                         </div>
                         <div class="flex-1 min-w-0">
-                            <a href="{{ route('products.show', $product->slug) }}" class="text-base font-semibold text-gray-900 hover:text-primary-600">
+                            <a href="{{ route('products.show', $product->slug) }}" wire:navigate.hover class="text-base font-semibold text-gray-900 hover:text-primary-600">
                                 {{ $product->name }}
                             </a>
                             <p class="text-sm text-gray-500 mt-0.5">{{ $product->tagline }}</p>
