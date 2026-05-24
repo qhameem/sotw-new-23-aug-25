@@ -430,8 +430,8 @@
         <x-top-bar />
 
         <!-- Mobile Header (visible only on mobile) -->
-        <div data-modal-scroll-lock-fixed class="md:hidden fixed top-0 w-full z-50 bg-white h-[75px] border-b border-gray-200 flex-shrink-0">
-            <div class="h-full px-4 flex items-center justify-between">
+        <div data-modal-scroll-lock-fixed class="md:hidden fixed top-0 w-full z-50 bg-white border-b border-gray-200 flex-shrink-0">
+            <div class="h-[75px] px-4 flex items-center justify-between">
                 <a href="{{ route('home') }}">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                 </a>
@@ -473,8 +473,6 @@
             </main>
         </div>
         <x-footer />
-        <!-- Mobile navigation -->
-        @include('partials._mobile-footer-menu')
     </div>
 
     <div x-show="searchModalOpen && searchModalLoading && !searchModalLoaded" x-cloak

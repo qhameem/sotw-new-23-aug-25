@@ -11,6 +11,8 @@
     href="{{ $targetUrl }}"
     x-data="{ loading: false }"
     x-bind:aria-busy="loading"
+    aria-label="{{ $compact ? 'Submit product' : 'Go to submit product page' }}"
+    title="{{ $compact ? 'Submit product' : 'Submit product' }}"
     @click.prevent="
         if (@js($isGuest)) {
             $dispatch('open-modal', { name: 'login-required-modal', url: @js($targetUrl) });
@@ -21,9 +23,9 @@
         window.location.href = @js($targetUrl);
     "
     {{ $attributes->class([
-        'relative inline-flex min-h-8 items-center justify-center gap-2 rounded-md bg-primary-500 px-3 py-1 text-white transition duration-300 hover:bg-primary-600',
-        'text-sm font-semibold' => $compact,
-        'text-sm font-semibold' => !$compact,
+        'relative inline-flex items-center justify-center bg-primary-500 text-white transition duration-300 hover:bg-primary-600',
+        'h-9 w-9 rounded-full text-sm font-semibold' => $compact,
+        'min-h-8 gap-2 rounded-md px-3 py-1 text-sm font-semibold' => !$compact,
     ]) }}
 >
     <span
@@ -31,7 +33,9 @@
         :class="loading ? 'opacity-0' : 'opacity-100'"
     >
         @if ($compact)
-            <span>Submit</span>
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M10 4.16666V15.8333M4.16666 10H15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
         @else
             <span class="hidden lg:inline-flex items-center gap-1.5">
                 <svg class="h-5 w-5 shrink-0 fill-gray-700" viewBox="0 -0.5 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

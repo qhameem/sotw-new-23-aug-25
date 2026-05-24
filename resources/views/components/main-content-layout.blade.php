@@ -91,8 +91,6 @@
     @persist('site-footer')
         <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
             <x-footer />
-            <!-- Mobile navigation -->
-            @include('partials._mobile-footer-menu')
         </div>
     @endpersist
 </div>
