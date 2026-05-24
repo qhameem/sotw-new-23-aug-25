@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{
         searchModalOpen: false,
-        searchModalLoaded: false,
+        searchModalLoaded: true,
         searchModalLoading: false,
         searchModalError: '',
         open: false, // For mobile navigation
@@ -42,36 +42,13 @@
             this.searchResults = { products: [], categories: [] };
             this.searchLoading = false;
         },
-        loadSearchModalContent: async function() {
-            if (this.searchModalLoaded || this.searchModalLoading) {
-                return;
-            }
-
-            this.searchModalLoading = true;
+        loadSearchModalContent() {
             this.searchModalError = '';
+            this.searchModalLoaded = true;
 
-            try {
-                const response = await fetch('{{ route('search.modal-content') }}', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load search modal.');
-                }
-
-                this.$refs.searchModalContent.innerHTML = await response.text();
-                window.Alpine?.initTree(this.$refs.searchModalContent);
-                this.searchModalLoaded = true;
-
-                this.$nextTick(() => {
-                    document.getElementById('globalSearchInput')?.focus();
-                });
-            } catch (error) {
-                console.error('Search modal loading error:', error);
-                this.searchModalError = 'Unable to load search right now.';
-            } finally {
-                this.searchModalLoading = false;
-            }
+            this.$nextTick(() => {
+                document.getElementById('globalSearchInput')?.focus();
+            });
         },
         openSearchModal() {
             this.resetSearchState();
@@ -544,7 +521,7 @@
             </div>
         </div>
     </div>
-    <div x-ref="searchModalContent"></div>
+    @include('partials._global-search-modal')
 
     @stack('scripts')
     @stack('form-scripts')
@@ -568,7 +545,7 @@
                         this.loading = true;
 
                         try {
-                            const response = await fetch('{{ route('auth.login-modal-content') }}', {
+                            const response = await fetch('{{ route('auth.login-modal-content', absolute: false) }}', {
                                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                             });
 
