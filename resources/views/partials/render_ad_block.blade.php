@@ -1,5 +1,5 @@
 @if(isset($ad) && $ad)
-    <div class="my-4 p-4 bg-stone-100 rounded-lg ad-listing-item border-l-4 transition-colors hover:bg-stone-200/70" style="border-left-color: var(--color-primary-500);"> {{-- Removed shadow-md --}}
+    <div class="ad-listing-item {{ $outerClass ?? 'mb-4 mt-2' }} rounded-lg border border-gray-200 border-l-4 bg-white p-4 transition-colors hover:bg-gray-50" style="border-left-color: var(--color-primary-500);">
         {{-- You can add a small "Advertisement" label if desired --}}
         {{-- <span class="text-xs text-gray-400  block mb-2 text-right">Advertisement</span> --}}
         @if($ad->type === 'image_banner')

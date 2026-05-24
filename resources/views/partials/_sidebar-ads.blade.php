@@ -46,20 +46,20 @@
 
 @if($sidebarTopAds->isNotEmpty() || $sponsors->isNotEmpty())
     <div class="pb-0">
-        <h3 class="text-base font-semibold text-gray-800">Featured</h3>
+        <h3 class="text-base font-semibold text-gray-800">Partners</h3>
     </div>
 @endif
 
 @if($sidebarTopAds->isNotEmpty())
-    <div class="space-y-4 pt-0">
+    <div class="mt-3 space-y-4">
         @foreach($sidebarTopAds as $sidebarTopAd)
-            @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top'])
+            @include('partials.render_ad_block', ['ad' => $sidebarTopAd, 'zoneSlug' => 'sidebar-top', 'outerClass' => 'my-0'])
         @endforeach
     </div>
 @endif
 
 @if($sponsors->isNotEmpty())
-    <div class="p-4 rounded-xl border-l-4 bg-stone-100 transition-colors hover:bg-stone-200/70" style="border-left-color: var(--color-primary-500);">
+    <div class="mt-3 rounded-xl border border-gray-200 border-l-4 bg-white p-4 transition-colors hover:bg-gray-50" style="border-left-color: var(--color-primary-500);">
         <ul class="space-y-4">
             @foreach($sponsors as $sponsor)
                 <li>

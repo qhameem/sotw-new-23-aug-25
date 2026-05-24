@@ -64,7 +64,6 @@
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
             ($hasEditorialSections || filled($detailDescriptionHtml)) ? ['id' => 'details', 'label' => 'Details'] : null,
-            $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
             $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
             !empty($productEditorial['faq']) ? ['id' => 'faq', 'label' => 'FAQ'] : null,
         ]));
@@ -120,17 +119,17 @@
                 </div>
 
                 @if($quickFacts->isNotEmpty())
-                    <div class="mt-8">
+                    <div class="mt-8 py-2">
                         <dl class="grid gap-4 lg:grid-cols-3">
                             @foreach($quickFacts as $fact)
-                                <div class="min-w-0 rounded-lg border border-gray-200 px-4 py-4 sm:px-5">
+                                <div class="min-w-0 rounded-lg px-4 py-3 sm:px-5">
                                     <dt class="flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
                                         @if($fact['icon'] === 'spark')
-                                            <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                            <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                 <path d="M10 2.75v4.5M10 12.75v4.5M2.75 10h4.5M12.75 10h4.5M4.9 4.9l3.18 3.18M11.92 11.92l3.18 3.18M15.1 4.9l-3.18 3.18M8.08 11.92L4.9 15.1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                             </svg>
                                         @elseif($fact['icon'] === 'pricing')
-                                            <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                            <svg class="h-5 w-5 text-emerald-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                 <path d="M10 2.75v14.5M13.75 5.5H8.875a2.375 2.375 0 1 0 0 4.75h2.25a2.375 2.375 0 1 1 0 4.75H5.75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                             </svg>
                                         @else
@@ -138,11 +137,11 @@
                                                 $platformName = Str::lower((string) (($fact['items'][0] ?? null) ?: ''));
                                             @endphp
                                             @if(in_array($platformName, ['macos', 'mac', 'mac app'], true))
-                                                <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <svg class="h-5 w-5 text-sky-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                     <path d="M16.37 12.47c.02 2.44 2.14 3.25 2.16 3.26-.02.06-.34 1.17-1.12 2.32-.68.99-1.38 1.98-2.49 2-.99.02-1.31-.58-2.44-.58-1.13 0-1.48.56-2.42.6-1 .04-1.77-1-2.45-1.98-1.39-2.01-2.46-5.69-1.03-8.18.71-1.23 1.97-2.02 3.34-2.04.98-.02 1.9.66 2.44.66.54 0 1.72-.82 2.9-.7.49.02 1.86.2 2.74 1.49-.07.04-1.64.96-1.63 2.85Zm-2.05-8.07c.57-.69.95-1.64.84-2.59-.82.03-1.82.54-2.41 1.23-.53.61-.99 1.58-.86 2.51.91.07 1.85-.47 2.43-1.15Z" />
                                                 </svg>
                                             @else
-                                                <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <svg class="h-5 w-5 text-sky-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                     <path d="M3.75 4.75A1.75 1.75 0 0 1 5.5 3h9A1.75 1.75 0 0 1 16.25 4.75v5.5A1.75 1.75 0 0 1 14.5 12h-9a1.75 1.75 0 0 1-1.75-1.75v-5.5ZM7.5 15.5h5M8.5 12v3.5M11.5 12v3.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                                 </svg>
                                             @endif
@@ -356,7 +355,7 @@
                 </section>
 
                 @if($alternativeProducts->isNotEmpty())
-                    <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
+                    <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8 md:hidden">
                         <div class="flex items-end justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-semibold text-gray-900">Alternatives</h2>
@@ -436,9 +435,14 @@
 @section('right_sidebar_content')
     <div class="hidden md:block space-y-6 md:pt-16">
         @include('partials._sidebar-ads')
+        @include('products.partials._featured-alternatives-sidebar', ['alternativeProducts' => $alternativeProducts])
         @include('products.partials._sidebar-info')
     </div>
 @endsection
+
+@if($product->user->hasRole('admin') && !(Auth::check() && Auth::user()->hasRole('admin')))
+    @include('products.partials._admin-product-claim-modal', ['product' => $product])
+@endif
 
 <template class="delayed-body-snippet">
     <script src="https://app.tinyadz.com/scripts/v1.0/ads.js" data-site-id="689a2b0d06e074933a271e16" async></script>

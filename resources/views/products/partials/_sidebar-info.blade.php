@@ -1,6 +1,8 @@
 @php
     $sidebarSnippets = \App\Models\CodeSnippet::where('location', 'sidebar')->get();
     $page = \Illuminate\Support\Facades\Route::currentRouteName();
+    $isAdminSubmittedProduct = $product->user->hasRole('admin');
+    $showAdminClaimPrompt = $isAdminSubmittedProduct && !(Auth::check() && Auth::user()->hasRole('admin'));
 @endphp
 <div class="space-y-6">
     <div class="sidebar-snippets-container w-full overflow-x-auto">
@@ -10,13 +12,9 @@
             @endif
         @endforeach
     </div>
-    <div>
-        <h3 class="text-xs text-gray-500 mb-2">Submitted by</h3>
-        @if($product->user->hasRole('admin'))
-            <div class="site-body-text text-gray-800 text-sm font-medium">
-                Software on the Web team
-            </div>
-        @else
+    @unless($isAdminSubmittedProduct)
+        <div>
+            <h3 class="text-xs text-gray-500 mb-2">Submitted by</h3>
             <div class="flex items-center gap-2">
                 <img src="{{ $product->user->avatar() }}" alt="{{ $product->user->name }}"
                     class="size-6 rounded-full border border-gray-100">
@@ -24,8 +22,8 @@
                     {{ $product->user->name }}
                 </div>
             </div>
-        @endif
-    </div>
+        </div>
+    @endunless
 
     @if(($idealForItems ?? collect())->isNotEmpty())
         <div>
@@ -40,7 +38,19 @@
         </div>
     @endif
 
-    @if(($canClaimProduct ?? false) && Auth::check())
+    @if($showAdminClaimPrompt)
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <h3 class="text-xs text-gray-500 mb-2">Ownership</h3>
+            <p class="text-sm text-gray-700">
+                If this is your product, contact us and we can help transfer it to you.
+            </p>
+            <button type="button"
+                @click="$dispatch('open-modal', { name: 'admin-product-claim-modal' })"
+                class="mt-2 inline-flex items-center text-sm font-medium text-primary-600 hover:underline">
+                Claim this product
+            </button>
+        </div>
+    @elseif(($canClaimProduct ?? false) && Auth::check())
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <h3 class="text-xs text-gray-500 mb-2">Ownership</h3>
 
