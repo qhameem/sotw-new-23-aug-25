@@ -19,14 +19,14 @@
 <div class="p-4">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-sm font-semibold text-gray-800">Top Categories</h3>
-        <a href="{{ route('categories.index') }}" class="text-xs text-gray-600 hover:text-gray-900 hover:underline">
+        <a href="{{ route('categories.index') }}" wire:navigate.hover class="text-xs text-gray-600 hover:text-gray-900 hover:underline">
             View all
         </a>
     </div>
     <ul class="space-y-2">
         @forelse($topCategories as $category)
             <li>
-                <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
                     class="flex justify-between items-center text-xs text-gray-700 hover:underline">
                     <span>{{ $category->name }}</span>
                     <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">

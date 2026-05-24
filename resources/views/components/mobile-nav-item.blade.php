@@ -16,6 +16,7 @@
 
 <a
     href="{{ $href }}"
+    wire:navigate.hover
     @class([
         'group flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-colors',
         'text-primary-600' => $isActive,

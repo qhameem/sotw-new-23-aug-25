@@ -32,7 +32,7 @@
     <div class="flex justify-between items-center {{ $padding }} py-[0.78rem]">
         <div>
             <div class="flex items-center">
-                <a href="{{ route('home') }}">
+                <a href="{{ route('home') }}" wire:navigate.hover>
                     <img src="{{ $mobileFaviconUrl }}" alt="{{ config('theme.logo_alt_text', config('app.name', 'Logo')) }}"
                         class="mobile-favicon mr-2 w-10 h-10 md:hidden object-contain">
                 </a>

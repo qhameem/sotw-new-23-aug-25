@@ -59,7 +59,7 @@
                 </button>
                 <div class="flex-1 flex overflow-x-auto scrollbar-hide mx-4" x-ref="container">
                     @foreach(($weekNavigationItems ?? []) as $weekItem)
-                        <a href="{{ $weekItem['url'] }}"
+                        <a href="{{ $weekItem['url'] }}" wire:navigate.hover
                            id="week-{{ $weekItem['year'] }}-{{ $weekItem['week'] }}"
                            @class([
                                'flex-shrink-0 w-[25%] md:w-[14.2857%] py-1 rounded text-center',

@@ -21,7 +21,7 @@
     <ul class="space-y-2 max-h-64 overflow-y-auto">
         @forelse($pricingCategories as $category)
             <li>
-                <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
                     class="flex justify-between items-center text-xs text-gray-700 hover:underline">
                     <span>{{ $category->name }}</span>
                     <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">

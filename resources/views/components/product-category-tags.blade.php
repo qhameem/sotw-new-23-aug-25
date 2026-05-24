@@ -25,7 +25,7 @@
         });
     @endphp
     @forelse($generalCategories as $category)
-        <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+        <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
            @click.stop
            class="@if($hideOnMobile) hidden sm:inline-flex @else inline-flex @endif items-center rounded text-gray-600 hover:text-gray-800 {{ $sizeClasses }}">
             <span class="hover:underline">{{ $category->name }}</span>

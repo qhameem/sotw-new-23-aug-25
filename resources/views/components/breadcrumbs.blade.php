@@ -7,7 +7,7 @@
 <nav class="flex mb-1" aria-label="Breadcrumb">
     <ol class="inline-flex items-center space-x-1 md:space-x-1">
         <li class="inline-flex items-center">
-            <a href="{{ route('home') }}"
+            <a href="{{ route('home') }}" wire:navigate.hover
                 class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700"
                 aria-label="Home">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75"
@@ -35,7 +35,7 @@
                                 clip-rule="evenodd"></path>
                         </svg>
                         @if($href)
-                            <a href="{{ $href }}" class="text-sm font-normal text-gray-500 hover:text-gray-700 md:ml-2"
+                            <a href="{{ $href }}" wire:navigate.hover class="text-sm font-normal text-gray-500 hover:text-gray-700 md:ml-2"
                                 @if($isCurrent) aria-current="page" @endif>{{ $item['label'] }}</a>
                         @else
                             <span class="text-sm font-normal text-gray-700 md:ml-1"

@@ -81,7 +81,7 @@
         });
     @endphp
     @foreach($generalCategories as $category)
-        <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+        <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
             class="text-[0.65rem] text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
         @if(!$loop->last)
             <span class="text-gray-300 mx-2">&middot;</span>

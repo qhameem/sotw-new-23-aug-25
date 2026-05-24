@@ -6,7 +6,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
-                <a href="{{ route('home') }}" class="shrink-0">
+                <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                 </a>
                 @if(!request()->is('free-todo-list-tool'))
@@ -137,7 +137,7 @@
                                             <h2 class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</h2>
                                             <p class="mt-1 max-w-none whitespace-nowrap text-[11px] text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
                                         </div>
-                                        <a href="{{ route('categories.index') }}" class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
+                                        <a href="{{ route('categories.index') }}" wire:navigate.hover class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
                                             View all categories
                                         </a>
                                     </div>
@@ -221,6 +221,7 @@
                                                     <template x-for="item in activeGroupData.items" :key="item.slug">
                                                         <a
                                                             :href="item.url"
+                                                            wire:navigate.hover
                                                             class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
                                                         >
                                                             <span class="pr-3">
@@ -252,7 +253,7 @@
                             </div>
                         </div>
                     </div>
-                    <a href="{{ route('articles.index') }}" class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Articles</a>
+                    <a href="{{ route('articles.index') }}" wire:navigate.hover class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Articles</a>
                 </div>
             </div>
             <div class="flex shrink-0 items-center gap-4">
