@@ -938,6 +938,22 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 
+    public function unpublish(Product $product)
+    {
+        $this->authorize('update', $product);
+
+        if (! $product->is_published) {
+            return redirect()->route('admin.products.index')->with('success', 'Product is already unpublished.');
+        }
+
+        $product->is_published = false;
+        $product->save();
+
+        $this->clearPublishedProductCaches([$product]);
+
+        return redirect()->route('admin.products.index')->with('success', 'Product unpublished successfully.');
+    }
+
     /**
      * Remove the specified resources from storage.
      */
@@ -998,5 +1014,23 @@ class ProductController extends Controller
         $product->save();
 
         return redirect()->route('admin.products.index')->with('success', 'Product promotion status updated successfully.');
+    }
+
+    private function clearPublishedProductCaches(iterable $products): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_categories_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
+        \Illuminate\Support\Facades\Cache::forget('active_weeks_homepage');
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+
+        collect($products)
+            ->filter(fn (Product $product) => $product->published_at)
+            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->unique()
+            ->each(function (string $weekKey): void {
+                $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+                \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
+            });
     }
 }

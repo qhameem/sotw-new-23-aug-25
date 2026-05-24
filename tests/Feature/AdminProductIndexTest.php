@@ -138,6 +138,42 @@ class AdminProductIndexTest extends TestCase
         $response->assertSee('Selected Owner');
     }
 
+    public function test_admin_products_page_offers_an_unpublish_action_for_live_products(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        Product::factory()->create([
+            'name' => 'Live Product',
+            'is_published' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.products.index', ['q' => 'Live Product']));
+
+        $response->assertOk();
+        $response->assertSee('Published');
+        $response->assertSee('Unpublish product');
+    }
+
+    public function test_admin_can_unpublish_a_product_from_admin_products(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $product = Product::factory()->create([
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.products.unpublish', $product));
+
+        $response->assertRedirect(route('admin.products.index'));
+        $response->assertSessionHas('success', 'Product unpublished successfully.');
+        $this->assertFalse($product->fresh()->is_published);
+    }
+
     public function test_admin_products_page_shows_vote_source_breakdown_for_live_products(): void
     {
         $adminRole = Role::create(['name' => 'admin']);

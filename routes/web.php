@@ -131,8 +131,9 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('products/assign', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'assign'])->name('products.assign.store');
     Route::get('users-search-ajax', [\App\Http\Controllers\Admin\ProductAssignmentController::class, 'searchUsers'])->name('users.search.ajax');
 
-    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
     Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
+    Route::post('products/{product}/unpublish', [\App\Http\Controllers\Admin\ProductController::class, 'unpublish'])->name('products.unpublish');
+    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
     Route::resource('tech-stacks', \App\Http\Controllers\Admin\TechStackController::class);
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);
     Route::get('advertising/detect-audience', [AdvertisingController::class, 'detectAudience'])->name('advertising.detect-audience');

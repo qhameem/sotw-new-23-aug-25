@@ -62,6 +62,12 @@
                             @else
                                 <span class="dashboard-badge-warning">Pending</span>
                             @endif
+
+                            @if ($product->is_published)
+                                <span class="dashboard-badge-success">Published</span>
+                            @else
+                                <span class="dashboard-badge-warning">Unpublished</span>
+                            @endif
                         </div>
                     </div>
 
@@ -223,7 +229,7 @@
                         <p class="dashboard-section-label">Placement controls</p>
                         <h3 class="mt-1 text-base font-semibold text-slate-950">Promotion and actions</h3>
                         <p class="mt-2 text-sm leading-6 text-slate-600">
-                            Update promotion settings, edit the product, or remove it from the catalog.
+                            Update promotion settings, edit the product, unpublish it, or remove it from the catalog.
                         </p>
                     </div>
 
@@ -266,6 +272,16 @@
                             class="font-medium text-slate-600 hover:text-slate-900">
                             Open website
                         </a>
+
+                        @if ($product->is_published)
+                            <form action="{{ route('admin.products.unpublish', $product) }}" method="POST" class="inline-block"
+                                onsubmit="return confirm('Are you sure you want to unpublish this product?');">
+                                @csrf
+                                <button type="submit" class="font-medium text-amber-700 hover:text-amber-900">
+                                    Unpublish product
+                                </button>
+                            </form>
+                        @endif
 
                         <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline-block"
                             onsubmit="return confirm('Are you sure you want to delete this product?');">

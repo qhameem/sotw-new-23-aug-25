@@ -1622,10 +1622,8 @@ class ProductController extends Controller
         $hasEditorialSections = $this->productEditorialHasSections($productEditorial);
 
         $title = $product->name;
-        $pageTitle = $product->name . ': ' . $product->product_page_tagline . ' - Software on the Web';
-
-        $description = strip_tags($product->description);
-        $metaDescription = Str::limit($description, 160);
+        $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $metaDescription = $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
 
         $allCategories = request()->routeIs('admin.*')
             ? Category::orderBy('name')->get()
@@ -1834,6 +1832,147 @@ class ProductController extends Controller
         }
 
         return trim($normalizedHtml) !== '' ? trim($normalizedHtml) : null;
+    }
+
+    protected function buildProductPageTitle(
+        Product $product,
+        $primaryBreadcrumbCategory,
+        \Illuminate\Support\Collection $useCaseCategories,
+        \Illuminate\Support\Collection $bestForCategories
+    ): string {
+        $brandSuffix = ' | Software on the Web';
+        $maxLength = 60;
+        $name = $this->cleanSeoText($product->name);
+        $topic = $this->firstProductSeoTopic($primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $tagline = $this->cleanSeoText($product->tagline ?: $product->product_page_tagline);
+
+        $candidates = array_values(array_filter([
+            $topic !== '' ? $name . ' Review: ' . $this->trimSeoTextToLength($topic, 22) : null,
+            $tagline !== '' ? $name . ': ' . $this->trimSeoTextToLength($tagline, 24) : null,
+            $name . ' Review',
+        ]));
+
+        foreach ($candidates as $candidate) {
+            $withBrand = $this->trimSeoTextToLength($candidate, $maxLength - Str::length($brandSuffix)) . $brandSuffix;
+
+            if (Str::length($withBrand) <= $maxLength) {
+                return $withBrand;
+            }
+        }
+
+        return $this->trimSeoTextToLength($candidates[0] ?? $name, $maxLength);
+    }
+
+    protected function buildProductMetaDescription(
+        Product $product,
+        $primaryBreadcrumbCategory,
+        \Illuminate\Support\Collection $useCaseCategories,
+        \Illuminate\Support\Collection $bestForCategories
+    ): string {
+        $maxLength = 155;
+        $descriptionText = $this->cleanSeoText(strip_tags((string) $product->description));
+        $taglineText = $this->cleanSeoText($product->product_page_tagline ?: $product->tagline);
+        $name = $this->cleanSeoText($product->name);
+        $topic = $this->firstProductSeoTopic($primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+
+        $intro = $this->extractFirstSeoSentence($descriptionText, 110);
+
+        if ($intro === '' && $taglineText !== '') {
+            $intro = preg_match('/^' . preg_quote($name, '/') . '\b/i', $taglineText)
+                ? $taglineText
+                : $name . ': ' . $taglineText;
+        }
+
+        if ($intro === '') {
+            $intro = $name . ' on Software on the Web.';
+        }
+
+        $intro = $this->ensureSentenceEnding($intro);
+        $secondary = $topic !== '' ? 'Best for ' . $topic . '.' : 'See features, pricing, and alternatives.';
+        $description = $intro;
+
+        $shouldAppendSecondary = $secondary !== ''
+            && ($topic === '' || !Str::contains(Str::lower($intro), Str::lower($topic)));
+
+        if ($shouldAppendSecondary) {
+            $candidate = trim($intro . ' ' . $secondary);
+
+            if (Str::length($candidate) <= $maxLength) {
+                return $candidate;
+            }
+        }
+
+        return $this->ensureSentenceEnding($this->trimSeoTextToLength($description, $maxLength));
+    }
+
+    protected function firstProductSeoTopic(
+        $primaryBreadcrumbCategory,
+        \Illuminate\Support\Collection $useCaseCategories,
+        \Illuminate\Support\Collection $bestForCategories
+    ): string {
+        $topic = $primaryBreadcrumbCategory?->name
+            ?: $useCaseCategories->first()?->name
+            ?: $bestForCategories->first()?->name
+            ?: '';
+
+        return $this->cleanSeoText($topic);
+    }
+
+    protected function cleanSeoText(?string $text): string
+    {
+        $text = html_entity_decode(strip_tags((string) $text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', $text ?? '');
+
+        return trim((string) $text, " \t\n\r\0\x0B-–—:;,.");
+    }
+
+    protected function trimSeoTextToLength(string $text, int $maxLength): string
+    {
+        $text = $this->cleanSeoText($text);
+
+        if ($maxLength <= 0 || $text === '') {
+            return '';
+        }
+
+        if (Str::length($text) <= $maxLength) {
+            return $text;
+        }
+
+        $slice = Str::substr($text, 0, $maxLength + 1);
+        $trimmed = preg_replace('/\s+\S*$/u', '', $slice);
+        $trimmed = $trimmed !== null && trim($trimmed) !== '' ? $trimmed : Str::substr($text, 0, $maxLength);
+
+        return rtrim($trimmed, " \t\n\r\0\x0B-–—:;,.");
+    }
+
+    protected function extractFirstSeoSentence(string $text, int $maxLength = 110): string
+    {
+        $text = $this->cleanSeoText($text);
+
+        if ($text === '') {
+            return '';
+        }
+
+        if (preg_match('/^(.+?[.!?])(\s|$)/u', $text, $matches) === 1) {
+            $sentence = $this->cleanSeoText($matches[1]);
+
+            if ($sentence !== '') {
+                return $this->trimSeoTextToLength($sentence, $maxLength);
+            }
+        }
+
+        return $this->trimSeoTextToLength($text, $maxLength);
+    }
+
+    protected function ensureSentenceEnding(string $text): string
+    {
+        $text = rtrim($this->cleanSeoText($text));
+
+        if ($text === '') {
+            return '';
+        }
+
+        return preg_match('/[.!?]$/u', $text) ? $text : $text . '.';
     }
 
     protected function resolveDescriptionContentRoot(\DOMElement $root): \DOMElement
