@@ -41,16 +41,19 @@
                 'label' => 'Use Cases',
                 'items' => $quickFactUseCases->isNotEmpty() ? $quickFactUseCases->all() : ['Not listed yet'],
                 'icon' => 'spark',
+                'link' => null,
             ],
             [
                 'label' => 'Pricing',
                 'items' => [$pricingValue ?: 'Not listed yet'],
                 'icon' => 'pricing',
+                'link' => $product->pricing_page_url ?: null,
             ],
             [
                 'label' => 'Platforms',
                 'items' => $quickFactPlatforms->isNotEmpty() ? $quickFactPlatforms->all() : ['Not listed yet'],
                 'icon' => 'platform',
+                'link' => null,
             ],
         ]);
         $quickFacts = $quickFacts->contains(function ($item) {
@@ -120,8 +123,8 @@
                     <div class="mt-8">
                         <dl class="grid gap-4 lg:grid-cols-3">
                             @foreach($quickFacts as $fact)
-                                <div class="min-w-0 rounded-lg border border-gray-200 px-5 py-5 sm:px-6">
-                                    <dt class="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
+                                <div class="min-w-0 rounded-lg border border-gray-200 px-4 py-4 sm:px-5">
+                                    <dt class="flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
                                         @if($fact['icon'] === 'spark')
                                             <svg class="h-5 w-5 text-zinc-300" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                 <path d="M10 2.75v4.5M10 12.75v4.5M2.75 10h4.5M12.75 10h4.5M4.9 4.9l3.18 3.18M11.92 11.92l3.18 3.18M15.1 4.9l-3.18 3.18M8.08 11.92L4.9 15.1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -145,11 +148,21 @@
                                             @endif
                                         @endif
                                         <span>{{ $fact['label'] }}</span>
+                                        @if(!empty($fact['link']))
+                                            <a href="{{ $fact['link'] }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($fact['link'], 'pricing_page') }}"
+                                                class="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal text-gray-400 underline-offset-2 transition hover:text-gray-600 hover:underline">
+                                                <span>View</span>
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M7 17 17 7M9 7h8v8" />
+                                                </svg>
+                                            </a>
+                                        @endif
                                     </dt>
 
-                                    <dd class="mt-5 flex flex-wrap gap-2">
+                                    <dd class="mt-3 flex flex-wrap items-center gap-2">
                                         @foreach($fact['items'] as $item)
-                                            <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-1 text-xs font-medium leading-none text-gray-500">
+                                            <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-500">
                                                 {{ $item }}
                                             </span>
                                         @endforeach
