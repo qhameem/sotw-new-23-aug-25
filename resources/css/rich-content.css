@@ -50,10 +50,10 @@
 
 .product-detail-description > p:first-of-type strong {
     display: block;
-    font-size: clamp(1.28rem, 1.65vw, 1.6rem);
-    line-height: 1.12;
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-size: clamp(1.2rem, 1.40vw, 1.5rem);
+    line-height: 1.3;
+    font-weight: 400;
+    /* letter-spacing: -0.035em; */
     color: var(--color-site-text);
 }
 
