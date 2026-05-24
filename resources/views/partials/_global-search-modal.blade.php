@@ -10,7 +10,7 @@
                 <div class="flex items-start justify-between gap-6">
                     <div>
                         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Discover Faster</p>
-                        <h2 class="mt-1 text-lg font-semibold text-gray-900">Search products and categories</h2>
+                        <div class="mt-1 text-lg font-semibold text-gray-900">Search products and categories</div>
                         <p class="mt-1 max-w-2xl text-xs leading-5 text-gray-600">Type to search instantly, or jump into the most popular spaces and products right now.</p>
                     </div>
                     <button type="button" @click="closeSearchModal()" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-gray-300 hover:text-gray-900">

@@ -19,7 +19,7 @@
         }">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <h2 class="text-lg font-semibold text-gray-900">Claim this product</h2>
+                <div class="text-lg font-semibold text-gray-900">Claim this product</div>
                 <p class="mt-2 text-sm leading-6 text-gray-600">
                     Email <a href="mailto:hello@softwareontheweb.com" class="font-medium text-primary-600 hover:underline">hello@softwareontheweb.com</a> to claim this product.
                 </p>

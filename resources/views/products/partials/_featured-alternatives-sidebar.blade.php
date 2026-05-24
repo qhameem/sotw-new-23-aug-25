@@ -4,7 +4,7 @@
 
 @if($alternativeProducts->isNotEmpty())
     <section>
-        <h2 class="text-base font-semibold text-gray-900">Featured alternatives</h2>
+        <h3 class="text-base font-semibold text-gray-900">Featured alternatives</h3>
 
         <div class="mt-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <div class="divide-y divide-gray-100">

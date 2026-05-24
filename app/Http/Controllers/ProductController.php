@@ -1614,6 +1614,7 @@ class ProductController extends Controller
             $product->product_page_tagline,
             $product->tagline
         );
+        $descriptionContent['details_html'] = $this->normalizeProductDetailHeadings($descriptionContent['details_html'] ?? null);
         $alternativeProducts = $this->relatedProductService->getAlternatives($product, 3)
             ->map(fn(Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
             ->values();
@@ -1780,6 +1781,58 @@ class ProductController extends Controller
             'overview_blocks' => $overviewBlocks,
             'details_html' => trim($detailsHtml) !== '' ? $detailsHtml : null,
         ];
+    }
+
+    protected function normalizeProductDetailHeadings(?string $html): ?string
+    {
+        $html = trim((string) $html);
+
+        if ($html === '') {
+            return null;
+        }
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $previousLibxmlState = libxml_use_internal_errors(true);
+        $dom->loadHTML(
+            '<?xml encoding="utf-8" ?><div id="product-detail-heading-root">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlState);
+
+        $root = $dom->getElementById('product-detail-heading-root');
+
+        if (!$root) {
+            return $html;
+        }
+
+        $xpath = new DOMXPath($dom);
+
+        foreach ($xpath->query('.//h1 | .//h2', $root) ?: [] as $headingNode) {
+            if (!$headingNode instanceof \DOMElement || !$headingNode->parentNode) {
+                continue;
+            }
+
+            $replacement = $dom->createElement('h3');
+
+            foreach (iterator_to_array($headingNode->attributes ?? []) as $attribute) {
+                $replacement->setAttribute($attribute->nodeName, $attribute->nodeValue ?? '');
+            }
+
+            while ($headingNode->firstChild) {
+                $replacement->appendChild($headingNode->firstChild);
+            }
+
+            $headingNode->parentNode->replaceChild($replacement, $headingNode);
+        }
+
+        $normalizedHtml = '';
+
+        foreach (iterator_to_array($root->childNodes) as $childNode) {
+            $normalizedHtml .= $dom->saveHTML($childNode);
+        }
+
+        return trim($normalizedHtml) !== '' ? trim($normalizedHtml) : null;
     }
 
     protected function resolveDescriptionContentRoot(\DOMElement $root): \DOMElement

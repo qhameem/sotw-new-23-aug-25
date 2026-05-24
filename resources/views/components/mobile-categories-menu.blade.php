@@ -79,7 +79,7 @@
                         <div class="flex items-center justify-between border-b border-gray-200 px-4 py-4">
                             <div>
                                 <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Categories</p>
-                                <h2 class="mt-1 text-lg font-semibold text-gray-900">Browse by goal</h2>
+                                <div class="mt-1 text-lg font-semibold text-gray-900">Browse by goal</div>
                             </div>
                             <button type="button" @click="closeMenu()" class="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,7 +123,7 @@
                                 </button>
                                 <div>
                                     <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="activeGroupData.eyebrow"></p>
-                                    <h2 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h2>
+                                    <div class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></div>
                                 </div>
                             </div>
                             <button type="button" @click="closeMenu()" class="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900">

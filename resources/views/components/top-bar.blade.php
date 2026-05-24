@@ -134,7 +134,7 @@
                                     <div class="flex items-start justify-between gap-6">
                                         <div>
                                             <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Browse By Goal</p>
-                                            <h2 class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</h2>
+                                            <div class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</div>
                                             <p class="mt-1 max-w-none whitespace-nowrap text-[11px] text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
                                         </div>
                                         <a href="{{ route('categories.index') }}" wire:navigate.hover class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
