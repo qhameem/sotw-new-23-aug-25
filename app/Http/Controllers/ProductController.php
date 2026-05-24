@@ -42,6 +42,7 @@ use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
 use DOMDocument;
+use DOMXPath;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
