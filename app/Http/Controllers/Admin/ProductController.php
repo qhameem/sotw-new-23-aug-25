@@ -946,12 +946,13 @@ class ProductController extends Controller
             return redirect()->route('admin.products.index')->with('success', 'Product is already unpublished.');
         }
 
+        $product->approved = false;
         $product->is_published = false;
         $product->save();
 
         $this->clearPublishedProductCaches([$product]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product unpublished successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product unpublished and moved to pending approvals.');
     }
 
     /**

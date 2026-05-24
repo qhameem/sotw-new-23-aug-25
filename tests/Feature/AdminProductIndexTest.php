@@ -170,8 +170,34 @@ class AdminProductIndexTest extends TestCase
         $response = $this->actingAs($admin)->post(route('admin.products.unpublish', $product));
 
         $response->assertRedirect(route('admin.products.index'));
-        $response->assertSessionHas('success', 'Product unpublished successfully.');
+        $response->assertSessionHas('success', 'Product unpublished and moved to pending approvals.');
         $this->assertFalse($product->fresh()->is_published);
+        $this->assertFalse($product->fresh()->approved);
+    }
+
+    public function test_unpublished_product_appears_in_pending_approvals_list(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $product = Product::factory()->create([
+            'name' => 'Reapproval Product',
+            'approved' => true,
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.products.unpublish', $product));
+
+        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index'));
+
+        $response->assertOk();
+        $response->assertSee('Pending Approval');
+        $response->assertSee('Reapproval Product');
+        $this->assertTrue(
+            $response->viewData('pendingProducts')->contains(fn (Product $pendingProduct) => $pendingProduct->id === $product->id)
+        );
     }
 
     public function test_admin_products_page_shows_vote_source_breakdown_for_live_products(): void
