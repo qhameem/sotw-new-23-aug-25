@@ -10,11 +10,17 @@
 
 @php
     // Keep CTA variants centralized so future A/B tests only need to update this component.
+    $spacingClasses = match ($styleVariant) {
+        'tag' => 'px-0 pt-1 pb-0',
+        'soft' => 'px-4 py-1.5',
+        default => 'px-4 py-1',
+    };
+
     $styleClasses = match ($styleVariant) {
         'default' => 'text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
         'primary' => 'text-white bg-primary-600 border border-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
-        'soft' => 'text-gray-700 bg-white border border-gray-400 py-1.5 rounded-md hover:bg-gray-50',
-        'tag' => 'px-0 pt-1 pb-0 border-x-0 border-t-0 border-b border-b-gray-400 bg-transparent text-gray-900 hover:border-b-gray-600 focus:outline-none focus:ring-0 focus:ring-offset-0',
+        'soft' => 'text-gray-700 bg-white border border-gray-400 rounded-md hover:bg-gray-50',
+        'tag' => 'border-x-0 border-t-0 border-b border-b-gray-400 bg-transparent text-gray-900 hover:border-b-gray-600 focus:outline-none focus:ring-0 focus:ring-offset-0',
         default => 'text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
     };
 
@@ -35,7 +41,8 @@
     data-label-variant="{{ $labelVariant }}"
     data-style-variant="{{ $styleVariant }}"
     {{ $attributes->class([
-        'inline-flex items-center justify-center gap-1.5 px-4 py-1 text-sm font-semibold transition-colors',
+        'inline-flex items-center justify-center gap-1.5 text-sm font-semibold transition-colors',
+        $spacingClasses,
         $styleClasses,
         'w-full' => $fullWidth,
     ]) }}
