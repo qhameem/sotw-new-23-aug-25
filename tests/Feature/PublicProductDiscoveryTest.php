@@ -28,6 +28,7 @@ class PublicProductDiscoveryTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString(route('products.show', $product->slug), $html);
+        $this->assertStringContainsString('"@type": "ItemList"', $html);
     }
 
     /** @test */
@@ -87,7 +88,30 @@ class PublicProductDiscoveryTest extends TestCase
     }
 
     /** @test */
-    public function viewing_a_product_page_records_an_impression_without_changing_the_editorial_last_modified_timestamp()
+    public function week_archive_pages_output_a_non_empty_meta_description()
+    {
+        $weekStart = now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY);
+
+        Product::factory()->create([
+            'slug' => 'meta-week-product',
+            'published_at' => $weekStart->copy()->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.byWeek', [
+            'year' => $weekStart->year,
+            'week' => $weekStart->weekOfYear,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee(
+            'Explore the best software from Week ' . $weekStart->weekOfYear . ' of ' . $weekStart->year,
+            false
+        );
+    }
+
+    /** @test */
+    public function viewing_a_product_page_does_not_increment_impressions_on_the_initial_server_response()
     {
         $originalUpdatedAt = Carbon::parse('2026-01-20 09:30:00');
         $product = Product::factory()->create([
@@ -102,7 +126,7 @@ class PublicProductDiscoveryTest extends TestCase
         $response->assertOk();
         $product->refresh();
 
-        $this->assertSame(1, $product->impressions);
+        $this->assertSame(0, $product->impressions);
         $this->assertSame(1, $product->votes_count);
         $this->assertTrue($product->updated_at->equalTo($originalUpdatedAt));
     }

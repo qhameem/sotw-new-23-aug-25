@@ -8,6 +8,22 @@
         $organicRank = 0;
     @endphp
 
+    @if($productCountForAd > 0)
+        <script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'ItemList',
+    'itemListElement' => collect($finalProductList)->values()->map(function ($product, $index) {
+        return [
+            '@type' => 'ListItem',
+            'position' => $index + 1,
+            'url' => route('products.show', $product->slug),
+        ];
+    }),
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
+        </script>
+    @endif
+
     @if($productCountForAd === 0 && $shouldDisplayAd)
         @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
         @php $adDisplayed = true; @endphp

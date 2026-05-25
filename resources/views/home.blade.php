@@ -4,6 +4,8 @@
     @section('title', $meta_title ?? $pageTitle ?? 'Software on the Web')
 @endif
 
+@section('meta_description', $metaDescription ?? $meta_description ?? '')
+
 @section('header-title')
     <span class="site-heading-text text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
 @endsection

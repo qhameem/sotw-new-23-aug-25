@@ -1236,6 +1236,13 @@ class ProductController extends Controller
             $pageTitle = 'Top Products';
         }
 
+        $metaDescription = $this->buildArchiveMetaDescription(
+            'day',
+            $date->copy()->startOfDay(),
+            $date->copy()->endOfDay(),
+            $combinedProducts->count()
+        );
+
         $activeDates = Product::where('approved', true)
             ->where('is_published', true)
             ->selectRaw('DISTINCT DATE(COALESCE(published_at, created_at)) as date')
@@ -1253,7 +1260,7 @@ class ProductController extends Controller
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture', 'metaDescription'));
     }
     public function redirectToCurrentWeek()
     {
@@ -1398,6 +1405,7 @@ class ProductController extends Controller
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $metaDescription = $this->buildArchiveMetaDescription('week', $startOfWeek, $endOfWeek, $combinedProducts->count());
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1407,7 +1415,7 @@ class ProductController extends Controller
 
         $weekNavigationItems = $this->buildWeekNavigationItems($year, $week);
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'metaDescription'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -1435,12 +1443,13 @@ class ProductController extends Controller
         $displayDateString = $startOfMonth->toDateString();
         $title = 'on ' . $startOfMonth->format('F Y'); // For potential in-page display
         $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $metaDescription = $this->buildArchiveMetaDescription('month', $startOfMonth, $endOfMonth, $combinedProducts->count());
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture', 'metaDescription'));
     }
 
     public function productsByYear(Request $request, $year)
@@ -1468,12 +1477,13 @@ class ProductController extends Controller
         $displayDateString = $startOfYear->toDateString();
         $title = 'in ' . $year; // For potential in-page display
         $pageTitle = 'Best of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $metaDescription = $this->buildArchiveMetaDescription('year', $startOfYear, $endOfYear, $combinedProducts->count());
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
         $nextLaunchTime = $this->getNextLaunchTimeIso();
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'isFuture', 'metaDescription'));
     }
 
     public function search(Request $request)
@@ -2105,6 +2115,32 @@ class ProductController extends Controller
         });
 
         return $shuffledIds;
+    }
+
+    protected function buildArchiveMetaDescription(string $period, Carbon $start, Carbon $end, int $productCount): string
+    {
+        $productLabel = $productCount === 1 ? '1 curated product' : number_format(max(0, $productCount)) . ' curated products';
+        $dateRange = match ($period) {
+            'day' => $start->format('F j, Y'),
+            'week' => $start->format('M j') . '-' . $end->format('j, Y'),
+            'month' => $start->format('F Y'),
+            'year' => $start->format('Y'),
+            default => $start->toDateString(),
+        };
+
+        $prefix = match ($period) {
+            'day' => 'Discover the top software launches for ' . $dateRange . ' on Software on the Web.',
+            'week' => 'Explore the best software from Week ' . $start->weekOfYear . ' of ' . $start->year . ' on Software on the Web.',
+            'month' => 'Browse the best software launches from ' . $dateRange . ' on Software on the Web.',
+            'year' => 'Browse the best software launches from ' . $dateRange . ' on Software on the Web.',
+            default => 'Discover curated software launches on Software on the Web.',
+        };
+
+        $suffix = 'Review ' . $productLabel . ' across AI, productivity, and developer tools.';
+
+        return $this->ensureSentenceEnding(
+            $this->trimSeoTextToLength(trim($prefix . ' ' . $suffix), 155)
+        );
     }
 
     protected function promotedProductsForPeriod(Carbon $start, Carbon $end): \Illuminate\Support\Collection
