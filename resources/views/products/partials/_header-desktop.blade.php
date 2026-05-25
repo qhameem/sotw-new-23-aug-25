@@ -67,45 +67,45 @@
             </div>
         </div>
 
-        <div class="mt-2 flex items-start justify-between gap-6">
-            <div class="min-w-0 flex-1 max-w-4xl">
-                {{-- Tagline --}}
-                <p class="site-body-text text-gray-800 text-base leading-snug">
-                    @if(isset($isAdminView) && $isAdminView)
-                        <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
-                            x-text="product_page_tagline"></span>
-                        <input x-show="editingProductPageTagline" x-model="product_page_tagline"
-                            @keydown.enter="updateProduct(); editingProductPageTagline = false"
-                            @keydown.escape="editingProductPageTagline = false" class="form-input">
-                    @else
-                        {{ $product->product_page_tagline }}
-                    @endif
-                </p>
-            </div>
-
-            <div class="shrink-0">
-                <x-products.visit-website-button :product="$product" surface="product_details" class="min-h-7 whitespace-nowrap text-base font-semibold" />
-            </div>
+        <div class="mt-2 min-w-0 max-w-4xl">
+            {{-- Tagline --}}
+            <p class="site-body-text text-gray-800 text-base leading-snug">
+                @if(isset($isAdminView) && $isAdminView)
+                    <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
+                        x-text="product_page_tagline"></span>
+                    <input x-show="editingProductPageTagline" x-model="product_page_tagline"
+                        @keydown.enter="updateProduct(); editingProductPageTagline = false"
+                        @keydown.escape="editingProductPageTagline = false" class="form-input">
+                @else
+                    {{ $product->product_page_tagline }}
+                @endif
+            </p>
         </div>
 
         {{-- Tags --}}
-        <div class="flex flex-wrap items-center mt-2.5">
-            @php
-                $generalCategories = $product->categories->filter(function ($cat) {
-                    return !$cat->types->contains('name', 'Pricing')
-                        && !$cat->types->contains('name', 'Best for')
-                        && !$cat->types->contains('name', 'Use Case')
-                        && !$cat->types->contains('name', 'Use Cases')
-                        && !$cat->types->contains('name', 'Platform');
-                });
-            @endphp
-            @foreach($generalCategories as $category)
-                <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
-                    class="text-xs text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
-                @if(!$loop->last)
-                    <span class="text-gray-300 mx-2">&middot;</span>
-                @endif
-            @endforeach
+        <div class="mt-2.5 flex items-center justify-between gap-4">
+            <div class="flex min-w-0 flex-wrap items-center">
+                @php
+                    $generalCategories = $product->categories->filter(function ($cat) {
+                        return !$cat->types->contains('name', 'Pricing')
+                            && !$cat->types->contains('name', 'Best for')
+                            && !$cat->types->contains('name', 'Use Case')
+                            && !$cat->types->contains('name', 'Use Cases')
+                            && !$cat->types->contains('name', 'Platform');
+                    });
+                @endphp
+                @foreach($generalCategories as $category)
+                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
+                        class="text-xs text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
+                    @if(!$loop->last)
+                        <span class="text-gray-300 mx-2">&middot;</span>
+                    @endif
+                @endforeach
+            </div>
+
+            <div class="shrink-0">
+                <x-products.visit-website-button :product="$product" surface="product_details" style-variant="tag" class="min-h-7 whitespace-nowrap text-sm font-medium" />
+            </div>
         </div>
     </div>
 </div>

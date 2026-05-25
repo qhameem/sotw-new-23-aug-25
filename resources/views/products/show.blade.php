@@ -29,6 +29,21 @@
 
         $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
         $hasMediaSection = $mediaAssetCount > 0;
+        $appendQueryParam = function (?string $url, string $key, string $value): ?string {
+            if (!filled($url)) {
+                return $url;
+            }
+
+            $fragment = null;
+            if (str_contains($url, '#')) {
+                [$url, $fragment] = explode('#', $url, 2);
+            }
+
+            $separator = str_contains($url, '?') ? '&' : '?';
+            $updatedUrl = $url . $separator . urlencode($key) . '=' . urlencode($value);
+
+            return $fragment !== null ? $updatedUrl . '#' . $fragment : $updatedUrl;
+        };
         $makerLinks = collect(is_array($product->maker_links) ? $product->maker_links : json_decode($product->maker_links, true) ?? [])
             ->filter(fn ($link) => filled($link))
             ->values();
@@ -40,25 +55,46 @@
         $overviewBlocks = $descriptionContent['overview_blocks'] ?? [];
         $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
         $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
-        $quickFactUseCases = $useCaseCategories->pluck('name')->take(2)->values();
-        $quickFactPlatforms = $platformCategories->pluck('name')->take(2)->values();
+        $quickFactUseCases = $useCaseCategories
+            ->take(2)
+            ->map(fn ($category) => [
+                'label' => $category->name,
+                'link' => route('categories.show', ['category' => $category->slug]),
+            ])
+            ->values();
+        $quickFactPlatforms = $platformCategories
+            ->take(2)
+            ->map(fn ($category) => [
+                'label' => $category->name,
+                'link' => route('categories.show', ['category' => $category->slug]),
+            ])
+            ->values();
         $pricingValue = $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null);
         $quickFacts = collect([
             [
                 'label' => 'Use Cases',
-                'items' => $quickFactUseCases->isNotEmpty() ? $quickFactUseCases->all() : ['Not listed yet'],
+                'items' => $quickFactUseCases->isNotEmpty() ? $quickFactUseCases->all() : [[
+                    'label' => 'Not listed yet',
+                    'link' => null,
+                ]],
                 'icon' => 'spark',
                 'link' => null,
             ],
             [
                 'label' => 'Pricing',
-                'items' => [$pricingValue ?: 'Not listed yet'],
+                'items' => [[
+                    'label' => $pricingValue ?: 'Not listed yet',
+                    'link' => $pricingCategory ? route('categories.show', ['category' => $pricingCategory->slug]) : null,
+                ]],
                 'icon' => 'pricing',
                 'link' => $product->pricing_page_url ?: null,
             ],
             [
                 'label' => 'Platforms',
-                'items' => $quickFactPlatforms->isNotEmpty() ? $quickFactPlatforms->all() : ['Not listed yet'],
+                'items' => $quickFactPlatforms->isNotEmpty() ? $quickFactPlatforms->all() : [[
+                    'label' => 'Not listed yet',
+                    'link' => null,
+                ]],
                 'icon' => 'platform',
                 'link' => null,
             ],
@@ -142,7 +178,7 @@
                                             </svg>
                                         @else
                                             @php
-                                                $platformName = Str::lower((string) (($fact['items'][0] ?? null) ?: ''));
+                                                $platformName = Str::lower((string) (($fact['items'][0]['label'] ?? null) ?: ''));
                                             @endphp
                                             @if(in_array($platformName, ['macos', 'mac', 'mac app'], true))
                                                 <svg class="h-5 w-5 text-sky-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -156,7 +192,7 @@
                                         @endif
                                         <span>{{ $fact['label'] }}</span>
                                         @if(!empty($fact['link']))
-                                            <a href="{{ $fact['link'] }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($fact['link'], 'pricing_page') }}"
+                                            <a href="{{ $appendQueryParam($fact['link'], 'utm_source', 'softwareontheweb.com') }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($fact['link'], 'pricing_page') }}"
                                                 class="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal text-gray-400 underline-offset-2 transition hover:text-gray-600 hover:underline">
                                                 <span>View</span>
                                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -169,9 +205,16 @@
 
                                     <dd class="mt-3 flex flex-wrap items-center gap-2">
                                         @foreach($fact['items'] as $item)
-                                            <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-500">
-                                                {{ $item }}
-                                            </span>
+                                            @if(!empty($item['link']))
+                                                <a href="{{ $item['link'] }}" wire:navigate.hover
+                                                    class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-900 transition hover:bg-gray-100 hover:underline">
+                                                    {{ $item['label'] }}
+                                                </a>
+                                            @else
+                                                <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-900">
+                                                    {{ $item['label'] }}
+                                                </span>
+                                            @endif
                                         @endforeach
                                     </dd>
                                 </div>
