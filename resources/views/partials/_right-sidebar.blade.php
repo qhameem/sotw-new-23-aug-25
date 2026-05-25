@@ -5,28 +5,6 @@
             @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
                 @include('partials._sidebar-ads')
 
-                <div class="p-4" data-analytics-stats-card>
-                    <h3 class="text-sm font-medium text-gray-800">{{ now()->year }} Statistics
-                        <div class="relative group inline-block">
-                            <span class="cursor-default text-gray-900 font-semibold">&#9432;</span>
-                            <div
-                                class="absolute z-10 hidden group-hover:block mt-1 px-2 py-1 text-xs text-gray-600 rounded border bg-gray-50 whitespace-nowrap">
-                                Updated every day.
-                            </div>
-                        </div>
-                    </h3>
-                    <div class="mt-2 grid grid-cols-2 gap-4">
-                        <div class="p-4 rounded-lg text-center border">
-                            <span id="total-visits" class="text-sm text-gray-700 font-bold">Loading...</span>
-                            <p class="text-xs text-gray-600">Visits</p>
-                        </div>
-                        <div class="p-4 rounded-lg text-center border">
-                            <span id="total-pageviews" class="text-sm text-gray-700 font-bold">Loading...</span>
-                            <p class="text-xs text-gray-600">Page views</p>
-                        </div>
-                    </div>
-                </div>
-
                 <x-top-categories />
 
                 @guest
@@ -159,64 +137,3 @@
 </template>
 </div>
 </div>
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const statsCard = document.querySelector('[data-analytics-stats-card]');
-            const totalVisitsElement = document.getElementById('total-visits');
-            const totalPageviewsElement = document.getElementById('total-pageviews');
-
-            if (!statsCard || !totalVisitsElement || !totalPageviewsElement) {
-                return;
-            }
-
-            let hasLoaded = false;
-
-            const loadStats = () => {
-                if (hasLoaded) {
-                    return;
-                }
-
-                hasLoaded = true;
-
-                fetch('/api/analytics/total-sessions')
-                    .then(response => response.json())
-                    .then(data => {
-                        const toMultiplyWith = 5;
-
-                        if (data.sessions !== null && data.sessions !== undefined) {
-                            totalVisitsElement.textContent = (data.sessions * toMultiplyWith).toLocaleString();
-                        } else {
-                            totalVisitsElement.textContent = 'N/A';
-                        }
-
-                        if (data.screenPageViews !== null && data.screenPageViews !== undefined) {
-                            totalPageviewsElement.textContent = (data.screenPageViews * toMultiplyWith).toLocaleString();
-                        } else {
-                            totalPageviewsElement.textContent = 'N/A';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching analytics data:', error);
-                        totalVisitsElement.textContent = 'Error';
-                        totalPageviewsElement.textContent = 'Error';
-                    });
-            };
-
-            if ('IntersectionObserver' in window) {
-                const observer = new IntersectionObserver((entries) => {
-                    if (entries.some((entry) => entry.isIntersecting)) {
-                        observer.disconnect();
-                        loadStats();
-                    }
-                }, { rootMargin: '200px 0px' });
-
-                observer.observe(statsCard);
-                return;
-            }
-
-            loadStats();
-        });
-    </script>
-@endpush
