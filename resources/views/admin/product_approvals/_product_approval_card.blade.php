@@ -173,7 +173,8 @@
                                                 <button type="button"
                                                     class="js-generate-ai-seo text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 transition-opacity duration-200"
                                                     data-submission-id="{{ $submission->id }}"
-                                                    data-category-name="{{ $submission->name }}">
+                                                    data-category-name="{{ $submission->name }}"
+                                                    data-category-type="{{ $submission->type }}">
                                                     <span class="icon-default">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
@@ -372,6 +373,7 @@
             btn.addEventListener('click', async function () {
                 const submissionId = this.dataset.submissionId;
                 const categoryName = this.dataset.categoryName;
+                const categoryType = this.dataset.categoryType || '';
 
                 const descInput = document.querySelector(`textarea[name="custom_category_${submissionId}_description"]`);
                 const metaDescInput = document.querySelector(`textarea[name="custom_category_${submissionId}_meta_description"]`);
@@ -395,7 +397,10 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ category_name: categoryName })
+                        body: JSON.stringify({
+                            category_name: categoryName,
+                            category_type: categoryType,
+                        })
                     });
 
                     const data = await response.json();

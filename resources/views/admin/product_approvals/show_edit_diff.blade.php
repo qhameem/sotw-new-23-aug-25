@@ -376,7 +376,8 @@
                                                     <button type="button"
                                                         class="js-generate-ai-seo inline-flex items-center gap-1 text-xs font-medium text-indigo-600 transition hover:text-indigo-800"
                                                         data-submission-id="{{ $submission->id }}"
-                                                        data-category-name="{{ $submission->name }}">
+                                                        data-category-name="{{ $submission->name }}"
+                                                        data-category-type="{{ $submission->type }}">
                                                         <span class="icon-default">
                                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -509,6 +510,7 @@
                 button.addEventListener('click', async function () {
                     const submissionId = this.dataset.submissionId;
                     const categoryName = this.dataset.categoryName;
+                    const categoryType = this.dataset.categoryType || '';
                     const descInput = document.querySelector(`textarea[name="custom_category_${submissionId}_description"]`);
                     const metaDescInput = document.querySelector(`textarea[name="custom_category_${submissionId}_meta_description"]`);
                     const defaultIcon = this.querySelector('.icon-default');
@@ -529,7 +531,10 @@
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                                 'Accept': 'application/json'
                             },
-                            body: JSON.stringify({ category_name: categoryName })
+                            body: JSON.stringify({
+                                category_name: categoryName,
+                                category_type: categoryType,
+                            })
                         });
 
                         const data = await response.json();

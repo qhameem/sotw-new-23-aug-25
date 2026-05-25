@@ -494,10 +494,13 @@ class ProductApprovalController extends Controller
     {
         $request->validate([
             'category_name' => 'required|string|max:255',
+            'category_type' => 'nullable|string|max:50',
         ]);
 
         try {
-            $result = $generator->generate($request->category_name);
+            $result = $generator->generate($request->category_name, [
+                'category_type' => $request->input('category_type'),
+            ]);
 
             if ($result) {
                 return response()->json([
