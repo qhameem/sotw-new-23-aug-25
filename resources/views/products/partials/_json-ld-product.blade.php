@@ -83,6 +83,10 @@
         ]
     ];
 
+    if ($product->published_at) {
+        $softwareApplicationSchema['datePublished'] = $product->published_at->toAtomString();
+    }
+
     // Breadcrumbs
     $breadcrumbs = [
         [

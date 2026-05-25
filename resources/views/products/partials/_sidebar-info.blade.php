@@ -25,6 +25,15 @@
         </div>
     @endunless
 
+    @if($product->published_at)
+        <div>
+            <h3 class="text-xs text-gray-500 mb-2">Launched</h3>
+            <time datetime="{{ $product->published_at->toDateString() }}" class="site-body-text text-sm font-medium text-gray-800">
+                {{ $product->published_at->format('F j, Y') }}
+            </time>
+        </div>
+    @endif
+
     @if(($idealForItems ?? collect())->isNotEmpty())
         <div>
             <h3 class="text-xs text-gray-500 mb-2">Ideal for</h3>

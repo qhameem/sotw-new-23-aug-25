@@ -106,4 +106,22 @@ class PublicProductDiscoveryTest extends TestCase
         $this->assertSame(1, $product->votes_count);
         $this->assertTrue($product->updated_at->equalTo($originalUpdatedAt));
     }
+
+    /** @test */
+    public function product_pages_show_the_launch_date_and_include_date_published_structured_data()
+    {
+        $publishedAt = Carbon::parse('2026-05-11 04:00:00', 'UTC');
+        $product = Product::factory()->create([
+            'name' => 'Launch Date Product',
+            'slug' => 'launch-date-product',
+            'published_at' => $publishedAt,
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('Launched');
+        $response->assertSee('May 11, 2026');
+        $response->assertSee('"datePublished": "2026-05-11T04:00:00+00:00"', false);
+    }
 }
