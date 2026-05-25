@@ -4,7 +4,7 @@
     $productLogo = ProductLogo::storedUrl($product);
 @endphp
 
-<div class="flex flex-row items-start mb-6">
+<div class="mb-6 flex flex-row items-start gap-5">
     {{-- Logo --}}
     <div class="flex-shrink-0">
         @if(isset($isAdminView) && $isAdminView)
@@ -43,9 +43,9 @@
     </div>
 
     {{-- Content Area --}}
-    <div class="ml-5 flex-1">
-        <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0 flex-1 max-w-4xl">
+    <div class="flex-1">
+        <div class="flex items-start justify-between gap-6">
+            <div class="min-w-0 max-w-4xl flex-1">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <div class="site-heading-text text-2xl font-bold text-gray-900">
                         @if(isset($isAdminView) && $isAdminView)
@@ -64,47 +64,45 @@
                         </a>
                     @endif
                 </div>
-            </div>
-        </div>
 
-        <div class="mt-2 min-w-0 max-w-4xl">
-            {{-- Tagline --}}
-            <p class="site-body-text text-gray-800 text-base leading-snug">
-                @if(isset($isAdminView) && $isAdminView)
-                    <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
-                        x-text="product_page_tagline"></span>
-                    <input x-show="editingProductPageTagline" x-model="product_page_tagline"
-                        @keydown.enter="updateProduct(); editingProductPageTagline = false"
-                        @keydown.escape="editingProductPageTagline = false" class="form-input">
-                @else
-                    {{ $product->product_page_tagline }}
-                @endif
-            </p>
-        </div>
+                <div class="mt-1 min-w-0 max-w-4xl">
+                    {{-- Tagline --}}
+                    <p class="site-body-text text-[15px] leading-snug text-gray-800">
+                        @if(isset($isAdminView) && $isAdminView)
+                            <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
+                                x-text="product_page_tagline"></span>
+                            <input x-show="editingProductPageTagline" x-model="product_page_tagline"
+                                @keydown.enter="updateProduct(); editingProductPageTagline = false"
+                                @keydown.escape="editingProductPageTagline = false" class="form-input">
+                        @else
+                            {{ $product->product_page_tagline }}
+                        @endif
+                    </p>
+                </div>
 
-        {{-- Tags --}}
-        <div class="mt-2.5 flex items-center justify-between gap-4">
-            <div class="flex min-w-0 flex-wrap items-center">
-                @php
-                    $generalCategories = $product->categories->filter(function ($cat) {
-                        return !$cat->types->contains('name', 'Pricing')
-                            && !$cat->types->contains('name', 'Best for')
-                            && !$cat->types->contains('name', 'Use Case')
-                            && !$cat->types->contains('name', 'Use Cases')
-                            && !$cat->types->contains('name', 'Platform');
-                    });
-                @endphp
-                @foreach($generalCategories as $category)
-                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
-                        class="text-xs text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
-                    @if(!$loop->last)
-                        <span class="text-gray-300 mx-2">&middot;</span>
-                    @endif
-                @endforeach
+                {{-- Tags --}}
+                <div class="mt-1 flex min-w-0 flex-wrap items-center">
+                    @php
+                        $generalCategories = $product->categories->filter(function ($cat) {
+                            return !$cat->types->contains('name', 'Pricing')
+                                && !$cat->types->contains('name', 'Best for')
+                                && !$cat->types->contains('name', 'Use Case')
+                                && !$cat->types->contains('name', 'Use Cases')
+                                && !$cat->types->contains('name', 'Platform');
+                        });
+                    @endphp
+                    @foreach($generalCategories as $category)
+                        <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
+                            class="text-xs text-gray-500 transition-colors hover:text-primary-600 hover:underline">{{ $category->name }}</a>
+                        @if(!$loop->last)
+                            <span class="mx-2 text-gray-300">&middot;</span>
+                        @endif
+                    @endforeach
+                </div>
             </div>
 
-            <div class="shrink-0">
-                <x-products.visit-website-button :product="$product" surface="product_details" style-variant="tag" class="min-h-7 whitespace-nowrap text-sm font-medium" />
+            <div class="flex h-[100px] w-[100px] shrink-0 self-start">
+                <x-products.visit-website-button :product="$product" surface="product_details" style-variant="soft" label="Visit" class="h-full w-full border-0 bg-gray-100 px-3 text-sm font-semibold hover:bg-gray-200" />
             </div>
         </div>
     </div>

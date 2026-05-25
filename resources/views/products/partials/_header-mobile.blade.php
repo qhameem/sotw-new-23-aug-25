@@ -55,8 +55,8 @@
 </div>
 
 {{-- Tagline --}}
-<div class="mt-3">
-    <p class="site-body-text text-gray-800 text-sm leading-snug">
+<div class="mt-2">
+    <p class="site-body-text text-[13px] leading-snug text-gray-800">
         @if(isset($isAdminView) && $isAdminView)
             <span x-show="!editingProductPageTagline" @click="editingProductPageTagline = true"
                 x-text="product_page_tagline"></span>
@@ -70,7 +70,7 @@
 </div>
 
 {{-- Tags --}}
-<div class="flex flex-wrap items-center mt-2.5">
+<div class="mt-2 flex flex-wrap items-center">
     @php
         $generalCategories = $product->categories->filter(function ($cat) {
             return !$cat->types->contains('name', 'Pricing')
