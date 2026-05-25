@@ -5,26 +5,36 @@ namespace App\Support;
 class SocialLinkValidator
 {
     private const ALLOWED_MAKER_LINK_HOSTS = [
+        'addons.mozilla.org',
+        'addons.opera.com',
+        'apps.apple.com',
+        'apps.microsoft.com',
+        'behance.net',
+        'chrome.google.com',
+        'chromewebstore.google.com',
+        'dev.to',
+        'discord.com',
+        'discord.gg',
+        'dribbble.com',
+        'facebook.com',
         'github.com',
         'gist.github.com',
         'gitlab.com',
-        'linkedin.com',
-        'facebook.com',
         'instagram.com',
-        'youtube.com',
-        'youtu.be',
-        'discord.com',
-        'discord.gg',
-        'reddit.com',
-        'tiktok.com',
+        'linkedin.com',
         'medium.com',
-        'substack.com',
-        'dev.to',
-        'threads.net',
-        'behance.net',
-        'dribbble.com',
+        'microsoftedge.microsoft.com',
+        'play.google.com',
         'producthunt.com',
+        'reddit.com',
+        'substack.com',
+        'threads.net',
+        'tiktok.com',
+        'youtu.be',
+        'youtube.com',
     ];
+
+    private const ALLOWED_MAKER_LINK_MESSAGE = 'Only profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, and similar listings are allowed.';
 
     public static function isAllowedMakerLinkUrl(?string $url): bool
     {
@@ -45,6 +55,11 @@ class SocialLinkValidator
         }
 
         return false;
+    }
+
+    public static function allowedMakerLinkMessage(): string
+    {
+        return self::ALLOWED_MAKER_LINK_MESSAGE;
     }
 
     private static function normalizeHost(string $host): string

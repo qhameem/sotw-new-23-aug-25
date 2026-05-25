@@ -465,13 +465,13 @@
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
          <div class="mt-4">
              <div class="flex justify-between items-center mb-2">
-                 <label class="block text-xs font-bold text-gray-900">Other Social / Profile Links</label>
+                 <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links</label>
                  <button type="button" @click="addMoreLink" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center">
                     <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Add Link
                  </button>
              </div>
-             <p class="mb-2 text-xs text-gray-500">Use social or profile links only, like GitHub, LinkedIn, YouTube, Discord, or similar profiles.</p>
+             <p class="mb-2 text-xs text-gray-500">Use profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, or Chrome Web Store.</p>
              <div class="space-y-2">
                  <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center gap-2">
                     <input

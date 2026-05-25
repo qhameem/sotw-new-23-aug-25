@@ -67,7 +67,7 @@ class ProductInlineUpdateController extends Controller
                     'max:2048',
                     function ($attribute, $value, $fail) {
                         if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
-                            $fail('Only social or profile links like GitHub, LinkedIn, and similar social platforms are allowed.');
+                            $fail(SocialLinkValidator::allowedMakerLinkMessage());
                         }
                     },
                 ];

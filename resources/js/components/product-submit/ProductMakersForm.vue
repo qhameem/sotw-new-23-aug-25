@@ -11,8 +11,8 @@
     <div class="space-y-6">
       <!-- Makers' Links Section -->
       <div>
-        <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers' Social Links</h3>
-        <p class="text-sm text-gray-500 mb-3">Add social or profile links only, like GitHub, LinkedIn, YouTube, or Discord.</p>
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Makers' Profile & Store Links</h3>
+        <p class="text-sm text-gray-500 mb-3">Add profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, or Chrome Web Store.</p>
         
         <!-- Dynamic maker links -->
         <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center mb-4">
@@ -21,7 +21,7 @@
             :id="`maker-link-${index}`"
             :value="link"
             @input="updateMakerLink(index, $event.target.value)"
-            :placeholder="`Link to maker ${index + 1} (e.g., https://github.com/username)`"
+            :placeholder="`Link ${index + 1} (e.g., https://github.com/username)`"
             class="flex-1 px-3 py-2 bg-white text-gray-600 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
           >
           <button
