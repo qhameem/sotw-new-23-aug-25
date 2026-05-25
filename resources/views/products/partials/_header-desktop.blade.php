@@ -101,8 +101,8 @@
                 </div>
             </div>
 
-            <div class="flex h-[100px] w-[100px] shrink-0 self-start">
-                <x-products.visit-website-button :product="$product" surface="product_details" style-variant="soft" label="Visit" class="h-full w-full border-0 bg-gray-100 px-3 text-sm font-semibold hover:bg-gray-200" />
+            <div class="flex shrink-0 self-center">
+                <x-products.visit-website-button :product="$product" surface="product_details" label="Visit" content-class="" class="font-bold" />
             </div>
         </div>
     </div>
