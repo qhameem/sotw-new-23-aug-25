@@ -104,14 +104,6 @@
 
     $normalizedXProfileUrl = $xProfileUrl ? \App\Models\Product::normalizeLink($xProfileUrl) : null;
 
-    if ($product->pricing_page_url) {
-        $resourceLinks[] = [
-            'link' => $product->pricing_page_url,
-            'label' => 'Pricing Page',
-            'source' => 'pricing_page',
-        ];
-    }
-
     foreach ($makerLinks as $link) {
         $platform = $findSocialPlatform($link);
 

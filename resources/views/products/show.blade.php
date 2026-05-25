@@ -29,7 +29,14 @@
 
         $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
         $hasMediaSection = $mediaAssetCount > 0;
-        $hasResourcesSection = !empty($product->pricing_page_url) || !empty($product->x_account) || !empty($product->maker_links ?? []);
+        $makerLinks = collect(is_array($product->maker_links) ? $product->maker_links : json_decode($product->maker_links, true) ?? [])
+            ->filter(fn ($link) => filled($link))
+            ->values();
+        $xProfileUrl = \App\Models\Product::xProfileUrl($product->x_account);
+        $normalizedXProfileUrl = $xProfileUrl ? \App\Models\Product::normalizeLink($xProfileUrl) : null;
+        $hasResourcesSection = $xProfileUrl || $makerLinks->contains(function ($link) use ($normalizedXProfileUrl) {
+            return !$normalizedXProfileUrl || \App\Models\Product::normalizeLink($link) !== $normalizedXProfileUrl;
+        });
         $overviewBlocks = $descriptionContent['overview_blocks'] ?? [];
         $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
         $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
@@ -377,7 +384,6 @@
                     <section id="resources" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
                         <div>
                             <h2 class="text-xl font-semibold text-gray-900">Resources</h2>
-                            <p class="mt-1 text-sm text-gray-500">Official profiles, useful links, and places to learn more about this product.</p>
                         </div>
 
                         <div class="mt-6">
