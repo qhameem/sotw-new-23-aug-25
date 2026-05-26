@@ -31,6 +31,7 @@ class SettingsController extends Controller
     {
         $settings = $this->loadSettings();
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
+        $hasHeaderCodeInjection = filled(trim((string) $googleAnalyticsCode));
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         $adminSandboxEnabled = (bool) ($settings['admin_add_product_sandbox_enabled'] ?? true);
@@ -45,6 +46,7 @@ class SettingsController extends Controller
 
         return view('admin.settings.index', compact(
             'googleAnalyticsCode',
+            'hasHeaderCodeInjection',
             'premiumProductSpots',
             'productPublishTime',
             'adminSandboxEnabled',
@@ -138,8 +140,12 @@ class SettingsController extends Controller
                 'nullable',
                 'string',
                 function ($attribute, $value, $fail) {
-                    if (!empty($value) && (!str_contains($value, '<script') || !str_contains($value, '</script>'))) {
-                        $fail('The ' . $attribute . ' must be a valid script tag.');
+                    if (empty($value)) {
+                        return;
+                    }
+
+                    if (!preg_match('/<\s*(script|meta|link|noscript)\b/i', $value)) {
+                        $fail('The ' . $attribute . ' must contain valid head HTML such as a <script>, <meta>, <link>, or <noscript> tag.');
                     }
                 }
             ],
@@ -154,11 +160,18 @@ class SettingsController extends Controller
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Google Analytics code updated by user: ' . Auth::id());
-            return back()->with('success', 'Google Analytics code saved successfully.');
+            Log::info('Header code injection updated by user: ' . Auth::id(), [
+                'active' => filled(trim((string) $settings['google_analytics_code'])),
+            ]);
+
+            $successMessage = filled(trim((string) $settings['google_analytics_code']))
+                ? 'Header code saved successfully. It is now active and will be injected into the <head> of public pages.'
+                : 'Header code cleared successfully. No custom code will be injected into the <head> of public pages.';
+
+            return back()->with('success', $successMessage);
         } catch (\Exception $e) {
-            Log::error('Failed to save Google Analytics code: ' . $e->getMessage());
-            return back()->with('error', 'Failed to save Google Analytics code. Please check logs.');
+            Log::error('Failed to save header code injection: ' . $e->getMessage());
+            return back()->with('error', 'Failed to save header code injection. Please check logs.');
         }
     }
 

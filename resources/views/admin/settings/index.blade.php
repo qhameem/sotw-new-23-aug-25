@@ -153,28 +153,33 @@
             </div>
         </div>
 
-        <!-- Google Analytics Integration Section -->
+        <!-- Header Code Injection Section -->
         <div class="mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
-                    Google Analytics Integration
+                    Header Code Injection
                 </h3>
                 <div class="mt-2 max-w-xl text-sm text-gray-500 ">
-                    <p>Paste your full Google Analytics tracking code (usually starting with <code><script></code > and
-                        ending with <code></script></code>) below. You can find this code in your Google Analytics account
-                        under Admin > Data Streams > (select your stream) > Configure tag settings > Installation
-                        instructions.</p>
+                    <p>Paste any code here that needs to be injected into the site <code>&lt;head&gt;</code> section.</p>
+                    <p class="mt-1">Use this for Google Analytics, Google Tag Manager, verification tags, chat widgets, or any other service that asks you to add code inside <code>&lt;head&gt;</code>.</p>
                 </div>
                 <form action="{{ route('admin.settings.storeAnalyticsCode') }}" method="POST" class="mt-5">
                     @csrf
+                    <div class="mb-4 rounded-lg border {{ $hasHeaderCodeInjection ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800' }} px-4 py-3 text-sm">
+                        @if($hasHeaderCodeInjection)
+                            Header code injection is active. Your saved code will be injected into the <code>&lt;head&gt;</code> of public pages.
+                        @else
+                            No header code injection is active right now.
+                        @endif
+                    </div>
                     <div>
                         <label for="google_analytics_code" class="block text-sm font-medium text-gray-700 ">
-                            Google Analytics Tracking Code
+                            Header Code
                         </label>
                         <div class="mt-1">
                             <textarea id="google_analytics_code" name="google_analytics_code" rows="10"
                                 class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md    "
-                                placeholder="Paste your Google Analytics script here (e.g., <script async src=...></script>...)">{{ old('google_analytics_code', $googleAnalyticsCode ?? '') }}</textarea>
+                                placeholder="Paste your head code here (e.g., <script async src=...></script> or a verification meta tag)">{{ old('google_analytics_code', $googleAnalyticsCode ?? '') }}</textarea>
                         </div>
                         @error('google_analytics_code')
                             <p class="mt-2 text-sm text-red-600 ">{{ $message }}</p>
@@ -183,7 +188,7 @@
                     <div class="mt-4">
                         <button type="submit"
                             class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
-                            Save Analytics Code
+                            Save Header Code
                         </button>
                     </div>
                 </form>
