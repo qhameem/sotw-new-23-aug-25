@@ -29,6 +29,7 @@ const formatUrlWithoutRootSlash = (urlObject) => {
 const initialFormState = {
   id: null,
   link: '',
+  additional_resources: '',
   name: '',
   slug: '',
   tagline: '',

@@ -60,6 +60,27 @@
       </button>
     </div>
 
+    <div v-if="isAdmin" class="mt-4">
+      <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
+        AI extra context
+        <span class="ml-2 text-xs font-normal text-amber-700">Admin only</span>
+      </label>
+      <p class="mt-1 text-xs text-gray-500">
+        Add notes or extra URLs related to the main site. This gives the AI more source material for better autofill.
+      </p>
+      <textarea
+        id="additional-resources"
+        :value="additionalResources"
+        @input="handleAdditionalResourcesInput"
+        rows="4"
+        class="mt-2 block w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm shadow-sm placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+        placeholder="One item per line. Example:
+https://example.com/pricing
+https://docs.example.com
+Internal note: focus on the API and automation features."
+      ></textarea>
+    </div>
+
     <transition name="fade">
       <p
         v-if="clipboardFeedback"
@@ -154,6 +175,10 @@ import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: String,
+  additionalResources: {
+    type: String,
+    default: '',
+  },
   isLoading: Boolean,
   loadingProgress: Number,
   loadingMessage: String,
@@ -162,13 +187,17 @@ const props = defineProps({
   urlExistsError: Boolean,
   existingProduct: Object,
   submissionBgUrl: String,
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
   isSandboxMode: {
     type: Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'getStarted', 'clear']);
+const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear']);
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
@@ -178,6 +207,10 @@ const handleInput = (event) => {
   clipboardFeedback.value = '';
   console.log('[ProductURLInput] Input event:', value);
   emit('update:modelValue', value);
+};
+
+const handleAdditionalResourcesInput = (event) => {
+  emit('update:additionalResources', event.target.value);
 };
 
 const logButtonConditions = () => {

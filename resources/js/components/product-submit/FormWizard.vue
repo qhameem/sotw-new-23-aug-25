@@ -23,8 +23,11 @@
             <!-- URL Input Block -->
             <ProductURLInput
               :modelValue="form.link"
+              :additionalResources="form.additional_resources"
               @update:modelValue="handleUrlInputUpdate"
+              @update:additionalResources="handleAdditionalResourcesUpdate"
               :isLoading="isLoading"
+              :isAdmin="showAdminAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
               :loadingMessage="loadingMessage"
@@ -113,8 +116,11 @@
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
+                    :additionalResources="form.additional_resources"
                     @update:modelValue="handleUrlInputUpdate"
+                    @update:additionalResources="handleAdditionalResourcesUpdate"
                     :isLoading="isLoading"
+                    :isAdmin="showAdminAiContext"
                     :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
                     :loadingProgress="loadingProgress"
                     :loadingMessage="loadingMessage"
@@ -286,6 +292,7 @@ const {
 } = useProductForm(props.initialProduct);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
+const showAdminAiContext = computed(() => isAdmin.value && !form.id);
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {
@@ -404,6 +411,10 @@ const handleUrlInputUpdate = (val) => {
   urlExistsCheckTimeout = setTimeout(() => {
     checkUrlExists(val);
   }, 300);
+};
+
+const handleAdditionalResourcesUpdate = (val) => {
+  form.additional_resources = val;
 };
 
 const clearForm = () => {

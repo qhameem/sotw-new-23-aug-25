@@ -116,6 +116,7 @@ class ProductController extends Controller
             'name' => $oldInput['name'] ?? '',
             'slug' => $oldInput['slug'] ?? '',
             'link' => $oldInput['link'] ?? '',
+            'additional_resources' => $oldInput['additional_resources'] ?? '',
             'tagline' => $oldInput['tagline'] ?? '',
             'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
             'description' => $oldInput['description'] ?? '',
@@ -165,6 +166,7 @@ class ProductController extends Controller
             'name' => $oldInput['name'] ?? '',
             'slug' => $oldInput['slug'] ?? '',
             'link' => $oldInput['link'] ?? '',
+            'additional_resources' => $oldInput['additional_resources'] ?? '',
             'tagline' => $oldInput['tagline'] ?? '',
             'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
             'description' => $oldInput['description'] ?? '',
@@ -697,6 +699,7 @@ class ProductController extends Controller
                 'name' => $oldInput['name'] ?? $product->name,
                 'slug' => $oldInput['slug'] ?? $product->slug,
                 'link' => $oldInput['link'] ?? $product->link,
+                'additional_resources' => $oldInput['additional_resources'] ?? '',
                 'logo' => $product->proposed_logo_path ?? $product->logo,
                 'logo_url' => ($product->proposed_logo_path ? \Illuminate\Support\Facades\Storage::url($product->proposed_logo_path) : $product->logo_url),
                 'tagline' => $product->proposed_tagline ?? $product->tagline,
@@ -724,6 +727,7 @@ class ProductController extends Controller
                 'name' => $oldInput['name'] ?? $product->name,
                 'slug' => $oldInput['slug'] ?? $product->slug,
                 'link' => $oldInput['link'] ?? $product->link,
+                'additional_resources' => $oldInput['additional_resources'] ?? '',
                 'logo' => $product->logo,
                 'logo_url' => $product->logo_url,
                 'tagline' => $oldInput['tagline'] ?? $product->tagline,
@@ -2856,6 +2860,145 @@ class ProductController extends Controller
         return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 
+    protected function parseAdditionalResources(?string $rawInput): array
+    {
+        if (!is_string($rawInput) || trim($rawInput) === '') {
+            return [
+                'notes' => [],
+                'urls' => [],
+            ];
+        }
+
+        $notes = [];
+        $urls = [];
+        $seenEntries = [];
+
+        foreach (preg_split('/\r\n|\r|\n/', $rawInput) ?: [] as $entry) {
+            $entry = trim((string) $entry);
+            if ($entry === '') {
+                continue;
+            }
+
+            $entryKey = Str::lower($entry);
+            if (isset($seenEntries[$entryKey])) {
+                continue;
+            }
+
+            $seenEntries[$entryKey] = true;
+            $candidateUrl = $entry;
+
+            if (!preg_match('~^https?://~i', $candidateUrl) && preg_match('/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[\/?#].*)?$/', $candidateUrl)) {
+                $candidateUrl = 'https://' . $candidateUrl;
+            }
+
+            if (filter_var($candidateUrl, FILTER_VALIDATE_URL)) {
+                try {
+                    $urls[] = PublicUrlGuard::sanitizePublicHttpUrl($candidateUrl);
+                    continue;
+                } catch (\InvalidArgumentException) {
+                    // Fall through and keep the raw line as a note.
+                }
+            }
+
+            $notes[] = $entry;
+        }
+
+        return [
+            'notes' => array_slice($notes, 0, 8),
+            'urls' => array_slice(array_values(array_unique($urls)), 0, 3),
+        ];
+    }
+
+    protected function buildDocumentTextSnippet(DOMDocument $doc, int $bodyLimit = 1800): string
+    {
+        $parts = [];
+
+        $titleNode = $doc->getElementsByTagName('title')->item(0);
+        $title = trim((string) ($titleNode?->nodeValue ?? ''));
+        if ($title !== '') {
+            $parts[] = 'Title: ' . $title;
+        }
+
+        $descriptionContent = '';
+        foreach ($doc->getElementsByTagName('meta') as $meta) {
+            if (strtolower((string) $meta->getAttribute('name')) === 'description') {
+                $descriptionContent = trim((string) $meta->getAttribute('content'));
+                break;
+            }
+        }
+
+        if ($descriptionContent !== '') {
+            $parts[] = 'Meta Description: ' . $descriptionContent;
+        }
+
+        $cleanDoc = clone $doc;
+        $cleanXpath = new DOMXPath($cleanDoc);
+        $noiseQuery = '//nav | //header | //footer | //script | //style | //noscript | //aside'
+            . ' | //video | //iframe | //form | //figure | //picture | //template'
+            . ' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
+
+        foreach ($cleanXpath->query($noiseQuery) as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        foreach (['h1', 'h2', 'h3'] as $tag) {
+            foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
+                $text = trim((string) $node->textContent);
+                if ($text !== '') {
+                    $parts[] = strtoupper($tag) . ': ' . $text;
+                }
+            }
+        }
+
+        $bodyText = trim((string) ($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? ''));
+        if ($bodyText !== '') {
+            $parts[] = 'Body: ' . mb_substr($bodyText, 0, $bodyLimit);
+        }
+
+        return implode("\n", $parts);
+    }
+
+    protected function buildAdditionalResourcesContext(?string $rawInput): string
+    {
+        $resources = $this->parseAdditionalResources($rawInput);
+        if (empty($resources['notes']) && empty($resources['urls'])) {
+            return '';
+        }
+
+        $sections = [];
+
+        if (!empty($resources['notes'])) {
+            $sections[] = "Admin notes:\n- " . implode("\n- ", $resources['notes']);
+        }
+
+        foreach ($resources['urls'] as $resourceUrl) {
+            try {
+                $response = Http::timeout(8)->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                ])->get($resourceUrl);
+
+                if (!$response->successful()) {
+                    continue;
+                }
+
+                $doc = new DOMDocument();
+                @$doc->loadHTML($response->body());
+
+                $snippet = $this->buildDocumentTextSnippet($doc);
+                $sections[] = $snippet !== ''
+                    ? "Additional resource URL: {$resourceUrl}\n{$snippet}"
+                    : "Additional resource URL: {$resourceUrl}";
+            } catch (\Throwable $e) {
+                Log::warning('Failed to fetch additional resource for add-product AI context.', [
+                    'url' => $resourceUrl,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return implode("\n\n", $sections);
+    }
+
     public function processUrlStream(Request $request)
     {
         set_time_limit(120);
@@ -2885,6 +3028,7 @@ class ProductController extends Controller
             $name = $request->input('name');
             $tagline = $request->input('tagline');
             $fetchContent = $request->input('fetch_content', true);
+            $additionalResourcesContext = $this->buildAdditionalResourcesContext($request->input('additional_resources'));
 
             $description = '';
             $extractedTagline = '';
@@ -2975,6 +3119,9 @@ class ProductController extends Controller
                     // Cap body content to avoid drowning out product metadata in the AI context window
                     $rawBodyText = trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
                     $textContent .= "\n\nBODY CONTENT:\n" . mb_substr($rawBodyText, 0, 4000);
+                    if ($additionalResourcesContext !== '') {
+                        $textContent .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                    }
 
                     $productNameForAI = trim((string) $name) !== ''
                         ? $name
@@ -3049,7 +3196,11 @@ class ProductController extends Controller
                 $logos = $this->logoExtractor->extract($url, $htmlContent);
 
                 $sendUpdate('Classifying features and categories...', 95);
-                $classificationResult = $this->categoryClassifier->classify($htmlContent);
+                $classificationSource = $htmlContent;
+                if ($additionalResourcesContext !== '') {
+                    $classificationSource .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                }
+                $classificationResult = $this->categoryClassifier->classify($classificationSource);
                 $categories = $classificationResult['categories'] ?? [];
                 $useCases = $classificationResult['use_cases'] ?? [];
                 $bestFor = $classificationResult['best_for'] ?? [];
@@ -3148,6 +3299,7 @@ class ProductController extends Controller
         $tagline = $request->input('tagline');
 
         $fetchContent = $request->input('fetch_content', true);
+        $additionalResourcesContext = $this->buildAdditionalResourcesContext($request->input('additional_resources'));
 
         $description = '';
         $extractedTagline = '';
@@ -3239,6 +3391,9 @@ class ProductController extends Controller
                     }
                 }
                 $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+                if ($additionalResourcesContext !== '') {
+                    $textContent .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                }
 
                 $productNameForAI = trim((string) $name) !== ''
                     ? $name
@@ -3336,7 +3491,11 @@ class ProductController extends Controller
             $logos = $this->logoExtractor->extract($url, $htmlContent);
 
             // Classify categories and bestFor from the HTML content
-            $classificationResult = $this->categoryClassifier->classify($htmlContent);
+            $classificationSource = $htmlContent;
+            if ($additionalResourcesContext !== '') {
+                $classificationSource .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+            }
+            $classificationResult = $this->categoryClassifier->classify($classificationSource);
             $categories = $classificationResult['categories'] ?? [];
             $useCases = $classificationResult['use_cases'] ?? [];
             $bestFor = $classificationResult['best_for'] ?? [];

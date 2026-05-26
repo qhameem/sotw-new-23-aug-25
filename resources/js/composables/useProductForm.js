@@ -108,6 +108,7 @@ export function useProductForm() {
 
     return {
       link: 'https://sandbox-preview.test',
+      additional_resources: "https://sandbox-preview.test/pricing\nhttps://sandbox-preview.test/docs\nFocus on the API automation and one-time setup workflow.",
       name: 'Sandbox Project',
       tagline: 'Sandbox autofill for testing the submission flow',
       tagline_detailed: 'Preview AI autofill states without submitting a real product',
@@ -414,6 +415,7 @@ export function useProductForm() {
     form.bestFor = [];
     form.bestFor_custom = [];
     form.pricing = [];
+    form.additional_resources = '';
     form.tech_stack = [];
     form.logo = null;
     form.gallery = [null];
@@ -628,6 +630,10 @@ export function useProductForm() {
       // Add X account if available
       if (form.x_account) {
         formData.append('x_account', form.x_account);
+      }
+
+      if (globalFormState.isAdmin.value && form.additional_resources) {
+        formData.append('additional_resources', form.additional_resources);
       }
 
       // Add maker links if available
@@ -905,7 +911,10 @@ export function useProductForm() {
 
     try {
       updateAutofillProgress('Fetching basic metadata and taking screenshot...', 10);
-      const response = await axios.post('/api/fetch-initial-metadata', { url: linkValue });
+      const response = await axios.post('/api/fetch-initial-metadata', {
+        url: linkValue,
+        additional_resources: form.additional_resources || '',
+      });
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       const data = response.data;
 
@@ -965,7 +974,7 @@ export function useProductForm() {
     }
   };
 
-  const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, onProgress = null }) => {
+  const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, additionalResources = '', onProgress = null }) => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const response = await fetch('/api/process-url-stream', {
@@ -981,6 +990,7 @@ export function useProductForm() {
         name,
         tagline,
         fetch_content: fetchContent,
+        additional_resources: additionalResources,
       })
     });
 
@@ -1137,6 +1147,7 @@ export function useProductForm() {
         name: nameValue,
         tagline: taglineValue,
         fetchContent: shouldFetchContent,
+        additionalResources: form.additional_resources || '',
         onProgress: (streamData) => {
           if (streamData.progress !== undefined && streamData.progress !== null) {
             const isFinalStreamStep = Number(streamData.progress) >= 100;
@@ -1421,6 +1432,7 @@ export function useProductForm() {
       form.pricing_page_url = sandboxPayload.pricing_page_url;
       form.x_account = sandboxPayload.x_account;
       form.maker_links = sandboxPayload.maker_links;
+      form.additional_resources = sandboxPayload.additional_resources;
       loadingStates.categories = false;
       loadingStates.bestFor = false;
       updateAutofillProgress('Finishing logo and media suggestions...', 92);
@@ -1732,6 +1744,7 @@ export function useProductForm() {
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
+              additional_resources: initialData.additional_resources || '',
               maker_links: initialData.maker_links || [],
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
@@ -1838,6 +1851,7 @@ export function useProductForm() {
               tech_stack: (initialData.current_tech_stacks || []).map(id => parseInt(id)),
               video_url: parsedVideoUrl,
               id: initialData.id, // Set the product ID
+              additional_resources: initialData.additional_resources || '',
               maker_links: initialData.maker_links || [],
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
@@ -1948,6 +1962,7 @@ export function useProductForm() {
                     pricing: separatedCategories.pricing,
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: parsedVideoUrl,
+                    additional_resources: initialData.additional_resources || '',
                     fromSource: fromParam || null,
                     comparison_overrides_input: initialData.comparison_overrides_input || '',
                     alternative_overrides_input: initialData.alternative_overrides_input || '',
@@ -1976,6 +1991,7 @@ export function useProductForm() {
                     tech_stack: initialData.current_tech_stacks || [],
                     video_url: initialData.video_url || '',
                     id: initialData.id, // Set the product ID
+                    additional_resources: initialData.additional_resources || '',
                     maker_links: initialData.maker_links || [],
                     sell_product: !!initialData.sell_product,
                     asking_price: initialData.asking_price,
