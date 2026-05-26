@@ -432,17 +432,17 @@
         <div v-else class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Admin Submission</h3>
           <p class="text-sm text-gray-600 mb-6">
-            Submit the product from the bottom of the form. Use Sandbox mode from the top of the page if you only want to test button states.
+            {{ adminCreateDescription }}
           </p>
           <div class="flex flex-col items-start gap-4">
-            <div v-if="modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
+            <div v-if="isSandboxAvailable && modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
               Sandbox mode is active, so this button will simulate submission without saving anything.
             </div>
             <div v-else-if="!isAllRequiredFilled" class="text-sm text-amber-600 font-medium">
               Fill the required fields to submit this product.
             </div>
             <AnimatedSubmitButton
-              v-if="modelValue.sandbox_mode"
+              v-if="isSandboxAvailable && modelValue.sandbox_mode"
               :label="adminCreateActionLabel"
               :state="submitButtonVisualState"
               :disabled="isLoading"
@@ -504,6 +504,10 @@ const props = defineProps({
   },
   allTechStacks: Array,
   isAdmin: Boolean,
+  adminSandboxEnabled: {
+    type: Boolean,
+    default: true,
+  },
   isLoading: Boolean,
   submitState: {
     type: String,
@@ -686,7 +690,7 @@ const submitButtonVisualState = computed(() => {
   return 'idle';
 });
 
-const isSandboxAvailable = computed(() => !props.modelValue.id);
+const isSandboxAvailable = computed(() => !props.modelValue.id && props.isAdmin && props.adminSandboxEnabled);
 
 const adminDescription = computed(() => {
   if (isSandboxAvailable.value) {
@@ -707,6 +711,14 @@ const adminActionLabel = computed(() => {
 const adminCreateActionLabel = computed(() => (
   props.modelValue.sandbox_mode ? 'Run Sandbox Submit' : 'Submit Product'
 ));
+
+const adminCreateDescription = computed(() => {
+  if (isSandboxAvailable.value) {
+    return 'Submit the product from the bottom of the form. Use Sandbox mode from the top of the page if you only want to test button states.';
+  }
+
+  return 'Submit the product from the bottom of the form. Sandbox mode is currently disabled in admin settings.';
+});
 
 const submitButtonLabel = computed(() => {
   if (wantsBadgeLaunch.value && props.modelValue.badge_verified) {

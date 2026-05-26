@@ -124,6 +124,7 @@ export const createProductFormState = () => {
     allPricing: ref([]),
     allTechStacks: ref([]),
     isAdmin: ref(false),
+    adminSandboxEnabled: ref(true),
     form: { ...initialFormState },
     sidebarSteps: [...sidebarSteps],
   };

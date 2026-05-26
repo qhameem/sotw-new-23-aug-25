@@ -54,6 +54,7 @@
                     data-display-data="{{ json_encode($displayData ?? []) }}"
                     data-submission-bg-url="{{ $submissionBgUrl }}"
                     data-is-admin="{{ (Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
+                    data-admin-sandbox-enabled="{{ ($adminSandboxEnabled ?? true) ? 'true' : 'false' }}"
                     data-use-case-categories="{{ json_encode(($useCaseCategories ?? collect())->toArray()) }}"
                     data-pricing-categories="{{ json_encode($pricingCategories->toArray() ?? []) }}"
                     data-platform-categories="{{ json_encode($platformCategories->toArray() ?? []) }}"

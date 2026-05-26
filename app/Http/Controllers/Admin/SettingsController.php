@@ -33,6 +33,7 @@ class SettingsController extends Controller
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
+        $adminSandboxEnabled = (bool) ($settings['admin_add_product_sandbox_enabled'] ?? true);
         $badgeService = app(BadgeService::class);
         $embedData = $badgeService->getEmbedData();
         $badgeImageUrl = $embedData['badge_image_url'];
@@ -46,6 +47,7 @@ class SettingsController extends Controller
             'googleAnalyticsCode',
             'premiumProductSpots',
             'productPublishTime',
+            'adminSandboxEnabled',
             'badgeImageUrl',
             'badgeImageSvgUrl',
             'badgeImagePngUrl',
@@ -221,6 +223,29 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to save product publish time: ' . $e->getMessage());
             return back()->with('error', 'Failed to save product publish time. Please check logs.');
+        }
+    }
+
+    public function storeAdminSandboxMode(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $settings = $this->loadSettings();
+        $settings['admin_add_product_sandbox_enabled'] = $request->boolean('admin_add_product_sandbox_enabled');
+
+        try {
+            $this->saveSettings($settings);
+            Log::info('Admin add-product sandbox mode updated by user: ' . Auth::id(), [
+                'enabled' => $settings['admin_add_product_sandbox_enabled'],
+            ]);
+
+            return back()->with('success', 'Admin sandbox mode saved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save admin sandbox mode: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save admin sandbox mode. Please check logs.');
         }
     }
 

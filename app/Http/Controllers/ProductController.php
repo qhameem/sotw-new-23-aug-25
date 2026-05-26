@@ -101,6 +101,7 @@ class ProductController extends Controller
     {
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
 
         [
             'regularCategories' => $regularCategories,
@@ -140,7 +141,8 @@ class ProductController extends Controller
             'pricingCategories',
             'platformCategories',
             'allTechStacksData',
-            'types'
+            'types',
+            'adminSandboxEnabled'
         ));
     }
 
@@ -148,6 +150,7 @@ class ProductController extends Controller
     {
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
 
         [
             'regularCategories' => $regularCategories,
@@ -183,7 +186,8 @@ class ProductController extends Controller
             'platformCategories',
             'allTechStacksData',
             'types',
-            'submissionBgUrl'
+            'submissionBgUrl',
+            'adminSandboxEnabled'
         ));
     }
 
@@ -215,7 +219,23 @@ class ProductController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = $request->user();
-        $isAdminSandbox = $user && $user->hasRole('admin') && $request->boolean('sandbox_mode');
+        $isAdmin = $user && $user->hasRole('admin');
+        $requestedSandboxMode = $request->boolean('sandbox_mode');
+        $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
+
+        if ($isAdmin && $requestedSandboxMode && ! $adminSandboxEnabled) {
+            $message = 'Sandbox mode is disabled in admin settings.';
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
+            return back()->withErrors(['sandbox_mode' => $message])->withInput();
+        }
+
+        $isAdminSandbox = $isAdmin && $adminSandboxEnabled && $requestedSandboxMode;
 
         if ($isAdminSandbox) {
             $message = 'Sandbox submission complete. No product was saved to the database.';
@@ -744,6 +764,7 @@ class ProductController extends Controller
         ]);
 
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+        $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
 
         return view('products.create', compact(
             'product',
@@ -758,7 +779,8 @@ class ProductController extends Controller
             'selectedUseCaseCategories',
             'selectedBestForCategories',
             'selectedPlatformCategories',
-            'submissionBgUrl'
+            'submissionBgUrl',
+            'adminSandboxEnabled'
         ));
     }
 
@@ -3838,6 +3860,21 @@ class ProductController extends Controller
             ->pluck('categories.id')
             ->map(fn ($id) => (string) $id)
             ->toArray();
+    }
+
+    private function isAdminAddProductSandboxEnabled(): bool
+    {
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return true;
+        }
+
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
+
+        if (!is_array($settings)) {
+            return true;
+        }
+
+        return (bool) ($settings['admin_add_product_sandbox_enabled'] ?? true);
     }
 
     protected function getNextLaunchTimeIso(): string

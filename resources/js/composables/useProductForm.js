@@ -13,6 +13,7 @@ let loadingAnimationFrameId = null;
 
 export function useProductForm() {
   const isAdmin = globalFormState.isAdmin;
+  const adminSandboxEnabled = globalFormState.adminSandboxEnabled;
   const submissionBgUrl = globalFormState.submissionBgUrl;
   const extractionErrors = globalFormState.extractionErrors;
   const form = sharedForm;
@@ -42,6 +43,12 @@ export function useProductForm() {
   const resetManualMediaChoices = () => {
     globalFormState.manualLogoChosen.value = false;
     globalFormState.manualScreenshotChosen.value = false;
+  };
+
+  const syncAdminSandboxAvailability = () => {
+    if (!globalFormState.adminSandboxEnabled.value && form.sandbox_mode) {
+      form.sandbox_mode = false;
+    }
   };
 
   const mergeAutofillLinks = (existingLinks = [], fetchedLinks = []) => {
@@ -456,7 +463,9 @@ export function useProductForm() {
     }
 
     let didSucceed = false;
-    const isSandboxSubmission = globalFormState.isAdmin.value && form.sandbox_mode;
+    const isSandboxSubmission = globalFormState.isAdmin.value
+      && globalFormState.adminSandboxEnabled.value
+      && form.sandbox_mode;
 
     try {
       // Set loading state to show the loader
@@ -779,7 +788,7 @@ export function useProductForm() {
   };
 
   const validateForm = () => {
-    if (globalFormState.isAdmin.value && form.sandbox_mode) {
+    if (globalFormState.isAdmin.value && globalFormState.adminSandboxEnabled.value && form.sandbox_mode) {
       showErrorMessage.value = false;
       errorMessage.value = '';
       return true;
@@ -1554,7 +1563,9 @@ export function useProductForm() {
       const element = document.getElementById('product-submit-app');
       if (element) {
         globalFormState.isAdmin.value = element.getAttribute('data-is-admin') === 'true';
+        globalFormState.adminSandboxEnabled.value = element.getAttribute('data-admin-sandbox-enabled') !== 'false';
         globalFormState.submissionBgUrl.value = element.getAttribute('data-submission-bg-url') || '';
+        syncAdminSandboxAvailability();
       }
     } catch (error) {
       console.error('Failed to fetch initial form data:', error);
@@ -2023,6 +2034,7 @@ export function useProductForm() {
     if (savedData) {
       if (savedData.link) {
         await updateFormMultiple(savedData);
+        syncAdminSandboxAvailability();
         globalFormState.logoPreview.value = savedData.logoPreview || null;
         globalFormState.galleryPreviews.value = savedData.galleryPreviews
           ? [savedData.galleryPreviews[0] || null]
@@ -2065,7 +2077,8 @@ export function useProductForm() {
     allBestFor: globalFormState.allBestFor,
     allPricing: globalFormState.allPricing,
     allTechStacks: globalFormState.allTechStacks,
-    isAdmin: globalFormState.isAdmin,
+    isAdmin,
+    adminSandboxEnabled,
     form,
     sidebarSteps,
     errorMessage,

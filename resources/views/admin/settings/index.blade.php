@@ -111,6 +111,48 @@
             </div>
         </div>
 
+        @php
+            $adminSandboxEnabledInput = old('admin_add_product_sandbox_enabled', $adminSandboxEnabled ? '1' : '0');
+        @endphp
+
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Add Product Sandbox Mode
+                </h3>
+                <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                    <p>Allow admins to use Sandbox mode on <code>/add-product</code> for dry-run submissions that never save to the database.</p>
+                </div>
+                <form action="{{ route('admin.settings.storeAdminSandboxMode') }}" method="POST" class="mt-5">
+                    @csrf
+                    <input type="hidden" name="admin_add_product_sandbox_enabled" value="0">
+                    <label for="admin_add_product_sandbox_enabled" class="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
+                        <input
+                            id="admin_add_product_sandbox_enabled"
+                            type="checkbox"
+                            name="admin_add_product_sandbox_enabled"
+                            value="1"
+                            class="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            @checked((string) $adminSandboxEnabledInput === '1')
+                        >
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Enable admin sandbox on the add-product page</p>
+                            <p class="mt-1 text-sm text-gray-500">When off, the sandbox toggle is hidden and sandbox requests are rejected.</p>
+                        </div>
+                    </label>
+                    @error('admin_add_product_sandbox_enabled')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <div class="mt-4">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
+                            Save Sandbox Setting
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Google Analytics Integration Section -->
         <div class="mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">

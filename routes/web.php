@@ -189,6 +189,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('settings/send-test-email', [\App\Http\Controllers\Admin\SettingsController::class, 'sendTestEmail'])->name('settings.sendTestEmail');
     Route::post('settings/store-premium-product-spots', [\App\Http\Controllers\Admin\SettingsController::class, 'storePremiumProductSpots'])->name('settings.storePremiumProductSpots');
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
+    Route::post('settings/store-admin-sandbox-mode', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAdminSandboxMode'])->name('settings.storeAdminSandboxMode');
     Route::post('settings/store-footer-embed-codes', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFooterEmbedCodes'])->name('settings.storeFooterEmbedCodes');
     Route::post('settings/store-badge-embed-code', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeEmbedCode'])->name('settings.storeBadgeEmbedCode');
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('settings.emailTemplates');

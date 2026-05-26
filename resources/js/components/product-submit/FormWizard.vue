@@ -169,6 +169,7 @@
                     :logoPreview="logoPreview"
                     :allTechStacks="allTechStacks"
                     :isAdmin="isAdmin"
+                    :adminSandboxEnabled="adminSandboxEnabled"
                     :isLoading="isLoading"
                     :submitState="submitState"
                     @submit="submitProduct"
@@ -267,6 +268,7 @@ const {
   allPricing,
   allTechStacks,
   isAdmin,
+  adminSandboxEnabled,
   isUrlInvalid,
   urlTrimSuggestion,
   initializeFormData,
@@ -283,7 +285,7 @@ const {
   resetManualMediaChoices
 } = useProductForm(props.initialProduct);
 
-const showAdminSandboxControls = computed(() => isAdmin.value && !form.id);
+const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {
@@ -305,6 +307,12 @@ watch(() => form.link, (newVal) => {
   if (!newVal) originalFavicon.value = null;
   console.log('[FormWizard] form.link changed:', newVal);
 });
+
+watch(showAdminSandboxControls, (isVisible) => {
+  if (!isVisible && form.sandbox_mode) {
+    form.sandbox_mode = false;
+  }
+}, { immediate: true });
 
 // Navigation Steps
 const steps = [
