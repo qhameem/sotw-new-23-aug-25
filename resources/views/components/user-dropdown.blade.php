@@ -49,11 +49,6 @@
                 </a>
             </div>
             <div class="border-t border-gray-200 my-1"></div>
-            <a href="{{ route('categories.index') }}"
-                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-squares-four class="mr-2 h-5 w-5 text-gray-400" />Categories</a>
-            <a href="{{ route('articles.index') }}"
-                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-file-text class="mr-2 h-5 w-5 text-gray-400" />Articles</a>
-            <div class="border-t border-gray-200 my-1"></div>
             @role('admin')
             <div class="px-2 py-1">
                 <button type="button" @click="toggleAdminSection('moderation')"
@@ -137,6 +132,8 @@
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-file-text class="mr-2 h-5 w-5 text-gray-400" />My Articles</a>
             <a href="{{ url('/my-products') }}"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-package class="mr-2 h-5 w-5 text-gray-400" />My Products</a>
+            <a href="{{ route('collections.index') }}"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-bookmark-simple class="mr-2 h-5 w-5 text-gray-400" />My Collections</a>
             <div class="border-t border-gray-200 my-1"></div>
             <form method="POST" action="{{ route('logout') }}" x-data="{ loggingOut: false }" @submit="loggingOut = true">
                 @csrf

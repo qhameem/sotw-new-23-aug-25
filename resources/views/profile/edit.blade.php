@@ -21,6 +21,12 @@
             </div>
         </div>
 
+        <div id="collections" class="p-4 sm:p-8 bg-white border border-gray-100 sm:rounded-lg">
+            <div class="max-w-4xl">
+                @include('profile.partials.collections-summary-card')
+            </div>
+        </div>
+
         <div class="p-4 sm:p-8 bg-white border border-gray-100 sm:rounded-lg">
             <div class="max-w-xl">
                 @include('profile.partials.delete-user-form')

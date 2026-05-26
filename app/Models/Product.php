@@ -13,6 +13,7 @@ use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
 use App\Helpers\HtmlHelper;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
@@ -298,6 +299,18 @@ class Product extends Model implements Sitemapable
     public function userUpvotes()
     {
         return $this->hasMany(UserProductUpvote::class);
+    }
+
+    public function collectionItems(): HasMany
+    {
+        return $this->hasMany(ProductCollectionItem::class);
+    }
+
+    public function productCollections(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductCollection::class, 'product_collection_items')
+            ->withPivot(['comment'])
+            ->withTimestamps();
     }
 
     public function weekStats(): HasMany

@@ -35,6 +35,8 @@ use App\Http\Controllers\AdInteractionController;
 use App\Http\Controllers\ArticleEditorController;
 use App\Http\Controllers\ProductInteractionController;
 use App\Http\Controllers\ProductClaimController;
+use App\Http\Controllers\ProductCollectionController;
+use App\Http\Controllers\ProductCollectionItemController;
 use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\IndexNowKeyController;
@@ -73,6 +75,13 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotificationPreferences'])->name('profile.update.notifications'); // Added route
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/my/collections', [ProductCollectionController::class, 'index'])->name('collections.index');
+    Route::post('/collections', [ProductCollectionController::class, 'store'])->name('collections.store');
+    Route::patch('/collections/{collection}', [ProductCollectionController::class, 'update'])->name('collections.update');
+    Route::delete('/collections/{collection}', [ProductCollectionController::class, 'destroy'])->name('collections.destroy');
+    Route::post('/products/{product}/collections/sync', [ProductCollectionItemController::class, 'sync'])->name('products.collections.sync');
+    Route::patch('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'update'])->name('collections.items.update');
+    Route::delete('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'destroy'])->name('collections.items.destroy');
     Route::post('/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
     Route::get('/my-products', [ProductController::class, 'myProducts'])->name('products.my');
     Route::patch('/products/{product}/inline-update', [ProductInlineUpdateController::class, 'update'])->name('products.inline-update');
@@ -241,6 +250,7 @@ Route::get('/monthly/{year}/{month}', [ProductController::class, 'productsByMont
 Route::get('/yearly', [ProductController::class, 'redirectToCurrentYear'])->name('products.yearly.redirect');
 Route::get('/yearly/{year}', [ProductController::class, 'productsByYear'])->name('products.byYear');
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
+Route::get('/collections/{owner:public_handle}/{collectionSlug}', [ProductCollectionController::class, 'show'])->name('collections.show');
 
 
 
@@ -294,7 +304,6 @@ Route::get('/alternatives/{product:slug}', [PseoController::class, 'alternatives
 Route::get('/built-with/{techstack:slug}', [PseoController::class, 'builtWith'])->name('pseo.builtWith');
 Route::get('/compare/{params}', [PseoController::class, 'compare'])->name('pseo.compare')->where('params', '.+-vs-.+');
 Route::get('/software/{pricing:slug}', [PseoController::class, 'pricingModel'])->name('pseo.pricing');
-
 // Dedicated product page - Ensure this doesn't conflict with article post slugs if products can have any slug.
 // If product slugs might overlap with 'articles', consider prefixing product routes, e.g., /products/{product:slug}
 // Redirect for old product URLs

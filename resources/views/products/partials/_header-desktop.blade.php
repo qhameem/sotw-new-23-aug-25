@@ -101,8 +101,39 @@
                 </div>
             </div>
 
-            <div class="flex shrink-0 self-center">
+            <div class="flex shrink-0 self-center items-center gap-3">
                 <x-products.visit-website-button :product="$product" surface="product_details" label="Visit" content-class="" class="font-bold" />
+
+                <div
+                    x-data="{ saved: {{ $isSavedByCurrentUser ? 'true' : 'false' }} }"
+                    @product-collections-synced.window="saved = $event.detail.isSaved"
+                    class="group relative"
+                >
+                    <button
+                        type="button"
+                        @click="{{ Auth::check() ? "\$dispatch('open-modal', { name: 'product-save-modal' })" : "\$dispatch('open-modal', { name: 'login-required-modal' })" }}"
+                        class="group inline-flex w-[42px] items-center justify-center rounded-md border px-3 py-1.5 text-sm leading-5 transition-colors"
+                        :class="saved ? 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+                        aria-label="Save product"
+                    >
+                        <svg x-show="!saved" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <path d="M5 4.75A1.75 1.75 0 0 1 6.75 3h10.5A1.75 1.75 0 0 1 19 4.75V21l-7-4-7 4V4.75Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M12 8.25v5.5M9.25 11h5.5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <svg x-show="saved" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" aria-hidden="true" style="display: none;">
+                            <path d="M6.75 3h10.5A1.75 1.75 0 0 1 19 4.75V21l-7-4-7 4V4.75A1.75 1.75 0 0 1 6.75 3Z" stroke-width="1.2" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+
+                    <span
+                        x-show="!saved"
+                        x-cloak
+                        class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 shadow-sm group-hover:block"
+                        style="display: none;"
+                    >
+                        Add to collection
+                    </span>
+                </div>
             </div>
         </div>
     </div>

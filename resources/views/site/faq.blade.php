@@ -74,7 +74,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">Can I save or bookmark products I like?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Currently, we offer user accounts where you can manage your profile and submitted products. Features like upvoting are available, and we are considering adding bookmarking or "favorites" functionality in a future update.
+                        Yes. Signed-in users can save products into collections, reuse quick-start lists like Favorites or Saved for Later, and keep lists public or private.
                     </p>
                 </div>
                 <div>

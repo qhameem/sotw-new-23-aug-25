@@ -494,6 +494,10 @@
     @include('products.partials._admin-product-claim-modal', ['product' => $product])
 @endif
 
+@auth
+    @include('products.partials._save-to-collections-modal', ['product' => $product])
+@endauth
+
 <template class="delayed-body-snippet">
     <script src="https://app.tinyadz.com/scripts/v1.0/ads.js" data-site-id="689a2b0d06e074933a271e16" async></script>
 </template>

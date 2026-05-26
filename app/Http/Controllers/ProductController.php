@@ -9,6 +9,7 @@ use App\Models\Type;
 use App\Models\PremiumProduct;
 use App\Models\TechStack;
 use App\Models\ProductClaim;
+use App\Models\ProductCollection;
 use App\Models\UserProductUpvote; // Added for upvote checking
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
@@ -1673,11 +1674,51 @@ class ProductController extends Controller
             : collect();
         $currentUserClaim = null;
         $canClaimProduct = false;
+        $productCollectionOptions = [];
+        $isSavedByCurrentUser = false;
 
         if (Auth::check()) {
             /** @var \App\Models\User $currentUser */
             $currentUser = Auth::user();
             $canClaimProduct = $currentUser->id !== $product->user_id && !$currentUser->hasRole('admin');
+
+            $userCollections = $currentUser->productCollections()
+                ->with(['items' => fn ($query) => $query->where('product_id', $product->id)])
+                ->orderBy('name')
+                ->get();
+
+            if ($userCollections->isEmpty()) {
+                $productCollectionOptions = collect(ProductCollection::defaultNames())
+                    ->map(fn (string $name) => [
+                        'id' => null,
+                        'name' => $name,
+                        'visibility' => ProductCollection::VISIBILITY_PUBLIC,
+                        'selected' => false,
+                        'comment' => '',
+                        'is_default' => true,
+                        'default_name' => $name,
+                        'url' => null,
+                    ])
+                    ->all();
+            } else {
+                $productCollectionOptions = $userCollections->map(function (ProductCollection $collection) {
+                    $item = $collection->items->first();
+
+                    return [
+                        'id' => $collection->id,
+                        'name' => $collection->name,
+                        'visibility' => $collection->visibility,
+                        'selected' => $item !== null,
+                        'comment' => (string) ($item?->comment ?? ''),
+                        'is_default' => false,
+                        'default_name' => null,
+                        'url' => route('collections.show', $collection->publicRouteParameters()),
+                    ];
+                })->all();
+            }
+
+            $isSavedByCurrentUser = collect($productCollectionOptions)
+                ->contains(fn (array $collection) => $collection['selected']);
 
             if ($canClaimProduct) {
                 $currentUserClaim = ProductClaim::query()
@@ -1701,6 +1742,8 @@ class ProductController extends Controller
             'allCategories',
             'currentUserClaim',
             'canClaimProduct',
+            'productCollectionOptions',
+            'isSavedByCurrentUser',
             'productEditorial',
             'descriptionContent',
             'alternativeProducts',

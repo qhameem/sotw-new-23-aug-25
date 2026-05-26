@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use LemonSqueezy\Laravel\Billable;
 
@@ -16,6 +17,27 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, Billable;
 
+    public const RESERVED_PUBLIC_HANDLES = [
+        'admin',
+        'api',
+        'app',
+        'articles',
+        'collections',
+        'create',
+        'dashboard',
+        'edit',
+        'help',
+        'login',
+        'manage',
+        'my',
+        'new',
+        'profile',
+        'register',
+        'search',
+        'settings',
+        'support',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -23,6 +45,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'public_handle',
         'email',
         'password',
         'google_id',
@@ -74,6 +97,46 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(UserProductUpvote::class);
     }
+
+    public function productCollections(): HasMany
+    {
+        return $this->hasMany(ProductCollection::class);
+    }
+
+    public static function reservedPublicHandles(): array
+    {
+        return self::RESERVED_PUBLIC_HANDLES;
+    }
+
+    public function suggestedPublicHandle(): string
+    {
+        $baseHandle = Str::slug($this->name ?: Str::before((string) $this->email, '@'));
+
+        return $baseHandle !== '' ? $baseHandle : 'member';
+    }
+
+    public function ensurePublicHandle(): string
+    {
+        if (filled($this->public_handle)) {
+            return $this->public_handle;
+        }
+
+        $baseHandle = $this->suggestedPublicHandle();
+        $handle = $baseHandle;
+        $counter = 2;
+
+        while (static::query()
+            ->where('public_handle', $handle)
+            ->whereKeyNot($this->getKey())
+            ->exists()) {
+            $handle = $baseHandle . '-' . $counter++;
+        }
+
+        $this->forceFill(['public_handle' => $handle])->saveQuietly();
+
+        return $handle;
+    }
+
     public function avatar()
     {
         if ($this->google_avatar) {

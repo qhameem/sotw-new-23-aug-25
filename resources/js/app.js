@@ -85,65 +85,53 @@ authSyncChannel?.addEventListener('message', (event) => {
     handleIncomingAuthSync(event.data);
 });
 
-// Check if Alpine is already loaded (e.g., by Livewire) to avoid multiple instances
-if (!window.Alpine) {
-    import('alpinejs').then(Alpine => {
-        window.Alpine = Alpine.default;
+function firstValidationError(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
 
-        // Define the upvote component
-        window.Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
-            isUpvoted: isUpvoted,
-            votesCount: initialVotesCount,
-            errorMessage: '',
+    if (typeof payload.message === 'string' && payload.message.length > 0) {
+        return payload.message;
+    }
 
-            async toggleUpvote() {
-                if (!isAuthenticated) {
-                    // Redirect to login if not authenticated
-                    window.location.href = '/login';
-                    return;
-                }
+    if (!payload.errors || typeof payload.errors !== 'object') {
+        return null;
+    }
 
-                try {
-                    const response = await fetch(`/products/${productId}/upvote`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            product_id: productId,
-                        }),
-                    });
+    const firstKey = Object.keys(payload.errors)[0];
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.isUpvoted = data.is_upvoted;
-                        this.votesCount = data.votes_count;
-                        this.errorMessage = '';
-                    } else {
-                        const errorData = await response.json();
-                        this.errorMessage = errorData.message || 'An error occurred while processing your request';
-                    }
-                } catch (error) {
-                    console.error('Error toggling upvote:', error);
-                    this.errorMessage = 'Network error occurred. Please try again.';
-                }
-            }
-        }));
+    if (!firstKey || !Array.isArray(payload.errors[firstKey]) || payload.errors[firstKey].length === 0) {
+        return null;
+    }
 
-        window.Alpine.start();
-    });
-} else {
-    // Alpine is already loaded, just define the upvote component
-    window.Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
+    return payload.errors[firstKey][0];
+}
+
+function normalizeCollectionOptions(collections) {
+    if (!Array.isArray(collections)) {
+        return [];
+    }
+
+    return collections.map((collection) => ({
+        id: collection.id ?? null,
+        name: collection.name ?? '',
+        visibility: collection.visibility ?? 'public',
+        selected: Boolean(collection.selected),
+        comment: collection.comment ?? '',
+        is_default: Boolean(collection.is_default),
+        default_name: collection.default_name ?? null,
+        url: collection.url ?? null,
+    }));
+}
+
+function registerAlpineComponents(Alpine) {
+    Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
         isUpvoted: isUpvoted,
         votesCount: initialVotesCount,
         errorMessage: '',
 
         async toggleUpvote() {
             if (!isAuthenticated) {
-                // Redirect to login if not authenticated
                 window.location.href = '/login';
                 return;
             }
@@ -176,6 +164,117 @@ if (!window.Alpine) {
             }
         }
     }));
+
+    Alpine.data('productCollectionSaver', (config) => ({
+        collections: normalizeCollectionOptions(config.collections),
+        syncUrl: config.syncUrl,
+        csrfToken: config.csrfToken,
+        submitting: false,
+        message: '',
+        errorMessage: '',
+        newCollection: {
+            enabled: false,
+            name: '',
+            visibility: 'public',
+            comment: '',
+        },
+
+        selectedCollectionsPayload() {
+            return this.collections
+                .filter((collection) => collection.selected)
+                .map((collection) => ({
+                    id: collection.id,
+                    default_name: collection.default_name,
+                    comment: typeof collection.comment === 'string' ? collection.comment.trim() : '',
+                }));
+        },
+
+        newCollectionPayload() {
+            if (!this.newCollection.enabled) {
+                return {};
+            }
+
+            const name = this.newCollection.name.trim();
+
+            if (name === '') {
+                return {};
+            }
+
+            return {
+                name,
+                visibility: this.newCollection.visibility,
+                comment: this.newCollection.comment.trim(),
+            };
+        },
+
+        resetNewCollection() {
+            this.newCollection = {
+                enabled: false,
+                name: '',
+                visibility: 'public',
+                comment: '',
+            };
+        },
+
+        async save() {
+            this.submitting = true;
+            this.errorMessage = '';
+            this.message = '';
+
+            try {
+                const response = await fetch(this.syncUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        collections: this.selectedCollectionsPayload(),
+                        new_collection: this.newCollectionPayload(),
+                    }),
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    this.errorMessage = firstValidationError(payload) || 'We could not save your collections.';
+                    return;
+                }
+
+                this.collections = normalizeCollectionOptions(payload.collections);
+                this.resetNewCollection();
+                this.message = payload.message || 'Saved to your collections.';
+
+                window.dispatchEvent(new CustomEvent('product-collections-synced', {
+                    detail: {
+                        isSaved: Boolean(payload.is_saved),
+                        savedCollectionCount: Number(payload.saved_collection_count ?? 0),
+                    },
+                }));
+
+                window.setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('close-modal', { detail: 'product-save-modal' }));
+                }, 250);
+            } catch (error) {
+                console.error('Error saving product collections:', error);
+                this.errorMessage = 'Network error occurred. Please try again.';
+            } finally {
+                this.submitting = false;
+            }
+        },
+    }));
+}
+
+// Check if Alpine is already loaded (e.g., by Livewire) to avoid multiple instances
+if (!window.Alpine) {
+    import('alpinejs').then((Alpine) => {
+        window.Alpine = Alpine.default;
+        registerAlpineComponents(window.Alpine);
+        window.Alpine.start();
+    });
+} else {
+    registerAlpineComponents(window.Alpine);
 }
 
 if (document.getElementById('notification-bell-app')) {

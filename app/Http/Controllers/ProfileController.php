@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProductCollection;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,8 +17,19 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $collections = $request->user()
+            ->productCollections()
+            ->withCount('items')
+            ->orderBy('updated_at', 'desc')
+            ->limit(3)
+            ->get();
+
         return view('profile.edit', [
             'user' => $request->user(),
+            'recentProductCollections' => $collections,
+            'productCollectionsCount' => $request->user()->productCollections()->count(),
+            'savedProductsCount' => (int) $request->user()->productCollections()->withCount('items')->get()->sum('items_count'),
+            'defaultProductCollectionNames' => ProductCollection::defaultNames(),
         ]);
     }
 

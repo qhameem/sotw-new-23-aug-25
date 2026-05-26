@@ -1,11 +1,15 @@
 <section>
+    @php
+        $publicHandlePreview = old('public_handle', $user->public_handle) ?: $user->suggestedPublicHandle();
+    @endphp
+
     <header>
         <h2 class="text-lg font-medium text-gray-900">
             {{ __('Profile Information') }}
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
+            {{ __("Update your account details and choose the public handle used in collection URLs.") }}
         </p>
     </header>
 
@@ -45,6 +49,19 @@
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div>
+            <x-input-label for="public_handle" :value="__('Public handle')" />
+            <x-text-input id="public_handle" name="public_handle" type="text" class="mt-1 block w-full" :value="old('public_handle', $user->public_handle)" autocomplete="off" spellcheck="false" placeholder="{{ $user->suggestedPublicHandle() }}" />
+            <p class="mt-2 text-sm text-gray-600">
+                Used for public collection URLs like
+                <span class="font-medium text-gray-800">{{ url('/collections/' . $publicHandlePreview . '/favorites') }}</span>
+            </p>
+            <p class="mt-1 text-xs text-gray-500">
+                Lowercase letters, numbers, and hyphens only. Leave it empty and we will generate one automatically when needed.
+            </p>
+            <x-input-error class="mt-2" :messages="$errors->get('public_handle')" />
         </div>
 
         <div class="flex items-center gap-4">

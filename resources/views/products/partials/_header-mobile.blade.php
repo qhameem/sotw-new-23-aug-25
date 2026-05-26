@@ -90,6 +90,28 @@
 </div>
 
 {{-- Primary Action --}}
-<div class="mt-6 mb-6">
-    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px]" />
+<div class="mt-6 mb-6 flex items-center gap-3">
+    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] flex-1" />
+
+    <div
+        x-data="{ saved: {{ $isSavedByCurrentUser ? 'true' : 'false' }} }"
+        @product-collections-synced.window="saved = $event.detail.isSaved"
+        class="shrink-0"
+    >
+        <button
+            type="button"
+            @click="{{ Auth::check() ? "\$dispatch('open-modal', { name: 'product-save-modal' })" : "\$dispatch('open-modal', { name: 'login-required-modal' })" }}"
+            class="inline-flex h-[48px] w-[48px] items-center justify-center rounded-md border transition-colors"
+            :class="saved ? 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+            aria-label="Save product"
+        >
+            <svg x-show="!saved" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M5 4.75A1.75 1.75 0 0 1 6.75 3h10.5A1.75 1.75 0 0 1 19 4.75V21l-7-4-7 4V4.75Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M12 8.25v5.5M9.25 11h5.5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <svg x-show="saved" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" aria-hidden="true" style="display: none;">
+                <path d="M6.75 3h10.5A1.75 1.75 0 0 1 19 4.75V21l-7-4-7 4V4.75A1.75 1.75 0 0 1 6.75 3Z" stroke-width="1.2" stroke-linejoin="round" />
+            </svg>
+        </button>
+    </div>
 </div>
