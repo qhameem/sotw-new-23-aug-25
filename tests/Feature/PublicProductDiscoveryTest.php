@@ -111,6 +111,66 @@ class PublicProductDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function week_archive_requests_before_the_first_published_week_return_a_404()
+    {
+        Product::factory()->create([
+            'slug' => 'current-week-product',
+            'published_at' => now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY)->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.byWeek', [
+            'year' => 1999,
+            'week' => 46,
+        ]));
+
+        $response->assertNotFound();
+    }
+
+    /** @test */
+    public function week_archive_requests_with_invalid_week_numbers_return_a_404()
+    {
+        Product::factory()->create([
+            'slug' => 'invalid-week-guard-product',
+            'published_at' => now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY)->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $this->get(route('products.byWeek', [
+            'year' => now()->year,
+            'week' => 0,
+        ]))->assertNotFound();
+
+        $this->get(route('products.byWeek', [
+            'year' => now()->year,
+            'week' => 54,
+        ]))->assertNotFound();
+    }
+
+    /** @test */
+    public function empty_week_archive_requests_redirect_to_the_last_available_week_url()
+    {
+        $lastAvailableWeek = now()->copy()->subWeeks(2)->startOfWeek(Carbon::MONDAY);
+        $emptyWeek = now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY);
+
+        Product::factory()->create([
+            'slug' => 'last-available-week-product',
+            'published_at' => $lastAvailableWeek->copy()->addDay(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.byWeek', [
+            'year' => $emptyWeek->year,
+            'week' => $emptyWeek->weekOfYear,
+        ]));
+
+        $response->assertRedirect(route('products.byWeek', [
+            'year' => $lastAvailableWeek->year,
+            'week' => $lastAvailableWeek->weekOfYear,
+        ]));
+    }
+
+    /** @test */
     public function viewing_a_product_page_does_not_increment_impressions_on_the_initial_server_response()
     {
         $originalUpdatedAt = Carbon::parse('2026-01-20 09:30:00');

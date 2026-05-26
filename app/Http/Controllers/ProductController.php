@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Session; // Added for session management
 use Illuminate\Support\Facades\Log; // Added for logging
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Services\FaviconExtractorService;
 use App\Services\SlugService;
 use App\Services\TechStackDetectorService;
@@ -1308,6 +1309,11 @@ class ProductController extends Controller
 
     public function productsByWeek(Request $request, $year, $week, $isHomepage = false)
     {
+        $year = (int) $year;
+        $week = (int) $week;
+
+        $this->ensureWeekArchiveRequestIsInRange($request, $year, $week);
+
         $now = Carbon::now();
         if ($year > $now->year + 1) {
             abort(404);
@@ -1362,12 +1368,13 @@ class ProductController extends Controller
                 $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
 
                 if ($lastAvailableWeek) {
-                    $year = $lastAvailableWeek->year;
-                    $week = $lastAvailableWeek->weekOfYear;
-
-                    // Redirect to the last available week with products
-                    return $this->productsByWeek($request, $year, $week, false);
+                    return redirect()->route('products.byWeek', [
+                        'year' => $lastAvailableWeek->year,
+                        'week' => $lastAvailableWeek->weekOfYear,
+                    ]);
                 }
+
+                abort(404);
             }
         }
 
@@ -2337,6 +2344,82 @@ class ProductController extends Controller
         \Log::info("findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks");
         // If no week with products was found, return null
         return null;
+    }
+
+    private function ensureWeekArchiveRequestIsInRange(Request $request, int $year, int $week): void
+    {
+        $now = Carbon::now();
+
+        if ($week < 1 || $week > 53) {
+            $this->abortInvalidWeekArchiveRequest($request, $year, $week, 'invalid_week_number');
+        }
+
+        if ($year > $now->year + 1) {
+            $this->abortInvalidWeekArchiveRequest($request, $year, $week, 'too_far_in_future');
+        }
+
+        $bounds = $this->publishedWeekArchiveBounds();
+
+        if (!$bounds) {
+            return;
+        }
+
+        if ($this->compareWeekArchives($year, $week, $bounds['earliest_year'], $bounds['earliest_week']) < 0) {
+            $this->abortInvalidWeekArchiveRequest($request, $year, $week, 'before_first_published_week');
+        }
+    }
+
+    private function publishedWeekArchiveBounds(): ?array
+    {
+        $dateExpressions = $this->productDateExpressions();
+
+        $baseQuery = Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week');
+
+        $earliestWeek = (clone $baseQuery)
+            ->orderBy('year')
+            ->orderBy('week')
+            ->first();
+
+        $latestWeek = (clone $baseQuery)
+            ->orderByDesc('year')
+            ->orderByDesc('week')
+            ->first();
+
+        if (!$earliestWeek || !$latestWeek) {
+            return null;
+        }
+
+        return [
+            'earliest_year' => (int) $earliestWeek->year,
+            'earliest_week' => (int) $earliestWeek->week,
+            'latest_year' => (int) $latestWeek->year,
+            'latest_week' => (int) $latestWeek->week,
+        ];
+    }
+
+    private function compareWeekArchives(int $leftYear, int $leftWeek, int $rightYear, int $rightWeek): int
+    {
+        if ($leftYear === $rightYear) {
+            return $leftWeek <=> $rightWeek;
+        }
+
+        return $leftYear <=> $rightYear;
+    }
+
+    private function abortInvalidWeekArchiveRequest(Request $request, int $year, int $week, string $reason): never
+    {
+        Log::notice('Blocked week archive request outside the published range.', [
+            'reason' => $reason,
+            'year' => $year,
+            'week' => $week,
+            'path' => $request->path(),
+            'ip' => $request->ip(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 255, ''),
+            'referer' => $request->headers->get('referer'),
+        ]);
+
+        throw new NotFoundHttpException();
     }
 
     private function buildWeekNavigationItems(int $selectedYear, int $selectedWeek): array
