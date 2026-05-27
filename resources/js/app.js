@@ -125,10 +125,51 @@ function normalizeCollectionOptions(collections) {
 }
 
 function registerAlpineComponents(Alpine) {
-    Alpine.data('upvote', (isUpvoted, initialVotesCount, productId, productSlug, isAuthenticated, csrfToken) => ({
+    Alpine.data('upvote', (
+        isUpvoted,
+        initialVotesCount,
+        productId,
+        productSlug,
+        isAuthenticated,
+        csrfToken,
+        initialOutboundClicks = 0,
+        initialImpressions = 0,
+        useMomentumDisplay = false
+    ) => ({
         isUpvoted: isUpvoted,
         votesCount: initialVotesCount,
+        outboundClicksCount: Number(initialOutboundClicks) || 0,
+        impressionsCount: Number(initialImpressions) || 0,
+        useMomentumDisplay: Boolean(useMomentumDisplay),
         errorMessage: '',
+
+        showNumericVotes() {
+            return !this.useMomentumDisplay || this.votesCount >= 4;
+        },
+
+        displayCount() {
+            if (this.showNumericVotes()) {
+                return this.votesCount;
+            }
+
+            if (this.outboundClicksCount >= 3 || this.impressionsCount >= 25) {
+                return 'Rising';
+            }
+
+            return 'New';
+        },
+
+        displaySubtext() {
+            if (!this.useMomentumDisplay || this.showNumericVotes()) {
+                return '';
+            }
+
+            if (this.votesCount <= 1) {
+                return '';
+            }
+
+            return `${this.votesCount} votes`;
+        },
 
         async toggleUpvote() {
             if (!isAuthenticated) {

@@ -255,6 +255,12 @@
 
                 <div class="space-y-4">
                     @foreach($alternatives as $index => $alt)
+                        @php
+                            $votesCount = max(1, (int) ($alt->votes_count ?? 0));
+                            $outboundClicksCount = max(0, (int) ($alt->outbound_clicks_count ?? 0));
+                            $impressionsCount = max(0, (int) ($alt->impressions ?? 0));
+                            $momentumLabel = $votesCount >= 4 ? null : (($outboundClicksCount >= 3 || $impressionsCount >= 25) ? 'Rising' : 'New');
+                        @endphp
                         <article class="rounded-2xl border border-gray-100 p-4 transition-all hover:border-gray-200 hover:shadow-sm">
                             <div class="flex items-start gap-4">
                                 <span class="mt-1 w-5 flex-shrink-0 text-sm font-bold text-gray-300">{{ $index + 1 }}</span>
@@ -277,7 +283,15 @@
                                             <span class="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700">
                                                 {{ ($alt->match_source ?? null) === 'manual' ? 'Curated pick' : 'Algorithmic match' }}
                                             </span>
-                                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">{{ (int) $alt->votes_count }} votes</span>
+                                            @if($momentumLabel)
+                                                <span @class([
+                                                    'rounded-full border px-2.5 py-1',
+                                                    'border-slate-200 bg-slate-50 text-slate-500' => $momentumLabel === 'Rising',
+                                                    'border-slate-200 bg-slate-50 text-slate-600' => $momentumLabel !== 'Rising',
+                                                ])>{{ $momentumLabel }}@if($votesCount > 1) · {{ number_format($votesCount) }} votes @endif</span>
+                                            @else
+                                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">{{ number_format($votesCount) }} votes</span>
+                                            @endif
                                         </div>
                                     </div>
 

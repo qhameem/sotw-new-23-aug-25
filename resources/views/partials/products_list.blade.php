@@ -37,7 +37,16 @@
             $productShowUrl = route('products.show', $product->slug);
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
+            $isWeeklyPage = request()->routeIs('products.byWeek');
+            $isCategoryPage = request()->routeIs('categories.show');
+            $showMomentumMeta = $isHomePage || $isWeeklyPage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
+            $votesCount = max(1, (int) ($product->votes_count ?? 0));
+            $outboundClicksCount = max(0, (int) ($product->outbound_clicks_count ?? 0));
+            $impressionsCount = max(0, (int) ($product->impressions ?? 0));
+            $momentumLabel = $votesCount >= 4
+                ? 'Popular'
+                : (($outboundClicksCount >= 3 || $impressionsCount >= 25) ? 'Rising' : 'New');
             $itemNumber = null;
             if (!$isPromoted) {
                 $organicRank++;
@@ -126,6 +135,15 @@
                             <span class="px-2 py-1 font-semibold">Promoted</span>
                         </span>
                     @endif
+                    @if($showMomentumMeta && !$isPromoted)
+                        <span @class([
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]',
+                            'bg-slate-100 text-slate-500' => $momentumLabel === 'Rising',
+                            'bg-slate-100 text-slate-600' => $momentumLabel !== 'Rising',
+                        ])>
+                            {{ $momentumLabel }}
+                        </span>
+                    @endif
                     <meta itemprop="applicationCategory"
                         content="{{ $product->application_category ?? 'BusinessApplication' }}" />
                     <meta itemprop="operatingSystem" content="{{ $product->operating_system ?? 'Web' }}" />
@@ -134,14 +152,24 @@
                         'flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2',
                         'hidden md:flex' => $isHomePage,
                         'flex' => !$isHomePage,
-                    ])>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
+                        ])>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
                             fill="currentColor">
                             <path
                                 d="M6 13H2c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1zm16-4h-4c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V10c0-.6-.4-1-1-1zm-8-8h-4c-.6 0-1 .4-1 1v20c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1z" />
                         </svg>
-                        <span class="font-medium">{{ number_format($product->impressions) }}</span>
+                        <span class="font-medium">{{ number_format($impressionsCount) }}</span>
                     </div>
+                    @if($showMomentumMeta && !$isPromoted && $outboundClicksCount > 0)
+                        <div class="flex flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M5 12h14M13 5l7 7-7 7" />
+                            </svg>
+                            <span class="font-medium">{{ number_format($outboundClicksCount) }}</span>
+                        </div>
+                    @endif
 
                     <x-product-category-tags :categories="$product->categories" :withCounts="true" :hideOnMobile="true" />
                 </div>
@@ -183,7 +211,10 @@
                 'hidden md:flex' => $isHomePage,
                 'flex' => !$isHomePage,
             ])>
-                @include('partials.product-upvote-button', ['product' => $product])
+                @include('partials.product-upvote-button', [
+                    'product' => $product,
+                    'preferMomentumLabels' => $showMomentumMeta,
+                ])
             </div>
         </article>
 

@@ -43,6 +43,12 @@
         @else
             <div class="space-y-4">
                 @foreach($products as $index => $product)
+                    @php
+                        $votesCount = max(1, (int) ($product->votes_count ?? 0));
+                        $outboundClicksCount = max(0, (int) ($product->outbound_clicks_count ?? 0));
+                        $impressionsCount = max(0, (int) ($product->impressions ?? 0));
+                        $momentumLabel = $votesCount >= 4 ? null : (($outboundClicksCount >= 3 || $impressionsCount >= 25) ? 'Rising' : 'New');
+                    @endphp
                     <div class="flex items-start gap-4 p-4 border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-sm transition-all">
                         <span class="text-sm font-bold text-gray-300 w-5 mt-1 flex-shrink-0">{{ $index + 1 }}</span>
                         <div class="flex-shrink-0">
@@ -55,8 +61,19 @@
                             <p class="text-sm text-gray-500 mt-0.5">{{ $product->tagline }}</p>
                         </div>
                         <div class="flex-shrink-0 text-center">
-                            <span class="text-sm font-bold text-gray-700">{{ $product->votes_count }}</span>
-                            <p class="text-xs text-gray-400">votes</p>
+                            @if($momentumLabel)
+                                <span @class([
+                                    'text-sm font-semibold',
+                                    'text-slate-500' => $momentumLabel === 'Rising',
+                                    'text-slate-600' => $momentumLabel !== 'Rising',
+                                ])>{{ $momentumLabel }}</span>
+                                @if($votesCount > 1)
+                                    <p class="text-xs text-gray-400">{{ number_format($votesCount) }} votes</p>
+                                @endif
+                            @else
+                                <span class="text-sm font-bold text-gray-700">{{ number_format($votesCount) }}</span>
+                                <p class="text-xs text-gray-400">votes</p>
+                            @endif
                         </div>
                     </div>
                 @endforeach
