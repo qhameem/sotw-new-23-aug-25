@@ -94,9 +94,6 @@
                     <p class="text-gray-800 text-base">
                       <strong>Tagline:</strong> {{ product.tagline }}
                     </p>
-                    <p class="text-gray-800 text-base">
-                      <strong>Product Page Tagline:</strong> {{ product.tagline_detailed }}
-                    </p>
                     <div class="flex flex-wrap items-center mt-1">
                       <template v-for="(category, index) in product.categories.filter(cat => !isPricingCategory(cat) && !isBestForCategory(cat))" :key="category">
                         <a href="#" class="text-xs text-gray-500 hover:underline">{{ category }}</a>

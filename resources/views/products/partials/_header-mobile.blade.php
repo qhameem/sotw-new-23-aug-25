@@ -64,7 +64,7 @@
                 @keydown.enter="updateProduct(); editingProductPageTagline = false"
                 @keydown.escape="editingProductPageTagline = false" class="form-input">
         @else
-            {{ $product->product_page_tagline }}
+            {{ $product->product_page_tagline ?: $product->tagline }}
         @endif
     </p>
 </div>

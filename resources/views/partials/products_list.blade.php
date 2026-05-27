@@ -77,7 +77,7 @@
                 @if($productLogo)
                     <img src="{{ $productLogo }}" alt="{{ $product->name }} logo"
                         @class([
-                            'rounded-xl object-cover flex-shrink-0 bg-gray-100 md:w-12 md:h-12',
+                            'rounded-xl object-contain flex-shrink-0 bg-gray-100 md:w-12 md:h-12',
                             'w-10 h-10' => $isHomePage,
                             'w-12 h-12' => !$isHomePage,
                         ])

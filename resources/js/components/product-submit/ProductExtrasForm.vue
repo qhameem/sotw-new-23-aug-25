@@ -16,7 +16,7 @@
         :max="5"
       >
         <template #description>
-          <p class="text-xs text-gray-400 mt-1">Select the technologies that were used to develop the product.</p>
+          <div class="mb-2 text-[11px] text-gray-500">Which technologies were used to build your product?</div>
         </template>
       </SearchableDropdown>
       

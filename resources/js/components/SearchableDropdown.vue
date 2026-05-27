@@ -4,7 +4,9 @@
       <label class="block text-sm font-semibold text-gray-700">{{ label }}</label>
       <span v-if="max && max !== Infinity" class="text-sm text-gray-500">{{ selectedItems.length }}/{{ max }}</span>
     </div>
-    <slot name="description"></slot>
+    <div v-if="$slots.description" class="mb-2">
+      <slot name="description"></slot>
+    </div>
     <div class="relative">
       <div class="flex items-center px-2 py-1 border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-sky-400 focus-within:border-sky-400">
         <div :class="[selectedItems.length > 2 ? 'flex flex-wrap' : 'flex', 'gap-2']">

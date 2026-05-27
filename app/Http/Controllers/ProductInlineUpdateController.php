@@ -206,7 +206,7 @@ class ProductInlineUpdateController extends Controller
         }
 
         $request->validate([
-            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
         ]);
 
         $finalPath = app(ProductLogoStorageService::class)

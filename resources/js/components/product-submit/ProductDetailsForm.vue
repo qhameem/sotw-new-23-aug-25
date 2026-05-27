@@ -2,11 +2,12 @@
   <div class="space-y-8 mt-4">
     
     <!-- Project Name -->
-    <div>
+    <div :class="autofillLockClass('name')">
       <div class="flex justify-between mb-1">
         <label for="name" class="block text-xs font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
         <span class="text-xs text-gray-400">{{ (modelValue.name || '').length }}/40</span>
       </div>
+      <div class="mb-2 text-[11px] text-gray-500">What is your product called? This name will be used across the site and in the product URL.</div>
       <input 
         ref="nameInput" 
         type="text" 
@@ -26,45 +27,27 @@
       <p v-if="extractionErrors.name" class="mt-1 text-xs text-red-500">{{ extractionErrors.name }}</p>
     </div>
 
-    <!-- Taglines (Grouped) -->
-     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-           <div class="flex justify-between mb-1">
-             <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
-             <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
-           </div>
-           <textarea 
-             id="tagline" 
-             :value="modelValue.tagline" 
-             @input="updateField('tagline', $event.target.value)" 
-             maxlength="140" 
-             rows="2" 
-             placeholder="Short Product Hunt-style one-liner"
-             class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-           ></textarea>
-           <p class="mt-1 text-[11px] text-gray-500">Keep it short and clear. Explain what the product does in one punchy line.</p>
+    <!-- Tagline -->
+     <div :class="autofillLockClass('tagline')">
+        <div class="flex justify-between mb-1">
+          <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
+          <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
         </div>
-        <div>
-           <div class="flex justify-between mb-1">
-             <label for="tagline_detailed" class="block text-xs font-bold text-gray-900">Detailed Tagline <span class="text-red-500">*</span></label>
-             <span class="text-xs text-gray-400">{{ (modelValue.tagline_detailed || '').length }}/160</span>
-           </div>
-           <textarea 
-             id="tagline_detailed" 
-             :value="modelValue.tagline_detailed" 
-             @input="updateField('tagline_detailed', $event.target.value)" 
-             maxlength="160" 
-             rows="2" 
-             placeholder="A slightly fuller one-liner for the product page"
-             class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-           ></textarea>
-           <p class="mt-1 text-[11px] text-gray-500">This can be a bit fuller than the tagline, but it should still feel like one crisp sentence.</p>
-        </div>
+        <div class="mb-2 text-[11px] text-gray-500">Use one clear 140-character tagline. It will appear on both the list page and the product page.</div>
+        <input
+          type="text"
+          id="tagline" 
+          :value="modelValue.tagline" 
+          @input="updateField('tagline', $event.target.value)" 
+          maxlength="140" 
+          placeholder="Short Product Hunt-style one-liner"
+          class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+        >
      </div>
 
     <!-- Description -->
-    <div class="relative" :class="{'opacity-50 pointer-events-none': loadingStates.description}">
-        <div class="flex items-center justify-between mb-2">
+    <div class="relative" :class="[autofillLockClass('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
+        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
           <button
             v-if="showRewriteDescriptionButton"
@@ -84,6 +67,7 @@
              Generating...
           </div>
         </div>
+        <div class="mb-2 text-[11px] text-gray-500">What does your product do, who is it for, and why would someone choose it?</div>
         <div class="prose-editor-wrapper border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all">
            <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" />
         </div>
@@ -91,11 +75,12 @@
     </div>
 
     <!-- Categories (Chip Selection) -->
-    <div>
-       <div class="flex items-center justify-between mb-3">
+    <div :class="autofillLockClass('taxonomy')">
+       <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3)</span></label>
           <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 bg-gray-200 rounded"></div>
        </div>
+       <div v-if="modelValue.categories.length === 0 && (!modelValue.categories_custom || modelValue.categories_custom.length === 0)" class="mb-2 text-xs text-gray-500">What categories best describe your product? If you can't find a good match, add a custom category.</div>
 
        <!-- Category Search -->
        <div class="relative mb-3">
@@ -149,7 +134,6 @@
              No categories found matching "{{ categorySearch }}"
           </div>
        </div>
-       <p v-if="modelValue.categories.length === 0 && (!modelValue.categories_custom || modelValue.categories_custom.length === 0)" class="mt-2 text-xs text-gray-400">Please select at least one category or add a custom category.</p>
        
        <!-- Display selected custom categories -->
        <div v-if="modelValue.categories_custom && modelValue.categories_custom.length > 0" class="flex flex-wrap gap-2 mt-2">
@@ -171,10 +155,11 @@
     </div>
 
     <!-- Use Cases (Chip Selection) -->
-    <div>
-       <div class="flex items-center justify-between mb-3">
+    <div :class="autofillLockClass('taxonomy')">
+       <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
        </div>
+       <div v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
 
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -242,15 +227,15 @@
            </button>
          </span>
        </div>
-       <p v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mt-2 text-xs text-gray-400">Please select at least one use case or add a custom one.</p>
        <p v-if="extractionErrors.useCases" class="mt-1 text-xs text-red-500">{{ extractionErrors.useCases }}</p>
     </div>
 
     <!-- Platform (Chip Selection) -->
-    <div>
-       <div class="flex items-center justify-between mb-3">
+    <div :class="autofillLockClass('taxonomy')">
+       <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Platform <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
        </div>
+       <div class="mb-2 text-xs text-gray-500">Where does your product run? Choose the platform your product is built for, or add a custom one if needed.</div>
 
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -289,11 +274,68 @@
             :key="platform.id"
             type="button"
             @click="togglePlatform(platform.id)"
-            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
             :class="modelValue.platforms.includes(platform.id)
               ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
               : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'"
           >
+            <template v-if="platformIconKey(platform.name) === 'android'">
+              <svg
+                class="h-4 w-4 flex-shrink-0"
+                :class="modelValue.platforms.includes(platform.id) ? 'text-sky-800' : 'text-gray-700'"
+                viewBox="0 0 256 256"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <g>
+                  <path d="M172,156a8,8,0,1,1-8-8A7.99993,7.99993,0,0,1,172,156Zm-80-8a8,8,0,1,0,8,8A7.99993,7.99993,0,0,0,92,148Zm144,20v24a12.01375,12.01375,0,0,1-12,12H32a12.01375,12.01375,0,0,1-12-12V169.12893a109.42633,109.42633,0,0,1,37.18213-82.29L29.17139,58.82863a4.00026,4.00026,0,0,1,5.65722-5.65722L63.41016,81.753a106.64706,106.64706,0,0,1,64.20849-21.75244C127.74561,60,127.876,60,128.00342,60a107.15753,107.15753,0,0,1,64.77392,21.56592l28.394-28.394a3.99992,3.99992,0,0,1,5.65722,5.65625L199.01953,86.63723q2.67152,2.33862,5.21485,4.8623A107.27637,107.27637,0,0,1,236,168Zm-8,0A99.99959,99.99959,0,0,0,128.00244,68c-.11914,0-.23682,0-.35644.00049C72.70117,68.19045,28,113.55666,28,169.12893V192a4.00458,4.00458,0,0,0,4,4H224a4.00458,4.00458,0,0,0,4-4Z" />
+                </g>
+              </svg>
+            </template>
+            <template v-else-if="platformIconKey(platform.name) === 'browser'">
+              <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3.5" y="5" width="17" height="14" rx="2.5" stroke-width="1.7"/>
+                <path d="M3.5 9h17M7 7h.01M10 7h.01M13 7h.01" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </template>
+            <template v-else-if="platformIconKey(platform.name) === 'chrome-extension'">
+              <svg
+                class="h-3.5 w-3.5 flex-shrink-0"
+                viewBox="0 0 1024 1024"
+                xmlns="http://www.w3.org/2000/svg"
+                xml:space="preserve"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <g>
+                  <path d="M938.67 512.01c0-44.59-6.82-87.6-19.54-128H682.67a212.372 212.372 0 0 1 42.67 128c.06 38.71-10.45 76.7-30.42 109.87l-182.91 316.8c235.65-.01 426.66-191.02 426.66-426.67z" />
+                  <path d="M576.79 401.63a127.92 127.92 0 0 0-63.56-17.6c-22.36-.22-44.39 5.43-63.89 16.38s-35.79 26.82-47.25 46.02a128.005 128.005 0 0 0-2.16 127.44l1.24 2.13a127.906 127.906 0 0 0 46.36 46.61 127.907 127.907 0 0 0 63.38 17.44c22.29.2 44.24-5.43 63.68-16.33a127.94 127.94 0 0 0 47.16-45.79v-.01l1.11-1.92a127.984 127.984 0 0 0 .29-127.46 127.957 127.957 0 0 0-46.36-46.91z" />
+                  <path d="M394.45 333.96A213.336 213.336 0 0 1 512 298.67h369.58A426.503 426.503 0 0 0 512 85.34a425.598 425.598 0 0 0-171.74 35.98 425.644 425.644 0 0 0-142.62 102.22l118.14 204.63a213.397 213.397 0 0 1 78.67-94.21zm117.56 604.72H512zm-97.25-236.73a213.284 213.284 0 0 1-89.54-86.81L142.48 298.6c-36.35 62.81-57.13 135.68-57.13 213.42 0 203.81 142.93 374.22 333.95 416.55h.04l118.19-204.71a213.315 213.315 0 0 1-122.77-21.91z" />
+                </g>
+              </svg>
+            </template>
+            <template v-else-if="platformIconKey(platform.name) === 'ios'">
+              <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="7.5" y="3.5" width="9" height="17" rx="2.5" stroke-width="1.7"/>
+                <path d="M11 6.5h2M11.75 17.5h.5" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </template>
+            <template v-else-if="platformIconKey(platform.name) === 'macos'">
+              <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M16.37 12.47c.02 2.44 2.14 3.25 2.16 3.26-.02.06-.34 1.17-1.12 2.32-.68.99-1.38 1.98-2.49 2-.99.02-1.31-.58-2.44-.58-1.13 0-1.48.56-2.42.6-1 .04-1.77-1-2.45-1.98-1.39-2.01-2.46-5.69-1.03-8.18.71-1.23 1.97-2.02 3.34-2.04.98-.02 1.9.66 2.44.66.54 0 1.72-.82 2.9-.7.49.02 1.86.2 2.74 1.49-.07.04-1.64.96-1.63 2.85Zm-2.05-8.07c.57-.69.95-1.64.84-2.59-.82.03-1.82.54-2.41 1.23-.53.61-.99 1.58-.86 2.51.91.07 1.85-.47 2.43-1.15Z"/>
+              </svg>
+            </template>
+            <template v-else-if="platformIconKey(platform.name) === 'windows'">
+              <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M4.5 6.5 10.5 5.5v6H4.5v-5ZM13.5 5l6-1v7.5h-6V5ZM4.5 12.5h6v6l-6-1v-5ZM13.5 12.5h6V20l-6-1v-6.5Z" stroke-width="1.4" stroke-linejoin="round"/>
+              </svg>
+            </template>
+            <template v-else>
+              <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M3.75 4.75A1.75 1.75 0 0 1 5.5 3h9A1.75 1.75 0 0 1 16.25 4.75v5.5A1.75 1.75 0 0 1 14.5 12h-9a1.75 1.75 0 0 1-1.75-1.75v-5.5ZM7.5 15.5h5M8.5 12v3.5M11.5 12v3.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </template>
             {{ platform.name }}
             <svg v-if="modelValue.platforms.includes(platform.id)" class="ml-1.5 h-3 w-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -325,10 +367,11 @@
 
 
     <!-- Best For / Tags (Chip Selection) -->
-    <div>
-       <div class="flex items-center justify-between mb-3">
+    <div :class="autofillLockClass('taxonomy')">
+       <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
        </div>
+       <div class="mb-2 text-xs text-gray-500">Who is your product best for? Add tags that describe the audience, role, or situation it fits best.</div>
 
        <!-- Tag Search -->
        <div class="relative mb-3">
@@ -401,8 +444,9 @@
     </div>
 
     <!-- Pricing (Cards) -->
-    <div>
-       <label class="block text-xs font-bold text-gray-900 mb-3">Pricing <span class="text-red-500">*</span></label>
+    <div :class="autofillLockClass('taxonomy')">
+       <label class="block text-xs font-bold text-gray-900 mb-1">Pricing <span class="text-red-500">*</span></label>
+       <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div 
             v-for="price in allPricing" 
@@ -430,10 +474,11 @@
     </div>
 
     <!-- Pricing Page URL -->
-    <div>
+    <div :class="autofillLockClass('links')">
       <div class="flex justify-between mb-1">
         <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing Page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
       </div>
+      <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
       <input 
         type="url" 
         id="pricing_page_url" 
@@ -442,15 +487,15 @@
         placeholder="https://example.com/pricing"
         class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
       >
-      <p class="mt-1 text-xs text-gray-500">Provide a direct link to your pricing page for better visibility.</p>
     </div>
 
     <!-- Social Links -->
-    <div class="pt-4 border-t border-gray-100">
+    <div class="pt-4 border-t border-gray-100" :class="autofillLockClass('links')">
         <label class="block text-xs font-bold text-gray-900 mb-4">Social Links</label>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 gap-6">
             <div>
                  <label class="block text-xs font-bold text-gray-900 mb-1">Twitter / X</label>
+                 <div class="mb-2 text-[11px] text-gray-500">Add your main product or founder profile so people can find updates and reach out.</div>
                  <input 
                     type="url" 
                     :value="modelValue.x_account || ''"
@@ -464,14 +509,14 @@
          
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
          <div class="mt-4">
-             <div class="flex justify-between items-center mb-2">
+             <div class="flex justify-between items-center mb-1">
                  <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links</label>
                  <button type="button" @click="addMoreLink" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center">
                     <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Add Link
                  </button>
              </div>
-             <p class="mb-2 text-xs text-gray-500">Use profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, or Chrome Web Store.</p>
+             <div class="mb-2 text-xs text-gray-500">Use profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, or Chrome Web Store.</div>
              <div class="space-y-2">
                  <div v-for="(link, index) in makerLinks" :key="index" class="flex items-center gap-2">
                     <input
@@ -528,6 +573,19 @@ const props = defineProps({
   allPricing: { type: Array, default: () => [] },
   loadingStates: { type: Object, default: () => ({}) },
   extractionErrors: { type: Object, default: () => ({}) },
+  autofillReveal: {
+    type: Object,
+    default: () => ({
+      active: false,
+      unlocked: {
+        name: false,
+        tagline: false,
+        description: false,
+        taxonomy: false,
+        links: false
+      }
+    })
+  },
   isAdmin: { type: Boolean, default: false }
 });
 
@@ -555,6 +613,16 @@ const useCaseSearch = ref('');
 const platformSearch = ref('');
 const tagSearch = ref('');
 const techStackSearch = ref(''); // For tech stack search
+
+const isAutofillLocked = (group) => (
+  props.autofillReveal?.active === true
+  && props.autofillReveal?.unlocked?.[group] !== true
+);
+
+const autofillLockClass = (group) => (
+  isAutofillLocked(group) ? 'autofill-locked-group' : ''
+);
+
 // Computed: show "Add as custom" button when search text has no exact match
 const showAddCategoryButton = computed(() => {
   const search = categorySearch.value.trim();
@@ -666,6 +734,19 @@ const filteredPlatforms = computed(() => {
       return a.name.localeCompare(b.name);
     });
 });
+
+function platformIconKey(name) {
+  const normalized = String(name || '').trim().toLowerCase();
+
+  if (normalized === 'android') return 'android';
+  if (normalized === 'browser' || normalized === 'web' || normalized === 'web app') return 'browser';
+  if (normalized === 'chrome extension' || normalized === 'browser extension') return 'chrome-extension';
+  if (normalized === 'ios' || normalized === 'iphone' || normalized === 'ipad') return 'ios';
+  if (normalized === 'macos' || normalized === 'mac' || normalized === 'mac app') return 'macos';
+  if (normalized === 'windows') return 'windows';
+
+  return 'default';
+}
 
 // Sync makerLinks with props
 watch(() => props.modelValue.maker_links, (newVal) => {
@@ -910,3 +991,12 @@ function removeCustomTechStack(customTechStackId) {
 }
 
 </script>
+
+<style scoped>
+.autofill-locked-group {
+  filter: blur(1.25px);
+  opacity: 0.58;
+  pointer-events: none;
+  user-select: none;
+}
+</style>

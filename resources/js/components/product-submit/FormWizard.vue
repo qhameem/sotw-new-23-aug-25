@@ -86,6 +86,13 @@
                 </div>
               </div>
 
+              <div
+                v-if="autofillReveal.active"
+                class="mb-4 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs text-sky-700"
+              >
+                We’re filling this out step by step. Fields unlock as each piece of product info is ready.
+              </div>
+
               <!-- Submission Error Message -->
               <transition name="fade">
                 <div v-if="showErrorMessage" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start">
@@ -145,6 +152,7 @@
                     :allPricing="allPricing"
                     :loadingStates="loadingStates"
                     :extractionErrors="extractionErrors"
+                    :autofillReveal="autofillReveal"
                     :isAdmin="isAdmin"
                   />
                 </div>
@@ -163,23 +171,31 @@
 
                 <div id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
                   <h2 class="text-xl font-bold text-gray-800 mb-4">Additional Info</h2>
-                  <div class="mb-8">
+                  <div
+                    class="mb-8 transition-all duration-300"
+                    :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.media }"
+                  >
                     <ProductMediaForm
                       :modelValue="form"
                       @update:modelValue="handleFormDetailUpdate"
                     />
                   </div>
-                  <LaunchChecklistForm
-                    :modelValue="form"
-                    @update:modelValue="handleFormDetailUpdate"
-                    :logoPreview="logoPreview"
-                    :allTechStacks="allTechStacks"
-                    :isAdmin="isAdmin"
-                    :adminSandboxEnabled="adminSandboxEnabled"
-                    :isLoading="isLoading"
-                    :submitState="submitState"
-                    @submit="submitProduct"
-                  />
+                  <div
+                    class="transition-all duration-300"
+                    :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.launch }"
+                  >
+                    <LaunchChecklistForm
+                      :modelValue="form"
+                      @update:modelValue="handleFormDetailUpdate"
+                      :logoPreview="logoPreview"
+                      :allTechStacks="allTechStacks"
+                      :isAdmin="isAdmin"
+                      :adminSandboxEnabled="adminSandboxEnabled"
+                      :isLoading="isLoading"
+                      :submitState="submitState"
+                      @submit="submitProduct"
+                    />
+                  </div>
                 </div>
               </form>
             </div>
@@ -283,6 +299,7 @@ const {
   sandboxNotice,
   loadingProgress,
   loadingMessage,
+  autofillReveal,
   errorMessage,
   showErrorMessage,
   isRestored,
@@ -300,6 +317,15 @@ watch(isRestored, (val) => {
     showForm.value = true;
   }
 });
+
+watch(
+  () => autofillReveal.showFormReady,
+  (isReady) => {
+    if (isReady && form.link) {
+      showForm.value = true;
+    }
+  }
+);
 
 // Store the original fetched favicon so users can restore it after removing
 const originalFavicon = ref(null);
@@ -518,5 +544,11 @@ const overallProgress = computed(() => {
 
 <style scoped>
 /* Add any specific overrides here if needed */
+.autofill-locked-section {
+  filter: blur(1.5px);
+  opacity: 0.58;
+  pointer-events: none;
+  user-select: none;
+}
 
 </style>

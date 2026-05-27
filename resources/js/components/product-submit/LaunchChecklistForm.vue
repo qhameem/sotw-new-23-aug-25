@@ -11,9 +11,10 @@
         <div class="space-y-6">
           <!-- Tech Stack Section -->
           <div>
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-1">
               <h4 class="text-xs font-bold text-gray-900">Tech Stack <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></h4>
             </div>
+            <div class="mb-2 text-[11px] text-gray-500">Which technologies were used to build your product?</div>
 
             <!-- Tech Stack Search -->
             <div class="relative mb-3">
@@ -38,8 +39,6 @@
                 + Add "{{ techSearch.trim() }}"
               </button>
             </div>
-
-            <p class="text-xs text-gray-400 mb-2">Select the technologies that were used to develop the product.</p>
 
             <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
               <button
@@ -614,7 +613,7 @@ watch(
 
 // Check if all required fields are filled
 const isAllRequiredFilled = computed(() => {
-  const { link, name, tagline, tagline_detailed, description, categories, bestFor, pricing, logo, logos } = props.modelValue;
+  const { link, name, tagline, description, categories, bestFor, pricing, logo, logos } = props.modelValue;
   const categoriesCustom = props.modelValue.categories_custom || [];
   
   // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
@@ -624,7 +623,6 @@ const isAllRequiredFilled = computed(() => {
     link,
     name,
     tagline,
-    tagline_detailed,
     description,
     (categories && Array.isArray(categories) && categories.length > 0) || categoriesCustom.length > 0,
     // bestFor is optional — not checked here

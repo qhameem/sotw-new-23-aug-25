@@ -86,6 +86,20 @@ const sidebarSteps = [
   { id: 'launchChecklist', name: 'Launch', icon: 'LaunchChecklistIcon' },
 ];
 
+const createInitialAutofillRevealState = () => ({
+  active: false,
+  showFormReady: false,
+  unlocked: {
+    name: false,
+    tagline: false,
+    description: false,
+    taxonomy: false,
+    links: false,
+    media: false,
+    launch: false,
+  },
+});
+
 export const createProductFormState = () => {
   return {
     step: ref(1),
@@ -126,6 +140,7 @@ export const createProductFormState = () => {
     allTechStacks: ref([]),
     isAdmin: ref(false),
     adminSandboxEnabled: ref(true),
+    autofillReveal: reactive(createInitialAutofillRevealState()),
     form: { ...initialFormState },
     sidebarSteps: [...sidebarSteps],
   };
@@ -255,11 +270,10 @@ export const productFormService = {
 
     switch (step.id) {
       case 'mainInfo':
-        // Main info tab requires: name, tagline, tagline_detailed, description, categories, use cases, pricing
+        // Main info tab requires: name, tagline, description, categories, use cases, pricing
         isCompleted = !!(
           form.name &&
           form.tagline &&
-          form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
           (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
@@ -276,7 +290,6 @@ export const productFormService = {
           form.link &&
           form.name &&
           form.tagline &&
-          form.tagline_detailed &&
           form.description &&
           (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
           (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
@@ -372,11 +385,10 @@ export const isTabCompleted = (step, form, logoPreview) => {
 
   switch (step.id) {
     case 'mainInfo':
-      // Main info tab requires: name, tagline, tagline_detailed, description, categories, use cases, pricing
+      // Main info tab requires: name, tagline, description, categories, use cases, pricing
       isCompleted = !!(
         form.name &&
         form.tagline &&
-        form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
         (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
@@ -393,7 +405,6 @@ export const isTabCompleted = (step, form, logoPreview) => {
         form.link &&
         form.name &&
         form.tagline &&
-        form.tagline_detailed &&
         form.description &&
         (form.categories?.length > 0 || form.categories_custom?.length > 0) &&
         (form.useCases?.length > 0 || form.useCases_custom?.length > 0) &&
@@ -417,10 +428,9 @@ export const getTabProgress = (stepId, form, logoPreview) => {
 
   switch (stepId) {
     case 'mainInfo':
-      total = 7;
+      total = 6;
       if (form.name) completed++;
       if (form.tagline) completed++;
-      if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
       if (form.useCases?.length > 0 || form.useCases_custom?.length > 0) completed++;
@@ -431,11 +441,10 @@ export const getTabProgress = (stepId, form, logoPreview) => {
       if (logoPreview) completed++;
       break;
     case 'launchChecklist':
-      total = 8; // 7 from mainInfo + logo
+      total = 8; // 6 from mainInfo + link + logo
       if (form.link) completed++;
       if (form.name) completed++;
       if (form.tagline) completed++;
-      if (form.tagline_detailed) completed++;
       if (form.description) completed++;
       if (form.categories?.length > 0 || form.categories_custom?.length > 0) completed++;
       if (form.useCases?.length > 0 || form.useCases_custom?.length > 0) completed++;

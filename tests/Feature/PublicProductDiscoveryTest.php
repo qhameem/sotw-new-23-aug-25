@@ -208,4 +208,26 @@ class PublicProductDiscoveryTest extends TestCase
         $response->assertSee('May 11, 2026');
         $response->assertSee('"datePublished": "2026-05-11T04:00:00+00:00"', false);
     }
+
+    /** @test */
+    public function product_pages_use_the_short_tagline_in_the_title_without_review_wording()
+    {
+        $product = Product::factory()->create([
+            'name' => 'SaaSOffers',
+            'slug' => 'saasoffers',
+            'tagline' => 'Startup Credits Platform',
+            'product_page_tagline' => 'Discover and claim exclusive startup discounts for essential software.',
+            'published_at' => now(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee(
+            '<title>SaaSOffers: Startup Credits Platform | Software on the Web</title>',
+            false
+        );
+        $response->assertDontSee('Review', false);
+    }
 }

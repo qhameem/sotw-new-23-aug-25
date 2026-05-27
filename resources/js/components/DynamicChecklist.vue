@@ -44,8 +44,7 @@ const props = defineProps({
     default: () => [
       { id: 'link', label: 'Product URL', completed: false },
       { id: 'name', label: 'Product Name', completed: false },
-      { id: 'tagline', label: 'Tagline (List Page)', completed: false },
-      { id: 'tagline_detailed', label: 'Tagline (Details Page)', completed: false },
+      { id: 'tagline', label: 'Tagline', completed: false },
       { id: 'selectedPricing', label: 'Pricing Model', completed: false },
       { id: 'logo', label: 'Logo', completed: false },
       { id: 'description', label: 'Detailed Description', completed: false },
@@ -57,7 +56,6 @@ const props = defineProps({
       link: (value) => !!value,
       name: (value) => !!value,
       tagline: (value) => !!value,
-      tagline_detailed: (value) => !!value,
       selectedPricing: (value) => value && value.length > 0,
       logo: (value) => !!value,
       description: (value) => value && value.length >= 10,
@@ -69,7 +67,6 @@ const form = ref({
     link: '',
     name: '',
     tagline: '',
-    tagline_detailed: '',
     description: '',
     logo: null,
     selectedPricing: [],
@@ -115,9 +112,6 @@ const scrollToField = (fieldId) => {
       break;
     case 'tagline':
       elementId = 'tagline'; // From ProductDetailsForm
-      break;
-    case 'tagline_detailed':
-      elementId = 'tagline_detailed'; // From ProductDetailsForm (textarea)
       break;
     case 'selectedPricing':
       elementId = 'price-1'; // From ProductDetailsForm (first pricing checkbox, but we'll look for any pricing checkbox)
@@ -179,7 +173,6 @@ const getLabelForField = (fieldId) => {
     'link': 'Product URL',
     'name': 'Product Name',
     'tagline': 'Tagline',
-    'tagline_detailed': 'Tagline for product details page',
     'selectedPricing': 'Pricing Model',
     'logo': 'Logo',
     'description': 'Description'

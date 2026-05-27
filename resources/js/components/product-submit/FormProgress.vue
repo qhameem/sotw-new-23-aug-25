@@ -39,8 +39,9 @@ const props = defineProps({
 });
 
 const step1Items = computed(() => [
-  { label: 'Name', complete: !!props.form.name },
   { label: 'URL', complete: !!props.form.link },
+  { label: 'Name', complete: !!props.form.name },
+  { label: 'Tagline', complete: !!props.form.tagline },
   { label: 'Description', complete: !!props.form.description },
   { label: 'Logo', complete: !!(props.logoPreview || props.form.favicon) },
   { label: 'Product image', complete: !!(props.galleryPreviews && props.galleryPreviews.some(p => !!p)) },

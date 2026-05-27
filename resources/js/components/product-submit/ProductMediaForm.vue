@@ -1,7 +1,7 @@
 <template>
   <div>
     <label for="video-url" class="block text-sm font-semibold text-gray-700">Video URL</label>
-    <p class="mb-2 text-xs text-gray-500">Add a YouTube video link to showcase your product.</p>
+    <div class="mb-2 text-xs text-gray-500">Add a YouTube video link to showcase your product.</div>
     <input
       id="video-url"
       type="url"

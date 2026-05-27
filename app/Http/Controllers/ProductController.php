@@ -258,7 +258,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'required|string|max:255',
-            'product_page_tagline' => 'required|string|max:255',
+            'product_page_tagline' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'link' => 'required|url|max:255',
             'maker_links' => 'nullable|array',
@@ -292,7 +292,7 @@ class ProductController extends Controller
             'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
             'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
-            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048',
+            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
             'media' => 'nullable|array|max:1',
@@ -306,6 +306,9 @@ class ProductController extends Controller
         ]);
 
         $validated['link'] = Product::normalizeLink($validated['link']);
+        $validated['product_page_tagline'] = filled(trim((string) ($validated['product_page_tagline'] ?? '')))
+            ? trim((string) $validated['product_page_tagline'])
+            : trim((string) $validated['tagline']);
         if (!empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
@@ -820,7 +823,7 @@ class ProductController extends Controller
             'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
             'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
-            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:2048', // File upload for logo
+            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120', // File upload for logo
             'logo_url' => 'nullable|string',
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|string|max:2048',
@@ -1929,13 +1932,11 @@ class ProductController extends Controller
         $brandSuffix = ' | Software on the Web';
         $maxLength = 60;
         $name = $this->cleanSeoText($product->name);
-        $topic = $this->firstProductSeoTopic($primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $tagline = $this->cleanSeoText($product->tagline ?: $product->product_page_tagline);
 
         $candidates = array_values(array_filter([
-            $topic !== '' ? $name . ' Review: ' . $this->trimSeoTextToLength($topic, 22) : null,
             $tagline !== '' ? $name . ': ' . $this->trimSeoTextToLength($tagline, 24) : null,
-            $name . ' Review',
+            $name,
         ]));
 
         foreach ($candidates as $candidate) {
@@ -3302,6 +3303,11 @@ class ProductController extends Controller
                     $extractedTagline = \Illuminate\Support\Str::limit($extractedTagline, 140, '...');
                     $extractedTaglineDetailed = \Illuminate\Support\Str::limit($extractedTaglineDetailed, 160, '...');
 
+                    $sendUpdate('Taglines ready. Writing product description...', 55, [
+                        'tagline' => $extractedTagline ?: $tagline,
+                        'tagline_detailed' => $extractedTaglineDetailed,
+                    ]);
+
                     $sendUpdate('Writing product description...', 65);
                     $rawDescForRewrite = $descriptionContent;
                     if (empty($rawDescForRewrite)) {
@@ -3315,11 +3321,22 @@ class ProductController extends Controller
                             $description = $rewritten;
                         }
                     }
+
+                    $sendUpdate('Description ready. Extracting pricing page, socials, and logos...', 72, [
+                        'description' => $description,
+                    ]);
                 }
 
                 $sendUpdate('Extracting pricing page, socials, and logos...', 85);
 
                 $logos = $this->logoExtractor->extract($url, $htmlContent);
+
+                $sendUpdate('Logos and links ready. Classifying features and categories...', 88, [
+                    'logos' => $logos,
+                    'pricing_page_url' => $autofillLinks['pricing_page_url'],
+                    'x_account' => $autofillLinks['x_account'],
+                    'maker_links' => $autofillLinks['maker_links'],
+                ]);
 
                 $sendUpdate('Classifying features and categories...', 95);
                 $classificationSource = $htmlContent;
@@ -3357,6 +3374,17 @@ class ProductController extends Controller
                 $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
                 $matchedUseCaseNames = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
                 $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
+
+                $sendUpdate('Categories ready. Finalizing screenshots and response...', 97, [
+                    'categories' => $categoryIds,
+                    'useCases' => $useCaseIds,
+                    'bestFor' => $bestForIds,
+                    'pricing' => $pricingIds,
+                    'platforms' => $platformIds,
+                    'tech_stacks' => $techStackIds,
+                    'suggestedCategories' => $unmatchedCategories,
+                    'suggestedUseCases' => $unmatchedUseCases,
+                ]);
 
                 $responseData = [
                     'description' => $description,

@@ -19,6 +19,7 @@ export function useProductForm() {
   const form = sharedForm;
   const loadingStates = sharedLoadingStates;
   const sidebarSteps = [...globalFormState.sidebarSteps];
+  const autofillReveal = globalFormState.autofillReveal;
 
   // Create local refs for form-specific error messages to avoid conflicts
   const errorMessage = ref('');
@@ -43,6 +44,36 @@ export function useProductForm() {
   const resetManualMediaChoices = () => {
     globalFormState.manualLogoChosen.value = false;
     globalFormState.manualScreenshotChosen.value = false;
+  };
+
+  const resetAutofillRevealState = (active = false) => {
+    autofillReveal.active = active;
+    autofillReveal.showFormReady = false;
+
+    Object.keys(autofillReveal.unlocked).forEach((key) => {
+      autofillReveal.unlocked[key] = false;
+    });
+  };
+
+  const unlockAutofillGroups = (...groups) => {
+    groups.forEach((group) => {
+      if (Object.prototype.hasOwnProperty.call(autofillReveal.unlocked, group)) {
+        autofillReveal.unlocked[group] = true;
+      }
+    });
+  };
+
+  const markAutofillFormReady = () => {
+    autofillReveal.showFormReady = true;
+  };
+
+  const finishAutofillRevealState = () => {
+    autofillReveal.active = false;
+    autofillReveal.showFormReady = false;
+
+    Object.keys(autofillReveal.unlocked).forEach((key) => {
+      autofillReveal.unlocked[key] = true;
+    });
   };
 
   const syncAdminSandboxAvailability = () => {
@@ -282,6 +313,151 @@ export function useProductForm() {
     }
   };
 
+  const applyTaxonomyAutofill = (data) => {
+    if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
+      form.categories = data.categories;
+      console.log('Applied autofill categories:', data.categories);
+    }
+
+    if (data.useCases && data.useCases.length > 0 && (!form.useCases || form.useCases.length === 0)) {
+      form.useCases = data.useCases;
+      console.log('Applied autofill use cases:', data.useCases);
+    }
+
+    if (data.bestFor && data.bestFor.length > 0 && (!form.bestFor || form.bestFor.length === 0)) {
+      form.bestFor = data.bestFor;
+      console.log('Applied autofill bestFor tags:', data.bestFor);
+    }
+
+    if (data.platforms && data.platforms.length > 0 && (!form.platforms || form.platforms.length === 0)) {
+      form.platforms = data.platforms;
+      console.log('Applied autofill platforms:', data.platforms);
+    }
+
+    if (data.tech_stacks && data.tech_stacks.length > 0 && (!form.tech_stack || form.tech_stack.length === 0)) {
+      form.tech_stack = data.tech_stacks;
+      console.log('Applied autofill tech stacks:', data.tech_stacks);
+    }
+
+    if (data.pricing && data.pricing.length > 0) {
+      form.pricing = data.pricing;
+      console.log('Applied autofill pricing:', data.pricing);
+    }
+
+    if (data.suggestedCategories && data.suggestedCategories.length > 0) {
+      const existingCustomNames = (form.categories_custom || []).map((category) => category.name.toLowerCase());
+      const newCustomCategories = data.suggestedCategories
+        .filter((name) => !existingCustomNames.includes(name.toLowerCase()))
+        .slice(0, 3)
+        .map((name) => ({
+          id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          name,
+          is_custom: true,
+        }));
+
+      if (newCustomCategories.length > 0) {
+        form.categories_custom = [...(form.categories_custom || []), ...newCustomCategories].slice(0, 3);
+        console.log('Applied suggested custom categories:', newCustomCategories.map((category) => category.name));
+      }
+    }
+
+    if (data.suggestedUseCases && data.suggestedUseCases.length > 0) {
+      const existingCustomNames = (form.useCases_custom || []).map((useCase) => useCase.name.toLowerCase());
+      const newCustomUseCases = data.suggestedUseCases
+        .filter((name) => !existingCustomNames.includes(name.toLowerCase()))
+        .slice(0, 3)
+        .map((name) => ({
+          id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          name,
+          is_custom: true,
+        }));
+
+      if (newCustomUseCases.length > 0) {
+        form.useCases_custom = [...(form.useCases_custom || []), ...newCustomUseCases].slice(0, 3);
+        console.log('Applied suggested custom use cases:', newCustomUseCases.map((useCase) => useCase.name));
+      }
+    }
+  };
+
+  const applyAutofillPatch = (data, options = {}) => {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
+    const forceDescriptionOverwrite = options.forceDescriptionOverwrite === true;
+    const unlockTagline = options.unlockTagline !== false;
+
+    if (typeof data.name === 'string' && data.name.trim() !== '') {
+      form.name = data.name.trim();
+      unlockAutofillGroups('name');
+      markAutofillFormReady();
+    }
+
+    if (typeof data.tagline === 'string' && data.tagline.trim() !== '') {
+      form.tagline = data.tagline.length > 140 ? `${data.tagline.substring(0, 137)}...` : data.tagline;
+      if (unlockTagline) {
+        unlockAutofillGroups('tagline');
+      }
+    }
+
+    if (typeof data.tagline_detailed === 'string' && data.tagline_detailed.trim() !== '') {
+      const detailed = data.tagline_detailed.length > 160 ? `${data.tagline_detailed.substring(0, 157)}...` : data.tagline_detailed;
+      form.tagline_detailed = detailed;
+    }
+
+    if (typeof data.favicon === 'string' && data.favicon.trim() !== '') {
+      form.favicon = data.favicon;
+    }
+
+    applyAutofillLinks(data);
+    if (data.pricing_page_url || data.x_account || (Array.isArray(data.maker_links) && data.maker_links.length > 0)) {
+      unlockAutofillGroups('links');
+    }
+
+    if (
+      typeof data.description === 'string'
+      && data.description.trim() !== ''
+      && (forceDescriptionOverwrite || !form.description || form.description.trim() === '' || form.description === '<p></p>')
+    ) {
+      form.description = data.description;
+      unlockAutofillGroups('description');
+    }
+
+    if (Array.isArray(data.logos) && data.logos.length > 0) {
+      form.logos = data.logos;
+      if (
+        !globalFormState.manualLogoChosen.value &&
+        (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon)
+      ) {
+        globalFormState.logoPreview.value = data.logos[0];
+      }
+      unlockAutofillGroups('media');
+    } else if (typeof data.favicon === 'string' && data.favicon.trim() !== '' && !globalFormState.manualLogoChosen.value) {
+      globalFormState.logoPreview.value = data.favicon;
+    }
+
+    if (typeof data.screenshot_url === 'string' && data.screenshot_url.trim() !== '' && !globalFormState.manualScreenshotChosen.value) {
+      globalFormState.galleryPreviews.value[0] = data.screenshot_url;
+      unlockAutofillGroups('media');
+    }
+
+    const hasTaxonomyData = [
+      'categories',
+      'useCases',
+      'bestFor',
+      'pricing',
+      'platforms',
+      'tech_stacks',
+      'suggestedCategories',
+      'suggestedUseCases',
+    ].some((key) => Object.prototype.hasOwnProperty.call(data, key));
+
+    if (hasTaxonomyData) {
+      applyTaxonomyAutofill(data);
+      unlockAutofillGroups('taxonomy', 'launch');
+    }
+  };
+
   const checkUrlExists = async (urlToCheck = form.link) => {
     console.log('checkUrlExists called with URL:', urlToCheck, 'and ID:', form.id);
     if (!urlToCheck) {
@@ -491,7 +667,7 @@ export function useProductForm() {
         formData.append('slug', form.slug);
       }
       formData.append('tagline', form.tagline);
-      formData.append('product_page_tagline', form.tagline_detailed);
+      formData.append('product_page_tagline', form.tagline);
       formData.append('description', form.description);
       formData.append('link', form.link);
       // User ID is automatically set by the backend based on the authenticated user
@@ -826,12 +1002,6 @@ export function useProductForm() {
       return false;
     }
 
-    if (!form.tagline_detailed) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Product details page tagline is required.';
-      return false;
-    }
-
     if (!form.description) {
       showErrorMessage.value = true;
       errorMessage.value = 'Description is required.';
@@ -907,6 +1077,7 @@ export function useProductForm() {
 
     loadingStates.name = true;
     extractionErrors.name = '';
+    resetAutofillRevealState(true);
     beginAutofillProgress('Initializing request...', 5, 'fullAutofill');
 
     try {
@@ -920,29 +1091,15 @@ export function useProductForm() {
 
       console.log('fetchInitialData response:', data);
 
-      if (data.name) form.name = data.name;
-      if (data.tagline) form.tagline = data.tagline;
-      if (data.tagline_detailed) form.tagline_detailed = data.tagline_detailed;
-      if (data.favicon) form.favicon = data.favicon;
-      applyAutofillLinks(data);
-
-      // Auto-set screenshot as first gallery item if available
-      if (data.screenshot_url && !globalFormState.manualScreenshotChosen.value) {
-        globalFormState.galleryPreviews.value[0] = data.screenshot_url;
-      }
+      applyAutofillPatch(data, { unlockTagline: false });
+      unlockAutofillGroups('name');
+      markAutofillFormReady();
 
       console.log('Form state after fetchInitialData:', {
         name: form.name,
         tagline: form.tagline,
         favicon: form.favicon
       });
-
-      // Prioritize the best logo found by our extractor over the favicon
-      if (data.logos && data.logos.length > 0 && !globalFormState.manualLogoChosen.value) {
-        globalFormState.logoPreview.value = data.logos[0];
-      } else if (data.favicon && !globalFormState.manualLogoChosen.value) {
-        globalFormState.logoPreview.value = data.favicon;
-      }
 
       loadingStates.name = false;
 
@@ -963,6 +1120,8 @@ export function useProductForm() {
       extractionErrors.name = 'Failed to extract name and taglines.';
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
+      markAutofillFormReady();
+      finishAutofillRevealState();
     } finally {
       if (!Object.values(loadingStates).some((loading) => loading === true)) {
         globalFormState.isLoading.value = false;
@@ -1020,7 +1179,7 @@ export function useProductForm() {
           const streamData = JSON.parse(line);
 
           if (streamData.data) {
-            finalData = streamData.data;
+            finalData = { ...finalData, ...streamData.data };
           }
 
           if (onProgress) {
@@ -1036,7 +1195,7 @@ export function useProductForm() {
       try {
         const streamData = JSON.parse(buffer);
         if (streamData.data) {
-          finalData = streamData.data;
+          finalData = { ...finalData, ...streamData.data };
         }
         if (onProgress) {
           onProgress(streamData);
@@ -1149,6 +1308,41 @@ export function useProductForm() {
         fetchContent: shouldFetchContent,
         additionalResources: form.additional_resources || '',
         onProgress: (streamData) => {
+          if (streamData.data) {
+            applyAutofillPatch(streamData.data, { forceDescriptionOverwrite });
+
+            if ((streamData.data.tagline && streamData.data.tagline.trim() !== '') || (streamData.data.tagline_detailed && streamData.data.tagline_detailed.trim() !== '')) {
+              loadingStates.name = false;
+            }
+
+            if (streamData.data.description && streamData.data.description.trim() !== '') {
+              loadingStates.description = false;
+            }
+
+            const hasTaxonomyPatch = [
+              'categories',
+              'useCases',
+              'bestFor',
+              'pricing',
+              'platforms',
+              'tech_stacks',
+              'suggestedCategories',
+              'suggestedUseCases',
+            ].some((key) => Object.prototype.hasOwnProperty.call(streamData.data, key));
+
+            if (hasTaxonomyPatch) {
+              loadingStates.categories = false;
+              loadingStates.bestFor = false;
+            }
+
+            if (
+              (Array.isArray(streamData.data.logos) && streamData.data.logos.length > 0)
+              || (typeof streamData.data.screenshot_url === 'string' && streamData.data.screenshot_url.trim() !== '')
+            ) {
+              loadingStates.logos = false;
+            }
+          }
+
           if (streamData.progress !== undefined && streamData.progress !== null) {
             const isFinalStreamStep = Number(streamData.progress) >= 100;
             updateAutofillProgress(
@@ -1167,144 +1361,25 @@ export function useProductForm() {
       console.log('fetchRemainingData: Extracted data object:', data);
 
       updateAutofillProgress('Applying extracted data to the form...', 91);
+      applyAutofillPatch(data, { forceDescriptionOverwrite });
 
-      // Update form data sequentially to give visual feedback
-      // 1. Content (Description & Detailed Tagline)
       if (shouldFetchContent) {
-        console.log('fetchRemainingData: Updating content fields...');
-
-        // The streaming endpoint uses TaglineRewriterService (AI rewrite),
-        // so its taglines should ALWAYS override the initial heuristic ones.
-        if (!contentOnly && data.tagline && data.tagline.trim() !== '') {
-          const tagline = data.tagline.length > 140 ? data.tagline.substring(0, 137) + '...' : data.tagline;
-          console.log('fetchRemainingData: Setting AI-rewritten tagline to:', tagline);
-          form.tagline = tagline;
-        }
-
-        if (!contentOnly && data.tagline_detailed && data.tagline_detailed.trim() !== '') {
-          const detailed = data.tagline_detailed.length > 160 ? data.tagline_detailed.substring(0, 157) + '...' : data.tagline_detailed;
-          console.log('fetchRemainingData: Setting AI-rewritten tagline_detailed to:', detailed);
-          form.tagline_detailed = detailed;
-        }
-
-        if (forceDescriptionOverwrite || !form.description || form.description.trim() === '' || form.description === '<p></p>') {
-          console.log('fetchRemainingData: Setting description to:', data.description);
-          form.description = data.description || form.description;
-        }
-        loadingStates.description = false; // Turn off immediately for visual progress
+        loadingStates.description = false;
         updateAutofillProgress('Applying extracted product copy...', 94);
-        await new Promise(r => setTimeout(r, 300)); // Small delay for visual effect
       }
 
-      // 2. Categories
       if (shouldFetchCategoriesAndBestFor) {
-        console.log('fetchRemainingData: Updating categories/useCases/bestFor/pricing...', {
-          categories: data.categories,
-          useCases: data.useCases,
-          platforms: data.platforms,
-          bestFor: data.bestFor,
-          pricing: data.pricing,
-          techStacks: data.tech_stacks,
-          suggestedCategories: data.suggestedCategories
-        });
-
-        // Set categories from classifier (only if not already user-selected)
-        if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
-          form.categories = data.categories;
-          console.log('fetchRemainingData: Set categories to:', data.categories);
-        }
-
-        if (data.useCases && data.useCases.length > 0 && (!form.useCases || form.useCases.length === 0)) {
-          form.useCases = data.useCases;
-          console.log('fetchRemainingData: Set useCases to:', data.useCases);
-        }
-
-        // Set bestFor from classifier (only if not already user-selected)
-        if (data.bestFor && data.bestFor.length > 0 && (!form.bestFor || form.bestFor.length === 0)) {
-          form.bestFor = data.bestFor;
-          console.log('fetchRemainingData: Set bestFor to:', data.bestFor);
-        }
-
-        if (data.platforms && data.platforms.length > 0 && (!form.platforms || form.platforms.length === 0)) {
-          form.platforms = data.platforms;
-          console.log('fetchRemainingData: Set platforms to:', data.platforms);
-        }
-
-        if (data.tech_stacks && data.tech_stacks.length > 0 && (!form.tech_stack || form.tech_stack.length === 0)) {
-          form.tech_stack = data.tech_stacks;
-          console.log('fetchRemainingData: Set tech_stack to:', data.tech_stacks);
-        }
-
-        // Set pricing from classifier
-        if (data.pricing && data.pricing.length > 0) {
-          form.pricing = data.pricing;
-          console.log('fetchRemainingData: Set pricing to:', data.pricing);
-        }
-
-        // Auto-add suggested categories (classifier names that don't exist in DB) as custom entries
-        if (data.suggestedCategories && data.suggestedCategories.length > 0) {
-          const existingCustomNames = (form.categories_custom || []).map(c => c.name.toLowerCase());
-          const newCustomCategories = data.suggestedCategories
-            .filter(name => !existingCustomNames.includes(name.toLowerCase()))
-            .slice(0, 3) // Max 3 custom categories
-            .map(name => ({
-              id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              name: name,
-              is_custom: true
-            }));
-          if (newCustomCategories.length > 0) {
-            form.categories_custom = [...(form.categories_custom || []), ...newCustomCategories].slice(0, 3);
-            console.log('fetchRemainingData: Auto-added suggested custom categories:', newCustomCategories.map(c => c.name));
-          }
-        }
-
-        if (data.suggestedUseCases && data.suggestedUseCases.length > 0) {
-          const existingCustomNames = (form.useCases_custom || []).map(c => c.name.toLowerCase());
-          const newCustomUseCases = data.suggestedUseCases
-            .filter(name => !existingCustomNames.includes(name.toLowerCase()))
-            .slice(0, 3)
-            .map(name => ({
-              id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              name,
-              is_custom: true
-            }));
-
-          if (newCustomUseCases.length > 0) {
-            form.useCases_custom = [...(form.useCases_custom || []), ...newCustomUseCases].slice(0, 3);
-            console.log('fetchRemainingData: Auto-added suggested custom use cases:', newCustomUseCases.map(c => c.name));
-          }
-        }
-
+        loadingStates.categories = false;
+        loadingStates.bestFor = false;
         updateAutofillProgress('Applying categories, use cases, and pricing...', 97);
       }
 
-      // 3. Update screenshot if available (refresh with viewport-specific version)
       if (!contentOnly) {
         updateAutofillProgress('Finalizing media, links, and logo suggestions...', 99);
+      }
 
-        if (data.screenshot_url && !globalFormState.manualScreenshotChosen.value) {
-          globalFormState.galleryPreviews.value[0] = data.screenshot_url;
-        }
-
-        // 3.5. Update pricing page url if available
-        if (data.pricing_page_url && (!form.pricing_page_url || form.pricing_page_url.trim() === '')) {
-          form.pricing_page_url = data.pricing_page_url;
-          console.log('fetchRemainingData: Auto-filled pricing_page_url with:', data.pricing_page_url);
-        }
-
-        applyAutofillLinks(data);
-
-        // 4. Update logos if available
-        if (data.logos && data.logos.length > 0) {
-          form.logos = data.logos;
-          // If we don't have a logo preview yet, or it's just the favicon, set it to the best logo
-          if (
-            !globalFormState.manualLogoChosen.value &&
-            (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon)
-          ) {
-            globalFormState.logoPreview.value = data.logos[0];
-          }
-        }
+      if (shouldFetchLogos || explicitLogoExtraction) {
+        loadingStates.logos = false;
       }
 
     } catch (error) {
@@ -1337,6 +1412,7 @@ export function useProductForm() {
         extractionErrors.logos = 'Failed to extract logos.';
         console.error('Error during logo extraction:', error.message || error);
       }
+      finishAutofillRevealState();
     } finally {
       console.log('In finally block, resetting loading states');
       // Always reset the specific loading states that were requested
@@ -1363,6 +1439,7 @@ export function useProductForm() {
         globalFormState.isLoading.value = false;
         globalFormState.loadingTargetProgress.value = 0;
         globalFormState.loadingStartedAt.value = null;
+        finishAutofillRevealState();
         console.log('Resetting general isLoading to false');
       }
     }
@@ -1379,6 +1456,7 @@ export function useProductForm() {
     }
 
     const sandboxPayload = buildSandboxAutofillPayload();
+    resetAutofillRevealState(true);
     globalFormState.sandboxNotice.value = '';
     globalFormState.urlExistsError.value = false;
     globalFormState.existingProduct.value = null;
@@ -1400,15 +1478,8 @@ export function useProductForm() {
 
       await delay(420);
       form.name = sandboxPayload.name;
-      form.tagline = sandboxPayload.tagline;
-      form.tagline_detailed = sandboxPayload.tagline_detailed;
-      form.favicon = sandboxPayload.logos[0];
-      if (!globalFormState.manualLogoChosen.value) {
-        globalFormState.logoPreview.value = sandboxPayload.logos[0];
-      }
-      if (!globalFormState.manualScreenshotChosen.value) {
-        globalFormState.galleryPreviews.value[0] = sandboxPayload.screenshot;
-      }
+      unlockAutofillGroups('name');
+      markAutofillFormReady();
       loadingStates.name = false;
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
 
@@ -1416,10 +1487,15 @@ export function useProductForm() {
       updateAutofillProgress('Connecting for detailed analysis...', 35);
 
       await delay(420);
+      form.tagline = sandboxPayload.tagline;
+      form.tagline_detailed = sandboxPayload.tagline_detailed;
+      form.favicon = sandboxPayload.logos[0];
+      unlockAutofillGroups('tagline', 'links');
       updateAutofillProgress('Reading page content and rewriting product summary...', 56);
 
       await delay(420);
       form.description = sandboxPayload.description;
+      unlockAutofillGroups('description');
       loadingStates.description = false;
       updateAutofillProgress('Mapping categories, use cases, pricing, and tags...', 74);
 
@@ -1433,17 +1509,26 @@ export function useProductForm() {
       form.x_account = sandboxPayload.x_account;
       form.maker_links = sandboxPayload.maker_links;
       form.additional_resources = sandboxPayload.additional_resources;
+      unlockAutofillGroups('taxonomy', 'launch');
       loadingStates.categories = false;
       loadingStates.bestFor = false;
       updateAutofillProgress('Finishing logo and media suggestions...', 92);
 
       await delay(360);
       form.logos = sandboxPayload.logos;
+      if (!globalFormState.manualLogoChosen.value) {
+        globalFormState.logoPreview.value = sandboxPayload.logos[0];
+      }
+      if (!globalFormState.manualScreenshotChosen.value) {
+        globalFormState.galleryPreviews.value[0] = sandboxPayload.screenshot;
+      }
+      unlockAutofillGroups('media');
       loadingStates.logos = false;
       completeAutofillProgress();
       globalFormState.isLoading.value = false;
       globalFormState.loadingTargetProgress.value = 0;
       globalFormState.loadingStartedAt.value = null;
+      finishAutofillRevealState();
       return true;
     } catch (error) {
       console.error('Sandbox autofill simulation failed:', error);
@@ -1452,6 +1537,8 @@ export function useProductForm() {
       globalFormState.isLoading.value = false;
       globalFormState.loadingTargetProgress.value = 0;
       globalFormState.loadingStartedAt.value = null;
+      markAutofillFormReady();
+      finishAutofillRevealState();
       stopLoadingAnimation();
       return false;
     } finally {
@@ -1547,6 +1634,7 @@ export function useProductForm() {
     const preservedFromSource = form.fromSource;
     Object.assign(form, { ...createProductFormState().form });
     form.fromSource = preservedFromSource;
+    resetAutofillRevealState(false);
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = [null];
     resetManualMediaChoices();
@@ -2085,6 +2173,7 @@ export function useProductForm() {
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,
     loadingStates,
+    autofillReveal,
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,
     allCategories: globalFormState.allCategories,
