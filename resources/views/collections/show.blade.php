@@ -75,13 +75,54 @@
                             </a>
                         @endif
 
-                        <button type="button" @click="copyCollectionUrl()" class="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50">
-                            Share Collection
+                        <button
+                            type="button"
+                            @click="copyCollectionUrl()"
+                            class="inline-flex w-[14rem] items-center justify-center rounded-full border border-gray-300 bg-white px-5 py-3 text-[1.15rem] font-medium text-slate-600 transition-colors duration-300 hover:border-gray-400 hover:text-slate-800"
+                            :class="copied ? 'text-emerald-600' : 'text-slate-600'"
+                            aria-live="polite"
+                        >
+                            <span class="mx-auto inline-flex items-center justify-center gap-2.5">
+                                <span
+                                    class="inline-flex items-center justify-center transition-all duration-300 ease-out"
+                                    :class="copied ? 'scale-105' : 'scale-100'"
+                                >
+                                    <svg class="h-[1.35rem] w-[1.35rem]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 16V4"></path>
+                                        <path d="m7 9 5-5 5 5"></path>
+                                        <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"></path>
+                                    </svg>
+                                </span>
+                                <span class="relative inline-flex items-center justify-center text-center leading-none">
+                                    <span class="invisible font-semibold">Link copied</span>
+                                    <span
+                                        x-show="!copied"
+                                        x-transition:enter="transition ease-out duration-350"
+                                        x-transition:enter-start="opacity-0 translate-y-1"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-250"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 -translate-y-1"
+                                        class="absolute inset-0 inline-flex items-center justify-center whitespace-nowrap"
+                                    >
+                                        Share
+                                    </span>
+                                    <span
+                                        x-cloak
+                                        x-show="copied"
+                                        x-transition:enter="transition ease-out duration-350"
+                                        x-transition:enter-start="opacity-0 translate-y-1"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-300"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 -translate-y-1"
+                                        class="absolute inset-0 inline-flex items-center justify-center whitespace-nowrap font-semibold text-emerald-600"
+                                    >
+                                        Link copied
+                                    </span>
+                                </span>
+                            </span>
                         </button>
-
-                        <span x-cloak x-show="copied" x-transition class="text-sm font-medium text-emerald-600">
-                            Link copied
-                        </span>
                     </div>
                 </div>
 
