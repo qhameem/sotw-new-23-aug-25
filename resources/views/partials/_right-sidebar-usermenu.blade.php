@@ -74,7 +74,7 @@
                         <form method="POST" action="{{ route('logout') }}" x-data="{ loggingOut: false }" @submit="loggingOut = true">
                             @csrf
                             <input type="hidden" name="redirect" value="{{ url()->current() }}">
-                            <button type="submit" class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                            <button type="submit" class="flex w-full items-center px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50">
                                 <template x-if="loggingOut">
                                     <span class="inline-flex items-center gap-2">
                                         <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -86,7 +86,7 @@
                                 </template>
                                 <template x-if="!loggingOut">
                                     <span class="inline-flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                        <x-phosphor-power class="w-5 h-5 mr-2 text-red-500" />
                                         Log Out
                                     </span>
                                 </template>

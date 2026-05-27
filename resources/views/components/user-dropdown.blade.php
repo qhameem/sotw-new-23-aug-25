@@ -138,7 +138,7 @@
             <form method="POST" action="{{ route('logout') }}" x-data="{ loggingOut: false }" @submit="loggingOut = true">
                 @csrf
                 <button type="submit"
-                    class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                    class="flex w-full items-center px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50">
                     <template x-if="loggingOut">
                         <span class="inline-flex items-center gap-2">
                             <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -150,7 +150,7 @@
                     </template>
                     <template x-if="!loggingOut">
                         <span class="inline-flex items-center">
-                            <x-phosphor-sign-out class="mr-2 h-5 w-5 text-gray-400" />
+                            <x-phosphor-power class="mr-2 h-5 w-5 shrink-0 text-red-500" />
                             Log Out
                         </span>
                     </template>

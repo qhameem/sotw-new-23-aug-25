@@ -50,7 +50,7 @@
                     type="submit"
                     :disabled="isLoggingOut"
                     :class="isLoggingOut ? 'cursor-wait opacity-70' : ''"
-                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50"
                 >
                     <span v-if="isLoggingOut" class="inline-flex items-center gap-2">
                         <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -59,7 +59,20 @@
                         </svg>
                         Logging out...
                     </span>
-                    <span v-else>Log Out</span>
+                    <span v-else class="inline-flex items-center">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 256 256"
+                            fill="currentColor"
+                            class="mr-2 h-5 w-5 text-red-500"
+                            aria-hidden="true"
+                        >
+                            <path d="M120,128V48a8,8,0,0,1,16,0v80a8,8,0,0,1-16,0Zm60.37-78.7a8,8,0,0,0-8.74,13.4C194.74,77.77,208,101.57,208,128a80,80,0,0,1-160,0c0-26.43,13.26-50.23,36.37-65.3a8,8,0,0,0-8.74-13.4C47.9,67.38,32,96.06,32,128a96,96,0,0,0,192,0C224,96.06,208.1,67.38,180.37,49.3Z" />
+                        </svg>
+                        Log Out
+                    </span>
                 </button>
             </form>
         </div>
