@@ -1245,53 +1245,10 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $isFuture = $date->isFuture();
-
-        $promotedProducts = $this->promotedProductsForPeriod($date->copy()->startOfDay(), $date->copy()->endOfDay());
-        $rankedRegularProductIds = $isFuture
-            ? collect()
-            : app(\App\Services\ProductRankingService::class)->organicDateProductIds($date);
-
-        [$regularProducts, $combinedProducts] = $this->buildPeriodPaginator($rankedRegularProductIds, $promotedProducts);
-
-        $categories = Category::all();
-        $types = Type::with('categories')->get();
-        $serverTodayDateString = Carbon::today()->toDateString();
-        $displayDateString = $date->toDateString();
-
-        if ($isHomepage) {
-            $title = 'Top Products of the Day';
-            $pageTitle = 'Top Products - ' . config('app.name', 'Software on the Web');
-        } else {
-            $title = 'Top Products';
-            $pageTitle = 'Top Products';
-        }
-
-        $metaDescription = $this->buildArchiveMetaDescription(
-            'day',
-            $date->copy()->startOfDay(),
-            $date->copy()->endOfDay(),
-            $combinedProducts->count()
-        );
-
-        $activeDates = Product::where('approved', true)
-            ->where('is_published', true)
-            ->selectRaw('DISTINCT DATE(COALESCE(published_at, created_at)) as date')
-            ->pluck('date')
-            ->toArray();
-
-        if ($request->ajax()) {
-            return view('partials.products_list_with_pagination', compact('regularProducts', 'promotedProducts'))->render();
-        }
-
-        $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
-
-        $dayOfYear = $date->dayOfYear;
-        $fullDate = $date->format('d F, Y');
-
-        $nextLaunchTime = $this->getNextLaunchTimeIso();
-
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'activeDates', 'dayOfYear', 'fullDate', 'nextLaunchTime', 'isFuture', 'metaDescription'));
+        return redirect()->route('products.byWeek', [
+            'year' => $date->year,
+            'week' => $date->weekOfYear,
+        ], 301);
     }
     public function redirectToCurrentWeek()
     {

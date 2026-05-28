@@ -111,6 +111,22 @@ class PublicProductDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function date_archive_requests_permanently_redirect_to_the_matching_week_archive_url()
+    {
+        $date = Carbon::parse('2025-08-22');
+
+        $response = $this->get(route('products.byDate', [
+            'date' => $date->toDateString(),
+        ]));
+
+        $response->assertRedirect(route('products.byWeek', [
+            'year' => $date->year,
+            'week' => $date->weekOfYear,
+        ]));
+        $this->assertSame(301, $response->getStatusCode());
+    }
+
+    /** @test */
     public function week_archive_requests_before_the_first_published_week_return_a_404()
     {
         Product::factory()->create([
