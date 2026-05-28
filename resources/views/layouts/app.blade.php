@@ -458,6 +458,11 @@
         :hide-desktop-page-header="filled(trim($__env->yieldContent('hide_desktop_page_header')))"
         :header-padding="$headerPadding ?? ($isPseoRoute ? $defaultPseoPagePadding : 'px-4 sm:px-6 lg:px-8')"
         :main-padding="$mainPadding ?? ($isPseoRoute ? $defaultPseoPagePadding : 'px-4 sm:px-6 lg:px-8')">
+        <x-slot:before_title>
+            @hasSection('before_header_title')
+                @yield('before_header_title')
+            @endif
+        </x-slot:before_title>
         <x-slot:title>
             @hasSection('header-title')
                 @yield('header-title')

@@ -35,6 +35,11 @@
                     @unless($hideDesktopPageHeader ?? false)
                         <div class="h-[75px] md:hidden w-full"></div>
                         <x-page-header :padding="$headerPadding">
+                            @if (isset($before_title))
+                                <x-slot:before_title>
+                                    {!! $before_title !!}
+                                </x-slot:before_title>
+                            @endif
                             <x-slot:title>
                                 {!! $title !!}
                             </x-slot:title>

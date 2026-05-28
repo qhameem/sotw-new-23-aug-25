@@ -6,6 +6,7 @@
 @php
     $titleText = trim(strip_tags((string) $title));
     $hasTitle = $titleText !== '';
+    $hasBeforeTitle = isset($before_title) && trim(strip_tags((string) $before_title)) !== '';
     $hasActions = isset($actions) && trim((string) $actions) !== '';
     $customFaviconPath = config('theme.favicon_url');
     $publicDisk = \Illuminate\Support\Facades\Storage::disk('public');
@@ -31,6 +32,11 @@
     style="background-color: var(--color-body-bg, #ffffff);">
     <div class="flex justify-between items-center {{ $padding }} py-[0.78rem]">
         <div>
+            @if($hasBeforeTitle)
+                <div class="mb-3">
+                    {{ $before_title }}
+                </div>
+            @endif
             <div class="flex items-center">
                 <a href="{{ route('home') }}" wire:navigate.hover>
                     <img src="{{ $mobileFaviconUrl }}" alt="{{ config('theme.logo_alt_text', config('app.name', 'Logo')) }}"

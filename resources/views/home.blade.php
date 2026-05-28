@@ -10,6 +10,14 @@
     <span class="site-heading-text text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
 @endsection
 
+@section('before_header_title')
+    @guest
+        @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
+            <x-site-intro-card />
+        @endif
+    @endguest
+@endsection
+
 @section('canonical')
     @if (Route::currentRouteName() == 'home')
         <link rel="canonical" href="{{ url('/') }}" />
