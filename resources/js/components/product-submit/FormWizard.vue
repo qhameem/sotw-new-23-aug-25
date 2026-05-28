@@ -27,7 +27,7 @@
               @update:modelValue="handleUrlInputUpdate"
               @update:additionalResources="handleAdditionalResourcesUpdate"
               :isLoading="isLoading"
-              :isAdmin="showAdminAiContext"
+              :showExtraContext="showAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
               :loadingMessage="loadingMessage"
@@ -127,7 +127,7 @@
                     @update:modelValue="handleUrlInputUpdate"
                     @update:additionalResources="handleAdditionalResourcesUpdate"
                     :isLoading="isLoading"
-                    :isAdmin="showAdminAiContext"
+                    :showExtraContext="showAiContext"
                     :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
                     :loadingProgress="loadingProgress"
                     :loadingMessage="loadingMessage"
@@ -309,7 +309,7 @@ const {
 } = useProductForm(props.initialProduct);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
-const showAdminAiContext = computed(() => isAdmin.value && !form.id);
+const showAiContext = computed(() => !form.id);
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {

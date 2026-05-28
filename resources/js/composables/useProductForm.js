@@ -808,7 +808,7 @@ export function useProductForm() {
         formData.append('x_account', form.x_account);
       }
 
-      if (globalFormState.isAdmin.value && form.additional_resources) {
+      if (form.additional_resources) {
         formData.append('additional_resources', form.additional_resources);
       }
 

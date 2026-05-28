@@ -60,25 +60,42 @@
       </button>
     </div>
 
-    <div v-if="isAdmin" class="mt-4">
-      <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
-        AI extra context
-        <span class="ml-2 text-xs font-normal text-amber-700">Admin only</span>
-      </label>
-      <p class="mt-1 text-xs text-gray-500">
-        Add notes or extra URLs related to the main site. This gives the AI more source material for better autofill.
-      </p>
-      <textarea
-        id="additional-resources"
-        :value="additionalResources"
-        @input="handleAdditionalResourcesInput"
-        rows="4"
-        class="mt-2 block w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm shadow-sm placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-        placeholder="One item per line. Example:
+    <div v-if="showExtraContext" class="mt-4">
+      <div class="flex items-center gap-2">
+        <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
+          AI extra context
+          <span class="ml-1 text-xs font-normal text-gray-500">(Optional)</span>
+        </label>
+        <button
+          type="button"
+          @click="toggleAdditionalResources"
+          class="inline-flex items-center justify-center text-lg font-semibold leading-none text-sky-700 transition-colors hover:text-sky-900"
+          :aria-expanded="showAdditionalResources ? 'true' : 'false'"
+          aria-controls="additional-resources-panel"
+          :aria-label="showAdditionalResources ? 'Hide AI extra context' : 'Show AI extra context'"
+        >
+          {{ showAdditionalResources ? '−' : '+' }}
+        </button>
+      </div>
+
+      <transition name="fade">
+        <div v-if="showAdditionalResources" id="additional-resources-panel">
+          <p class="mt-1 text-xs text-gray-500">
+            Add notes or extra URLs related to the main site. This gives the AI more source material for better autofill.
+          </p>
+          <textarea
+            id="additional-resources"
+            :value="additionalResources"
+            @input="handleAdditionalResourcesInput"
+            rows="4"
+            class="mt-2 block w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm shadow-sm placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            placeholder="One item per line. Example:
 https://example.com/pricing
 https://docs.example.com
 Internal note: focus on the API and automation features."
-      ></textarea>
+          ></textarea>
+        </div>
+      </transition>
     </div>
 
     <transition name="fade">
@@ -170,7 +187,7 @@ Internal note: focus on the API and automation features."
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
@@ -187,7 +204,7 @@ const props = defineProps({
   urlExistsError: Boolean,
   existingProduct: Object,
   submissionBgUrl: String,
-  isAdmin: {
+  showExtraContext: {
     type: Boolean,
     default: false,
   },
@@ -201,6 +218,7 @@ const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'ge
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
+const showAdditionalResources = ref(Boolean(props.additionalResources?.trim()));
 
 const handleInput = (event) => {
   const value = event.target.value;
@@ -212,6 +230,19 @@ const handleInput = (event) => {
 const handleAdditionalResourcesInput = (event) => {
   emit('update:additionalResources', event.target.value);
 };
+
+const toggleAdditionalResources = () => {
+  showAdditionalResources.value = !showAdditionalResources.value;
+};
+
+watch(
+  () => props.additionalResources,
+  (value) => {
+    if (value?.trim()) {
+      showAdditionalResources.value = true;
+    }
+  }
+);
 
 const logButtonConditions = () => {
   console.log('[ProductURLInput] Button conditions:', {

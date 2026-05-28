@@ -3332,7 +3332,7 @@ class ProductController extends Controller
                 $matchedUseCaseNames = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
                 $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
-                $sendUpdate('Categories ready. Finalizing screenshots and response...', 97, [
+                $sendUpdate('Categories ready. Finalizing extracted data and response...', 97, [
                     'categories' => $categoryIds,
                     'useCases' => $useCaseIds,
                     'bestFor' => $bestForIds,
