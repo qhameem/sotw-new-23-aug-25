@@ -33,7 +33,7 @@
     <div class="flex justify-between items-center {{ $padding }} py-[0.78rem]">
         <div>
             @if($hasBeforeTitle)
-                <div class="mb-3">
+                <div class="mb-3 hidden md:block">
                     {{ $before_title }}
                 </div>
             @endif

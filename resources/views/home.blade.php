@@ -13,7 +13,7 @@
 @section('before_header_title')
     @guest
         @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
-            <x-site-intro-card />
+            <x-site-intro-card class="hidden md:block" />
         @endif
     @endguest
 @endsection
@@ -61,6 +61,12 @@
 
 @section('content')
     <div class="flex-shrink-0 z-10 relative" style="background-color: var(--color-body-bg, #ffffff);">
+    @guest
+        @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
+            <x-site-intro-card class="md:hidden" />
+        @endif
+    @endguest
+
     @if(!isset($isCategoryPage) || !$isCategoryPage)
         <div class="px-4 py-2">
             <div class="flex justify-between items-center text-xs" x-data="weekNavigationScroller()" x-init="init()">
