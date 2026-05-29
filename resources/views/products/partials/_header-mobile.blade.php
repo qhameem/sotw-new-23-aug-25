@@ -80,6 +80,12 @@
                 && !$cat->types->contains('name', 'Platform');
         });
     @endphp
+    @if($generalCategories->isNotEmpty())
+        <svg class="mr-2 h-3.5 w-3.5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M7.25 4.75h-2.5A1.5 1.5 0 0 0 3.25 6.25v2.5a1.5 1.5 0 0 0 .44 1.06l6.5 6.5a1.5 1.5 0 0 0 2.12 0l4-4a1.5 1.5 0 0 0 0-2.12l-6.5-6.5a1.5 1.5 0 0 0-1.06-.44Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M6.5 7.25a.375.375 0 1 0 0-.75.375.375 0 0 0 0 .75Z" fill="currentColor" stroke="currentColor" />
+        </svg>
+    @endif
     @foreach($generalCategories as $category)
         <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
             class="text-[0.65rem] text-gray-500 hover:underline hover:text-primary-600 transition-colors">{{ $category->name }}</a>
