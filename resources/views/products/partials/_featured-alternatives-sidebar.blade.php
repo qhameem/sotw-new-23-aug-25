@@ -40,6 +40,26 @@
                     </span>
                 </a>
             @endforeach
+
+                <a href="{{ route('pseo.alternatives', $product->slug) }}" wire:navigate.hover
+                    class="flex items-center gap-3 py-3 first:pt-0 last:pb-0 text-gray-400 transition-colors hover:text-gray-500">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-lg font-semibold text-gray-500" aria-hidden="true">
+                            <span>⌥</span>
+                        </div>
+
+                        <div class="min-w-0 flex items-center gap-2">
+                            <span class="block text-sm font-medium">
+                                View all <span class="text-gray-600">{{ $product->name }}</span> alternatives
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14" />
+                                <path d="m12 5 7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
     </section>
