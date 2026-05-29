@@ -6,13 +6,14 @@
     $hideSidebar = true;
     $headerPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
     $mainPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
-    $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc';
+    $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc' || ($logoFilter ?? 'all') !== 'all';
     $showingFrom = $products->firstItem() ?? 0;
     $showingTo = $products->lastItem() ?? 0;
     $activeSortLabel = $sortOptions[$sortBy] ?? ucfirst(str_replace('_', ' ', $sortBy));
     $sortTagBaseParams = array_filter([
         'q' => $searchTerm ?: null,
         'sort_dir' => $sortDir,
+        'logo_filter' => ($logoFilter ?? 'all') !== 'all' ? $logoFilter : null,
         'selected_product_id' => request()->integer('selected_product_id') ?: null,
     ], fn ($value) => $value !== null && $value !== '');
 @endphp
@@ -73,6 +74,7 @@
                             initialQuery: @js($searchTerm ?? ''),
                             sortBy: @js($sortBy),
                             sortDir: @js($sortDir),
+                            logoFilter: @js($logoFilter ?? 'all'),
                         })"
                         @keydown.escape.window="open = false">
                         <div class="space-y-2">
@@ -146,7 +148,7 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-3 lg:grid-cols-[240px_160px_auto]">
+                        <div class="grid gap-3 lg:grid-cols-[220px_160px_180px_auto]">
                             <div class="space-y-2">
                                 <label for="admin-sort-by" class="dashboard-label block">Sort by</label>
                                 <select id="admin-sort-by" name="sort_by" x-model="sortBy" class="dashboard-select">
@@ -161,6 +163,14 @@
                                 <select id="admin-sort-dir" name="sort_dir" x-model="sortDir" class="dashboard-select">
                                     <option value="desc">Descending</option>
                                     <option value="asc">Ascending</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="admin-logo-filter" class="dashboard-label block">Logo</label>
+                                <select id="admin-logo-filter" name="logo_filter" x-model="logoFilter" class="dashboard-select">
+                                    <option value="all">All products</option>
+                                    <option value="missing">Missing logo</option>
                                 </select>
                             </div>
 
@@ -181,6 +191,9 @@
                             <span>Live suggestions open inline. Press Enter to open the highlighted result.</span>
                             @if ($searchTerm ?? null)
                                 <span class="dashboard-badge">Query: {{ $searchTerm }}</span>
+                            @endif
+                            @if (($logoFilter ?? 'all') === 'missing')
+                                <span class="dashboard-badge">Logo: Missing</span>
                             @endif
                         </div>
                     </form>
@@ -399,6 +412,13 @@ function adminProductOwnerManager(config) {
         assigning: false,
         feedback: null,
         searchTimeout: null,
+        logoUrl: config.logoUrl || '',
+        logoInitial: config.logoInitial || '?',
+        productName: config.productName || 'this product',
+        logoSaving: false,
+        logoFeedback: null,
+        logoModalOpen: false,
+        extractedLogos: [],
         async searchUsers() {
             clearTimeout(this.searchTimeout);
             this.selectedUser = null;
@@ -478,6 +498,161 @@ function adminProductOwnerManager(config) {
             } finally {
                 this.assigning = false;
             }
+        },
+        openLogoFilePicker() {
+            if (this.logoSaving) {
+                return;
+            }
+
+            this.$refs.logoInput?.click();
+        },
+        handleLogoFileChange(event) {
+            const [file] = event.target.files || [];
+
+            if (file) {
+                this.uploadLogo(file);
+            }
+
+            event.target.value = '';
+        },
+        async uploadLogo(file) {
+            const formData = new FormData();
+            formData.append('action', 'upload');
+            formData.append('logo', file);
+
+            await this.submitLogoUpdate(formData);
+        },
+        async findLogoFromUrl() {
+            const formData = new FormData();
+            formData.append('action', 'discover');
+
+            if (this.logoSaving) {
+                return;
+            }
+
+            this.logoModalOpen = true;
+            this.logoSaving = true;
+            this.logoFeedback = null;
+            this.extractedLogos = [];
+
+            try {
+                const response = await fetch(config.logoUpdateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData,
+                });
+
+                let data = {};
+
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    data = {};
+                }
+
+                if (!response.ok || !data.success) {
+                    this.logoFeedback = {
+                        type: 'error',
+                        message: data.message || 'Failed to find logos from the product URL.'
+                    };
+                    this.extractedLogos = [];
+                    return;
+                }
+
+                this.extractedLogos = Array.isArray(data.logos) ? data.logos : [];
+                if (this.extractedLogos.length === 0) {
+                    this.logoFeedback = {
+                        type: 'error',
+                        message: 'No usable logo could be found from the product URL.'
+                    };
+                    return;
+                }
+
+                this.logoFeedback = {
+                    type: 'success',
+                    message: data.message || 'Choose a logo to save.'
+                };
+            } catch (error) {
+                this.logoFeedback = {
+                    type: 'error',
+                    message: 'Failed to find logos from the product URL.'
+                };
+                this.extractedLogos = [];
+            } finally {
+                this.logoSaving = false;
+            }
+        },
+        closeLogoModal() {
+            if (this.logoSaving) {
+                return;
+            }
+
+            this.logoModalOpen = false;
+        },
+        async selectExtractedLogo(logoOption) {
+            const formData = new FormData();
+            formData.append('action', 'select');
+            formData.append('logo_url', logoOption);
+
+            const saved = await this.submitLogoUpdate(formData);
+
+            if (saved) {
+                this.logoModalOpen = false;
+                this.extractedLogos = [];
+            }
+        },
+        async submitLogoUpdate(formData) {
+            if (this.logoSaving) {
+                return false;
+            }
+
+            this.logoSaving = true;
+            this.logoFeedback = null;
+
+            try {
+                const response = await fetch(config.logoUpdateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData,
+                });
+
+                let data = {};
+
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    data = {};
+                }
+
+                if (!response.ok || !data.success) {
+                    this.logoFeedback = {
+                        type: 'error',
+                        message: data.message || 'Failed to update the logo.'
+                    };
+                    return false;
+                }
+
+                this.logoUrl = data.logo_url || '';
+                this.logoFeedback = {
+                    type: 'success',
+                    message: data.message || 'Logo updated successfully.'
+                };
+                return true;
+            } catch (error) {
+                this.logoFeedback = {
+                    type: 'error',
+                    message: 'Failed to update the logo.'
+                };
+                return false;
+            } finally {
+                this.logoSaving = false;
+            }
         }
     };
 }
@@ -487,6 +662,7 @@ function adminProductSearchAutocomplete(config) {
         query: config.initialQuery || '',
         sortBy: config.sortBy || 'created_at',
         sortDir: config.sortDir || 'desc',
+        logoFilter: config.logoFilter || 'all',
         suggestions: [],
         open: false,
         loading: false,
@@ -513,6 +689,7 @@ function adminProductSearchAutocomplete(config) {
                         q: this.query.trim(),
                         sort_by: this.sortBy,
                         sort_dir: this.sortDir,
+                        logo_filter: this.logoFilter,
                     });
 
                     const response = await fetch(`/admin/products/autocomplete?${params.toString()}`, {

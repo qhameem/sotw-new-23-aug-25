@@ -13,9 +13,12 @@ use Illuminate\Support\Facades\Storage; // Added Storage facade
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ProductLogoStorageService;
+use App\Services\FaviconExtractorService;
+use App\Services\LogoExtractorService;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use App\Support\CategoryTypeRegistry;
+use App\Support\ProductLogo;
 use App\Support\SocialLinkValidator;
 use App\Support\ProductMediaSeo;
 
@@ -73,6 +76,31 @@ class ProductController extends Controller
         return in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
     }
 
+    protected function normalizeLogoFilter(?string $logoFilter): string
+    {
+        return in_array($logoFilter, ['all', 'missing'], true) ? $logoFilter : 'all';
+    }
+
+    protected function applyLogoFilter($query, string $logoFilter): void
+    {
+        if ($logoFilter !== 'missing') {
+            return;
+        }
+
+        $query->where(function ($logoQuery) {
+            $logoQuery
+                ->whereNull('logo')
+                ->orWhere('logo', '')
+                ->orWhere(function ($blockedQuery) {
+                    $blockedQuery
+                        ->where('logo', 'like', 'https://www.google.com/s2/favicons%')
+                        ->orWhere('logo', 'like', 'http://www.google.com/s2/favicons%')
+                        ->orWhere('logo', 'like', 'https://google.com/s2/favicons%')
+                        ->orWhere('logo', 'like', 'http://google.com/s2/favicons%');
+                });
+        });
+    }
+
     protected function applySort($query, string $sortBy, string $sortDir): void
     {
         if ($sortBy === 'is_promoted') {
@@ -119,6 +147,8 @@ class ProductController extends Controller
         $searchTerm = trim((string) $request->input('q'));
         $this->applySearch($query, $searchTerm);
         $selectedProductId = $request->integer('selected_product_id');
+        $logoFilter = $this->normalizeLogoFilter($request->input('logo_filter'));
+        $this->applyLogoFilter($query, $logoFilter);
 
         // Sorting functionality
         $sortOptions = $this->sortOptions();
@@ -137,7 +167,7 @@ class ProductController extends Controller
             $selectedProduct = Product::with(['user', 'categories'])->withCount('userUpvotes')->find($selectedProductId);
         }
 
-        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct', 'sortOptions'));
+        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct', 'sortOptions', 'logoFilter'));
     }
 
     public function autocomplete(Request $request)
@@ -145,6 +175,7 @@ class ProductController extends Controller
         $searchTerm = trim((string) $request->input('q'));
         $sortBy = $this->normalizeSortBy($request->input('sort_by'));
         $sortDir = $this->normalizeSortDir($request->input('sort_dir'));
+        $logoFilter = $this->normalizeLogoFilter($request->input('logo_filter'));
 
         if (mb_strlen($searchTerm) < 2) {
             return response()->json([]);
@@ -153,12 +184,13 @@ class ProductController extends Controller
         $products = Product::with('user')
             ->select(['id', 'user_id', 'name', 'slug', 'tagline', 'link', 'logo'])
             ->tap(fn ($query) => $this->applySearch($query, $searchTerm))
+            ->tap(fn ($query) => $this->applyLogoFilter($query, $logoFilter))
             ->orderBy('is_promoted', 'desc')
             ->orderBy('name')
             ->limit(8)
             ->get();
 
-        return response()->json($products->map(function (Product $product) use ($searchTerm, $sortBy, $sortDir) {
+        return response()->json($products->map(function (Product $product) use ($searchTerm, $sortBy, $sortDir, $logoFilter) {
             $domain = parse_url($product->link, PHP_URL_HOST);
             $domain = is_string($domain) ? preg_replace('/^www\./i', '', $domain) : null;
 
@@ -176,6 +208,7 @@ class ProductController extends Controller
                     'q' => $searchTerm,
                     'sort_by' => $sortBy,
                     'sort_dir' => $sortDir,
+                    'logo_filter' => $logoFilter,
                     'selected_product_id' => $product->id,
                 ]) . '#selected-product-card',
             ];
@@ -572,6 +605,74 @@ class ProductController extends Controller
         return redirect()->route($redirectRoute)->with('success', $message);
     }
 
+    public function updatePanelLogo(Request $request, Product $product)
+    {
+        $request->validate([
+            'action' => 'required|string|in:upload,discover,select',
+            'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
+            'logo_url' => 'nullable|string',
+        ]);
+
+        $action = (string) $request->input('action');
+        $logoPath = null;
+
+        if ($action === 'upload') {
+            if (!$request->hasFile('logo')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Choose a logo file to upload.',
+                ], 422);
+            }
+
+            $logoPath = app(ProductLogoStorageService::class)
+                ->storeUploadedFile($request->file('logo'));
+            $message = 'Logo uploaded and saved immediately.';
+        } elseif ($action === 'discover') {
+            $logoCandidates = $this->discoverLogoCandidatesFromProductLink((string) $product->link);
+
+            if (empty($logoCandidates)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No usable logo could be found from the product URL.',
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Choose a logo to save.',
+                'logos' => array_values($logoCandidates),
+            ]);
+        } else {
+            $logoInput = trim((string) $request->input('logo_url'));
+
+            if ($logoInput === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Choose one of the extracted logos first.',
+                ], 422);
+            }
+
+            $logoPath = $this->resolveLogoPathFromInput($logoInput, (string) $product->link);
+
+            if (!$logoPath) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected logo could not be saved.',
+                ], 422);
+            }
+
+            $message = 'Selected logo saved immediately.';
+        }
+
+        $this->replaceLiveLogoFromAdminPanel($product, $logoPath);
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'logo_url' => ProductLogo::storedUrl($product->fresh()),
+        ]);
+    }
+
     private function syncPendingCustomSubmissions(Product $product, Request $request): void
     {
         $product->customCategorySubmissions()
@@ -596,6 +697,69 @@ class ProductController extends Controller
                 'status' => 'pending',
             ]);
         }
+    }
+
+    private function discoverLogoCandidatesFromProductLink(string $productLink): array
+    {
+        $normalizedLink = Product::normalizeLink($productLink);
+
+        if (!filled($normalizedLink) || !filter_var($normalizedLink, FILTER_VALIDATE_URL)) {
+            return [];
+        }
+
+        $logoCandidates = [];
+
+        try {
+            $response = Http::timeout(10)
+                ->withHeaders([
+                    'User-Agent' => 'Software on the Web Admin Logo Fetcher',
+                    'Accept' => 'text/html,application/xhtml+xml',
+                ])
+                ->get($normalizedLink);
+
+            if ($response->successful()) {
+                $logoCandidates = app(LogoExtractorService::class)->extract($normalizedLink, $response->body());
+            }
+        } catch (\Throwable $throwable) {
+            \Log::warning('Admin panel logo discovery failed during HTML fetch.', [
+                'product_link' => $productLink,
+                'url' => $normalizedLink,
+                'error' => $throwable->getMessage(),
+            ]);
+        }
+
+        $logoCandidates = $this->usableLogoCandidates($logoCandidates);
+
+        if (!empty($logoCandidates)) {
+            return $logoCandidates;
+        }
+
+        return $this->usableLogoCandidates(
+            app(FaviconExtractorService::class)->extract($normalizedLink)
+        );
+    }
+
+    private function usableLogoCandidates(array $candidates): array
+    {
+        $usableCandidates = [];
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate)) {
+                continue;
+            }
+
+            $candidate = trim($candidate);
+
+            if ($candidate === '' || ProductLogo::isBlockedExternalFaviconUrl($candidate)) {
+                continue;
+            }
+
+            if (!in_array($candidate, $usableCandidates, true)) {
+                $usableCandidates[] = $candidate;
+            }
+        }
+
+        return $usableCandidates;
     }
 
     private function resolveLogoPathFromInput(string $logoInput, string $productLink): ?string
@@ -636,6 +800,69 @@ class ProductController extends Controller
         }
 
         return null;
+    }
+
+    private function replaceLiveLogoFromAdminPanel(Product $product, string $logoPath): void
+    {
+        if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+            Storage::disk('public')->delete($product->logo);
+        }
+
+        if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+            Storage::disk('public')->delete($product->proposed_logo_path);
+        }
+
+        $product->logo = $logoPath;
+        $product->proposed_logo_path = null;
+        $product->last_edited_by_id = Auth::id();
+        $product->has_pending_edits = $this->productHasRemainingPendingEdits($product);
+        $product->save();
+    }
+
+    private function productHasRemainingPendingEdits(Product $product): bool
+    {
+        $pendingFields = [
+            $product->proposed_logo_path,
+            $product->proposed_screenshot_path,
+            $product->proposed_screenshot_thumb_path,
+            $product->proposed_screenshot_medium_path,
+            $product->proposed_tagline,
+            $product->proposed_description,
+            $product->proposed_name,
+            $product->proposed_link,
+            $product->proposed_video_url,
+            $product->proposed_x_account,
+            $product->proposed_asking_price,
+            $product->proposed_maker_links,
+            $product->proposed_product_page_tagline,
+            $product->proposed_pricing_page_url,
+        ];
+
+        foreach ($pendingFields as $value) {
+            if (is_array($value)) {
+                if (!empty($value)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!is_null($value) && $value !== '') {
+                return true;
+            }
+        }
+
+        if (!is_null($product->proposed_sell_product)) {
+            return true;
+        }
+
+        if ($product->proposedCategories()->exists() || $product->proposedTechStacks()->exists()) {
+            return true;
+        }
+
+        return $product->customCategorySubmissions()
+            ->where('status', 'pending')
+            ->exists();
     }
 
     private function replacePrimaryScreenshotFromUrl(Product $product, string $url, ImageManager $manager): void
