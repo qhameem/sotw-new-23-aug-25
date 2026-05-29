@@ -2,7 +2,6 @@
     $mainContentMaxWidth = 'max-w-7xl';
     $pageUrl = route('pseo.alternatives', ['product' => $product->slug]);
     $topAlternatives = $alternatives->take(5)->values();
-    $productSummary = trim(strip_tags((string) ($product->product_page_tagline ?: $product->tagline ?: $product->description)));
 
     $schema = [
         '@context' => 'https://schema.org',
@@ -132,9 +131,6 @@
                     <p class="mb-0.5 text-xs font-semibold uppercase tracking-wide text-gray-400">You are comparing alternatives to</p>
                     <a href="{{ route('products.show', $product->slug) }}" wire:navigate.hover class="text-lg font-bold text-gray-900 hover:text-primary-600">{{ $product->name }}</a>
                     <p class="mt-1 text-sm text-gray-500">{{ $product->tagline }}</p>
-                    @if($productSummary !== '')
-                        <p class="mt-2 max-w-3xl text-sm text-gray-600">{{ \Illuminate\Support\Str::limit($productSummary, 200) }}</p>
-                    @endif
                 </div>
             </div>
         </div>
@@ -154,9 +150,9 @@
         @if($alternatives->isEmpty())
             <p class="text-gray-500">No alternatives found yet. Check back as new products are added.</p>
         @else
-            <div class="mb-8 rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Quick Answer</p>
-                <p class="mt-2 text-sm leading-6 text-blue-900">
+            <div class="mb-8 rounded-2xl border border-gray-100 bg-yellow-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-900">Quick Answer</p>
+                <p class="mt-2 text-sm leading-6 text-gray-900">
                     The best {{ $product->name }} alternatives on this page start with
                     @foreach($alternatives->take(3) as $alt)
                         <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="font-semibold text-blue-900 underline decoration-blue-300 underline-offset-2">{{ $alt->name }}</a>@if(!$loop->last), @endif
@@ -171,7 +167,7 @@
                     <p class="mt-1 text-sm text-gray-500">A quick framing for what to compare before you start clicking through every option.</p>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-3">
+                <div class="grid gap-4">
                     <article class="rounded-2xl border border-gray-200 bg-white p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Why Readers Switch</p>
                         <p class="mt-2 text-sm leading-6 text-gray-700">
@@ -257,11 +253,44 @@
                     @foreach($alternatives as $index => $alt)
                         @php
                             $votesCount = max(1, (int) ($alt->votes_count ?? 0));
-                            $outboundClicksCount = max(0, (int) ($alt->outbound_clicks_count ?? 0));
-                            $impressionsCount = max(0, (int) ($alt->impressions ?? 0));
-                            $momentumLabel = $votesCount >= 4 ? null : (($outboundClicksCount >= 3 || $impressionsCount >= 25) ? 'Rising' : 'New');
+                            $primaryCategory = $alt->categories->first(function ($category) {
+                                $typeNames = $category->types->pluck('name')->map(fn($name) => strtolower((string) $name));
+
+                                if ($typeNames->isEmpty()) {
+                                    return true;
+                                }
+
+                                if ($typeNames->contains('pricing') || $typeNames->contains('best for')) {
+                                    return false;
+                                }
+
+                                return $typeNames->contains('software')
+                                    || $typeNames->contains('software categories')
+                                    || $typeNames->contains('category');
+                            });
+                            $pricingCategory = $alt->categories->first(fn($category) => $category->types->contains('name', 'Pricing'));
+                            $metaLinks = collect([
+                                $primaryCategory ? [
+                                    'label' => $alt->primary_category_label,
+                                    'href' => route('categories.show', ['category' => $primaryCategory->slug]),
+                                    'navigate' => true,
+                                    'class' => 'text-xs hover:text-gray-800 hover:underline',
+                                ] : null,
+                                ($pricingCategory && $alt->pricing_label !== 'Pricing not listed') ? [
+                                    'label' => $alt->pricing_label,
+                                    'href' => route('pseo.pricing', ['pricing' => $pricingCategory->slug]),
+                                    'navigate' => true,
+                                    'class' => 'text-xs hover:text-gray-800 hover:underline',
+                                ] : null,
+                                [
+                                    'label' => ($alt->match_source ?? null) === 'manual' ? 'Curated pick' : 'Algorithmic match',
+                                    'href' => '#ranking-methodology',
+                                    'navigate' => false,
+                                    'class' => 'text-xs hover:text-gray-800 hover:underline',
+                                ],
+                            ])->filter()->values();
                         @endphp
-                        <article class="rounded-2xl border border-gray-100 p-4 transition-all hover:border-gray-200 hover:shadow-sm">
+                        <article class="rounded-2xl border border-gray-100 bg-white p-4 transition-all hover:border-gray-200 hover:shadow-sm">
                             <div class="flex items-start gap-4">
                                 <span class="mt-1 w-5 flex-shrink-0 text-sm font-bold text-gray-300">{{ $index + 1 }}</span>
                                 <div class="flex-shrink-0">
@@ -270,28 +299,34 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                         <div class="min-w-0">
-                                            <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="text-base font-semibold text-gray-900 hover:text-primary-600">
-                                                {{ $alt->name }}
-                                            </a>
+                                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="text-base font-semibold text-gray-900 hover:text-primary-600">
+                                                    {{ $alt->name }}
+                                                </a>
+                                                <span class="text-xs text-gray-500">{{ number_format($votesCount) }} {{ $votesCount === 1 ? 'vote' : 'votes' }}</span>
+                                            </div>
                                             <p class="mt-0.5 text-sm text-gray-500">{{ $alt->tagline }}</p>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-2 text-xs">
-                                            @if($alt->primary_category_label)
-                                                <span class="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-gray-700">{{ $alt->primary_category_label }}</span>
-                                            @endif
-                                            <span class="rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-green-700">{{ $alt->pricing_label }}</span>
-                                            <span class="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700">
-                                                {{ ($alt->match_source ?? null) === 'manual' ? 'Curated pick' : 'Algorithmic match' }}
-                                            </span>
-                                            @if($momentumLabel)
-                                                <span @class([
-                                                    'rounded-full border px-2.5 py-1',
-                                                    'border-slate-200 bg-slate-50 text-slate-500' => $momentumLabel === 'Rising',
-                                                    'border-slate-200 bg-slate-50 text-slate-600' => $momentumLabel !== 'Rising',
-                                                ])>{{ $momentumLabel }}@if($votesCount > 1) · {{ number_format($votesCount) }} votes @endif</span>
-                                            @else
-                                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">{{ number_format($votesCount) }} votes</span>
-                                            @endif
+                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+                                            @foreach($metaLinks as $metaLink)
+                                                @if(!$loop->first)
+                                                    <span class="text-gray-400">•</span>
+                                                @endif
+                                                @if($metaLink['href'])
+                                                    <a
+                                                        href="{{ $metaLink['href'] }}"
+                                                        @if($metaLink['navigate']) wire:navigate.hover @endif
+                                                        @click.stop
+                                                        class="{{ $metaLink['class'] }}"
+                                                    >
+                                                        {{ $metaLink['label'] }}
+                                                    </a>
+                                                @else
+                                                    <span class="{{ $metaLink['class'] }}">
+                                                        {{ $metaLink['label'] }}
+                                                    </span>
+                                                @endif
+                                            @endforeach
                                         </div>
                                     </div>
 
@@ -301,15 +336,15 @@
                                         <p class="mt-2 text-sm leading-6 text-gray-600">{{ $alt->editorial_take }}</p>
                                     @endif
 
-                                    <div class="mt-4 grid gap-3 md:grid-cols-3">
-                                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                    <div class="mt-4 grid gap-3">
+                                        <div class="rounded-xl border border-gray-100 bg-white p-3">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Better For</p>
                                             <p class="mt-2 text-sm leading-5 text-gray-700">
                                                 {{ $alt->better_for_text ?: 'Readers who want a similar tool with a slightly different workflow fit.' }}
                                             </p>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                        <div class="rounded-xl border border-gray-100 bg-white p-3">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Feature Highlights</p>
                                             @if(!empty($alt->feature_highlights))
                                                 <ul class="mt-2 space-y-1.5 text-sm leading-5 text-gray-700">
@@ -322,7 +357,7 @@
                                             @endif
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                        <div class="rounded-xl border border-gray-100 bg-white p-3">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Watch Out If</p>
                                             <p class="mt-2 text-sm leading-5 text-gray-700">
                                                 {{ $alt->watch_out_text ?: 'You need a near-identical replacement with no workflow changes.' }}
@@ -361,7 +396,7 @@
                 </div>
             </section>
 
-            <section class="mb-10 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <section id="ranking-methodology" class="mb-10 rounded-2xl border border-gray-200 bg-gray-50 p-5">
                 <h2 class="text-xl font-semibold text-gray-900">How We Ranked These Alternatives</h2>
                 <p class="mt-2 text-sm leading-6 text-gray-600">
                     We prioritize alternatives that overlap with {{ $product->name }} in software category, audience, pricing model, technical profile, and product positioning.
