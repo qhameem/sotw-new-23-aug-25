@@ -108,8 +108,6 @@
             </div>
 
             <div class="flex shrink-0 self-center items-center gap-3">
-                <x-products.visit-website-button :product="$product" surface="product_details" label="Visit" content-class="" class="font-bold" />
-
                 <div
                     x-data="{ saved: {{ $isSavedByCurrentUser ? 'true' : 'false' }} }"
                     @product-collections-synced.window="saved = $event.detail.isSaved"
@@ -140,6 +138,8 @@
                         Add to collection
                     </span>
                 </div>
+
+                <x-products.visit-website-button :product="$product" surface="product_details" label="Visit" content-class="" class="font-bold" />
             </div>
         </div>
     </div>

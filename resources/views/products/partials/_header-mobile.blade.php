@@ -97,8 +97,6 @@
 
 {{-- Primary Action --}}
 <div class="mt-6 mb-6 flex items-center gap-3">
-    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] flex-1" />
-
     <div
         x-data="{ saved: {{ $isSavedByCurrentUser ? 'true' : 'false' }} }"
         @product-collections-synced.window="saved = $event.detail.isSaved"
@@ -120,4 +118,6 @@
             </svg>
         </button>
     </div>
+
+    <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] flex-1" />
 </div>
