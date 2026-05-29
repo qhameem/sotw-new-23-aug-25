@@ -14,8 +14,7 @@ class SubmitIndexNowUrls implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
-    public int $backoff = 30;
+    public int $tries = 1;
 
     public function __construct(
         public array $urls
@@ -24,7 +23,14 @@ class SubmitIndexNowUrls implements ShouldQueue
 
     public function handle(IndexNowService $indexNow): void
     {
-        $indexNow->submitUrls($this->urls);
+        try {
+            $indexNow->submitUrls($this->urls);
+        } catch (\Throwable $exception) {
+            Log::warning('IndexNow URL submission failed.', [
+                'urls' => $this->urls,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     public function failed(\Throwable $exception): void
