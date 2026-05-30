@@ -158,7 +158,10 @@ class ProductEditorialContentService
         }
 
         foreach (['key_features', 'ideal_for', 'top_use_cases', 'known_alternatives', 'integrations', 'pros', 'limitations'] as $key) {
-            $result[$key] = array_values(array_unique(array_filter(array_map([$this, 'cleanText'], $result[$key]))));
+            $result[$key] = array_values(array_unique(array_filter(
+                array_map([$this, 'cleanText'], $result[$key]),
+                fn (string $item): bool => $key !== 'limitations' || !$this->isPlaceholderLimitation($item)
+            )));
         }
 
         return $result;
@@ -261,5 +264,10 @@ class ProductEditorialContentService
         $value = preg_replace('/\s+/u', ' ', trim($value));
 
         return trim((string) $value);
+    }
+
+    private function isPlaceholderLimitation(string $value): bool
+    {
+        return mb_strtolower(trim($value)) === mb_strtolower(DescriptionRewriterService::UNKNOWN_LIMITATION);
     }
 }

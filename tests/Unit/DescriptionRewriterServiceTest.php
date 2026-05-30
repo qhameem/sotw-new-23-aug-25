@@ -70,8 +70,8 @@ test('description rewriter renders deterministic html from structured groq json'
         '<ul><li>Release plans with approval steps.</li><li>Rollback guidance for production changes.</li><li>Shared release visibility for engineering teams.</li></ul>',
         '<h2><strong>Who is Acme best for?</strong></h2>',
         '<ul><li>Software teams coordinating releases across environments.</li><li>Engineering leads who need clearer approval workflows.</li></ul>',
-        '<h2><strong>What are the pros and limitations of Acme?</strong></h2>',
-        '<ul><li><strong>Pros:</strong> Keeps release steps in one place.; Makes approvals easier to track.</li><li><strong>Limitations:</strong> Not clearly stated in the available source material.</li></ul>',
+        '<h2><strong>What are the pros of Acme?</strong></h2>',
+        '<ul><li>Keeps release steps in one place.</li><li>Makes approvals easier to track.</li></ul>',
     ]));
 });
 
@@ -449,7 +449,8 @@ test('description rewriter normalizes product names, casing, and weak limitation
     expect($result)->toContain('<h2><strong>What is Wowable?</strong></h2>');
     expect($result)->toContain('Wowable turns links into websites for businesses using Google Maps and TripAdvisor listings.');
     expect($result)->toContain('It works with Google Maps, TripAdvisor, Facebook, Instagram, and LinkedIn.');
-    expect($result)->toContain('<li><strong>Limitations:</strong> Not clearly stated in the available source material.</li>');
+    expect($result)->toContain('<h2><strong>What are the pros of Wowable?</strong></h2>');
+    expect($result)->not->toContain('Not clearly stated in the available source material.');
 });
 
 test('description rewriter does not uppercase ai inside unrelated words', function () {

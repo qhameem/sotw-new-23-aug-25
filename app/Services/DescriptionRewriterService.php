@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Log;
 
 class DescriptionRewriterService
 {
+    public const UNKNOWN_LIMITATION = 'Not clearly stated in the available source material.';
+
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
@@ -395,6 +397,10 @@ PROMPT;
         $bestFor = $this->cleanStringArray($payload['best_for'] ?? [], 3);
         $pros = $this->cleanStringArray($payload['pros'] ?? [], 3);
         $limitations = $this->cleanLimitationsArray($payload['limitations'] ?? [], 2);
+        $displayLimitations = array_values(array_filter(
+            $limitations,
+            fn (string $item): bool => !$this->isPlaceholderLimitation($item)
+        ));
         $alternatives = $options['include_alternatives'] ? $this->cleanStringArray($payload['alternatives'] ?? [], 2) : [];
         $integrations = $options['include_integrations'] ? $this->cleanStringArray($payload['integrations'] ?? [], 3) : [];
         $faq = $options['include_faq'] ? $this->cleanFaqArray($payload['faq'] ?? [], 2) : [];
@@ -423,11 +429,16 @@ PROMPT;
             $html[] = $this->renderList($integrations);
         }
 
-        $html[] = '<h2><strong>What are the pros and limitations of ' . e($productName) . '?</strong></h2>';
-        $html[] = '<ul>'
-            . '<li><strong>Pros:</strong> ' . e(implode('; ', $pros)) . '</li>'
-            . '<li><strong>Limitations:</strong> ' . e(implode('; ', $limitations)) . '</li>'
-            . '</ul>';
+        if ($displayLimitations === []) {
+            $html[] = '<h2><strong>What are the pros of ' . e($productName) . '?</strong></h2>';
+            $html[] = $this->renderList($pros);
+        } else {
+            $html[] = '<h2><strong>What are the pros and limitations of ' . e($productName) . '?</strong></h2>';
+            $html[] = '<ul>'
+                . '<li><strong>Pros:</strong> ' . e(implode('; ', $pros)) . '</li>'
+                . '<li><strong>Limitations:</strong> ' . e(implode('; ', $displayLimitations)) . '</li>'
+                . '</ul>';
+        }
 
         if ($faq !== []) {
             $html[] = '<h2><strong>Frequently asked questions about ' . e($productName) . '</strong></h2>';
@@ -505,7 +516,7 @@ PROMPT;
                 str_contains($lower, 'not mentioned in the available source') ||
                 str_contains($lower, 'no clear limitations mentioned')
             ) {
-                return ['Not clearly stated in the available source material.'];
+                return [self::UNKNOWN_LIMITATION];
             }
 
             if (
@@ -515,13 +526,18 @@ PROMPT;
                 && !str_contains($lower, 'coming soon')
                 && !str_contains($lower, 'currently')
             ) {
-                return ['Not clearly stated in the available source material.'];
+                return [self::UNKNOWN_LIMITATION];
             }
 
             $normalized[] = $item;
         }
 
         return $normalized;
+    }
+
+    private function isPlaceholderLimitation(string $value): bool
+    {
+        return mb_strtolower(trim($value)) === mb_strtolower(self::UNKNOWN_LIMITATION);
     }
 
     private function cleanFaqArray(array $items, int $limit): array
