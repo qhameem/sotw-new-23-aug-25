@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between h-14 px-4">
     <div class="flex items-center w-full gap-3">
-        @if(!request()->is('free-todo-list-tool'))
+        @if(!request()->routeIs('todolists.*'))
             <div class="w-full">
                 <button type="button" @click="$dispatch('open-search-modal')"
                     class="flex w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 text-left shadow-sm transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500/30">
@@ -14,7 +14,7 @@
         @guest
             <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
         @else
-            @if(!request()->is('free-todo-list-tool'))
+            @if(!request()->routeIs('todolists.*'))
                 @auth
                 <div class="mr-2">
                     <x-notification-bell />

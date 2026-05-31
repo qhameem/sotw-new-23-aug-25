@@ -9,7 +9,7 @@ This is a reminder that the deadline for your task **"{{ $task->title }}"** is a
 
 You can view your task by clicking the button below:
 
-@component('mail::button', ['url' => route('todolists.index')])
+@component('mail::button', ['url' => app(\App\Support\ToolSettings::class)->url(\App\Support\ToolSettings::TODO_LIST_KEY)])
 View My To-Do List
 @endcomponent
 

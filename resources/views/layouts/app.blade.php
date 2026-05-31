@@ -497,7 +497,7 @@
                     </div>
                     @include('partials._right-sidebar')
                     {{ $right_sidebar_content ?? '' }}
-                    @if(Request::is('free-todo-list-tool'))
+                    @if(request()->routeIs('todolists.*'))
                         @include('todolists._lists')
                     @endif
                 </div>

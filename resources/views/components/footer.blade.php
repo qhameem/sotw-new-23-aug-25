@@ -44,7 +44,7 @@
                 class="absolute left-1/2 z-50 mt-2 w-40 -translate-x-1/2 rounded-md bg-white py-1 text-left shadow-lg ring-1 ring-black ring-opacity-5"
                 style="display: none;"
             >
-                <a href="{{ route('todolists.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To-Do List</a>
+                <a href="{{ app(\App\Support\ToolSettings::class)->url(\App\Support\ToolSettings::TODO_LIST_KEY) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To-Do List</a>
             </div>
         </span> •
         <a href="https://x.com/software_on_web" target="_blank" rel="{{ \App\Support\OutboundLink::rel('https://x.com/software_on_web', 'system_view') }}" class="hover:underline">X.com</a> •

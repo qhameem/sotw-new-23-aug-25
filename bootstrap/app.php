@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
+            'configured.tool' => \App\Http\Middleware\EnsureConfiguredToolSlug::class,
         ]);
 
 

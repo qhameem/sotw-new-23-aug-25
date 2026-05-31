@@ -41,6 +41,7 @@ use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\IndexNowKeyController;
 use App\Http\Controllers\Auth\LoginModalContentController;
+use App\Support\ToolSettings;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
@@ -200,6 +201,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('settings/store-premium-product-spots', [\App\Http\Controllers\Admin\SettingsController::class, 'storePremiumProductSpots'])->name('settings.storePremiumProductSpots');
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
     Route::post('settings/store-admin-sandbox-mode', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAdminSandboxMode'])->name('settings.storeAdminSandboxMode');
+    Route::post('settings/store-tool-settings', [\App\Http\Controllers\Admin\SettingsController::class, 'storeToolSettings'])->name('settings.storeToolSettings');
     Route::post('settings/store-footer-embed-codes', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFooterEmbedCodes'])->name('settings.storeFooterEmbedCodes');
     Route::post('settings/store-badge-embed-code', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeEmbedCode'])->name('settings.storeBadgeEmbedCode');
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('settings.emailTemplates');
@@ -319,7 +321,7 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|software-review|premium-spot-details|changelog|free-todo-list-tool|best|alternatives|built-with|compare|software)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|software-review|premium-spot-details|changelog|free-todo-list-tool|tools|best|alternatives|built-with|compare|software)[^/]+$');
 
 Route::post('/products/{product}/upvote', [ProductController::class, 'upvote'])->name('products.upvote');
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
@@ -360,7 +362,22 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
 });
 
-Route::prefix('free-todo-list-tool')->name('todolists.')->group(function () {
+Route::get('/free-todo-list-tool/{path?}', function (?string $path, ToolSettings $toolSettings) {
+    $target = $toolSettings->path(ToolSettings::TODO_LIST_KEY);
+
+    if ($path) {
+        $target .= '/' . ltrim($path, '/');
+    }
+
+    $queryString = request()->getQueryString();
+
+    return redirect($queryString ? $target . '?' . $queryString : $target, 301);
+})->where('path', '.*');
+
+Route::prefix('tools/{toolSlug}')
+    ->middleware('configured.tool:todo_list')
+    ->name('todolists.')
+    ->group(function () {
     Route::get('/', [TodoListController::class, 'index'])->name('index');
     Route::post('/', [TodoListController::class, 'store'])->name('store');
     Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');

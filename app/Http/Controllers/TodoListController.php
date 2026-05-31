@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TodoList;
 use App\Models\TodoListItem;
 use App\Models\PageMetaTag;
+use App\Support\ToolSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -15,6 +16,10 @@ class TodoListController extends Controller
 {
     use AuthorizesRequests;
 
+    public function __construct(private readonly ToolSettings $toolSettings)
+    {
+    }
+
     public function index()
     {
         if (request()->wantsJson()) {
@@ -22,9 +27,16 @@ class TodoListController extends Controller
             return response()->json($lists);
         }
 
-        $seoSettings = PageMetaTag::where('page_id', '/free-todo-list-tool')->first();
+        $seoSettings = PageMetaTag::query()
+            ->whereIn('page_id', array_filter([
+                request()->route()?->getName(),
+                '/free-todo-list-tool',
+            ]))
+            ->orderByRaw("CASE WHEN page_id = ? THEN 0 ELSE 1 END", [request()->route()?->getName()])
+            ->first();
         $meta_title = $seoSettings->meta_title ?? 'Free To Do List Tool - Software on the Web';
         $meta_description = $seoSettings->meta_description ?? '';
+        $toolBaseUrl = $this->toolSettings->url(ToolSettings::TODO_LIST_KEY);
         $lists = [];
         if (Auth::check()) {
             $lists = TodoList::where('user_id', Auth::id())->with('items')->get();
@@ -32,7 +44,7 @@ class TodoListController extends Controller
             $lists = session('todo_lists', []);
         }
 
-        return view('todolists.index', compact('meta_title', 'meta_description', 'lists'));
+        return view('todolists.index', compact('meta_title', 'meta_description', 'lists', 'toolBaseUrl'));
     }
 
     public function store(Request $request)

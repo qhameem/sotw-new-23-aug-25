@@ -153,6 +153,52 @@
             </div>
         </div>
 
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Tool URL Settings
+                </h3>
+                <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                    <p>Keep the todo tool on the canonical <code>/tools/{tool-slug}</code> structure. Changing the slug here updates the live URL without another code change.</p>
+                    <p class="mt-1">Current canonical URL: <code>{{ $todoListToolPath }}</code></p>
+                </div>
+                <form action="{{ route('admin.settings.storeToolSettings') }}" method="POST" class="mt-5">
+                    @csrf
+                    <div>
+                        <label for="todo_list_tool_slug" class="block text-sm font-medium text-gray-700">
+                            Todo Tool Slug
+                        </label>
+                        <div class="mt-1 flex items-center rounded-md shadow-sm">
+                            <span class="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500">
+                                /tools/
+                            </span>
+                            <input
+                                type="text"
+                                id="todo_list_tool_slug"
+                                name="todo_list_tool_slug"
+                                class="block w-full rounded-none rounded-r-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                value="{{ old('todo_list_tool_slug', $todoListToolSlug) }}"
+                                inputmode="url"
+                                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                                placeholder="todo-list-app"
+                                required
+                            >
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">Use lowercase letters, numbers, and hyphens only.</p>
+                        @error('todo_list_tool_slug')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
+                            Save Tool URL
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Header Code Injection Section -->
         <div class="mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">

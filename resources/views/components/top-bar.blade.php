@@ -9,7 +9,7 @@
                 <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                 </a>
-                @if(!request()->is('free-todo-list-tool'))
+                @if(!request()->routeIs('todolists.*'))
                     <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
                         <button type="button" @click="$dispatch('open-search-modal')"
                             x-data="{ isMac: /Mac|iPhone|iPad|iPod/.test(navigator.platform) || /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) }"

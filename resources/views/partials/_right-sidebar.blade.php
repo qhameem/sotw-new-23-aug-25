@@ -1,6 +1,6 @@
 <div class="flex flex-col md:w-sm" x-data="{ searchFocused: false }"
     @search-focus-changed.window="searchFocused = $event.detail">
-    @if(!request()->is('free-todo-list-tool'))
+    @if(!request()->routeIs('todolists.*'))
         <div x-show="!searchFocused">
             @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
                 @include('partials._sidebar-ads')

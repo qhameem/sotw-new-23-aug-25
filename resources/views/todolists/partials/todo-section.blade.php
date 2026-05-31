@@ -1,9 +1,9 @@
 <!-- Todo List Section -->
-<div id="todo-app-container" class="bg-white rounded-lg p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists ?? []) }}" data-store-url="{{ route('todolists.store') }}" data-base-url="{{ url('/free-todo-list-tool') }}" data-csrf-token="{{ csrf_token() }}">
+<div id="todo-app-container" class="bg-white rounded-lg p-6 w-full max-w-2xl" data-lists="{{ json_encode($lists ?? []) }}" data-store-url="{{ route('todolists.store', ['toolSlug' => request()->route('toolSlug')]) }}" data-base-url="{{ $toolBaseUrl }}" data-csrf-token="{{ csrf_token() }}">
     <todo-list 
         :initial-lists="{{ json_encode($lists ?? []) }}"
-        :store-url="'{{ route('todolists.store') }}'"
-        :base-url="'{{ url('/free-todo-list-tool') }}'"
+        :store-url="'{{ route('todolists.store', ['toolSlug' => request()->route('toolSlug')]) }}'"
+        :base-url="'{{ $toolBaseUrl }}'"
         :csrf-token="'{{ csrf_token() }}'"
     ></todo-list>
 </div>

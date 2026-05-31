@@ -4,7 +4,7 @@
         <ul class="space-y-2">
             @foreach($lists as $list)
                 <li>
-                    <a href="{{ url('/free-todo-list-tool#' . $list->id) }}" class="text-blue-500 hover:underline">{{ $list->title }}</a>
+                    <a href="{{ route('todolists.index', ['toolSlug' => request()->route('toolSlug')]) }}#{{ $list->id }}" class="text-blue-500 hover:underline">{{ $list->title }}</a>
                 </li>
             @endforeach
         </ul>

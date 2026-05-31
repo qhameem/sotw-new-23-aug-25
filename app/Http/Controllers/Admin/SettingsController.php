@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\ToolSettings;
 use App\Services\BadgeService;
 use App\Services\ScreenshotService;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ use Carbon\Carbon;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
+use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
@@ -30,11 +32,14 @@ class SettingsController extends Controller
     public function index()
     {
         $settings = $this->loadSettings();
+        $toolSettings = app(ToolSettings::class);
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $hasHeaderCodeInjection = filled(trim((string) $googleAnalyticsCode));
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         $adminSandboxEnabled = (bool) ($settings['admin_add_product_sandbox_enabled'] ?? true);
+        $todoListToolSlug = $toolSettings->slug(ToolSettings::TODO_LIST_KEY);
+        $todoListToolPath = $toolSettings->path(ToolSettings::TODO_LIST_KEY);
         $badgeService = app(BadgeService::class);
         $embedData = $badgeService->getEmbedData();
         $badgeImageUrl = $embedData['badge_image_url'];
@@ -50,6 +55,8 @@ class SettingsController extends Controller
             'premiumProductSpots',
             'productPublishTime',
             'adminSandboxEnabled',
+            'todoListToolSlug',
+            'todoListToolPath',
             'badgeImageUrl',
             'badgeImageSvgUrl',
             'badgeImagePngUrl',
@@ -259,6 +266,63 @@ class SettingsController extends Controller
             Log::error('Failed to save admin sandbox mode: ' . $e->getMessage());
 
             return back()->with('error', 'Failed to save admin sandbox mode. Please check logs.');
+        }
+    }
+
+    public function storeToolSettings(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'todo_list_tool_slug' => [
+                'required',
+                'string',
+                'max:120',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            ],
+        ]);
+
+        $settings = $this->loadSettings();
+        $toolSettings = app(ToolSettings::class);
+        $currentSlug = $toolSettings->slug(ToolSettings::TODO_LIST_KEY);
+        $newSlug = Str::slug($request->input('todo_list_tool_slug'));
+
+        $tools = is_array($settings['tools'] ?? null) ? $settings['tools'] : [];
+        $todoListToolSettings = is_array($tools[ToolSettings::TODO_LIST_KEY] ?? null)
+            ? $tools[ToolSettings::TODO_LIST_KEY]
+            : [];
+
+        $legacySlugs = collect($todoListToolSettings['legacy_slugs'] ?? [])
+            ->merge([$currentSlug])
+            ->map(fn ($value) => Str::slug(trim((string) $value)))
+            ->filter()
+            ->reject(fn ($value) => $value === $newSlug)
+            ->unique()
+            ->values()
+            ->all();
+
+        $tools[ToolSettings::TODO_LIST_KEY] = array_merge($todoListToolSettings, [
+            'slug' => $newSlug,
+            'legacy_slugs' => $legacySlugs,
+        ]);
+
+        $settings['tools'] = $tools;
+
+        try {
+            $this->saveSettings($settings);
+            Log::info('Tool slug updated by user: ' . Auth::id(), [
+                'tool_key' => ToolSettings::TODO_LIST_KEY,
+                'previous_slug' => $currentSlug,
+                'new_slug' => $newSlug,
+            ]);
+
+            return back()->with('success', 'Tool slug saved successfully. The todo tool now lives at /tools/' . $newSlug . '.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save tool settings: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save tool settings. Please check logs.');
         }
     }
 
