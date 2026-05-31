@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'hideSidebar' => true])
 
 @section('title', 'Screenshot Provider Debug')
 
@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-semibold text-gray-900">Screenshot Provider Quotas</h2>
