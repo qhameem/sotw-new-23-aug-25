@@ -25,7 +25,7 @@
     {{ $attributes->class([
         'relative inline-flex items-center justify-center transition duration-300',
         'h-11 w-11 rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 md:h-9 md:w-9' => $compact,
-        'min-h-8 gap-2 rounded-md px-3 py-1 text-sm font-semibold' => !$compact,
+        'min-h-8 gap-2 rounded-md bg-primary-500 px-3 py-1 text-sm font-semibold text-white hover:bg-primary-600' => !$compact,
     ]) }}
 >
     <span
