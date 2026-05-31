@@ -431,17 +431,17 @@
 
         <!-- Mobile Header (visible only on mobile) -->
         <div data-modal-scroll-lock-fixed class="md:hidden fixed top-0 w-full z-50 bg-white border-b border-gray-200 flex-shrink-0">
-            <div class="h-[75px] px-4 flex items-center justify-between">
+            <div class="flex h-[75px] items-center justify-between gap-3 px-4">
                 <a href="{{ route('home') }}">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                 </a>
-                <div class="flex items-center space-x-2">
+                <div class="flex shrink-0 items-center gap-2">
                     @guest
                         <x-add-product-button compact />
                         <button
                             type="button"
                             @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
-                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
+                            class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
                             aria-label="Sign in"
                             title="Sign in"
                         >
@@ -451,7 +451,7 @@
                             </svg>
                         </button>
                     @else
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center gap-2">
                             <x-add-product-button compact />
                             @auth
                                 <div id="mobile-notification-bell-app">

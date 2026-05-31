@@ -1,14 +1,14 @@
 <div x-data="{ open: false, adminSection: null, toggleAdminSection(section) { this.adminSection = this.adminSection === section ? null : section } }" class="relative flex items-center ms-auto sm:ms-2 z-50">
     @auth
     <button type="button" @click.stop="open = !open"
-        class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+        class="inline-flex h-11 w-11 items-center justify-center text-sm font-medium text-gray-500 transition ease-in-out duration-150 hover:text-gray-700 focus:outline-none md:h-9 md:w-9"
         aria-haspopup="true" :aria-expanded="open ? 'true' : 'false'">
             @if (Auth::user()->google_avatar)
                 <img src="{{ Auth::user()->google_avatar }}" alt="{{ Auth::user()->name }}"
-                    class="h-8 w-8 rounded-full object-cover" />
+                    class="h-11 w-11 rounded-full object-cover md:h-8 md:w-8" />
             @else
                 <span
-                    class="flex items-center justify-center h-8 w-8 rounded-full bg-primary-500 text-white text-xs font-semibold">
+                    class="flex h-11 w-11 items-center justify-center rounded-full bg-primary-500 text-xs font-semibold text-white md:h-8 md:w-8">
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </span>
             @endif
@@ -17,7 +17,7 @@
     <button
         type="button"
         @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })"
-        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
+        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 md:h-9 md:w-9"
         aria-label="Sign in"
         title="Sign in"
     >

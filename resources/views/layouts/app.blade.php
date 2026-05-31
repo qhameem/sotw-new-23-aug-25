@@ -271,6 +271,13 @@
     <meta name="description" content="@yield('meta_description', $meta_description ?? '')">
     <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large')">
 
+    @php
+        $canonicalProduct = request()->route('product');
+        $canonicalProductSlug = is_object($canonicalProduct) ? ($canonicalProduct->slug ?? null) : $canonicalProduct;
+        $canonicalCategory = request()->route('category');
+        $canonicalCategorySlug = is_object($canonicalCategory) ? ($canonicalCategory->slug ?? null) : $canonicalCategory;
+    @endphp
+
     @hasSection('canonical')
         @yield('canonical')
     @elseif(request()->routeIs('products.byWeek'))
@@ -285,10 +292,10 @@
         <link rel="canonical" href="{{ route('products.byYear', ['year' => request()->route('year')]) }}" />
     @elseif(request()->routeIs('home'))
         <link rel="canonical" href="{{ route('home') }}" />
-    @elseif(request()->routeIs('products.show'))
-        <link rel="canonical" href="{{ route('products.show', ['product' => $product->slug]) }}" />
-    @elseif(request()->routeIs('categories.show'))
-        <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
+    @elseif(request()->routeIs('products.show') && filled($canonicalProductSlug))
+        <link rel="canonical" href="{{ route('products.show', ['product' => $canonicalProductSlug]) }}" />
+    @elseif(request()->routeIs('categories.show') && filled($canonicalCategorySlug))
+        <link rel="canonical" href="{{ route('categories.show', ['category' => $canonicalCategorySlug]) }}" />
     @endif
 
     @yield('preloads')

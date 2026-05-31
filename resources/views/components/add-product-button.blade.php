@@ -23,8 +23,8 @@
         window.location.href = @js($targetUrl);
     "
     {{ $attributes->class([
-        'relative inline-flex items-center justify-center bg-primary-500 text-white transition duration-300 hover:bg-primary-600',
-        'h-9 w-9 rounded-full text-sm font-semibold' => $compact,
+        'relative inline-flex items-center justify-center transition duration-300',
+        'h-11 w-11 rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 md:h-9 md:w-9' => $compact,
         'min-h-8 gap-2 rounded-md px-3 py-1 text-sm font-semibold' => !$compact,
     ]) }}
 >
@@ -33,8 +33,8 @@
         :class="loading ? 'opacity-0' : 'opacity-100'"
     >
         @if ($compact)
-            <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M10 4.16666V15.8333M4.16666 10H15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <svg class="h-5 w-5 shrink-0 md:h-[18px] md:w-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M8 12H12M12 12H16M12 12V16M12 12V8M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         @else
             <span class="hidden lg:inline-flex items-center gap-1.5">

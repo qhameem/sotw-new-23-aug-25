@@ -6,6 +6,7 @@
 @php
     $titleText = trim(strip_tags((string) $title));
     $hasTitle = $titleText !== '';
+    $hasRichTitle = $hasTitle && str_contains((string) $title, '<');
     $hasBeforeTitle = isset($before_title) && trim(strip_tags((string) $before_title)) !== '';
     $hasActions = isset($actions) && trim((string) $actions) !== '';
     $customFaviconPath = config('theme.favicon_url');
@@ -30,24 +31,30 @@
         'md:hidden' => $hideDesktop,
     ])
     style="background-color: var(--color-body-bg, #ffffff);">
-    <div class="flex justify-between items-center {{ $padding }} py-[0.78rem]">
-        <div>
+    <div class="flex min-h-[76px] items-center justify-between gap-3 {{ $padding }} py-4 md:min-h-0 md:py-[0.78rem]">
+        <div class="min-w-0 flex-1">
             @if($hasBeforeTitle)
                 <div class="mb-3 hidden md:block">
                     {{ $before_title }}
                 </div>
             @endif
-            <div class="flex items-center">
+            <div class="flex min-w-0 items-center gap-3">
                 <a href="{{ route('home') }}" wire:navigate.hover>
                     <img src="{{ $mobileFaviconUrl }}" alt="{{ config('theme.logo_alt_text', config('app.name', 'Logo')) }}"
-                        class="mobile-favicon mr-2 w-10 h-10 md:hidden object-contain">
+                        class="mobile-favicon h-10 w-10 shrink-0 object-contain md:hidden">
                 </a>
                 @if($hasTitle)
-                    <h1 class="site-heading-text text-base md:text-xl font-semibold text-gray-600">{{ $title }}</h1>
+                    @if($hasRichTitle)
+                        <div class="mobile-page-header-rich-title min-w-0 flex-1 text-gray-900">
+                            {!! $title !!}
+                        </div>
+                    @else
+                        <h1 class="site-heading-text min-w-0 flex-1 truncate text-base font-semibold leading-tight text-gray-700 md:text-xl md:text-gray-600" title="{{ $titleText }}">{{ $titleText }}</h1>
+                    @endif
                 @endif
             </div>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex shrink-0 items-center gap-2 md:gap-4">
             @unless($hasActions)
                 <div class="md:hidden">
                     <x-add-product-button compact />
@@ -65,6 +72,36 @@
                         width: 40px;
                         height: 40px;
                         vertical-align: middle;
+                    }
+
+                    .mobile-page-header-rich-title>* {
+                        margin: 0;
+                    }
+
+                    @media (max-width: 767px) {
+                        .mobile-page-header-rich-title {
+                            min-width: 0;
+                        }
+
+                        .mobile-page-header-rich-title h1,
+                        .mobile-page-header-rich-title h2,
+                        .mobile-page-header-rich-title h3,
+                        .mobile-page-header-rich-title h4,
+                        .mobile-page-header-rich-title h5,
+                        .mobile-page-header-rich-title h6 {
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                            font-size: 1.125rem;
+                            line-height: 1.4;
+                            font-weight: 600;
+                            color: rgb(17 24 39);
+                        }
+
+                        .mobile-page-header-rich-title p,
+                        .mobile-page-header-rich-title .mobile-header-supporting-copy {
+                            display: none;
+                        }
                     }
                 </style>
             @endpush
