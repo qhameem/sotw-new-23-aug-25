@@ -1,47 +1,47 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use App\Models\Product;
-use App\Models\Category;
-use App\Models\User;
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ThemeController;
-use App\Http\Controllers\Admin\ArticlePostController; // Added
-use App\Http\Controllers\Admin\ArticleCategoryController; // Added
-use App\Http\Controllers\Admin\ArticleTagController; // Added
+use App\Http\Controllers\AdInteractionController;
 use App\Http\Controllers\Admin\AdController;
 use App\Http\Controllers\Admin\AdvertisingController;
 use App\Http\Controllers\Admin\AdZoneController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\ChangelogController;
-use App\Http\Controllers\ArticleController; // Added for public articles
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\TopicController; // Added for topics page
-use App\Http\Controllers\Api\ProductMetaController;
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\StripeController;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
-use App\Http\Controllers\RedirectController;
-use App\Http\Controllers\ProductReviewController;
-use App\Http\Controllers\TodoListController;
+use App\Http\Controllers\Admin\ArticleCategoryController;
+use App\Http\Controllers\Admin\ArticlePostController;
+use App\Http\Controllers\Admin\ArticleTagController;
 use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
-use App\Http\Controllers\ProductInlineUpdateController;
-use App\Http\Controllers\BadgeController;
-use App\Http\Controllers\VideoController;
-use App\Http\Controllers\AdInteractionController;
+use App\Http\Controllers\Admin\CategoryController; // Added
+use App\Http\Controllers\Admin\ThemeController; // Added
+use App\Http\Controllers\Admin\UserController; // Added
+use App\Http\Controllers\Api\ProductMetaController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleEditorController;
-use App\Http\Controllers\ProductInteractionController;
+use App\Http\Controllers\Auth\LoginModalContentController;
+use App\Http\Controllers\BadgeController; // Added for public articles
+use App\Http\Controllers\IndexNowKeyController;
+use App\Http\Controllers\LaunchReadinessController; // Added for topics page
 use App\Http\Controllers\ProductClaimController;
 use App\Http\Controllers\ProductCollectionController;
 use App\Http\Controllers\ProductCollectionItemController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductInlineUpdateController;
+use App\Http\Controllers\ProductInteractionController;
+use App\Http\Controllers\ProductReviewController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
-use App\Http\Controllers\IndexNowKeyController;
-use App\Http\Controllers\Auth\LoginModalContentController;
+use App\Http\Controllers\StripeController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TodoListController;
+use App\Http\Controllers\ToolAuthController;
+use App\Http\Controllers\ToolGoogleLoginController;
+use App\Http\Controllers\TopicController;
+use App\Http\Controllers\VideoController;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
 use App\Support\ToolSettings;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
@@ -63,7 +63,6 @@ Route::get('/', [ProductController::class, 'home'])->name('home');
 Route::get('/thank-you', function () {
     return view('subscription.thankyou');
 })->name('subscription.thankyou');
-
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -187,7 +186,6 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
         // Admin show route, if needed, would also use ID
         // Route::get('posts/{post:id}', [ArticlePostController::class, 'show'])->name('posts.show');
 
-
         Route::resource('categories', ArticleCategoryController::class)->except(['show']);
         Route::resource('tags', ArticleTagController::class)->except(['show']);
         Route::post('posts/upload-featured-image', [ArticlePostController::class, 'uploadFeaturedImage'])->name('posts.uploadFeaturedImage');
@@ -255,17 +253,17 @@ Route::get('/yearly/{year}', [ProductController::class, 'productsByYear'])->name
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
 Route::get('/collections/{owner:public_handle}/{collectionSlug}', [ProductCollectionController::class, 'show'])->name('collections.show');
 
-
-
 Route::get('/test-notification', function () {
     if (Auth::check()) {
         /** @var User $user */
         $user = Auth::user();
         // Send a sample UserMentioned notification
-        $user->notify(new \App\Notifications\UserMentioned("This is a test notification from the test route!", "/profile"));
-        return "Test notification sent to " . $user->email . ". Check your notification bell!";
+        $user->notify(new \App\Notifications\UserMentioned('This is a test notification from the test route!', '/profile'));
+
+        return 'Test notification sent to '.$user->email.'. Check your notification bell!';
     }
-    return "You need to be logged in to test notifications.";
+
+    return 'You need to be logged in to test notifications.';
 })->middleware('auth')->name('test.notification');
 
 // Public Articles Routes
@@ -283,7 +281,7 @@ use App\Http\Controllers\Auth\GoogleLoginController; // We will create this cont
 // Google OAuth routes
 Route::get('/auth/google', [GoogleLoginController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback'])->name('auth.google.callback');
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
 
 // About Page
 Route::get('/about', function () {
@@ -326,7 +324,6 @@ Route::get('/{product_name}', function ($product_name) {
 Route::post('/products/{product}/upvote', [ProductController::class, 'upvote'])->name('products.upvote');
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');
 
-
 use App\Http\Controllers\FastTrackController;
 use App\Http\Controllers\PremiumSpotController;
 
@@ -339,7 +336,6 @@ Route::get('/fast-track-approval', function () {
 Route::get('/premium-spot', [PremiumSpotController::class, 'index'])->name('premium-spot.index');
 Route::post('/premium-spot/checkout', [PremiumSpotController::class, 'checkout'])->name('premium-spot.checkout');
 Route::get('/premium-spot/success', [PremiumSpotController::class, 'success'])->name('premium-spot.success');
-
 
 Route::get('/software-review', function () {
     return view('site.software-review');
@@ -366,26 +362,60 @@ Route::get('/free-todo-list-tool/{path?}', function (?string $path, ToolSettings
     $target = $toolSettings->path(ToolSettings::TODO_LIST_KEY);
 
     if ($path) {
-        $target .= '/' . ltrim($path, '/');
+        $target .= '/'.ltrim($path, '/');
     }
 
     $queryString = request()->getQueryString();
 
-    return redirect($queryString ? $target . '?' . $queryString : $target, 301);
+    return redirect($queryString ? $target.'?'.$queryString : $target, 301);
 })->where('path', '.*');
+
+$todoToolConfig = app(ToolSettings::class)->toolConfig(ToolSettings::TODO_LIST_KEY);
+$todoToolSlugPattern = implode('|', collect([$todoToolConfig['slug'], ...($todoToolConfig['legacy_slugs'] ?? [])])
+    ->map(fn (string $slug) => preg_quote($slug, '/'))
+    ->all());
+
+$launchToolConfig = app(ToolSettings::class)->toolConfig(ToolSettings::LAUNCH_READINESS_KEY);
+$launchToolSlugPattern = implode('|', collect([$launchToolConfig['slug'], ...($launchToolConfig['legacy_slugs'] ?? [])])
+    ->map(fn (string $slug) => preg_quote($slug, '/'))
+    ->all());
 
 Route::prefix('tools/{toolSlug}')
     ->middleware('configured.tool:todo_list')
+    ->where(['toolSlug' => $todoToolSlugPattern])
     ->name('todolists.')
     ->group(function () {
-    Route::get('/', [TodoListController::class, 'index'])->name('index');
-    Route::post('/', [TodoListController::class, 'store'])->name('store');
-    Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');
-    Route::patch('/{todoList}', [TodoListController::class, 'updateName'])->name('update.name');
-    Route::delete('/{todoList}', [TodoListController::class, 'destroy'])->name('destroy');
-    Route::get('/{todoList}/export', [TodoListController::class, 'export'])->name('export');
+        Route::get('/', [TodoListController::class, 'index'])->name('index');
+        Route::post('/', [TodoListController::class, 'store'])->name('store');
+        Route::put('/{todoList}', [TodoListController::class, 'update'])->name('update');
+        Route::patch('/{todoList}', [TodoListController::class, 'updateName'])->name('update.name');
+        Route::delete('/{todoList}', [TodoListController::class, 'destroy'])->name('destroy');
+        Route::get('/{todoList}/export', [TodoListController::class, 'export'])->name('export');
 
-    Route::post('/{todoList}/items', [TodoListController::class, 'storeItem'])->name('items.store');
-    Route::put('/items/{todoListItem}', [TodoListController::class, 'updateItem'])->name('items.update');
-    Route::delete('/items/{todoListItem}', [TodoListController::class, 'destroyItem'])->name('items.destroy');
-});
+        Route::post('/{todoList}/items', [TodoListController::class, 'storeItem'])->name('items.store');
+        Route::put('/items/{todoListItem}', [TodoListController::class, 'updateItem'])->name('items.update');
+        Route::delete('/items/{todoListItem}', [TodoListController::class, 'destroyItem'])->name('items.destroy');
+    });
+
+Route::prefix('tools/{toolSlug}')
+    ->middleware('configured.tool:launch_readiness')
+    ->where(['toolSlug' => $launchToolSlugPattern])
+    ->name('launch-readiness.')
+    ->group(function () {
+        Route::get('/', [LaunchReadinessController::class, 'index'])->name('index');
+        Route::post('/analyze', [LaunchReadinessController::class, 'analyze'])->middleware('throttle:30,1')->name('analyze');
+        Route::get('/history', [LaunchReadinessController::class, 'history'])->name('history');
+        Route::get('/results/{toolScan:result_token}', [LaunchReadinessController::class, 'show'])->name('results.show');
+
+        Route::middleware('guest:tool_user')->group(function () {
+            Route::get('/login', [ToolAuthController::class, 'create'])->name('auth.login');
+            Route::post('/login', [ToolAuthController::class, 'send'])->name('auth.email.send');
+            Route::post('/auth/email-otp', [ToolAuthController::class, 'verify'])->name('auth.email.verify');
+            Route::get('/auth/google', [ToolGoogleLoginController::class, 'redirectToGoogle'])->name('auth.google');
+            Route::get('/auth/google/callback', [ToolGoogleLoginController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+        });
+
+        Route::middleware('auth:tool_user')->group(function () {
+            Route::post('/logout', [ToolAuthController::class, 'destroy'])->name('auth.logout');
+        });
+    });

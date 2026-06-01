@@ -9,6 +9,8 @@ class ToolSettings
 {
     public const TODO_LIST_KEY = 'todo_list';
 
+    public const LAUNCH_READINESS_KEY = 'launch_readiness';
+
     private const SETTINGS_FILE = 'settings.json';
 
     private const DEFAULTS = [
@@ -16,6 +18,12 @@ class ToolSettings
             'slug' => 'todo-list-app',
             'legacy_slugs' => [
                 'free-todo-list-tool',
+            ],
+        ],
+        self::LAUNCH_READINESS_KEY => [
+            'slug' => 'launch-readiness-checker',
+            'legacy_slugs' => [
+                'site-health',
             ],
         ],
     ];
@@ -27,7 +35,7 @@ class ToolSettings
 
     public function path(string $toolKey): string
     {
-        return '/tools/' . $this->slug($toolKey);
+        return '/tools/'.$this->slug($toolKey);
     }
 
     public function url(string $toolKey): string
@@ -44,7 +52,7 @@ class ToolSettings
     {
         $normalizedSlug = $this->normalizeSlug($slug);
 
-        if (!$normalizedSlug) {
+        if (! $normalizedSlug) {
             return false;
         }
 
@@ -80,7 +88,7 @@ class ToolSettings
 
     private function loadSettings(): array
     {
-        if (!Storage::disk('local')->exists(self::SETTINGS_FILE)) {
+        if (! Storage::disk('local')->exists(self::SETTINGS_FILE)) {
             return [];
         }
 

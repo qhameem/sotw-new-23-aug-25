@@ -41,6 +41,11 @@ return [
             'provider' => 'users',
             'remember' => (int) env('AUTH_REMEMBER_FOR', 43200),
         ],
+        'tool_user' => [
+            'driver' => 'session',
+            'provider' => 'tool_users',
+            'remember' => (int) env('AUTH_REMEMBER_FOR', 43200),
+        ],
     ],
 
     /*
@@ -64,6 +69,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+        'tool_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\ToolUser::class,
         ],
 
         // 'users' => [
@@ -95,6 +104,12 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'tool_users' => [
+            'provider' => 'tool_users',
+            'table' => 'tool_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

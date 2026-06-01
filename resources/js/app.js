@@ -305,6 +305,60 @@ function registerAlpineComponents(Alpine) {
             }
         },
     }));
+
+    Alpine.data('launchReadinessAnalyzer', (config = {}) => ({
+        csrfToken: config.csrfToken ?? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+        submitting: false,
+        errorMessage: '',
+        noticeMessage: config.initialNotice ?? '',
+
+        async submitAnalyze(event) {
+            const form = event.target;
+            this.submitting = true;
+            this.errorMessage = '';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                });
+
+                const payload = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    this.errorMessage = firstValidationError(payload) || 'We could not analyze this site right now.';
+                    return;
+                }
+
+                if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
+                    this.$refs.reportContainer.innerHTML = payload.report_html;
+                }
+
+                if (typeof payload.notice_message === 'string') {
+                    this.noticeMessage = payload.notice_message;
+                }
+
+                if (typeof payload.page_title === 'string' && payload.page_title !== '') {
+                    document.title = payload.page_title;
+                }
+
+                if (typeof payload.result_url === 'string' && payload.result_url !== '') {
+                    window.history.pushState({ launchReadiness: true }, '', payload.result_url);
+                }
+            } catch (error) {
+                console.error('Launch readiness analyze error:', error);
+                this.errorMessage = 'Network error occurred. Please try again.';
+            } finally {
+                this.submitting = false;
+            }
+        },
+    }));
 }
 
 // Check if Alpine is already loaded (e.g., by Livewire) to avoid multiple instances

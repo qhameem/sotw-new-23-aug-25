@@ -1887,24 +1887,35 @@ class ProductController extends Controller
         \Illuminate\Support\Collection $bestForCategories
     ): string {
         $brandSuffix = ' | Software on the Web';
-        $maxLength = 60;
+        $maxLength = 68;
         $name = $this->cleanSeoText($product->name);
-        $tagline = $this->cleanSeoText($product->tagline ?: $product->product_page_tagline);
+        $tagline = $this->cleanSeoText($product->product_page_tagline ?: $product->tagline);
+        $fullTitle = $tagline !== '' ? $name . ': ' . $tagline : $name;
 
-        $candidates = array_values(array_filter([
-            $tagline !== '' ? $name . ': ' . $this->trimSeoTextToLength($tagline, 24) : null,
-            $name,
-        ]));
+        if (Str::length($fullTitle . $brandSuffix) <= $maxLength) {
+            return $fullTitle . $brandSuffix;
+        }
 
-        foreach ($candidates as $candidate) {
-            $withBrand = $this->trimSeoTextToLength($candidate, $maxLength - Str::length($brandSuffix)) . $brandSuffix;
+        if (Str::length($fullTitle) <= $maxLength) {
+            return $fullTitle;
+        }
 
-            if (Str::length($withBrand) <= $maxLength) {
-                return $withBrand;
+        if ($tagline !== '') {
+            $trimmedTitle = $name . ': ' . $this->trimSeoTextToLength(
+                $tagline,
+                max(0, $maxLength - Str::length($name) - 2)
+            );
+
+            if (Str::length($trimmedTitle) <= $maxLength) {
+                return $trimmedTitle;
             }
         }
 
-        return $this->trimSeoTextToLength($candidates[0] ?? $name, $maxLength);
+        if (Str::length($name . $brandSuffix) <= $maxLength) {
+            return $name . $brandSuffix;
+        }
+
+        return $this->trimSeoTextToLength($name, $maxLength);
     }
 
     protected function buildProductMetaDescription(

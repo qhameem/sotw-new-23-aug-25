@@ -232,7 +232,7 @@ class PublicProductDiscoveryTest extends TestCase
             'name' => 'SaaSOffers',
             'slug' => 'saasoffers',
             'tagline' => 'Startup Credits Platform',
-            'product_page_tagline' => 'Discover and claim exclusive startup discounts for essential software.',
+            'product_page_tagline' => '',
             'published_at' => now(),
             'votes_count' => 1,
         ]);
@@ -245,5 +245,55 @@ class PublicProductDiscoveryTest extends TestCase
             false
         );
         $response->assertDontSee('Review', false);
+    }
+
+    /** @test */
+    public function product_pages_prefer_the_visible_product_page_tagline_in_the_title_when_present()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Cloudbrief',
+            'slug' => 'cloudbrief',
+            'tagline' => 'AI notes for teams',
+            'product_page_tagline' => 'Shared AI meeting notes for remote teams',
+            'published_at' => now(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee(
+            '<title>Cloudbrief: Shared AI meeting notes for remote teams</title>',
+            false
+        );
+        $response->assertDontSee(
+            '<title>Cloudbrief: AI notes for teams | Software on the Web</title>',
+            false
+        );
+    }
+
+    /** @test */
+    public function product_pages_do_not_cut_titles_off_mid_phrase_when_the_tagline_is_longer()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Bulkmark',
+            'slug' => 'bulkmark',
+            'tagline' => 'Auto-tag and organize X bookmarks with AI',
+            'product_page_tagline' => '',
+            'published_at' => now(),
+            'votes_count' => 1,
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee(
+            '<title>Bulkmark: Auto-tag and organize X bookmarks with AI</title>',
+            false
+        );
+        $response->assertDontSee(
+            '<title>Bulkmark: Auto-tag and organize X | Software on the Web</title>',
+            false
+        );
     }
 }
