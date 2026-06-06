@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+@php
+    $hideSidebar = true;
+    $mainContentMaxWidth = 'max-w-none';
+    $containerMaxWidth = 'max-w-none';
+@endphp
+
 @section('header-title', 'Product Approvals')
 
 @section('actions')
@@ -57,6 +63,40 @@
             </div>
         </div>
     </div>
+
+    @if (isset($scheduledProductsStats))
+        <div class="mb-8 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
+            <div class="flex flex-col gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Scheduled Products</h2>
+                    <p class="mt-1 text-sm text-slate-500">Upcoming scheduled launch counts, now shown inline instead of in the sidebar.</p>
+                </div>
+
+                @if(!$scheduledProductsStats->isEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200">
+                                    <th class="py-3 text-left font-semibold text-slate-500">Date</th>
+                                    <th class="py-3 text-right font-semibold text-slate-500">Scheduled</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($scheduledProductsStats as $stat)
+                                    <tr class="border-b border-slate-100 last:border-b-0">
+                                        <td class="py-3 text-slate-700">{{ \Carbon\Carbon::parse($stat->date)->format('d M, Y') }}</td>
+                                        <td class="py-3 text-right font-semibold text-slate-900">{{ $stat->count }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-sm text-slate-500">No products are currently scheduled.</p>
+                @endif
+            </div>
+        </div>
+    @endif
 
     <div class="mb-10">
         <div class="mb-4 flex items-center justify-between gap-4">
