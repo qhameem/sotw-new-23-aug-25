@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ToolAuthMagicLink;
 use App\Models\ToolUser;
 use App\Notifications\EmailOtpNotification;
+use App\Support\LaunchReadinessGuestSession;
+use App\Support\LaunchReadinessPageData;
 use App\Support\ToolSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,17 +28,17 @@ class ToolAuthController extends Controller
 
     private const THROTTLE_SECONDS = 300;
 
-    public function __construct(private readonly ToolSettings $toolSettings) {}
+    public function __construct(
+        private readonly ToolSettings $toolSettings,
+        private readonly LaunchReadinessPageData $pageData,
+        private readonly LaunchReadinessGuestSession $guestSession,
+    ) {}
 
     public function create(Request $request): View
     {
-        return view('tools.launch-readiness.auth.login', [
-            'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
-            'toolPath' => $this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY),
-            'toolOgImage' => asset('images/tools/launch-readiness-og.svg'),
+        return view('tools.launch-readiness.auth.login', $this->pageData->merge([
             'intended' => $request->query('intended', url()->previous()),
-            'toolUser' => Auth::guard('tool_user')->user(),
-        ]);
+        ], Auth::guard('tool_user')->user(), $request->getHost()));
     }
 
     public function send(Request $request): RedirectResponse
@@ -139,7 +141,8 @@ class ToolAuthController extends Controller
         $request->session()->regenerateToken();
         $request->session()->regenerate();
 
-        return redirect($this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY));
+        return redirect($this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY))
+            ->with('auth_sync_event', 'signed-out');
     }
 
     private function authenticate(Request $request, ToolAuthMagicLink $magicLink): RedirectResponse
@@ -167,10 +170,12 @@ class ToolAuthController extends Controller
             ->whereKeyNot($magicLink->id)
             ->update(['consumed_at' => now()]);
 
+        $this->guestSession->claimScansForUser($user, $request);
         Auth::guard('tool_user')->login($user, true);
         $request->session()->regenerate();
 
-        return redirect()->to($magicLink->redirect_to ?: $this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY));
+        return redirect()->to($magicLink->redirect_to ?: $this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY))
+            ->with('auth_sync_event', 'signed-in');
     }
 
     private function ensureNotRateLimited(string $throttleKey, int $maxAttempts, string $field): void

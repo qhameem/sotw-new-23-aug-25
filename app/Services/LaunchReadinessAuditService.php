@@ -12,6 +12,11 @@ use RuntimeException;
 
 class LaunchReadinessAuditService
 {
+    private const TITLE_RECOMMENDED_MIN = 30;
+    private const TITLE_RECOMMENDED_MAX = 60;
+    private const META_DESCRIPTION_RECOMMENDED_MIN = 120;
+    private const META_DESCRIPTION_RECOMMENDED_MAX = 160;
+
     public function pendingReport(): array
     {
         $categories = [];
@@ -60,6 +65,7 @@ class LaunchReadinessAuditService
 
     public function run(string $inputUrl): array
     {
+        $startedAt = microtime(true);
         $normalizedUrl = $this->normalizeUrl($inputUrl);
         $this->assertSafeHost($normalizedUrl);
 
@@ -83,7 +89,17 @@ class LaunchReadinessAuditService
         $headers = $response?->headers() ?? [];
         $html = $response?->body() ?? '';
         $domState = $this->parseHtml($html);
-        $content = $this->extractContentState($domState['xpath'], is_string($finalHost) ? $finalHost : null);
+        $content = $this->extractContentState(
+            $domState['xpath'],
+            is_string($finalHost) ? $finalHost : null,
+            $finalUrl,
+            isset($siteRoot) ? $siteRoot : $this->siteRoot($finalUrl)
+        );
+        $faviconState = $this->faviconState(
+            $content['favicon'],
+            $finalUrl,
+            isset($siteRoot) ? $siteRoot : $this->siteRoot($finalUrl)
+        );
 
         $resultsByKey = [
             'page_status' => $this->pageStatusResult($response, $fatalError),
@@ -91,7 +107,7 @@ class LaunchReadinessAuditService
             'title_tag' => $this->titleResult($content['title']),
             'meta_description' => $this->metaDescriptionResult($content['meta_description']),
             'canonical_url' => $this->canonicalResult($content['canonical'], $finalUrl),
-            'favicon' => $this->faviconResult($content['favicon']),
+            'favicon' => $this->faviconResult($faviconState),
             'viewport_meta' => $this->viewportResult($content['viewport']),
             'html_lang' => $this->htmlLangResult($content['html_lang']),
             'h1_tag' => $this->h1Result($content['h1_count']),
@@ -137,6 +153,7 @@ class LaunchReadinessAuditService
                     'status' => $result['status'],
                     'summary' => $result['summary'],
                     'fix' => in_array($result['status'], ['warning', 'fail'], true) ? ($check['fix'] ?? null) : null,
+                    'meta' => $result['meta'] ?? [],
                 ];
 
                 if ($result['status'] === 'pass') {
@@ -156,6 +173,7 @@ class LaunchReadinessAuditService
         }
 
         [$seoScore, $aiScore, $trustScore, $launchScore] = $this->scoresFromResults($resultsByKey);
+        $totalTestTimeSeconds = round(max(microtime(true) - $startedAt, 0), 2);
 
         return [
             'launch_score' => $launchScore,
@@ -174,6 +192,7 @@ class LaunchReadinessAuditService
                 'scanned_at' => now()->toIso8601String(),
                 'page_title' => $content['title'],
                 'fatal_error' => $fatalError,
+                'total_test_time_seconds' => $totalTestTimeSeconds,
             ],
             'categories' => $categories,
         ];
@@ -276,7 +295,7 @@ class LaunchReadinessAuditService
         ];
     }
 
-    private function extractContentState(DOMXPath $xpath, ?string $host = null): array
+    private function extractContentState(DOMXPath $xpath, ?string $host = null, ?string $finalUrl = null, ?string $siteRoot = null): array
     {
         $title = trim((string) $xpath->evaluate('string(//title[1])'));
         $metaDescription = trim((string) $xpath->evaluate('string((//meta[translate(@name,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="description"]/@content)[1])'));
@@ -292,6 +311,10 @@ class LaunchReadinessAuditService
             'type' => trim((string) $xpath->evaluate('string((//meta[@property="og:type"]/@content)[1])')),
             'image' => trim((string) $xpath->evaluate('string((//meta[@property="og:image"]/@content)[1])')),
         ];
+
+        if ($og['image'] !== '' && $finalUrl && $siteRoot) {
+            $og['image'] = $this->resolveAssetUrl($og['image'], $finalUrl, $siteRoot) ?? $og['image'];
+        }
 
         $twitterCard = trim((string) $xpath->evaluate('string((//meta[@name="twitter:card"]/@content)[1])'));
         $structuredDataCount = (int) $xpath->evaluate('count(//script[contains(@type, "ld+json")])');
@@ -458,8 +481,8 @@ class LaunchReadinessAuditService
             return $this->fail('No HTML title tag was found.');
         }
 
-        if ($length < 20 || $length > 70) {
-            return $this->warning("A title exists, but the length ({$length} chars) could be improved.");
+        if ($length < self::TITLE_RECOMMENDED_MIN || $length > self::TITLE_RECOMMENDED_MAX) {
+            return $this->warning("A title exists, but the length ({$length} chars) is outside the recommended " . self::TITLE_RECOMMENDED_MIN . '-' . self::TITLE_RECOMMENDED_MAX . ' character range.');
         }
 
         return $this->pass('The page has a clear title tag.');
@@ -473,8 +496,8 @@ class LaunchReadinessAuditService
             return $this->fail('No meta description was found.');
         }
 
-        if ($length < 70 || $length > 170) {
-            return $this->warning("A meta description exists, but the length ({$length} chars) could be improved.");
+        if ($length < self::META_DESCRIPTION_RECOMMENDED_MIN || $length > self::META_DESCRIPTION_RECOMMENDED_MAX) {
+            return $this->warning("A meta description exists, but the length ({$length} chars) is outside the recommended " . self::META_DESCRIPTION_RECOMMENDED_MIN . '-' . self::META_DESCRIPTION_RECOMMENDED_MAX . ' character range.');
         }
 
         return $this->pass('The page has a usable meta description.');
@@ -496,11 +519,37 @@ class LaunchReadinessAuditService
         return $this->pass('A canonical URL is present.');
     }
 
-    private function faviconResult(string $favicon): array
+    private function faviconResult(array $faviconState): array
     {
-        return $favicon !== ''
-            ? $this->pass('A favicon link is present.')
-            : $this->warning('No favicon link was detected in the page head.');
+        $label = $faviconState['label'] ?? 'favicon.ico';
+        $httpCode = $faviconState['http_code'];
+        $previewUrl = $faviconState['preview_url'] ?? null;
+
+        if ($faviconState['is_reachable']) {
+            return $this->pass(
+                "Favicon found and reachable: {$label} (HTTP {$httpCode}).",
+                [
+                    'preview_url' => $previewUrl,
+                ]
+            );
+        }
+
+        if ($faviconState['is_declared']) {
+            $statusText = $httpCode ? "HTTP {$httpCode}" : 'unreachable';
+
+            return $this->warning(
+                "Favicon found but not reachable: {$label} ({$statusText}).",
+                [
+                    'preview_url' => $previewUrl,
+                ]
+            );
+        }
+
+        if ($httpCode) {
+            return $this->warning("No favicon found or reachable: {$label} (HTTP {$httpCode}).");
+        }
+
+        return $this->warning('No favicon found or reachable.');
     }
 
     private function viewportResult(string $viewport): array
@@ -657,12 +706,28 @@ class LaunchReadinessAuditService
             ->filter(fn (?string $value) => filled($value))
             ->count();
 
-        if ($present === 3) {
-            return $this->pass('Core Open Graph fields are present.');
-        }
-
         if ($present > 0) {
-            return $this->warning('Some Open Graph fields are present, but the set is incomplete.');
+            if ($present < 3) {
+                return $this->warning('Some Open Graph fields are present, but the set is incomplete.');
+            }
+
+            $lengthWarnings = [];
+            $ogTitleLength = Str::length((string) ($og['title'] ?? ''));
+            $ogDescriptionLength = Str::length((string) ($og['description'] ?? ''));
+
+            if ($ogTitleLength > 0 && ($ogTitleLength < self::TITLE_RECOMMENDED_MIN || $ogTitleLength > self::TITLE_RECOMMENDED_MAX)) {
+                $lengthWarnings[] = "og:title ({$ogTitleLength} chars, recommended " . self::TITLE_RECOMMENDED_MIN . '-' . self::TITLE_RECOMMENDED_MAX . ')';
+            }
+
+            if ($ogDescriptionLength > 0 && ($ogDescriptionLength < self::META_DESCRIPTION_RECOMMENDED_MIN || $ogDescriptionLength > self::META_DESCRIPTION_RECOMMENDED_MAX)) {
+                $lengthWarnings[] = "og:description ({$ogDescriptionLength} chars, recommended " . self::META_DESCRIPTION_RECOMMENDED_MIN . '-' . self::META_DESCRIPTION_RECOMMENDED_MAX . ')';
+            }
+
+            if ($lengthWarnings !== []) {
+                return $this->warning('Core Open Graph fields are present, but recommended lengths could be improved for ' . implode(' and ', $lengthWarnings) . '.');
+            }
+
+            return $this->pass('Core Open Graph fields are present.');
         }
 
         return $this->warning('Open Graph basics were not detected.');
@@ -671,7 +736,7 @@ class LaunchReadinessAuditService
     private function openGraphImageResult(?string $image): array
     {
         return filled($image)
-            ? $this->pass('An Open Graph image is present.')
+            ? $this->pass('An Open Graph image is present.', ['preview_url' => $image])
             : $this->warning('No Open Graph image was detected.');
     }
 
@@ -808,24 +873,116 @@ class LaunchReadinessAuditService
         return $this->pass('The page shows enough HTML content without obvious heavy JS dependence.');
     }
 
+    private function faviconState(string $favicon, string $finalUrl, string $siteRoot): array
+    {
+        $rawCandidate = $favicon !== '' ? $favicon : '/favicon.ico';
+        $resolvedUrl = $this->resolveAssetUrl($rawCandidate, $finalUrl, $siteRoot);
+        $label = $this->assetLabel($rawCandidate, $resolvedUrl);
+
+        if ($resolvedUrl === null) {
+            return [
+                'is_declared' => $favicon !== '',
+                'is_reachable' => false,
+                'http_code' => null,
+                'label' => $label,
+                'preview_url' => null,
+            ];
+        }
+
+        if (Str::startsWith($resolvedUrl, 'data:')) {
+            return [
+                'is_declared' => true,
+                'is_reachable' => true,
+                'http_code' => 200,
+                'label' => $label,
+                'preview_url' => $resolvedUrl,
+            ];
+        }
+
+        try {
+            $this->assertSafeHost($resolvedUrl);
+            $response = $this->fetchOptional($resolvedUrl);
+        } catch (\Throwable) {
+            $response = null;
+        }
+
+        return [
+            'is_declared' => $favicon !== '',
+            'is_reachable' => (bool) $response?->successful(),
+            'http_code' => $response?->status(),
+            'label' => $label,
+            'preview_url' => $response?->successful() ? $resolvedUrl : null,
+        ];
+    }
+
+    private function resolveAssetUrl(string $asset, string $finalUrl, string $siteRoot): ?string
+    {
+        if ($asset === '') {
+            return null;
+        }
+
+        if (Str::startsWith($asset, 'data:')) {
+            return $asset;
+        }
+
+        if (Str::startsWith($asset, ['http://', 'https://'])) {
+            return $asset;
+        }
+
+        $parts = parse_url($finalUrl);
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        if (Str::startsWith($asset, '//')) {
+            return "{$scheme}:{$asset}";
+        }
+
+        if (Str::startsWith($asset, '/')) {
+            return "{$scheme}://{$host}{$port}{$asset}";
+        }
+
+        $path = $parts['path'] ?? '/';
+        $directory = str_contains($path, '/') ? preg_replace('~/[^/]*$~', '/', $path) : '/';
+
+        return "{$scheme}://{$host}{$port}{$directory}{$asset}";
+    }
+
+    private function assetLabel(string $rawCandidate, ?string $resolvedUrl): string
+    {
+        if (Str::startsWith($rawCandidate, 'data:')) {
+            return 'inline data URL';
+        }
+
+        $path = parse_url($resolvedUrl ?: $rawCandidate, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '') {
+            return $rawCandidate !== '' ? $rawCandidate : 'favicon.ico';
+        }
+
+        $basename = basename($path);
+
+        return $basename !== '' ? $basename : ltrim($path, '/');
+    }
+
     private function unknownResult(): array
     {
         return $this->warning('This check was not evaluated.');
     }
 
-    private function pass(string $summary): array
+    private function pass(string $summary, array $meta = []): array
     {
-        return ['status' => 'pass', 'summary' => $summary];
+        return ['status' => 'pass', 'summary' => $summary, 'meta' => $meta];
     }
 
-    private function warning(string $summary): array
+    private function warning(string $summary, array $meta = []): array
     {
-        return ['status' => 'warning', 'summary' => $summary];
+        return ['status' => 'warning', 'summary' => $summary, 'meta' => $meta];
     }
 
-    private function fail(string $summary): array
+    private function fail(string $summary, array $meta = []): array
     {
-        return ['status' => 'fail', 'summary' => $summary];
+        return ['status' => 'fail', 'summary' => $summary, 'meta' => $meta];
     }
 
     private function scoresFromResults(array $resultsByKey): array
@@ -894,10 +1051,10 @@ class LaunchReadinessAuditService
     private function statusLabel(int $launchScore): string
     {
         return match (true) {
-            $launchScore >= 90 => 'Ready',
-            $launchScore >= 75 => 'Almost ready',
-            $launchScore >= 55 => 'Needs improvement',
-            default => 'Not launch-ready',
+            $launchScore >= 90 => 'Excellent score',
+            $launchScore >= 75 => 'Good score',
+            $launchScore >= 55 => 'Fair score',
+            default => 'Poor score',
         };
     }
 
@@ -907,8 +1064,8 @@ class LaunchReadinessAuditService
             'meta_information' => [
                 'label' => 'Meta Information',
                 'checks' => [
-                    'title_tag' => ['label' => 'Title Tag', 'description' => 'Checks whether the homepage title exists and looks usable.', 'fix' => 'Add a unique <title> tag describing the main page intent in about 30-60 characters.'],
-                    'meta_description' => ['label' => 'Meta Description', 'description' => 'Checks for a usable description in search results and previews.', 'fix' => 'Add a concise meta description that explains the page value in about 70-160 characters.'],
+                    'title_tag' => ['label' => 'Title Tag', 'description' => 'Checks whether the homepage title exists, looks usable, and fits a recommended snippet length.', 'fix' => 'Add a unique <title> tag describing the main page intent in about 30-60 characters.'],
+                    'meta_description' => ['label' => 'Meta Description', 'description' => 'Checks for a usable description in search results and previews, including recommended snippet length.', 'fix' => 'Add a concise meta description that explains the page value in about 120-160 characters.'],
                     'canonical_url' => ['label' => 'Canonical URL', 'description' => 'Checks whether the page declares a canonical destination.', 'fix' => 'Add a canonical link pointing to the preferred public URL for this page.'],
                     'favicon' => ['label' => 'Favicon', 'description' => 'Checks whether the page head includes a favicon.', 'fix' => 'Add favicon links in the page head so the site has a branded browser tab and richer previews.'],
                     'viewport_meta' => ['label' => 'Viewport Meta', 'description' => 'Checks for mobile viewport configuration.', 'fix' => 'Add a viewport meta tag such as width=device-width, initial-scale=1 for mobile-friendly rendering.'],
@@ -946,7 +1103,7 @@ class LaunchReadinessAuditService
             'social_and_rich_results' => [
                 'label' => 'Social & Rich Results',
                 'checks' => [
-                    'open_graph_basics' => ['label' => 'Open Graph Basics', 'description' => 'Checks for core social-sharing metadata.', 'fix' => 'Add og:title, og:description, and og:type tags so shared links have usable preview metadata.'],
+                    'open_graph_basics' => ['label' => 'Open Graph Basics', 'description' => 'Checks for core social-sharing metadata, including recommended title and description lengths.', 'fix' => 'Add og:title, og:description, and og:type tags, and keep og:title around 30-60 characters and og:description around 120-160 characters.'],
                     'open_graph_image' => ['label' => 'Open Graph Image', 'description' => 'Checks whether a social preview image is present.', 'fix' => 'Add a branded og:image that looks good when the page is shared on social platforms or chat apps.'],
                     'twitter_card' => ['label' => 'Twitter Card', 'description' => 'Checks whether a Twitter card tag is present.', 'fix' => 'Add a twitter:card tag, ideally summary_large_image if you have a preview image.'],
                     'structured_data' => ['label' => 'Structured Data', 'description' => 'Checks whether JSON-LD markup is present.', 'fix' => 'Add relevant JSON-LD schema markup that matches the page content, such as Organization, WebSite, Product, or FAQPage when appropriate.'],

@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\LoginModalContentController;
 use App\Http\Controllers\BadgeController; // Added for public articles
 use App\Http\Controllers\IndexNowKeyController;
 use App\Http\Controllers\LaunchReadinessController; // Added for topics page
+use App\Http\Controllers\LaunchReadinessWorkspaceController;
 use App\Http\Controllers\ProductClaimController;
 use App\Http\Controllers\ProductCollectionController;
 use App\Http\Controllers\ProductCollectionItemController;
@@ -370,19 +371,9 @@ Route::get('/free-todo-list-tool/{path?}', function (?string $path, ToolSettings
     return redirect($queryString ? $target.'?'.$queryString : $target, 301);
 })->where('path', '.*');
 
-$todoToolConfig = app(ToolSettings::class)->toolConfig(ToolSettings::TODO_LIST_KEY);
-$todoToolSlugPattern = implode('|', collect([$todoToolConfig['slug'], ...($todoToolConfig['legacy_slugs'] ?? [])])
-    ->map(fn (string $slug) => preg_quote($slug, '/'))
-    ->all());
-
-$launchToolConfig = app(ToolSettings::class)->toolConfig(ToolSettings::LAUNCH_READINESS_KEY);
-$launchToolSlugPattern = implode('|', collect([$launchToolConfig['slug'], ...($launchToolConfig['legacy_slugs'] ?? [])])
-    ->map(fn (string $slug) => preg_quote($slug, '/'))
-    ->all());
-
 Route::prefix('tools/{toolSlug}')
     ->middleware('configured.tool:todo_list')
-    ->where(['toolSlug' => $todoToolSlugPattern])
+    ->where(['toolSlug' => '[A-Za-z0-9\-]+'])
     ->name('todolists.')
     ->group(function () {
         Route::get('/', [TodoListController::class, 'index'])->name('index');
@@ -399,7 +390,7 @@ Route::prefix('tools/{toolSlug}')
 
 Route::prefix('tools/{toolSlug}')
     ->middleware('configured.tool:launch_readiness')
-    ->where(['toolSlug' => $launchToolSlugPattern])
+    ->where(['toolSlug' => '[A-Za-z0-9\-]+'])
     ->name('launch-readiness.')
     ->group(function () {
         Route::get('/', [LaunchReadinessController::class, 'index'])->name('index');
@@ -416,6 +407,14 @@ Route::prefix('tools/{toolSlug}')
         });
 
         Route::middleware('auth:tool_user')->group(function () {
+            Route::get('/dashboard', [LaunchReadinessWorkspaceController::class, 'dashboard'])->name('dashboard');
+            Route::patch('/dashboard/branding', [LaunchReadinessWorkspaceController::class, 'updateBranding'])->name('dashboard.branding.update');
+            Route::post('/dashboard/scans/clear', [LaunchReadinessWorkspaceController::class, 'clearScans'])->name('dashboard.scans.clear');
+            Route::post('/dashboard/scans/bulk', [LaunchReadinessWorkspaceController::class, 'bulkScans'])->name('dashboard.scans.bulk');
+            Route::post('/dashboard/scans/{toolScan:result_token}/recheck', [LaunchReadinessWorkspaceController::class, 'recheck'])->name('dashboard.scans.recheck');
+            Route::get('/settings', [LaunchReadinessWorkspaceController::class, 'settings'])->name('settings');
+            Route::patch('/settings/profile', [LaunchReadinessWorkspaceController::class, 'updateProfile'])->name('settings.profile.update');
+            Route::delete('/settings/account', [LaunchReadinessWorkspaceController::class, 'destroyAccount'])->name('settings.account.destroy');
             Route::post('/logout', [ToolAuthController::class, 'destroy'])->name('auth.logout');
         });
     });

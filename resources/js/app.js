@@ -308,14 +308,26 @@ function registerAlpineComponents(Alpine) {
 
     Alpine.data('launchReadinessAnalyzer', (config = {}) => ({
         csrfToken: config.csrfToken ?? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+        toolName: config.toolName ?? 'Website Launch Checker',
         submitting: false,
         errorMessage: '',
         noticeMessage: config.initialNotice ?? '',
+        shareModalOpen: false,
+        shareResultUrl: '',
+        shareTargetName: '',
+        shareLaunchScore: null,
+        sharePassedChecks: 0,
+        shareWarningChecks: 0,
+        shareFailedChecks: 0,
+        shareLinkCopied: false,
+        previousBodyOverflow: '',
+        previousBodyPaddingRight: '',
 
         async submitAnalyze(event) {
             const form = event.target;
             this.submitting = true;
             this.errorMessage = '';
+            this.closeShareModal();
 
             try {
                 const response = await fetch(form.action, {
@@ -350,6 +362,7 @@ function registerAlpineComponents(Alpine) {
 
                 if (typeof payload.result_url === 'string' && payload.result_url !== '') {
                     window.history.pushState({ launchReadiness: true }, '', payload.result_url);
+                    this.openShareModal(payload.result_url, payload.share_target ?? '', payload.share_summary ?? {});
                 }
             } catch (error) {
                 console.error('Launch readiness analyze error:', error);
@@ -357,6 +370,367 @@ function registerAlpineComponents(Alpine) {
             } finally {
                 this.submitting = false;
             }
+        },
+
+        openShareModal(resultUrl, targetName = '', summary = {}) {
+            this.shareResultUrl = resultUrl;
+            this.shareTargetName = targetName || 'your site';
+            this.shareLaunchScore = Number.isFinite(Number(summary.launch_score)) ? Number(summary.launch_score) : null;
+            this.sharePassedChecks = Number(summary.passed_checks) || 0;
+            this.shareWarningChecks = Number(summary.warning_checks) || 0;
+            this.shareFailedChecks = Number(summary.failed_checks) || 0;
+            this.shareLinkCopied = false;
+            this.shareModalOpen = true;
+            this.lockShareScroll();
+        },
+
+        closeShareModal() {
+            this.shareModalOpen = false;
+            this.unlockShareScroll();
+        },
+
+        shareMessage() {
+            const score = this.shareLaunchScore ?? 0;
+            const passed = this.sharePassedChecks;
+            const warnings = this.shareWarningChecks;
+            const errors = this.shareFailedChecks;
+
+            return `I scored ${score}/100 on ${this.shareTargetName} with ${this.toolName} (${passed} passed, ${warnings} warnings, ${errors} errors).`;
+        },
+
+        lockShareScroll() {
+            if (typeof document === 'undefined') {
+                return;
+            }
+
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            this.previousBodyOverflow = document.body.style.overflow;
+            this.previousBodyPaddingRight = document.body.style.paddingRight;
+            document.body.style.overflow = 'hidden';
+
+            if (scrollbarWidth > 0) {
+                document.body.style.paddingRight = `${scrollbarWidth}px`;
+            }
+        },
+
+        unlockShareScroll() {
+            if (typeof document === 'undefined') {
+                return;
+            }
+
+            document.body.style.overflow = this.previousBodyOverflow || '';
+            document.body.style.paddingRight = this.previousBodyPaddingRight || '';
+        },
+
+        shareOnX() {
+            this.openShareWindow('https://twitter.com/intent/tweet?text=' + encodeURIComponent(this.shareMessage()) + '&url=' + encodeURIComponent(this.shareResultUrl));
+        },
+
+        shareOnReddit() {
+            this.openShareWindow('https://www.reddit.com/submit?title=' + encodeURIComponent(this.shareMessage()) + '&url=' + encodeURIComponent(this.shareResultUrl));
+        },
+
+        shareOnFacebook() {
+            this.openShareWindow('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(this.shareResultUrl));
+        },
+
+        openShareWindow(url) {
+            if (!url) {
+                return;
+            }
+
+            window.open(url, '_blank', 'noopener,noreferrer');
+        },
+
+        async copyShareLink() {
+            if (!this.shareResultUrl) {
+                return;
+            }
+
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(this.shareResultUrl);
+                } else {
+                    const input = document.createElement('input');
+                    input.value = this.shareResultUrl;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    input.remove();
+                }
+
+                this.shareLinkCopied = true;
+                window.setTimeout(() => {
+                    this.shareLinkCopied = false;
+                }, 1800);
+            } catch (error) {
+                console.error('Failed to copy share link:', error);
+            }
+        },
+
+        viewResultPage() {
+            if (!this.shareResultUrl) {
+                return;
+            }
+
+            window.location.href = this.shareResultUrl;
+        },
+    }));
+
+    Alpine.data('launchReadinessAuthModal', (config = {}) => ({
+        signInModalOpen: Boolean(config.openOnLoad),
+        intendedUrl: config.intendedUrl ?? window.location.href,
+        previousBodyPaddingRight: '',
+
+        init() {
+            if (this.signInModalOpen) {
+                this.lockScroll();
+            }
+
+            this.$watch('signInModalOpen', (open) => {
+                if (open) {
+                    this.lockScroll();
+                    return;
+                }
+
+                this.unlockScroll();
+            });
+        },
+
+        openSignInModal() {
+            this.signInModalOpen = true;
+        },
+
+        closeSignInModal() {
+            this.signInModalOpen = false;
+        },
+
+        lockScroll() {
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            this.previousBodyPaddingRight = document.body.style.paddingRight;
+
+            document.documentElement.classList.add('overflow-hidden');
+
+            if (scrollbarWidth > 0) {
+                document.body.style.paddingRight = `${scrollbarWidth}px`;
+            }
+        },
+
+        unlockScroll() {
+            document.documentElement.classList.remove('overflow-hidden');
+            document.body.style.paddingRight = this.previousBodyPaddingRight;
+        },
+    }));
+
+    Alpine.data('launchReadinessWorkspace', (config = {}) => ({
+        workspaceRoot: String(config.workspaceRoot ?? '').replace(/\/$/, ''),
+        navigating: false,
+
+        init() {
+            this.handlePopState = () => {
+                if (this.isWorkspaceUrl(window.location.href)) {
+                    this.navigate(window.location.href, { pushState: false });
+                }
+            };
+
+            window.addEventListener('popstate', this.handlePopState);
+        },
+
+        destroy() {
+            window.removeEventListener('popstate', this.handlePopState);
+        },
+
+        handleLinkClick(event) {
+            const link = event.target.closest('a[href]');
+
+            if (!link || !this.shouldInterceptLink(event, link)) {
+                return;
+            }
+
+            event.preventDefault();
+            this.navigate(link.href);
+        },
+
+        shouldInterceptLink(event, link) {
+            if (event.defaultPrevented || event.button !== 0) {
+                return false;
+            }
+
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return false;
+            }
+
+            if (link.target && link.target !== '_self') {
+                return false;
+            }
+
+            if (link.hasAttribute('download')) {
+                return false;
+            }
+
+            const href = link.getAttribute('href');
+
+            if (!href || href.startsWith('#')) {
+                return false;
+            }
+
+            return this.isWorkspaceUrl(link.href);
+        },
+
+        isWorkspaceUrl(url) {
+            if (!this.workspaceRoot) {
+                return false;
+            }
+
+            try {
+                const parsed = new URL(url, window.location.origin);
+
+                if (parsed.origin !== window.location.origin) {
+                    return false;
+                }
+
+                return (
+                    parsed.pathname.startsWith(`${this.workspaceRoot}/dashboard`) ||
+                    parsed.pathname.startsWith(`${this.workspaceRoot}/settings`)
+                );
+            } catch (error) {
+                return false;
+            }
+        },
+
+        async navigate(url, options = {}) {
+            const { pushState = true } = options;
+
+            if (this.navigating) {
+                return;
+            }
+
+            this.navigating = true;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        Accept: 'text/html, application/xhtml+xml',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Launch-Readiness-Workspace': '1',
+                    },
+                    credentials: 'same-origin',
+                });
+
+                if (response.redirected && !this.isWorkspaceUrl(response.url)) {
+                    window.location.href = response.url;
+                    return;
+                }
+
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const nextMain = doc.querySelector('[data-workspace-main]');
+
+                if (!nextMain || !this.$refs.workspaceMain) {
+                    window.location.href = url;
+                    return;
+                }
+
+                const nextSidebarNav = doc.querySelector('[data-workspace-sidebar-nav]');
+                const title = doc.querySelector('title')?.textContent?.trim();
+                const description = doc.querySelector('meta[name="description"]')?.getAttribute('content');
+                const csrfToken = doc.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                if (window.Alpine?.destroyTree) {
+                    window.Alpine.destroyTree(this.$refs.workspaceMain);
+                }
+
+                this.$refs.workspaceMain.innerHTML = nextMain.innerHTML;
+
+                if (this.$refs.sidebarNav && nextSidebarNav) {
+                    this.$refs.sidebarNav.innerHTML = nextSidebarNav.innerHTML;
+                }
+
+                if (title) {
+                    document.title = title;
+                }
+
+                if (description) {
+                    document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+                }
+
+                if (csrfToken) {
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+                    if (csrfMeta) {
+                        csrfMeta.setAttribute('content', csrfToken);
+                    }
+
+                    axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+                }
+
+                if (pushState && window.location.href !== url) {
+                    window.history.pushState({ launchReadinessWorkspace: true }, '', url);
+                }
+
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+                this.$nextTick(() => {
+                    if (window.Alpine?.initTree) {
+                        window.Alpine.initTree(this.$refs.workspaceMain);
+                    }
+
+                    bootstrapNavigatedPage();
+                });
+            } catch (error) {
+                console.error('Launch readiness workspace navigation error:', error);
+                window.location.href = url;
+            } finally {
+                this.navigating = false;
+            }
+        },
+    }));
+
+    Alpine.data('launchReadinessDashboard', () => ({
+        selected: [],
+        action: '',
+
+        get allSelected() {
+            const rowCheckboxes = Array.from(document.querySelectorAll('[value][type="checkbox"]'))
+                .filter((input) => input.value && input.value !== 'on');
+
+            return rowCheckboxes.length > 0 && rowCheckboxes.every((input) => this.selected.includes(input.value));
+        },
+
+        toggleAll(event) {
+            const checked = event.target.checked;
+            const rowCheckboxes = Array.from(document.querySelectorAll('[value][type="checkbox"]'))
+                .filter((input) => input.value && input.value !== 'on');
+
+            this.selected = checked ? rowCheckboxes.map((input) => input.value) : [];
+        },
+
+        toggleOne(event) {
+            const { value, checked } = event.target;
+
+            if (!value) {
+                return;
+            }
+
+            if (checked) {
+                if (!this.selected.includes(value)) {
+                    this.selected.push(value);
+                }
+
+                return;
+            }
+
+            this.selected = this.selected.filter((item) => item !== value);
+        },
+
+        submitAction(action) {
+            if (this.selected.length === 0) {
+                return;
+            }
+
+            this.action = action;
+            this.$refs.bulkForm?.submit();
         },
     }));
 }

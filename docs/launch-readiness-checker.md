@@ -41,3 +41,15 @@
 ## Progress log
 
 - 2026-05-31: Started integrated implementation inside the main Laravel app.
+- 2026-06-03: Added signed-in workspace foundations:
+  - shared launch-readiness page-data support
+  - tool-user admin email support via config
+  - authenticated dashboard and settings routes
+  - shared light app-shell design tokens
+  - avatar dropdown menu with dashboard/settings/logout
+- 2026-06-03: Added admin-managed tool branding:
+  - admin-only branding form on the dashboard
+  - configurable tool logo, site name, favicon, and Google Font link
+  - configurable tool font size, text color, and background color
+  - shared branding service backed by `storage/app/settings.json`
+  - branding applied across public tool pages and the signed-in workspace

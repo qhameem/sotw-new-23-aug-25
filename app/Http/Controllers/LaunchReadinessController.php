@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ToolScan;
 use App\Models\ToolUser;
 use App\Services\LaunchReadinessAuditService;
+use App\Support\LaunchReadinessGuestSession;
+use App\Support\LaunchReadinessPageData;
 use App\Support\ToolSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,11 +24,13 @@ class LaunchReadinessController extends Controller
     public function __construct(
         private readonly LaunchReadinessAuditService $auditService,
         private readonly ToolSettings $toolSettings,
+        private readonly LaunchReadinessPageData $pageData,
+        private readonly LaunchReadinessGuestSession $guestSession,
     ) {}
 
     public function index(): View
     {
-        return view('tools.launch-readiness.index', $this->baseViewData([
+        return view('tools.launch-readiness.index', $this->pageData->merge([
             'report' => $this->auditService->pendingReport(),
             'scan' => null,
             'recentHistory' => $this->recentHistory(),
@@ -53,7 +57,7 @@ class LaunchReadinessController extends Controller
         ]);
 
         $toolUser = Auth::guard('tool_user')->user();
-        $guestHash = $toolUser ? null : $this->guestHash($request);
+        $guestHash = $toolUser ? null : $this->guestSession->hash($request);
 
         $this->ensureDailyLimit($toolUser, $guestHash);
 
@@ -86,6 +90,14 @@ class LaunchReadinessController extends Controller
                     'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
                     'toolScan' => $scan,
                 ]),
+                'share_target' => $report['summary']['final_host']
+                    ?: (parse_url($report['summary']['final_url'] ?? '', PHP_URL_HOST) ?: parse_url($validated['url'], PHP_URL_HOST) ?: 'your site'),
+                'share_summary' => [
+                    'launch_score' => $report['launch_score'],
+                    'passed_checks' => $report['passed_checks'],
+                    'warning_checks' => $report['warning_checks'],
+                    'failed_checks' => $report['failed_checks'],
+                ],
                 'page_title' => (($report['summary']['page_title'] ?? null) ?: 'Launch Readiness Result').' - Software on the Web',
                 'notice_message' => $scan->save_to_history
                     ? ''
@@ -104,7 +116,7 @@ class LaunchReadinessController extends Controller
 
     public function show(string $toolSlug, ToolScan $toolScan): View
     {
-        return view('tools.launch-readiness.show', $this->baseViewData([
+        return view('tools.launch-readiness.show', $this->pageData->merge([
             'report' => $toolScan->audit_payload,
             'scan' => $toolScan,
             'recentHistory' => $this->recentHistory(),
@@ -137,7 +149,7 @@ class LaunchReadinessController extends Controller
                 ],
             );
 
-        return view('tools.launch-readiness.history', $this->baseViewData([
+        return view('tools.launch-readiness.history', $this->pageData->merge([
             'history' => $history,
             'query' => $query,
             'perPage' => $perPage,
@@ -146,20 +158,12 @@ class LaunchReadinessController extends Controller
         ]));
     }
 
-    private function baseViewData(array $data = []): array
-    {
-        $toolSlug = $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY);
-
-        return array_merge([
-            'toolSlug' => $toolSlug,
-            'toolPath' => $this->toolSettings->path(ToolSettings::LAUNCH_READINESS_KEY),
-            'toolUser' => Auth::guard('tool_user')->user(),
-            'toolOgImage' => asset('images/tools/launch-readiness-og.svg'),
-        ], $data);
-    }
-
     private function ensureDailyLimit(?ToolUser $toolUser, ?string $guestHash): void
     {
+        if ($toolUser?->isAdmin()) {
+            return;
+        }
+
         $query = ToolScan::query()
             ->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()]);
@@ -170,20 +174,11 @@ class LaunchReadinessController extends Controller
             $query->where('guest_hash', $guestHash);
         }
 
-        if ($query->count() >= 20) {
+        if ($query->count() >= config('launch_readiness.daily_limit', 20)) {
             throw ValidationException::withMessages([
                 'url' => 'Daily scan limit reached. Please come back tomorrow.',
             ]);
         }
-    }
-
-    private function guestHash(Request $request): string
-    {
-        return hash('sha256', implode('|', [
-            (string) $request->ip(),
-            (string) $request->userAgent(),
-            (string) $request->session()->getId(),
-        ]));
     }
 
     private function recentHistory()

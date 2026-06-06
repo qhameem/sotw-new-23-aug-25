@@ -103,16 +103,31 @@
 
                         <div class="mt-6 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Passed</p>
-                                <p class="mt-1 text-sm font-semibold text-emerald-600">{{ $item->passed_checks }}</p>
+                                <p class="text-[11px] text-slate-400">Passed</p>
+                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                                    <svg class="h-4 w-4 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L9.25 10.69 7.78 9.22a.75.75 0 1 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4-4Z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>{{ $item->passed_checks }}</span>
+                                </p>
                             </div>
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Warnings</p>
-                                <p class="mt-1 text-sm font-semibold text-amber-500">{{ $item->warning_checks }}</p>
+                                <p class="text-[11px] text-slate-400">Warnings</p>
+                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                                    <svg class="h-4 w-4 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l4.58 8.145c.75 1.334-.213 2.993-1.742 2.993H5.419c-1.53 0-2.492-1.66-1.743-2.993l4.58-8.145ZM11 7a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0V7Zm-1 6a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 13Z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>{{ $item->warning_checks }}</span>
+                                </p>
                             </div>
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Errors</p>
-                                <p class="mt-1 text-sm font-semibold text-rose-500">{{ $item->failed_checks }}</p>
+                                <p class="text-[11px] text-slate-400">Errors</p>
+                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                                    <svg class="h-4 w-4 shrink-0 text-rose-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.53-10.47a.75.75 0 0 0-1.06-1.06L10 8.94 7.53 6.47a.75.75 0 0 0-1.06 1.06L8.94 10l-2.47 2.47a.75.75 0 1 0 1.06 1.06L10 11.06l2.47 2.47a.75.75 0 0 0 1.06-1.06L11.06 10l2.47-2.47Z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>{{ $item->failed_checks }}</span>
+                                </p>
                             </div>
                         </div>
                     </a>
@@ -130,14 +145,14 @@
                         Showing {{ $history->firstItem() ?? 0 }} to {{ $history->lastItem() ?? 0 }} of {{ $history->total() }} results
                     </p>
 
-                    <div class="rounded-[32px] border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-200/40">
-                        <div class="flex flex-col gap-4 xl:flex-row xl:items-center">
-                            <div class="flex items-center gap-2">
+                    <div class="rounded-[24px] border border-slate-200 bg-white px-2.5 py-2 shadow-sm shadow-slate-200/40">
+                        <div class="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:justify-end">
+                            <div class="flex items-center gap-1">
                                 <a
                                     href="{{ $history->onFirstPage() ? '#' : $history->previousPageUrl() }}"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-slate-700 transition {{ $history->onFirstPage() ? 'pointer-events-none opacity-40' : 'hover:border-slate-200 hover:bg-slate-50' }}"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-slate-700 transition {{ $history->onFirstPage() ? 'pointer-events-none opacity-40' : 'hover:border-slate-200 hover:bg-slate-50' }}"
                                 >
-                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path fill-rule="evenodd" d="M11.78 15.53a.75.75 0 0 1-1.06 0l-5-5a.75.75 0 0 1 0-1.06l5-5a.75.75 0 0 1 1.06 1.06L7.31 10l4.47 4.47a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
                                     </svg>
                                 </a>
@@ -148,7 +163,7 @@
                                     @else
                                         <a
                                             href="{{ $history->url($page) }}"
-                                            class="inline-flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-base font-medium transition {{ $page === $currentPage ? 'border border-indigo-300 bg-indigo-100/70 text-indigo-700 shadow-sm' : 'text-slate-900 hover:bg-slate-50' }}"
+                                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 text-xs font-medium transition {{ $page === $currentPage ? 'border border-indigo-300 bg-indigo-100/70 text-indigo-700 shadow-sm' : 'text-slate-900 hover:bg-slate-50' }}"
                                         >
                                             {{ $page }}
                                         </a>
@@ -157,15 +172,15 @@
 
                                 <a
                                     href="{{ $history->hasMorePages() ? $history->nextPageUrl() : '#' }}"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-slate-700 transition {{ $history->hasMorePages() ? 'hover:border-slate-200 hover:bg-slate-50' : 'pointer-events-none opacity-40' }}"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-slate-700 transition {{ $history->hasMorePages() ? 'hover:border-slate-200 hover:bg-slate-50' : 'pointer-events-none opacity-40' }}"
                                 >
-                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path fill-rule="evenodd" d="M8.22 4.47a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06-1.06L12.69 10 8.22 5.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
                                     </svg>
                                 </a>
                             </div>
 
-                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex flex-wrap items-center gap-3">
+                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex flex-wrap items-center gap-2">
                                 @if($query !== '')
                                     <input type="hidden" name="q" value="{{ $query }}">
                                 @endif
@@ -174,7 +189,7 @@
                                     id="per_page"
                                     name="per_page"
                                     onchange="this.form.submit()"
-                                    class="h-11 rounded-full border border-indigo-300 bg-white px-5 text-base font-medium text-slate-900 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-0"
+                                    class="h-8 rounded-full border border-indigo-300 bg-white pl-3 pr-9 text-xs font-medium text-slate-900 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-0"
                                 >
                                     @foreach($allowedPerPage as $option)
                                         <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }} / page</option>
@@ -182,12 +197,12 @@
                                 </select>
                             </form>
 
-                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-3">
+                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-2">
                                 @if($query !== '')
                                     <input type="hidden" name="q" value="{{ $query }}">
                                 @endif
                                 <input type="hidden" name="per_page" value="{{ $perPage }}">
-                                <span class="text-base font-medium text-slate-900">Go to</span>
+                                <span class="text-xs font-medium text-slate-900">Go to</span>
                                 <label for="goto_page" class="sr-only">Go to page</label>
                                 <input
                                     id="goto_page"
@@ -196,9 +211,9 @@
                                     min="1"
                                     max="{{ max(1, $lastPage) }}"
                                     inputmode="numeric"
-                                    class="h-11 w-24 rounded-full border border-indigo-300 bg-white px-4 text-center text-base font-medium text-slate-900 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-0"
+                                    class="h-8 w-16 rounded-full border border-indigo-300 bg-white px-2 text-center text-xs font-medium text-slate-900 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-0"
                                 >
-                                <span class="text-base font-medium text-slate-900">Page</span>
+                                <span class="text-xs font-medium text-slate-900">Page</span>
                             </form>
                         </div>
                     </div>

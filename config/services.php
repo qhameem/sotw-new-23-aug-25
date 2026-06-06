@@ -30,6 +30,7 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'tool_redirect' => env('GOOGLE_TOOL_REDIRECT_URI'),
     ],
 
     'ses' => [

@@ -86,6 +86,70 @@ class ToolSettings
         ];
     }
 
+    public function candidateSlug(mixed $value): ?string
+    {
+        return $this->normalizeSlug($value);
+    }
+
+    public function slugAvailable(string $toolKey, mixed $value): bool
+    {
+        $candidate = $this->normalizeSlug($value);
+
+        if (! $candidate) {
+            return false;
+        }
+
+        foreach (array_keys(self::DEFAULTS) as $otherToolKey) {
+            if ($otherToolKey === $toolKey) {
+                continue;
+            }
+
+            $config = $this->toolConfig($otherToolKey);
+
+            if ($config['slug'] === $candidate) {
+                return false;
+            }
+
+            if (in_array($candidate, $config['legacy_slugs'], true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function updateSlug(string $toolKey, mixed $value): string
+    {
+        $slug = $this->normalizeSlug($value);
+
+        if (! $slug) {
+            throw new \InvalidArgumentException('A valid tool slug is required.');
+        }
+
+        $settings = $this->loadSettings();
+        $toolSettings = is_array($settings['tools'][$toolKey] ?? null) ? $settings['tools'][$toolKey] : [];
+        $currentConfig = $this->toolConfig($toolKey);
+        $currentSlug = $currentConfig['slug'];
+
+        $legacySlugs = collect($toolSettings['legacy_slugs'] ?? [])
+            ->merge($currentConfig['legacy_slugs'] ?? [])
+            ->when($currentSlug !== $slug, fn ($collection) => $collection->push($currentSlug))
+            ->map(fn ($legacySlug) => $this->normalizeSlug($legacySlug))
+            ->filter()
+            ->reject(fn ($legacySlug) => $legacySlug === $slug)
+            ->unique()
+            ->values()
+            ->all();
+
+        $toolSettings['slug'] = $slug;
+        $toolSettings['legacy_slugs'] = $legacySlugs;
+        $settings['tools'][$toolKey] = $toolSettings;
+
+        $this->saveSettings($settings);
+
+        return $slug;
+    }
+
     private function loadSettings(): array
     {
         if (! Storage::disk('local')->exists(self::SETTINGS_FILE)) {
@@ -93,6 +157,11 @@ class ToolSettings
         }
 
         return json_decode(Storage::disk('local')->get(self::SETTINGS_FILE), true) ?: [];
+    }
+
+    private function saveSettings(array $settings): void
+    {
+        Storage::disk('local')->put(self::SETTINGS_FILE, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     private function normalizeSlug(mixed $value): ?string
