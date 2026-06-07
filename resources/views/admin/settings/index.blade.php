@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Or your admin layout if different --}}
+@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true]) {{-- Or your admin layout if different --}}
 
 @section('title', 'Admin Settings')
 
@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
         @if(session('success'))
             <div class="mb-4 p-4 text-sm text-green-700 bg-green-100 rounded-lg  " role="alert">
                 {{ session('success') }}
@@ -310,6 +310,35 @@
 
         <div class="mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            AI Provider Status
+                        </h3>
+                        <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                            <p>Check live AI provider availability, known quota signals, and reset windows.</p>
+                            <p class="mt-1">Times below are shown in your browser's local time when available.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-start gap-2 sm:items-end">
+                        <button
+                            type="button"
+                            id="refresh-ai-provider-status"
+                            class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                        >
+                            Check AI quota now
+                        </button>
+                        <p id="ai-provider-status-timezone" class="text-xs text-gray-500"></p>
+                    </div>
+                </div>
+
+                <div id="ai-provider-status-feedback" class="mt-4 hidden rounded-md border px-4 py-3 text-sm"></div>
+                <div id="ai-provider-status-list" class="mt-5 grid gap-4 lg:grid-cols-2"></div>
+            </div>
+        </div>
+
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Outbound Link Policy
                 </h3>
@@ -533,6 +562,130 @@
             var footerEmbedCodeList = document.getElementById('footer-embed-code-list');
             var footerEmbedCodeTemplate = document.getElementById('footer-embed-code-template');
             var addFooterEmbedCodeButton = document.getElementById('add-footer-embed-code');
+            var aiProviderStatusButton = document.getElementById('refresh-ai-provider-status');
+            var aiProviderStatusList = document.getElementById('ai-provider-status-list');
+            var aiProviderStatusFeedback = document.getElementById('ai-provider-status-feedback');
+            var aiProviderStatusTimezone = document.getElementById('ai-provider-status-timezone');
+            var initialAiProviderStatus = @json($aiProviderStatusSnapshots ?? []);
+            var aiProviderStatusUrl = @json(route('admin.settings.aiProviderStatus'));
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function formatLocalDateTime(value) {
+                if (!value) {
+                    return '—';
+                }
+
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return '—';
+                }
+
+                return new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                }).format(date);
+            }
+
+            function stateClasses(state) {
+                if (state === 'ok') {
+                    return 'bg-green-100 text-green-800';
+                }
+
+                if (state === 'limited') {
+                    return 'bg-amber-100 text-amber-800';
+                }
+
+                if (state === 'missing_key') {
+                    return 'bg-gray-100 text-gray-700';
+                }
+
+                if (state === 'error') {
+                    return 'bg-red-100 text-red-800';
+                }
+
+                return 'bg-blue-100 text-blue-800';
+            }
+
+            function renderAiProviderStatus(providers) {
+                if (!aiProviderStatusList) {
+                    return;
+                }
+
+                if (!Array.isArray(providers) || providers.length === 0) {
+                    aiProviderStatusList.innerHTML = '<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">No AI provider status data is available yet.</div>';
+                    return;
+                }
+
+                aiProviderStatusList.innerHTML = providers.map(function (provider) {
+                    var notes = Array.isArray(provider.notes) && provider.notes.length > 0
+                        ? '<ul class="mt-3 space-y-1 text-xs text-gray-500">' + provider.notes.map(function (note) {
+                            return '<li>' + escapeHtml(note) + '</li>';
+                        }).join('') + '</ul>'
+                        : '';
+
+                    var rows = [
+                        ['Model', provider.model || '—'],
+                        ['API key configured', provider.configured ? 'Yes' : 'No'],
+                        ['Last checked', formatLocalDateTime(provider.checked_at)],
+                        ['Retry / unblock hint', formatLocalDateTime(provider.retry_at)],
+                        ['Request limit', provider.request_limit != null ? provider.request_limit : '—'],
+                        ['Requests remaining', provider.request_remaining != null ? provider.request_remaining : '—'],
+                        ['Request reset', formatLocalDateTime(provider.request_reset_at)],
+                        ['Token limit', provider.token_limit != null ? provider.token_limit : '—'],
+                        ['Tokens remaining', provider.token_remaining != null ? provider.token_remaining : '—'],
+                        ['Token reset', formatLocalDateTime(provider.token_reset_at)],
+                        ['Daily reset', formatLocalDateTime(provider.daily_reset_at)],
+                    ].map(function (row) {
+                        return '<div class="flex items-start justify-between gap-4 py-2"><dt class="text-sm text-gray-500">' + escapeHtml(row[0]) + '</dt><dd class="text-sm font-medium text-gray-900 text-right">' + escapeHtml(row[1]) + '</dd></div>';
+                    }).join('');
+
+                    return ''
+                        + '<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">'
+                        + '  <div class="flex items-start justify-between gap-3">'
+                        + '    <div>'
+                        + '      <h4 class="text-base font-semibold text-gray-900">' + escapeHtml(provider.label || 'Provider') + '</h4>'
+                        + '      <p class="mt-1 text-sm text-gray-500">' + escapeHtml(provider.message || '') + '</p>'
+                        + '    </div>'
+                        + '    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ' + stateClasses(provider.state) + '">' + escapeHtml(provider.status_label || 'Unknown') + '</span>'
+                        + '  </div>'
+                        + '  <dl class="mt-4 divide-y divide-gray-100">' + rows + '</dl>'
+                        + notes
+                        + '  <div class="mt-4 flex flex-wrap gap-3 text-sm">'
+                        + '    <a href="' + escapeHtml(provider.dashboard_url || '#') + '" target="_blank" rel="noopener noreferrer" class="font-medium text-primary-700 hover:text-primary-800">Open dashboard</a>'
+                        + '    <a href="' + escapeHtml(provider.docs_url || '#') + '" target="_blank" rel="noopener noreferrer" class="font-medium text-gray-600 hover:text-gray-800">Docs</a>'
+                        + '  </div>'
+                        + '</div>';
+                }).join('');
+            }
+
+            function setAiProviderFeedback(message, tone) {
+                if (!aiProviderStatusFeedback) {
+                    return;
+                }
+
+                if (!message) {
+                    aiProviderStatusFeedback.className = 'mt-4 hidden rounded-md border px-4 py-3 text-sm';
+                    aiProviderStatusFeedback.textContent = '';
+                    return;
+                }
+
+                var toneClasses = {
+                    success: 'mt-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800',
+                    error: 'mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800',
+                    info: 'mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800'
+                };
+
+                aiProviderStatusFeedback.className = toneClasses[tone] || toneClasses.info;
+                aiProviderStatusFeedback.textContent = message;
+            }
 
             function updateFooterEmbedCodeLabels() {
                 if (!footerEmbedCodeList) {
@@ -589,6 +742,51 @@
                 });
 
                 updateFooterEmbedCodeLabels();
+            }
+
+            if (aiProviderStatusTimezone) {
+                var browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                aiProviderStatusTimezone.textContent = browserTimeZone
+                    ? 'Browser time zone: ' + browserTimeZone
+                    : 'Browser local time';
+            }
+
+            renderAiProviderStatus(initialAiProviderStatus);
+
+            if (aiProviderStatusButton) {
+                aiProviderStatusButton.addEventListener('click', function () {
+                    aiProviderStatusButton.disabled = true;
+                    aiProviderStatusButton.textContent = 'Checking...';
+                    setAiProviderFeedback('Running live provider checks...', 'info');
+
+                    fetch(aiProviderStatusUrl + '?refresh=1', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (data) {
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'Failed to refresh AI provider status.');
+                                }
+
+                                return data;
+                            });
+                        })
+                        .then(function (data) {
+                            renderAiProviderStatus(data.providers || []);
+                            setAiProviderFeedback('AI provider status was refreshed successfully.', 'success');
+                        })
+                        .catch(function (error) {
+                            console.error('AI provider status refresh error:', error);
+                            setAiProviderFeedback(error.message || 'Failed to refresh AI provider status.', 'error');
+                        })
+                        .finally(function () {
+                            aiProviderStatusButton.disabled = false;
+                            aiProviderStatusButton.textContent = 'Check AI quota now';
+                        });
+                });
             }
 
             if (form) {

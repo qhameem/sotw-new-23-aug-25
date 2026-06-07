@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiProviderStatusService;
 use App\Support\ToolSettings;
 use App\Services\BadgeService;
 use App\Services\ScreenshotService;
@@ -29,7 +30,7 @@ class SettingsController extends Controller
     /**
      * Display the admin settings page.
      */
-    public function index()
+    public function index(AiProviderStatusService $aiProviderStatusService)
     {
         $settings = $this->loadSettings();
         $toolSettings = app(ToolSettings::class);
@@ -48,6 +49,7 @@ class SettingsController extends Controller
         $badgeImageWebpUrl = $embedData['badge_image_webp_url'] ?? null;
         $badgeEmbedCode = $embedData['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
+        $aiProviderStatusSnapshots = $aiProviderStatusService->latestSnapshots();
 
         return view('admin.settings.index', compact(
             'googleAnalyticsCode',
@@ -62,8 +64,24 @@ class SettingsController extends Controller
             'badgeImagePngUrl',
             'badgeImageWebpUrl',
             'badgeEmbedCode',
-            'footerBadgeEmbedCodes'
+            'footerBadgeEmbedCodes',
+            'aiProviderStatusSnapshots'
         ));
+    }
+
+    public function aiProviderStatus(Request $request, AiProviderStatusService $aiProviderStatusService)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $snapshots = $request->boolean('refresh', false)
+            ? $aiProviderStatusService->refreshSnapshots()
+            : $aiProviderStatusService->latestSnapshots();
+
+        return response()->json([
+            'providers' => $snapshots,
+        ]);
     }
 
     public function emailTemplates()
