@@ -17,6 +17,8 @@ class AiProviderStatusService
 
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GEMINI_MODEL = 'gemini-2.5-flash';
+    private const OPENROUTER_KEY_API_URL = 'https://openrouter.ai/api/v1/key';
+    private const OPENROUTER_MODEL = 'openrouter/auto';
 
     public function latestSnapshots(): array
     {
@@ -28,6 +30,7 @@ class AiProviderStatusService
         $snapshots = [
             $this->probeGroq(),
             $this->probeGemini(),
+            $this->probeOpenRouter(),
         ];
 
         Cache::put(self::CACHE_KEY, $snapshots, now()->addMinutes(self::CACHE_TTL_MINUTES));
@@ -53,6 +56,14 @@ class AiProviderStatusService
                 model: self::GEMINI_MODEL,
                 docsUrl: 'https://ai.google.dev/gemini-api/docs/rate-limits',
                 dashboardUrl: 'https://aistudio.google.com/'
+            ),
+            $this->baseSnapshot(
+                provider: 'openrouter',
+                label: 'OpenRouter',
+                configured: filled((string) config('services.openrouter.key')),
+                model: (string) config('services.openrouter.model', self::OPENROUTER_MODEL),
+                docsUrl: 'https://openrouter.ai/docs/api-reference/limits/',
+                dashboardUrl: 'https://openrouter.ai/settings/keys'
             ),
         ];
     }
@@ -85,11 +96,15 @@ class AiProviderStatusService
             'token_limit' => null,
             'token_remaining' => null,
             'token_reset_at' => null,
+            'credit_limit' => null,
+            'credit_remaining' => null,
             'daily_reset_at' => $provider === 'gemini' ? $this->nextGeminiDailyResetAt()?->toIso8601String() : null,
-            'exact_usage_available' => $provider === 'groq',
-            'notes' => $provider === 'groq'
-                ? ['Groq exposes live rate-limit headers on API responses.']
-                : ['Gemini does not expose exact live remaining quota in this API response; use AI Studio for exact counters.'],
+            'exact_usage_available' => in_array($provider, ['groq', 'openrouter'], true),
+            'notes' => match ($provider) {
+                'groq' => ['Groq exposes live rate-limit headers on API responses.'],
+                'openrouter' => ['OpenRouter exposes key-level limit and remaining credit information via its key endpoint.'],
+                default => ['Gemini does not expose exact live remaining quota in this API response; use AI Studio for exact counters.'],
+            },
         ];
     }
 
@@ -241,6 +256,69 @@ class AiProviderStatusService
         }
     }
 
+    private function probeOpenRouter(): array
+    {
+        $apiKey = (string) config('services.openrouter.key');
+        $snapshot = $this->baseSnapshot(
+            provider: 'openrouter',
+            label: 'OpenRouter',
+            configured: filled($apiKey),
+            model: (string) config('services.openrouter.model', self::OPENROUTER_MODEL),
+            docsUrl: 'https://openrouter.ai/docs/api-reference/limits/',
+            dashboardUrl: 'https://openrouter.ai/settings/keys'
+        );
+
+        if (!$snapshot['configured']) {
+            return $snapshot;
+        }
+
+        $checkedAt = now();
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => config('app.url'),
+                'X-OpenRouter-Title' => config('app.name'),
+            ])->timeout(20)->get(self::OPENROUTER_KEY_API_URL);
+
+            $snapshot['checked_at'] = $checkedAt->toIso8601String();
+
+            if ($response->successful()) {
+                $data = $response->json('data', []);
+                $snapshot['state'] = 'ok';
+                $snapshot['status_label'] = 'Available now';
+                $snapshot['message'] = 'OpenRouter key details were fetched successfully.';
+                $snapshot['credit_limit'] = is_numeric($data['limit'] ?? null) ? (float) $data['limit'] : null;
+                $snapshot['credit_remaining'] = is_numeric($data['limit_remaining'] ?? null) ? (float) $data['limit_remaining'] : null;
+                $snapshot['daily_reset_at'] = $this->openRouterLimitResetAt($data['limit_reset'] ?? null)?->toIso8601String();
+
+                return $snapshot;
+            }
+
+            if (in_array($response->status(), [402, 429], true)) {
+                $snapshot['state'] = 'limited';
+                $snapshot['status_label'] = 'Rate limited or credits exhausted';
+                $snapshot['message'] = $this->extractMessageFromBody($response->body())
+                    ?: 'OpenRouter is currently limited for this key.';
+
+                return $snapshot;
+            }
+
+            $snapshot['state'] = 'error';
+            $snapshot['status_label'] = 'Request failed';
+            $snapshot['message'] = 'OpenRouter returned HTTP ' . $response->status() . '.';
+
+            return $snapshot;
+        } catch (\Throwable $e) {
+            $snapshot['checked_at'] = $checkedAt->toIso8601String();
+            $snapshot['state'] = 'error';
+            $snapshot['status_label'] = 'Request failed';
+            $snapshot['message'] = Str::limit($e->getMessage(), 180, '...');
+
+            return $snapshot;
+        }
+    }
+
     private function normalizeNumericHeader(string|array|null $value): ?int
     {
         if (is_array($value)) {
@@ -348,5 +426,19 @@ class AiProviderStatusService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function openRouterLimitResetAt(?string $resetType): ?Carbon
+    {
+        if (!is_string($resetType) || trim($resetType) === '') {
+            return null;
+        }
+
+        return match (trim(strtolower($resetType))) {
+            'daily' => Carbon::now('UTC')->addDay()->startOfDay(),
+            'weekly' => Carbon::now('UTC')->next(Carbon::MONDAY)->startOfDay(),
+            'monthly' => Carbon::now('UTC')->addMonthNoOverflow()->startOfMonth(),
+            default => null,
+        };
     }
 }

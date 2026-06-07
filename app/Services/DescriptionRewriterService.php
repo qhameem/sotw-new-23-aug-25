@@ -12,6 +12,7 @@ class DescriptionRewriterService
 
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 60;
     private array $failures = [];
@@ -25,8 +26,7 @@ class DescriptionRewriterService
         $this->failures = [];
         $this->usedFallback = false;
         $productName = $this->normalizeProductName($productName);
-        $googleApiKey = config('services.google.api_key');
-        $groqApiKey = config('services.groq.key');
+        $providerRouter = app(AiProviderRoutingService::class);
 
         if (empty(trim($rawDescription))) {
             return null;
@@ -35,7 +35,7 @@ class DescriptionRewriterService
         $context = mb_substr(strip_tags($pageTextContext), 0, 8000);
         $prompt = $this->buildPrompt($productName, $rawDescription, $context);
 
-        if (empty($googleApiKey) && empty($groqApiKey)) {
+        if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             $this->usedFallback = true;
@@ -43,18 +43,12 @@ class DescriptionRewriterService
         }
 
         try {
-            // Restore the old long-form behavior by preferring the Groq path that originally powered it.
-            foreach ([
-                ['provider' => 'groq', 'key' => $groqApiKey],
-                ['provider' => 'gemini', 'key' => $googleApiKey],
-            ] as $candidate) {
-                if (empty($candidate['key'])) {
-                    continue;
-                }
-
-                $response = $candidate['provider'] === 'groq'
-                    ? $this->generateWithGroq($candidate['key'], $prompt)
-                    : $this->generateWithGemini($candidate['key'], $prompt);
+            foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+                $response = match ($candidate['provider']) {
+                    'groq' => $this->generateWithGroq($candidate['key'], $prompt),
+                    'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
+                    default => $this->generateWithGemini($candidate['key'], $prompt),
+                };
 
                 if (!is_string($response) || trim($response) === '') {
                     continue;
@@ -117,6 +111,7 @@ AEO / STRUCTURE RULES:
 - Keep the first two lines as exactly two separate <p> paragraphs.
 - Mention "{$productName}" naturally in the opening paragraph.
 - Keep each bullet concise, concrete, and focused on user value.
+- Use question-based headings so the description reads more like direct answers than a generic editorial page.
 - Write grounded FAQ questions and answers instead of generic filler.
 - If limitations are unclear, write exactly: "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"
 
@@ -124,7 +119,10 @@ HTML STRUCTURE TO FOLLOW EXACTLY:
 <p><strong>[Write a 40-70 word opening paragraph that clearly explains what {$productName} is, who it helps, and why someone would choose it.]</strong></p>
 <p>[Write a second paragraph that expands on the main workflow, differentiator, or practical use without hype.]</p>
 
-<h2><strong>Key Features</strong></h2>
+<h2><strong>What is {$productName}?</strong></h2>
+<p>[Write 2 short plain-English sentences that explain what the product does and how it fits into a user's workflow.]</p>
+
+<h2><strong>What are the key features of {$productName}?</strong></h2>
 <ul>
   <li>[Feature 1 focused on user value]</li>
   <li>[Feature 2 focused on workflow or product capability]</li>
@@ -133,38 +131,38 @@ HTML STRUCTURE TO FOLLOW EXACTLY:
   <li>[Feature 5 if supported by the source]</li>
 </ul>
 
-<h2><strong>Ideal For</strong></h2>
+<h2><strong>Who is {$productName} best for?</strong></h2>
 <ul>
   <li>[Specific audience 1]</li>
   <li>[Specific audience 2]</li>
   <li>[Specific audience 3 if supported]</li>
 </ul>
 
-<h2><strong>Top Use Cases</strong></h2>
+<h2><strong>What can you use {$productName} for?</strong></h2>
 <ul>
   <li>[Concrete use case 1]</li>
   <li>[Concrete use case 2]</li>
   <li>[Concrete use case 3]</li>
 </ul>
 
-<h2><strong>Known Alternatives</strong></h2>
+<h2><strong>How does {$productName} compare to alternatives?</strong></h2>
 <ul>
   <li>[Alternative 1 with a grounded comparison]</li>
   <li>[Alternative 2 with a grounded comparison]</li>
 </ul>
 
-<h2><strong>Integrations &amp; Ecosystem</strong></h2>
+<h2><strong>What integrations and ecosystem support does {$productName} offer?</strong></h2>
 <ul>
   <li>[Specific integrations, APIs, platforms, or ecosystem details from the source. If unclear, say that the available source material does not clearly specify integrations.]</li>
 </ul>
 
-<h2><strong>Pros &amp; Cons</strong></h2>
+<h2><strong>What are the pros and limitations of {$productName}?</strong></h2>
 <ul>
   <li><strong>Pros:</strong> [List 2-3 grounded strengths separated by semicolons]</li>
   <li><strong>Limitations:</strong> [List 1-2 honest limitations based only on supported facts, or "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"]</li>
 </ul>
 
-<h2><strong>Frequently Asked Questions</strong></h2>
+<h2><strong>Frequently asked questions about {$productName}</strong></h2>
 <dl>
   <dt><strong>[Question 1 written like a real user search]</strong></dt>
   <dd>[Direct answer based only on supported facts.]</dd>
@@ -197,6 +195,7 @@ PROMPT;
         ]);
 
         if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('gemini', $response);
             $content = $response->json('candidates.0.content.parts.0.text');
 
             return is_string($content) ? $content : null;
@@ -206,6 +205,7 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('gemini', $response);
         $this->recordFailure('gemini', $response->status(), $response->body());
 
         return null;
@@ -228,6 +228,7 @@ PROMPT;
             ]);
 
         if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('groq', $response);
             $content = $response->json('choices.0.message.content');
 
             return is_string($content) ? $content : null;
@@ -237,7 +238,45 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('groq', $response);
         $this->recordFailure('groq', $response->status(), $response->body());
+
+        return null;
+    }
+
+    private function generateWithOpenRouter(string $apiKey, string $prompt): ?string
+    {
+        $response = Http::timeout(self::TIMEOUT)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => config('app.url'),
+                'X-OpenRouter-Title' => config('app.name'),
+            ])
+            ->post(self::OPENROUTER_API_URL, [
+                'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+                'temperature' => 0.55,
+                'max_tokens' => 1800,
+            ]);
+
+        if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('openrouter', $response);
+            $content = $response->json('choices.0.message.content');
+
+            return is_string($content) ? $content : null;
+        }
+
+        Log::warning('DescriptionRewriterService: OpenRouter API error', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('openrouter', $response);
+        $this->recordFailure('openrouter', $response->status(), $response->body());
 
         return null;
     }
@@ -273,13 +312,14 @@ PROMPT;
     private function hasRequiredLongFormSections(string $content): bool
     {
         $requiredFragments = [
-            '<h2><strong>Key Features</strong></h2>',
-            '<h2><strong>Ideal For</strong></h2>',
-            '<h2><strong>Top Use Cases</strong></h2>',
-            '<h2><strong>Known Alternatives</strong></h2>',
-            '<h2><strong>Integrations',
-            '<h2><strong>Pros',
-            '<h2><strong>Frequently Asked Questions</strong></h2>',
+            '<h2><strong>What is ',
+            '<h2><strong>What are the key features of ',
+            '<h2><strong>Who is ',
+            '<h2><strong>What can you use ',
+            '<h2><strong>How does ',
+            '<h2><strong>What integrations and ecosystem support does ',
+            '<h2><strong>What are the pros and limitations of ',
+            '<h2><strong>Frequently asked questions about ',
             '<dl>',
         ];
 
@@ -300,6 +340,7 @@ PROMPT;
         $supporting = $this->buildFallbackSupportingSentence($rawDescription, $context);
         $headingCandidates = $this->extractHeadingCandidates($context);
         $bodySentences = $this->extractBodySentences($context);
+        $whatIs = $this->buildFallbackWhatIs($productName, $summary, $supporting, $bodySentences);
         $features = $this->buildFallbackFeatures($headingCandidates, $bodySentences);
         $idealFor = $this->buildFallbackIdealFor($context);
         $useCases = $this->buildFallbackUseCases($headingCandidates, $bodySentences);
@@ -315,21 +356,44 @@ PROMPT;
         return implode("\n", [
             '<p><strong>' . e($summary) . '</strong></p>',
             '<p>' . e($supporting) . '</p>',
-            '<h2><strong>Key Features</strong></h2>',
+            '<h2><strong>What is ' . e($productName) . '?</strong></h2>',
+            '<p>' . e($whatIs) . '</p>',
+            '<h2><strong>What are the key features of ' . e($productName) . '?</strong></h2>',
             $this->renderList($features),
-            '<h2><strong>Ideal For</strong></h2>',
+            '<h2><strong>Who is ' . e($productName) . ' best for?</strong></h2>',
             $this->renderList($idealFor),
-            '<h2><strong>Top Use Cases</strong></h2>',
+            '<h2><strong>What can you use ' . e($productName) . ' for?</strong></h2>',
             $this->renderList($useCases),
-            '<h2><strong>Known Alternatives</strong></h2>',
+            '<h2><strong>How does ' . e($productName) . ' compare to alternatives?</strong></h2>',
             $this->renderList($alternatives),
-            '<h2><strong>Integrations &amp; Ecosystem</strong></h2>',
+            '<h2><strong>What integrations and ecosystem support does ' . e($productName) . ' offer?</strong></h2>',
             $this->renderList($integrations),
-            '<h2><strong>Pros &amp; Cons</strong></h2>',
+            '<h2><strong>What are the pros and limitations of ' . e($productName) . '?</strong></h2>',
             '<ul><li><strong>Pros:</strong> ' . e($prosLine) . '</li><li><strong>Limitations:</strong> ' . e($limitationsLine) . '</li></ul>',
-            '<h2><strong>Frequently Asked Questions</strong></h2>',
+            '<h2><strong>Frequently asked questions about ' . e($productName) . '</strong></h2>',
             $this->renderFaq($faq),
         ]);
+    }
+
+    private function buildFallbackWhatIs(string $productName, string $summary, string $supporting, array $bodySentences): string
+    {
+        $lead = $summary;
+
+        if ($productName !== 'this product' && !Str::contains(Str::lower($lead), Str::lower($productName))) {
+            $lead = $productName . ' helps users ' . Str::lcfirst(rtrim($lead, '.')) . '.';
+        }
+
+        $lead = rtrim($lead, '. ') . '.';
+
+        $second = $bodySentences[0] ?? $supporting;
+        $second = $this->ensureSentenceLength($second, 180);
+        $second = rtrim($second, '. ') . '.';
+
+        if (Str::lower($second) === Str::lower($lead)) {
+            $second = 'It is positioned around a practical workflow, with the available source material emphasizing how the product is used in day-to-day work.';
+        }
+
+        return $lead . ' ' . $second;
     }
 
     private function buildFallbackSummary(string $productName, string $rawDescription): string

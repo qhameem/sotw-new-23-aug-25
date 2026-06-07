@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Log;
 
 class CategoryDescriptionGenerator
 {
+    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 30;
     private const TEMPERATURE = 0.75;
@@ -22,10 +24,11 @@ class CategoryDescriptionGenerator
      */
     public function generate(string $categoryName, array $runtimeContext = []): ?array
     {
-        $apiKey = config('services.groq.key');
+        $providerRouter = app(AiProviderRoutingService::class);
+        $candidates = $providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']);
 
-        if (empty($apiKey)) {
-            Log::warning('CategoryDescriptionGenerator: GROQ_API_KEY is not set.');
+        if ($candidates === []) {
+            Log::warning('CategoryDescriptionGenerator: No AI provider key is set.');
             return null;
         }
 
@@ -39,7 +42,15 @@ class CategoryDescriptionGenerator
             $context = $this->buildCategoryContext($categoryName, $runtimeContext);
 
             for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
-                $result = $this->requestCategoryCopy($apiKey, $categoryName, $context, $attempt);
+                $result = null;
+
+                foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+                    $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
+
+                    if ($result !== null) {
+                        break;
+                    }
+                }
 
                 if ($result === null) {
                     $lastFailureReason = 'request_failed';
@@ -104,39 +115,71 @@ class CategoryDescriptionGenerator
         }
     }
 
-    private function requestCategoryCopy(string $apiKey, string $categoryName, array $context, int $attempt): ?array
+    private function requestCategoryCopy(string $provider, string $apiKey, string $categoryName, array $context, int $attempt): ?array
     {
-        $response = Http::timeout(self::TIMEOUT)
-            ->withToken($apiKey)
-            ->post(self::GROQ_API_URL, [
+        $prompt = $this->buildPrompt($categoryName, $context, $attempt);
+        $response = match ($provider) {
+            'gemini' => Http::withHeaders([
+                'X-goog-api-key' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(self::TIMEOUT)->post(self::GEMINI_API_URL, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt],
+                        ],
+                    ],
+                ],
+            ]),
+            'openrouter' => Http::timeout(self::TIMEOUT)->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => config('app.url'),
+                'X-OpenRouter-Title' => config('app.name'),
+            ])->post(self::OPENROUTER_API_URL, [
+                'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+                'temperature' => self::TEMPERATURE,
+            ]),
+            default => Http::timeout(self::TIMEOUT)->withToken($apiKey)->post(self::GROQ_API_URL, [
                 'model' => self::MODEL,
                 'messages' => [
                     [
                         'role' => 'user',
-                        'content' => $this->buildPrompt($categoryName, $context, $attempt),
+                        'content' => $prompt,
                     ],
                 ],
                 'temperature' => self::TEMPERATURE,
                 'response_format' => ['type' => 'json_object'],
-            ]);
+            ]),
+        };
 
         if (!$response->successful()) {
-            Log::warning('CategoryDescriptionGenerator: Groq API error', [
+            Log::warning('CategoryDescriptionGenerator: Provider API error', [
+                'provider' => $provider,
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'attempt' => $attempt,
             ]);
+            app(AiProviderRoutingService::class)->recordHttpFailure($provider, $response);
 
             return null;
         }
 
-        $content = $response->json('choices.0.message.content');
+        app(AiProviderRoutingService::class)->recordHttpSuccess($provider, $response);
+        $content = $provider === 'gemini'
+            ? $response->json('candidates.0.content.parts.0.text')
+            : $response->json('choices.0.message.content');
 
         if (!is_string($content)) {
             return null;
         }
 
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonText($content);
 
         if (!isset($data['description'], $data['meta_description'])) {
             return null;
@@ -146,6 +189,24 @@ class CategoryDescriptionGenerator
             'description' => trim((string) $data['description']),
             'meta_description' => trim((string) $data['meta_description']),
         ];
+    }
+
+    private function decodeJsonText(string $content): ?array
+    {
+        $cleaned = trim(str_replace(['```json', '```'], '', $content));
+        $decoded = json_decode($cleaned, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/\{.*\}/s', $cleaned, $matches) !== 1) {
+            return null;
+        }
+
+        $decoded = json_decode($matches[0], true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     private function normalizeResult(array $result): array

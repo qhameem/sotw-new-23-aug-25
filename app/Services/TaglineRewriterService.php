@@ -10,6 +10,7 @@ class TaglineRewriterService
 {
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 60;
     private const TAGLINE_SOFT_MAX = 88;
@@ -21,10 +22,9 @@ class TaglineRewriterService
     public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?array
     {
         $this->failures = [];
-        $googleApiKey = config('services.google.api_key');
-        $groqApiKey = config('services.groq.key');
+        $providerRouter = app(AiProviderRoutingService::class);
 
-        if (empty($googleApiKey) && empty($groqApiKey)) {
+        if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             return null;
@@ -72,17 +72,12 @@ Respond ONLY with valid JSON in the exact structure below. Do NOT wrap it in mar
 PROMPT;
 
         try {
-            foreach ([
-                ['provider' => 'groq', 'key' => $groqApiKey],
-                ['provider' => 'gemini', 'key' => $googleApiKey],
-            ] as $candidate) {
-                if (empty($candidate['key'])) {
-                    continue;
-                }
-
-                $content = $candidate['provider'] === 'groq'
-                    ? $this->generateWithGroq($candidate['key'], $prompt)
-                    : $this->generateWithGemini($candidate['key'], $prompt);
+            foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+                $content = match ($candidate['provider']) {
+                    'groq' => $this->generateWithGroq($candidate['key'], $prompt),
+                    'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
+                    default => $this->generateWithGemini($candidate['key'], $prompt),
+                };
 
                 if (!is_string($content) || trim($content) === '') {
                     continue;
@@ -129,6 +124,7 @@ PROMPT;
         ]);
 
         if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('gemini', $response);
             $content = $response->json('candidates.0.content.parts.0.text');
 
             return is_string($content) ? $content : null;
@@ -138,6 +134,7 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('gemini', $response);
         $this->recordFailure('gemini', $response->status(), $response->body());
 
         return null;
@@ -160,6 +157,7 @@ PROMPT;
             ]);
 
         if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('groq', $response);
             $content = $response->json('choices.0.message.content');
 
             return is_string($content) ? $content : null;
@@ -169,7 +167,44 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('groq', $response);
         $this->recordFailure('groq', $response->status(), $response->body());
+
+        return null;
+    }
+
+    private function generateWithOpenRouter(string $apiKey, string $prompt): ?string
+    {
+        $response = Http::timeout(self::TIMEOUT)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => config('app.url'),
+                'X-OpenRouter-Title' => config('app.name'),
+            ])
+            ->post(self::OPENROUTER_API_URL, [
+                'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+                'temperature' => 0.4,
+            ]);
+
+        if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess('openrouter', $response);
+            $content = $response->json('choices.0.message.content');
+
+            return is_string($content) ? $content : null;
+        }
+
+        Log::warning('TaglineRewriterService: OpenRouter API error', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure('openrouter', $response);
+        $this->recordFailure('openrouter', $response->status(), $response->body());
 
         return null;
     }

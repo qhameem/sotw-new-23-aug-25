@@ -11,6 +11,7 @@ class CategoryClassifier
 {
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const GROQ_MODEL = 'llama-3.3-70b-versatile';
     private const MAX_CONTENT_LENGTH = 8000;
 
@@ -31,17 +32,19 @@ class CategoryClassifier
                 $promptTemplate
             );
 
-            $apiKey = config('services.google.api_key');
-            $groqApiKey = config('services.groq.key');
-
+            $providerRouter = app(AiProviderRoutingService::class);
             $responseText = null;
 
-            if ($apiKey) {
-                $responseText = $this->classifyWithGemini($apiKey, $prompt);
-            }
+            foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+                $responseText = match ($candidate['provider']) {
+                    'groq' => $this->classifyWithGroq($candidate['key'], $prompt),
+                    'openrouter' => $this->classifyWithOpenRouter($candidate['key'], $prompt),
+                    default => $this->classifyWithGemini($candidate['key'], $prompt),
+                };
 
-            if ($responseText === null && $groqApiKey) {
-                $responseText = $this->classifyWithGroq($groqApiKey, $prompt);
+                if (is_string($responseText) && trim($responseText) !== '') {
+                    break;
+                }
             }
 
             if (!is_string($responseText) || trim($responseText) === '') {
@@ -98,10 +101,12 @@ class CategoryClassifier
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+            app(AiProviderRoutingService::class)->recordHttpFailure('gemini', $response);
 
             return null;
         }
 
+        app(AiProviderRoutingService::class)->recordHttpSuccess('gemini', $response);
         return $response->json('candidates.0.content.parts.0.text', '');
     }
 
@@ -122,10 +127,40 @@ class CategoryClassifier
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+            app(AiProviderRoutingService::class)->recordHttpFailure('groq', $response);
 
             return null;
         }
 
+        app(AiProviderRoutingService::class)->recordHttpSuccess('groq', $response);
+        return data_get($response->json(), 'choices.0.message.content');
+    }
+
+    private function classifyWithOpenRouter(string $apiKey, string $prompt): ?string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $apiKey,
+            'HTTP-Referer' => config('app.url'),
+            'X-OpenRouter-Title' => config('app.name'),
+        ])->timeout(60)->post(self::OPENROUTER_API_URL, [
+            'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            'temperature' => 0.2,
+        ]);
+
+        if ($response->failed()) {
+            Log::warning('Category classifier OpenRouter request failed.', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            app(AiProviderRoutingService::class)->recordHttpFailure('openrouter', $response);
+
+            return null;
+        }
+
+        app(AiProviderRoutingService::class)->recordHttpSuccess('openrouter', $response);
         return data_get($response->json(), 'choices.0.message.content');
     }
 

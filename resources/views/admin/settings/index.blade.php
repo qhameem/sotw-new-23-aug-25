@@ -642,6 +642,8 @@
                         ['Token limit', provider.token_limit != null ? provider.token_limit : '—'],
                         ['Tokens remaining', provider.token_remaining != null ? provider.token_remaining : '—'],
                         ['Token reset', formatLocalDateTime(provider.token_reset_at)],
+                        ['Credit limit', provider.credit_limit != null ? provider.credit_limit : '—'],
+                        ['Credits remaining', provider.credit_remaining != null ? provider.credit_remaining : '—'],
                         ['Daily reset', formatLocalDateTime(provider.daily_reset_at)],
                     ].map(function (row) {
                         return '<div class="flex items-start justify-between gap-4 py-2"><dt class="text-sm text-gray-500">' + escapeHtml(row[0]) + '</dt><dd class="text-sm font-medium text-gray-900 text-right">' + escapeHtml(row[1]) + '</dd></div>';

@@ -51,6 +51,12 @@ return [
         'key' => env('GROQ_API_KEY'),
     ],
 
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'openrouter/auto'),
+        'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+    ],
+
     'indexnow' => [
         'enabled' => env('INDEXNOW_ENABLED', false),
         'key' => env('INDEXNOW_KEY'),

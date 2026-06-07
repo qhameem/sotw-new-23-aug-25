@@ -2892,6 +2892,7 @@ class ProductController extends Controller
             $provider = match (strtolower((string) ($failure['provider'] ?? ''))) {
                 'groq' => 'Groq',
                 'gemini' => 'Gemini',
+                'openrouter' => 'OpenRouter',
                 default => 'AI provider',
             };
 
@@ -2902,7 +2903,7 @@ class ProductController extends Controller
 
             if (str_contains($normalized, 'no ai provider key is set')) {
                 $part = 'No AI provider key is configured.';
-            } elseif ($status === 429 || str_contains($normalized, 'rate_limit_exceeded') || str_contains($normalized, 'quota exceeded') || str_contains($normalized, 'resource_exhausted')) {
+            } elseif ($status === 402 || $status === 429 || str_contains($normalized, 'rate_limit_exceeded') || str_contains($normalized, 'quota exceeded') || str_contains($normalized, 'resource_exhausted') || str_contains($normalized, 'credits')) {
                 $part = $provider . ' quota or rate limit was reached';
                 $retryAt = $this->extractAiRetryAt($body);
 
