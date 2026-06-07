@@ -84,6 +84,54 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function storeAiProviderEnabled(Request $request, AiProviderStatusService $aiProviderStatusService)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'provider' => 'required|string|in:groq,gemini,openrouter',
+            'enabled' => 'required',
+        ]);
+
+        $provider = (string) $validated['provider'];
+        $enabled = filter_var($request->input('enabled'), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+        if ($enabled === null) {
+            return response()->json(['message' => 'Invalid enabled value.'], 422);
+        }
+
+        $settings = $this->loadSettings();
+        $aiProviders = is_array($settings['ai_providers'] ?? null) ? $settings['ai_providers'] : [];
+        $providerSettings = is_array($aiProviders[$provider] ?? null) ? $aiProviders[$provider] : [];
+        $providerSettings['enabled'] = $enabled;
+        $aiProviders[$provider] = $providerSettings;
+        $settings['ai_providers'] = $aiProviders;
+
+        try {
+            $this->saveSettings($settings);
+            $aiProviderStatusService->clearCache();
+
+            Log::info('AI provider enabled flag updated by user: ' . Auth::id(), [
+                'provider' => $provider,
+                'enabled' => $enabled,
+            ]);
+
+            return response()->json([
+                'message' => ucfirst($provider) . ' was ' . ($enabled ? 'enabled' : 'disabled') . ' successfully.',
+                'providers' => $aiProviderStatusService->latestSnapshots(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save AI provider enabled flag: ' . $e->getMessage(), [
+                'provider' => $provider,
+                'enabled' => $enabled,
+            ]);
+
+            return response()->json(['message' => 'Failed to save AI provider setting.'], 500);
+        }
+    }
+
     public function emailTemplates()
     {
         $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();

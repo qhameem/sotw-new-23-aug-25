@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AiProviderStatusService
@@ -22,7 +23,9 @@ class AiProviderStatusService
 
     public function latestSnapshots(): array
     {
-        return Cache::get(self::CACHE_KEY, $this->defaultSnapshots());
+        return $this->applyProviderFlags(
+            Cache::get(self::CACHE_KEY, $this->defaultSnapshots())
+        );
     }
 
     public function refreshSnapshots(): array
@@ -35,7 +38,12 @@ class AiProviderStatusService
 
         Cache::put(self::CACHE_KEY, $snapshots, now()->addMinutes(self::CACHE_TTL_MINUTES));
 
-        return $snapshots;
+        return $this->applyProviderFlags($snapshots);
+    }
+
+    public function clearCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
     }
 
     private function defaultSnapshots(): array
@@ -80,6 +88,7 @@ class AiProviderStatusService
             'provider' => $provider,
             'label' => $label,
             'configured' => $configured,
+            'enabled' => $this->providerEnabled($provider),
             'model' => $model,
             'docs_url' => $docsUrl,
             'dashboard_url' => $dashboardUrl,
@@ -440,5 +449,38 @@ class AiProviderStatusService
             'monthly' => Carbon::now('UTC')->addMonthNoOverflow()->startOfMonth(),
             default => null,
         };
+    }
+
+    private function applyProviderFlags(array $snapshots): array
+    {
+        return array_map(function (array $snapshot): array {
+            $provider = (string) ($snapshot['provider'] ?? '');
+            $enabled = $this->providerEnabled($provider);
+            $snapshot['enabled'] = $enabled;
+
+            if (!$enabled) {
+                $snapshot['notes'] = array_values(array_unique(array_merge(
+                    ['This provider is disabled in admin settings and will not be used for new AI requests.'],
+                    is_array($snapshot['notes'] ?? null) ? $snapshot['notes'] : []
+                )));
+            }
+
+            return $snapshot;
+        }, $snapshots);
+    }
+
+    private function providerEnabled(string $provider): bool
+    {
+        if ($provider === '') {
+            return true;
+        }
+
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return true;
+        }
+
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true) ?: [];
+
+        return filter_var(data_get($settings, "ai_providers.{$provider}.enabled", true), FILTER_VALIDATE_BOOL);
     }
 }

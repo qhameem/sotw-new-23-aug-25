@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class AiProviderRoutingService
 {
@@ -95,6 +96,10 @@ class AiProviderRoutingService
 
     public function apiKeyFor(string $provider): ?string
     {
+        if (!$this->providerEnabled($provider)) {
+            return null;
+        }
+
         return match ($provider) {
             'groq' => $this->filledOrNull(config('services.groq.key')),
             'gemini' => $this->filledOrNull(config('services.google.api_key')),
@@ -396,5 +401,20 @@ class AiProviderRoutingService
         $value = is_string($value) ? trim($value) : '';
 
         return $value !== '' ? $value : null;
+    }
+
+    private function providerEnabled(string $provider): bool
+    {
+        if ($provider === '') {
+            return true;
+        }
+
+        if (!Storage::disk('local')->exists('settings.json')) {
+            return true;
+        }
+
+        $settings = json_decode(Storage::disk('local')->get('settings.json'), true) ?: [];
+
+        return filter_var(data_get($settings, "ai_providers.{$provider}.enabled", true), FILTER_VALIDATE_BOOL);
     }
 }

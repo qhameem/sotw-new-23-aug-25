@@ -206,6 +206,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('settings.emailTemplates');
     Route::get('settings/screenshot-providers', [\App\Http\Controllers\Admin\SettingsController::class, 'screenshotProviders'])->name('settings.screenshotProviders');
     Route::get('settings/ai-provider-status', [\App\Http\Controllers\Admin\SettingsController::class, 'aiProviderStatus'])->name('settings.aiProviderStatus');
+    Route::post('settings/ai-provider-enabled', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAiProviderEnabled'])->name('settings.storeAiProviderEnabled');
     Route::post('settings/email-templates', [\App\Http\Controllers\Admin\SettingsController::class, 'storeEmailTemplates'])->name('settings.storeEmailTemplates');
     Route::post('settings/store-badge-image', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeImage'])->name('settings.storeBadgeImage');
     Route::get('settings/outbound-links/rules', [\App\Http\Controllers\Admin\OutboundLinkRuleController::class, 'index'])->name('outbound-links.rules.index');

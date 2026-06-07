@@ -568,6 +568,8 @@
             var aiProviderStatusTimezone = document.getElementById('ai-provider-status-timezone');
             var initialAiProviderStatus = @json($aiProviderStatusSnapshots ?? []);
             var aiProviderStatusUrl = @json(route('admin.settings.aiProviderStatus'));
+            var aiProviderToggleUrl = @json(route('admin.settings.storeAiProviderEnabled'));
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             function escapeHtml(value) {
                 return String(value)
@@ -614,6 +616,12 @@
                 return 'bg-blue-100 text-blue-800';
             }
 
+            function enabledClasses(enabled) {
+                return enabled
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-slate-100 text-slate-700';
+            }
+
             function renderAiProviderStatus(providers) {
                 if (!aiProviderStatusList) {
                     return;
@@ -633,6 +641,7 @@
 
                     var rows = [
                         ['Model', provider.model || '—'],
+                        ['Enabled', provider.enabled ? 'Yes' : 'No'],
                         ['API key configured', provider.configured ? 'Yes' : 'No'],
                         ['Last checked', formatLocalDateTime(provider.checked_at)],
                         ['Retry / unblock hint', formatLocalDateTime(provider.retry_at)],
@@ -649,6 +658,11 @@
                         return '<div class="flex items-start justify-between gap-4 py-2"><dt class="text-sm text-gray-500">' + escapeHtml(row[0]) + '</dt><dd class="text-sm font-medium text-gray-900 text-right">' + escapeHtml(row[1]) + '</dd></div>';
                     }).join('');
 
+                    var toggleLabel = provider.enabled ? 'Disable API' : 'Enable API';
+                    var toggleClasses = provider.enabled
+                        ? 'border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50'
+                        : 'border-emerald-200 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50';
+
                     return ''
                         + '<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">'
                         + '  <div class="flex items-start justify-between gap-3">'
@@ -656,11 +670,15 @@
                         + '      <h4 class="text-base font-semibold text-gray-900">' + escapeHtml(provider.label || 'Provider') + '</h4>'
                         + '      <p class="mt-1 text-sm text-gray-500">' + escapeHtml(provider.message || '') + '</p>'
                         + '    </div>'
-                        + '    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ' + stateClasses(provider.state) + '">' + escapeHtml(provider.status_label || 'Unknown') + '</span>'
+                        + '    <div class="flex flex-col items-end gap-2">'
+                        + '      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ' + stateClasses(provider.state) + '">' + escapeHtml(provider.status_label || 'Unknown') + '</span>'
+                        + '      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ' + enabledClasses(!!provider.enabled) + '">' + (provider.enabled ? 'Enabled' : 'Disabled') + '</span>'
+                        + '    </div>'
                         + '  </div>'
                         + '  <dl class="mt-4 divide-y divide-gray-100">' + rows + '</dl>'
                         + notes
                         + '  <div class="mt-4 flex flex-wrap gap-3 text-sm">'
+                        + '    <button type="button" data-ai-provider-toggle="' + escapeHtml(provider.provider || '') + '" data-ai-provider-enabled="' + (provider.enabled ? '0' : '1') + '" class="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors ' + toggleClasses + '">' + toggleLabel + '</button>'
                         + '    <a href="' + escapeHtml(provider.dashboard_url || '#') + '" target="_blank" rel="noopener noreferrer" class="font-medium text-primary-700 hover:text-primary-800">Open dashboard</a>'
                         + '    <a href="' + escapeHtml(provider.docs_url || '#') + '" target="_blank" rel="noopener noreferrer" class="font-medium text-gray-600 hover:text-gray-800">Docs</a>'
                         + '  </div>'
@@ -787,6 +805,53 @@
                         .finally(function () {
                             aiProviderStatusButton.disabled = false;
                             aiProviderStatusButton.textContent = 'Check AI quota now';
+                        });
+                });
+            }
+
+            if (aiProviderStatusList) {
+                aiProviderStatusList.addEventListener('click', function (event) {
+                    var toggleButton = event.target.closest('[data-ai-provider-toggle]');
+
+                    if (!toggleButton) {
+                        return;
+                    }
+
+                    var provider = toggleButton.getAttribute('data-ai-provider-toggle');
+                    var enabled = toggleButton.getAttribute('data-ai-provider-enabled') === '1';
+
+                    toggleButton.disabled = true;
+                    setAiProviderFeedback('Saving AI provider setting...', 'info');
+
+                    fetch(aiProviderToggleUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            provider: provider,
+                            enabled: enabled
+                        })
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (data) {
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'Failed to save AI provider setting.');
+                                }
+
+                                return data;
+                            });
+                        })
+                        .then(function (data) {
+                            renderAiProviderStatus(data.providers || []);
+                            setAiProviderFeedback(data.message || 'AI provider setting saved successfully.', 'success');
+                        })
+                        .catch(function (error) {
+                            console.error('AI provider toggle error:', error);
+                            setAiProviderFeedback(error.message || 'Failed to save AI provider setting.', 'error');
                         });
                 });
             }
