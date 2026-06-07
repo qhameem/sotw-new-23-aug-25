@@ -121,6 +121,22 @@
       <p v-if="screenshotUploadError" class="mt-3 text-sm text-red-600">{{ screenshotUploadError }}</p>
     </div>
 
+    <div class="mb-4 border-t border-gray-100 pt-4">
+      <label for="sidebar-video-url" class="block text-xs font-bold text-gray-900">Video URL</label>
+      <p class="mt-1 text-xs text-gray-500">Add a YouTube video link to showcase your product</p>
+      <input
+        id="sidebar-video-url"
+        type="url"
+        :value="displayVideoUrl"
+        class="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400"
+        placeholder="https://youtube.com/watch?v=..."
+        @input="updateField('video_url', $event.target.value)"
+      >
+      <div v-if="videoThumbnailUrl" class="mt-3 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+        <img :src="videoThumbnailUrl" alt="Video thumbnail preview" class="h-auto w-full object-contain">
+      </div>
+    </div>
+
     <div class="flex flex-wrap gap-2">
       <span
         v-for="catId in (form.categories || []).slice(0, 3)"
@@ -159,7 +175,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['open-logo-picker', 'remove-logo', 'upload-screenshot']);
+const emit = defineEmits(['open-logo-picker', 'remove-logo', 'upload-screenshot', 'update:modelValue']);
 
 const screenshotInput = ref(null);
 const screenshotUploadError = ref('');
@@ -176,6 +192,52 @@ const supportedImageMimeTypes = [
 const supportedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
 
 const screenshotPreview = computed(() => props.galleryPreviews?.[0] || '');
+const displayVideoUrl = computed(() => {
+  let url = props.form.video_url;
+  if (!url) return '';
+
+  if (typeof url === 'string' && (url.startsWith('{') || url.startsWith('"'))) {
+    try {
+      if (url.startsWith('"')) {
+        url = JSON.parse(url);
+      }
+
+      const parsed = typeof url === 'string' ? JSON.parse(url) : url;
+
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.embed_url) {
+          return parsed.embed_url;
+        }
+
+        if (parsed.url) {
+          return parsed.url;
+        }
+      }
+
+      return url;
+    } catch (error) {
+      console.error('Error parsing video URL JSON:', error);
+      return url;
+    }
+  }
+
+  return url;
+});
+
+const videoThumbnailUrl = computed(() => {
+  const url = displayVideoUrl.value;
+  if (!url) return '';
+
+  let videoId = '';
+  if (url.includes('youtube.com/watch')) {
+    const params = new URLSearchParams(url.split('?')[1] || '');
+    videoId = params.get('v') || '';
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+  }
+
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+});
 
 const openScreenshotPicker = () => {
   screenshotInput.value?.click();
@@ -204,5 +266,9 @@ const onScreenshotChange = (event) => {
 
   emit('upload-screenshot', file);
   event.target.value = '';
+};
+
+const updateField = (field, value) => {
+  emit('update:modelValue', { ...props.form, [field]: value });
 };
 </script>

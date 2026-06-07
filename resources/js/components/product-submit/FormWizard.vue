@@ -169,6 +169,7 @@
                     :galleryPreviews="galleryPreviews"
                     :allCategories="allCategories"
                     :validationErrors="validationErrors"
+                    @update:modelValue="handleFormDetailUpdate"
                     @open-logo-picker="openLogoPicker"
                     @remove-logo="removeSelectedLogo"
                     @upload-screenshot="uploadScreenshotFile"
@@ -177,15 +178,6 @@
 
                 <div id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
                   <h2 class="text-xl font-bold text-gray-800 mb-4">Additional Info</h2>
-                  <div
-                    class="mb-8 transition-all duration-300"
-                    :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.media }"
-                  >
-                    <ProductMediaForm
-                      :modelValue="form"
-                      @update:modelValue="handleFormDetailUpdate"
-                    />
-                  </div>
                   <div
                     class="transition-all duration-300"
                     :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.launch }"
@@ -225,6 +217,7 @@
                  :galleryPreviews="galleryPreviews" 
                  :allCategories="allCategories"
                  :validationErrors="validationErrors"
+                 @update:modelValue="handleFormDetailUpdate"
                  @open-logo-picker="openLogoPicker"
                  @remove-logo="removeSelectedLogo"
                  @upload-screenshot="uploadScreenshotFile"
@@ -261,7 +254,6 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
-import ProductMediaForm from './ProductMediaForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewCard from './ProductPreviewCard.vue';
 import FormProgress from './FormProgress.vue';
