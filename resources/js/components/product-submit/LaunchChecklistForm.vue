@@ -245,10 +245,16 @@
                   </div>
 
                   <div>
-                    <label for="badge-placement-url" class="block text-sm font-semibold text-gray-700 mb-2">
-                      Badge page URL
-                    </label>
-                    <div class="flex flex-col gap-3 md:flex-row">
+                    <div class="mb-2 flex items-start justify-between gap-4">
+                      <label for="badge-placement-url" class="block text-sm font-semibold text-gray-700">
+                        Badge page URL
+                      </label>
+                      <div class="flex flex-col items-end gap-1">
+                        <p v-if="validationErrors.badge_placement_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.badge_placement_url }}</p>
+                        <p v-if="validationErrors.badge_verified" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.badge_verified }}</p>
+                      </div>
+                    </div>
+                    <div id="field-badge-placement-url" class="flex flex-col gap-3 md:flex-row">
                       <input
                         id="badge-placement-url"
                         type="url"
@@ -256,8 +262,10 @@
                         @input="handleBadgeUrlInput($event.target.value)"
                         placeholder="https://your-site.com/"
                         class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 placeholder-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                        :class="{ '!border-red-400 !ring-red-100': validationErrors.badge_placement_url }"
                       >
                       <button
+                        id="field-badge-verified"
                         type="button"
                         @click="verifyBadgePlacement"
                         :disabled="isVerifyingBadge || !badgePlacementUrlReady"
@@ -301,10 +309,13 @@
                     {{ badgeVerificationMessage }}
                   </div>
 
-                  <div>
-                    <label for="badge-week-start" class="block text-sm font-semibold text-gray-700 mb-2">
-                      Launch week
-                    </label>
+                  <div id="field-badge-week-start">
+                    <div class="mb-2 flex items-start justify-between gap-4">
+                      <label for="badge-week-start" class="block text-sm font-semibold text-gray-700">
+                        Launch week
+                      </label>
+                      <p v-if="validationErrors.badge_week_start" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.badge_week_start }}</p>
+                    </div>
                     <select
                       id="badge-week-start"
                       :value="modelValue.badge_week_start || ''"
@@ -326,6 +337,21 @@
               </div>
 
               <div class="flex flex-col items-start gap-4">
+                <div v-if="validationSummary.length || generalErrorMessage" class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p class="text-xs font-semibold !text-amber-800">Please fix these before submitting:</p>
+                  <ul class="mt-2 space-y-1.5 !text-[11px] !text-amber-700">
+                    <li v-for="item in validationSummary" :key="item.field">
+                      <button
+                        type="button"
+                        class="block w-full rounded-xl border border-amber-300 bg-amber-100 px-3 py-2 text-left !text-[11px] font-medium !text-amber-800 shadow-sm transition-colors hover:bg-amber-200"
+                        @click="$emit('focus-field', item.field)"
+                      >
+                        {{ item.message }}
+                      </button>
+                    </li>
+                    <li v-if="generalErrorMessage">{{ generalErrorMessage }}</li>
+                  </ul>
+                </div>
                 <div v-if="!isAllRequiredFilled" class="text-sm font-medium text-amber-600">
                   Fill all required fields before submitting.
                 </div>
@@ -382,6 +408,21 @@
             </div>
           </div>
           <div class="flex flex-col items-start gap-4">
+            <div v-if="validationSummary.length || generalErrorMessage" class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p class="text-xs font-semibold !text-amber-800">Please fix these before submitting:</p>
+              <ul class="mt-2 space-y-1.5 !text-[11px] !text-amber-700">
+                <li v-for="item in validationSummary" :key="item.field">
+                  <button
+                    type="button"
+                    class="block w-full rounded-xl border border-amber-300 bg-amber-100 px-3 py-2 text-left !text-[11px] font-medium !text-amber-800 shadow-sm transition-colors hover:bg-amber-200"
+                    @click="$emit('focus-field', item.field)"
+                  >
+                    {{ item.message }}
+                  </button>
+                </li>
+                <li v-if="generalErrorMessage">{{ generalErrorMessage }}</li>
+              </ul>
+            </div>
             <div v-if="isSandboxAvailable && modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
               Sandbox mode ignores all required fields and keeps this run out of the database.
             </div>
@@ -434,6 +475,21 @@
             {{ adminCreateDescription }}
           </p>
           <div class="flex flex-col items-start gap-4">
+            <div v-if="validationSummary.length || generalErrorMessage" class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p class="text-xs font-semibold !text-amber-800">Please fix these before submitting:</p>
+              <ul class="mt-2 space-y-1.5 !text-[11px] !text-amber-700">
+                <li v-for="item in validationSummary" :key="item.field">
+                  <button
+                    type="button"
+                    class="block w-full rounded-xl border border-amber-300 bg-amber-100 px-3 py-2 text-left !text-[11px] font-medium !text-amber-800 shadow-sm transition-colors hover:bg-amber-200"
+                    @click="$emit('focus-field', item.field)"
+                  >
+                    {{ item.message }}
+                  </button>
+                </li>
+                <li v-if="generalErrorMessage">{{ generalErrorMessage }}</li>
+              </ul>
+            </div>
             <div v-if="isSandboxAvailable && modelValue.sandbox_mode" class="text-sm text-amber-700 font-medium">
               Sandbox mode is active, so this button will simulate submission without saving anything.
             </div>
@@ -447,15 +503,14 @@
               :disabled="isLoading"
               @click="emitAdminSubmit"
             />
-            <button
+              <button
               v-else
               type="button"
               @click="emitAdminSubmit"
-              :disabled="isLoading || !isAllRequiredFilled"
+              :disabled="isLoading"
               :class="{
-                'opacity-50 cursor-not-allowed': !isAllRequiredFilled && !isLoading,
                 'cursor-wait': isLoading,
-                'hover:bg-primary-600': isAllRequiredFilled && !isLoading
+                'hover:bg-primary-600': !isLoading
               }"
               class="relative inline-flex min-h-12 items-center justify-center rounded-lg bg-primary-500 px-8 py-3 text-sm font-bold text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
@@ -512,9 +567,21 @@ const props = defineProps({
     type: String,
     default: 'idle',
   },
+  validationErrors: {
+    type: Object,
+    default: () => ({}),
+  },
+  validationSummary: {
+    type: Array,
+    default: () => [],
+  },
+  generalErrorMessage: {
+    type: String,
+    default: '',
+  },
 });
 
-const emit = defineEmits(['update:modelValue', 'submit']);
+const emit = defineEmits(['update:modelValue', 'submit', 'focus-field']);
 
 const progress = computed(() => getTabProgress('launchChecklist', props.modelValue, props.logoPreview));
 const wantsBadgeLaunch = ref(!!props.modelValue.badge_opt_in || props.modelValue.submission_type === 'badge');
@@ -669,15 +736,10 @@ const launchWeekOptions = computed(() => {
 });
 
 const submitButtonDisabled = computed(() => {
-  if (props.isLoading || isVerifyingBadge.value || !isAllRequiredFilled.value) {
+  if (props.isLoading || isVerifyingBadge.value) {
     return true;
   }
-
-  if (!wantsBadgeLaunch.value) {
-    return false;
-  }
-
-  return !props.modelValue.badge_verified || !props.modelValue.badge_week_start;
+  return false;
 });
 
 const submitButtonVisualState = computed(() => {

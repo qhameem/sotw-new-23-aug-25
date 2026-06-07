@@ -26,6 +26,7 @@
               :additionalResources="form.additional_resources"
               @update:modelValue="handleUrlInputUpdate"
               @update:additionalResources="handleAdditionalResourcesUpdate"
+              @validate-field="handleFieldValidationRequest"
               :isLoading="isLoading"
               :showExtraContext="showAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
@@ -35,6 +36,7 @@
               :urlTrimSuggestion="urlTrimSuggestion"
               :urlExistsError="urlExistsError"
               :existingProduct="existingProduct"
+              :fieldError="validationErrors.link"
               @getStarted="handleUrlFetch"
               @clear="clearForm"
             />
@@ -126,6 +128,7 @@
                     :additionalResources="form.additional_resources"
                     @update:modelValue="handleUrlInputUpdate"
                     @update:additionalResources="handleAdditionalResourcesUpdate"
+                    @validate-field="handleFieldValidationRequest"
                     :isLoading="isLoading"
                     :showExtraContext="showAiContext"
                     :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
@@ -135,6 +138,7 @@
                     :urlTrimSuggestion="urlTrimSuggestion"
                     :urlExistsError="urlExistsError"
                     :existingProduct="existingProduct"
+                    :fieldError="validationErrors.link"
                     @getStarted="handleUrlFetch"
                     @clear="clearForm"
                   />
@@ -152,6 +156,7 @@
                     :allPricing="allPricing"
                     :loadingStates="loadingStates"
                     :extractionErrors="extractionErrors"
+                    :validationErrors="validationErrors"
                     :autofillReveal="autofillReveal"
                     :isAdmin="isAdmin"
                   />
@@ -163,6 +168,7 @@
                     :logoPreview="logoPreview"
                     :galleryPreviews="galleryPreviews"
                     :allCategories="allCategories"
+                    :validationErrors="validationErrors"
                     @open-logo-picker="openLogoPicker"
                     @remove-logo="removeSelectedLogo"
                     @upload-screenshot="uploadScreenshotFile"
@@ -193,6 +199,10 @@
                       :adminSandboxEnabled="adminSandboxEnabled"
                       :isLoading="isLoading"
                       :submitState="submitState"
+                      :validationErrors="validationErrors"
+                      :validationSummary="validationSummary"
+                      :generalErrorMessage="showErrorMessage ? errorMessage : ''"
+                      @focus-field="handleFocusField"
                       @submit="submitProduct"
                     />
                   </div>
@@ -214,6 +224,7 @@
                  :logoPreview="logoPreview" 
                  :galleryPreviews="galleryPreviews" 
                  :allCategories="allCategories"
+                 :validationErrors="validationErrors"
                  @open-logo-picker="openLogoPicker"
                  @remove-logo="removeSelectedLogo"
                  @upload-screenshot="uploadScreenshotFile"
@@ -302,7 +313,13 @@ const {
   autofillReveal,
   errorMessage,
   showErrorMessage,
+  validationErrors,
+  validationSummary,
   isRestored,
+  touchField,
+  validateField,
+  resetValidationState,
+  focusField,
   markManualLogoChosen,
   markManualScreenshotChosen,
   resetManualMediaChoices
@@ -424,6 +441,8 @@ const handleUrlFetch = async (url) => {
 const handleUrlInputUpdate = (val) => {
   console.log('[FormWizard] update:modelValue:', val);
   form.link = val;
+  touchField('link');
+  validateField('link');
 
   if (urlExistsCheckTimeout) {
     clearTimeout(urlExistsCheckTimeout);
@@ -447,12 +466,53 @@ const clearForm = () => {
     form.link = '';
     checkUrlExists('');
     resetManualMediaChoices();
+    resetValidationState();
     // Reset other fields if needed, but keeping it simple for now as per previous logic
 };
 
 const handleFormDetailUpdate = (updatedForm) => {
+  const changedKeys = Object.keys(updatedForm).filter((key) => JSON.stringify(form[key]) !== JSON.stringify(updatedForm[key]));
+
   // We must mutate the reactive form object, not replace it
   Object.assign(form, updatedForm);
+
+  const fieldsToValidate = new Set();
+  const fieldMap = {
+    link: ['link'],
+    name: ['name'],
+    tagline: ['tagline'],
+    description: ['description'],
+    categories: ['categories'],
+    categories_custom: ['categories'],
+    useCases: ['useCases'],
+    useCases_custom: ['useCases'],
+    pricing: ['pricing'],
+    pricing_page_url: ['pricing_page_url'],
+    maker_links: ['maker_links'],
+    badge_opt_in: ['badge_placement_url', 'badge_verified', 'badge_week_start'],
+    badge_placement_url: ['badge_placement_url', 'badge_verified'],
+    badge_verified: ['badge_verified', 'badge_week_start'],
+    badge_week_start: ['badge_week_start'],
+  };
+
+  changedKeys.forEach((key) => {
+    const mappedFields = fieldMap[key] || [];
+    mappedFields.forEach((fieldKey) => {
+      touchField(fieldKey);
+      fieldsToValidate.add(fieldKey);
+    });
+  });
+
+  fieldsToValidate.forEach((fieldKey) => validateField(fieldKey));
+};
+
+const handleFieldValidationRequest = (fieldKey) => {
+  touchField(fieldKey);
+  validateField(fieldKey);
+};
+
+const handleFocusField = (fieldKey) => {
+  focusField(fieldKey);
 };
 
 const handleDescriptionRewrite = async () => {
@@ -479,12 +539,16 @@ const applySelectedLogo = (logoUrl) => {
   markManualLogoChosen();
   form.logo = logoUrl;
   logoPreview.value = logoUrl;
+  touchField('logo');
+  validateField('logo');
   isLogoPickerOpen.value = false;
 };
 
 const uploadLogoFile = (file) => {
   markManualLogoChosen();
   form.logo = file;
+  touchField('logo');
+  validateField('logo');
 
   const reader = new FileReader();
   reader.onload = (event) => {
@@ -515,6 +579,8 @@ const restoreFaviconLogo = () => {
   form.logo = null;
   form.favicon = restoredLogo;
   logoPreview.value = restoredLogo;
+  touchField('logo');
+  validateField('logo');
   isLogoPickerOpen.value = false;
 };
 
@@ -523,6 +589,8 @@ const removeSelectedLogo = () => {
   form.logo = null;
   form.favicon = null;
   logoPreview.value = null;
+  touchField('logo');
+  validateField('logo');
 };
 
 // Calculate Overall Progress (Simplified for demo)

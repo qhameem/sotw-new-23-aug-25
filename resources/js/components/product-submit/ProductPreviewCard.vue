@@ -1,7 +1,11 @@
 <template>
   <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div class="mb-3 flex items-start justify-between gap-4">
+      <p class="text-xs font-bold text-gray-900">Logo <span class="text-red-500">*</span></p>
+      <p v-if="validationErrors.logo" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.logo }}</p>
+    </div>
     <div class="mb-4 flex items-start gap-4">
-      <div class="relative group">
+      <div id="field-logo" class="relative group">
         <button
           type="button"
           :class="logoPreview || form.favicon
@@ -55,13 +59,11 @@
           </svg>
         </button>
       </div>
-
       <div>
         <h3 class="text-lg font-bold leading-tight text-gray-900">{{ form.name || 'Project Name' }}</h3>
         <p class="mt-1 line-clamp-2 text-sm text-gray-500">{{ form.tagline || 'Your catchy tagline will appear here.' }}</p>
       </div>
     </div>
-
     <div class="mb-4">
       <input
         ref="screenshotInput"
@@ -150,6 +152,10 @@ const props = defineProps({
   allCategories: {
     type: Array,
     default: () => [],
+  },
+  validationErrors: {
+    type: Object,
+    default: () => ({}),
   },
 });
 

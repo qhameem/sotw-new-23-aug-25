@@ -1,10 +1,13 @@
 <template>
-  <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 mb-8">
-    <div class="mb-3 flex items-center gap-2">
-      <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
-      <span class="text-xs text-gray-500 flex items-center">
-        Enter your URL <span class="mx-1">👇</span> and we'll auto-fill the rest
-      </span>
+  <div id="field-link" class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 mb-8">
+    <div class="mb-3 flex items-start justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
+        <span class="text-xs text-gray-500 flex items-center">
+          Enter your URL <span class="mx-1">👇</span> and we'll auto-fill the rest
+        </span>
+      </div>
+      <p v-if="fieldError && !urlExistsError" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ fieldError }}</p>
     </div>
     
     <div class="flex items-center gap-3">
@@ -59,7 +62,6 @@
         </span>
       </button>
     </div>
-
     <div v-if="showExtraContext" class="mt-4">
       <div class="flex items-center gap-2">
         <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
@@ -203,6 +205,10 @@ const props = defineProps({
   urlTrimSuggestion: Object,
   urlExistsError: Boolean,
   existingProduct: Object,
+  fieldError: {
+    type: String,
+    default: '',
+  },
   submissionBgUrl: String,
   showExtraContext: {
     type: Boolean,
@@ -214,7 +220,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear']);
+const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear', 'validate-field']);
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
@@ -262,6 +268,11 @@ const performValidationAndFetch = async (explicitValue = null) => {
   // Get the current value directly from the input element to avoid timing issues
   const inputValue = normalizedExplicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
   console.log('[ProductURLInput] Using URL value:', inputValue);
+
+  if (inputValue !== props.modelValue) {
+    emit('update:modelValue', inputValue);
+  }
+  emit('validate-field', 'link');
   
   // Step 1: Check if anything is loading
   console.log('[ProductURLInput] Step 1: Checking if anything is loading...');
@@ -286,11 +297,6 @@ const performValidationAndFetch = async (explicitValue = null) => {
     return;
   }
   console.log('[ProductURLInput] Step 2 passed: URL is valid');
-  
-  // Update the model value if needed before proceeding
-  if (inputValue !== props.modelValue) {
-    emit('update:modelValue', inputValue);
-  }
   
   // All validations passed, proceed with fetching data
   console.log('[ProductURLInput] All validations passed, proceeding to fetch data...');

@@ -2,10 +2,13 @@
   <div class="space-y-8 mt-4">
     
     <!-- Project Name -->
-    <div :class="autofillLockClass('name')">
-      <div class="flex justify-between mb-1">
-        <label for="name" class="block text-xs font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
-        <span class="text-xs text-gray-400">{{ (modelValue.name || '').length }}/40</span>
+    <div id="field-name" :class="autofillLockClass('name')">
+      <div class="mb-1 flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <label for="name" class="block text-xs font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
+          <span class="text-xs text-gray-400">{{ (modelValue.name || '').length }}/40</span>
+        </div>
+        <p v-if="validationErrors.name" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.name }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">What is your product called? This name will be used across the site and in the product URL.</div>
       <input 
@@ -17,7 +20,10 @@
         maxlength="40" 
         placeholder="e.g. Smooth Capture"
         class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-        :class="{'opacity-50 pointer-events-none': loadingStates.name}"
+        :class="{
+          'opacity-50 pointer-events-none': loadingStates.name,
+          '!border-red-400 !ring-red-100': validationErrors.name
+        }"
       >
       <!-- Slug preview -->
       <div v-if="generatedSlug" class="mt-2 text-xs text-gray-500 flex items-center gap-1">
@@ -28,10 +34,13 @@
     </div>
 
     <!-- Tagline -->
-     <div :class="autofillLockClass('tagline')">
-        <div class="flex justify-between mb-1">
-          <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
-          <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
+     <div id="field-tagline" :class="autofillLockClass('tagline')">
+        <div class="mb-1 flex items-start justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
+            <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
+          </div>
+          <p v-if="validationErrors.tagline" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.tagline }}</p>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">Use one clear 140-character tagline. It will appear on both the list page and the product page.</div>
         <input
@@ -42,44 +51,54 @@
           maxlength="140" 
           placeholder="Short Product Hunt-style one-liner"
           class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+          :class="{ '!border-red-400 !ring-red-100': validationErrors.tagline }"
         >
         <p v-if="extractionErrors.tagline" class="mt-1 text-xs text-red-500">{{ extractionErrors.tagline }}</p>
      </div>
 
     <!-- Description -->
-    <div class="relative" :class="[autofillLockClass('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
-        <div class="flex items-center justify-between mb-1">
+    <div id="field-description" class="relative" :class="[autofillLockClass('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
+        <div class="mb-1 flex items-start justify-between gap-4">
           <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
-          <button
-            v-if="showRewriteDescriptionButton"
-            type="button"
-            :disabled="loadingStates.description || !modelValue.link"
-            @click="$emit('rewrite-description')"
-            class="inline-flex items-center gap-1 rounded-md border border-sky-200 px-2.5 py-1 text-[11px] font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
-          >
-            <svg v-if="loadingStates.description" class="h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ loadingStates.description ? 'Rewriting...' : 'Rewrite product description' }}
-          </button>
-          <div v-else-if="loadingStates.description" class="flex items-center text-xs text-sky-600">
-             <svg class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-             Generating...
+          <div class="flex items-center gap-3">
+            <p v-if="validationErrors.description" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.description }}</p>
+            <button
+              v-if="showRewriteDescriptionButton"
+              type="button"
+              :disabled="loadingStates.description || !modelValue.link"
+              @click="$emit('rewrite-description')"
+              class="inline-flex items-center gap-1 rounded-md border border-sky-200 px-2.5 py-1 text-[11px] font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+            >
+              <svg v-if="loadingStates.description" class="h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ loadingStates.description ? 'Rewriting...' : 'Rewrite product description' }}
+            </button>
+            <div v-else-if="loadingStates.description" class="flex items-center text-xs text-sky-600">
+               <svg class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+               Generating...
+            </div>
           </div>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">What does your product do, who is it for, and why would someone choose it?</div>
-        <div class="prose-editor-wrapper border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all">
+        <div
+          class="prose-editor-wrapper border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all"
+          :class="{ '!border-red-400 !ring-red-100': validationErrors.description }"
+        >
            <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" />
         </div>
         <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
     </div>
 
     <!-- Categories (Chip Selection) -->
-    <div :class="autofillLockClass('taxonomy')">
-       <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3)</span></label>
-          <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 bg-gray-200 rounded"></div>
+    <div id="field-categories" :class="autofillLockClass('taxonomy')">
+       <div class="mb-1 flex items-start justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3)</span></label>
+            <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 rounded bg-gray-200"></div>
+          </div>
+          <p v-if="validationErrors.categories" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.categories }}</p>
        </div>
        <div v-if="modelValue.categories.length === 0 && (!modelValue.categories_custom || modelValue.categories_custom.length === 0)" class="mb-2 text-xs text-gray-500">What categories best describe your product? If you can't find a good match, add a custom category.</div>
 
@@ -156,9 +175,10 @@
     </div>
 
     <!-- Use Cases (Chip Selection) -->
-    <div :class="autofillLockClass('taxonomy')">
-       <div class="flex items-center justify-between mb-1">
+    <div id="field-use-cases" :class="autofillLockClass('taxonomy')">
+       <div class="mb-1 flex items-start justify-between gap-4">
           <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
+          <p v-if="validationErrors.useCases" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases }}</p>
        </div>
        <div v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
 
@@ -368,7 +388,7 @@
 
 
     <!-- Best For / Tags (Chip Selection) -->
-    <div :class="autofillLockClass('taxonomy')">
+    <div id="field-pricing" :class="autofillLockClass('taxonomy')">
        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
        </div>
@@ -446,7 +466,10 @@
 
     <!-- Pricing (Cards) -->
     <div :class="autofillLockClass('taxonomy')">
-       <label class="block text-xs font-bold text-gray-900 mb-1">Pricing <span class="text-red-500">*</span></label>
+       <div class="mb-1 flex items-start justify-between gap-4">
+         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span></label>
+         <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
+       </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div 
@@ -475,9 +498,10 @@
     </div>
 
     <!-- Pricing Page URL -->
-    <div :class="autofillLockClass('links')">
-      <div class="flex justify-between mb-1">
+    <div id="field-pricing-page-url" :class="autofillLockClass('links')">
+      <div class="mb-1 flex items-start justify-between gap-4">
         <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing Page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+        <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
       <input 
@@ -487,6 +511,7 @@
         @input="updateField('pricing_page_url', $event.target.value)" 
         placeholder="https://example.com/pricing"
         class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+        :class="{ '!border-red-400 !ring-red-100': validationErrors.pricing_page_url }"
       >
     </div>
 
@@ -509,13 +534,16 @@
         </div>
          
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
-         <div class="mt-4">
-             <div class="flex justify-between items-center mb-1">
+         <div id="field-maker-links" class="mt-4">
+             <div class="mb-1 flex items-start justify-between gap-4">
                  <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links</label>
-                 <button type="button" @click="addMoreLink" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center">
-                    <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Add Link
-                 </button>
+                 <div class="flex items-center gap-3">
+                   <p v-if="validationErrors.maker_links" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.maker_links }}</p>
+                   <button type="button" @click="addMoreLink" class="flex items-center text-xs font-bold text-sky-600 hover:text-sky-700">
+                      <svg class="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                      Add Link
+                   </button>
+                 </div>
              </div>
              <div class="mb-2 text-xs text-gray-500">Use profile, social, app store, or browser extension links like GitHub, LinkedIn, App Store, Play Store, or Chrome Web Store.</div>
              <div class="space-y-2">
@@ -574,6 +602,10 @@ const props = defineProps({
   allPricing: { type: Array, default: () => [] },
   loadingStates: { type: Object, default: () => ({}) },
   extractionErrors: { type: Object, default: () => ({}) },
+  validationErrors: {
+    type: Object,
+    default: () => ({}),
+  },
   autofillReveal: {
     type: Object,
     default: () => ({

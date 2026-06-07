@@ -24,6 +24,116 @@ export function useProductForm() {
   // Create local refs for form-specific error messages to avoid conflicts
   const errorMessage = ref('');
   const showErrorMessage = ref(false);
+  const submitAttempted = ref(false);
+  const validationErrors = reactive({
+    link: '',
+    name: '',
+    tagline: '',
+    description: '',
+    categories: '',
+    useCases: '',
+    pricing: '',
+    logo: '',
+    pricing_page_url: '',
+    maker_links: '',
+    badge_placement_url: '',
+    badge_verified: '',
+    badge_week_start: '',
+  });
+  const touchedFields = reactive({
+    link: false,
+    name: false,
+    tagline: false,
+    description: false,
+    categories: false,
+    useCases: false,
+    pricing: false,
+    logo: false,
+    pricing_page_url: false,
+    maker_links: false,
+    badge_placement_url: false,
+    badge_verified: false,
+    badge_week_start: false,
+  });
+  const validationFieldOrder = [
+    'link',
+    'name',
+    'tagline',
+    'description',
+    'categories',
+    'useCases',
+    'pricing',
+    'logo',
+    'pricing_page_url',
+    'maker_links',
+    'badge_placement_url',
+    'badge_verified',
+    'badge_week_start',
+  ];
+  const validationFieldMeta = {
+    link: {
+      label: 'Website URL',
+      anchorId: 'field-link',
+      focusSelector: '#product-url',
+    },
+    name: {
+      label: 'Project Name',
+      anchorId: 'field-name',
+      focusSelector: '#name',
+    },
+    tagline: {
+      label: 'Tagline',
+      anchorId: 'field-tagline',
+      focusSelector: '#tagline',
+    },
+    description: {
+      label: 'Description',
+      anchorId: 'field-description',
+      focusSelector: '.prose-editor-wrapper [contenteditable=\"true\"]',
+    },
+    categories: {
+      label: 'Categories',
+      anchorId: 'field-categories',
+    },
+    useCases: {
+      label: 'Use Cases',
+      anchorId: 'field-use-cases',
+    },
+    pricing: {
+      label: 'Pricing',
+      anchorId: 'field-pricing',
+    },
+    logo: {
+      label: 'Logo',
+      anchorId: 'field-logo',
+      focusSelector: '#field-logo button',
+    },
+    pricing_page_url: {
+      label: 'Pricing Page URL',
+      anchorId: 'field-pricing-page-url',
+      focusSelector: '#pricing_page_url',
+    },
+    maker_links: {
+      label: 'Other Profile / Store Links',
+      anchorId: 'field-maker-links',
+      focusSelector: '#field-maker-links input',
+    },
+    badge_placement_url: {
+      label: 'Badge Page URL',
+      anchorId: 'field-badge-placement-url',
+      focusSelector: '#badge-placement-url',
+    },
+    badge_verified: {
+      label: 'Badge Verification',
+      anchorId: 'field-badge-verified',
+      focusSelector: '#badge-placement-url',
+    },
+    badge_week_start: {
+      label: 'Launch Week',
+      anchorId: 'field-badge-week-start',
+      focusSelector: '#badge-week-start',
+    },
+  };
 
   // Computed properties
   const isUrlInvalid = computed(() => {
@@ -32,6 +142,206 @@ export function useProductForm() {
   const urlTrimSuggestion = computed(() => {
     return productFormService.getUrlTrimSuggestion(form.link);
   });
+  const validationSummary = computed(() => validationFieldOrder
+    .filter((fieldKey) => validationErrors[fieldKey])
+    .map((fieldKey) => ({
+      field: fieldKey,
+      message: validationErrors[fieldKey],
+      ...validationFieldMeta[fieldKey],
+    })));
+
+  const isDescriptionBlank = (value) => {
+    const normalized = String(value || '')
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/p>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .trim();
+
+    return normalized === '';
+  };
+
+  const isOptionalUrlInvalid = (value) => {
+    if (!value || String(value).trim() === '') {
+      return false;
+    }
+
+    return productFormService.isUrlInvalid(String(value).trim());
+  };
+
+  const resetValidationState = () => {
+    submitAttempted.value = false;
+    Object.keys(validationErrors).forEach((fieldKey) => {
+      validationErrors[fieldKey] = '';
+    });
+    Object.keys(touchedFields).forEach((fieldKey) => {
+      touchedFields[fieldKey] = false;
+    });
+  };
+
+  const touchField = (fieldKeys) => {
+    const keys = Array.isArray(fieldKeys) ? fieldKeys : [fieldKeys];
+    keys.forEach((fieldKey) => {
+      if (Object.prototype.hasOwnProperty.call(touchedFields, fieldKey)) {
+        touchedFields[fieldKey] = true;
+      }
+    });
+    showErrorMessage.value = false;
+    errorMessage.value = '';
+  };
+
+  const getFieldValidationMessage = (fieldKey) => {
+    const validCategories = (form.categories || []).filter((id) => id !== null && id !== undefined && id !== '');
+    const customCategories = (form.categories_custom || []).filter((category) => category && category.name && category.name.trim() !== '');
+    const validUseCases = (form.useCases || []).filter((id) => id !== null && id !== undefined && id !== '');
+    const customUseCases = (form.useCases_custom || []).filter((useCase) => useCase && useCase.name && useCase.name.trim() !== '');
+    const actualPricingCategories = (form.pricing || []).filter((id) => id !== null && id !== undefined && id !== '' && !isNaN(id));
+    const hasLogo = !!globalFormState.logoPreview.value || !!form.logo || (form.logos && form.logos.length > 0);
+    const makerLinks = (form.maker_links || []).filter((link) => String(link || '').trim() !== '');
+
+    switch (fieldKey) {
+      case 'link':
+        if (!String(form.link || '').trim()) {
+          return 'Product URL is required';
+        }
+        if (productFormService.isUrlInvalid(form.link)) {
+          return 'Enter a valid product URL';
+        }
+        if (globalFormState.urlExistsError.value && globalFormState.existingProduct.value?.name) {
+          return `This URL already exists as "${globalFormState.existingProduct.value.name}" and you cannot add the same product twice`;
+        }
+        return '';
+      case 'name':
+        return String(form.name || '').trim() ? '' : 'Product name is required';
+      case 'tagline':
+        return String(form.tagline || '').trim() ? '' : 'Tagline is required';
+      case 'description':
+        return isDescriptionBlank(form.description) ? 'Description is required' : '';
+      case 'categories':
+        return (validCategories.length === 0 && customCategories.length === 0)
+          ? 'At least one category is required'
+          : '';
+      case 'useCases':
+        return (validUseCases.length === 0 && customUseCases.length === 0)
+          ? 'At least one use case is required'
+          : '';
+      case 'pricing':
+        return actualPricingCategories.length === 0 ? 'At least one pricing model is required' : '';
+      case 'logo':
+        return hasLogo ? '' : 'A logo is required';
+      case 'pricing_page_url':
+        return isOptionalUrlInvalid(form.pricing_page_url)
+          ? 'Enter a valid pricing page URL'
+          : '';
+      case 'maker_links':
+        return makerLinks.some((link) => isOptionalUrlInvalid(link))
+          ? 'Each extra link must be a valid URL'
+          : '';
+      case 'badge_placement_url':
+        if (!form.badge_opt_in) {
+          return '';
+        }
+        if (!String(form.badge_placement_url || '').trim()) {
+          return 'Add the page URL where your badge is placed';
+        }
+        return isOptionalUrlInvalid(form.badge_placement_url)
+          ? 'Enter a valid badge page URL'
+          : '';
+      case 'badge_verified':
+        if (!form.badge_opt_in) {
+          return '';
+        }
+        return form.badge_verified ? '' : 'Verify your badge placement before submitting for a scheduled week';
+      case 'badge_week_start':
+        if (!form.badge_opt_in || !form.badge_verified) {
+          return '';
+        }
+        return String(form.badge_week_start || '').trim() ? '' : 'Choose a launch week after badge verification';
+      default:
+        return '';
+    }
+  };
+
+  const validateField = (fieldKey, options = {}) => {
+    if (!Object.prototype.hasOwnProperty.call(validationErrors, fieldKey)) {
+      return true;
+    }
+
+    const message = getFieldValidationMessage(fieldKey);
+    const shouldShow = options.force === true
+      || submitAttempted.value
+      || touchedFields[fieldKey]
+      || !!validationErrors[fieldKey];
+
+    validationErrors[fieldKey] = shouldShow ? message : '';
+    return message === '';
+  };
+
+  const validateFields = (fieldKeys, options = {}) => fieldKeys
+    .map((fieldKey) => validateField(fieldKey, options))
+    .every(Boolean);
+
+  const normalizeServerValidationField = (fieldKey) => {
+    const normalized = String(fieldKey || '')
+      .replace(/\.\d+\./g, '.')
+      .replace(/\.\d+$/g, '');
+
+    if (normalized === 'link') return 'link';
+    if (normalized === 'name') return 'name';
+    if (normalized === 'tagline' || normalized === 'product_page_tagline') return 'tagline';
+    if (normalized === 'description') return 'description';
+    if (normalized === 'categories' || normalized.startsWith('custom_categories')) return 'categories';
+    if (normalized === 'logo' || normalized === 'logo_url') return 'logo';
+    if (normalized === 'pricing_page_url') return 'pricing_page_url';
+    if (normalized.startsWith('maker_links')) return 'maker_links';
+    if (normalized === 'badge_placement_url') return 'badge_placement_url';
+    if (normalized === 'badge_week_start') return 'badge_week_start';
+
+    return null;
+  };
+
+  const applyServerValidationErrors = (errors = {}) => {
+    Object.keys(validationErrors).forEach((fieldKey) => {
+      validationErrors[fieldKey] = '';
+    });
+
+    let appliedAny = false;
+
+    Object.entries(errors).forEach(([serverField, messages]) => {
+      const normalizedField = normalizeServerValidationField(serverField);
+      if (!normalizedField || !Array.isArray(messages) || messages.length === 0) {
+        return;
+      }
+
+      touchedFields[normalizedField] = true;
+      validationErrors[normalizedField] = messages[0];
+      appliedAny = true;
+    });
+
+    return appliedAny;
+  };
+
+  const focusField = (fieldKey) => {
+    const meta = validationFieldMeta[fieldKey];
+    if (!meta) {
+      return;
+    }
+
+    const anchorElement = document.getElementById(meta.anchorId);
+    if (anchorElement) {
+      anchorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    window.setTimeout(() => {
+      const focusTarget = meta.focusSelector ? document.querySelector(meta.focusSelector) : null;
+      const fallbackTarget = anchorElement?.querySelector('input, textarea, select, button, [contenteditable="true"]');
+      const target = focusTarget || fallbackTarget;
+
+      if (target && typeof target.focus === 'function') {
+        target.focus({ preventScroll: true });
+      }
+    }, 150);
+  };
 
   const markManualLogoChosen = (chosen = true) => {
     globalFormState.manualLogoChosen.value = chosen;
@@ -471,12 +781,14 @@ export function useProductForm() {
     if (!urlToCheck) {
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
+      validateField('link');
       return { exists: false };
     }
 
     if (productFormService.isUrlInvalid(urlToCheck)) {
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
+      validateField('link');
       return { exists: false };
     }
 
@@ -492,20 +804,22 @@ export function useProductForm() {
       if (response.exists) {
         globalFormState.urlExistsError.value = true;
         globalFormState.existingProduct.value = response.product;
-        // Don't show the general error message since it's now handled in the ProductURLInput component
         showErrorMessage.value = false;
-        errorMessage.value = `This URL already exists as "${response.product.name}". You cannot add the same product twice.`;
+        errorMessage.value = '';
       } else {
         globalFormState.urlExistsError.value = false;
         globalFormState.existingProduct.value = null;
         showErrorMessage.value = false;
+        errorMessage.value = '';
       }
+      validateField('link');
       console.log('Updated state - urlExistsError:', globalFormState.urlExistsError.value, 'existingProduct:', globalFormState.existingProduct.value);
       return response;
     } catch (error) {
       console.error('Error checking URL existence:', error);
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
+      validateField('link');
       return { exists: false };
     }
   };
@@ -543,7 +857,7 @@ export function useProductForm() {
         console.log('URL exists, preventing progression');
         // Don't show the general error message since it's now handled in the ProductURLInput component
         showErrorMessage.value = false;
-        errorMessage.value = `This URL already exists as "${globalFormState.existingProduct.value.name}". You cannot add the same product twice.`;
+        errorMessage.value = `This URL already exists as "${globalFormState.existingProduct.value.name}" and you cannot add the same product twice`;
         return false;
       }
     }
@@ -570,12 +884,14 @@ export function useProductForm() {
     globalFormState.urlExistsError.value = false;
     globalFormState.existingProduct.value = null;
     resetManualMediaChoices();
+    resetValidationState();
     // Also reset any URL-related validation state
     errorMessage.value = '';
   };
 
   const goBack = () => {
     showErrorMessage.value = false;
+    resetValidationState();
     globalFormState.step.value = 1;
 
     // Dispatch step change event to update checklist visibility
@@ -959,11 +1275,17 @@ export function useProductForm() {
     } catch (error) {
       console.error('Error submitting product:', error);
       globalFormState.submitState.value = 'idle';
-      showErrorMessage.value = true;
-      const firstValidationError = error.response?.data?.errors
-        ? Object.values(error.response.data.errors).flat()[0]
-        : null;
-      errorMessage.value = firstValidationError || error.response?.data?.message || 'Failed to submit product. Please try again.';
+      const serverErrors = error.response?.data?.errors || {};
+      const hasFieldErrors = applyServerValidationErrors(serverErrors);
+
+      if (hasFieldErrors) {
+        submitAttempted.value = true;
+        showErrorMessage.value = false;
+        errorMessage.value = '';
+      } else {
+        showErrorMessage.value = true;
+        errorMessage.value = error.response?.data?.message || 'Failed to submit product. Please try again.';
+      }
       return false;
     } finally {
       if (!didSucceed) {
@@ -979,99 +1301,16 @@ export function useProductForm() {
 
   const validateForm = () => {
     if (globalFormState.isAdmin.value && globalFormState.adminSandboxEnabled.value && form.sandbox_mode) {
+      resetValidationState();
       showErrorMessage.value = false;
       errorMessage.value = '';
       return true;
     }
-
-    if (!form.link) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Product URL is required.';
-      return false;
-    }
-
-    // Check if URL already exists before allowing submission
-    if (globalFormState.urlExistsError.value) {
-      // Don't show the general error message since it's now handled in the ProductURLInput component
-      showErrorMessage.value = false;
-      errorMessage.value = `This URL already exists as "${globalFormState.existingProduct.value.name}". You cannot add the same product twice.`;
-      return false;
-    }
-
-    if (!form.name) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Product name is required.';
-      return false;
-    }
-
-    if (!form.tagline) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Tagline is required.';
-      return false;
-    }
-
-    if (!form.description) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'Description is required.';
-      return false;
-    }
-
-    // Validate categories: minimum 1 (either existing or custom)
-    const validCategories = (form.categories || []).filter(id => id !== null && id !== undefined && id !== '');
-    const customCategories = (form.categories_custom || []).filter(cat => cat && cat.name && cat.name.trim() !== '');
-    if (validCategories.length === 0 && customCategories.length === 0) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'At least one category is required.';
-      return false;
-    }
-
-    const validUseCases = (form.useCases || []).filter(id => id !== null && id !== undefined && id !== '');
-    const customUseCases = (form.useCases_custom || []).filter(useCase => useCase && useCase.name && useCase.name.trim() !== '');
-    if (validUseCases.length === 0 && customUseCases.length === 0) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'At least one use case is required.';
-      return false;
-    }
-
-    // bestFor/Tags is optional — no validation needed
-
-    // Check if actual pricing categories are selected (not submission options like 'free' or 'paid')
-    const actualPricingCategories = (form.pricing || []).filter(id => !isNaN(id));
-    if (actualPricingCategories.length === 0) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'At least one pricing model is required.';
-      return false;
-    }
-
-    const hasLogo = !!globalFormState.logoPreview.value || !!form.logo || (form.logos && form.logos.length > 0);
-    if (!hasLogo) {
-      showErrorMessage.value = true;
-      errorMessage.value = 'A logo is required.';
-      return false;
-    }
-
-    if (form.submission_type === 'badge') {
-      if (!form.badge_placement_url) {
-        showErrorMessage.value = true;
-        errorMessage.value = 'Add the badge URL on your site before submitting.';
-        return false;
-      }
-
-      if (!form.badge_verified) {
-        showErrorMessage.value = true;
-        errorMessage.value = 'Verify your badge placement before submitting for a scheduled week.';
-        return false;
-      }
-
-      if (!form.badge_week_start) {
-        showErrorMessage.value = true;
-        errorMessage.value = 'Choose a launch week after badge verification.';
-        return false;
-      }
-    }
-
     showErrorMessage.value = false;
-    return true;
+    errorMessage.value = '';
+    submitAttempted.value = true;
+
+    return validateFields(validationFieldOrder, { force: true });
   };
 
   const fetchInitialData = async (urlOverride) => {
@@ -1126,6 +1365,7 @@ export function useProductForm() {
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
       extractionErrors.name = 'Failed to extract name and taglines.';
+      resetValidationState();
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
       markAutofillFormReady();
@@ -1642,6 +1882,7 @@ export function useProductForm() {
     const preservedFromSource = form.fromSource;
     Object.assign(form, { ...createProductFormState().form });
     form.fromSource = preservedFromSource;
+    resetValidationState();
     resetAutofillRevealState(false);
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = [null];
@@ -2196,6 +2437,8 @@ export function useProductForm() {
     sidebarSteps,
     errorMessage,
     showErrorMessage,
+    validationErrors,
+    validationSummary,
     isUrlInvalid,
     urlTrimSuggestion,
     completionPercentage,
@@ -2220,6 +2463,10 @@ export function useProductForm() {
     saveFormData,
     clearSavedData,
     checkUrlExists,
+    touchField,
+    validateField,
+    resetValidationState,
+    focusField,
     markManualLogoChosen,
     markManualScreenshotChosen,
     resetManualMediaChoices
