@@ -117,7 +117,12 @@ class AiProviderStatusService
             'exact_usage_available' => in_array($provider, ['groq', 'openrouter'], true),
             'notes' => match ($provider) {
                 'groq' => ['Groq exposes live rate-limit headers on API responses.'],
-                'openrouter' => ['OpenRouter exposes key-level limit and remaining credit information via its key endpoint.'],
+                'openrouter' => [
+                    'OpenRouter exposes key-level limit and remaining credit information via its key endpoint.',
+                    'Free-model policy: up to 20 requests per minute.',
+                    'Free-model daily cap: 50 requests/day before you have purchased $10 in credits, then 1000 requests/day after that threshold.',
+                    'OpenRouter does not expose a single token quota remaining value on /api/v1/key; the card shows credit and usage data instead.',
+                ],
                 default => ['Gemini does not expose exact live remaining quota in this API response; use AI Studio for exact counters.'],
             },
         ];
