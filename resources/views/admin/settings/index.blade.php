@@ -653,6 +653,12 @@
                         ['Token reset', formatLocalDateTime(provider.token_reset_at)],
                         ['Credit limit', provider.credit_limit != null ? provider.credit_limit : '—'],
                         ['Credits remaining', provider.credit_remaining != null ? provider.credit_remaining : '—'],
+                        ['Limit reset type', provider.limit_reset_type || '—'],
+                        ['Next limit reset', formatLocalDateTime(provider.next_limit_reset_at)],
+                        ['Usage total', provider.usage_total != null ? provider.usage_total : '—'],
+                        ['Usage today', provider.usage_daily != null ? provider.usage_daily : '—'],
+                        ['Usage this week', provider.usage_weekly != null ? provider.usage_weekly : '—'],
+                        ['Usage this month', provider.usage_monthly != null ? provider.usage_monthly : '—'],
                         ['Daily reset', formatLocalDateTime(provider.daily_reset_at)],
                     ].map(function (row) {
                         return '<div class="flex items-start justify-between gap-4 py-2"><dt class="text-sm text-gray-500">' + escapeHtml(row[0]) + '</dt><dd class="text-sm font-medium text-gray-900 text-right">' + escapeHtml(row[1]) + '</dd></div>';

@@ -107,6 +107,12 @@ class AiProviderStatusService
             'token_reset_at' => null,
             'credit_limit' => null,
             'credit_remaining' => null,
+            'limit_reset_type' => null,
+            'next_limit_reset_at' => null,
+            'usage_total' => null,
+            'usage_daily' => null,
+            'usage_weekly' => null,
+            'usage_monthly' => null,
             'daily_reset_at' => $provider === 'gemini' ? $this->nextGeminiDailyResetAt()?->toIso8601String() : null,
             'exact_usage_available' => in_array($provider, ['groq', 'openrouter'], true),
             'notes' => match ($provider) {
@@ -294,12 +300,18 @@ class AiProviderStatusService
 
             if ($response->successful()) {
                 $data = $response->json('data', []);
+                $limitResetType = is_string($data['limit_reset'] ?? null) ? trim((string) $data['limit_reset']) : null;
                 $snapshot['state'] = 'ok';
                 $snapshot['status_label'] = 'Available now';
                 $snapshot['message'] = 'OpenRouter key details were fetched successfully.';
                 $snapshot['credit_limit'] = is_numeric($data['limit'] ?? null) ? (float) $data['limit'] : null;
                 $snapshot['credit_remaining'] = is_numeric($data['limit_remaining'] ?? null) ? (float) $data['limit_remaining'] : null;
-                $snapshot['daily_reset_at'] = $this->openRouterLimitResetAt($data['limit_reset'] ?? null)?->toIso8601String();
+                $snapshot['limit_reset_type'] = $limitResetType;
+                $snapshot['next_limit_reset_at'] = $this->openRouterLimitResetAt($limitResetType)?->toIso8601String();
+                $snapshot['usage_total'] = is_numeric($data['usage'] ?? null) ? (float) $data['usage'] : null;
+                $snapshot['usage_daily'] = is_numeric($data['usage_daily'] ?? null) ? (float) $data['usage_daily'] : null;
+                $snapshot['usage_weekly'] = is_numeric($data['usage_weekly'] ?? null) ? (float) $data['usage_weekly'] : null;
+                $snapshot['usage_monthly'] = is_numeric($data['usage_monthly'] ?? null) ? (float) $data['usage_monthly'] : null;
 
                 return $snapshot;
             }
