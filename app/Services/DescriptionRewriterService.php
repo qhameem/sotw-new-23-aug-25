@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class DescriptionRewriterService
 {
@@ -13,285 +14,170 @@ class DescriptionRewriterService
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 60;
+    private array $failures = [];
+    private bool $usedFallback = false;
 
+    /**
+     * Rewrite a raw product description into a long-form editorial HTML block.
+     */
     public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?string
     {
+        $this->failures = [];
+        $this->usedFallback = false;
         $productName = $this->normalizeProductName($productName);
         $googleApiKey = config('services.google.api_key');
         $groqApiKey = config('services.groq.key');
-
-        if (empty($googleApiKey) && empty($groqApiKey)) {
-            Log::warning('DescriptionRewriterService: No AI provider key is set.');
-            return null;
-        }
 
         if (empty(trim($rawDescription))) {
             return null;
         }
 
         $context = mb_substr(strip_tags($pageTextContext), 0, 8000);
-        $options = [
-            'include_alternatives' => $this->shouldIncludeAlternatives($context),
-            'include_integrations' => $this->shouldIncludeIntegrations($context),
-            'include_faq' => $this->shouldIncludeFaq($rawDescription, $context),
-        ];
-        $productPattern = $this->detectProductPattern($rawDescription, $context);
+        $prompt = $this->buildPrompt($productName, $rawDescription, $context);
 
-        $prompt = $this->buildPrompt($productName, $rawDescription, $context, $options, $productPattern);
+        if (empty($googleApiKey) && empty($groqApiKey)) {
+            Log::warning('DescriptionRewriterService: No AI provider key is set.');
+            $this->recordFailure('system', null, 'No AI provider key is set.');
+            $this->usedFallback = true;
+            return $this->buildFallbackHtml($productName, $rawDescription, $context);
+        }
 
         try {
-            $rawResponse = null;
-            $provider = null;
+            // Restore the old long-form behavior by preferring the Groq path that originally powered it.
+            foreach ([
+                ['provider' => 'groq', 'key' => $groqApiKey],
+                ['provider' => 'gemini', 'key' => $googleApiKey],
+            ] as $candidate) {
+                if (empty($candidate['key'])) {
+                    continue;
+                }
 
-            if (!empty($googleApiKey)) {
-                $rawResponse = $this->generateWithGemini($googleApiKey, $prompt);
-                $provider = $rawResponse !== null ? 'gemini' : null;
+                $response = $candidate['provider'] === 'groq'
+                    ? $this->generateWithGroq($candidate['key'], $prompt)
+                    : $this->generateWithGemini($candidate['key'], $prompt);
+
+                if (!is_string($response) || trim($response) === '') {
+                    continue;
+                }
+
+                $cleaned = $this->cleanHtmlResponse($response);
+
+                if ($cleaned !== null) {
+                    return $cleaned;
+                }
             }
-
-            if ($rawResponse === null && !empty($groqApiKey)) {
-                $rawResponse = $this->generateWithGroq($groqApiKey, $prompt);
-                $provider = $rawResponse !== null ? 'groq' : null;
-            }
-
-            if (!is_string($rawResponse) || trim($rawResponse) === '') {
-                return null;
-            }
-
-            $payload = $this->decodeStructuredResponse($rawResponse);
-
-            if ($payload === null) {
-                Log::warning('DescriptionRewriterService: Failed to decode structured response.', [
-                    'response' => $rawResponse,
-                ]);
-
-                return null;
-            }
-
-            $payload = $this->refineEditorialFieldsIfNeeded(
-                $payload,
-                $productName,
-                $rawDescription,
-                $context,
-                $productPattern,
-                $provider,
-                $googleApiKey,
-                $groqApiKey
-            );
-
-            $payload = $this->repairLowQualityEditorialFields(
-                $payload,
-                $productName,
-                $rawDescription,
-                $context,
-                $productPattern,
-                $provider,
-                $googleApiKey,
-                $groqApiKey
-            );
-
-            return $this->renderHtml($productName, $payload, $options);
         } catch (\Exception $e) {
             Log::warning('DescriptionRewriterService: Exception', ['message' => $e->getMessage()]);
-
-            return null;
+            $this->recordFailure('system', null, $e->getMessage());
+            $this->usedFallback = true;
+            return $this->buildFallbackHtml($productName, $rawDescription, $context);
         }
+
+        $this->usedFallback = true;
+        return $this->buildFallbackHtml($productName, $rawDescription, $context);
     }
 
-    private function buildPrompt(string $productName, string $rawDescription, string $context, array $options, ?string $productPattern): string
+    public function getFailures(): array
     {
-        $optionalRules = [];
-        $optionalRules[] = $options['include_alternatives']
-            ? '- Fill the `alternatives` array with up to 2 grounded comparison bullets.'
-            : '- Return `alternatives` as an empty array.';
-        $optionalRules[] = $options['include_integrations']
-            ? '- Fill the `integrations` array with specific integrations, APIs, or supported platforms.'
-            : '- Return `integrations` as an empty array.';
-        $optionalRules[] = $options['include_faq']
-            ? '- Fill the `faq` array with up to 2 grounded question/answer pairs.'
-            : '- Return `faq` as an empty array.';
+        return $this->failures;
+    }
 
-        $optionalRulesText = implode("\n", $optionalRules);
-        $patternGuidance = $this->buildProductPatternGuidance($productPattern);
+    public function usedFallback(): bool
+    {
+        return $this->usedFallback;
+    }
 
+    private function buildPrompt(string $productName, string $rawDescription, string $context): string
+    {
         return <<<PROMPT
-You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to rewrite the product description for "{$productName}" so it feels human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
+You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
 
 Raw information: "{$rawDescription}"
 
 Additional context: "{$context}"
 
 OBJECTIVE:
-- Explain what the product does, who it helps, and why someone would choose it.
-- Keep the writing grounded, specific, compact, and easy to scan.
-- Help a user decide quickly without overwhelming them with unnecessary detail.
-{$patternGuidance}
+- Make the description feel complete, useful, and editorial rather than compressed.
+- Explain what the product does, why it matters, who it helps, and how it fits into a workflow.
+- Write enough detail to produce a rich long-form description with multiple clear sections.
+- Keep claims grounded in the source material. If some details are unclear, stay conservative instead of inventing facts.
 
-WRITING RULES:
-- Write like a calm editor, not a landing-page marketer.
-- Use plain language and short sentences when possible.
-- Avoid hype, filler, generic marketing claims, and repeated ideas.
-- Avoid vague audience labels like "professionals", "creators", or "teams" unless the source clearly supports them.
-- Avoid ad-like words and labels such as "AI-powered", "polished", "professional-looking", "instant", "instantly", "complimentary", "powerful", or "seamless" unless the source explicitly uses and supports them.
-- Avoid generic phrases like "online presence", "quickly and easily", "simple online presence", "professional look", or "saves time and effort" unless the source explicitly supports them.
-- Name actual supported platforms or integrations when the source provides them.
-- Use normal capitalization. Do not write in all lowercase.
-- Mention supported source platforms at most once in the summary and once in the body. Do not repeat the same platform list in multiple bullets.
-- Make `key_features` about workflows, capabilities, or user value, not one bullet per source website.
-- Make `pros` specific to the product's workflow or value. Do not use vague praise.
-- Do not invent claims, limitations, pricing details, integrations, customer outcomes, or competitor comparisons.
-- Limitations must be grounded in explicit source facts. If there are no clear limitations, say so plainly.
-- If limitations are unclear, return exactly: "Not clearly stated in the available source material."
-- Do not turn supported input types into a guessed limitation such as "limited to supported platforms" unless the source explicitly states that constraint.
+HUMAN WRITING RULES:
+- Write like a real person explaining a product to another person.
+- Use plain English, natural phrasing, and varied sentence lengths.
+- Avoid robotic filler, generic hype, and repeated claims.
+- Avoid clichés like "game-changing", "revolutionary", "cutting-edge", or "seamless".
+- Every section should include product-specific information that would sound wrong if pasted onto another tool.
+- If a section has limited source support, keep it brief but still useful.
 
-OUTPUT RULES:
-- Return ONLY valid JSON.
-- Do not return HTML.
-- Do not return Markdown.
-- Do not wrap the JSON in code fences.
-- Keep arrays concise and specific.
-- Use sentence case in all string values.
-- Keep `summary` to roughly 40-60 words.
-- Keep `supporting_sentence` to 1 sentence.
-- Keep `what_it_is` to 2 short sentences maximum.
-- Keep `key_features` to 3-4 bullets.
-- Keep `best_for` to 2-3 bullets.
-- Keep `pros` to 2-3 bullets.
-- Keep `limitations` to 1-2 bullets.
-{$optionalRulesText}
+AEO / STRUCTURE RULES:
+- Preserve the exact HTML structure, section order, headings, and list types shown below.
+- Do not add, remove, rename, merge, or reorder sections.
+- Return ONLY HTML. No markdown fences, no labels, no explanations.
+- Keep the first two lines as exactly two separate <p> paragraphs.
+- Mention "{$productName}" naturally in the opening paragraph.
+- Keep each bullet concise, concrete, and focused on user value.
+- Write grounded FAQ questions and answers instead of generic filler.
+- If limitations are unclear, write exactly: "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"
 
-JSON SHAPE:
-{
-  "summary": "string",
-  "supporting_sentence": "string",
-  "what_it_is": "string",
-  "key_features": ["string"],
-  "best_for": ["string"],
-  "pros": ["string"],
-  "limitations": ["string"],
-  "alternatives": ["string"],
-  "integrations": ["string"],
-  "faq": [
-    {
-      "question": "string",
-      "answer": "string"
-    }
-  ]
-}
-PROMPT;
-    }
+HTML STRUCTURE TO FOLLOW EXACTLY:
+<p><strong>[Write a 40-70 word opening paragraph that clearly explains what {$productName} is, who it helps, and why someone would choose it.]</strong></p>
+<p>[Write a second paragraph that expands on the main workflow, differentiator, or practical use without hype.]</p>
 
-    private function buildFieldRepairPrompt(
-        string $field,
-        string $productName,
-        string $rawDescription,
-        string $context,
-        ?string $productPattern,
-        mixed $currentValue,
-        array $issues
-    ): string {
-        $encodedCurrentValue = json_encode($currentValue, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        $issueText = implode('; ', $issues);
-        $patternGuidance = $this->buildProductPatternGuidance($productPattern, true);
+<h2><strong>Key Features</strong></h2>
+<ul>
+  <li>[Feature 1 focused on user value]</li>
+  <li>[Feature 2 focused on workflow or product capability]</li>
+  <li>[Feature 3 focused on a distinct benefit]</li>
+  <li>[Feature 4 if supported by the source]</li>
+  <li>[Feature 5 if supported by the source]</li>
+</ul>
 
-        if ($field === 'pros') {
-            return <<<PROMPT
-You are fixing the `pros` field in a structured product description for "{$productName}".
+<h2><strong>Ideal For</strong></h2>
+<ul>
+  <li>[Specific audience 1]</li>
+  <li>[Specific audience 2]</li>
+  <li>[Specific audience 3 if supported]</li>
+</ul>
 
-SOURCE FACTS:
-- Raw information: "{$rawDescription}"
-- Additional context: "{$context}"
+<h2><strong>Top Use Cases</strong></h2>
+<ul>
+  <li>[Concrete use case 1]</li>
+  <li>[Concrete use case 2]</li>
+  <li>[Concrete use case 3]</li>
+</ul>
 
-CURRENT VALUE:
-{$encodedCurrentValue}
+<h2><strong>Known Alternatives</strong></h2>
+<ul>
+  <li>[Alternative 1 with a grounded comparison]</li>
+  <li>[Alternative 2 with a grounded comparison]</li>
+</ul>
 
-PROBLEMS TO FIX:
-- {$issueText}
+<h2><strong>Integrations &amp; Ecosystem</strong></h2>
+<ul>
+  <li>[Specific integrations, APIs, platforms, or ecosystem details from the source. If unclear, say that the available source material does not clearly specify integrations.]</li>
+</ul>
 
-TASK:
-- Return a better `pros` array with 2-3 concise bullets.
-- Each bullet must describe concrete workflow value or product value.
-- Do not repeat platform lists unless truly necessary.
-- Do not use vague bullets like "supports multiple platforms", "easy to use", or "builds a website in seconds".
-- Do not add unsupported claims.
-{$patternGuidance}
+<h2><strong>Pros &amp; Cons</strong></h2>
+<ul>
+  <li><strong>Pros:</strong> [List 2-3 grounded strengths separated by semicolons]</li>
+  <li><strong>Limitations:</strong> [List 1-2 honest limitations based only on supported facts, or "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"]</li>
+</ul>
 
-RETURN ONLY VALID JSON:
-{
-  "pros": ["string"]
-}
-PROMPT;
-        }
+<h2><strong>Frequently Asked Questions</strong></h2>
+<dl>
+  <dt><strong>[Question 1 written like a real user search]</strong></dt>
+  <dd>[Direct answer based only on supported facts.]</dd>
+  <dt><strong>[Question 2 written like a real user search]</strong></dt>
+  <dd>[Direct answer based only on supported facts.]</dd>
+</dl>
 
-        return <<<PROMPT
-You are fixing the `{$field}` field in a structured product description for "{$productName}".
-
-SOURCE FACTS:
-- Raw information: "{$rawDescription}"
-- Additional context: "{$context}"
-
-CURRENT VALUE:
-{$encodedCurrentValue}
-
-PROBLEMS TO FIX:
-- {$issueText}
-
-TASK:
-- Rewrite only `{$field}`.
-- Keep the wording specific, calm, and editorial.
-- Avoid phrases like "online presence", "in seconds", "various platforms", or repeated platform lists.
-- Do not add unsupported claims.
-- Do not repeat the same platform list already used elsewhere in the description.
-- Keep `summary` to roughly 40-60 words.
-- Keep `what_it_is` to 2 short sentences maximum.
-{$patternGuidance}
-
-RETURN ONLY VALID JSON:
-{
-  "{$field}": "string"
-}
-PROMPT;
-    }
-
-    private function buildFieldRefinementPrompt(string $productName, string $rawDescription, string $context, ?string $productPattern, array $payload): string
-    {
-        $currentFields = json_encode([
-            'summary' => (string) ($payload['summary'] ?? ''),
-            'what_it_is' => (string) ($payload['what_it_is'] ?? ''),
-            'pros' => array_values(array_filter($payload['pros'] ?? [], 'is_string')),
-        ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        $patternGuidance = $this->buildProductPatternGuidance($productPattern, true);
-
-        return <<<PROMPT
-You are editing three fields in a structured product description for "{$productName}".
-
-SOURCE FACTS:
-- Raw information: "{$rawDescription}"
-- Additional context: "{$context}"
-
-CURRENT FIELDS:
-{$currentFields}
-
-TASK:
-- Rewrite only `summary`, `what_it_is`, and `pros`.
-- Keep every claim grounded in the source facts above.
-- Make the wording more specific, calm, and editorial.
-- Remove generic wording, filler, and repeated ideas.
-- Mention supported platforms at most once across these edited fields.
-- Do not repeat the same platform list in both `summary` and `what_it_is`.
-- Do not add pricing, comparisons, integrations, or limitations that are not clearly supported.
-- Keep `summary` to roughly 40-60 words.
-- Keep `what_it_is` to 2 short sentences maximum.
-- Keep `pros` to 2-3 concise bullets focused on concrete user value or workflow value.
-- Do not use hype words like "polished", "powerful", "seamless", "instant", or "professional-looking".
-- Do not use generic phrases like "online presence", "saves time and effort", or "quick and easy".
-{$patternGuidance}
-
-RETURN ONLY VALID JSON:
-{
-  "summary": "string",
-  "what_it_is": "string",
-  "pros": ["string"]
-}
+STYLE CHECK BEFORE YOU RESPOND:
+- Does it sound human, plainspoken, and useful?
+- Is the structure exactly preserved?
+- Are the claims grounded in the provided information?
+- Does it feel fuller and more informative than a short summary?
+- Do the FAQ items sound like real questions and not filler?
 PROMPT;
     }
 
@@ -308,9 +194,6 @@ PROMPT;
                     ],
                 ],
             ],
-            'generationConfig' => [
-                'responseMimeType' => 'application/json',
-            ],
         ]);
 
         if ($response->successful()) {
@@ -323,19 +206,7 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
-
-        return null;
-    }
-
-    private function generateWithProvider(?string $provider, string $prompt, ?string $googleApiKey, ?string $groqApiKey): ?string
-    {
-        if ($provider === 'gemini' && !empty($googleApiKey)) {
-            return $this->generateWithGemini($googleApiKey, $prompt);
-        }
-
-        if ($provider === 'groq' && !empty($groqApiKey)) {
-            return $this->generateWithGroq($groqApiKey, $prompt);
-        }
+        $this->recordFailure('gemini', $response->status(), $response->body());
 
         return null;
     }
@@ -353,7 +224,7 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.55,
-                'max_tokens' => 1200,
+                'max_tokens' => 1800,
             ]);
 
         if ($response->successful()) {
@@ -366,86 +237,328 @@ PROMPT;
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
+        $this->recordFailure('groq', $response->status(), $response->body());
 
         return null;
     }
 
-    private function decodeStructuredResponse(string $content): ?array
+    private function recordFailure(string $provider, ?int $status, string $body): void
     {
-        $cleaned = $this->stripMarkdownFence($content);
-        $decoded = json_decode($cleaned, true);
-
-        if (is_array($decoded)) {
-            return $decoded;
-        }
-
-        if (preg_match('/\{.*\}/s', $cleaned, $matches) !== 1) {
-            return null;
-        }
-
-        $decoded = json_decode($matches[0], true);
-
-        return is_array($decoded) ? $decoded : null;
+        $this->failures[] = [
+            'provider' => $provider,
+            'status' => $status,
+            'body' => $body,
+        ];
     }
 
-    private function renderHtml(string $productName, array $payload, array $options): ?string
+    private function cleanHtmlResponse(string $content): ?string
     {
-        $summary = $this->cleanSentence($payload['summary'] ?? '');
-        $supportingSentence = $this->cleanSentence($payload['supporting_sentence'] ?? '');
-        $whatItIs = $this->cleanParagraph($payload['what_it_is'] ?? '');
-        $keyFeatures = $this->cleanStringArray($payload['key_features'] ?? [], 4);
-        $bestFor = $this->cleanStringArray($payload['best_for'] ?? [], 3);
-        $pros = $this->cleanStringArray($payload['pros'] ?? [], 3);
-        $limitations = $this->cleanLimitationsArray($payload['limitations'] ?? [], 2);
-        $displayLimitations = array_values(array_filter(
-            $limitations,
-            fn (string $item): bool => !$this->isPlaceholderLimitation($item)
-        ));
-        $alternatives = $options['include_alternatives'] ? $this->cleanStringArray($payload['alternatives'] ?? [], 2) : [];
-        $integrations = $options['include_integrations'] ? $this->cleanStringArray($payload['integrations'] ?? [], 3) : [];
-        $faq = $options['include_faq'] ? $this->cleanFaqArray($payload['faq'] ?? [], 2) : [];
+        $content = trim($this->stripMarkdownFence($content));
 
-        if ($summary === '' || $supportingSentence === '' || $whatItIs === '' || $keyFeatures === [] || $bestFor === [] || $pros === [] || $limitations === []) {
+        if ($content === '') {
             return null;
         }
 
-        $html = [];
-        $html[] = '<p><strong>' . e($summary) . '</strong></p>';
-        $html[] = '<p>' . e($supportingSentence) . '</p>';
-        $html[] = '<h2><strong>What is ' . e($productName) . '?</strong></h2>';
-        $html[] = '<p>' . e($whatItIs) . '</p>';
-        $html[] = '<h2><strong>What are the key features of ' . e($productName) . '?</strong></h2>';
-        $html[] = $this->renderList($keyFeatures);
-        $html[] = '<h2><strong>Who is ' . e($productName) . ' best for?</strong></h2>';
-        $html[] = $this->renderList($bestFor);
-
-        if ($alternatives !== []) {
-            $html[] = '<h2><strong>How does ' . e($productName) . ' compare to alternatives?</strong></h2>';
-            $html[] = $this->renderList($alternatives);
+        if (!str_contains($content, '<p>') && !str_contains($content, '<h2>')) {
+            return null;
         }
 
-        if ($integrations !== []) {
-            $html[] = '<h2><strong>What integrations and ecosystem support does ' . e($productName) . ' offer?</strong></h2>';
-            $html[] = $this->renderList($integrations);
+        if (!$this->hasRequiredLongFormSections($content)) {
+            return null;
         }
 
-        if ($displayLimitations === []) {
-            $html[] = '<h2><strong>What are the pros of ' . e($productName) . '?</strong></h2>';
-            $html[] = $this->renderList($pros);
-        } else {
-            $html[] = '<h2><strong>What are the pros and limitations of ' . e($productName) . '?</strong></h2>';
-            $html[] = '<ul>'
-                . '<li><strong>Pros:</strong> ' . e(implode('; ', $pros)) . '</li>'
-                . '<li><strong>Limitations:</strong> ' . e(implode('; ', $displayLimitations)) . '</li>'
-                . '</ul>';
+        return $content;
+    }
+
+    private function hasRequiredLongFormSections(string $content): bool
+    {
+        $requiredFragments = [
+            '<h2><strong>Key Features</strong></h2>',
+            '<h2><strong>Ideal For</strong></h2>',
+            '<h2><strong>Top Use Cases</strong></h2>',
+            '<h2><strong>Known Alternatives</strong></h2>',
+            '<h2><strong>Integrations',
+            '<h2><strong>Pros',
+            '<h2><strong>Frequently Asked Questions</strong></h2>',
+            '<dl>',
+        ];
+
+        foreach ($requiredFragments as $fragment) {
+            if (!str_contains($content, $fragment)) {
+                return false;
+            }
         }
 
-        if ($faq !== []) {
-            $html[] = '<h2><strong>Frequently asked questions about ' . e($productName) . '</strong></h2>';
-            $html[] = $this->renderFaq($faq);
+        return substr_count($content, '<li>') >= 10
+            && substr_count($content, '<dt>') >= 2
+            && substr_count($content, '<dd>') >= 2;
+    }
+
+    private function buildFallbackHtml(string $productName, string $rawDescription, string $context): string
+    {
+        $summary = $this->buildFallbackSummary($productName, $rawDescription);
+        $supporting = $this->buildFallbackSupportingSentence($rawDescription, $context);
+        $headingCandidates = $this->extractHeadingCandidates($context);
+        $bodySentences = $this->extractBodySentences($context);
+        $features = $this->buildFallbackFeatures($headingCandidates, $bodySentences);
+        $idealFor = $this->buildFallbackIdealFor($context);
+        $useCases = $this->buildFallbackUseCases($headingCandidates, $bodySentences);
+        $alternatives = [
+            'The available source material focuses on this product\'s own workflow rather than direct competitor comparisons.',
+            'Use the product\'s planning, building, and execution flow as the main point of comparison.',
+        ];
+        $integrations = [$this->buildFallbackIntegrationLine($context)];
+        $prosLine = implode('; ', array_slice($features, 0, 3));
+        $limitationsLine = self::UNKNOWN_LIMITATION;
+        $faq = $this->buildFallbackFaq($productName, $summary, $idealFor);
+
+        return implode("\n", [
+            '<p><strong>' . e($summary) . '</strong></p>',
+            '<p>' . e($supporting) . '</p>',
+            '<h2><strong>Key Features</strong></h2>',
+            $this->renderList($features),
+            '<h2><strong>Ideal For</strong></h2>',
+            $this->renderList($idealFor),
+            '<h2><strong>Top Use Cases</strong></h2>',
+            $this->renderList($useCases),
+            '<h2><strong>Known Alternatives</strong></h2>',
+            $this->renderList($alternatives),
+            '<h2><strong>Integrations &amp; Ecosystem</strong></h2>',
+            $this->renderList($integrations),
+            '<h2><strong>Pros &amp; Cons</strong></h2>',
+            '<ul><li><strong>Pros:</strong> ' . e($prosLine) . '</li><li><strong>Limitations:</strong> ' . e($limitationsLine) . '</li></ul>',
+            '<h2><strong>Frequently Asked Questions</strong></h2>',
+            $this->renderFaq($faq),
+        ]);
+    }
+
+    private function buildFallbackSummary(string $productName, string $rawDescription): string
+    {
+        $summary = $this->cleanPlainText($rawDescription);
+
+        if ($summary === '') {
+            return $productName . ' helps people plan, build, and manage work more clearly.';
         }
 
-        return implode("\n", $html);
+        if ($productName !== 'this product' && !Str::contains(Str::lower($summary), Str::lower($productName))) {
+            $summary = $productName . ' helps users ' . Str::lcfirst(rtrim($summary, '.')) . '.';
+        }
+
+        return $this->ensureSentenceLength($summary, 260);
+    }
+
+    private function buildFallbackSupportingSentence(string $rawDescription, string $context): string
+    {
+        $sentences = $this->extractBodySentences($context);
+
+        foreach ($sentences as $sentence) {
+            if ($sentence !== '' && !str_contains(Str::lower($sentence), Str::lower($this->cleanPlainText($rawDescription)))) {
+                return $this->ensureSentenceLength($sentence, 220);
+            }
+        }
+
+        return 'The available source material highlights the core workflow and positioning, even when deeper editorial details are limited.';
+    }
+
+    private function buildFallbackFeatures(array $headingCandidates, array $bodySentences): array
+    {
+        $features = array_slice(array_values(array_unique(array_merge($headingCandidates, $bodySentences))), 0, 5);
+
+        while (count($features) < 5) {
+            $features[] = match (count($features)) {
+                0 => 'Supports a structured workflow instead of leaving each step to ad hoc prompting.',
+                1 => 'Keeps core project information in one place so planning and execution stay connected.',
+                2 => 'Helps teams move from ideas to delivery with clearer context and less repetition.',
+                3 => 'Surfaces practical planning or execution steps instead of abstract product messaging.',
+                default => 'Turns the available source material into a more actionable overview of how the product works.',
+            };
+        }
+
+        return array_slice($features, 0, 5);
+    }
+
+    private function buildFallbackIdealFor(string $context): array
+    {
+        $normalized = Str::lower($context);
+        $candidates = [];
+
+        $audienceMap = [
+            'solo builders' => 'Solo builders who want faster execution with clearer project structure.',
+            'startup teams' => 'Startup teams managing product delivery and iteration across multiple moving parts.',
+            'agencies' => 'Agencies coordinating planning, delivery, and client-facing execution.',
+            'founders' => 'Founders who need a tighter link between planning, delivery, and output.',
+            'project managers' => 'Project managers who want more visibility into roadmap, capacity, and execution.',
+            'designers' => 'Designers collaborating inside broader product or delivery workflows.',
+            'enterprise' => 'Enterprise teams looking for more structured AI-assisted planning and execution.',
+        ];
+
+        foreach ($audienceMap as $needle => $line) {
+            if (str_contains($normalized, $needle)) {
+                $candidates[] = $line;
+            }
+        }
+
+        if ($candidates === []) {
+            $candidates = [
+                'Builders who want more structure around AI-assisted product work.',
+                'Teams planning and executing software projects with shared context.',
+                'Operators who need planning, execution, and tracking to stay connected.',
+            ];
+        }
+
+        return array_slice(array_values(array_unique($candidates)), 0, 3);
+    }
+
+    private function buildFallbackUseCases(array $headingCandidates, array $bodySentences): array
+    {
+        $candidates = [];
+
+        foreach (array_merge($headingCandidates, $bodySentences) as $candidate) {
+            if (preg_match('/\b(build|plan|track|manage|generate|execute|review|debug|ship|deploy|estimate|collaborate)\b/i', $candidate)) {
+                $candidates[] = $candidate;
+            }
+        }
+
+        if ($candidates === []) {
+            $candidates = [
+                'Planning software work with clearer tasks, scope, and delivery context.',
+                'Executing multi-step project work without losing track of earlier decisions.',
+                'Tracking delivery progress while keeping planning and implementation aligned.',
+            ];
+        }
+
+        return array_slice(array_values(array_unique($candidates)), 0, 3);
+    }
+
+    private function buildFallbackIntegrationLine(string $context): string
+    {
+        $matches = [];
+
+        foreach (['Supabase', 'Stripe', 'GitHub', 'Firebase', 'Sentry', 'Intercom', 'PayPal', 'Firecrawl', 'n8n'] as $integration) {
+            if (str_contains(Str::lower($context), Str::lower($integration))) {
+                $matches[] = $integration;
+            }
+        }
+
+        if ($matches === []) {
+            return 'The available source material does not clearly specify integrations or ecosystem details.';
+        }
+
+        return 'The source material references ecosystem or integration signals including ' . implode(', ', array_slice($matches, 0, 6)) . '.';
+    }
+
+    private function buildFallbackFaq(string $productName, string $summary, array $idealFor): array
+    {
+        return [
+            [
+                'question' => 'What does ' . $productName . ' help you do?',
+                'answer' => $summary,
+            ],
+            [
+                'question' => 'Who is ' . $productName . ' best for?',
+                'answer' => implode(' ', array_slice($idealFor, 0, 2)),
+            ],
+        ];
+    }
+
+    private function extractHeadingCandidates(string $context): array
+    {
+        preg_match_all('/(?:^|\n)H[1-3]:\s*(.+)/u', $context, $matches);
+        $headings = [];
+
+        foreach ($matches[1] ?? [] as $heading) {
+            $heading = $this->cleanPlainText($heading);
+
+            if ($this->isWeakFallbackCandidate($heading)) {
+                continue;
+            }
+
+            $headings[] = $this->ensureSentenceLength($heading, 160);
+        }
+
+        return array_slice(array_values(array_unique($headings)), 0, 8);
+    }
+
+    private function extractBodySentences(string $context): array
+    {
+        $parts = preg_split('/BODY CONTENT:\s*/u', $context, 2);
+        $body = $parts[1] ?? '';
+
+        if ($body === '') {
+            return [];
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $body, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $cleaned = [];
+
+        foreach ($sentences as $sentence) {
+            $sentence = $this->cleanPlainText($sentence);
+
+            if ($this->isWeakFallbackCandidate($sentence) || mb_strlen($sentence) < 35) {
+                continue;
+            }
+
+            $cleaned[] = $this->ensureSentenceLength($sentence, 180);
+
+            if (count($cleaned) >= 8) {
+                break;
+            }
+        }
+
+        return $cleaned;
+    }
+
+    private function isWeakFallbackCandidate(string $value): bool
+    {
+        $normalized = Str::lower(trim($value));
+
+        if ($normalized === '' || str_word_count($normalized) < 2 || mb_strlen($normalized) < 12) {
+            return true;
+        }
+
+        if (preg_match('/[$%]|^\d+$/', $normalized)) {
+            return true;
+        }
+
+        return in_array($normalized, [
+            'platform',
+            'agile',
+            'community',
+            'pricing',
+            'legal',
+            'solutions',
+            'reports',
+            'roadmap',
+            'backlog',
+            'dashboard',
+            'board',
+            'qa mode',
+            'site wide links',
+            'ready to build',
+            'live preview',
+            'start building',
+            'get started',
+            'try it free',
+        ], true);
+    }
+
+    private function ensureSentenceLength(string $value, int $maxLength): string
+    {
+        $value = $this->cleanPlainText($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        return rtrim(Str::limit($value, $maxLength, '...'), " \t\n\r\0\x0B");
+    }
+
+    private function cleanPlainText(string $value): string
+    {
+        $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace('/\s+/u', ' ', trim($value)) ?? '';
+
+        return trim($value, " \t\n\r\0\x0B-");
     }
 
     private function renderList(array $items): string
@@ -471,668 +584,6 @@ PROMPT;
         return $html . '</dl>';
     }
 
-    private function cleanStringArray(array $items, int $limit): array
-    {
-        $cleaned = [];
-
-        foreach ($items as $item) {
-            if (!is_string($item)) {
-                continue;
-            }
-
-            $value = $this->cleanSentence($item);
-
-            if ($value === '') {
-                continue;
-            }
-
-            $cleaned[] = $value;
-
-            if (count($cleaned) >= $limit) {
-                break;
-            }
-        }
-
-        return array_values(array_unique($cleaned));
-    }
-
-    private function cleanLimitationsArray(array $items, int $limit): array
-    {
-        $cleaned = $this->cleanStringArray($items, $limit);
-
-        if ($cleaned === []) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($cleaned as $item) {
-            $lower = mb_strtolower($item);
-
-            if (
-                str_contains($lower, 'not clearly stated') ||
-                str_contains($lower, 'no clear limitations') ||
-                str_contains($lower, 'not mentioned in the source') ||
-                str_contains($lower, 'not mentioned in the available source') ||
-                str_contains($lower, 'no clear limitations mentioned')
-            ) {
-                return [self::UNKNOWN_LIMITATION];
-            }
-
-            if (
-                (str_contains($lower, 'supported platform') || str_contains($lower, 'specific platform') || str_contains($lower, 'links from'))
-                && !str_contains($lower, 'source')
-                && !str_contains($lower, 'available')
-                && !str_contains($lower, 'coming soon')
-                && !str_contains($lower, 'currently')
-            ) {
-                return [self::UNKNOWN_LIMITATION];
-            }
-
-            $normalized[] = $item;
-        }
-
-        return $normalized;
-    }
-
-    private function isPlaceholderLimitation(string $value): bool
-    {
-        return mb_strtolower(trim($value)) === mb_strtolower(self::UNKNOWN_LIMITATION);
-    }
-
-    private function cleanFaqArray(array $items, int $limit): array
-    {
-        $cleaned = [];
-
-        foreach ($items as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-
-            $question = $this->cleanSentence((string) ($item['question'] ?? ''));
-            $answer = $this->cleanSentence((string) ($item['answer'] ?? ''));
-
-            if ($question === '' || $answer === '') {
-                continue;
-            }
-
-            $cleaned[] = [
-                'question' => $question,
-                'answer' => $answer,
-            ];
-
-            if (count($cleaned) >= $limit) {
-                break;
-            }
-        }
-
-        return $cleaned;
-    }
-
-    private function refineEditorialFieldsIfNeeded(
-        array $payload,
-        string $productName,
-        string $rawDescription,
-        string $context,
-        ?string $productPattern,
-        ?string $provider,
-        ?string $googleApiKey,
-        ?string $groqApiKey
-    ): array {
-        if (!$this->shouldRefineEditorialFields($payload)) {
-            return $payload;
-        }
-
-        $prompt = $this->buildFieldRefinementPrompt($productName, $rawDescription, $context, $productPattern, $payload);
-        $response = $this->generateWithProvider($provider, $prompt, $googleApiKey, $groqApiKey);
-
-        if (!is_string($response) || trim($response) === '') {
-            return $payload;
-        }
-
-        $refined = $this->decodeStructuredResponse($response);
-
-        if (!is_array($refined)) {
-            return $payload;
-        }
-
-        if (is_string($refined['summary'] ?? null) && trim($refined['summary']) !== '') {
-            $payload['summary'] = $refined['summary'];
-        }
-
-        if (is_string($refined['what_it_is'] ?? null) && trim($refined['what_it_is']) !== '') {
-            $payload['what_it_is'] = $refined['what_it_is'];
-        }
-
-        if (is_array($refined['pros'] ?? null) && $refined['pros'] !== []) {
-            $payload['pros'] = $refined['pros'];
-        }
-
-        return $payload;
-    }
-
-    private function repairLowQualityEditorialFields(
-        array $payload,
-        string $productName,
-        string $rawDescription,
-        string $context,
-        ?string $productPattern,
-        ?string $provider,
-        ?string $googleApiKey,
-        ?string $groqApiKey
-    ): array {
-        $fieldsToCheck = ['summary', 'what_it_is', 'pros'];
-
-        foreach ($fieldsToCheck as $field) {
-            $issues = $this->getEditorialQualityIssues($field, $payload, $productPattern);
-
-            if ($issues === []) {
-                continue;
-            }
-
-            $prompt = $this->buildFieldRepairPrompt(
-                $field,
-                $productName,
-                $rawDescription,
-                $context,
-                $productPattern,
-                $payload[$field] ?? ($field === 'pros' ? [] : ''),
-                $issues
-            );
-
-            $response = $this->generateWithProvider($provider, $prompt, $googleApiKey, $groqApiKey);
-
-            if (!is_string($response) || trim($response) === '') {
-                continue;
-            }
-
-            $repaired = $this->decodeStructuredResponse($response);
-
-            if (!is_array($repaired)) {
-                continue;
-            }
-
-            if ($field === 'pros') {
-                $candidate = $this->cleanStringArray($repaired['pros'] ?? [], 3);
-
-                if ($candidate !== [] && $this->getEditorialQualityIssues('pros', ['pros' => $candidate] + $payload, $productPattern) === []) {
-                    $payload['pros'] = $candidate;
-                }
-
-                continue;
-            }
-
-            if (!is_string($repaired[$field] ?? null)) {
-                continue;
-            }
-
-            $candidate = $field === 'summary'
-                ? $this->cleanSentence($repaired[$field])
-                : $this->cleanParagraph($repaired[$field]);
-
-            if ($candidate === '') {
-                continue;
-            }
-
-            $candidatePayload = $payload;
-            $candidatePayload[$field] = $candidate;
-
-            if ($this->getEditorialQualityIssues($field, $candidatePayload, $productPattern) === []) {
-                $payload[$field] = $candidate;
-            }
-        }
-
-        return $payload;
-    }
-
-    private function shouldRefineEditorialFields(array $payload): bool
-    {
-        $summary = mb_strtolower((string) ($payload['summary'] ?? ''));
-        $whatItIs = mb_strtolower((string) ($payload['what_it_is'] ?? ''));
-        $pros = array_map(static fn ($item) => mb_strtolower((string) $item), $payload['pros'] ?? []);
-
-        $combined = trim($summary . ' ' . $whatItIs . ' ' . implode(' ', $pros));
-
-        if ($combined === '') {
-            return false;
-        }
-
-        $weakPhrases = [
-            'online presence',
-            'saves time and effort',
-            'quick and easy',
-            'professional-looking',
-            'popular platform',
-            'popular platforms',
-            'in seconds',
-            'quickly',
-            'easy to use',
-            'simple website',
-            'basic website',
-            'polished website',
-            'individuals',
-            'professionals',
-        ];
-
-        if ($this->containsAny($combined, $weakPhrases)) {
-            return true;
-        }
-
-        return $this->countNamedPlatformMentions($combined) > 6;
-    }
-
-    private function getEditorialQualityIssues(string $field, array $payload, ?string $productPattern = null): array
-    {
-        $issues = [];
-        $value = $payload[$field] ?? ($field === 'pros' ? [] : '');
-
-        $text = is_array($value) ? implode(' ', array_map('strval', $value)) : (string) $value;
-        $normalized = mb_strtolower($text);
-
-        if ($normalized === '') {
-            return [];
-        }
-
-        if (str_contains($normalized, 'online presence')) {
-            $issues[] = 'Uses the generic phrase "online presence".';
-        }
-
-        if (
-            preg_match('/\bin seconds\b/i', $text)
-            || preg_match('/\bvarious platforms\b/i', $text)
-            || preg_match('/\bpopular platforms\b/i', $text)
-            || preg_match('/\bsupports multiple platforms\b/i', $text)
-        ) {
-            $issues[] = 'Uses generic wording instead of specific product value.';
-        }
-
-        if ($field === 'pros') {
-            if (
-                preg_match('/\beasy to use\b/i', $text)
-                || preg_match('/\bno design experience\b/i', $text)
-                || preg_match('/\bno design skills\b/i', $text)
-                || preg_match('/\bfree preview is available\b/i', $text)
-            ) {
-                $issues[] = 'Pros are too generic or read like filler.';
-            }
-        }
-
-        if ($field === 'what_it_is' && preg_match('/\bsupports links from\b/i', $text)) {
-            $issues[] = 'Explains supported links instead of the product workflow.';
-        }
-
-        if ($productPattern === 'link_to_website') {
-            if (
-                preg_match('/\bprofessional layout\b/i', $text)
-                || preg_match('/\bsocial media presence\b/i', $text)
-                || preg_match('/\bwebsite quickly\b/i', $text)
-            ) {
-                $issues[] = 'Uses generic link-to-website wording instead of the source-to-site transformation.';
-            }
-
-            if (
-                $field === 'summary'
-                && preg_match('/\bgoogle maps link\b/i', $text)
-                && !preg_match('/\b(listing|profile|review|business information|business details)\b/i', $text)
-            ) {
-                $issues[] = 'Over-focuses on one link type instead of the broader source material.';
-            }
-        }
-
-        $summaryMentions = $this->countNamedPlatformMentions((string) ($payload['summary'] ?? ''));
-        $whatItIsMentions = $this->countNamedPlatformMentions((string) ($payload['what_it_is'] ?? ''));
-
-        if (
-            $field === 'summary'
-            && $summaryMentions >= 3
-            && $whatItIsMentions >= 2
-        ) {
-            $issues[] = 'Repeats the same platform list too heavily.';
-        }
-
-        if (
-            $field === 'what_it_is'
-            && $whatItIsMentions >= 2
-            && $summaryMentions >= 3
-        ) {
-            $issues[] = 'Repeats the same platform list too heavily.';
-        }
-
-        return array_values(array_unique($issues));
-    }
-
-    private function detectProductPattern(string $rawDescription, string $context): ?string
-    {
-        $normalized = mb_strtolower(trim($rawDescription . "\n" . $context));
-
-        if ($normalized === '') {
-            return null;
-        }
-
-        $hasWebsiteSignals = $this->containsAny($normalized, [
-            'website',
-            'websites',
-            'site',
-            'sites',
-        ]);
-
-        $hasSourceSignals = $this->containsAny($normalized, [
-            'paste a link',
-            'paste your link',
-            'from a link',
-            'existing links',
-            'google maps',
-            'tripadvisor',
-            'facebook',
-            'instagram',
-            'linkedin',
-            'reviews',
-            'review links',
-            'social media',
-            'business listing',
-            'business listings',
-            'profiles',
-            'screenshots',
-        ]);
-
-        $hasTransformationSignals = $this->containsAny($normalized, [
-            'turns links into',
-            'transforms links into',
-            'create a website from',
-            'generate a website from',
-            'build a website from',
-            'uses existing content',
-        ]);
-
-        if ($hasWebsiteSignals && $hasSourceSignals && $hasTransformationSignals) {
-            return 'link_to_website';
-        }
-
-        return null;
-    }
-
-    private function buildProductPatternGuidance(?string $productPattern, bool $compact = false): string
-    {
-        if ($productPattern !== 'link_to_website') {
-            return '';
-        }
-
-        $lines = [
-            '- This product appears to turn existing listings, profiles, reviews, or links into a website.',
-            '- Describe the transformation from existing business content to a ready-to-use site.',
-            '- Prefer phrases like "existing listings and profiles", "reviews and business details", or "source content the user already maintains".',
-            '- Avoid framing it as a generic "online presence" tool.',
-            '- Avoid over-focusing on one source like Google Maps when the product supports several source types.',
-            '- In `pros`, emphasize reusing current content, previewing before publish, and reducing manual site setup.',
-        ];
-
-        if ($compact) {
-            return "\nPRODUCT-TYPE GUIDANCE:\n" . implode("\n", $lines);
-        }
-
-        return "\nPRODUCT-TYPE GUIDANCE:\n" . implode("\n", $lines);
-    }
-
-    private function cleanParagraph(string $text): string
-    {
-        $text = $this->normalizeText($text);
-        $text = $this->normalizeSentenceCase($text);
-        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
-
-        return trim($text);
-    }
-
-    private function cleanSentence(string $text): string
-    {
-        $text = $this->normalizeText($text);
-        $text = $this->normalizeSentenceCase($text);
-        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
-        $text = trim($text);
-
-        return trim($text, " \t\n\r\0\x0B;");
-    }
-
-    private function normalizeText(string $text): string
-    {
-        $text = trim(strip_tags($this->stripMarkdownFence($text)));
-        $text = preg_replace('/\*\*(.*?)\*\*/s', '$1', $text) ?? $text;
-        $text = str_replace(["\r\n", "\r"], "\n", $text);
-        $text = preg_replace('/\binstant(?:ly)?\b/i', 'quickly', $text) ?? $text;
-        $text = preg_replace('/\bin moments\b/i', 'quickly', $text) ?? $text;
-        $text = preg_replace('/\balmost instantly\b/i', 'quickly', $text) ?? $text;
-        $text = preg_replace('/\bAI-powered\b/i', 'AI', $text) ?? $text;
-        $text = preg_replace('/\btraditional web design\b/i', 'building a site from scratch', $text) ?? $text;
-        $text = preg_replace('/\bprofessional online presence\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bfunctional web presence\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bfull web presence\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bbasic website\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bsimple website\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bpolished website\b/i', 'website', $text) ?? $text;
-        $text = preg_replace('/\bquick and easy to use\b/i', 'easy to use', $text) ?? $text;
-        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
-        $text = $this->normalizeKnownTerms($text);
-
-        return trim($text);
-    }
-
-    private function countNamedPlatformMentions(string $text): int
-    {
-        $count = 0;
-
-        foreach ([
-            'google maps',
-            'tripadvisor',
-            'facebook',
-            'instagram',
-            'linkedin',
-            'github',
-            'slack',
-            'zapier',
-            'notion',
-        ] as $platform) {
-            preg_match_all('/\b' . preg_quote($platform, '/') . '\b/i', $text, $matches);
-            $count += count($matches[0] ?? []);
-        }
-
-        return $count;
-    }
-
-    private function normalizeSentenceCase(string $text): string
-    {
-        if ($text === '') {
-            return '';
-        }
-
-        $text = preg_replace_callback('/(^|[.!?]\s+)([a-z])/', function (array $matches) {
-            return $matches[1] . mb_strtoupper($matches[2]);
-        }, $text) ?? $text;
-
-        return ucfirst($text);
-    }
-
-    private function normalizeKnownTerms(string $text): string
-    {
-        $patterns = [
-            '/\bgoogle maps\b/i' => 'Google Maps',
-            '/\btripadvisor\b/i' => 'TripAdvisor',
-            '/\bfacebook\b/i' => 'Facebook',
-            '/\binstagram\b/i' => 'Instagram',
-            '/\blinkedin\b/i' => 'LinkedIn',
-            '/\bgithub\b/i' => 'GitHub',
-            '/\bslack\b/i' => 'Slack',
-            '/\bzapier\b/i' => 'Zapier',
-            '/\bnotion\b/i' => 'Notion',
-            '/\bapis\b/i' => 'APIs',
-            '/\bapi\b/i' => 'API',
-            '/\bai\b/i' => 'AI',
-            '/\bsaas\b/i' => 'SaaS',
-            '/\bwowable\b/i' => 'Wowable',
-            '/\bchangelogfy\b/i' => 'Changelogfy',
-        ];
-
-        return preg_replace(array_keys($patterns), array_values($patterns), $text) ?? $text;
-    }
-
-    private function normalizeProductName(string $productName): string
-    {
-        $productName = trim($productName);
-
-        if ($productName === '') {
-            return 'this product';
-        }
-
-        if (str_contains($productName, '|')) {
-            $parts = array_values(array_filter(array_map('trim', explode('|', $productName))));
-            $lastPart = end($parts);
-
-            if (is_string($lastPart) && $lastPart !== '' && str_word_count($lastPart) <= 4) {
-                $productName = $lastPart;
-            }
-        }
-
-        return $this->normalizeKnownTerms($this->normalizeSentenceCase($productName));
-    }
-
-    private function shouldIncludeFaq(string $rawDescription, string $pageTextContext): bool
-    {
-        $source = trim($rawDescription . "\n" . $pageTextContext);
-
-        if ($source === '') {
-            return false;
-        }
-
-        $normalized = mb_strtolower($source);
-
-        if (str_contains($normalized, 'frequently asked questions') || str_contains($normalized, 'faq')) {
-            return true;
-        }
-
-        $questionHeadingCount = preg_match_all('/(?:^|\n)\s*(?:h[1-3]:\s*)?(what|how|who|does|is|can|why|when)\b/im', $source);
-        $hasSupportSignals = $this->containsAny($normalized, [
-            'docs',
-            'documentation',
-            'help center',
-            'knowledge base',
-            'troubleshooting',
-            'getting started',
-            'setup',
-            'onboarding',
-        ]);
-        $hasIntegrationSignals = $this->shouldIncludeIntegrations($pageTextContext);
-        $hasPricingSignals = $this->containsAny($normalized, [
-            'pricing',
-            'plans',
-            'free trial',
-            'enterprise',
-            'subscription',
-            'billing',
-        ]);
-        $hasWorkflowSignals = $this->containsAny($normalized, [
-            'workflow',
-            'workflows',
-            'use case',
-            'use cases',
-        ]);
-
-        return mb_strlen($normalized) >= 600
-            && $questionHeadingCount >= 2
-            && ($hasSupportSignals || $hasIntegrationSignals || $hasPricingSignals || $hasWorkflowSignals);
-    }
-
-    private function shouldIncludeAlternatives(string $pageTextContext): bool
-    {
-        $normalized = mb_strtolower(trim($pageTextContext));
-
-        if ($normalized === '') {
-            return false;
-        }
-
-        if (preg_match('/(?:^|\n)\s*h[1-3]:\s*.*\b(compare|comparison|alternative|alternatives|versus|vs\.?)\b/im', $pageTextContext)) {
-            return true;
-        }
-
-        return $this->containsAny($normalized, [
-            'compare',
-            'comparison',
-            'alternative',
-            'alternatives',
-            'versus',
-            'vs ',
-            'unlike ',
-            'switch from',
-        ]);
-    }
-
-    private function shouldIncludeIntegrations(string $pageTextContext): bool
-    {
-        $normalized = mb_strtolower(trim($pageTextContext));
-
-        if ($normalized === '') {
-            return false;
-        }
-
-        if (preg_match('/(?:^|\n)\s*h[1-3]:\s*.*\b(integration|integrations|api|apis|sdk|webhook|plugin|extension)\b/im', $pageTextContext)) {
-            return true;
-        }
-
-        $signals = 0;
-
-        if ($this->containsAny($normalized, [
-            'integration',
-            'integrations',
-            'api',
-            'apis',
-            'sdk',
-            'webhook',
-            'webhooks',
-            'plugin',
-            'plugins',
-            'extension',
-            'extensions',
-        ])) {
-            $signals++;
-        }
-
-        if ($this->containsAny($normalized, [
-            'slack',
-            'zapier',
-            'notion',
-            'github',
-            'gitlab',
-            'stripe',
-            'paypal',
-            'hubspot',
-            'salesforce',
-            'google calendar',
-            'zoom',
-            'teams',
-            'discord',
-            'mixpanel',
-            'amplitude',
-            'firebase',
-            'google maps',
-            'tripadvisor',
-            'facebook',
-            'instagram',
-            'linkedin',
-        ])) {
-            $signals++;
-        }
-
-        return $signals >= 2;
-    }
-
-    private function containsAny(string $haystack, array $needles): bool
-    {
-        foreach ($needles as $needle) {
-            if (str_contains($haystack, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private function stripMarkdownFence(string $content): string
     {
         $trimmed = trim($content);
@@ -1143,5 +594,21 @@ PROMPT;
         }
 
         return trim($trimmed);
+    }
+
+    private function normalizeProductName(string $productName): string
+    {
+        $productName = trim($productName);
+
+        if ($productName === '') {
+            return 'this product';
+        }
+
+        return $productName;
+    }
+
+    private function escapeForPrompt(string $value): string
+    {
+        return str_replace('"', '\"', $value);
     }
 }

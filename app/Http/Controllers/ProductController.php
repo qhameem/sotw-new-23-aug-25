@@ -2689,6 +2689,311 @@ class ProductController extends Controller
         }
     }
 
+    protected function extractPotentialTaglinesFromDocument(DOMDocument $doc, ?string $productName = null): array
+    {
+        $cleanDoc = clone $doc;
+        $xpath = new DOMXPath($cleanDoc);
+        $noiseQuery = '//footer | //nav | //script | //style | //noscript | //aside'
+            . ' | //video | //iframe | //form | //figure | //picture | //template'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "cookie")]'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "banner")]'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "intercom")]'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "chat")]'
+            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "widget")]'
+            . ' | //*[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]';
+
+        foreach ($xpath->query($noiseQuery) as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        $candidates = [];
+
+        foreach (['h1', 'h2', 'h3'] as $tag) {
+            foreach ($cleanDoc->getElementsByTagName($tag) as $heading) {
+                $value = $this->normalizeAutofillCandidateText($heading->nodeValue);
+
+                if ($this->isWeakAutofillTaglineCandidate($value, $productName)) {
+                    continue;
+                }
+
+                $candidates[] = $value;
+            }
+        }
+
+        $elements = $xpath->query("//*[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline') or contains(@class, 'hero')]");
+        foreach ($elements as $element) {
+            $value = $this->normalizeAutofillCandidateText($element->textContent);
+
+            if ($this->isWeakAutofillTaglineCandidate($value, $productName)) {
+                continue;
+            }
+
+            $candidates[] = $value;
+        }
+
+        return array_slice(array_values(array_unique($candidates)), 0, 20);
+    }
+
+    protected function buildHeuristicTaglines(?string $descriptionContent, string $title, array $potentialTaglines, ?string $productName = null): array
+    {
+        $allCandidates = array_filter(array_map(
+            fn ($candidate) => $this->normalizeAutofillCandidateText((string) $candidate),
+            array_merge([(string) $descriptionContent, trim($title)], $potentialTaglines)
+        ));
+
+        $allCandidates = array_values(array_filter(array_unique($allCandidates), function ($candidate) use ($productName) {
+            return !$this->isWeakAutofillTaglineCandidate($candidate, $productName);
+        }));
+
+        $tagline = $this->selectBestAutofillTaglineCandidate($allCandidates, $productName, 140, true) ?? '';
+        $remaining = array_values(array_filter($allCandidates, fn ($candidate) => $candidate !== $tagline));
+        $detailed = $this->selectBestAutofillTaglineCandidate($remaining !== [] ? $remaining : $allCandidates, $productName, 160, false) ?? '';
+
+        return [
+            'tagline' => $tagline,
+            'tagline_detailed' => $detailed,
+        ];
+    }
+
+    protected function selectBestAutofillTaglineCandidate(array $candidates, ?string $productName = null, int $maxLength = 160, bool $preferShort = false): ?string
+    {
+        $scored = [];
+
+        foreach ($candidates as $candidate) {
+            $candidate = $this->normalizeAutofillCandidateText((string) $candidate);
+
+            if ($this->isWeakAutofillTaglineCandidate($candidate, $productName)) {
+                continue;
+            }
+
+            $scored[] = [
+                'text' => Str::limit($candidate, $maxLength, '...'),
+                'score' => $this->scoreAutofillTaglineCandidate($candidate, $preferShort),
+            ];
+        }
+
+        if ($scored === []) {
+            return null;
+        }
+
+        usort($scored, fn ($a, $b) => $b['score'] <=> $a['score']);
+
+        return $scored[0]['text'] ?? null;
+    }
+
+    protected function scoreAutofillTaglineCandidate(string $candidate, bool $preferShort = false): int
+    {
+        $score = 0;
+        $length = mb_strlen($candidate);
+        $wordCount = str_word_count($candidate);
+
+        $targetLength = $preferShort ? 70 : 105;
+        $score -= abs($length - $targetLength);
+
+        if ($wordCount >= 5 && $wordCount <= 14) {
+            $score += 35;
+        } elseif ($wordCount >= 3 && $wordCount <= 18) {
+            $score += 15;
+        } else {
+            $score -= 25;
+        }
+
+        if (preg_match('/\b(build|plan|track|manage|generate|execute|write|debug|ship|deploy|estimate|collaborate|code|launch|review|organize|automate)\b/i', $candidate)) {
+            $score += 30;
+        }
+
+        if (preg_match('/[.!?]$/', $candidate)) {
+            $score += 5;
+        }
+
+        if (preg_match('/\b(no credit card|required|setup in|deploy instantly|the future of)\b/i', $candidate)) {
+            $score -= 20;
+        }
+
+        return $score;
+    }
+
+    protected function isWeakAutofillTaglineCandidate(?string $candidate, ?string $productName = null): bool
+    {
+        $candidate = $this->normalizeAutofillCandidateText((string) $candidate);
+        $normalized = Str::lower($candidate);
+
+        if ($candidate === '' || mb_strlen($candidate) < 12 || mb_strlen($candidate) > 220) {
+            return true;
+        }
+
+        if (str_word_count($candidate) < 2) {
+            return true;
+        }
+
+        if ($productName && Str::lower(trim($productName)) === $normalized) {
+            return true;
+        }
+
+        if (preg_match('/[$%]|^\d+$/', $candidate)) {
+            return true;
+        }
+
+        return in_array($normalized, [
+            'platform',
+            'agile',
+            'community',
+            'pricing',
+            'legal',
+            'solutions',
+            'founders',
+            'agencies',
+            'marketing',
+            'enterprise',
+            'project managers',
+            'designers',
+            'dashboard',
+            'backlog',
+            'board',
+            'roadmap',
+            'reports',
+            'qa mode',
+            'site wide links',
+            'site-wide links',
+            'ready to build',
+            'live preview',
+            'start building',
+            'get started',
+            'try it free',
+            'status',
+            'terms',
+            'privacy',
+            'contact sales',
+        ], true);
+    }
+
+    protected function normalizeAutofillCandidateText(?string $value): string
+    {
+        $value = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace('/\s+/u', ' ', trim($value)) ?? '';
+
+        return trim($value, " \t\n\r\0\x0B-");
+    }
+
+    protected function buildAiAutofillNotice(array $failures, string $fieldLabel, bool $isAdmin): ?string
+    {
+        if ($failures === []) {
+            return null;
+        }
+
+        if (!$isAdmin) {
+            return 'AI autofill is unavailable right now, so we used a structured fallback. You can continue editing manually.';
+        }
+
+        $parts = [];
+
+        foreach ($failures as $failure) {
+            $provider = match (strtolower((string) ($failure['provider'] ?? ''))) {
+                'groq' => 'Groq',
+                'gemini' => 'Gemini',
+                default => 'AI provider',
+            };
+
+            $status = $failure['status'] ?? null;
+            $body = (string) ($failure['body'] ?? '');
+            $normalized = Str::lower($body);
+            $part = null;
+
+            if (str_contains($normalized, 'no ai provider key is set')) {
+                $part = 'No AI provider key is configured.';
+            } elseif ($status === 429 || str_contains($normalized, 'rate_limit_exceeded') || str_contains($normalized, 'quota exceeded') || str_contains($normalized, 'resource_exhausted')) {
+                $part = $provider . ' quota or rate limit was reached';
+                $retryAt = $this->extractAiRetryAt($body);
+
+                if ($retryAt) {
+                    $retryLabel = $retryAt->isSameDay(Carbon::now())
+                        ? $retryAt->format('g:i A')
+                        : $retryAt->format('M j, g:i A');
+                    $part .= ' and may reset around ' . $retryLabel;
+                }
+
+                $part .= '.';
+            } elseif ($status === 400) {
+                $part = $provider . ' rejected the request with a 400 response.';
+            } elseif ($status) {
+                $part = $provider . ' returned HTTP ' . $status . '.';
+            } elseif ($body !== '') {
+                $part = $provider . ' error: ' . Str::limit($body, 140, '...');
+            }
+
+            if ($part) {
+                $parts[] = $part;
+            }
+        }
+
+        $parts = array_values(array_unique($parts));
+
+        if ($parts === []) {
+            return 'AI ' . $fieldLabel . ' generation failed, so fallback content was used.';
+        }
+
+        return 'AI ' . $fieldLabel . ' generation failed. ' . implode(' ', $parts) . ' Using fallback content for now.';
+    }
+
+    protected function extractAiRetryAt(string $body): ?Carbon
+    {
+        $seconds = $this->extractAiRetryDelaySeconds($body);
+
+        if ($seconds === null) {
+            return null;
+        }
+
+        return Carbon::now()->addSeconds($seconds);
+    }
+
+    protected function extractAiRetryDelaySeconds(string $body): ?int
+    {
+        if (preg_match('/"retryDelay"\s*:\s*"([^"]+)"/', $body, $matches) === 1) {
+            return $this->parseRetryDelayToSeconds($matches[1]);
+        }
+
+        if (preg_match('/Please try again in ([0-9hms.\s]+)/i', $body, $matches) === 1) {
+            return $this->parseRetryDelayToSeconds($matches[1]);
+        }
+
+        if (preg_match('/Please retry in ([0-9hms.\s]+)/i', $body, $matches) === 1) {
+            return $this->parseRetryDelayToSeconds($matches[1]);
+        }
+
+        return null;
+    }
+
+    protected function parseRetryDelayToSeconds(string $value): ?int
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        preg_match_all('/(\d+(?:\.\d+)?)([hms])/i', $value, $matches, PREG_SET_ORDER);
+
+        if ($matches === []) {
+            return null;
+        }
+
+        $seconds = 0.0;
+
+        foreach ($matches as $match) {
+            $amount = (float) $match[1];
+            $unit = strtolower($match[2]);
+
+            $seconds += match ($unit) {
+                'h' => $amount * 3600,
+                'm' => $amount * 60,
+                default => $amount,
+            };
+        }
+
+        return (int) ceil($seconds);
+    }
+
     public function fetchInitialMetadata(Request $request)
     {
         // Increase maximum execution time for scraping
@@ -2728,36 +3033,13 @@ class ProductController extends Controller
             @$doc->loadHTML($html);
             $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
 
-            // Extract potential detailed tagline from h1, h2, h3 tags or specific classes
-            $potentialTaglines = [];
-            $headings = $doc->getElementsByTagName('h1');
-            foreach ($headings as $heading) {
-                $potentialTaglines[] = $heading->nodeValue;
-            }
-            $headings = $doc->getElementsByTagName('h2');
-            foreach ($headings as $heading) {
-                $potentialTaglines[] = $heading->nodeValue;
-            }
-            $headings = $doc->getElementsByTagName('h3');
-            foreach ($headings as $heading) {
-                $potentialTaglines[] = $heading->nodeValue;
-            }
-
-            // Look for specific classes that might contain taglines
-            $xpath = new \DOMXPath($doc);
-            $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
-            foreach ($elements as $element) {
-                $potentialTaglines[] = $element->nodeValue;
-            }
-
-            // Use the first potential tagline that's not empty and not too long
-            foreach ($potentialTaglines as $potential) {
-                $potential = trim($potential);
-                if (!empty($potential) && strlen($potential) < 200) {
-                    $taglineDetailed = $potential;
-                    break;
-                }
-            }
+            $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $metadata['name'] ?? '');
+            $taglineDetailed = $this->selectBestAutofillTaglineCandidate(
+                $potentialTaglines,
+                $metadata['name'] ?? '',
+                160,
+                false
+            ) ?? '';
 
             // Fallback to the meta description if no detailed tagline was found
             if (empty($taglineDetailed)) {
@@ -2782,7 +3064,7 @@ class ProductController extends Controller
         ];
 
         // Smart assignment: short tagline ≤ 140 chars, detailed ≤ 160 chars
-        $metaTagline = $metadata['tagline'] ?? '';
+            $metaTagline = $metadata['tagline'] ?? '';
         $headingTagline = $taglineDetailed;
 
         // If both are available, the shorter one is the tagline, longer is detailed
@@ -3097,8 +3379,9 @@ class ProductController extends Controller
     public function processUrlStream(Request $request)
     {
         set_time_limit(120);
+        $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
-        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
+        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request, $isAdmin) {
             $sendUpdate = function ($message, $progress, $data = null) {
                 echo json_encode(['message' => $message, 'progress' => $progress, 'data' => $data]) . "\n";
                 if (ob_get_level() > 0) {
@@ -3128,6 +3411,8 @@ class ProductController extends Controller
             $description = '';
             $extractedTagline = '';
             $extractedTaglineDetailed = '';
+            $taglineNotice = null;
+            $descriptionNotice = null;
 
             try {
                 $sendUpdate('Connecting to website...', 5);
@@ -3175,18 +3460,7 @@ class ProductController extends Controller
                         }
                     }
 
-                    $potentialTaglines = [];
-                    foreach (['h1', 'h2', 'h3'] as $tag) {
-                        foreach ($doc->getElementsByTagName($tag) as $heading) {
-                            $potentialTaglines[] = $heading->nodeValue;
-                        }
-                    }
-
-                    $xpath = new \DOMXPath($doc);
-                    $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
-                    foreach ($elements as $element) {
-                        $potentialTaglines[] = $element->nodeValue;
-                    }
+                    $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $name);
 
                     $description = $descriptionContent;
 
@@ -3237,34 +3511,18 @@ class ProductController extends Controller
                     }
 
                     if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
-                        $allCandidates = array_filter(array_map('trim', array_merge([$descriptionContent, trim($title)], $potentialTaglines)));
-                        $allCandidates = array_unique($allCandidates);
-                        $allCandidates = array_filter($allCandidates, function ($c) use ($name) {
-                            return !empty($c) && strtolower(trim($c)) !== strtolower(trim($name ?? ''));
-                        });
-                        usort($allCandidates, fn($a, $b) => strlen($a) - strlen($b));
+                        $heuristicTaglines = $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name);
 
                         if (empty($extractedTagline)) {
-                            foreach ($allCandidates as $candidate) {
-                                if (strlen($candidate) <= 140 && strlen($candidate) > 5) {
-                                    $extractedTagline = $candidate;
-                                    break;
-                                }
-                            }
-                            if (empty($extractedTagline) && !empty($allCandidates))
-                                $extractedTagline = \Illuminate\Support\Str::limit(reset($allCandidates), 140, '...');
+                            $extractedTagline = $heuristicTaglines['tagline'] ?? '';
                         }
 
                         if (empty($extractedTaglineDetailed)) {
-                            $reversed = array_reverse($allCandidates);
-                            foreach ($reversed as $candidate) {
-                                if ($candidate !== $extractedTagline && strlen($candidate) > 10) {
-                                    $extractedTaglineDetailed = \Illuminate\Support\Str::limit($candidate, 160, '...');
-                                    break;
-                                }
-                            }
-                            if (empty($extractedTaglineDetailed) && !empty($allCandidates))
-                                $extractedTaglineDetailed = \Illuminate\Support\Str::limit(end($allCandidates), 160, '...');
+                            $extractedTaglineDetailed = $heuristicTaglines['tagline_detailed'] ?? '';
+                        }
+
+                        if (isset($taglineRewriter) && $taglineRewriter instanceof \App\Services\TaglineRewriterService) {
+                            $taglineNotice = $this->buildAiAutofillNotice($taglineRewriter->getFailures(), 'tagline', $isAdmin);
                         }
                     }
 
@@ -3274,6 +3532,7 @@ class ProductController extends Controller
                     $sendUpdate('Taglines ready. Writing product description...', 55, [
                         'tagline' => $extractedTagline ?: $tagline,
                         'tagline_detailed' => $extractedTaglineDetailed,
+                        'tagline_notice' => $taglineNotice,
                     ]);
 
                     $sendUpdate('Writing product description...', 65);
@@ -3288,10 +3547,15 @@ class ProductController extends Controller
                         if ($rewritten) {
                             $description = $rewritten;
                         }
+
+                        if ($descRewriter->usedFallback()) {
+                            $descriptionNotice = $this->buildAiAutofillNotice($descRewriter->getFailures(), 'description', $isAdmin);
+                        }
                     }
 
                     $sendUpdate('Description ready. Extracting pricing page, socials, and logos...', 72, [
                         'description' => $description,
+                        'description_notice' => $descriptionNotice,
                     ]);
                 }
 
@@ -3359,6 +3623,8 @@ class ProductController extends Controller
                     'logos' => $logos,
                     'tagline' => $extractedTagline ?: $tagline,
                     'tagline_detailed' => $extractedTaglineDetailed,
+                    'tagline_notice' => $taglineNotice,
+                    'description_notice' => $descriptionNotice,
                     'categories' => $categoryIds,
                     'useCases' => $useCaseIds,
                     'bestFor' => $bestForIds,
@@ -3405,6 +3671,7 @@ class ProductController extends Controller
     public function processUrl(Request $request)
     {
         set_time_limit(120);
+        $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
         $url = $request->input('url');
         if (!$url) {
@@ -3426,6 +3693,8 @@ class ProductController extends Controller
         $description = '';
         $extractedTagline = '';
         $extractedTaglineDetailed = '';
+        $taglineNotice = null;
+        $descriptionNotice = null;
 
         try {
             // 3. Fetch HTML for content extraction with timeout
@@ -3471,26 +3740,7 @@ class ProductController extends Controller
                 }
 
                 // Extract potential taglines from h1, h2, h3 tags or specific classes
-                $potentialTaglines = [];
-                $headings = $doc->getElementsByTagName('h1');
-                foreach ($headings as $heading) {
-                    $potentialTaglines[] = $heading->nodeValue;
-                }
-                $headings = $doc->getElementsByTagName('h2');
-                foreach ($headings as $heading) {
-                    $potentialTaglines[] = $heading->nodeValue;
-                }
-                $headings = $doc->getElementsByTagName('h3');
-                foreach ($headings as $heading) {
-                    $potentialTaglines[] = $heading->nodeValue;
-                }
-
-                // Look for specific classes that might contain taglines
-                $xpath = new \DOMXPath($doc);
-                $elements = $xpath->query("//div[contains(@class, 'tagline') or contains(@class, 'slogan') or contains(@class, 'subtitle') or contains(@class, 'description') or contains(@class, 'headline')]");
-                foreach ($elements as $element) {
-                    $potentialTaglines[] = $element->nodeValue;
-                }
+                $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $name);
 
                 // --- Gather raw material for taglines and description ---
                 $description = $descriptionContent; // meta description as raw material
@@ -3544,47 +3794,18 @@ class ProductController extends Controller
                 // --- Heuristic fallback if AI didn't produce taglines ---
                 if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
                     // Collect all candidate strings: meta description, title, headings
-                    $allCandidates = array_filter(array_map('trim', array_merge(
-                        [$descriptionContent, trim($title)],
-                        $potentialTaglines
-                    )));
-
-                    // Remove duplicates and the product name itself
-                    $allCandidates = array_unique($allCandidates);
-                    $allCandidates = array_filter($allCandidates, function ($c) use ($name) {
-                        return !empty($c) && strtolower(trim($c)) !== strtolower(trim($name ?? ''));
-                    });
-
-                    // Sort by length: shortest first
-                    usort($allCandidates, fn($a, $b) => strlen($a) - strlen($b));
+                    $heuristicTaglines = $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name);
 
                     if (empty($extractedTagline)) {
-                        // Pick the shortest candidate that's ≤ 60 chars for short tagline
-                        foreach ($allCandidates as $candidate) {
-                            if (strlen($candidate) <= 140 && strlen($candidate) > 5) {
-                                $extractedTagline = $candidate;
-                                break;
-                            }
-                        }
-                        // If nothing ≤ 60, truncate the shortest candidate
-                        if (empty($extractedTagline) && !empty($allCandidates)) {
-                            $extractedTagline = Str::limit(reset($allCandidates), 140, '...');
-                        }
+                        $extractedTagline = $heuristicTaglines['tagline'] ?? '';
                     }
 
                     if (empty($extractedTaglineDetailed)) {
-                        // Pick the longest candidate that differs from $extractedTagline
-                        $reversed = array_reverse($allCandidates);
-                        foreach ($reversed as $candidate) {
-                            if ($candidate !== $extractedTagline && strlen($candidate) > 10) {
-                                $extractedTaglineDetailed = Str::limit($candidate, 160, '...');
-                                break;
-                            }
-                        }
-                        // If nothing differs, use the same one truncated to 160
-                        if (empty($extractedTaglineDetailed) && !empty($allCandidates)) {
-                            $extractedTaglineDetailed = Str::limit(end($allCandidates), 160, '...');
-                        }
+                        $extractedTaglineDetailed = $heuristicTaglines['tagline_detailed'] ?? '';
+                    }
+
+                    if (isset($taglineRewriter) && $taglineRewriter instanceof \App\Services\TaglineRewriterService) {
+                        $taglineNotice = $this->buildAiAutofillNotice($taglineRewriter->getFailures(), 'tagline', $isAdmin);
                     }
                 }
 
@@ -3605,6 +3826,10 @@ class ProductController extends Controller
                     $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $textContent);
                     if ($rewritten) {
                         $description = $rewritten;
+                    }
+
+                    if ($descRewriter->usedFallback()) {
+                        $descriptionNotice = $this->buildAiAutofillNotice($descRewriter->getFailures(), 'description', $isAdmin);
                     }
                 }
             }
@@ -3674,6 +3899,8 @@ class ProductController extends Controller
                 'logos' => $logos,
                 'tagline' => $extractedTagline ?: $tagline, // Use extracted tagline, fallback to provided tagline
                 'tagline_detailed' => $extractedTaglineDetailed, // Use extracted detailed tagline
+                'tagline_notice' => $taglineNotice,
+                'description_notice' => $descriptionNotice,
                 'categories' => $categoryIds,
                 'useCases' => $useCaseIds,
                 'bestFor' => $bestForIds,

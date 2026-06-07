@@ -405,6 +405,10 @@ export function useProductForm() {
       form.tagline_detailed = detailed;
     }
 
+    if (typeof data.tagline_notice === 'string') {
+      extractionErrors.tagline = data.tagline_notice.trim();
+    }
+
     if (typeof data.favicon === 'string' && data.favicon.trim() !== '') {
       form.favicon = data.favicon;
     }
@@ -421,6 +425,10 @@ export function useProductForm() {
     ) {
       form.description = data.description;
       unlockAutofillGroups('description');
+    }
+
+    if (typeof data.description_notice === 'string') {
+      extractionErrors.description = data.description_notice.trim();
     }
 
     if (Array.isArray(data.logos) && data.logos.length > 0) {
