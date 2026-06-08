@@ -11,6 +11,7 @@
         popularSearchLoaded: false,
         popularSearchLoading: false,
         searchResults: { products: [], categories: [] },
+        searchTrackingKeys: new Set(),
         searchTerm: '',
         searchLoading: false,
         searchController: null,
@@ -38,9 +39,58 @@
             }
 
             this.searchController = null;
+            this.searchTrackingKeys = new Set();
             this.searchTerm = '';
             this.searchResults = { products: [], categories: [] };
             this.searchLoading = false;
+        },
+        normalizeTrackedSearchTerm(term) {
+            return (term || '').trim().replace(/\s+/g, ' ').slice(0, 255);
+        },
+        queueSearchTracking(term, source = 'global_search_modal') {
+            const query = this.normalizeTrackedSearchTerm(term);
+
+            if (query.length < 2) {
+                return;
+            }
+
+            const trackingKey = `${source}:${query.toLowerCase()}`;
+
+            if (this.searchTrackingKeys.has(trackingKey)) {
+                return;
+            }
+
+            this.searchTrackingKeys.add(trackingKey);
+
+            try {
+                const csrfToken = document.querySelector(`meta[name='csrf-token']`)?.getAttribute('content') || '';
+
+                if (navigator.sendBeacon) {
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('query', query);
+                    formData.append('source', source);
+
+                    if (navigator.sendBeacon('{{ route('api.search.log') }}', formData)) {
+                        return;
+                    }
+                }
+
+                fetch('{{ route('api.search.log') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ query, source }),
+                    keepalive: true,
+                    credentials: 'same-origin',
+                }).catch(() => {});
+            } catch (error) {
+                console.error('Search tracking error:', error);
+            }
         },
         loadSearchModalContent() {
             this.searchModalError = '';
@@ -57,6 +107,7 @@
             this.loadPopularSearchContent();
         },
         closeSearchModal() {
+            this.queueSearchTracking(this.searchTerm);
             this.searchModalOpen = false;
             this.resetSearchState();
             this.searchModalError = '';

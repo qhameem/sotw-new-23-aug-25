@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\GlobalSearchService;
+use App\Services\SearchTrackingService;
 use App\Support\ProductLogo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,24 @@ class SearchController extends Controller
         return response()->json([
             'products' => $globalSearchService->getPopularProducts(),
             'categories' => $globalSearchService->getPopularCategories(),
+        ]);
+    }
+
+    public function log(Request $request, SearchTrackingService $searchTrackingService)
+    {
+        $validated = $request->validate([
+            'query' => ['required', 'string', 'min:2', 'max:255'],
+            'source' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $searchTrackingService->track(
+            $request,
+            $validated['query'],
+            (string) ($validated['source'] ?? 'global_search_modal')
+        );
+
+        return response()->json([
+            'tracked' => true,
         ]);
     }
 

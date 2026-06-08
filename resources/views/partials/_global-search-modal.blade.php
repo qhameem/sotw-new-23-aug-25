@@ -72,7 +72,7 @@
 
                     <div class="space-y-2" x-show="!showDefaultSearchContent() && searchResults.categories.length > 0">
                         <template x-for="category in searchResults.categories" :key="`search-category-${category.id}`">
-                            <a :href="category.url" class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
+                            <a :href="category.url" @click="queueSearchTracking(searchTerm)" class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
                                 <span class="truncate text-sm font-semibold text-gray-900" x-text="category.name"></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -106,7 +106,7 @@
 
                     <div x-show="showDefaultSearchContent() && popularSearchContent.products.length > 0" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <template x-for="product in popularSearchContent.products" :key="`popular-product-${product.id}`">
-                            <a :href="product.url" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
+                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
                                 <template x-if="product.logo_url">
                                     <img :src="product.logo_url" :alt="product.name"
                                         x-on:error="if (product.fallback_logo_url && $el.src !== product.fallback_logo_url) { $el.src = product.fallback_logo_url } else { product.logo_url = null }"
@@ -132,7 +132,7 @@
                     <div x-show="!showDefaultSearchContent() && !searchLoading && searchResults.products.length > 0"
                         class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <template x-for="product in searchResults.products" :key="`search-product-${product.id}`">
-                            <a :href="product.url" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
+                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
                                 <template x-if="product.logo_url">
                                     <img :src="product.logo_url" :alt="product.name"
                                         x-on:error="if (product.fallback_logo_url && $el.src !== product.fallback_logo_url) { $el.src = product.fallback_logo_url } else { product.logo_url = null }"

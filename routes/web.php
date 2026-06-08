@@ -47,6 +47,9 @@ use Illuminate\Support\Facades\Route;
 Route::resource('product-reviews', ProductReviewController::class)->only(['create', 'store']);
 
 Route::post('/set-intended-url', [RedirectController::class, 'setIntendedUrl'])->name('set-intended-url');
+Route::post('/api/search/log', [\App\Http\Controllers\Api\SearchController::class, 'log'])
+    ->middleware('throttle:60,1')
+    ->name('api.search.log');
 Route::get('/search-modal-content', SearchModalContentController::class)->name('search.modal-content');
 Route::get('/auth/login-modal-content', LoginModalContentController::class)->name('auth.login-modal-content');
 Route::post('/fetch-videos', [VideoController::class, 'fetch'])->middleware('throttle:20,1')->name('fetch-videos');
