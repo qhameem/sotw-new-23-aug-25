@@ -23,7 +23,6 @@ class SearchTrackingService
 
         $location = $this->locationService->resolve($request);
         $user = $request->user();
-        $ipAddress = $location['ip_address'] ?? null;
         $dedupeWindowStart = Carbon::now()->subSeconds(15);
 
         $existing = SearchLog::query()
@@ -33,15 +32,7 @@ class SearchTrackingService
             ->when(
                 $user,
                 fn ($query) => $query->where('user_id', $user->getKey()),
-                function ($query) use ($ipAddress) {
-                    $query->whereNull('user_id');
-
-                    if ($ipAddress) {
-                        $query->where('ip_address', $ipAddress);
-                    } else {
-                        $query->whereRaw('1 = 0');
-                    }
-                }
+                fn ($query) => $query->whereNull('user_id')
             )
             ->latest('id')
             ->first();
@@ -54,7 +45,6 @@ class SearchTrackingService
             'user_id' => $user?->getKey(),
             'search_term' => $searchTerm,
             'source' => $source,
-            'ip_address' => $ipAddress,
             'country_code' => $location['country_code'] ?? null,
             'country_name' => $location['country_name'] ?? null,
             'city' => $location['city'] ?? null,

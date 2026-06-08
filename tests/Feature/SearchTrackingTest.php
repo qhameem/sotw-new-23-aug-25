@@ -4,7 +4,7 @@ use App\Models\SearchLog;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 
-it('tracks guest search activity with ip and location details', function () {
+it('tracks guest search activity with location details without storing ip', function () {
     $response = $this->post(route('api.search.log'), [
         'query' => 'AI note taker',
         'source' => 'global_search_modal',
@@ -24,7 +24,7 @@ it('tracks guest search activity with ip and location details', function () {
     expect($log)->not->toBeNull()
         ->and($log->search_term)->toBe('AI note taker')
         ->and($log->user_id)->toBeNull()
-        ->and($log->ip_address)->toBe('198.51.100.20')
+        ->and($log->ip_address)->toBeNull()
         ->and($log->country_code)->toBe('US')
         ->and($log->country_name)->toBe('United States')
         ->and($log->city)->toBe('New York');
@@ -68,7 +68,6 @@ it('shows tracked searches on the admin search history page', function () {
         'user_id' => $searchUser->id,
         'search_term' => 'best ai crm',
         'source' => 'global_search_modal',
-        'ip_address' => '198.51.100.40',
         'country_code' => 'GB',
         'country_name' => 'United Kingdom',
         'city' => 'London',

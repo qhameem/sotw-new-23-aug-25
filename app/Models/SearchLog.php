@@ -14,7 +14,6 @@ class SearchLog extends Model
         'user_id',
         'search_term',
         'source',
-        'ip_address',
         'country_code',
         'country_name',
         'city',

@@ -28,7 +28,6 @@
                             <tr>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Search</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">User</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">IP</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Location</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Time</th>
                             </tr>
@@ -51,9 +50,6 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm text-gray-700">
-                                        {{ $searchLog->ip_address ?: 'Unavailable' }}
-                                    </td>
-                                    <td class="px-4 py-4 align-top text-sm text-gray-700">
                                         @php
                                             $locationParts = array_values(array_filter([
                                                 $searchLog->city,
@@ -69,7 +65,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">
+                                    <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">
                                         No search activity tracked yet.
                                     </td>
                                 </tr>
