@@ -29,35 +29,35 @@
                     <div
                         x-data="{
                             open: false,
-                            closeTimer: null,
                             activeGroup: '{{ $defaultCategoryNavigationGroupKey ?? 'ai-automation' }}',
+                            searchQuery: '',
                             summaries: {{ \Illuminate\Support\Js::from($categoryNavigationSummaries ?? []) }},
                             groups: [],
                             groupsLoaded: false,
                             groupsLoading: false,
-                            clearCloseTimer() {
-                                if (this.closeTimer) {
-                                    clearTimeout(this.closeTimer);
-                                    this.closeTimer = null;
-                                }
-                            },
                             openMenu() {
-                                this.clearCloseTimer();
                                 this.open = true;
                                 this.loadGroups();
+                                this.$nextTick(() => this.$refs.searchInput?.focus());
                             },
-                            scheduleClose() {
-                                this.clearCloseTimer();
-                                this.closeTimer = setTimeout(() => {
-                                    this.open = false;
-                                }, 180);
+                            closeMenu() {
+                                this.open = false;
+                                this.searchQuery = '';
+                            },
+                            toggleMenu() {
+                                if (this.open) {
+                                    this.closeMenu();
+                                    return;
+                                }
+
+                                this.openMenu();
                             },
                             setGroup(key) {
                                 if (this.activeGroup !== key) {
                                     this.activeGroup = key;
                                 }
 
-                                this.openMenu();
+                                this.loadGroups();
                             },
                             async loadGroups() {
                                 if (this.groupsLoaded || this.groupsLoading) {
@@ -92,19 +92,39 @@
                                     ?? this.summaries[0]
                                     ?? { items: [] };
                             },
+                            get isSearching() {
+                                return this.searchQuery.trim().length > 0;
+                            },
+                            get searchableItems() {
+                                return this.groups.flatMap((group) => {
+                                    const items = Array.isArray(group.items) ? group.items : [];
+
+                                    return items.map((item) => ({
+                                        ...item,
+                                        groupKey: group.key,
+                                        groupLabel: group.label,
+                                    }));
+                                });
+                            },
+                            get filteredSearchItems() {
+                                const query = this.searchQuery.trim().toLowerCase();
+
+                                if (!query) {
+                                    return [];
+                                }
+
+                                return this.searchableItems.filter((item) => item.name.toLowerCase().includes(query));
+                            },
                         }"
                         class="relative"
-                        @click.outside="open = false; clearCloseTimer()"
-                        @keydown.escape.window="open = false; clearCloseTimer()"
+                        @click.outside="closeMenu()"
+                        @keydown.escape.window="closeMenu()"
                     >
                         <button
                             x-ref="trigger"
                             type="button"
                             class="flex items-center gap-1.5 text-sm font-semibold transition-colors"
-                            @mouseenter="openMenu()"
-                            @mouseleave="scheduleClose()"
-                            @focus="openMenu()"
-                            @click="open ? open = false : openMenu()"
+                            @click="toggleMenu()"
                             :aria-expanded="open.toString()"
                             aria-haspopup="true"
                         >
@@ -118,8 +138,6 @@
                             x-ref="panel"
                             x-show="open"
                             x-cloak
-                            @mouseenter="openMenu()"
-                            @mouseleave="scheduleClose()"
                             x-transition:enter="transition ease-out duration-150"
                             x-transition:enter-start="opacity-0 -translate-y-2"
                             x-transition:enter-end="opacity-100 translate-y-0"
@@ -137,9 +155,54 @@
                                             <div class="mt-1 text-base font-semibold text-gray-900">Find the right category faster</div>
                                             <p class="mt-1 max-w-none whitespace-nowrap text-[11px] text-gray-600">Explore grouped software categories on the left, then jump straight into the sub-categories on the right.</p>
                                         </div>
-                                        <a href="{{ route('categories.index') }}" wire:navigate.hover class="inline-flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
-                                            View all categories
-                                        </a>
+                                        <div class="flex shrink-0 items-center gap-2">
+                                            <a href="{{ route('categories.index') }}" wire:navigate.hover class="inline-flex items-center rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">
+                                                View all categories
+                                            </a>
+                                            <button
+                                                type="button"
+                                                @click="closeMenu()"
+                                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+                                                aria-label="Close categories menu"
+                                                title="Close"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <label for="desktop-category-search" class="sr-only">Search categories</label>
+                                        <div class="relative">
+                                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                x-ref="searchInput"
+                                                id="desktop-category-search"
+                                                type="search"
+                                                x-model="searchQuery"
+                                                autocomplete="off"
+                                                placeholder="Search category name"
+                                                class="block w-full rounded-2xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                                            >
+                                            <button
+                                                x-show="searchQuery"
+                                                x-cloak
+                                                type="button"
+                                                @click="searchQuery = ''; $nextTick(() => $refs.searchInput?.focus())"
+                                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 transition hover:text-gray-700"
+                                                aria-label="Clear category search"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -203,9 +266,22 @@
                                     <div class="p-6">
                                         <div class="mb-5 flex items-start justify-between gap-4">
                                             <div>
-                                                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="activeGroupData.eyebrow"></p>
-                                                <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h3>
-                                                <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600" x-text="activeGroupData.description"></p>
+                                                <template x-if="!isSearching">
+                                                    <div>
+                                                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="activeGroupData.eyebrow"></p>
+                                                        <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h3>
+                                                        <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600" x-text="activeGroupData.description"></p>
+                                                    </div>
+                                                </template>
+                                                <template x-if="isSearching">
+                                                    <div>
+                                                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Search Results</p>
+                                                        <h3 class="mt-1 text-lg font-semibold text-gray-900">Matching categories</h3>
+                                                        <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600">
+                                                            Search across all category groups by category name.
+                                                        </p>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </div>
 
@@ -215,7 +291,7 @@
                                             </div>
                                         </template>
 
-                                        <template x-if="groupsLoaded && activeGroupData.items && activeGroupData.items.length">
+                                        <template x-if="groupsLoaded && !isSearching && activeGroupData.items && activeGroupData.items.length">
                                             <div class="max-h-[24rem] overflow-y-auto pr-2">
                                                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                                     <template x-for="item in activeGroupData.items" :key="item.slug">
@@ -242,10 +318,45 @@
                                             </div>
                                         </template>
 
-                                        <template x-if="groupsLoaded && (!activeGroupData.items || !activeGroupData.items.length)">
+                                        <template x-if="groupsLoaded && isSearching && filteredSearchItems.length">
+                                            <div class="max-h-[24rem] overflow-y-auto pr-2">
+                                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                                    <template x-for="item in filteredSearchItems" :key="`${item.groupKey}-${item.slug}`">
+                                                        <a
+                                                            :href="item.url"
+                                                            wire:navigate.hover
+                                                            class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
+                                                        >
+                                                            <span class="pr-3">
+                                                                <span class="block font-semibold text-sm text-gray-900" x-text="item.name"></span>
+                                                                <span class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600" x-text="item.groupLabel"></span>
+                                                                    <span x-text="`${item.count} products`"></span>
+                                                                    <template x-if="item.type_label">
+                                                                        <span class="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600" x-text="item.type_label"></span>
+                                                                    </template>
+                                                                </span>
+                                                            </span>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </a>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="groupsLoaded && !isSearching && (!activeGroupData.items || !activeGroupData.items.length)">
                                             <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                                                 <p class="text-sm font-medium text-gray-900">No categories are in this section yet.</p>
                                                 <p class="mt-2 text-sm text-gray-600">Use the alphabetical directory to browse everything that is available right now.</p>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="groupsLoaded && isSearching && !filteredSearchItems.length">
+                                            <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                                <p class="text-sm font-medium text-gray-900">No matching categories found.</p>
+                                                <p class="mt-2 text-sm text-gray-600">Try a different category name.</p>
                                             </div>
                                         </template>
                                     </div>
