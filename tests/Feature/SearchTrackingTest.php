@@ -53,7 +53,7 @@ it('tracks authenticated search activity against the signed in user', function (
         ->and($log->city)->toBe('Toronto');
 });
 
-it('shows tracked searches on the admin settings page', function () {
+it('shows tracked searches on the admin search history page', function () {
     Role::firstOrCreate(['name' => 'admin']);
 
     $admin = User::factory()->create();
@@ -75,10 +75,10 @@ it('shows tracked searches on the admin settings page', function () {
         'user_agent' => 'Pest',
     ]);
 
-    $response = $this->actingAs($admin)->get(route('admin.settings.index'));
+    $response = $this->actingAs($admin)->get(route('admin.search-history.index'));
 
     $response->assertOk()
-        ->assertSee('Search Tracking')
+        ->assertSee('Search History')
         ->assertSee('best ai crm')
         ->assertSee('Search Member')
         ->assertSee('London, United Kingdom');

@@ -118,6 +118,8 @@
                 <div x-show="adminSection === 'system'" x-transition.opacity.duration.150ms class="pb-1">
                     <a href="{{ route('admin.users.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-users class="mr-2 h-4 w-4 text-gray-400" />Manage Users</a>
+                    <a href="{{ route('admin.search-history.index') }}"
+                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-magnifying-glass class="mr-2 h-4 w-4 text-gray-400" />Search History</a>
                     <a href="{{ route('admin.theme.edit') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-palette class="mr-2 h-4 w-4 text-gray-400" />Theme Settings</a>
                     <a href="{{ route('admin.settings.index') }}"

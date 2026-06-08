@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SearchLog;
 use App\Services\AiProviderStatusService;
 use App\Support\ToolSettings;
 use App\Services\BadgeService;
@@ -51,11 +50,6 @@ class SettingsController extends Controller
         $badgeEmbedCode = $embedData['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
         $aiProviderStatusSnapshots = $aiProviderStatusService->latestSnapshots();
-        $searchLogs = SearchLog::query()
-            ->with('user')
-            ->latest()
-            ->paginate(25, ['*'], 'search_logs_page')
-            ->withQueryString();
 
         return view('admin.settings.index', compact(
             'googleAnalyticsCode',
@@ -71,8 +65,7 @@ class SettingsController extends Controller
             'badgeImageWebpUrl',
             'badgeEmbedCode',
             'footerBadgeEmbedCodes',
-            'aiProviderStatusSnapshots',
-            'searchLogs'
+            'aiProviderStatusSnapshots'
         ));
     }
 

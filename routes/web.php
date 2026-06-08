@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ArticlePostController;
 use App\Http\Controllers\Admin\ArticleTagController;
 use App\Http\Controllers\Admin\BadgeController as AdminBadgeController;
 use App\Http\Controllers\Admin\CategoryController; // Added
+use App\Http\Controllers\Admin\SearchHistoryController;
 use App\Http\Controllers\Admin\ThemeController; // Added
 use App\Http\Controllers\Admin\UserController; // Added
 use App\Http\Controllers\Api\ProductMetaController;
@@ -125,6 +126,7 @@ Route::get('/stripe/product-review/success', [StripeController::class, 'productR
 
 Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', CategoryController::class);
+    Route::get('search-history', [SearchHistoryController::class, 'index'])->name('search-history.index');
     // Define specific product routes BEFORE the resource controller for products
     // Test route for debugging 404
     Route::get('products/test-pending-edits', function () {
