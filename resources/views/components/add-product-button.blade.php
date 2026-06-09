@@ -23,9 +23,9 @@
         window.location.href = @js($targetUrl);
     "
     {{ $attributes->class([
-        'relative inline-flex items-center justify-center transition duration-300',
+        'relative inline-flex items-center justify-center transition duration-150',
         'h-11 w-11 rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 md:h-9 md:w-9' => $compact,
-        'min-h-8 gap-2 rounded-md bg-primary-500 px-3 py-1 text-sm font-semibold text-white hover:bg-primary-600' => !$compact,
+        'min-h-8 gap-2 rounded-md border-2 border-[color:color-mix(in_srgb,var(--color-primary-700)_82%,black)] bg-primary-500 px-3 py-1 text-sm font-semibold text-[var(--color-primary-button-text)] shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-700)_82%,black),0_8px_14px_rgba(15,23,42,0.14)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none' => !$compact,
     ]) }}
 >
     <span
@@ -38,7 +38,7 @@
             </svg>
         @else
             <span class="hidden lg:inline-flex items-center gap-1.5">
-                <svg class="h-5 w-5 shrink-0 fill-gray-700" viewBox="0 -0.5 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="h-5 w-5 shrink-0 fill-current" viewBox="0 -0.5 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <g stroke-width="0"></g>
                     <g stroke-linecap="round" stroke-linejoin="round"></g>
                     <g>
@@ -46,7 +46,7 @@
                         <desc>Cricled Plus Icon.</desc>
                         <defs></defs>
                         <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-179.000000, -600.000000)" fill="#ffffff">
+                            <g transform="translate(-179.000000, -600.000000)" fill="currentColor">
                                 <g transform="translate(56.000000, 160.000000)">
                                     <path d="M137.7,450 C137.7,450.552 137.2296,451 136.65,451 L134.55,451 L134.55,453 C134.55,453.552 134.0796,454 133.5,454 C132.9204,454 132.45,453.552 132.45,453 L132.45,451 L130.35,451 C129.7704,451 129.3,450.552 129.3,450 C129.3,449.448 129.7704,449 130.35,449 L132.45,449 L132.45,447 C132.45,446.448 132.9204,446 133.5,446 C134.0796,446 134.55,446.448 134.55,447 L134.55,449 L136.65,449 C137.2296,449 137.7,449.448 137.7,450 M133.5,458 C128.86845,458 125.1,454.411 125.1,450 C125.1,445.589 128.86845,442 133.5,442 C138.13155,442 141.9,445.589 141.9,450 C141.9,454.411 138.13155,458 133.5,458 M133.5,440 C127.70085,440 123,444.477 123,450 C123,455.523 127.70085,460 133.5,460 C139.29915,460 144,455.523 144,450 C144,444.477 139.29915,440 133.5,440"></path>
                                 </g>
