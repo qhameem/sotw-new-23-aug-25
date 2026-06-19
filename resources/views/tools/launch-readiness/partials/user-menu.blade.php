@@ -23,7 +23,7 @@
         x-show="open"
         x-transition.origin.top.right
         @click.outside="open = false"
-        class="absolute right-0 z-40 mt-3 w-72 overflow-hidden rounded-2xl border shadow-2xl"
+        class="absolute right-0 z-40 mt-3 w-72 overflow-hidden rounded-xl border shadow-2xl"
         :class="'border-[var(--lr-border)] bg-[var(--lr-panel)] text-[var(--lr-text)]'"
     >
         <div class="border-b px-4 py-4" :class="'border-[var(--lr-border)]'">

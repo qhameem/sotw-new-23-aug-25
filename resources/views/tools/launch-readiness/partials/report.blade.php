@@ -70,7 +70,7 @@
 @endphp
 
 <div class="space-y-6">
-    <section class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-4">
                 <div class="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full {{ $topScoreClasses($launchScore, $awaitingScan) }} text-xl font-semibold">
@@ -128,7 +128,7 @@
     </section>
 
     @foreach(($report['categories'] ?? []) as $category)
-        <section class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
             <div class="px-5 pb-5 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
                 <div class="flex items-center gap-2">
                 <div class="inline-flex h-5 w-5 items-center justify-center {{ $categoryIconColors[$category['key']] ?? 'text-slate-500' }}">
@@ -218,7 +218,7 @@
                                 <p class="mt-1 text-xs text-slate-500">{{ $check['summary'] }}</p>
                                 @if(!empty($check['meta']['preview_url']))
                                     @if(($check['key'] ?? null) === 'open_graph_image')
-                                        <div class="mt-3 w-full overflow-hidden rounded-2xl">
+                                        <div class="mt-3 w-full overflow-hidden rounded-xl">
                                             <img
                                                 src="{{ $check['meta']['preview_url'] }}"
                                                 alt="{{ $check['label'] }} preview"
@@ -227,7 +227,7 @@
                                             >
                                         </div>
                                     @else
-                                        <div class="mt-3 inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        <div class="mt-3 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-3">
                                             <img
                                                 src="{{ $check['meta']['preview_url'] }}"
                                                 alt="{{ $check['label'] }} preview"

@@ -3,7 +3,21 @@
 @section('header-title')
     <div class="flex gap-4 justify-between items-center">
         <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
-            {{ isset($product) ? 'Edit Product: ' . ($displayData['name'] ?? $product->name) : 'Add Your Product' }}
+            @if(isset($product))
+                <span class="inline-flex items-center gap-3">
+                    <span class="font-medium text-gray-500">Edit</span>
+                    @if(!empty($displayData['logo_url'] ?? $product->logo_url))
+                        <img
+                            src="{{ $displayData['logo_url'] ?? $product->logo_url }}"
+                            alt="{{ $displayData['name'] ?? $product->name }} logo"
+                            class="h-7 w-7 rounded-md border border-slate-200 object-cover"
+                        >
+                    @endif
+                    <span>{{ $displayData['name'] ?? $product->name }}</span>
+                </span>
+            @else
+                Add Your Product
+            @endif
         </h1>
     </div>
 @endsection
@@ -49,10 +63,19 @@
                     </div>
                 @endif
 
+                @if(session('error'))
+                    <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <!-- Simplified Container: Direct flex child, full height/width -->
                 <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore
                     data-display-data="{{ json_encode($displayData ?? []) }}"
                     data-submission-bg-url="{{ $submissionBgUrl }}"
+                    data-premium-launch-price-cents="{{ $premiumLaunchPriceCents ?? \App\Support\PremiumLaunchPricing::cents() }}"
+                    data-free-launch-queue-months="{{ $freeLaunchQueueMonths ?? \App\Support\FreeLaunchQueueSettings::months() }}"
+                    data-product-publish-time="{{ \App\Support\ProductPublishSchedule::getPublishTime() }}"
                     data-is-admin="{{ (Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
                     data-admin-sandbox-enabled="{{ ($adminSandboxEnabled ?? true) ? 'true' : 'false' }}"
                     data-use-case-categories="{{ json_encode(($useCaseCategories ?? collect())->toArray()) }}"

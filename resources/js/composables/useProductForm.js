@@ -1,5 +1,5 @@
 import { reactive, computed, ref, toRefs } from 'vue';
-import { productFormService, createProductFormState } from '../services/productFormService';
+import { productFormService, createProductFormState, getDefaultFreeScheduleDate, getDefaultPaidScheduleDate } from '../services/productFormService';
 import axios from 'axios';
 
 // Create a global state for the product form
@@ -11,10 +11,207 @@ const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
 
 let loadingAnimationFrameId = null;
 
+const IMAGE_COMPRESSION_EXCLUDED_TYPES = ['image/svg+xml', 'image/gif'];
+
+const changeFileExtension = (fileName, extension) => {
+  const baseName = String(fileName || 'upload').replace(/\.[^/.]+$/, '');
+  return `${baseName}.${extension}`;
+};
+
+const extensionFromMimeType = (mimeType) => {
+  switch (mimeType) {
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    case 'image/avif':
+      return 'avif';
+    case 'image/gif':
+      return 'gif';
+    case 'image/svg+xml':
+      return 'svg';
+    default:
+      return 'img';
+  }
+};
+
+const decodeBase64ToBytes = (base64Value) => {
+  const normalized = String(base64Value || '').replace(/\s/g, '');
+  const binary = window.atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+};
+
+const minifySvgMarkup = (svgMarkup) => String(svgMarkup || '')
+  .replace(/<!--[\s\S]*?-->/g, '')
+  .replace(/>\s+</g, '><')
+  .replace(/\s{2,}/g, ' ')
+  .trim();
+
+const fileFromDataUrl = (dataUrl, baseName = 'image') => {
+  const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ''));
+
+  if (!match) {
+    return null;
+  }
+
+  const mimeType = match[1] || 'application/octet-stream';
+  const isBase64 = Boolean(match[2]);
+  const rawPayload = match[3] || '';
+  const extension = extensionFromMimeType(mimeType);
+
+  if (mimeType === 'image/svg+xml') {
+    const svgMarkup = isBase64
+      ? new TextDecoder().decode(decodeBase64ToBytes(rawPayload))
+      : decodeURIComponent(rawPayload);
+    const optimizedSvg = minifySvgMarkup(svgMarkup);
+
+    return new File([optimizedSvg], changeFileExtension(baseName, extension), {
+      type: mimeType,
+      lastModified: Date.now(),
+    });
+  }
+
+  const bytes = isBase64
+    ? decodeBase64ToBytes(rawPayload)
+    : new TextEncoder().encode(decodeURIComponent(rawPayload));
+
+  return new File([bytes], changeFileExtension(baseName, extension), {
+    type: mimeType,
+    lastModified: Date.now(),
+  });
+};
+
+const loadImageFromFile = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Unable to load image.'));
+    image.src = reader.result;
+  };
+
+  reader.onerror = () => reject(new Error('Unable to read file.'));
+  reader.readAsDataURL(file);
+});
+
+const canvasToBlob = (canvas, type, quality) => new Promise((resolve, reject) => {
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      reject(new Error('Unable to encode image.'));
+      return;
+    }
+
+    resolve(blob);
+  }, type, quality);
+});
+
+const optimizeImageFile = async (file, options = {}) => {
+  if (!(file instanceof File) || !file.type.startsWith('image/')) {
+    return file;
+  }
+
+  if (IMAGE_COMPRESSION_EXCLUDED_TYPES.includes(file.type)) {
+    return file;
+  }
+
+  const {
+    maxWidth = 1600,
+    maxHeight = 1600,
+    maxBytes = 1.5 * 1024 * 1024,
+    preferredType = 'image/webp',
+    fallbackType = 'image/jpeg',
+  } = options;
+
+  if (file.size <= maxBytes) {
+    return file;
+  }
+
+  const image = await loadImageFromFile(file);
+  const widthRatio = maxWidth / image.width;
+  const heightRatio = maxHeight / image.height;
+  const scale = Math.min(1, widthRatio, heightRatio);
+  const targetWidth = Math.max(1, Math.round(image.width * scale));
+  const targetHeight = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return file;
+  }
+
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  const outputType = preferredType;
+  let bestBlob = await canvasToBlob(canvas, outputType, 0.86).catch(() => null);
+
+  if (!bestBlob) {
+    bestBlob = await canvasToBlob(canvas, fallbackType, 0.82).catch(() => null);
+  }
+
+  if (!bestBlob) {
+    return file;
+  }
+
+  if (bestBlob.size > maxBytes) {
+    const qualitySteps = [0.78, 0.7, 0.62, 0.54];
+
+    for (const quality of qualitySteps) {
+      const candidate = await canvasToBlob(canvas, bestBlob.type || outputType, quality).catch(() => null);
+      if (candidate) {
+        bestBlob = candidate;
+      }
+      if (bestBlob.size <= maxBytes) {
+        break;
+      }
+    }
+  }
+
+  if (bestBlob.size >= file.size) {
+    return file;
+  }
+
+  const extension = (bestBlob.type || outputType) === 'image/webp' ? 'webp' : 'jpg';
+  return new File([bestBlob], changeFileExtension(file.name, extension), {
+    type: bestBlob.type || outputType,
+    lastModified: Date.now(),
+  });
+};
+
+const prepareImageSubmissionAsset = async (source, baseName, optimizationOptions) => {
+  if (source instanceof File) {
+    return optimizeImageFile(source, optimizationOptions);
+  }
+
+  if (typeof source === 'string' && source.startsWith('data:image')) {
+    const generatedFile = fileFromDataUrl(source, baseName);
+    if (!(generatedFile instanceof File)) {
+      return null;
+    }
+
+    return optimizeImageFile(generatedFile, optimizationOptions);
+  }
+
+  return null;
+};
+
 export function useProductForm() {
   const isAdmin = globalFormState.isAdmin;
   const adminSandboxEnabled = globalFormState.adminSandboxEnabled;
   const submissionBgUrl = globalFormState.submissionBgUrl;
+  const freeLaunchQueueMonths = globalFormState.freeLaunchQueueMonths;
+  const productPublishTime = globalFormState.productPublishTime;
   const extractionErrors = globalFormState.extractionErrors;
   const form = sharedForm;
   const loadingStates = sharedLoadingStates;
@@ -39,6 +236,7 @@ export function useProductForm() {
     badge_placement_url: '',
     badge_verified: '',
     badge_week_start: '',
+    paid_schedule_date: '',
   });
   const touchedFields = reactive({
     link: false,
@@ -54,6 +252,7 @@ export function useProductForm() {
     badge_placement_url: false,
     badge_verified: false,
     badge_week_start: false,
+    paid_schedule_date: false,
   });
   const validationFieldOrder = [
     'link',
@@ -69,6 +268,7 @@ export function useProductForm() {
     'badge_placement_url',
     'badge_verified',
     'badge_week_start',
+    'paid_schedule_date',
   ];
   const validationFieldMeta = {
     link: {
@@ -126,12 +326,17 @@ export function useProductForm() {
     badge_verified: {
       label: 'Badge Verification',
       anchorId: 'field-badge-verified',
-      focusSelector: '#badge-placement-url',
+      focusSelector: '#badge-verify-button',
     },
     badge_week_start: {
       label: 'Launch Week',
       anchorId: 'field-badge-week-start',
       focusSelector: '#badge-week-start',
+    },
+    paid_schedule_date: {
+      label: 'Schedule Date',
+      anchorId: 'field-paid-schedule-date',
+      focusSelector: '#paid-schedule-date',
     },
   };
 
@@ -251,12 +456,43 @@ export function useProductForm() {
         if (!form.badge_opt_in) {
           return '';
         }
-        return form.badge_verified ? '' : 'Verify your badge placement before submitting for a scheduled week';
+        return form.badge_verified ? '' : 'Verify your badge before skipping the queue';
       case 'badge_week_start':
         if (!form.badge_opt_in || !form.badge_verified) {
           return '';
         }
-        return String(form.badge_week_start || '').trim() ? '' : 'Choose a launch week after badge verification';
+        return String(form.badge_week_start || '').trim() ? '' : 'Choose your launch week after verification';
+      case 'paid_schedule_date':
+        if (form.submission_type !== 'paid') {
+          return '';
+        }
+
+        if (!String(form.paid_schedule_date || '').trim()) {
+          return 'Choose a schedule date for the premium launch';
+        }
+
+        {
+          const selectedDate = new Date(`${form.paid_schedule_date}T00:00:00`);
+          const minDate = new Date(`${getDefaultPaidScheduleDate()}T00:00:00`);
+
+          const maxDate = new Date();
+          maxDate.setDate(maxDate.getDate() + 60);
+          maxDate.setHours(0, 0, 0, 0);
+
+          if (Number.isNaN(selectedDate.getTime())) {
+            return 'Choose a valid schedule date';
+          }
+
+          if (selectedDate < minDate) {
+            return 'Premium launch starts from next Monday';
+          }
+
+          if (selectedDate > maxDate) {
+            return 'Premium launch date must be within 60 days';
+          }
+        }
+
+        return '';
       default:
         return '';
     }
@@ -296,6 +532,7 @@ export function useProductForm() {
     if (normalized.startsWith('maker_links')) return 'maker_links';
     if (normalized === 'badge_placement_url') return 'badge_placement_url';
     if (normalized === 'badge_week_start') return 'badge_week_start';
+    if (normalized === 'paid_schedule_date') return 'paid_schedule_date';
 
     return null;
   };
@@ -924,12 +1161,14 @@ export function useProductForm() {
     form.sell_product = false;
     form.asking_price = null;
     form.x_account = '';
-    form.submissionOption = 'free';
-    form.submission_type = 'free';
+    form.submissionOption = 'paid';
+    form.submission_type = 'paid';
     form.badge_opt_in = false;
     form.badge_placement_url = '';
     form.badge_week_start = '';
     form.badge_verified = false;
+    form.free_schedule_date = getDefaultFreeScheduleDate(globalFormState.freeLaunchQueueMonths.value);
+    form.paid_schedule_date = getDefaultPaidScheduleDate();
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = [null];
     resetManualMediaChoices();
@@ -940,26 +1179,26 @@ export function useProductForm() {
     globalFormState.currentTab.value = tabId;
   };
 
-  const submitProduct = () => {
+  const submitProduct = (submissionMode = null) => {
     if (globalFormState.isLoading.value) {
       return false;
     }
 
-    if (!validateForm()) {
+    if (!validateForm(submissionMode)) {
       globalFormState.submitState.value = 'idle';
       return false;
     }
 
-    confirmSubmit();
+    confirmSubmit(submissionMode);
     return true;
   };
 
-  const confirmSubmit = async () => {
+  const confirmSubmit = async (submissionMode = null) => {
     if (globalFormState.isLoading.value) {
       return false;
     }
 
-    if (!validateForm()) {
+    if (!validateForm(submissionMode)) {
       globalFormState.submitState.value = 'idle';
       return false;
     }
@@ -1081,22 +1320,40 @@ export function useProductForm() {
         });
       }
 
+      const screenshotPreview = globalFormState.galleryPreviews.value?.[0];
+      const logoSource = form.logo || globalFormState.logoPreview.value || null;
+      const screenshotSource = form.gallery?.[0] || screenshotPreview || null;
+
+      const optimizedLogoFile = await prepareImageSubmissionAsset(logoSource, 'logo', {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        maxBytes: 900 * 1024,
+      });
+
+      const optimizedScreenshotFile = await prepareImageSubmissionAsset(screenshotSource, 'screenshot', {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        maxBytes: 1800 * 1024,
+      });
+
       // Add logo if available as file or URL
-      if (form.logo instanceof File) {
-        formData.append('logo', form.logo);
-      } else if (typeof form.logo === 'string' && form.logo) {
+      if (optimizedLogoFile instanceof File) {
+        formData.append('logo', optimizedLogoFile);
+      } else if (typeof form.logo === 'string' && form.logo && !form.logo.startsWith('data:image')) {
         // If logo is a string (e.g. from suggested logos), send it as logo_url
         formData.append('logo_url', form.logo);
-      } else if (globalFormState.logoPreview.value) {
+      } else if (
+        typeof globalFormState.logoPreview.value === 'string'
+        && globalFormState.logoPreview.value
+        && !globalFormState.logoPreview.value.startsWith('data:image')
+      ) {
         // If we have a logo preview URL but no form.logo set, use that
         formData.append('logo_url', globalFormState.logoPreview.value);
       }
 
       // Submit only the single product screenshot slot.
-      const screenshotPreview = globalFormState.galleryPreviews.value?.[0];
-      const screenshotFile = form.gallery?.[0];
-      if (screenshotFile instanceof File) {
-        formData.append('media[0]', screenshotFile);
+      if (optimizedScreenshotFile instanceof File) {
+        formData.append('media[0]', optimizedScreenshotFile);
       } else if (
         typeof screenshotPreview === 'string'
         && screenshotPreview
@@ -1158,6 +1415,10 @@ export function useProductForm() {
         formData.append('badge_week_start', form.badge_week_start);
       }
 
+      if (form.paid_schedule_date) {
+        formData.append('paid_schedule_date', form.paid_schedule_date);
+      }
+
       formData.append('sandbox_mode', form.sandbox_mode ? '1' : '0');
 
       // Admin-only curated related-product overrides
@@ -1214,6 +1475,24 @@ export function useProductForm() {
       } else if (form.fromSource) {
         // Use the fromSource that was captured during initialization
         formData.append('from', form.fromSource);
+      }
+
+      const isPaidSubmission = !form.id && submissionMode === 'paid';
+
+      if (isPaidSubmission) {
+        const response = await axios.post('/stripe/paid-submission/checkout', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
+
+        if (response.data?.checkout_url) {
+          didSucceed = true;
+          window.location.href = response.data.checkout_url;
+          return true;
+        }
       }
 
       // Submit the form
@@ -1284,7 +1563,9 @@ export function useProductForm() {
         errorMessage.value = '';
       } else {
         showErrorMessage.value = true;
-        errorMessage.value = error.response?.data?.message || 'Failed to submit product. Please try again.';
+        errorMessage.value = error.response?.status === 413
+          ? 'Uploaded files are too large. Try a smaller logo or screenshot.'
+          : (error.response?.data?.message || 'Failed to submit product. Please try again.');
       }
       return false;
     } finally {
@@ -1299,7 +1580,16 @@ export function useProductForm() {
     globalFormState.showPreviewModal.value = false;
   };
 
-  const validateForm = () => {
+  const validateForm = (submissionMode = null) => {
+    if (submissionMode === 'paid') {
+      form.submission_type = 'paid';
+      form.submissionOption = 'paid';
+      form.badge_opt_in = false;
+      form.badge_verified = false;
+      form.badge_week_start = '';
+      form.badge_placement_url = '';
+    }
+
     if (globalFormState.isAdmin.value && globalFormState.adminSandboxEnabled.value && form.sandbox_mode) {
       resetValidationState();
       showErrorMessage.value = false;
@@ -1914,6 +2204,10 @@ export function useProductForm() {
         globalFormState.isAdmin.value = element.getAttribute('data-is-admin') === 'true';
         globalFormState.adminSandboxEnabled.value = element.getAttribute('data-admin-sandbox-enabled') !== 'false';
         globalFormState.submissionBgUrl.value = element.getAttribute('data-submission-bg-url') || '';
+        globalFormState.premiumLaunchPriceCents.value = parseInt(element.getAttribute('data-premium-launch-price-cents') || '1200', 10) || 1200;
+        globalFormState.freeLaunchQueueMonths.value = parseInt(element.getAttribute('data-free-launch-queue-months') || '6', 10) || 0;
+        globalFormState.productPublishTime.value = element.getAttribute('data-product-publish-time') || '07:00';
+        form.free_schedule_date = getDefaultFreeScheduleDate(globalFormState.freeLaunchQueueMonths.value);
         syncAdminSandboxAvailability();
       }
     } catch (error) {
@@ -2418,6 +2712,9 @@ export function useProductForm() {
     sandboxNotice: globalFormState.sandboxNotice,
     showPreviewModal: globalFormState.showPreviewModal,
     submissionBgUrl: globalFormState.submissionBgUrl,
+    premiumLaunchPriceCents: globalFormState.premiumLaunchPriceCents,
+    freeLaunchQueueMonths: globalFormState.freeLaunchQueueMonths,
+    productPublishTime: globalFormState.productPublishTime,
     extractionErrors: globalFormState.extractionErrors,
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,

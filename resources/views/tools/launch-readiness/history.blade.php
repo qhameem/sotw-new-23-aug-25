@@ -53,7 +53,7 @@
             <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="w-full lg:max-w-xs">
                 <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <label for="q" class="sr-only">Search domains</label>
-                <div class="flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-3 shadow-sm shadow-slate-200/30">
+                <div class="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm shadow-slate-200/30">
                     <svg class="mr-2 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.473 9.765l3.63 3.631a.75.75 0 1 0 1.06-1.06l-3.63-3.632A5.5 5.5 0 0 0 9 3.5ZM5 9a4 4 0 1 1 8 0a4 4 0 0 1-8 0Z" clip-rule="evenodd" />
                     </svg>
@@ -63,7 +63,7 @@
         </section>
 
         @unless($toolTablesReady ?? false)
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                 The tool database tables are not migrated yet, so public history is not available yet.
             </div>
         @endunless
@@ -77,7 +77,7 @@
                     @endphp
                     <a
                         href="{{ route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $item]) }}"
-                        class="group rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                        class="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
@@ -132,7 +132,7 @@
                         </div>
                     </a>
                 @empty
-                    <div class="sm:col-span-2 xl:col-span-3 rounded-[24px] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm shadow-slate-200/30">
+                    <div class="sm:col-span-2 xl:col-span-3 rounded-xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm shadow-slate-200/30">
                         <p class="text-sm font-medium text-slate-900">No saved scans found yet.</p>
                         <p class="mt-2 text-sm text-slate-500">Run a scan with “Save to history” enabled to populate the public feed.</p>
                     </div>
@@ -145,7 +145,7 @@
                         Showing {{ $history->firstItem() ?? 0 }} to {{ $history->lastItem() ?? 0 }} of {{ $history->total() }} results
                     </p>
 
-                    <div class="rounded-[24px] border border-slate-200 bg-white px-2.5 py-2 shadow-sm shadow-slate-200/40">
+                    <div class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm shadow-slate-200/40">
                         <div class="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:justify-end">
                             <div class="flex items-center gap-1">
                                 <a

@@ -241,7 +241,7 @@
                 @click.self="closeLogoModal"
                 @keydown.escape.window="closeLogoModal"
             >
-                <div class="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div class="w-full max-w-3xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                     <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
                         <div>
                             <p class="dashboard-section-label">Extracted logos</p>
@@ -262,7 +262,7 @@
                     <div class="max-h-[70vh] overflow-y-auto px-5 py-5">
                         <div
                             x-show="logoSaving && extractedLogos.length === 0"
-                            class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
+                            class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
                         >
                             <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500"></div>
                             <p class="mt-3 text-sm text-slate-500">Looking for logos from the product URL...</p>
@@ -270,7 +270,7 @@
 
                         <div
                             x-show="!logoSaving && extractedLogos.length === 0"
-                            class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
+                            class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
                         >
                             <p class="text-sm font-medium text-slate-700">No extracted logos found</p>
                             <p class="mt-1 text-sm text-slate-500">Try uploading a logo instead.</p>
@@ -281,8 +281,8 @@
                                 <button type="button"
                                     @click="selectExtractedLogo(logoOption)"
                                     :disabled="logoSaving"
-                                    class="rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
-                                    <div class="flex h-24 items-center justify-center rounded-2xl bg-slate-50">
+                                    class="rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                    <div class="flex h-24 items-center justify-center rounded-xl bg-slate-50">
                                         <img :src="logoOption" alt="" class="h-16 w-16 object-contain">
                                     </div>
                                     <div class="mt-3 flex items-center justify-between gap-3">

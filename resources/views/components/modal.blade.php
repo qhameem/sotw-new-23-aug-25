@@ -103,7 +103,7 @@ $viewportPadding = [
     x-on:keydown.shift.tab.prevent="prevFocusable().focus()"
     x-show="show"
     data-hide-scrollbar="{{ $hideScrollbar ? 'true' : 'false' }}"
-    class="fixed inset-0 z-[60] overflow-y-auto {{ $viewportPadding }} {{ $hideScrollbar ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : '' }}"
+    class="fixed inset-0 z-[60] overflow-y-auto {{ $viewportPadding }} {{ $scrollable ? '' : 'flex items-center justify-center' }} {{ $hideScrollbar ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : '' }}"
     style="display: {{ $show ? 'block' : 'none' }};"
 >
     <div

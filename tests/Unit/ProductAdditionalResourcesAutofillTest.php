@@ -40,6 +40,13 @@ class ProductAdditionalResourcesAutofillTest extends TestCase
             $this->assertStringContainsString('Additional resource URL: https://8.8.8.8/pricing', $prompt);
             $this->assertStringContainsString('Acme pricing and enterprise docs', $prompt);
         }
+
+        $this->assertTrue(collect($capturedPrompts)->contains(function ($prompt) {
+            return str_contains($prompt, 'LIMITATION RESEARCH:')
+                && str_contains($prompt, 'Search-based limitation research:')
+                && str_contains($prompt, 'steep learning curve')
+                && str_contains($prompt, 'limited native integrations');
+        }));
     }
 
     public function test_process_url_stream_includes_additional_resources_in_ai_prompts_and_classification(): void
@@ -67,6 +74,13 @@ class ProductAdditionalResourcesAutofillTest extends TestCase
             $this->assertStringContainsString('Additional resource URL: https://8.8.8.8/pricing', $prompt);
             $this->assertStringContainsString('Acme pricing and enterprise docs', $prompt);
         }
+
+        $this->assertTrue(collect($capturedPrompts)->contains(function ($prompt) {
+            return str_contains($prompt, 'LIMITATION RESEARCH:')
+                && str_contains($prompt, 'Search-based limitation research:')
+                && str_contains($prompt, 'steep learning curve')
+                && str_contains($prompt, 'limited native integrations');
+        }));
     }
 
     private function fakeAutofillRequests(array &$capturedPrompts): void
@@ -161,6 +175,23 @@ class ProductAdditionalResourcesAutofillTest extends TestCase
                         ],
                     ],
                 ], 200);
+            }
+
+            if (str_starts_with($url, 'https://html.duckduckgo.com/html')) {
+                return Http::response(<<<'HTML'
+                    <html>
+                        <body>
+                            <div class="result">
+                                <a class="result__a" href="https://reviews.example.com/acme-review">Acme review</a>
+                                <div class="result__snippet">Reviewers mention a steep learning curve and limited native integrations for smaller teams.</div>
+                            </div>
+                            <div class="result">
+                                <a class="result__a" href="https://docs.example.com/acme-faq">Acme FAQ</a>
+                                <div class="result__snippet">FAQ and setup guide.</div>
+                            </div>
+                        </body>
+                    </html>
+                HTML, 200);
             }
 
             return Http::response('', 404);

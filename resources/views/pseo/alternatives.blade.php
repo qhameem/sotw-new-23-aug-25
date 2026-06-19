@@ -124,7 +124,7 @@
     </script>
 
     <div class="rounded-lg py-6 md:py-8" style="background-color: var(--color-body-bg, #ffffff);">
-        <div class="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5">
+        <div class="mb-6 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5">
             <div class="flex items-start gap-4">
                 <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="h-14 w-14 flex-shrink-0 rounded-xl border border-gray-100 object-cover">
                 <div class="min-w-0">
@@ -150,7 +150,7 @@
         @if($alternatives->isEmpty())
             <p class="text-gray-500">No alternatives found yet. Check back as new products are added.</p>
         @else
-            <div class="mb-8 rounded-2xl border border-gray-100 bg-yellow-50 p-4">
+            <div class="mb-8 rounded-xl border border-gray-100 bg-yellow-50 p-4">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-900">Quick Answer</p>
                 <p class="mt-2 text-sm leading-6 text-gray-900">
                     The best {{ $product->name }} alternatives on this page start with
@@ -168,14 +168,14 @@
                 </div>
 
                 <div class="grid gap-4">
-                    <article class="rounded-2xl border border-gray-200 bg-white p-4">
+                    <article class="rounded-xl border border-gray-200 bg-white p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Why Readers Switch</p>
                         <p class="mt-2 text-sm leading-6 text-gray-700">
                             {{ $productEditorial['limitations'][0] ?? "Most people look for alternatives when they need a better pricing fit, a better workflow fit, or stronger support for their specific use case." }}
                         </p>
                     </article>
 
-                    <article class="rounded-2xl border border-gray-200 bg-white p-4">
+                    <article class="rounded-xl border border-gray-200 bg-white p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Where {{ $product->name }} Still Fits</p>
                         @if(!empty($productEditorial['ideal_for']))
                             <ul class="mt-2 space-y-2 text-sm leading-6 text-gray-700">
@@ -188,7 +188,7 @@
                         @endif
                     </article>
 
-                    <article class="rounded-2xl border border-gray-200 bg-white p-4">
+                    <article class="rounded-xl border border-gray-200 bg-white p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">What To Compare First</p>
                         <ul class="mt-2 space-y-2 text-sm leading-6 text-gray-700">
                             <li>Feature depth for the exact workflow you care about</li>
@@ -205,7 +205,7 @@
                     <p class="mt-1 text-sm text-gray-500">A quick shortlist for readers who want editorial-style context before diving into the full ranked list.</p>
                 </div>
 
-                <div class="overflow-x-auto rounded-2xl border border-gray-200">
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
                     <table class="min-w-full divide-y divide-gray-200 bg-white">
                         <thead class="bg-gray-50">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -290,7 +290,7 @@
                                 ],
                             ])->filter()->values();
                         @endphp
-                        <article class="rounded-2xl border border-gray-100 bg-white p-4 transition-all hover:border-gray-200 hover:shadow-sm">
+                        <article class="rounded-xl border border-gray-100 bg-white p-4 transition-all hover:border-gray-200 hover:shadow-sm">
                             <div class="flex items-start gap-4">
                                 <span class="mt-1 w-5 flex-shrink-0 text-sm font-bold text-gray-300">{{ $index + 1 }}</span>
                                 <div class="flex-shrink-0">
@@ -396,7 +396,7 @@
                 </div>
             </section>
 
-            <section id="ranking-methodology" class="mb-10 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <section id="ranking-methodology" class="mb-10 rounded-xl border border-gray-200 bg-gray-50 p-5">
                 <h2 class="text-xl font-semibold text-gray-900">How We Ranked These Alternatives</h2>
                 <p class="mt-2 text-sm leading-6 text-gray-600">
                     We prioritize alternatives that overlap with {{ $product->name }} in software category, audience, pricing model, technical profile, and product positioning.
@@ -413,7 +413,7 @@
 
                     <div class="space-y-3">
                         @foreach($faqItems as $item)
-                            <article class="rounded-2xl border border-gray-200 bg-white p-4">
+                            <article class="rounded-xl border border-gray-200 bg-white p-4">
                                 <h3 class="text-sm font-semibold text-gray-900">{{ $item['question'] }}</h3>
                                 <p class="mt-2 text-sm leading-6 text-gray-600">{{ $item['answer'] }}</p>
                             </article>

@@ -27,11 +27,11 @@
             </div>
 
             @forelse($pendingClaims as $claim)
-                <article class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-5">
+                <article class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-5">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="space-y-3">
                             <div class="flex items-center gap-4">
-                                <img src="{{ $claim->product->logo_url }}" alt="{{ $claim->product->name }}" class="size-14 rounded-2xl border border-gray-100 object-cover">
+                                <img src="{{ $claim->product->logo_url }}" alt="{{ $claim->product->name }}" class="size-14 rounded-xl border border-gray-100 object-cover">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Product</p>
                                     <h2 class="text-xl font-semibold text-gray-900">{{ $claim->product->name }}</h2>
@@ -97,7 +97,7 @@
                     </div>
                 </article>
             @empty
-                <div class="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-sm text-gray-500">
+                <div class="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-sm text-gray-500">
                     No pending product claims right now.
                 </div>
             @endforelse
@@ -108,7 +108,7 @@
                 <h2 class="text-xl font-semibold text-gray-900">Recently reviewed claims</h2>
             </div>
 
-            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">

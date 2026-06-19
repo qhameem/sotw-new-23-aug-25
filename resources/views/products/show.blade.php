@@ -8,25 +8,19 @@
 
 @section('title', $pageTitle)
 @section('meta_description', $metaDescription)
+@if(!empty($isUnpublishedProduct))
+    @section('robots', 'noindex, nofollow, noarchive')
+@endif
 
 @push('styles')
     @vite('resources/css/rich-content.css')
 @endpush
 
 @section('content')
-    @include('products.partials._json-ld-product')
+    @if(empty($isUnpublishedProduct))
+        @include('products.partials._json-ld-product')
+    @endif
     @php
-        $breadcrumbs = [];
-
-        if ($primaryBreadcrumbCategory) {
-            $breadcrumbs[] = [
-                'label' => $primaryBreadcrumbCategory->name,
-                'link' => route('categories.show', $primaryBreadcrumbCategory->slug),
-            ];
-        }
-
-        $breadcrumbs[] = ['label' => $product->name];
-
         $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
         $hasMediaSection = $mediaAssetCount > 0;
         $appendQueryParam = function (?string $url, string $key, string $value): ?string {
@@ -116,6 +110,12 @@
         <x-breadcrumbs :items="$breadcrumbs" />
     </div>
 
+    @if(!empty($isUnpublishedProduct))
+        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This product has not been published yet. It is visible here for preview only and may still change before going live.
+        </div>
+    @endif
+
     <div class="rounded-lg pt-2 pb-6 md:pt-3 md:pb-8"
         x-data="{
                                                                                         @if(isset($isAdminView) && $isAdminView)
@@ -152,7 +152,7 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              }
                                                                                         @endif
         }">
-        <div class="overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div class="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm">
             <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
                 <h1 class="sr-only">{{ $product->name }}</h1>
                 <div class="md:hidden">
@@ -278,6 +278,12 @@
                         }
 
                         $hasMultipleMediaSlides = count($mediaSlides) > 1;
+                        $productClickUrl = filled($product->link)
+                            ? route('products.click', ['product' => $product->slug, 'surface' => 'product_details'])
+                            : null;
+                        $productLinkRel = $productClickUrl
+                            ? \App\Support\OutboundLink::rel($product->link, 'product_link')
+                            : null;
                     @endphp
 
                     <section class="mt-8">
@@ -316,7 +322,7 @@
                                 <div x-ref="mediaContainer" @scroll.debounce.100ms="updateScroll()"
                                     class="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 no-scrollbar">
                                     @foreach($mediaSlides as $slide)
-                                        <article class="w-full min-w-full snap-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                                        <article class="w-full min-w-full snap-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                                             @if($slide['type'] === 'video')
                                                 <div class="aspect-video w-full">
                                                     <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
@@ -325,11 +331,23 @@
                                                         allowfullscreen></iframe>
                                                 </div>
                                             @else
-                                                <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                    sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                    class="block h-auto w-full object-contain"
-                                                    itemprop="image"
-                                                    loading="{{ $loop->first ? 'eager' : 'lazy' }}">
+                                                @if($productClickUrl)
+                                                    <a href="{{ $productClickUrl }}" target="_blank"
+                                                        rel="{{ $productLinkRel }}"
+                                                        aria-label="Visit {{ $product->name }} website">
+                                                        <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                                            sizes="100vw" alt="{{ $slide['alt'] }}"
+                                                            class="block h-auto w-full object-contain"
+                                                            itemprop="image"
+                                                            loading="{{ $loop->first ? 'eager' : 'lazy' }}">
+                                                    </a>
+                                                @else
+                                                    <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                                        sizes="100vw" alt="{{ $slide['alt'] }}"
+                                                        class="block h-auto w-full object-contain"
+                                                        itemprop="image"
+                                                        loading="{{ $loop->first ? 'eager' : 'lazy' }}">
+                                                @endif
                                             @endif
                                         </article>
                                     @endforeach
@@ -337,7 +355,7 @@
                             </div>
                         @else
                             @foreach($mediaSlides as $slide)
-                                <article class="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                                <article class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                                     @if($slide['type'] === 'video')
                                         <div class="aspect-video w-full">
                                             <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
@@ -346,11 +364,23 @@
                                                 allowfullscreen></iframe>
                                         </div>
                                     @else
-                                        <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                            sizes="100vw" alt="{{ $slide['alt'] }}"
-                                            class="block h-auto w-full object-contain"
-                                            itemprop="image"
-                                            loading="eager">
+                                        @if($productClickUrl)
+                                            <a href="{{ $productClickUrl }}" target="_blank"
+                                                rel="{{ $productLinkRel }}"
+                                                aria-label="Visit {{ $product->name }} website">
+                                                <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                                    sizes="100vw" alt="{{ $slide['alt'] }}"
+                                                    class="block h-auto w-full object-contain"
+                                                    itemprop="image"
+                                                    loading="eager">
+                                            </a>
+                                        @else
+                                            <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                                sizes="100vw" alt="{{ $slide['alt'] }}"
+                                                class="block h-auto w-full object-contain"
+                                                itemprop="image"
+                                                loading="eager">
+                                        @endif
                                     @endif
                                 </article>
                             @endforeach

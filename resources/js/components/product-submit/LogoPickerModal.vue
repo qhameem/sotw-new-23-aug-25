@@ -5,7 +5,7 @@
       class="fixed inset-0 z-[80] flex items-center justify-center bg-gray-950/45 p-3 sm:p-4"
       @click.self="emit('close')"
     >
-      <div class="flex max-h-[calc(100vh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl sm:max-h-[calc(100vh-2rem)]">
+      <div class="flex max-h-[calc(100vh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl sm:max-h-[calc(100vh-2rem)]">
         <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Logo Picker</p>
@@ -25,9 +25,9 @@
         </div>
 
         <div class="grid flex-1 gap-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 lg:grid-cols-[200px,1fr]">
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <p class="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">Selected</p>
-            <div class="mt-3 flex h-24 w-24 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div class="mt-3 flex h-24 w-24 items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm">
               <img
                 v-if="currentLogo"
                 :src="currentLogo"
@@ -77,7 +77,7 @@
 
             <div
               v-if="isLoading && logoOptions.length === 0"
-              class="mt-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center"
+              class="mt-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center"
             >
               <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-sky-500"></div>
               <p class="mt-3 text-sm text-gray-500">Searching for additional logos...</p>
@@ -85,7 +85,7 @@
 
             <div
               v-else-if="logoOptions.length === 0"
-              class="mt-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center"
+              class="mt-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center"
             >
               <p class="text-sm font-medium text-gray-700">No extracted alternatives yet</p>
               <p class="mt-1 text-sm text-gray-500">You can upload a logo or run extraction again.</p>
@@ -96,7 +96,7 @@
                 v-for="option in logoOptions"
                 :key="option.url"
                 type="button"
-                class="group rounded-2xl border bg-white p-2.5 text-left transition"
+                class="group rounded-xl border bg-white p-2.5 text-left transition"
                 :class="option.url === currentLogo ? 'border-sky-500 shadow-sm shadow-sky-100' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
                 @click="emit('select-logo', option.url)"
               >

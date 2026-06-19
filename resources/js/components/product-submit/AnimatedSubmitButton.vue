@@ -10,9 +10,13 @@
     <span class="absolute inset-0 flex items-center justify-center overflow-hidden">
       <span
         :class="labelClasses"
-        class="pointer-events-none whitespace-nowrap text-sm font-bold tracking-[0.01em] transition-all duration-200"
+        class="pointer-events-none inline-flex items-center gap-2 whitespace-nowrap text-base font-bold tracking-[0.01em] transition-all duration-200"
       >
-        {{ label }}
+        <span>{{ label }}</span>
+        <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+          <path d="M4.167 10h11.666" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="m10.833 5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </span>
 
       <span
@@ -52,6 +56,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  variant: {
+    type: String,
+    default: 'primary',
+  },
+  fullWidth: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 defineEmits(['click']);
@@ -78,7 +90,7 @@ const buttonClasses = computed(() => {
     'items-center',
     'justify-center',
     'overflow-hidden',
-    'rounded-full',
+    'rounded-lg',
     'border',
     'px-6',
     'focus:outline-none',
@@ -105,8 +117,7 @@ const buttonClasses = computed(() => {
   if (props.state === 'success') {
     return [
       ...baseClasses,
-      'w-full',
-      'sm:w-[240px]',
+      props.fullWidth ? 'w-full' : 'w-full sm:w-[240px]',
       'border-emerald-500',
       'bg-emerald-500',
       'text-white',
@@ -114,10 +125,21 @@ const buttonClasses = computed(() => {
     ];
   }
 
+  if (props.variant === 'ghost') {
+    return [
+      ...baseClasses,
+      props.fullWidth ? 'w-full' : 'w-full sm:w-[240px]',
+      props.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-50 hover:text-primary-700 hover:shadow-sm',
+      'border-gray-300',
+      'bg-white',
+      'text-gray-800',
+      'shadow-sm',
+    ];
+  }
+
   return [
     ...baseClasses,
-    'w-full',
-    'sm:w-[240px]',
+    props.fullWidth ? 'w-full' : 'w-full sm:w-[240px]',
     props.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:-translate-y-0.5 hover:bg-primary-600 hover:border-primary-600 hover:shadow-md',
     'border-primary-500',
     'bg-primary-500',

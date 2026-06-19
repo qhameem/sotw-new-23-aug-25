@@ -64,7 +64,7 @@
 
         @if($imageUrl)
             <div class="w-full flex-shrink-0 sm:ml-8 sm:w-56 lg:w-64">
-                <a href="{{ route('articles.show', $post->slug) }}" class="block overflow-hidden rounded-2xl bg-stone-100">
+                <a href="{{ route('articles.show', $post->slug) }}" class="block overflow-hidden rounded-xl bg-stone-100">
                     <img
                         class="h-52 w-full object-cover transition duration-300 group-hover:scale-[1.02] sm:h-40"
                         src="{{ $imageUrl }}"

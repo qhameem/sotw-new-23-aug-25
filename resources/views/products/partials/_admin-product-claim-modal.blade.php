@@ -37,7 +37,7 @@
             </button>
         </div>
 
-        <div class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
             <label for="admin-product-claim-link" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Product page link
             </label>

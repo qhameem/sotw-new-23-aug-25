@@ -16,19 +16,19 @@
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Collections</p>
             <p class="mt-3 text-3xl font-semibold text-gray-900">{{ $productCollectionsCount ?? 0 }}</p>
             <p class="mt-1 text-sm text-gray-600">Lists you can keep public or private.</p>
         </div>
 
-        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Saved Products</p>
             <p class="mt-3 text-3xl font-semibold text-gray-900">{{ $savedProductsCount ?? 0 }}</p>
             <p class="mt-1 text-sm text-gray-600">Total items across all of your collections.</p>
         </div>
 
-        <div class="rounded-2xl border border-dashed border-gray-300 p-4">
+        <div class="rounded-xl border border-dashed border-gray-300 p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Starter Ideas</p>
             <div class="mt-3 flex flex-wrap gap-2">
                 @foreach(($defaultProductCollectionNames ?? []) as $defaultCollectionName)
@@ -40,7 +40,7 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-gray-200">
+    <div class="rounded-xl border border-gray-200">
         <div class="flex items-center justify-between border-b border-gray-100 px-4 py-4">
             <h3 class="text-sm font-semibold text-gray-900">Recent Collections</h3>
             <a href="{{ route('collections.index') }}" class="text-sm font-medium text-primary-600 hover:underline">

@@ -147,7 +147,7 @@
                             class="fixed left-1/2 top-[3.5rem] z-50 w-[58rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 pt-3"
                             style="display: none;"
                         >
-                            <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
+                            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
                                 <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5">
                                     <div class="flex items-start justify-between gap-6">
                                         <div>
@@ -188,7 +188,7 @@
                                                 x-model="searchQuery"
                                                 autocomplete="off"
                                                 placeholder="Search category name"
-                                                class="block w-full rounded-2xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                                                class="block w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                                             >
                                             <button
                                                 x-show="searchQuery"
@@ -211,7 +211,7 @@
                                         @foreach (($categoryNavigationSummaries ?? []) as $group)
                                             <button
                                                 type="button"
-                                                class="flex w-full items-start justify-between gap-3 rounded-2xl px-4 py-3 text-left transition"
+                                                class="flex w-full items-start justify-between gap-3 rounded-xl px-4 py-3 text-left transition"
                                                 @mouseenter="setGroup('{{ $group['key'] }}')"
                                                 @focus="setGroup('{{ $group['key'] }}')"
                                                 @click="setGroup('{{ $group['key'] }}')"
@@ -286,7 +286,7 @@
                                         </div>
 
                                         <template x-if="groupsLoading && !groupsLoaded">
-                                            <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                            <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                                                 <p class="text-sm font-medium text-gray-900">Loading categories...</p>
                                             </div>
                                         </template>
@@ -298,7 +298,7 @@
                                                         <a
                                                             :href="item.url"
                                                             wire:navigate.hover
-                                                            class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
+                                                            class="flex items-start justify-between rounded-xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
                                                         >
                                                             <span class="pr-3">
                                                                 <span class="block font-semibold text-sm text-gray-900" x-text="item.name"></span>
@@ -325,7 +325,7 @@
                                                         <a
                                                             :href="item.url"
                                                             wire:navigate.hover
-                                                            class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
+                                                            class="flex items-start justify-between rounded-xl border border-gray-200 px-4 py-3 text-xs transition hover:border-gray-300 hover:bg-slate-50"
                                                         >
                                                             <span class="pr-3">
                                                                 <span class="block font-semibold text-sm text-gray-900" x-text="item.name"></span>
@@ -347,14 +347,14 @@
                                         </template>
 
                                         <template x-if="groupsLoaded && !isSearching && (!activeGroupData.items || !activeGroupData.items.length)">
-                                            <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                            <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                                                 <p class="text-sm font-medium text-gray-900">No categories are in this section yet.</p>
                                                 <p class="mt-2 text-sm text-gray-600">Use the alphabetical directory to browse everything that is available right now.</p>
                                             </div>
                                         </template>
 
                                         <template x-if="groupsLoaded && isSearching && !filteredSearchItems.length">
-                                            <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                                            <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                                                 <p class="text-sm font-medium text-gray-900">No matching categories found.</p>
                                                 <p class="mt-2 text-sm text-gray-600">Try a different category name.</p>
                                             </div>

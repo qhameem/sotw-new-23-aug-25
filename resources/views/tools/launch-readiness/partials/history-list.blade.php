@@ -1,5 +1,5 @@
 @if($recentHistory->isNotEmpty())
-    <section class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
         <div class="mb-5 flex items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-slate-900">Recent public scans</h2>
@@ -11,7 +11,7 @@
         <div class="space-y-3">
             @foreach($recentHistory as $item)
                 <a href="{{ route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $item]) }}"
-                   class="flex flex-col gap-3 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
+                   class="flex flex-col gap-3 rounded-xl border border-slate-200 px-4 py-4 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
                     <div class="min-w-0">
                         <p class="truncate text-sm font-medium text-slate-900">{{ $item->final_url ?: $item->submitted_url }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ optional($item->scanned_at)->diffForHumans() }} · {{ $item->status_label }}</p>

@@ -23,7 +23,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('collections.store') }}" class="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
+    <form method="POST" action="{{ route('collections.store') }}" class="grid gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
         @csrf
 
         <div>
@@ -54,7 +54,7 @@
 
     <div class="space-y-4">
         @forelse(($productCollections ?? collect()) as $collection)
-            <div class="rounded-2xl border border-gray-200 p-4">
+            <div class="rounded-xl border border-gray-200 p-4">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
@@ -115,7 +115,7 @@
                 </div>
             </div>
         @empty
-            <div class="rounded-2xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-600">
+            <div class="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-600">
                 You have not created any collections yet. Use one of the suggested starter names above or create your own.
             </div>
         @endforelse

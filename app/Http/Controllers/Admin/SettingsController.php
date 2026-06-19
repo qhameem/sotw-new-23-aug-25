@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\AiProviderStatusService;
 use App\Support\ToolSettings;
+use App\Support\FreeLaunchQueueSettings;
+use App\Support\PremiumLaunchPricing;
 use App\Services\BadgeService;
 use App\Services\ScreenshotService;
 use Illuminate\Http\Request;
@@ -37,6 +39,8 @@ class SettingsController extends Controller
         $googleAnalyticsCode = $settings['google_analytics_code'] ?? '';
         $hasHeaderCodeInjection = filled(trim((string) $googleAnalyticsCode));
         $premiumProductSpots = $settings['premium_product_spots'] ?? 6;
+        $premiumLaunchPrice = number_format(PremiumLaunchPricing::cents() / 100, 2, '.', '');
+        $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
         $productPublishTime = $settings['product_publish_time'] ?? '07:00';
         $adminSandboxEnabled = (bool) ($settings['admin_add_product_sandbox_enabled'] ?? true);
         $todoListToolSlug = $toolSettings->slug(ToolSettings::TODO_LIST_KEY);
@@ -55,6 +59,8 @@ class SettingsController extends Controller
             'googleAnalyticsCode',
             'hasHeaderCodeInjection',
             'premiumProductSpots',
+            'premiumLaunchPrice',
+            'freeLaunchQueueMonths',
             'productPublishTime',
             'adminSandboxEnabled',
             'todoListToolSlug',
@@ -256,6 +262,7 @@ class SettingsController extends Controller
 
         $request->validate([
             'premium_product_spots' => 'required|integer|min:0',
+            'premium_launch_price' => 'required|numeric|min:0|max:9999.99',
         ]);
 
         $settings = [];
@@ -264,14 +271,15 @@ class SettingsController extends Controller
         }
 
         $settings['premium_product_spots'] = $request->input('premium_product_spots');
+        $settings['premium_launch_price_cents'] = (int) round(((float) $request->input('premium_launch_price')) * 100);
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
             Log::info('Premium product spots updated by user: ' . Auth::id());
-            return back()->with('success', 'Premium product spots saved successfully.');
+            return back()->with('success', 'Premium launch settings saved successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to save premium product spots: ' . $e->getMessage());
-            return back()->with('error', 'Failed to save premium product spots. Please check logs.');
+            return back()->with('error', 'Failed to save premium launch settings. Please check logs.');
         }
     }
 
@@ -296,6 +304,7 @@ class SettingsController extends Controller
         $defaultSettings = [
             'google_analytics_code' => '',
             'premium_product_spots' => 6,
+            'premium_launch_price_cents' => PremiumLaunchPricing::DEFAULT_PRICE_CENTS,
             'product_publish_time' => '07:00',
         ];
 
@@ -332,6 +341,33 @@ class SettingsController extends Controller
             Log::error('Failed to save admin sandbox mode: ' . $e->getMessage());
 
             return back()->with('error', 'Failed to save admin sandbox mode. Please check logs.');
+        }
+    }
+
+    public function storeFreeLaunchQueue(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'free_launch_queue_months' => 'required|integer|min:0|max:36',
+        ]);
+
+        $settings = $this->loadSettings();
+        $settings['free_launch_queue_months'] = (int) $request->input('free_launch_queue_months');
+
+        try {
+            $this->saveSettings($settings);
+            Log::info('Free launch queue months updated by user: ' . Auth::id(), [
+                'months' => $settings['free_launch_queue_months'],
+            ]);
+
+            return back()->with('success', 'Free launch queue setting saved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to save free launch queue setting: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save free launch queue setting. Please check logs.');
         }
     }
 

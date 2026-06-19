@@ -75,8 +75,8 @@
         @click.capture="handleLinkClick"
     >
         <aside class="border-b px-6 py-6 lg:min-h-screen lg:border-b-0 lg:border-r" style="border-color: var(--lr-sidebar-border); background: color-mix(in srgb, var(--lr-bg) 88%, black 12%);">
-            <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="inline-flex rounded-2xl outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--lr-accent)] focus-visible:ring-offset-2" style="ring-offset-color: var(--lr-bg);">
-                <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+            <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="inline-flex rounded-xl outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--lr-accent)] focus-visible:ring-offset-2" style="ring-offset-color: var(--lr-bg);">
+                <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 ring-1 ring-white/10">
                     <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-9 w-9 rounded-xl object-contain">
                 </div>
             </a>
@@ -85,7 +85,7 @@
                 <nav class="space-y-2" x-ref="sidebarNav" data-workspace-sidebar-nav>
                     <a
                         href="{{ route('launch-readiness.dashboard', ['toolSlug' => $toolSlug]) }}"
-                        class="flex items-center gap-3 rounded-[22px] px-4 py-4 transition"
+                        class="flex items-center gap-3 rounded-xl px-4 py-4 transition"
                         style="{{ request()->routeIs('launch-readiness.dashboard*') ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}"
                     >
                         <svg class="h-[18px] w-[18px]" viewBox="0 0 1920 1920" fill="currentColor" aria-hidden="true">
@@ -95,7 +95,7 @@
                     </a>
                     <a
                         href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug]) }}"
-                        class="flex items-center gap-3 rounded-[22px] px-4 py-4 transition"
+                        class="flex items-center gap-3 rounded-xl px-4 py-4 transition"
                         style="{{ request()->routeIs('launch-readiness.settings*') ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}"
                     >
                         <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -117,13 +117,13 @@
 
             <main class="px-6 py-10 transition-opacity duration-150" x-ref="workspaceMain" data-workspace-main :class="navigating ? 'opacity-70 pointer-events-none' : 'opacity-100'">
                 @if(session('status'))
-                    <div class="mb-6 rounded-2xl border px-4 py-3 text-sm text-[var(--lr-text)]" style="border-color: color-mix(in srgb, var(--lr-success) 35%, transparent); background: color-mix(in srgb, var(--lr-success) 14%, transparent);">
+                    <div class="mb-6 rounded-xl border px-4 py-3 text-sm text-[var(--lr-text)]" style="border-color: color-mix(in srgb, var(--lr-success) 35%, transparent); background: color-mix(in srgb, var(--lr-success) 14%, transparent);">
                         {{ session('status') }}
                     </div>
                 @endif
 
                 @if($errors->any())
-                    <div class="mb-6 rounded-2xl border px-4 py-3 text-sm" style="border-color: color-mix(in srgb, var(--lr-danger) 35%, transparent); background: color-mix(in srgb, var(--lr-danger) 14%, transparent); color: var(--lr-text);">
+                    <div class="mb-6 rounded-xl border px-4 py-3 text-sm" style="border-color: color-mix(in srgb, var(--lr-danger) 35%, transparent); background: color-mix(in srgb, var(--lr-danger) 14%, transparent); color: var(--lr-text);">
                         {{ $errors->first() }}
                     </div>
                 @endif

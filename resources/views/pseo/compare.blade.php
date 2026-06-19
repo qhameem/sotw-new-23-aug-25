@@ -72,7 +72,7 @@
                     }
                     $softCats = $softCats->take(2);
                 @endphp
-                <div class="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
+                <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
                     <div class="flex items-center gap-3 mb-4">
                         <img src="{{ $p->logo_url }}" alt="{{ $p->name }}" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0">
                         <div>

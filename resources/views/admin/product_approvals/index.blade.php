@@ -14,7 +14,7 @@
 @section('content')
 <div class="mx-auto w-full max-w-none px-4 py-10 sm:px-6 lg:px-8">
     @if(session('success'))
-        <div class="mb-6 flex items-center gap-3 rounded-2xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
+        <div class="mb-6 flex items-center gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
                 <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -28,7 +28,7 @@
     @endif
 
     @if(session('error'))
-        <div class="mb-6 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm">
+        <div class="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500">
                 <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z" />
@@ -41,22 +41,22 @@
         </div>
     @endif
 
-    <div class="mb-8 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
+    <div class="mb-8 rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900">Product Approvals</h1>
                 <p class="mt-1 text-sm text-slate-600">Review pending submissions, manage scheduled launches, and publish approved products faster.</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Pending</div>
                     <div class="mt-1 text-2xl font-semibold text-slate-900">{{ $pendingProducts->count() }}</div>
                 </div>
-                <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+                <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Scheduled</div>
                     <div class="mt-1 text-2xl font-semibold text-sky-900">{{ $scheduledProductsCount }}</div>
                 </div>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Shown</div>
                     <div class="mt-1 text-2xl font-semibold text-emerald-900">{{ $approvedProducts->count() }}</div>
                 </div>
@@ -65,7 +65,7 @@
     </div>
 
     @if (isset($scheduledProductsStats))
-        <div class="mb-8 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
+        <div class="mb-8 rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm sm:px-8">
             <div class="flex flex-col gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">Scheduled Products</h2>
@@ -107,7 +107,7 @@
         </div>
 
         @if($pendingProducts->count() > 0)
-            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form" class="mb-5 rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <form action="{{ route('admin.product-approvals.bulk-approve') }}" method="POST" id="bulk-approve-form" class="mb-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
                 @csrf
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div>
@@ -131,7 +131,7 @@
                 @endforeach
             </div>
         @else
-            <div class="rounded-[24px] border border-dashed border-slate-300 bg-white py-10 text-center text-gray-500 shadow-sm">
+            <div class="rounded-xl border border-dashed border-slate-300 bg-white py-10 text-center text-gray-500 shadow-sm">
                 <p>No products are currently pending approval.</p>
             </div>
         @endif
@@ -151,13 +151,13 @@
                 <h2 class="text-lg font-semibold text-slate-900">Approved Products</h2>
                 <p class="text-sm text-slate-500">Scheduled products can be published immediately in bulk from here.</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <span class="font-semibold text-slate-900">{{ $scheduledProductsCount }}</span> scheduled total,
                 <span class="font-semibold text-slate-900">{{ $scheduledOnPageCount }}</span> on this page
             </div>
         </div>
 
-        <div class="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="inline-flex items-center">

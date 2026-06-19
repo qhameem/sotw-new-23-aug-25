@@ -50,11 +50,12 @@
                     Premium Product Spots
                 </h3>
                 <div class="mt-2 max-w-xl text-sm text-gray-500 ">
-                    <p>Set the maximum number of premium product spots available for purchase.</p>
+                    <p>Set the maximum number of premium product spots available for purchase and the Premium Launch price shown on <code>/add-product</code>.</p>
                 </div>
                 <form action="{{ route('admin.settings.storePremiumProductSpots') }}" method="POST" class="mt-5">
                     @csrf
-                    <div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
                         <label for="premium_product_spots" class="block text-sm font-medium text-gray-700 ">
                             Number of Spots
                         </label>
@@ -66,11 +67,32 @@
                         @error('premium_product_spots')
                             <p class="mt-2 text-sm text-red-600 ">{{ $message }}</p>
                         @enderror
+                        </div>
+                        <div>
+                            <label for="premium_launch_price" class="block text-sm font-medium text-gray-700 ">
+                                Premium Launch Price (USD)
+                            </label>
+                            <div class="mt-1">
+                                <input
+                                    type="number"
+                                    id="premium_launch_price"
+                                    name="premium_launch_price"
+                                    min="0"
+                                    max="9999.99"
+                                    step="0.01"
+                                    class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                    value="{{ old('premium_launch_price', $premiumLaunchPrice ?? '12.00') }}"
+                                >
+                            </div>
+                            @error('premium_launch_price')
+                                <p class="mt-2 text-sm text-red-600 ">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                     <div class="mt-4">
                         <button type="submit"
                             class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
-                            Save Spots
+                            Save Premium Launch Settings
                         </button>
                     </div>
                 </form>
@@ -147,6 +169,46 @@
                         <button type="submit"
                             class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
                             Save Sandbox Setting
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Free Launch Queue
+                </h3>
+                <div class="mt-2 max-w-2xl text-sm text-gray-500">
+                    <p>Set how many months ahead the free launch date picker should start. Example: <code>6</code> means the first free launch date shown starts after about 6 months from today.</p>
+                </div>
+                <form action="{{ route('admin.settings.storeFreeLaunchQueue') }}" method="POST" class="mt-5">
+                    @csrf
+                    <div class="max-w-xs">
+                        <label for="free_launch_queue_months" class="block text-sm font-medium text-gray-700">
+                            Queue Length (Months)
+                        </label>
+                        <input
+                            type="number"
+                            id="free_launch_queue_months"
+                            name="free_launch_queue_months"
+                            min="0"
+                            max="36"
+                            step="1"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            value="{{ old('free_launch_queue_months', $freeLaunchQueueMonths ?? 6) }}"
+                            required
+                        >
+                        <p class="mt-2 text-sm text-gray-500">Use <code>0</code> to start from the current queue period.</p>
+                        @error('free_launch_queue_months')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
+                            Save Free Queue
                         </button>
                     </div>
                 </form>

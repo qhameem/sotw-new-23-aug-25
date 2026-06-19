@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+  <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
     <div class="space-y-8">
       <!-- Project Info -->
       <div>

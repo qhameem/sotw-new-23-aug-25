@@ -1,5 +1,5 @@
 <template>
-  <div id="field-link" class="bg-yellow-50 p-6 rounded-2xl border border-dashed border-gray-300 mb-8">
+  <div id="field-link" class="bg-yellow-50 p-6 rounded-xl border border-dashed border-gray-300 mb-8">
     <div class="mb-3 flex items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>

@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -113,7 +116,8 @@ AEO / STRUCTURE RULES:
 - Keep each bullet concise, concrete, and focused on user value.
 - Use question-based headings so the description reads more like direct answers than a generic editorial page.
 - Write grounded FAQ questions and answers instead of generic filler.
-- If limitations are unclear, write exactly: "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"
+- If limitations are unclear even after reviewing the full context, do not mention them.
+- Never write placeholder copy about missing, unavailable, or unclear limitations.
 
 HTML STRUCTURE TO FOLLOW EXACTLY:
 <p><strong>[Write a 40-70 word opening paragraph that clearly explains what {$productName} is, who it helps, and why someone would choose it.]</strong></p>
@@ -159,7 +163,7 @@ HTML STRUCTURE TO FOLLOW EXACTLY:
 <h2><strong>What are the pros and limitations of {$productName}?</strong></h2>
 <ul>
   <li><strong>Pros:</strong> [List 2-3 grounded strengths separated by semicolons]</li>
-  <li><strong>Limitations:</strong> [List 1-2 honest limitations based only on supported facts, or "{$this->escapeForPrompt(self::UNKNOWN_LIMITATION)}"]</li>
+  <li><strong>Limitations:</strong> [List 1-2 honest limitations based only on supported facts. Leave this blank if no clear limitation is supported.]</li>
 </ul>
 
 <h2><strong>Frequently asked questions about {$productName}</strong></h2>
@@ -306,7 +310,7 @@ PROMPT;
             return null;
         }
 
-        return $content;
+        return $this->normalizeLimitationsSection($content);
     }
 
     private function hasRequiredLongFormSections(string $content): bool
@@ -318,7 +322,6 @@ PROMPT;
             '<h2><strong>What can you use ',
             '<h2><strong>How does ',
             '<h2><strong>What integrations and ecosystem support does ',
-            '<h2><strong>What are the pros and limitations of ',
             '<h2><strong>Frequently asked questions about ',
             '<dl>',
         ];
@@ -329,9 +332,101 @@ PROMPT;
             }
         }
 
+        $hasProsSection = str_contains($content, '<h2><strong>What are the pros and limitations of ')
+            || str_contains($content, '<h2><strong>What are the pros of ');
+
+        if (!$hasProsSection) {
+            return false;
+        }
+
         return substr_count($content, '<li>') >= 10
             && substr_count($content, '<dt>') >= 2
             && substr_count($content, '<dd>') >= 2;
+    }
+
+    public static function isUnknownLimitationText(string $value): bool
+    {
+        $normalized = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalized = preg_replace('/\s+/u', ' ', trim($normalized)) ?? '';
+        $normalized = trim(mb_strtolower($normalized), " \t\n\r\0\x0B.:;-");
+
+        if ($normalized === '') {
+            return true;
+        }
+
+        if ($normalized === mb_strtolower(self::UNKNOWN_LIMITATION)) {
+            return true;
+        }
+
+        return (bool) preg_match('/\b(?:not|no)\b.*\b(?:clear|clearly|specific|specified|stated|known|available|mentioned)\b.*\b(?:limitation|limitations|source|source material|available source material|information|details)\b/u', $normalized)
+            || (bool) preg_match('/\b(?:limitations?|drawbacks?)\b.*\b(?:unclear|unknown|unspecified|not available|not mentioned)\b/u', $normalized);
+    }
+
+    private function normalizeLimitationsSection(string $content): string
+    {
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $wrappedHtml = '<!DOCTYPE html><html><body><div id="editorial-root">' . $content . '</div></body></html>';
+
+        libxml_use_internal_errors(true);
+        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?>' . $wrappedHtml, LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+
+        if (!$loaded) {
+            return $content;
+        }
+
+        $xpath = new DOMXPath($document);
+        $root = $xpath->query("//*[@id='editorial-root']")->item(0);
+
+        if (!$root instanceof DOMElement) {
+            return $content;
+        }
+
+        foreach ($root->childNodes as $node) {
+            if (!$node instanceof DOMElement || strtolower($node->tagName) !== 'h2') {
+                continue;
+            }
+
+            if (!str_contains(Str::lower($this->cleanPlainText($node->textContent)), 'pros and limitations')) {
+                continue;
+            }
+
+            $listNode = $this->nextElementSibling($node);
+
+            if (!$listNode instanceof DOMElement || !in_array(strtolower($listNode->tagName), ['ul', 'ol'], true)) {
+                continue;
+            }
+
+            $hasSupportedLimitation = false;
+
+            foreach (iterator_to_array($listNode->childNodes) as $childNode) {
+                if (!$childNode instanceof DOMElement || strtolower($childNode->tagName) !== 'li') {
+                    continue;
+                }
+
+                $itemText = $this->cleanPlainText($childNode->textContent);
+                $normalizedText = Str::lower($itemText);
+
+                if (!str_starts_with($normalizedText, 'limitations:')) {
+                    continue;
+                }
+
+                $limitationText = trim(substr($itemText, strlen('Limitations:')));
+
+                if (self::isUnknownLimitationText($itemText) || self::isUnknownLimitationText($limitationText)) {
+                    $listNode->removeChild($childNode);
+                    continue;
+                }
+
+                $hasSupportedLimitation = true;
+            }
+
+            if (!$hasSupportedLimitation) {
+                $this->rewriteProsHeadingWithoutLimitations($node);
+            }
+        }
+
+        return $this->renderRootChildren($document, $root);
     }
 
     private function buildFallbackHtml(string $productName, string $rawDescription, string $context): string
@@ -350,7 +445,6 @@ PROMPT;
         ];
         $integrations = [$this->buildFallbackIntegrationLine($context)];
         $prosLine = implode('; ', array_slice($features, 0, 3));
-        $limitationsLine = self::UNKNOWN_LIMITATION;
         $faq = $this->buildFallbackFaq($productName, $summary, $idealFor);
 
         return implode("\n", [
@@ -368,8 +462,8 @@ PROMPT;
             $this->renderList($alternatives),
             '<h2><strong>What integrations and ecosystem support does ' . e($productName) . ' offer?</strong></h2>',
             $this->renderList($integrations),
-            '<h2><strong>What are the pros and limitations of ' . e($productName) . '?</strong></h2>',
-            '<ul><li><strong>Pros:</strong> ' . e($prosLine) . '</li><li><strong>Limitations:</strong> ' . e($limitationsLine) . '</li></ul>',
+            '<h2><strong>What are the pros of ' . e($productName) . '?</strong></h2>',
+            '<ul><li><strong>Pros:</strong> ' . e($prosLine) . '</li></ul>',
             '<h2><strong>Frequently asked questions about ' . e($productName) . '</strong></h2>',
             $this->renderFaq($faq),
         ]);
@@ -552,6 +646,8 @@ PROMPT;
             return [];
         }
 
+        $body = preg_split('/(?:ADDITIONAL RESOURCES:|LIMITATION RESEARCH:)\s*/u', $body, 2)[0] ?? $body;
+
         $sentences = preg_split('/(?<=[.!?])\s+/u', $body, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $cleaned = [];
 
@@ -658,6 +754,54 @@ PROMPT;
         }
 
         return trim($trimmed);
+    }
+
+    private function nextElementSibling(DOMElement $node): ?DOMElement
+    {
+        $sibling = $node->nextSibling;
+
+        while ($sibling !== null) {
+            if ($sibling instanceof DOMElement) {
+                return $sibling;
+            }
+
+            $sibling = $sibling->nextSibling;
+        }
+
+        return null;
+    }
+
+    private function rewriteProsHeadingWithoutLimitations(DOMElement $headingNode): void
+    {
+        $updatedHeading = preg_replace(
+            '/What are the pros and limitations of\s+/iu',
+            'What are the pros of ',
+            $this->cleanPlainText($headingNode->textContent)
+        );
+
+        if (!is_string($updatedHeading) || $updatedHeading === '') {
+            return;
+        }
+
+        foreach ($headingNode->childNodes as $childNode) {
+            if ($childNode instanceof DOMElement && strtolower($childNode->tagName) === 'strong') {
+                $childNode->nodeValue = $updatedHeading;
+                return;
+            }
+        }
+
+        $headingNode->nodeValue = $updatedHeading;
+    }
+
+    private function renderRootChildren(DOMDocument $document, DOMElement $root): string
+    {
+        $html = '';
+
+        foreach ($root->childNodes as $childNode) {
+            $html .= $document->saveHTML($childNode);
+        }
+
+        return trim($html);
     }
 
     private function normalizeProductName(string $productName): string

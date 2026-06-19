@@ -17,7 +17,7 @@
     >
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gray-50">
+                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gray-50">
                     @if($productLogo)
                         <img src="{{ $productLogo }}" alt="{{ $product->name }} logo" class="h-12 w-12 rounded-xl object-contain">
                     @else
@@ -47,7 +47,7 @@
 
         <div class="mt-6 space-y-3">
             <template x-for="(collection, index) in collections" :key="collection.id ?? collection.default_name ?? index">
-                <div class="rounded-2xl border border-gray-200 p-4">
+                <div class="rounded-xl border border-gray-200 p-4">
                     <label class="flex cursor-pointer items-start gap-3">
                         <input type="checkbox" x-model="collection.selected" class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                         <div class="min-w-0 flex-1">
@@ -69,7 +69,7 @@
             </template>
         </div>
 
-        <div class="mt-6 rounded-2xl border border-dashed border-gray-300 p-4">
+        <div class="mt-6 rounded-xl border border-dashed border-gray-300 p-4">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-semibold text-gray-900">Create a new collection</h3>

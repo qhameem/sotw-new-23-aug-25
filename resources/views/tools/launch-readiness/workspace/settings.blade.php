@@ -14,11 +14,11 @@
             <div class="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <aside>
                     <nav class="space-y-2">
-                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'profile']) }}" class="block rounded-[20px] px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'profile' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Profile</a>
-                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'password']) }}" class="block rounded-[20px] px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'password' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Password</a>
-                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'two-factor']) }}" class="block rounded-[20px] px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'two-factor' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Two-Factor Auth</a>
+                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'profile']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'profile' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Profile</a>
+                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'password']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'password' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Password</a>
+                        <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'two-factor']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'two-factor' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Two-Factor Auth</a>
                         @if($toolUserIsAdmin ?? false)
-                            <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'branding']) }}" class="block rounded-[20px] px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'branding' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Branding</a>
+                            <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'branding']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'branding' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Branding</a>
                         @endif
                     </nav>
                 </aside>
@@ -36,11 +36,11 @@
                                 @method('PATCH')
                                 <div>
                                     <label for="settings_name" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Name</label>
-                                    <input id="settings_name" name="name" type="text" value="{{ old('name', $toolUser->name) }}" class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0" style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);" placeholder="Your name">
+                                    <input id="settings_name" name="name" type="text" value="{{ old('name', $toolUser->name) }}" class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0" style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);" placeholder="Your name">
                                 </div>
                                 <div>
                                     <label for="settings_email" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Email</label>
-                                    <input id="settings_email" name="email" type="email" value="{{ old('email', $toolUser->email) }}" class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0" style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);">
+                                    <input id="settings_email" name="email" type="email" value="{{ old('email', $toolUser->email) }}" class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0" style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);">
                                 </div>
                                 <button type="submit" class="inline-flex h-11 items-center justify-center rounded-full border border-slate-900 bg-slate-900 px-5 text-sm font-semibold text-white transition hover:border-slate-800 hover:bg-slate-800">Save</button>
                             </form>
@@ -62,7 +62,7 @@
                                 <p class="mt-2 text-base text-[var(--lr-muted)]">Tool accounts currently use Google sign-in or email one-time codes.</p>
                             </div>
 
-                            <div class="rounded-[24px] border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
+                            <div class="rounded-xl border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
                                 <p class="text-base font-medium text-[var(--lr-text)]">Password sign-in is not enabled for launch-readiness tool accounts yet.</p>
                                 <p class="mt-3 text-base leading-7 text-[var(--lr-muted)]">This section is reserved for a future password-based login flow. Your current account access is still protected through Google sign-in or email verification codes.</p>
                             </div>
@@ -74,7 +74,7 @@
                                 <p class="mt-2 text-base text-[var(--lr-muted)]">Review how your tool account is currently verified.</p>
                             </div>
 
-                            <div class="rounded-[24px] border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
+                            <div class="rounded-xl border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
                                 <p class="text-base font-medium text-[var(--lr-text)]">Authenticator-based 2FA is not enabled for tool accounts yet.</p>
                                 <p class="mt-3 text-base leading-7 text-[var(--lr-muted)]">For now, access is verified either through Google OAuth or the 6-digit email sign-in code flow. This keeps sign-in simple while leaving room for stronger 2FA later.</p>
                             </div>
@@ -108,7 +108,7 @@
                                                 name="site_name"
                                                 type="text"
                                                 value="{{ old('site_name', $toolBrandingSiteName) }}"
-                                                class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 maxlength="120"
                                             >
@@ -121,7 +121,7 @@
                                                 name="tool_slug"
                                                 type="text"
                                                 value="{{ old('tool_slug', $toolSlug) }}"
-                                                class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 placeholder="website-launch-checker"
                                                 maxlength="120"
@@ -136,7 +136,7 @@
                                                 name="homepage_h1"
                                                 type="text"
                                                 value="{{ old('homepage_h1', $toolHomepageH1) }}"
-                                                class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 maxlength="160"
                                             >
@@ -149,7 +149,7 @@
                                                 name="homepage_title_tag"
                                                 type="text"
                                                 value="{{ old('homepage_title_tag', $toolHomepageTitleTag) }}"
-                                                class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 maxlength="255"
                                             >
@@ -161,7 +161,7 @@
                                                 id="branding_homepage_meta_description"
                                                 name="homepage_meta_description"
                                                 rows="4"
-                                                class="block w-full rounded-2xl border px-4 py-3 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block w-full rounded-xl border px-4 py-3 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 maxlength="255"
                                             >{{ old('homepage_meta_description', $toolHomepageMetaDescription) }}</textarea>
@@ -174,7 +174,7 @@
                                                 name="font_url"
                                                 type="url"
                                                 value="{{ old('font_url', $toolBranding['font_url'] ?? '') }}"
-                                                class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                 style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 placeholder="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap"
                                             >
@@ -191,7 +191,7 @@
                                                     min="14"
                                                     max="20"
                                                     value="{{ old('font_size', $toolBranding['font_size'] ?? 16) }}"
-                                                    class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                    class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                     style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                 >
                                             </div>
@@ -203,13 +203,13 @@
                                                         id="branding_font_color"
                                                         type="color"
                                                         x-model="fontColor"
-                                                        class="block h-[52px] w-16 rounded-[0.9rem] border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2"
+                                                        class="block h-[52px] w-16 rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2"
                                                     >
                                                     <input
                                                         name="font_color"
                                                         type="text"
                                                         x-model="fontColor"
-                                                        class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                        class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                         style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                         placeholder="#161616"
                                                         maxlength="7"
@@ -225,13 +225,13 @@
                                                         id="branding_background_color"
                                                         type="color"
                                                         x-model="backgroundColor"
-                                                        class="block h-[52px] w-16 rounded-[0.9rem] border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2"
+                                                        class="block h-[52px] w-16 rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2"
                                                     >
                                                     <input
                                                         name="background_color"
                                                         type="text"
                                                         x-model="backgroundColor"
-                                                        class="block h-12 w-full rounded-2xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
+                                                        class="block h-12 w-full rounded-xl border px-4 text-sm outline-none transition placeholder:text-[var(--lr-subtle)] focus:ring-0"
                                                         style="border-color: var(--lr-border); background: var(--lr-panel-strong); color: var(--lr-text);"
                                                         placeholder="#f5f5f4"
                                                         maxlength="7"
@@ -291,14 +291,14 @@
                                         </div>
                                     </div>
 
-                                    <div class="space-y-5 rounded-[24px] border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
+                                    <div class="space-y-5 rounded-xl border p-6" style="border-color: var(--lr-border); background: var(--lr-panel-soft);">
                                         <div>
                                             <p class="text-sm font-semibold text-[var(--lr-text)]">Preview</p>
                                             <p class="mt-1 text-sm text-[var(--lr-muted)]">These values will appear across the public tool pages and the signed-in workspace.</p>
                                         </div>
 
-                                        <div class="flex items-center gap-4 rounded-[20px] border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
-                                            <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-12 w-12 rounded-2xl object-contain">
+                                        <div class="flex items-center gap-4 rounded-xl border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
+                                            <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-12 w-12 rounded-xl object-contain">
                                             <div>
                                                 <p class="text-lg font-semibold text-[var(--lr-text)]">{{ $toolBrandingSiteName }}</p>
                                                 <p class="mt-1 text-sm text-[var(--lr-muted)]">/tools/{{ $toolSlug }}</p>
@@ -306,7 +306,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="rounded-[20px] border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
+                                        <div class="rounded-xl border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
                                             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--lr-muted)]">Homepage SEO Preview</p>
                                             <p class="mt-3 text-lg font-semibold text-[var(--lr-text)]">{{ old('homepage_title_tag', $toolHomepageTitleTag) }}</p>
                                             <p class="mt-2 text-sm font-medium text-emerald-700">{{ url('/tools/' . old('tool_slug', $toolSlug)) }}</p>
@@ -316,7 +316,7 @@
 
                                         <div class="grid gap-4 lg:grid-cols-2">
                                             <div class="flex items-center gap-4">
-                                                <div class="rounded-2xl border p-3" style="border-color: var(--lr-border); background: var(--lr-panel);">
+                                                <div class="rounded-xl border p-3" style="border-color: var(--lr-border); background: var(--lr-panel);">
                                                     @if($toolBrandingFaviconUrl)
                                                         <img src="{{ $toolBrandingFaviconUrl }}" alt="{{ $toolBrandingSiteName }} favicon" class="h-8 w-8 rounded-xl object-contain">
                                                     @else
@@ -329,19 +329,19 @@
                                                 </div>
                                             </div>
 
-                                            <div class="rounded-[20px] border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
+                                            <div class="rounded-xl border p-4" style="border-color: var(--lr-border); background: var(--lr-panel);">
                                                 <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--lr-muted)]">OG Image Preview</p>
                                                 @if($toolBrandingOgImageUrl)
-                                                    <img src="{{ $toolBrandingOgImageUrl }}" alt="{{ $toolBrandingSiteName }} OG image" class="mt-3 aspect-[1200/630] w-full rounded-2xl object-cover">
+                                                    <img src="{{ $toolBrandingOgImageUrl }}" alt="{{ $toolBrandingSiteName }} OG image" class="mt-3 aspect-[1200/630] w-full rounded-xl object-cover">
                                                     <p class="mt-3 text-sm text-[var(--lr-muted)]">Custom OG image uploaded.</p>
                                                 @else
-                                                    <img src="{{ $toolOgImage }}" alt="{{ $toolBrandingSiteName }} default OG image" class="mt-3 aspect-[1200/630] w-full rounded-2xl object-cover">
+                                                    <img src="{{ $toolOgImage }}" alt="{{ $toolBrandingSiteName }} default OG image" class="mt-3 aspect-[1200/630] w-full rounded-xl object-cover">
                                                     <p class="mt-3 text-sm text-[var(--lr-muted)]">Using the default OG image.</p>
                                                 @endif
                                             </div>
                                         </div>
 
-                                        <div class="rounded-[20px] border p-4" style="border-color: var(--lr-border); background: {{ $toolBranding['background_color'] ?? '#f5f5f4' }};">
+                                        <div class="rounded-xl border p-4" style="border-color: var(--lr-border); background: {{ $toolBranding['background_color'] ?? '#f5f5f4' }};">
                                             <p class="text-sm font-semibold" style="color: {{ $toolBranding['font_color'] ?? '#161616' }};">Color preview</p>
                                             <p class="mt-1 text-sm" style="color: {{ $toolBranding['font_color'] ?? '#161616' }};">This preview uses the current project background and font color.</p>
                                         </div>

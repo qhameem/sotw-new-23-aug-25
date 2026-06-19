@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\PaidSubmissionCheckout;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -11,42 +12,38 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PaymentConfirmation extends Mailable
+class PaymentConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $product;
-    public $user;
+    public Product $product;
+    public User $user;
+    public PaidSubmissionCheckout $checkout;
 
     /**
      * Create a new message instance.
-     *
-     * @return void
      */
-    public function __construct(Product $product, User $user)
+    public function __construct(Product $product, User $user, PaidSubmissionCheckout $checkout)
     {
         $this->product = $product;
         $this->user = $user;
+        $this->checkout = $checkout;
     }
 
     /**
      * Get the message envelope.
-     *
-     * @return \Illuminate\Mail\Mailables\Envelope
      */
-    public function envelope()
+    public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Payment Confirmation',
+            subject: 'Your Paid Submission Receipt',
         );
     }
 
     /**
      * Get the message content definition.
-     *
-     * @return \Illuminate\Mail\Mailables\Content
      */
-    public function content()
+    public function content(): Content
     {
         return new Content(
             view: 'emails.payment-confirmation',
@@ -55,10 +52,8 @@ class PaymentConfirmation extends Mailable
 
     /**
      * Get the attachments for the message.
-     *
-     * @return array
      */
-    public function attachments()
+    public function attachments(): array
     {
         return [];
     }

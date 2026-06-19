@@ -5,7 +5,7 @@
     @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()" x-cloak
     x-init="$watch('searchModalOpen', open => { const searchInput = document.getElementById('globalSearchInput'); if (open) { $nextTick(() => { if (searchInput) { searchInput.focus(); } }); } else if (searchInput) { searchInput.blur(); } })">
     <div class="mx-auto w-full max-w-5xl">
-        <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
             <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 sm:px-8">
                 <div class="flex items-start justify-between gap-6">
                     <div>
@@ -29,7 +29,7 @@
                     </div>
                     <input type="text" x-model="searchTerm" @input.debounce.150ms="performSearch(searchTerm)" id="globalSearchInput"
                         placeholder="Search by product name, tagline, description, or category..."
-                        class="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                        class="w-full rounded-xl border border-gray-200 bg-white px-12 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
                     <button x-show="searchTerm.length > 0" type="button" @click="searchTerm = ''; performSearch('')"
                         class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 transition hover:text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,13 +47,13 @@
                     </div>
 
                     <div x-show="showDefaultSearchContent() && popularSearchLoading"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
+                        class="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
                         Loading categories...
                     </div>
 
                     <div class="space-y-2" x-show="showDefaultSearchContent() && popularSearchContent.categories.length > 0">
                         <template x-for="category in popularSearchContent.categories" :key="`popular-category-${category.id}`">
-                            <a :href="category.url" class="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
+                            <a :href="category.url" class="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
                                 <span class="min-w-0">
                                     <span class="block truncate text-sm font-semibold text-gray-900" x-text="category.name"></span>
                                     <span class="mt-1 block text-[11px] text-gray-500" x-text="`${category.products_count} products`"></span>
@@ -66,13 +66,13 @@
                     </div>
 
                     <div x-show="showDefaultSearchContent() && !popularSearchLoading && popularSearchContent.categories.length === 0"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
+                        class="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
                         No popular categories available right now.
                     </div>
 
                     <div class="space-y-2" x-show="!showDefaultSearchContent() && searchResults.categories.length > 0">
                         <template x-for="category in searchResults.categories" :key="`search-category-${category.id}`">
-                            <a :href="category.url" @click="queueSearchTracking(searchTerm)" class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
+                            <a :href="category.url" @click="queueSearchTracking(searchTerm)" class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-gray-300 hover:bg-white/90">
                                 <span class="truncate text-sm font-semibold text-gray-900" x-text="category.name"></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -82,7 +82,7 @@
                     </div>
 
                     <div x-show="!showDefaultSearchContent() && !searchLoading && searchTerm.trim().length >= 2 && searchResults.categories.length === 0"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
+                        class="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-500">
                         No categories matched.
                     </div>
                 </div>
@@ -100,13 +100,13 @@
                     </div>
 
                     <div x-show="showDefaultSearchContent() && popularSearchLoading"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
+                        class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
                         <p class="text-sm text-gray-600">Loading popular products...</p>
                     </div>
 
                     <div x-show="showDefaultSearchContent() && popularSearchContent.products.length > 0" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <template x-for="product in popularSearchContent.products" :key="`popular-product-${product.id}`">
-                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
+                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
                                 <template x-if="product.logo_url">
                                     <img :src="product.logo_url" :alt="product.name"
                                         x-on:error="if (product.fallback_logo_url && $el.src !== product.fallback_logo_url) { $el.src = product.fallback_logo_url } else { product.logo_url = null }"
@@ -125,14 +125,14 @@
                     </div>
 
                     <div x-show="showDefaultSearchContent() && !popularSearchLoading && popularSearchContent.products.length === 0"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
+                        class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
                         <p class="text-sm text-gray-600">No popular products available right now.</p>
                     </div>
 
                     <div x-show="!showDefaultSearchContent() && !searchLoading && searchResults.products.length > 0"
                         class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <template x-for="product in searchResults.products" :key="`search-product-${product.id}`">
-                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
+                            <a :href="product.url" @click="queueSearchTracking(searchTerm)" class="flex items-start gap-3 rounded-xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50">
                                 <template x-if="product.logo_url">
                                     <img :src="product.logo_url" :alt="product.name"
                                         x-on:error="if (product.fallback_logo_url && $el.src !== product.fallback_logo_url) { $el.src = product.fallback_logo_url } else { product.logo_url = null }"
@@ -150,7 +150,7 @@
                     </div>
 
                     <div x-show="!showDefaultSearchContent() && !searchLoading && searchTerm.trim().length >= 2 && !hasSearchResults()"
-                        class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
+                        class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-10 text-center">
                         <p class="text-sm font-medium text-gray-900">No matching products or categories found.</p>
                         <p class="mt-2 text-sm text-gray-600">Try a broader keyword or browse the popular picks on the left.</p>
                     </div>

@@ -115,6 +115,7 @@ class AppServiceProvider extends ServiceProvider
     protected function loadThemeSettings(): void
     {
         $settingsPath = storage_path('app/theme_settings.json');
+        $rawPrimaryColor = Config::get('theme.primary_color', 'blue-500');
 
         if (File::exists($settingsPath)) {
             $settings = json_decode(File::get($settingsPath), true);
@@ -133,9 +134,7 @@ class AppServiceProvider extends ServiceProvider
                     Config::set('theme.body_text_color', $settings['body_text_color']);
                 }
                 if (!empty($settings['primary_color'])) {
-                    // Resolve color and set it
-                    $resolvedColor = $this->resolveColor($settings['primary_color']);
-                    Config::set('theme.primary_color', $resolvedColor);
+                    $rawPrimaryColor = $settings['primary_color'];
                 }
                 // Add logo and favicon settings
                 if (isset($settings['logo_url'])) { // Can be null if removed
@@ -165,6 +164,10 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        $primaryPalette = $this->buildPrimaryPalette($rawPrimaryColor);
+
+        Config::set('theme.primary_palette', $primaryPalette);
+        Config::set('theme.primary_color', $primaryPalette['500']);
         Config::set('theme.font_css_stack', $this->normalizeFontFamilyForCss(
             Config::get('theme.font_family', 'Inter')
         ));
@@ -262,5 +265,78 @@ class AppServiceProvider extends ServiceProvider
             // Fallback to a default color
             return '#3b82f6';
         });
+    }
+
+    private function buildPrimaryPalette(string $colorValue): array
+    {
+        $tailwindColors = config('tailwindcolors');
+
+        if (preg_match('/^([a-z]+)-(\d{2,3})$/', $colorValue, $matches)) {
+            $colorName = $matches[1];
+
+            if (isset($tailwindColors[$colorName])) {
+                return collect(['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
+                    ->mapWithKeys(fn (string $shade) => [$shade => $tailwindColors[$colorName][$shade] ?? $tailwindColors[$colorName]['500']])
+                    ->all();
+            }
+        }
+
+        $baseHex = $this->normalizeHexColor($this->resolveColor($colorValue));
+
+        return [
+            '50' => $this->mixHexColors($baseHex, '#FFFFFF', 0.08),
+            '100' => $this->mixHexColors($baseHex, '#FFFFFF', 0.14),
+            '200' => $this->mixHexColors($baseHex, '#FFFFFF', 0.24),
+            '300' => $this->mixHexColors($baseHex, '#FFFFFF', 0.42),
+            '400' => $this->mixHexColors($baseHex, '#FFFFFF', 0.68),
+            '500' => $baseHex,
+            '600' => $this->mixHexColors($baseHex, '#000000', 0.92),
+            '700' => $this->mixHexColors($baseHex, '#000000', 0.78),
+            '800' => $this->mixHexColors($baseHex, '#000000', 0.64),
+            '900' => $this->mixHexColors($baseHex, '#000000', 0.50),
+        ];
+    }
+
+    private function normalizeHexColor(string $hexColor): string
+    {
+        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $hexColor)) {
+            return '#3b82f6';
+        }
+
+        if (strlen($hexColor) === 4) {
+            return '#' . $hexColor[1] . $hexColor[1]
+                . $hexColor[2] . $hexColor[2]
+                . $hexColor[3] . $hexColor[3];
+        }
+
+        return strtoupper($hexColor);
+    }
+
+    private function mixHexColors(string $hexA, string $hexB, float $weightA): string
+    {
+        $hexA = $this->normalizeHexColor($hexA);
+        $hexB = $this->normalizeHexColor($hexB);
+        $weightA = max(0, min(1, $weightA));
+        $weightB = 1 - $weightA;
+
+        $channelsA = [
+            hexdec(substr($hexA, 1, 2)),
+            hexdec(substr($hexA, 3, 2)),
+            hexdec(substr($hexA, 5, 2)),
+        ];
+
+        $channelsB = [
+            hexdec(substr($hexB, 1, 2)),
+            hexdec(substr($hexB, 3, 2)),
+            hexdec(substr($hexB, 5, 2)),
+        ];
+
+        $mixedChannels = [];
+
+        foreach ($channelsA as $index => $channel) {
+            $mixedChannels[] = (int) round(($channel * $weightA) + ($channelsB[$index] * $weightB));
+        }
+
+        return sprintf('#%02X%02X%02X', $mixedChannels[0], $mixedChannels[1], $mixedChannels[2]);
     }
 }

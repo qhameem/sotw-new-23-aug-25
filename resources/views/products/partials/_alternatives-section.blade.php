@@ -5,7 +5,7 @@
 @if($alternativeProducts->isNotEmpty())
     <div class="grid gap-4 lg:grid-cols-3">
         @foreach($alternativeProducts as $alternative)
-            <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start gap-3">
                     @if($alternative->logo_url)
                         <img src="{{ $alternative->logo_url }}" alt="{{ $alternative->name }} logo"

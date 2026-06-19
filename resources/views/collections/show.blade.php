@@ -19,7 +19,7 @@
 
 @section('content')
     <div class="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-6 lg:px-10 xl:px-12">
-        <div class="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)]">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)]">
             <div class="bg-white px-6 py-8 sm:px-8 lg:px-10 xl:px-12">
                 <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
                     <div class="max-w-4xl">
@@ -129,13 +129,13 @@
             </div>
 
             @if(in_array(session('status'), ['collection-item-updated', 'collection-item-removed'], true))
-                <div class="mx-6 mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 sm:mx-8 lg:mx-10 xl:mx-12">
+                <div class="mx-6 mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 sm:mx-8 lg:mx-10 xl:mx-12">
                     {{ session('status') === 'collection-item-updated' ? 'Saved note updated.' : 'Product removed from this collection.' }}
                 </div>
             @endif
 
             <div class="px-6 py-6 sm:px-8 lg:px-10 xl:px-12">
-                <div class="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-sm">
+                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     @forelse($collection->items as $item)
                         @php
                             $savedProduct = $item->product;
@@ -151,7 +151,7 @@
                         <article class="@if(!$loop->last) border-b border-gray-100 @endif">
                             <div class="px-5 py-5 sm:px-6">
                                 <div class="flex items-start gap-4">
-                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                                         @if($productLogo)
                                             <img src="{{ $productLogo }}" alt="{{ $savedProduct->name }} logo" class="h-12 w-12 rounded-xl object-contain">
                                         @else
@@ -203,7 +203,7 @@
 
                                                     <div>
                                                         <label for="comment-{{ $item->id }}" class="text-sm font-medium text-gray-700">Note</label>
-                                                        <textarea id="comment-{{ $item->id }}" name="comment" rows="3" class="mt-2 block w-full rounded-2xl border-gray-200 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Why did you save this?">{{ $item->comment }}</textarea>
+                                                        <textarea id="comment-{{ $item->id }}" name="comment" rows="3" class="mt-2 block w-full rounded-xl border-gray-200 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Why did you save this?">{{ $item->comment }}</textarea>
                                                     </div>
 
                                                     <x-primary-button>{{ __('Save Note') }}</x-primary-button>

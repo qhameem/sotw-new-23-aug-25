@@ -22,7 +22,7 @@
 
     <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div class="space-y-8">
-            <section class="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm sm:p-8">
+            <section class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm sm:p-8">
                 <div class="flex items-start justify-between gap-6">
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Current Badge</p>
@@ -41,8 +41,8 @@
                     </a>
                 </div>
 
-                <div class="mt-6 rounded-2xl border border-emerald-200 bg-white p-6">
-                    <div class="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
+                <div class="mt-6 rounded-xl border border-emerald-200 bg-white p-6">
+                    <div class="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
                         <a href="{{ $destinationUrl }}" target="_blank" rel="dofollow noopener noreferrer">
                             <img src="{{ $badgeImageUrl }}" alt="{{ $badgeAltText }}" class="h-auto w-[200px] max-w-full border-0" />
                         </a>
@@ -53,7 +53,7 @@
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 1</p>
@@ -76,7 +76,7 @@
                     </button>
                 </div>
 
-                <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-gray-950">
+                <div class="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-950">
                     <pre id="default-badge-code" class="overflow-x-auto px-5 py-4 text-sm leading-7 text-emerald-100">{{ $defaultSnippet }}</pre>
                 </div>
 
@@ -85,7 +85,7 @@
                 </p>
             </section>
 
-            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 2</p>
                 <h2 class="mt-2 text-2xl font-semibold text-gray-900">Paste it into your homepage</h2>
                 <p class="mt-3 text-sm leading-6 text-gray-600">
@@ -93,21 +93,21 @@
                 </p>
 
                 <div class="mt-6 grid gap-4 sm:grid-cols-3">
-                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <h3 class="text-sm font-semibold text-gray-900">Best option</h3>
                         <p class="mt-2 text-sm text-gray-600">Inside your homepage <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">&lt;footer&gt;</code> area.</p>
                     </div>
-                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <h3 class="text-sm font-semibold text-gray-900">Also good</h3>
                         <p class="mt-2 text-sm text-gray-600">Inside the homepage <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">&lt;header&gt;</code> or hero section.</p>
                     </div>
-                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <h3 class="text-sm font-semibold text-gray-900">Also valid</h3>
                         <p class="mt-2 text-sm text-gray-600">Inside an "As Seen On", "Featured In", or trust/logo section on the homepage.</p>
                     </div>
                 </div>
 
-                <div class="mt-6 space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                <div class="mt-6 space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-5">
                     <p class="text-sm font-semibold text-amber-900">If you edit raw HTML</p>
                     <div class="space-y-3 text-sm leading-6 text-amber-900/90">
                         <p>Footer example:</p>
@@ -125,42 +125,42 @@
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 3</p>
                 <h2 class="mt-2 text-2xl font-semibold text-gray-900">Find the right place in popular platforms</h2>
                 <div class="mt-6 space-y-4">
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">WordPress</h3>
                         <p class="mt-2 text-sm text-gray-600">Open the homepage editor and add a <strong>Custom HTML</strong> block inside the footer section, homepage content, or a widget area.</p>
                         <p class="mt-2 text-sm text-gray-600">If you use Elementor: open the homepage, drag in an <strong>HTML</strong> widget, and paste the code.</p>
                         <p class="mt-2 text-sm text-gray-600">If you use a footer builder or theme options panel: look for <strong>Footer Builder</strong>, <strong>Widgets</strong>, or <strong>Custom HTML</strong>.</p>
                     </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">Shopify</h3>
                         <p class="mt-2 text-sm text-gray-600">Go to <strong>Online Store → Themes → Customize</strong>, open your homepage, then add a <strong>Custom Liquid</strong> block or an HTML-capable section.</p>
                         <p class="mt-2 text-sm text-gray-600">For footer placement, open the footer section inside the theme customizer and add the badge there if your theme supports custom content blocks.</p>
                     </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">Webflow</h3>
                         <p class="mt-2 text-sm text-gray-600">Open the homepage in the Designer, add an <strong>Embed</strong> element where you want the badge, then paste the code.</p>
                         <p class="mt-2 text-sm text-gray-600">Footer placement usually means dropping the embed inside your global footer component.</p>
                     </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">Wix</h3>
                         <p class="mt-2 text-sm text-gray-600">Edit the homepage, then use <strong>Add Elements → Embed Code → Embed HTML</strong> and paste the code.</p>
                         <p class="mt-2 text-sm text-gray-600">Place it in the homepage footer or a visible trust section, then publish.</p>
                     </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">Squarespace</h3>
                         <p class="mt-2 text-sm text-gray-600">Edit the homepage and insert a <strong>Code Block</strong> in the section where you want the badge.</p>
                         <p class="mt-2 text-sm text-gray-600">For footer placement, edit the footer area and add the code block there.</p>
                     </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-5">
+                    <div class="rounded-xl border border-gray-200 p-5">
                         <h3 class="text-lg font-semibold text-gray-900">Static HTML, cPanel, or aaPanel</h3>
                         <p class="mt-2 text-sm text-gray-600">Open your homepage file such as <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">index.html</code>, <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">index.php</code>, or the homepage template file.</p>
                         <p class="mt-2 text-sm text-gray-600">Paste the badge code inside the homepage <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">&lt;footer&gt;</code>, <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">&lt;header&gt;</code>, or a visible section within the <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">&lt;body&gt;</code>, then save and publish.</p>
@@ -168,7 +168,7 @@
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 4</p>
                 <h2 class="mt-2 text-2xl font-semibold text-gray-900">Customize the badge size</h2>
                 <p class="mt-3 text-sm leading-6 text-gray-600">
@@ -176,31 +176,31 @@
                 </p>
 
                 <div class="mt-6 grid gap-4 lg:grid-cols-3">
-                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Small</p>
                         <p class="mt-2 text-xs text-gray-600">Use this if your footer has limited space.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $smallSnippet }}</pre>
                     </div>
-                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Default</p>
                         <p class="mt-2 text-xs text-gray-600">Recommended for most homepages.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $defaultSnippet }}</pre>
                     </div>
-                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Large</p>
                         <p class="mt-2 text-xs text-gray-600">Use this for hero or "Featured On" sections.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $largeSnippet }}</pre>
                     </div>
                 </div>
 
-                <div class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
                     A safe rule: change only <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">width="200"</code> to another value like <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">160</code>, <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">220</code>, or <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">260</code>.
                 </div>
             </section>
         </div>
 
         <aside class="space-y-6">
-            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Checklist</p>
                 <ul class="mt-4 space-y-3 text-sm text-gray-700">
                     <li class="flex items-start gap-3">
@@ -222,7 +222,7 @@
                 </ul>
             </section>
 
-            <section class="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <section class="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Important</p>
                 <ul class="mt-4 space-y-3 text-sm leading-6 text-amber-900">
                     <li>The badge should be visible on your homepage.</li>

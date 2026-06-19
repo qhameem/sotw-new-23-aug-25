@@ -398,35 +398,8 @@
         $fontCssStack = config('theme.font_css_stack', "'Inter', sans-serif");
         $siteFontColor = config('theme.font_color', '#111827');
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
-        $primaryHexColor = config('theme.primary_color', '#3b82f6');
-
-        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $primaryHexColor)) {
-            $primaryHexColor = '#3b82f6';
-        }
-
-        if (strlen($primaryHexColor) === 4) {
-            $primaryHexColor = '#' . $primaryHexColor[1] . $primaryHexColor[1]
-                . $primaryHexColor[2] . $primaryHexColor[2]
-                . $primaryHexColor[3] . $primaryHexColor[3];
-        }
-
-        $darkenHex = static function (string $hexColor, float $amount): string {
-            $channels = [
-                hexdec(substr($hexColor, 1, 2)),
-                hexdec(substr($hexColor, 3, 2)),
-                hexdec(substr($hexColor, 5, 2)),
-            ];
-
-            $darkenedChannels = array_map(
-                static fn (int $channel): int => max(0, min(255, (int) round($channel * (1 - $amount)))),
-                $channels
-            );
-
-            return sprintf('#%02X%02X%02X', $darkenedChannels[0], $darkenedChannels[1], $darkenedChannels[2]);
-        };
-
-        $primaryHexColor600 = $darkenHex($primaryHexColor, 0.08);
-        $primaryHexColor700 = $darkenHex($primaryHexColor, 0.16);
+        $primaryPalette = config('theme.primary_palette', []);
+        $primaryHexColor = $primaryPalette['500'] ?? config('theme.primary_color', '#3b82f6');
 
         // Determine intelligent default for button text color
         $primaryButtonTextColor = config('theme.primary_button_text_color');
@@ -444,9 +417,16 @@
             --font-family-sans: {!! $fontCssStack !!};
             --color-site-text: {{ $siteFontColor }};
             --color-site-body-text: {{ $siteBodyTextColor }};
+            --color-primary-50: {{ $primaryPalette['50'] ?? '#eff6ff' }};
+            --color-primary-100: {{ $primaryPalette['100'] ?? '#dbeafe' }};
+            --color-primary-200: {{ $primaryPalette['200'] ?? '#bfdbfe' }};
+            --color-primary-300: {{ $primaryPalette['300'] ?? '#93c5fd' }};
+            --color-primary-400: {{ $primaryPalette['400'] ?? '#60a5fa' }};
             --color-primary-500: {{ $primaryHexColor }};
-            --color-primary-600: {{ $primaryHexColor600 }};
-            --color-primary-700: {{ $primaryHexColor700 }};
+            --color-primary-600: {{ $primaryPalette['600'] ?? '#2563eb' }};
+            --color-primary-700: {{ $primaryPalette['700'] ?? '#1d4ed8' }};
+            --color-primary-800: {{ $primaryPalette['800'] ?? '#1e40af' }};
+            --color-primary-900: {{ $primaryPalette['900'] ?? '#1e3a8a' }};
             --color-primary-button-text: {{ $primaryButtonTextColor }};
             --color-navbar-bg: {{ config('theme.navbar_bg_color', '#ffffff') }};
             --color-body-bg: {{ config('theme.body_bg_color', '#ffffff') }};
@@ -566,7 +546,7 @@
         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"
         @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()">
         <div class="mx-auto w-full max-w-lg">
-            <div class="rounded-3xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
+            <div class="rounded-xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
                 <p class="text-sm font-medium text-gray-900">Loading search...</p>
                 <p class="mt-2 text-sm text-gray-500">Preparing products and categories.</p>
             </div>
@@ -576,7 +556,7 @@
         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"
         @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()">
         <div class="mx-auto w-full max-w-lg">
-            <div class="rounded-3xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
+            <div class="rounded-xl border border-gray-200 bg-white px-6 py-10 text-center shadow-2xl">
                 <p class="text-sm font-medium text-gray-900" x-text="searchModalError"></p>
                 <button type="button" @click="closeSearchModal()"
                     class="mt-4 inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900">

@@ -9,7 +9,19 @@
           <!-- Left Column: Entry Options -->
           <div class="lg:col-span-8 space-y-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <h1 class="text-2xl font-bold text-gray-800">Submit a Project</h1>
+              <h1 class="text-2xl font-bold text-gray-800">
+                <span v-if="isEditMode" class="inline-flex items-center gap-3">
+                  <span class="font-medium text-gray-500">Edit</span>
+                  <img
+                    v-if="headingLogoUrl"
+                    :src="headingLogoUrl"
+                    :alt="`${editProductName} logo`"
+                    class="h-8 w-8 rounded-md border border-slate-200 object-cover"
+                  >
+                  <span>{{ editProductName }}</span>
+                </span>
+                <span v-else>{{ formHeading }}</span>
+              </h1>
               <div v-if="showAdminSandboxControls" class="md:max-w-sm md:flex-shrink-0">
                 <AdminSandboxBanner
                   :modelValue="form"
@@ -44,7 +56,7 @@
             <!-- Manual Fill Trigger -->
             <div
               @click="showForm = true"
-              class="group relative border-2 border-dashed border-gray-200 rounded-3xl h-1/2 flex items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition-all duration-300"
+              class="group relative border-2 border-dashed border-gray-200 rounded-xl h-1/2 flex items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition-all duration-300"
             >
               <div class="text-center group-hover:scale-105 transition-transform duration-300">
                 <p class="text-gray-400 font-medium text-sm">Or click here to fill manually</p>
@@ -77,7 +89,19 @@
           <div class="lg:col-span-8 space-y-10">
             <div>
               <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <h1 class="text-3xl font-bold text-gray-900">Submit a Project</h1>
+                <h1 class="text-3xl font-bold text-gray-900">
+                  <span v-if="isEditMode" class="inline-flex items-center gap-3">
+                    <span class="font-medium text-gray-500">Edit</span>
+                    <img
+                      v-if="headingLogoUrl"
+                      :src="headingLogoUrl"
+                      :alt="`${editProductName} logo`"
+                      class="h-9 w-9 rounded-md border border-slate-200 object-cover"
+                    >
+                    <span>{{ editProductName }}</span>
+                  </span>
+                  <span v-else>{{ formHeading }}</span>
+                </h1>
                 <div v-if="showAdminSandboxControls" class="md:max-w-sm md:flex-shrink-0">
                   <AdminSandboxBanner
                     :modelValue="form"
@@ -187,6 +211,9 @@
                       @update:modelValue="handleFormDetailUpdate"
                       :logoPreview="logoPreview"
                       :allTechStacks="allTechStacks"
+                      :premiumLaunchPriceCents="premiumLaunchPriceCents"
+                      :freeLaunchQueueMonths="freeLaunchQueueMonths"
+                      :productPublishTime="productPublishTime"
                       :isAdmin="isAdmin"
                       :adminSandboxEnabled="adminSandboxEnabled"
                       :isLoading="isLoading"
@@ -292,6 +319,9 @@ const {
   allBestFor,
   allPricing,
   allTechStacks,
+  premiumLaunchPriceCents,
+  freeLaunchQueueMonths,
+  productPublishTime,
   isAdmin,
   adminSandboxEnabled,
   isUrlInvalid,
@@ -316,6 +346,20 @@ const {
   markManualScreenshotChosen,
   resetManualMediaChoices
 } = useProductForm(props.initialProduct);
+
+const formHeading = computed(() => {
+  const productName = String(form.name || props.initialProduct?.name || '').trim();
+
+  if (form.id || props.initialProduct?.id) {
+    return productName ? `Edit ${productName}` : 'Edit Product';
+  }
+
+  return 'Submit a Project';
+});
+
+const isEditMode = computed(() => Boolean(form.id || props.initialProduct?.id));
+const editProductName = computed(() => String(form.name || props.initialProduct?.name || '').trim() || 'Product');
+const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props.initialProduct?.logo_url || null);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 const showAiContext = computed(() => !form.id);

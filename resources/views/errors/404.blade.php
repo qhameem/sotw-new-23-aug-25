@@ -65,7 +65,7 @@
                         Missing path: <span class="font-medium text-gray-500">{{ $requestedPath }}</span>
                     </p>
 
-                    <div class="mt-8 rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-4 text-left">
+                    <div class="mt-8 rounded-xl border border-sky-100 bg-sky-50/80 px-4 py-4 text-left">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Popular categories</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             @foreach($topCategories as $category)

@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <div x-show="otpSent" x-transition.opacity.duration.200ms class="mt-7 rounded-3xl border border-emerald-200 bg-emerald-50 px-6 py-6 text-center" style="display: none;">
+    <div x-show="otpSent" x-transition.opacity.duration.200ms class="mt-7 rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-6 text-center" style="display: none;">
         <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
             <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M22 8l-8.97 5.7a2 2 0 0 1-2.06 0L2 8" />

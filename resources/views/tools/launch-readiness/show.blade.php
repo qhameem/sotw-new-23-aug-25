@@ -31,11 +31,11 @@
             </p>
         </section>
 
-        <div x-cloak x-show="errorMessage" x-text="errorMessage" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
-        <div x-cloak x-show="noticeMessage" x-text="noticeMessage" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"></div>
+        <div x-cloak x-show="errorMessage" x-text="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+        <div x-cloak x-show="noticeMessage" x-text="noticeMessage" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"></div>
 
         @unless($toolTablesReady ?? false)
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                 The tool database tables are not migrated yet. Run the new migration before using Analyze.
             </div>
         @endunless

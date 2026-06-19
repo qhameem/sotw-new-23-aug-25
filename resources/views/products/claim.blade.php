@@ -8,9 +8,9 @@
 
 @section('content')
     <div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
             <div class="flex items-center gap-4">
-                <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="size-16 rounded-2xl border border-gray-100 object-cover">
+                <img src="{{ $product->logo_url }}" alt="{{ $product->name }}" class="size-16 rounded-xl border border-gray-100 object-cover">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Product</p>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
@@ -35,7 +35,7 @@
         @endif
 
         @if ($existingClaim && $existingClaim->status === \App\Models\ProductClaim::STATUS_PENDING)
-            <div class="bg-white border border-amber-200 rounded-2xl shadow-sm p-6 space-y-4">
+            <div class="bg-white border border-amber-200 rounded-xl shadow-sm p-6 space-y-4">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Pending claim</p>
                     <h2 class="text-lg font-semibold text-gray-900 mt-1">Your claim is waiting for admin review</h2>
@@ -64,7 +64,7 @@
                 </form>
             </div>
         @else
-            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-6">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-6">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Ownership proof</p>
                     <h2 class="text-lg font-semibold text-gray-900 mt-1">Submit your claim</h2>

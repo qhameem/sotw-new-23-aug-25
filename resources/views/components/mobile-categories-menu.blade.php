@@ -89,14 +89,14 @@
                         </div>
 
                         <div class="px-4 py-4">
-                            <p class="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-gray-600">Start with a parent category, then drill into the specific sub-category you want.</p>
+                            <p class="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-gray-600">Start with a parent category, then drill into the specific sub-category you want.</p>
                         </div>
 
                         <div class="flex-1 space-y-2 px-4 pb-24">
                             <template x-for="group in summaries" :key="group.key">
                                 <button
                                     type="button"
-                                    class="flex w-full items-center justify-between rounded-2xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50"
+                                    class="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-4 text-left transition hover:border-gray-300 hover:bg-slate-50"
                                     @click="showGroup(group.key)"
                                 >
                                     <span class="pr-4">
@@ -139,7 +139,7 @@
 
                         <div class="flex-1 space-y-2 px-4 pb-24">
                             <template x-if="groupsLoading && !groupsLoaded">
-                                <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
+                                <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
                                     <p class="text-sm font-medium text-gray-900">Loading categories...</p>
                                 </div>
                             </template>
@@ -149,7 +149,7 @@
                                     <template x-for="item in activeGroupData.items" :key="item.slug">
                                         <a
                                             :href="item.url"
-                                            class="flex items-start justify-between rounded-2xl border border-gray-200 px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50"
+                                            class="flex items-start justify-between rounded-xl border border-gray-200 px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50"
                                             @click="closeMenu()"
                                         >
                                             <span class="pr-4">
@@ -170,7 +170,7 @@
                             </template>
 
                             <template x-if="groupsLoaded && (!activeGroupData.items || !activeGroupData.items.length)">
-                                <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
+                                <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-4 py-8 text-center">
                                     <p class="text-sm font-medium text-gray-900">No categories are here yet.</p>
                                     <p class="mt-2 text-sm text-gray-600">Go back and use the alphabetical view to browse everything.</p>
                                 </div>

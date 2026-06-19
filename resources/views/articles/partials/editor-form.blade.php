@@ -199,7 +199,7 @@
 
                         <label
                             for="featured_image_upload"
-                            class="mt-2 flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center transition hover:border-primary-500 hover:bg-white"
+                            class="mt-2 flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center transition hover:border-primary-500 hover:bg-white"
                             data-featured-image-dropzone
                         >
                             <div data-featured-image-empty class="{{ old('featured_image_path', $article->featured_image_path ?? '') ? 'hidden' : '' }}">
@@ -428,7 +428,7 @@
                 <div class="article-editor-card p-6">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">SEO Preview</h2>
 
-                    <div class="mt-4 rounded-2xl border border-gray-200 p-4">
+                    <div class="mt-4 rounded-xl border border-gray-200 p-4">
                         <div class="truncate text-sm font-medium text-blue-700" data-article-seo-title-preview>
                             {{ old('meta_title', $article->meta_title ?: ($article->title ?? 'Untitled article')) }}
                         </div>

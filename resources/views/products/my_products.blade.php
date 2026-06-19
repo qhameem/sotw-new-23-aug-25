@@ -1,430 +1,541 @@
-@extends('layouts.app')
+@extends('layouts.app', [
+    'mainContentMaxWidth' => 'max-w-none',
+    'containerMaxWidth' => 'max-w-none',
+    'hideSidebar' => true,
+    'headerPadding' => 'px-4 sm:px-6 lg:px-10 xl:px-12',
+    'mainPadding' => 'px-0',
+])
 
 @section('title', 'My Products | Software on the Web')
 
-@section('header-title')
-<h2 class="text-base font-semibold py-[3px] hidden md:block">My Products</h2>
+@section('hide_desktop_page_header')
+    1
 @endsection
 
 @section('content')
-    <div class="p-4">
-        <div class="flex justify-end mb-4">
-            <div class="flex items-center space-x-2">
-                <label for="per_page" class="text-sm text-gray-600">Show:</label>
-                <select id="per_page" name="per_page" onchange="window.location.href = this.value;" class="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    @foreach($allowedPerPages as $option)
-                        <option value="{{ route('products.my', ['per_page' => $option]) }}" {{ $perPage == $option ? 'selected' : '' }}>
-                            {{ $option }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-        @if($products->isEmpty())
-            <div class="text-center text-gray-500 py-12">
-                <p class="text-xl mb-2">You haven't submitted any products yet.</p>
-                <a href="{{ route('products.create') }}" class="text-blue-500 hover:underline">Submit your first product!</a>
-            </div>
-        @else
-            <div class="space-y-4">
-                @foreach($products as $product)
-                    @php
-                        $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
-                        $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
-                    @endphp
-                    <article x-data="productEditor({ 
-                        product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url', 'slug']), ['logo_url' => $product->logo_url, 'x_handle' => \App\Models\Product::normalizeXAccount($product->x_account), 'x_profile_url' => \App\Models\Product::xProfileUrl($product->x_account)])) }},
-                        categories: {{ $product->categories->pluck('id')->toJson() }},
-                        tech_stacks: {{ $product->techStacks->pluck('id')->toJson() }},
-                        media: {{ $product->media->map->only(['id', 'path', 'type', 'alt_text'])->toJson() }}
-                    })" @description-updated.window="if($event.detail.id === product.id) tempValue = $event.detail.content" class="bg-white p-4 md:p-4 border rounded-lg flex flex-col md:flex-row gap-4 md:gap-6 relative group" itemscope itemtype="https://schema.org/Product">
-                        
-                        <!-- Overlay Loading -->
-                        <div x-show="loading" class="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
-                            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
+    <div class="mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6 lg:px-10 xl:px-12">
+        <div class="rounded-lg bg-slate-50 p-4 sm:p-6 lg:p-8">
+            <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-2xl">
+                    <h1 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">My Products</h1>
+                    <p class="text-sm text-slate-600">Compact cards by default. Click a card to expand. Click editable sections to update them.</p>
+                </div>
 
-                        <div class="flex-1">
-                            <div class="flex items-stretch gap-4 flex-col md:flex-row mb-4">
-                                <!-- Logo Card -->
-                                <div class="flex flex-col items-center justify-center border border-gray-100 rounded-lg p-3 bg-white shadow-sm min-w-[120px]">
-                                    <div class="relative group mb-2">
-                                        <img :src="product.logo_url" alt="" class="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-gray-50" itemprop="image">
-                                    </div>
-                                    <label class="text-blue-600 hover:text-blue-800 text-[0.65rem] font-bold tracking-wider cursor-pointer text-center">
-                                        Replace
-                                        <input type="file" class="hidden" @change="uploadLogo">
-                                    </label>
-                                </div>
-                                
-                                <!-- Name Card -->
-                                <div class="flex-1 flex items-center justify-between border border-gray-100 rounded-lg p-4 bg-gray-50/30 shadow-sm relative">
-                                    <div class="flex flex-col">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider mb-1">Product Name</p>
-                                        <div class="flex items-center gap-2">
-                                            <h2 x-show="editingField !== 'name'" class="text-lg md:text-xl font-bold leading-tight" itemprop="name">
-                                                <a :href="product.link" target="_blank" rel="noopener nofollow" class="hover:underline" itemprop="url" x-text="product.name"></a>
-                                            </h2>
-                                        </div>
-                                    </div>
-                                    <span class="text-gray-400 text-xs font-semibold">Locked</span>
-                                </div>
+                <div class="flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                    <label for="per_page" class="text-sm font-medium text-slate-600">Show</label>
+                    <select
+                        id="per_page"
+                        name="per_page"
+                        onchange="window.location.href = this.value;"
+                        class="rounded border-slate-200 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                    >
+                        @foreach ($allowedPerPages as $option)
+                            <option value="{{ route('products.my', ['per_page' => $option]) }}" {{ $perPage == $option ? 'selected' : '' }}>
+                                {{ $option }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            @if ($products->isEmpty())
+                <div class="rounded-lg border border-dashed border-slate-300 bg-white/80 px-6 py-16 text-center shadow-sm">
+                    <p class="text-xl font-semibold text-slate-900">You haven't submitted any products yet.</p>
+                    <a href="{{ route('products.create') }}" class="mt-3 inline-flex rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
+                        Submit your first product
+                    </a>
+                </div>
+            @else
+                <div class="space-y-4">
+                    @foreach ($products as $product)
+                        @php
+                            $fallbackLogo = $product->link
+                                ? 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link)
+                                : null;
+                        @endphp
+
+                        <article
+                            x-data="productEditor({
+                                product: {{ json_encode(array_merge($product->only(['id', 'name', 'tagline', 'product_page_tagline', 'description', 'link', 'x_account', 'sell_product', 'asking_price', 'maker_links', 'video_url', 'slug', 'approved']), ['logo_url' => $product->logo_url, 'fallback_logo_url' => $fallbackLogo, 'logo_initial' => \App\Support\ProductLogo::initial($product), 'x_handle' => \App\Models\Product::normalizeXAccount($product->x_account), 'x_profile_url' => \App\Models\Product::xProfileUrl($product->x_account)])) }},
+                                categories: {{ $product->categories->pluck('id')->toJson() }},
+                                tech_stacks: {{ $product->techStacks->pluck('id')->toJson() }},
+                                media: {{ $product->media->map->only(['id', 'path', 'type', 'alt_text'])->toJson() }}
+                            })"
+                            @description-updated.window="if ($event.detail.id === product.id) tempValue = $event.detail.content"
+                            class="relative overflow-hidden rounded-lg border border-white/80 bg-white/90 shadow-sm backdrop-blur"
+                            itemscope
+                            itemtype="https://schema.org/Product"
+                        >
+                            <div x-show="loading" class="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+                                <svg class="h-8 w-8 animate-spin text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
                             </div>
-                            
-                            <div class="flex flex-col gap-4 w-full">
-                                <!-- Tagline -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Tagline</p>
-                                        <button x-show="editingField !== 'tagline'" @click="startEdit('tagline', product.tagline)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'tagline'">
-                                        <p class="text-gray-700 text-sm" itemprop="tagline" x-text="product.tagline"></p>
-                                    </div>
-                                    <div x-show="editingField === 'tagline'" class="flex items-center gap-2 mt-1">
-                                        <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full">
-                                        <button @click="save('tagline')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Product Page Tagline -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Product Page Tagline</p>
-                                        <button x-show="editingField !== 'product_page_tagline'" @click="startEdit('product_page_tagline', product.product_page_tagline)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'product_page_tagline'">
-                                        <p class="text-gray-700 text-sm" x-text="product.product_page_tagline || 'Not set'"></p>
-                                    </div>
-                                    <div x-show="editingField === 'product_page_tagline'" class="flex items-center gap-2 mt-1">
-                                        <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="Enter product page tagline">
-                                        <button @click="save('product_page_tagline')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Description -->
-                                <div class="md:col-span-2 border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Description</p>
-                                        <button x-show="editingField !== 'description'" @click="startEdit('description', product.description)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'description'" class="prose prose-sm text-sm max-w-none text-gray-600" itemprop="description" x-html="product.description"></div>
-                                    <div x-show="editingField === 'description'" class="mt-1"
-                                        x-init="$watch('editingField', value => { 
-                                            if (value === 'description') {
-                                                $nextTick(() => {
-                                                    const editorId = 'editor-' + product.id;
-                                                    if (window.Quill) {
-                                                        const quill = new Quill('#' + editorId, {
-                                                            theme: 'snow',
-                                                            modules: { 
-                                                                toolbar: [
-                                                                    [{ 'header': [2, 3, false] }],
-                                                                    ['bold', 'italic', 'underline'],
-                                                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                                                    ['link', 'clean']
-                                                                ] 
-                                                            }
-                                                        });
-                                                        quill.root.innerHTML = tempValue;
-                                                        quill.on('text-change', () => {
-                                                            $dispatch('description-updated', { id: product.id, content: quill.root.innerHTML });
-                                                        });
-                                                    }
-                                                });
-                                            }
-                                        })">
-                                        <div :id="'editor-' + product.id" class="bg-white" style="height: 200px;"></div>
-                                        <div class="flex justify-end gap-2 mt-2">
-                                            <button @click="cancelEdit()" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
-                                            <button @click="save('description')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">Save Changes</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Video URL -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Video URL</p>
-                                        <button x-show="editingField !== 'video_url'" @click="startEdit('video_url', product.video_url)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <p x-show="editingField !== 'video_url'" class="text-sm text-blue-600 break-all">
-                                        <template x-if="product.video_url">
-                                            <a :href="product.video_url" target="_blank" rel="noopener nofollow" x-text="product.video_url"></a>
-                                        </template>
-                                        <template x-if="!product.video_url">
-                                            <span class="text-gray-400 italic">None</span>
-                                        </template>
-                                    </p>
-                                    <div x-show="editingField === 'video_url'" class="flex items-center gap-2 mt-1">
-                                        <input type="url" x-model="tempValue" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="https://youtube.com/...">
-                                        <button @click="save('video_url')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Link -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Link</p>
-                                        <span class="text-gray-400 text-xs font-semibold">Locked</span>
-                                    </div>
-                                    <p x-show="editingField !== 'link'" class="text-sm text-blue-600 break-all">
-                                        <a :href="product.link" target="_blank" rel="noopener nofollow" x-text="product.link"></a>
-                                    </p>
-                                     <!-- Slug display below Link field -->
-                                     <div class="mt-2 text-[0.7rem] text-gray-500">
-                                         <span class="font-bold uppercase tracking-wider text-gray-400">Software on the Web URL:</span>
-                                         <div class="mt-0.5 flex items-center gap-1">
-                                             <span class="text-gray-400">softwareontheweb.com/</span>
-                                             <span class="font-semibold text-blue-600" x-text="product.slug"></span>
-                                         </div>
-                                     </div>
-                                 </div>
-                                
-                                <!-- Maker Links -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Maker Links</p>
-                                        <button x-show="editingField !== 'maker_links'" @click="startEdit('maker_links', product.maker_links || [])" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'maker_links'" class="flex flex-wrap gap-2">
-                                        <template x-if="!product.maker_links || product.maker_links.length === 0">
-                                            <p class="text-sm text-gray-400 italic">None</p>
-                                        </template>
-                                        <template x-for="link in product.maker_links" :key="link">
-                                            <a :href="link" target="_blank" rel="noopener nofollow" class="text-sm text-blue-600 hover:underline break-all" x-text="link"></a>
-                                        </template>
-                                    </div>
-                                    <div x-show="editingField === 'maker_links'" class="mt-1 space-y-2">
-                                        <template x-for="(link, index) in tempValue" :key="index">
-                                            <div class="flex items-center gap-2">
-                                                <input type="url" x-model="tempValue[index]" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="https://...">
-                                                <button @click="tempValue.splice(index, 1)" class="text-red-500 hover:bg-red-50 p-1 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
-                                            </div>
-                                        </template>
-                                        <div class="flex justify-between items-center">
-                                            <button @click="tempValue.push('')" class="text-xs font-medium text-blue-600 hover:underline">+ Add link</button>
-                                            <div class="flex gap-2">
-                                                <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
-                                                <button @click="save('maker_links')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- X Account -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">X Account</p>
-                                        <button x-show="editingField !== 'x_account'" @click="startEdit('x_account', product.x_handle || product.x_account)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <p x-show="editingField !== 'x_account'" class="text-sm text-gray-700">
-                                        <a x-show="product.x_profile_url" :href="product.x_profile_url" target="_blank" rel="noopener nofollow" class="text-blue-600 hover:underline">@<span x-text="product.x_handle"></span></a>
-                                        <span x-show="!product.x_profile_url" class="text-gray-400 italic">None</span>
-                                    </p>
-                                    <div x-show="editingField === 'x_account'" class="flex items-center gap-2 mt-1">
-                                        <div class="relative w-full">
-                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
-                                            <input type="text" x-model="tempValue" class="text-sm border-gray-300 rounded pl-6 pr-2 py-1 w-full" placeholder="username">
-                                        </div>
-                                        <button @click="save('x_account')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded">Cancel</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Selling Info -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Selling Info</p>
-                                        <button x-show="editingField !== 'selling'" @click="editingField = 'selling'; tempValue = {sell_product: product.sell_product, asking_price: product.asking_price}" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'selling'">
-                                        <p class="text-sm text-gray-700">
-                                            <span x-text="product.sell_product ? 'For Sale' : 'Not for sale'"></span>
-                                            <template x-if="product.sell_product && product.asking_price">
-                                                <span x-text="' - Asking Price: $' + parseFloat(product.asking_price).toLocaleString()"></span>
+
+                            <button
+                                type="button"
+                                @click="toggleExpanded()"
+                                class="w-full px-4 py-4 text-left sm:px-6 sm:py-5"
+                                :aria-expanded="expanded.toString()"
+                            >
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div class="flex min-w-0 items-center gap-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm md:h-12 md:w-12">
+                                            <template x-if="displayLogo()">
+                                                <img :src="displayLogo()" alt="" class="h-full w-full object-cover" itemprop="image">
                                             </template>
-                                        </p>
-                                    </div>
-                                    <div x-show="editingField === 'selling'" class="mt-1 space-y-2">
-                                        <label class="flex items-center gap-2">
-                                            <input type="checkbox" x-model="tempValue.sell_product" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                            <span class="text-sm text-gray-700">Allow for sale</span>
-                                        </label>
-                                        <div x-show="tempValue.sell_product" class="flex items-center gap-2">
-                                            <span class="text-sm text-gray-500">$</span>
-                                            <input type="number" x-model="tempValue.asking_price" step="0.01" class="text-sm border-gray-300 rounded px-2 py-1 w-full" placeholder="Asking price">
+                                            <template x-if="!displayLogo()">
+                                                <span class="text-sm font-semibold text-slate-500" x-text="product.logo_initial"></span>
+                                            </template>
                                         </div>
-                                        <div class="flex justify-end gap-2">
-                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
-                                            <button @click="saveSelling()" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Tech Stacks -->
-                                <div class="border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Tech Stacks</p>
-                                        <button x-show="editingField !== 'tech_stacks'" @click="startEdit('tech_stacks', techStacks)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    <div x-show="editingField !== 'tech_stacks'" class="flex flex-wrap gap-2 mt-1">
-                                        <template x-if="techStacks.length === 0">
-                                            <p class="text-sm text-gray-400 italic">None</p>
-                                        </template>
-                                        <template x-for="techId in techStacks" :key="techId">
-                                            <span class="inline-block px-2 py-1 text-xs bg-gray-100 rounded" x-text="getTechName(techId)"></span>
-                                        </template>
-                                    </div>
-                                    <div x-show="editingField === 'tech_stacks'" class="mt-1">
-                                        <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border rounded bg-gray-50">
-                                            @foreach($allTechStacks as $tech)
-                                                <label class="flex items-center gap-1 bg-white px-2 py-1 rounded border cursor-pointer hover:bg-blue-50 transition-colors">
-                                                    <input type="checkbox" :value="{{ $tech->id }}" x-model="tempValue" class="rounded border-gray-300 text-blue-600">
-                                                    <span class="text-xs">{{ $tech->name }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                        <div class="flex justify-end gap-2 mt-2">
-                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded">Cancel</button>
-                                            <button @click="save('tech_stacks')" class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded">Save</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Categories Section -->
-                                <div class="md:col-span-2 mt-2 border border-blue-50 bg-blue-50/10 rounded-lg p-4 shadow-sm">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <p class="text-[0.7rem] font-bold text-blue-800 uppercase tracking-wider">Manage Categories</p>
-                                        <button x-show="editingField !== 'categories'" @click="startEdit('categories', categories)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                    </div>
-                                    
-                                    <div x-show="editingField !== 'categories'" class="space-y-3 mt-2">
-                                        <!-- Category Grouping Logic within JS/Alpine -->
-                                        <div>
-                                            <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Category</p>
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                <template x-for="catId in getSoftwareCats()" :key="catId">
-                                                    <span class="text-gray-600 text-[0.65rem] border px-1.5 py-0.5 rounded" x-text="getCategoryName(catId)"></span>
-                                                </template>
+
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h2 class="truncate text-lg font-semibold tracking-tight text-slate-950 sm:text-xl" itemprop="name" x-text="product.name"></h2>
+                                                <span
+                                                    class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border px-[11px] text-sm font-medium"
+                                                    :class="product.approved
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                        : 'border-amber-200 bg-amber-50 text-amber-700'"
+                                                    x-text="product.approved ? 'Approved' : 'Pending'"
+                                                ></span>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Pricing</p>
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                <template x-for="catId in getPricingCats()" :key="catId">
-                                                    <span class="text-gray-600 text-[0.65rem] border px-1.5 py-0.5 rounded" x-text="getCategoryName(catId)"></span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Best For</p>
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                <template x-for="catId in getBestForCats()" :key="catId">
-                                                    <span class="text-gray-600 text-[0.65rem] border px-1.5 py-0.5 rounded" x-text="getCategoryName(catId)"></span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Platform</p>
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                <template x-for="catId in getPlatformCats()" :key="catId">
-                                                    <span class="text-gray-600 text-[0.65rem] border px-1.5 py-0.5 rounded" x-text="getCategoryName(catId)"></span>
-                                                </template>
-                                            </div>
+
+                                            <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600" itemprop="tagline" x-text="displayTagline()"></p>
                                         </div>
                                     </div>
 
-                                    <div x-show="editingField === 'categories'" class="mt-2 space-y-4 bg-gray-50 p-3 rounded border">
-                                        @foreach(['Software Categories' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for', 'Platform' => 'Platform'] as $title => $typeName)
-                                            <div>
-                                                <p class="text-[0.7rem] font-bold text-gray-500 mb-1">{{ $title }}</p>
-                                                <div class="flex flex-wrap gap-1.5">
-                                                    @foreach($allCategories as $cat)
-                                                        @if(($typeName === 'Software' && ($cat->types->contains('name', 'Software') || $cat->types->contains('name', 'Software Categories') || $cat->types->contains('name', 'Category') || $cat->types->isEmpty())) || ($cat->types->contains('name', $typeName)))
-                                                            <label class="flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-gray-200 cursor-pointer text-[0.7rem] hover:bg-blue-50">
-                                                                <input type="checkbox" :value="{{ $cat->id }}" x-model="tempValue" class="size-3 rounded border-gray-300 text-blue-600">
-                                                                {{ $cat->name }}
-                                                            </label>
-                                                        @endif
-                                                    @endforeach
+                                    <div class="flex items-center gap-3 text-sm font-medium text-slate-500">
+                                        <span x-text="expanded ? 'Hide details' : 'Show details'"></span>
+                                        <svg class="h-5 w-5 transition-transform duration-200" :class="expanded ? 'rotate-180 text-slate-700' : 'text-slate-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <div x-show="expanded" x-transition.opacity.duration.200ms class="border-t border-slate-200/80 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
+                                <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                    <p class="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Editable sections open on click</p>
+
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @if ($product->approved)
+                                            <a
+                                                href="{{ route('products.show', ['product' => $product->slug]) }}"
+                                                class="inline-flex items-center rounded border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+                                                @click.stop
+                                            >
+                                                View product page
+                                            </a>
+                                        @endif
+
+                                        <a
+                                            :href="product.link"
+                                            target="_blank"
+                                            rel="noopener nofollow"
+                                            class="inline-flex items-center rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-slate-700"
+                                            @click.stop
+                                        >
+                                            Visit website
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="grid gap-4 xl:grid-cols-[280px,minmax(0,1fr)]">
+                                    <div class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Logo</p>
+                                        <div class="mt-4 flex flex-col items-center rounded-lg border border-dashed border-slate-300 bg-white p-4 text-center">
+                                            <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm">
+                                                <template x-if="displayLogo()">
+                                                    <img :src="displayLogo()" alt="" class="h-full w-full object-cover">
+                                                </template>
+                                                <template x-if="!displayLogo()">
+                                                    <span class="text-2xl font-semibold text-slate-500" x-text="product.logo_initial"></span>
+                                                </template>
+                                            </div>
+                                            <label class="mt-4 inline-flex cursor-pointer rounded border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100">
+                                                Replace logo
+                                                <input type="file" class="hidden" @change="uploadLogo">
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+                                            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Product name</p>
+                                            <p class="mt-3 text-lg font-semibold text-slate-950" x-text="product.name"></p>
+                                            <p class="mt-1 text-sm text-slate-400">Locked</p>
+                                        </div>
+
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+                                            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Software on the Web URL</p>
+                                            <p class="mt-3 break-all text-sm font-medium text-slate-700">
+                                                <span class="text-slate-400">softwareontheweb.com/</span>
+                                                <span x-text="product.slug"></span>
+                                            </p>
+                                            <p class="mt-1 text-sm text-slate-400">Locked</p>
+                                        </div>
+
+                                        <div
+                                            class="md:col-span-2"
+                                            :class="fieldCardClasses('product_page_tagline', true)"
+                                            @click="editingField !== 'product_page_tagline' && startEdit('product_page_tagline', product.product_page_tagline || product.tagline || '')"
+                                        >
+                                            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tagline</p>
+
+                                            <div x-show="editingField !== 'product_page_tagline'" class="mt-3">
+                                                <p class="text-sm leading-6 text-slate-700" x-text="displayTagline()"></p>
+                                            </div>
+
+                                            <div x-show="editingField === 'product_page_tagline'" class="mt-3 flex flex-col gap-3" @click.stop>
+                                                <input
+                                                    type="text"
+                                                    x-model="tempValue"
+                                                    class="w-full rounded border-slate-300 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                                                    placeholder="Enter tagline"
+                                                >
+                                                <div class="flex justify-end gap-2">
+                                                    <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                    <button @click="save('product_page_tagline')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
                                                 </div>
                                             </div>
-                                        @endforeach
-                                        <div class="flex justify-end gap-2 pt-2 border-t mt-2">
-                                            <button @click="cancelEdit()" class="px-2 py-1 text-xs text-gray-500 bg-gray-200 rounded">Cancel</button>
-                                            <button @click="save('categories')" class="px-2 py-1 text-xs text-white bg-blue-600 rounded">Save Categories</button>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Media Gallery -->
-                                <div class="md:col-span-2 border border-gray-100 rounded-lg p-3 bg-white shadow-sm">
-                                    <p class="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider mb-3">Media Gallery</p>
-                                    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                                        <template x-for="item in media" :key="item.id">
-                                            <div class="relative group/media aspect-square bg-gray-100 rounded border overflow-hidden">
-                                                <template x-if="item.type === 'video'">
-                                                    <div class="w-full h-full flex items-center justify-center bg-gray-900">
-                                                        <svg class="w-8 h-8 text-white/50" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.333-5.89a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg>
-                                                    </div>
-                                                </template>
-                                                <template x-if="item.type !== 'video'">
-                                                    <img :src="item.path.startsWith('http') ? item.path : '/storage/' + item.path" :alt="item.alt_text" class="w-full h-full object-cover">
-                                                </template>
-                                                <button @click="removeMedia(item.id)" class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                </button>
+
+                                <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                    <div
+                                        class="lg:col-span-2"
+                                        :class="fieldCardClasses('description', true)"
+                                        @click="editingField !== 'description' && startEdit('description', product.description)"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Description</p>
+
+                                        <div x-show="editingField !== 'description'" class="prose prose-sm mt-3 max-w-none text-sm text-slate-600" itemprop="description" x-html="product.description"></div>
+
+                                        <div
+                                            x-show="editingField === 'description'"
+                                            class="mt-3"
+                                            @click.stop
+                                            x-init="$watch('editingField', value => {
+                                                if (value === 'description') {
+                                                    $nextTick(() => {
+                                                        const editorId = 'editor-' + product.id;
+                                                        if (window.Quill) {
+                                                            const quill = new Quill('#' + editorId, {
+                                                                theme: 'snow',
+                                                                modules: {
+                                                                    toolbar: [
+                                                                        [{ header: [2, 3, false] }],
+                                                                        ['bold', 'italic', 'underline'],
+                                                                        [{ list: 'ordered' }, { list: 'bullet' }],
+                                                                        ['link', 'clean']
+                                                                    ]
+                                                                }
+                                                            });
+                                                            quill.root.innerHTML = tempValue;
+                                                            quill.on('text-change', () => {
+                                                                $dispatch('description-updated', { id: product.id, content: quill.root.innerHTML });
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                            })"
+                                        >
+                                            <div :id="'editor-' + product.id" class="bg-white" style="height: 220px;"></div>
+                                            <div class="mt-3 flex justify-end gap-2">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="save('description')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
                                             </div>
-                                        </template>
-                                        
-                                        <!-- Add Media Tool -->
-                                        <label class="relative aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-colors group/add">
-                                            <svg class="w-6 h-6 text-gray-300 group-hover/add:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                            <span class="text-[0.6rem] text-gray-400 mt-1 uppercase">Add</span>
-                                            <input type="file" class="hidden" @change="addMedia">
-                                        </label>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        :class="fieldCardClasses('video_url', true)"
+                                        @click="editingField !== 'video_url' && startEdit('video_url', product.video_url)"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Video URL</p>
+
+                                        <div x-show="editingField !== 'video_url'" class="mt-3 text-sm">
+                                            <template x-if="product.video_url">
+                                                <a :href="product.video_url" target="_blank" rel="noopener nofollow" class="break-all text-sky-700 hover:underline" @click.stop x-text="product.video_url"></a>
+                                            </template>
+                                            <template x-if="!product.video_url">
+                                                <span class="text-slate-400">None</span>
+                                            </template>
+                                        </div>
+
+                                        <div x-show="editingField === 'video_url'" class="mt-3 flex flex-col gap-3" @click.stop>
+                                            <input
+                                                type="url"
+                                                x-model="tempValue"
+                                                class="w-full rounded border-slate-300 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                                                placeholder="https://youtube.com/..."
+                                            >
+                                            <div class="flex justify-end gap-2">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="save('video_url')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Website</p>
+                                        <a :href="product.link" target="_blank" rel="noopener nofollow" class="mt-3 block break-all text-sm text-sky-700 hover:underline" @click.stop x-text="product.link"></a>
+                                        <p class="mt-1 text-sm text-slate-400">Locked</p>
+                                    </div>
+
+                                    <div
+                                        :class="fieldCardClasses('maker_links', true)"
+                                        @click="editingField !== 'maker_links' && startEdit('maker_links', product.maker_links || [])"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Maker links</p>
+
+                                        <div x-show="editingField !== 'maker_links'" class="mt-3 flex flex-wrap gap-2">
+                                            <template x-if="!product.maker_links || product.maker_links.length === 0">
+                                                <span class="text-sm text-slate-400">None</span>
+                                            </template>
+                                            <template x-for="link in product.maker_links" :key="link">
+                                                <a :href="link" target="_blank" rel="noopener nofollow" class="inline-flex h-6 w-fit items-center justify-center gap-1 break-all rounded-2xl border border-sky-100 bg-sky-50 px-[11px] text-sm text-sky-700 hover:underline" @click.stop x-text="link"></a>
+                                            </template>
+                                        </div>
+
+                                        <div x-show="editingField === 'maker_links'" class="mt-3 space-y-2" @click.stop>
+                                            <template x-for="(link, index) in tempValue" :key="index">
+                                                <div class="flex items-center gap-2">
+                                                    <input
+                                                        type="url"
+                                                        x-model="tempValue[index]"
+                                                        class="w-full rounded border-slate-300 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                                                        placeholder="https://..."
+                                                    >
+                                                    <button @click="tempValue.splice(index, 1)" class="rounded bg-rose-50 p-2 text-rose-600">
+                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </template>
+
+                                            <div class="flex items-center justify-between pt-1">
+                                                <button @click="tempValue.push('')" class="text-sm font-medium text-sky-700">Add link</button>
+                                                <div class="flex gap-2">
+                                                    <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                    <button @click="save('maker_links')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        :class="fieldCardClasses('x_account', true)"
+                                        @click="editingField !== 'x_account' && startEdit('x_account', product.x_handle || product.x_account)"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">X account</p>
+
+                                        <div x-show="editingField !== 'x_account'" class="mt-3 text-sm text-slate-700">
+                                            <a x-show="product.x_profile_url" :href="product.x_profile_url" target="_blank" rel="noopener nofollow" class="text-sky-700 hover:underline" @click.stop>@<span x-text="product.x_handle"></span></a>
+                                            <span x-show="!product.x_profile_url" class="text-slate-400">None</span>
+                                        </div>
+
+                                        <div x-show="editingField === 'x_account'" class="mt-3 flex flex-col gap-3" @click.stop>
+                                            <div class="relative">
+                                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">@</span>
+                                                <input
+                                                    type="text"
+                                                    x-model="tempValue"
+                                                    class="w-full rounded border-slate-300 py-2 pl-8 pr-3 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                                                    placeholder="username"
+                                                >
+                                            </div>
+                                            <div class="flex justify-end gap-2">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="save('x_account')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        :class="fieldCardClasses('selling', true)"
+                                        @click="editingField !== 'selling' && (editingField = 'selling', tempValue = { sell_product: product.sell_product, asking_price: product.asking_price })"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Selling info</p>
+
+                                        <div x-show="editingField !== 'selling'" class="mt-3 text-sm text-slate-700">
+                                            <span x-text="product.sell_product ? 'For sale' : 'Not for sale'"></span>
+                                            <template x-if="product.sell_product && product.asking_price">
+                                                <span x-text="' - Asking Price: $' + formatPrice(product.asking_price)"></span>
+                                            </template>
+                                        </div>
+
+                                        <div x-show="editingField === 'selling'" class="mt-3 space-y-3" @click.stop>
+                                            <label class="flex items-center gap-2 text-sm text-slate-700">
+                                                <input type="checkbox" x-model="tempValue.sell_product" class="rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                                                <span>Allow for sale</span>
+                                            </label>
+
+                                            <div x-show="tempValue.sell_product" class="flex items-center gap-2">
+                                                <span class="text-sm text-slate-500">$</span>
+                                                <input
+                                                    type="number"
+                                                    x-model="tempValue.asking_price"
+                                                    step="0.01"
+                                                    class="w-full rounded border-slate-300 text-sm shadow-none focus:border-sky-300 focus:ring focus:ring-sky-100"
+                                                    placeholder="Asking price"
+                                                >
+                                            </div>
+
+                                            <div class="flex justify-end gap-2">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="saveSelling()" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        :class="fieldCardClasses('tech_stacks', true)"
+                                        @click="editingField !== 'tech_stacks' && startEdit('tech_stacks', techStacks)"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tech stacks</p>
+
+                                        <div x-show="editingField !== 'tech_stacks'" class="mt-3 flex flex-wrap gap-2">
+                                            <template x-if="techStacks.length === 0">
+                                                <span class="text-sm text-slate-400">None</span>
+                                            </template>
+                                            <template x-for="techId in techStacks" :key="techId">
+                                                <span class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 px-[11px] text-sm text-slate-700" x-text="getTechName(techId)"></span>
+                                            </template>
+                                        </div>
+
+                                        <div x-show="editingField === 'tech_stacks'" class="mt-3" @click.stop>
+                                            <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                                @foreach ($allTechStacks as $tech)
+                                                    <label class="flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">
+                                                        <input type="checkbox" :value="{{ $tech->id }}" x-model="tempValue" class="rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                                                        <span>{{ $tech->name }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                            <div class="mt-3 flex justify-end gap-2">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="save('tech_stacks')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="lg:col-span-2"
+                                        :class="fieldCardClasses('categories', true)"
+                                        @click="editingField !== 'categories' && startEdit('categories', categories)"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Categories</p>
+
+                                        <div x-show="editingField !== 'categories'" class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                            <div>
+                                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Category</p>
+                                                <div class="mt-2 flex flex-wrap gap-2">
+                                                    <template x-for="catId in getSoftwareCats()" :key="catId">
+                                                        <span class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 px-[11px] text-sm text-slate-700" x-text="getCategoryName(catId)"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pricing</p>
+                                                <div class="mt-2 flex flex-wrap gap-2">
+                                                    <template x-for="catId in getPricingCats()" :key="catId">
+                                                        <span class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 px-[11px] text-sm text-slate-700" x-text="getCategoryName(catId)"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Best for</p>
+                                                <div class="mt-2 flex flex-wrap gap-2">
+                                                    <template x-for="catId in getBestForCats()" :key="catId">
+                                                        <span class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 px-[11px] text-sm text-slate-700" x-text="getCategoryName(catId)"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Platform</p>
+                                                <div class="mt-2 flex flex-wrap gap-2">
+                                                    <template x-for="catId in getPlatformCats()" :key="catId">
+                                                        <span class="inline-flex h-6 w-fit items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 px-[11px] text-sm text-slate-700" x-text="getCategoryName(catId)"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div x-show="editingField === 'categories'" class="mt-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4" @click.stop>
+                                            @foreach (['Software Categories' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for', 'Platform' => 'Platform'] as $title => $typeName)
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ $title }}</p>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        @foreach ($allCategories as $cat)
+                                                            @if (($typeName === 'Software' && ($cat->types->contains('name', 'Software') || $cat->types->contains('name', 'Software Categories') || $cat->types->contains('name', 'Category') || $cat->types->isEmpty())) || ($cat->types->contains('name', $typeName)))
+                                                                <label class="flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">
+                                                                    <input type="checkbox" :value="{{ $cat->id }}" x-model="tempValue" class="rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                                                                    <span>{{ $cat->name }}</span>
+                                                                </label>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endforeach
+
+                                            <div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
+                                                <button @click="cancelEdit()" class="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">Cancel</button>
+                                                <button @click="save('categories')" class="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white">Save</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Media gallery</p>
+                                        <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+                                            <template x-for="item in media" :key="item.id">
+                                                <div class="group/media relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                    <template x-if="item.type === 'video'">
+                                                        <div class="flex h-full w-full items-center justify-center bg-slate-900">
+                                                            <svg class="h-8 w-8 text-white/50" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.333-5.89a1.5 1.5 0 000-2.538L6.3 2.841z"/>
+                                                            </svg>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="item.type !== 'video'">
+                                                        <img :src="item.path.startsWith('http') ? item.path : '/storage/' + item.path" :alt="item.alt_text" class="h-full w-full object-cover">
+                                                    </template>
+                                                    <button @click="removeMedia(item.id)" class="absolute right-2 top-2 rounded bg-rose-600 p-1 text-white opacity-0 transition group-hover/media:opacity-100">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </template>
+
+                                            <label class="group/add relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-sky-300 hover:bg-sky-50">
+                                                <svg class="h-6 w-6 text-slate-300 transition group-hover/add:text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                </svg>
+                                                <span class="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 transition group-hover/add:text-sky-600">Add</span>
+                                                <input type="file" class="hidden" @change="addMedia">
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </article>
+                    @endforeach
+                </div>
 
-                            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
-                                <div class="flex items-center gap-3">
-                                    <span class="px-2 py-0.5 rounded" :class="product.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" x-text="product.approved ? 'Approved' : 'Pending Approval'"></span>
-                                </div>
-                            </div>
-                            </div>
-                    </article>
-                @endforeach
-            </div>
-            <div class="mt-6">
-                {{ $products->links() }}
-            </div>
-        @endif
+                <div class="mt-6">
+                    {{ $products->links() }}
+                </div>
+            @endif
+        </div>
     </div>
 
     <script>
@@ -434,30 +545,57 @@
                 categories: config.categories,
                 techStacks: config.tech_stacks,
                 media: config.media || [],
+                expanded: false,
                 editingField: null,
                 tempValue: null,
                 loading: false,
-                logoUrl: null,
 
-                // Lookup data injected from server
                 allCategories: @js($allCategories->mapWithKeys(fn($c) => [$c->id => ['name' => $c->name, 'types' => $c->types->pluck('name')]])),
                 allTechStacks: @js($allTechStacks->pluck('name', 'id')),
 
+                toggleExpanded() {
+                    this.expanded = !this.expanded;
+                },
+
+                displayLogo() {
+                    return this.product.logo_url || this.product.fallback_logo_url;
+                },
+
+                displayTagline() {
+                    const tagline = `${this.product.product_page_tagline || this.product.tagline || ''}`.trim();
+                    return tagline || 'Not set';
+                },
+
+                fieldCardClasses(field, editable = false) {
+                    let classes = 'rounded-lg border p-4 shadow-sm transition ';
+                    classes += this.editingField === field
+                        ? 'border-sky-300 bg-sky-50/70 shadow-md '
+                        : 'border-slate-200 bg-white ';
+
+                    if (editable) {
+                        classes += 'cursor-pointer hover:border-sky-200 hover:shadow-md ';
+                    }
+
+                    return classes;
+                },
+
                 startEdit(field, value) {
+                    this.expanded = true;
                     this.editingField = field;
-                    // Handle deep copy for arrays
-                    this.tempValue = Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : value;
+                    this.tempValue = Array.isArray(value) || (value && typeof value === 'object')
+                        ? JSON.parse(JSON.stringify(value))
+                        : value;
                 },
 
                 generateSlug(text) {
                     if (!text) return '';
-                    
-                    // If it's a URL, try to extract something meaningful
+
                     if (text.includes('://')) {
                         try {
                             const url = new URL(text);
                             text = url.hostname.replace('www.', '').split('.')[0];
-                        } catch (e) {}
+                        } catch (e) {
+                        }
                     }
 
                     return text
@@ -481,13 +619,23 @@
                     return /^[A-Za-z0-9_]{1,15}$/.test(handle) ? `https://x.com/${handle}` : null;
                 },
 
+                formatPrice(value) {
+                    const amount = parseFloat(value);
+                    return Number.isFinite(amount) ? amount.toLocaleString() : value;
+                },
+
                 cancelEdit() {
                     this.editingField = null;
                     this.tempValue = null;
                 },
 
-                getCategoryName(id) { return this.allCategories[id]?.name || 'Unknown'; },
-                getTechName(id) { return this.allTechStacks[id] || 'Unknown'; },
+                getCategoryName(id) {
+                    return this.allCategories[id]?.name || 'Unknown';
+                },
+
+                getTechName(id) {
+                    return this.allTechStacks[id] || 'Unknown';
+                },
 
                 getSoftwareCats() {
                     return this.categories.filter(id => {
@@ -495,12 +643,15 @@
                         return types.includes('Software') || types.includes('Software Categories') || types.includes('Category') || types.length === 0;
                     });
                 },
+
                 getPricingCats() {
                     return this.categories.filter(id => (this.allCategories[id]?.types || []).includes('Pricing'));
                 },
+
                 getBestForCats() {
                     return this.categories.filter(id => (this.allCategories[id]?.types || []).includes('Best for'));
                 },
+
                 getPlatformCats() {
                     return this.categories.filter(id => (this.allCategories[id]?.types || []).includes('Platform'));
                 },
@@ -519,10 +670,13 @@
 
                         const data = await response.json();
                         if (data.success) {
-                            if (field === 'categories') this.categories = JSON.parse(JSON.stringify(this.tempValue));
-                            else if (field === 'tech_stacks') this.techStacks = JSON.parse(JSON.stringify(this.tempValue));
-                            else if (field === 'maker_links') this.product.maker_links = JSON.parse(JSON.stringify(this.tempValue));
-                            else if (field === 'x_account') {
+                            if (field === 'categories') {
+                                this.categories = JSON.parse(JSON.stringify(this.tempValue));
+                            } else if (field === 'tech_stacks') {
+                                this.techStacks = JSON.parse(JSON.stringify(this.tempValue));
+                            } else if (field === 'maker_links') {
+                                this.product.maker_links = JSON.parse(JSON.stringify(this.tempValue));
+                            } else if (field === 'x_account') {
                                 let savedValue = this.tempValue;
                                 if (data && data.product && typeof data.product.x_account !== 'undefined') {
                                     savedValue = data.product.x_account;
@@ -531,10 +685,8 @@
                                 this.product.x_account = savedValue;
                                 this.product.x_handle = normalizedHandle;
                                 this.product.x_profile_url = this.buildXProfileUrl(normalizedHandle);
-                            }
-                            else {
+                            } else {
                                 this.product[field] = this.tempValue;
-                                // Update slug if name or link changed
                                 if (field === 'name' || field === 'link') {
                                     this.product.slug = data.product.slug;
                                 }
@@ -558,34 +710,33 @@
                 async saveSelling() {
                     this.loading = true;
                     try {
-                        const response = await fetch(`/products/${this.product.id}/inline-update`, {
+                        await fetch(`/products/${this.product.id}/inline-update`, {
                             method: 'PATCH',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
-                            body: JSON.stringify({ 
-                                field: 'sell_product', 
-                                value: this.tempValue.sell_product 
+                            body: JSON.stringify({
+                                field: 'sell_product',
+                                value: this.tempValue.sell_product
                             })
                         });
 
-                        const priceResponse = await fetch(`/products/${this.product.id}/inline-update`, {
+                        await fetch(`/products/${this.product.id}/inline-update`, {
                             method: 'PATCH',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
-                            body: JSON.stringify({ 
-                                field: 'asking_price', 
-                                value: this.tempValue.asking_price 
+                            body: JSON.stringify({
+                                field: 'asking_price',
+                                value: this.tempValue.asking_price
                             })
                         });
 
                         this.product.sell_product = this.tempValue.sell_product;
                         this.product.asking_price = this.tempValue.asking_price;
                         this.editingField = null;
-                        
                     } catch (error) {
                         alert('Update failed');
                     } finally {
@@ -684,8 +835,18 @@
 @push('styles')
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
-        .ql-toolbar.ql-snow { border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; background: #f9fafb; border-color: #d1d5db; }
-        .ql-container.ql-snow { border-bottom-left-radius: 0.375rem; border-bottom-right-radius: 0.375rem; border-color: #d1d5db; }
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+            border-color: #cbd5e1;
+        }
     </style>
 @endpush
 

@@ -25,8 +25,48 @@ const formatUrlWithoutRootSlash = (urlObject) => {
   return `${protocol}://${urlObject.host}${path}${urlObject.search}${urlObject.hash}`;
 };
 
-// Define initial form state
-const initialFormState = {
+export const getLocalDateValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+export const getDefaultPaidScheduleDate = () => {
+  const nextMonday = new Date();
+  const daysUntilNextMonday = ((8 - nextMonday.getDay()) % 7) || 7;
+  nextMonday.setDate(nextMonday.getDate() + daysUntilNextMonday);
+  nextMonday.setHours(0, 0, 0, 0);
+
+  return getLocalDateValue(nextMonday);
+};
+
+export const getDefaultFreeScheduleDate = (queueMonths = 6) => {
+  const startDate = new Date();
+  const normalizedQueueMonths = Number.isFinite(Number(queueMonths)) ? Math.max(0, Number(queueMonths)) : 6;
+  startDate.setMonth(startDate.getMonth() + normalizedQueueMonths);
+  startDate.setHours(0, 0, 0, 0);
+
+  const dayOfWeek = startDate.getDay();
+  const daysUntilMonday = (8 - dayOfWeek) % 7;
+  startDate.setDate(startDate.getDate() + daysUntilMonday);
+
+  return getLocalDateValue(startDate);
+};
+
+export const formatPriceFromCents = (cents) => {
+  const numericValue = Number.isFinite(Number(cents)) ? Number(cents) : 0;
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: numericValue % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(numericValue / 100);
+};
+
+const createInitialFormValues = () => ({
   id: null,
   link: '',
   additional_resources: '',
@@ -56,17 +96,19 @@ const initialFormState = {
   sell_product: false,
   asking_price: null,
   x_account: '',
-  submissionOption: 'free',
-  submission_type: 'free',
+  submissionOption: 'paid',
+  submission_type: 'paid',
   badge_opt_in: false,
   badge_placement_url: '',
   badge_week_start: '',
   badge_verified: false,
+  free_schedule_date: getDefaultFreeScheduleDate(),
+  paid_schedule_date: getDefaultPaidScheduleDate(),
   sandbox_mode: false,
   comparison_overrides_input: '',
   alternative_overrides_input: '',
   fromSource: null,
-};
+});
 
 // Define loading states
 const initialLoadingStates = {
@@ -118,6 +160,9 @@ export const createProductFormState = () => {
     sandboxNotice: ref(''),
     showPreviewModal: ref(false),
     submissionBgUrl: ref(''),
+    premiumLaunchPriceCents: ref(1200),
+    freeLaunchQueueMonths: ref(6),
+    productPublishTime: ref('07:00'),
     extractionErrors: reactive({
       name: '',
       tagline: '',
@@ -141,7 +186,7 @@ export const createProductFormState = () => {
     isAdmin: ref(false),
     adminSandboxEnabled: ref(true),
     autofillReveal: reactive(createInitialAutofillRevealState()),
-    form: { ...initialFormState },
+    form: createInitialFormValues(),
     sidebarSteps: [...sidebarSteps],
   };
 };

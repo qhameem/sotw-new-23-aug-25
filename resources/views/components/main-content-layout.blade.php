@@ -2,7 +2,7 @@
     <x-top-bar />
 @endpersist
 
-<div @class(['flex flex-col min-h-0', 'md:h-screen' => $lockHeight])>
+<div @class(['flex flex-col min-h-screen', 'md:h-screen' => $lockHeight])>
 
     <!-- Body Container (Middle + Right Columns) -->
     <div class="flex-1 flex flex-col md:flex-row min-h-0 w-full relative z-0">

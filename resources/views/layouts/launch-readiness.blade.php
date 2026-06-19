@@ -82,7 +82,7 @@
     @if(session('auth_sync_event')) data-auth-sync-event="{{ session('auth_sync_event') }}" @endif
 >
     <div
-        class="min-h-screen"
+        class="flex min-h-screen flex-col"
         x-data="launchReadinessAuthModal({
             openOnLoad: @js($errors->has('email') || $errors->has('otp') || session('status') === 'otp-sent'),
             intendedUrl: @js(url()->current()),
@@ -103,7 +103,7 @@
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.937a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0l-4.25-4.51a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
                             </svg>
                         </button>
-                        <div class="invisible absolute left-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-200/60 transition group-hover:visible group-hover:opacity-100">
+                        <div class="invisible absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-200/60 transition group-hover:visible group-hover:opacity-100">
                             <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900">{{ $toolBrandingSiteName }}</a>
                             <a href="{{ app(\App\Support\ToolSettings::class)->url(\App\Support\ToolSettings::TODO_LIST_KEY) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900">To-Do List</a>
                         </div>
@@ -130,7 +130,7 @@
             </div>
         </header>
 
-        <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+        <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-12">
             @yield('content')
         </main>
 
@@ -159,7 +159,7 @@
                     class="relative z-10 w-full max-w-md"
                     @click.stop
                 >
-                    <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
+                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
                         <div class="mb-5 flex items-start justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-semibold tracking-tight text-slate-900">Continue to your tool account</h2>

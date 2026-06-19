@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+  <div class="overflow-hidden rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
     <div class="mb-3 flex items-start justify-between gap-4">
       <p class="text-xs font-bold text-gray-900">Logo <span class="text-red-500">*</span></p>
       <p v-if="validationErrors.logo" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.logo }}</p>

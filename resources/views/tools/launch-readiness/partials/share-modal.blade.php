@@ -18,7 +18,7 @@
         x-transition:leave="transition duration-150 ease-in"
         x-transition:leave-start="translate-y-0 opacity-100"
         x-transition:leave-end="translate-y-2 opacity-0"
-        class="relative w-full max-w-[510px] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)]"
+        class="relative w-full max-w-[510px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)]"
     >
         <div class="border-b border-slate-100 px-5 py-3.5">
             <div class="flex items-start justify-between gap-4">
@@ -45,7 +45,7 @@
 
         <div class="border-b border-slate-100 px-5 py-3.5">
             <p class="mb-2 text-[13px] font-medium text-slate-900">Result page link</p>
-            <div class="rounded-[14px] border border-slate-200 p-1">
+            <div class="rounded-xl border border-slate-200 p-1">
                 <div class="flex items-center gap-2">
                     <div class="min-w-0 flex-1 rounded-[11px] bg-white px-3 py-2 text-[12px] text-slate-700">
                         <p class="truncate" x-text="shareResultUrl"></p>

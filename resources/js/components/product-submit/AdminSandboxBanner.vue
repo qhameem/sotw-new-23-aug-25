@@ -1,6 +1,6 @@
 <template>
   <div
-    class="rounded-2xl border p-4 shadow-sm transition-colors"
+    class="rounded-xl border p-4 shadow-sm transition-colors"
     :class="modelValue.sandbox_mode ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50/80'"
   >
     <div class="flex items-start gap-3">

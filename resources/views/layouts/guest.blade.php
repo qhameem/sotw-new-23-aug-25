@@ -75,41 +75,14 @@
         $fontCssStack = config('theme.font_css_stack', "'Figtree', sans-serif");
         $siteFontColor = config('theme.font_color', '#111827');
         $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
-        $primaryHexColor = config('theme.primary_color', '#3b82f6'); // Default to a blue hex
-
-        // Basic validation for hex color format
-        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $primaryHexColor)) {
-            $primaryHexColor = '#3b82f6'; // Fallback to default blue if format is invalid
-        }
-        if (strlen($primaryHexColor) === 4) {
-            $primaryHexColor = '#' . $primaryHexColor[1] . $primaryHexColor[1]
-                . $primaryHexColor[2] . $primaryHexColor[2]
-                . $primaryHexColor[3] . $primaryHexColor[3];
-        }
+        $primaryPalette = config('theme.primary_palette', []);
+        $primaryHexColor = $primaryPalette['500'] ?? config('theme.primary_color', '#3b82f6'); // Default to a blue hex
         if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $siteFontColor)) {
             $siteFontColor = '#111827';
         }
         if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $siteBodyTextColor)) {
             $siteBodyTextColor = '#4b5563';
         }
-
-        $darkenHex = static function (string $hexColor, float $amount): string {
-            $channels = [
-                hexdec(substr($hexColor, 1, 2)),
-                hexdec(substr($hexColor, 3, 2)),
-                hexdec(substr($hexColor, 5, 2)),
-            ];
-
-            $darkenedChannels = array_map(
-                static fn (int $channel): int => max(0, min(255, (int) round($channel * (1 - $amount)))),
-                $channels
-            );
-
-            return sprintf('#%02X%02X%02X', $darkenedChannels[0], $darkenedChannels[1], $darkenedChannels[2]);
-        };
-
-        $primaryHexColor600 = $darkenHex($primaryHexColor, 0.08);
-        $primaryHexColor700 = $darkenHex($primaryHexColor, 0.16);
 
         // Determine intelligent default for button text color
         $primaryButtonTextColor = config('theme.primary_button_text_color');
@@ -127,14 +100,35 @@
             --font-family-sans: {!! $fontCssStack !!};
             --color-site-text: {{ $siteFontColor }};
             --color-site-body-text: {{ $siteBodyTextColor }};
+            --color-primary-50:
+                {{ $primaryPalette['50'] ?? '#eff6ff' }}
+            ;
+            --color-primary-100:
+                {{ $primaryPalette['100'] ?? '#dbeafe' }}
+            ;
+            --color-primary-200:
+                {{ $primaryPalette['200'] ?? '#bfdbfe' }}
+            ;
+            --color-primary-300:
+                {{ $primaryPalette['300'] ?? '#93c5fd' }}
+            ;
+            --color-primary-400:
+                {{ $primaryPalette['400'] ?? '#60a5fa' }}
+            ;
             --color-primary-500:
                 {{ $primaryHexColor }}
             ;
             --color-primary-600:
-                {{ $primaryHexColor600 }}
+                {{ $primaryPalette['600'] ?? '#2563eb' }}
             ;
             --color-primary-700:
-                {{ $primaryHexColor700 }}
+                {{ $primaryPalette['700'] ?? '#1d4ed8' }}
+            ;
+            --color-primary-800:
+                {{ $primaryPalette['800'] ?? '#1e40af' }}
+            ;
+            --color-primary-900:
+                {{ $primaryPalette['900'] ?? '#1e3a8a' }}
             ;
             --color-primary-button-text:
                 {{ $primaryButtonTextColor }}

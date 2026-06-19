@@ -30,6 +30,7 @@ use App\Services\TechStackDetectorService;
 use App\Services\NameExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\DescriptionRewriterService;
+use App\Services\ProductLimitationResearchService;
 use App\Services\ProductLogoStorageService;
 use App\Services\ProductLogoResolver;
 use App\Services\ScreenshotService;
@@ -39,6 +40,8 @@ use App\Services\RelatedProductService;
 use App\Services\ProductEditorialContentService;
 use App\Jobs\FetchOgImage;
 use App\Support\CategoryTypeRegistry;
+use App\Support\FreeLaunchQueueSettings;
+use App\Support\PremiumLaunchPricing;
 use App\Support\SocialLinkValidator;
 use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
@@ -136,6 +139,8 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+        $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
+        $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
         return view('products.create', compact(
             'displayData',
             'regularCategories',
@@ -145,7 +150,9 @@ class ProductController extends Controller
             'platformCategories',
             'allTechStacksData',
             'types',
-            'adminSandboxEnabled'
+            'adminSandboxEnabled',
+            'premiumLaunchPriceCents',
+            'freeLaunchQueueMonths'
         ));
     }
 
@@ -180,6 +187,8 @@ class ProductController extends Controller
 
         $types = Type::with('categories')->get();
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
+        $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
+        $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
 
         return view('products.create', compact(
             'displayData',
@@ -191,7 +200,9 @@ class ProductController extends Controller
             'allTechStacksData',
             'types',
             'submissionBgUrl',
-            'adminSandboxEnabled'
+            'adminSandboxEnabled',
+            'premiumLaunchPriceCents',
+            'freeLaunchQueueMonths'
         ));
     }
 
@@ -774,6 +785,8 @@ class ProductController extends Controller
 
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
+        $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
+        $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
 
         return view('products.create', compact(
             'product',
@@ -789,7 +802,9 @@ class ProductController extends Controller
             'selectedBestForCategories',
             'selectedPlatformCategories',
             'submissionBgUrl',
-            'adminSandboxEnabled'
+            'adminSandboxEnabled',
+            'premiumLaunchPriceCents',
+            'freeLaunchQueueMonths'
         ));
     }
 
@@ -1100,7 +1115,11 @@ class ProductController extends Controller
                     'slug' => $product->slug,
                     'can_edit' => $canEdit,
                     'edit_url' => $canEdit ? route('products.edit', $product) : null,
-                    'view_url' => route('products.show', $product->slug),
+                    'view_url' => route('products.show', [
+                        'product' => $product->slug,
+                        'return_to' => route('products.create'),
+                        'return_label' => 'Submit a Project',
+                    ]),
                 ],
             ]);
         }
@@ -1552,9 +1571,11 @@ class ProductController extends Controller
 
     public function showProductPage(Product $product)
     {
-        if (!$product->approved || !$product->is_published) {
+        if (!$product->approved) {
             abort(404);
         }
+
+        $isUnpublishedProduct = !$product->is_published;
 
         $product->load([
             'categories.types',
@@ -1628,6 +1649,7 @@ class ProductController extends Controller
         $title = $product->name;
         $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $metaDescription = $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $breadcrumbs = $this->buildProductBreadcrumbs($product, $primaryBreadcrumbCategory, request(), $isUnpublishedProduct);
 
         $allCategories = request()->routeIs('admin.*')
             ? Category::orderBy('name')->get()
@@ -1689,11 +1711,12 @@ class ProductController extends Controller
             }
         }
 
-        return view('products.show', compact(
+        $response = response()->view('products.show', compact(
             'product',
             'title',
             'pageTitle',
             'pricingCategory',
+            'breadcrumbs',
             'primaryBreadcrumbCategory',
             'metaDescription',
             'bestForCategories',
@@ -1707,8 +1730,116 @@ class ProductController extends Controller
             'productEditorial',
             'descriptionContent',
             'alternativeProducts',
-            'hasEditorialSections'
+            'hasEditorialSections',
+            'isUnpublishedProduct'
         ));
+
+        if ($isUnpublishedProduct) {
+            $response->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
+
+        return $response;
+    }
+
+    protected function buildProductBreadcrumbs(Product $product, ?Category $primaryBreadcrumbCategory, Request $request, bool $isUnpublishedProduct): array
+    {
+        if ($isUnpublishedProduct) {
+            $returnBreadcrumb = $this->resolveUnpublishedProductReturnBreadcrumb($request, $product);
+
+            if ($returnBreadcrumb !== null) {
+                return [
+                    $returnBreadcrumb,
+                    ['label' => $product->name],
+                ];
+            }
+        }
+
+        $breadcrumbs = [];
+
+        if ($primaryBreadcrumbCategory) {
+            $breadcrumbs[] = [
+                'label' => $primaryBreadcrumbCategory->name,
+                'link' => route('categories.show', $primaryBreadcrumbCategory->slug),
+            ];
+        }
+
+        $breadcrumbs[] = ['label' => $product->name];
+
+        return $breadcrumbs;
+    }
+
+    protected function resolveUnpublishedProductReturnBreadcrumb(Request $request, Product $product): ?array
+    {
+        $returnUrl = $this->normalizeInternalBreadcrumbUrl(
+            $request->query('return_to'),
+            $request,
+            $product
+        );
+
+        if ($returnUrl === null) {
+            $returnUrl = $this->normalizeInternalBreadcrumbUrl(
+                $request->headers->get('referer'),
+                $request,
+                $product
+            );
+        }
+
+        if ($returnUrl === null) {
+            return null;
+        }
+
+        $returnLabel = trim((string) $request->query('return_label'));
+        $returnLabel = $returnLabel !== ''
+            ? Str::limit(strip_tags($returnLabel), 60)
+            : $this->resolveBreadcrumbLabelForUrl($returnUrl);
+
+        return [
+            'label' => $returnLabel !== '' ? $returnLabel : 'Back',
+            'link' => $returnUrl,
+        ];
+    }
+
+    protected function normalizeInternalBreadcrumbUrl(?string $url, Request $request, Product $product): ?string
+    {
+        if (!filled($url)) {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if ($host !== null && $host !== $request->getHost()) {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: '/';
+        $query = parse_url($url, PHP_URL_QUERY);
+        $normalizedUrl = $path . ($query ? '?' . $query : '');
+        $currentPath = route('products.show', ['product' => $product->slug], false);
+
+        if ($path === $currentPath) {
+            return null;
+        }
+
+        return $normalizedUrl;
+    }
+
+    protected function resolveBreadcrumbLabelForUrl(string $url): string
+    {
+        try {
+            $path = parse_url($url, PHP_URL_PATH) ?: '/';
+            $query = parse_url($url, PHP_URL_QUERY);
+            $routeRequest = Request::create($path . ($query ? '?' . $query : ''), 'GET');
+            $route = app('router')->getRoutes()->match($routeRequest);
+
+            return match ($route->getName()) {
+                'products.my' => 'My Products',
+                'products.create' => 'Submit a Project',
+                'stripe.paid-submission.confirmation' => 'Payment Confirmation',
+                default => 'Back',
+            };
+        } catch (\Throwable $exception) {
+            return 'Back';
+        }
     }
 
     protected function decorateProductDetailAlternative(Product $alternative, ProductEditorialContentService $productEditorialContentService): Product
@@ -3377,6 +3508,27 @@ class ProductController extends Controller
         return implode("\n\n", $sections);
     }
 
+    protected function appendLimitationResearchContext(string $context, string $productName, string $productUrl): string
+    {
+        try {
+            $researchContext = app(ProductLimitationResearchService::class)->buildContext($productName, $productUrl);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to build limitation research context for add-product AI flow.', [
+                'product_name' => $productName,
+                'url' => $productUrl,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $context;
+        }
+
+        if ($researchContext === '') {
+            return $context;
+        }
+
+        return $context . "\n\nLIMITATION RESEARCH:\n" . $researchContext;
+    }
+
     public function processUrlStream(Request $request)
     {
         set_time_limit(120);
@@ -3496,6 +3648,7 @@ class ProductController extends Controller
                     $productNameForAI = trim((string) $name) !== ''
                         ? $name
                         : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
+                    $descriptionContext = $this->appendLimitationResearchContext($textContent, $productNameForAI, $url);
 
                     $sendUpdate('Generating AI taglines...', 40);
                     try {
@@ -3544,7 +3697,7 @@ class ProductController extends Controller
 
                     if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
                         $descRewriter = new \App\Services\DescriptionRewriterService();
-                        $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $textContent);
+                        $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
                         if ($rewritten) {
                             $description = $rewritten;
                         }
@@ -3771,6 +3924,7 @@ class ProductController extends Controller
                 $productNameForAI = trim((string) $name) !== ''
                     ? $name
                     : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
+                $descriptionContext = $this->appendLimitationResearchContext($textContent, $productNameForAI, $url);
 
                 // --- AI Tagline Generation (primary source) ---
                 try {
@@ -3824,7 +3978,7 @@ class ProductController extends Controller
 
                 if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
                     $descRewriter = new DescriptionRewriterService();
-                    $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $textContent);
+                    $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
                     if ($rewritten) {
                         $description = $rewritten;
                     }

@@ -88,6 +88,7 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::patch('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'update'])->name('collections.items.update');
     Route::delete('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'destroy'])->name('collections.items.destroy');
     Route::post('/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
+    Route::post('/stripe/paid-submission/checkout', [StripeController::class, 'paidSubmissionCheckout'])->name('stripe.paid-submission.checkout');
     Route::get('/my-products', [ProductController::class, 'myProducts'])->name('products.my');
     Route::patch('/products/{product}/inline-update', [ProductInlineUpdateController::class, 'update'])->name('products.inline-update');
     Route::post('/products/{product}/inline-update-logo', [ProductInlineUpdateController::class, 'updateLogo'])->name('products.inline-update-logo');
@@ -111,6 +112,10 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/my-articles', [ArticleController::class, 'myArticles'])->name('articles.my');
     Route::get('/promote/success', [StripeController::class, 'promoteSuccess'])->name('promote.success');
     Route::post('/promote/update-date', [StripeController::class, 'updateDate'])->name('promote.update-date');
+    Route::get('/stripe/paid-submission/success', [StripeController::class, 'paidSubmissionSuccess'])->name('stripe.paid-submission.success');
+    Route::get('/stripe/paid-submission/confirmation/{checkout}', [StripeController::class, 'paidSubmissionConfirmation'])->name('stripe.paid-submission.confirmation');
+    Route::patch('/stripe/paid-submission/confirmation/{checkout}/schedule-date', [StripeController::class, 'updatePaidSubmissionScheduleDate'])->name('stripe.paid-submission.schedule-date.update');
+    Route::get('/stripe/paid-submission/cancel/{checkout}', [StripeController::class, 'paidSubmissionCancel'])->name('stripe.paid-submission.cancel');
 });
 
 Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
@@ -120,7 +125,9 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 });
 
 Route::get('/stripe/cancel', [StripeController::class, 'cancel'])->name('stripe.cancel');
-Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
+Route::post('/stripe/webhook', [StripeController::class, 'webhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('stripe.webhook');
 Route::post('/stripe/product-review-checkout', [StripeController::class, 'productReviewCheckout'])->name('stripe.product-review.checkout');
 Route::get('/stripe/product-review/success', [StripeController::class, 'productReviewSuccess'])->name('stripe.product-review.success');
 
@@ -205,6 +212,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('settings/store-premium-product-spots', [\App\Http\Controllers\Admin\SettingsController::class, 'storePremiumProductSpots'])->name('settings.storePremiumProductSpots');
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
     Route::post('settings/store-admin-sandbox-mode', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAdminSandboxMode'])->name('settings.storeAdminSandboxMode');
+    Route::post('settings/store-free-launch-queue', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFreeLaunchQueue'])->name('settings.storeFreeLaunchQueue');
     Route::post('settings/store-tool-settings', [\App\Http\Controllers\Admin\SettingsController::class, 'storeToolSettings'])->name('settings.storeToolSettings');
     Route::post('settings/store-footer-embed-codes', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFooterEmbedCodes'])->name('settings.storeFooterEmbedCodes');
     Route::post('settings/store-badge-embed-code', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeEmbedCode'])->name('settings.storeBadgeEmbedCode');

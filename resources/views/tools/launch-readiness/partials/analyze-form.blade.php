@@ -2,7 +2,7 @@
     $submittedUrl = $submittedUrl ?? old('url');
 @endphp
 
-<section class="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/60 sm:p-5">
+<section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/60 sm:p-5">
     <form
         method="POST"
         action="{{ route('launch-readiness.analyze', ['toolSlug' => $toolSlug]) }}"
@@ -12,7 +12,7 @@
         @csrf
         <div class="min-w-0 flex-1">
             <label for="url" class="sr-only">URL</label>
-            <div class="relative flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-[9.5rem] transition focus-within:border-[#b17915] focus-within:ring-2 focus-within:ring-[#eb9e2b]/30 sm:pr-[10.5rem]">
+            <div class="relative flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 pr-[9.5rem] transition focus-within:border-[#b17915] focus-within:ring-2 focus-within:ring-[#eb9e2b]/30 sm:pr-[10.5rem]">
                 <svg class="mr-3 h-5 w-5 shrink-0 text-slate-500" viewBox="0 0 48 48" fill="none" aria-hidden="true">
                     <path d="M23.0551 14.2115 29.9971 7.2694c2.6788-2.6788 7.5386-2.1623 10.2172.5164s3.1951 7.5384.5163 10.2172L30.4481 28.2856c-2.6788 2.6788-7.5386 2.1623-10.2172-.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     <path d="M24.9449 33.7885 18.0029 40.7306c-2.6788 2.6788-7.5386 2.1623-10.2172-.5164S4.5906 32.6758 7.2694 29.997L17.5519 19.7144c2.6788-2.6788 7.5386-2.1623 10.2172.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>

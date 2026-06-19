@@ -12,7 +12,7 @@
     </style>
 
     <div class="mx-auto max-w-7xl space-y-8" x-data="launchReadinessDashboard()">
-        <section class="overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,0.25)]" style="border-color: var(--lr-border);">
+        <section class="overflow-hidden rounded-xl border bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,0.25)]" style="border-color: var(--lr-border);">
             <div class="flex flex-col gap-4 border-b px-7 py-6 lg:flex-row lg:items-center lg:justify-between" style="border-color: var(--lr-border);">
                 <div class="flex flex-wrap items-center gap-3">
                     <h1 class="text-2xl font-semibold tracking-tight text-[var(--lr-text)]">Recent Tests</h1>

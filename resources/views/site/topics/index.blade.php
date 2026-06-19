@@ -43,7 +43,7 @@
     </script>
 
     <div class="space-y-12 p-4">
-        <section class="overflow-hidden rounded-[2rem] border border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+        <section class="overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <div class="px-6 py-8 sm:px-8">
                 <p class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gray-400">Category Directory</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-gray-900">Browse categories by user goal</h1>
@@ -80,7 +80,7 @@
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                         @foreach ($group['items'] as $category)
                             <a href="{{ $category['url'] }}"
-                                class="group flex items-start justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50">
+                                class="group flex items-start justify-between rounded-xl border border-gray-200 bg-white px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50">
                                 <span class="pr-4">
                                     <span class="block text-sm font-semibold text-gray-900">{{ $category['name'] }}</span>
                                     <span class="mt-1 block text-xs text-gray-500">{{ $category['count'] }} products</span>
@@ -95,7 +95,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                    <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                         <p class="text-sm font-medium text-gray-900">No categories are in this group yet.</p>
                         <p class="mt-2 text-sm text-gray-600">Check the alphabetical list below to browse everything currently available.</p>
                     </div>
@@ -116,14 +116,14 @@
             </div>
 
             @if ($allCategories->isEmpty())
-                <div class="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
+                <div class="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center">
                     <p class="text-sm font-medium text-gray-900">No categories are currently available.</p>
                 </div>
             @else
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($allCategories as $category)
                         <a href="{{ $category['url'] }}"
-                            class="group flex items-start justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50">
+                            class="group flex items-start justify-between rounded-xl border border-gray-200 bg-white px-4 py-4 transition hover:border-gray-300 hover:bg-slate-50">
                             <span class="pr-4">
                                 <span class="block text-sm font-semibold text-gray-900">{{ $category['name'] }}</span>
                                 <span class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">

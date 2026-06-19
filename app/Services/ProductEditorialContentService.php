@@ -268,6 +268,6 @@ class ProductEditorialContentService
 
     private function isPlaceholderLimitation(string $value): bool
     {
-        return mb_strtolower(trim($value)) === mb_strtolower(DescriptionRewriterService::UNKNOWN_LIMITATION);
+        return DescriptionRewriterService::isUnknownLimitationText($value);
     }
 }

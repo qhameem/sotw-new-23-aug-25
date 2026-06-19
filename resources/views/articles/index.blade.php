@@ -108,7 +108,7 @@
                 {{ $posts->links() }}
             </div>
         @else
-            <div class="rounded-3xl border border-dashed border-stone-300 bg-stone-50 px-6 py-16 text-center">
+            <div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-6 py-16 text-center">
                 <p class="text-base text-stone-600">{{ __('No articles found.') }}</p>
             </div>
         @endif
