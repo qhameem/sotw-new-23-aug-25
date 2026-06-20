@@ -97,8 +97,8 @@
               :galleryPreviews="galleryPreviews" 
               :allCategories="allCategories"
               @open-logo-picker="openLogoPicker"
+              @open-screenshot-picker="openScreenshotPicker"
               @remove-logo="removeSelectedLogo"
-              @upload-screenshot="uploadScreenshotFile"
             />
             <FormProgress 
               :form="form" 
@@ -227,8 +227,8 @@
                     :validationErrors="validationErrors"
                     @update:modelValue="handleFormDetailUpdate"
                     @open-logo-picker="openLogoPicker"
+                    @open-screenshot-picker="openScreenshotPicker"
                     @remove-logo="removeSelectedLogo"
-                    @upload-screenshot="uploadScreenshotFile"
                   />
                 </div>
 
@@ -278,8 +278,8 @@
                  :validationErrors="validationErrors"
                  @update:modelValue="handleFormDetailUpdate"
                  @open-logo-picker="openLogoPicker"
+                 @open-screenshot-picker="openScreenshotPicker"
                  @remove-logo="removeSelectedLogo"
-                 @upload-screenshot="uploadScreenshotFile"
                />
                <FormProgress 
                  :form="form" 
@@ -304,6 +304,13 @@
         @refresh-logos="extractLogos"
         @restore-favicon="restoreFaviconLogo"
       />
+      <ScreenshotPickerModal
+        :show="isScreenshotPickerOpen"
+        :currentScreenshot="galleryPreviews[0] || ''"
+        @close="closeScreenshotPicker"
+        @upload-screenshot="uploadScreenshotFile"
+        @remove-screenshot="removeSelectedScreenshot"
+      />
     </div>
    </div>
  </template>
@@ -317,6 +324,7 @@ import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import ProductPreviewCard from './ProductPreviewCard.vue';
 import FormProgress from './FormProgress.vue';
 import LogoPickerModal from './LogoPickerModal.vue';
+import ScreenshotPickerModal from './ScreenshotPickerModal.vue';
 import { useProductForm } from '../../composables/useProductForm';
 
 const props = defineProps({
@@ -329,6 +337,7 @@ const props = defineProps({
 
 const showForm = ref(props.initialProduct ? true : false);
 const isLogoPickerOpen = ref(false);
+const isScreenshotPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 
 const {
@@ -642,6 +651,14 @@ const closeLogoPicker = () => {
   isLogoPickerOpen.value = false;
 };
 
+const openScreenshotPicker = () => {
+  isScreenshotPickerOpen.value = true;
+};
+
+const closeScreenshotPicker = () => {
+  isScreenshotPickerOpen.value = false;
+};
+
 const applySelectedLogo = (logoUrl) => {
   markManualLogoChosen();
   form.logo = logoUrl;
@@ -672,8 +689,16 @@ const uploadScreenshotFile = (file) => {
   const reader = new FileReader();
   reader.onload = (event) => {
     galleryPreviews.value = [event.target.result];
+    isScreenshotPickerOpen.value = false;
   };
   reader.readAsDataURL(file);
+};
+
+const removeSelectedScreenshot = () => {
+  markManualScreenshotChosen();
+  form.gallery = [null];
+  galleryPreviews.value = [null];
+  isScreenshotPickerOpen.value = false;
 };
 
 const restoreFaviconLogo = () => {

@@ -65,26 +65,14 @@
       </div>
     </div>
     <div class="mb-4">
-      <input
-        :id="screenshotInputId"
-        ref="screenshotInput"
-        type="file"
-        :accept="supportedImageAcceptList"
-        class="sr-only"
-        @change="onScreenshotChange"
-      >
-
       <div class="relative group">
-        <label
-          :for="screenshotInputId"
-          role="button"
-          tabindex="0"
+        <button
+          type="button"
           :class="screenshotPreview
             ? 'border border-gray-100 bg-gray-50 hover:border-gray-200 hover:bg-gray-100/70'
             : 'min-h-[220px] border-2 border-dashed border-gray-300 bg-transparent hover:border-gray-400'"
           class="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl transition"
-          @keydown.enter.prevent="openScreenshotPicker"
-          @keydown.space.prevent="openScreenshotPicker"
+          @click="emit('open-screenshot-picker')"
         >
           <img
             v-if="screenshotPreview"
@@ -118,11 +106,9 @@
               Supports JPG, JPEG, PNG, GIF, SVG, WEBP, and AVIF
             </p>
           </div>
-        </label>
+        </button>
 
       </div>
-
-      <p v-if="screenshotUploadError" class="mt-3 text-sm text-red-600">{{ screenshotUploadError }}</p>
     </div>
 
     <div class="mb-4 border-t border-gray-100 pt-4">
@@ -154,7 +140,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   form: {
@@ -179,22 +165,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['open-logo-picker', 'remove-logo', 'upload-screenshot', 'update:modelValue']);
-
-const screenshotInput = ref(null);
-const screenshotUploadError = ref('');
-const screenshotInputId = `product-screenshot-upload-${Math.random().toString(36).slice(2, 10)}`;
-const supportedImageAcceptList = 'image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif';
-const supportedImageMimeTypes = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/svg+xml',
-  'image/webp',
-  'image/avif',
-  'image/avif-sequence',
-];
-const supportedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
+const emit = defineEmits(['open-logo-picker', 'open-screenshot-picker', 'remove-logo', 'update:modelValue']);
 
 const screenshotPreview = computed(() => props.galleryPreviews?.[0] || '');
 const displayVideoUrl = computed(() => {
@@ -243,35 +214,6 @@ const videoThumbnailUrl = computed(() => {
 
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
 });
-
-const openScreenshotPicker = () => {
-  screenshotInput.value?.click();
-};
-
-const onScreenshotChange = (event) => {
-  const file = event.target.files?.[0];
-  screenshotUploadError.value = '';
-
-  if (!file) {
-    return;
-  }
-
-  const normalizedMimeType = (file.type || '').toLowerCase();
-  const fileName = file.name || '';
-  const normalizedExtension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
-  const isSupportedFile =
-    supportedImageMimeTypes.includes(normalizedMimeType) ||
-    supportedImageExtensions.includes(normalizedExtension);
-
-  if (!isSupportedFile) {
-    screenshotUploadError.value = 'Unsupported image format. Please upload JPG, PNG, GIF, SVG, WEBP, or AVIF.';
-    event.target.value = '';
-    return;
-  }
-
-  emit('upload-screenshot', file);
-  event.target.value = '';
-};
 
 const updateField = (field, value) => {
   emit('update:modelValue', { ...props.form, [field]: value });

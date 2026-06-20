@@ -43,13 +43,19 @@
             </div>
 
             <div class="mt-4 space-y-2">
-              <button
-                type="button"
-                class="inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
-                @click="openFilePicker"
-              >
-                Upload Logo
-              </button>
+              <div class="relative">
+                <div class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
+                  Upload Logo
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  aria-label="Upload Logo"
+                  @change="handleFileChange"
+                  @input="handleFileChange"
+                >
+              </div>
               <button
                 type="button"
                 class="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -125,19 +131,12 @@
         </div>
       </div>
 
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif"
-        class="hidden"
-        @change="handleFileChange"
-      >
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 
 const props = defineProps({
   show: {
@@ -167,7 +166,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'select-logo', 'upload-logo', 'refresh-logos', 'restore-favicon']);
-const fileInput = ref(null);
 
 const logoOptions = computed(() => {
   const seen = new Set();
@@ -216,10 +214,6 @@ onBeforeUnmount(() => {
   document.body.classList.remove('overflow-hidden');
   window.removeEventListener('keydown', handleEscape);
 });
-
-function openFilePicker() {
-  fileInput.value?.click();
-}
 
 function handleFileChange(event) {
   const [file] = event.target.files || [];

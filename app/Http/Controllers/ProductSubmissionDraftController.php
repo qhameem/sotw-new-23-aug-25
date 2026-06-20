@@ -70,8 +70,9 @@ class ProductSubmissionDraftController extends Controller
 
         if (! $this->hasMeaningfulContent($payload)) {
             return response()->json([
-                'message' => 'Add a URL or some product details before autosave can create an unfinished submission.',
-            ], 422);
+                'skipped' => true,
+                'message' => 'Nothing meaningful to autosave yet.',
+            ]);
         }
 
         if (filled($payload['link'] ?? null)) {

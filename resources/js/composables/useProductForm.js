@@ -818,6 +818,13 @@ export function useProductForm() {
 
       return true;
     } catch (error) {
+      const statusCode = error?.response?.status || null;
+
+      if (statusCode === 403 || statusCode === 422) {
+        draftAutosaveState.value = 'idle';
+        return false;
+      }
+
       console.error('Failed to autosave unfinished submission.', error);
       draftAutosaveState.value = 'error';
       return false;
