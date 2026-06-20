@@ -32,6 +32,7 @@ use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\ProductSubmissionDraftController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TodoListController;
 use App\Http\Controllers\ToolAuthController;
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::patch('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'update'])->name('collections.items.update');
     Route::delete('/collections/{collection}/products/{product}', [ProductCollectionItemController::class, 'destroy'])->name('collections.items.destroy');
     Route::post('/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
+    Route::post('/product-submission-drafts', [ProductSubmissionDraftController::class, 'store'])->name('product-submission-drafts.store');
     Route::post('/stripe/paid-submission/checkout', [StripeController::class, 'paidSubmissionCheckout'])->name('stripe.paid-submission.checkout');
     Route::get('/my-products', [ProductController::class, 'myProducts'])->name('products.my');
     Route::patch('/products/{product}/inline-update', [ProductInlineUpdateController::class, 'update'])->name('products.inline-update');

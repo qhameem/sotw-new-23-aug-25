@@ -10,6 +10,8 @@ const sharedForm = reactive({ ...globalFormState.form });
 const sharedLoadingStates = reactive({ ...globalFormState.loadingStates });
 
 let loadingAnimationFrameId = null;
+let draftAutosaveTimerId = null;
+let draftAutosaveInFlight = false;
 
 const IMAGE_COMPRESSION_EXCLUDED_TYPES = ['image/svg+xml', 'image/gif'];
 
@@ -206,9 +208,31 @@ const prepareImageSubmissionAsset = async (source, baseName, optimizationOptions
   return null;
 };
 
+const sortDraftSummaries = (drafts = []) => [...drafts].sort((left, right) => {
+  const leftTime = left?.updated_at ? new Date(left.updated_at).getTime() : 0;
+  const rightTime = right?.updated_at ? new Date(right.updated_at).getTime() : 0;
+
+  return rightTime - leftTime;
+});
+
+const normalizeDraftSummary = (draft = {}) => ({
+  uuid: draft.uuid || null,
+  title: draft.title || 'Untitled unfinished submission',
+  link: draft.link || '',
+  resume_url: draft.resume_url || '#',
+  updated_at: draft.updated_at || null,
+  updated_at_label: draft.updated_at_label || '',
+});
+
 export function useProductForm() {
   const isAdmin = globalFormState.isAdmin;
   const adminSandboxEnabled = globalFormState.adminSandboxEnabled;
+  const canSaveDrafts = globalFormState.canSaveDrafts;
+  const draftAutosaveUrl = globalFormState.draftAutosaveUrl;
+  const activeDraftId = globalFormState.activeDraftId;
+  const submissionDrafts = globalFormState.submissionDrafts;
+  const draftAutosaveState = globalFormState.draftAutosaveState;
+  const draftAutosavedAtLabel = globalFormState.draftAutosavedAtLabel;
   const submissionBgUrl = globalFormState.submissionBgUrl;
   const freeLaunchQueueMonths = globalFormState.freeLaunchQueueMonths;
   const productPublishTime = globalFormState.productPublishTime;
@@ -605,6 +629,236 @@ export function useProductForm() {
     globalFormState.manualLogoChosen.value = false;
     globalFormState.manualScreenshotChosen.value = false;
   };
+
+  const replaceDraftQueryParam = (draftUuid) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (draftUuid) {
+      url.searchParams.set('draft', draftUuid);
+    } else {
+      url.searchParams.delete('draft');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  const upsertSubmissionDraftSummary = (draftSummary) => {
+    const normalized = normalizeDraftSummary(draftSummary);
+
+    submissionDrafts.value = sortDraftSummaries([
+      normalized,
+      ...submissionDrafts.value.filter((draft) => draft.uuid !== normalized.uuid),
+    ]);
+  };
+
+  const loadDraftContextFromElement = (element) => {
+    if (!element) {
+      return;
+    }
+
+    canSaveDrafts.value = element.getAttribute('data-can-save-drafts') === 'true';
+    draftAutosaveUrl.value = element.getAttribute('data-draft-autosave-url') || '';
+    activeDraftId.value = element.getAttribute('data-active-draft-id') || null;
+
+    try {
+      submissionDrafts.value = sortDraftSummaries(
+        JSON.parse(element.getAttribute('data-submission-drafts') || '[]').map(normalizeDraftSummary)
+      );
+    } catch (error) {
+      console.error('Failed to parse unfinished submissions.', error);
+      submissionDrafts.value = [];
+    }
+  };
+
+  const buildDraftPayload = () => ({
+    draft_uuid: activeDraftId.value || null,
+    link: form.link || '',
+    additional_resources: form.additional_resources || '',
+    name: form.name || '',
+    slug: form.slug || '',
+    tagline: form.tagline || '',
+    tagline_detailed: form.tagline_detailed || '',
+    description: form.description || '',
+    categories: Array.isArray(form.categories) ? [...form.categories] : [],
+    categories_custom: Array.isArray(form.categories_custom) ? [...form.categories_custom] : [],
+    useCases: Array.isArray(form.useCases) ? [...form.useCases] : [],
+    useCases_custom: Array.isArray(form.useCases_custom) ? [...form.useCases_custom] : [],
+    platforms: Array.isArray(form.platforms) ? [...form.platforms] : [],
+    platforms_custom: Array.isArray(form.platforms_custom) ? [...form.platforms_custom] : [],
+    bestFor: Array.isArray(form.bestFor) ? [...form.bestFor] : [],
+    bestFor_custom: Array.isArray(form.bestFor_custom) ? [...form.bestFor_custom] : [],
+    pricing: Array.isArray(form.pricing) ? [...form.pricing] : [],
+    pricing_page_url: form.pricing_page_url || '',
+    tech_stack: Array.isArray(form.tech_stack) ? [...form.tech_stack] : [],
+    tech_stack_custom: Array.isArray(form.tech_stack_custom) ? [...form.tech_stack_custom] : [],
+    favicon: form.favicon || '',
+    logo: typeof form.logo === 'string' ? form.logo : null,
+    gallery: Array.isArray(form.gallery)
+      ? form.gallery.map((item) => (typeof item === 'string' ? item : null))
+      : [null],
+    video_url: form.video_url || '',
+    logos: Array.isArray(form.logos)
+      ? form.logos.filter((item) => typeof item === 'string' && item !== '')
+      : [],
+    maker_links: Array.isArray(form.maker_links) ? [...form.maker_links] : [],
+    sell_product: Boolean(form.sell_product),
+    asking_price: form.asking_price,
+    x_account: form.x_account || '',
+    submissionOption: form.submissionOption || '',
+    submission_type: form.submission_type || '',
+    badge_opt_in: Boolean(form.badge_opt_in),
+    badge_placement_url: form.badge_placement_url || '',
+    badge_week_start: form.badge_week_start || '',
+    badge_verified: Boolean(form.badge_verified),
+    free_schedule_date: form.free_schedule_date || '',
+    paid_schedule_date: form.paid_schedule_date || '',
+    comparison_overrides_input: form.comparison_overrides_input || '',
+    alternative_overrides_input: form.alternative_overrides_input || '',
+    logoPreview: typeof globalFormState.logoPreview.value === 'string'
+      ? globalFormState.logoPreview.value
+      : null,
+    galleryPreviews: Array.isArray(globalFormState.galleryPreviews.value)
+      ? globalFormState.galleryPreviews.value.map((item) => (typeof item === 'string' ? item : null))
+      : [null],
+  });
+
+  const hasMeaningfulDraftContent = (payload) => {
+    const textFields = [
+      'link',
+      'additional_resources',
+      'name',
+      'tagline',
+      'tagline_detailed',
+      'description',
+      'pricing_page_url',
+      'video_url',
+      'x_account',
+      'badge_placement_url',
+      'logo',
+      'logoPreview',
+    ];
+
+    if (textFields.some((field) => String(payload?.[field] || '').trim() !== '')) {
+      return true;
+    }
+
+    const arrayFields = [
+      'categories',
+      'categories_custom',
+      'useCases',
+      'useCases_custom',
+      'platforms',
+      'platforms_custom',
+      'bestFor',
+      'bestFor_custom',
+      'pricing',
+      'tech_stack',
+      'tech_stack_custom',
+      'logos',
+      'maker_links',
+      'gallery',
+      'galleryPreviews',
+    ];
+
+    return arrayFields.some((field) => Array.isArray(payload?.[field]) && payload[field].some((item) => {
+      if (item && typeof item === 'object') {
+        return Object.values(item).some((value) => String(value || '').trim() !== '');
+      }
+
+      return String(item || '').trim() !== '';
+    }));
+  };
+
+  const canPersistDraft = () => canSaveDrafts.value
+    && !form.id
+    && !(globalFormState.isAdmin.value && globalFormState.adminSandboxEnabled.value && form.sandbox_mode)
+    && String(draftAutosaveUrl.value || '').trim() !== '';
+
+  const persistSubmissionDraft = async () => {
+    if (!canPersistDraft()) {
+      return false;
+    }
+
+    const payload = buildDraftPayload();
+
+    if (!hasMeaningfulDraftContent(payload)) {
+      return false;
+    }
+
+    if (globalFormState.isLoading.value) {
+      scheduleDraftAutosave();
+      return false;
+    }
+
+    draftAutosaveInFlight = true;
+    draftAutosaveState.value = 'saving';
+
+    try {
+      const response = await axios.post(draftAutosaveUrl.value, payload, {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+
+      const savedDraft = normalizeDraftSummary(response.data?.draft || {});
+
+      if (savedDraft.uuid) {
+        activeDraftId.value = savedDraft.uuid;
+        replaceDraftQueryParam(savedDraft.uuid);
+        upsertSubmissionDraftSummary(savedDraft);
+      }
+
+      draftAutosaveState.value = 'saved';
+      draftAutosavedAtLabel.value = response.data?.autosaved_at_label || savedDraft.updated_at_label || '';
+
+      return true;
+    } catch (error) {
+      console.error('Failed to autosave unfinished submission.', error);
+      draftAutosaveState.value = 'error';
+      return false;
+    } finally {
+      draftAutosaveInFlight = false;
+    }
+  };
+
+  const cancelDraftAutosave = () => {
+    if (draftAutosaveTimerId) {
+      clearTimeout(draftAutosaveTimerId);
+      draftAutosaveTimerId = null;
+    }
+  };
+
+  const scheduleDraftAutosave = () => {
+    cancelDraftAutosave();
+
+    if (!canPersistDraft()) {
+      return;
+    }
+
+    const payload = buildDraftPayload();
+    if (!hasMeaningfulDraftContent(payload)) {
+      return;
+    }
+
+    draftAutosaveState.value = 'pending';
+    draftAutosaveTimerId = window.setTimeout(async () => {
+      draftAutosaveTimerId = null;
+
+      if (draftAutosaveInFlight) {
+        scheduleDraftAutosave();
+        return;
+      }
+
+      await persistSubmissionDraft();
+    }, 1600);
+  };
+
+  const draftAutosaveSignature = computed(() => JSON.stringify(buildDraftPayload()));
 
   const resetAutofillRevealState = (active = false) => {
     autofillReveal.active = active;
@@ -1436,6 +1690,10 @@ export function useProductForm() {
         formData.append('paid_schedule_date', form.paid_schedule_date);
       }
 
+      if (activeDraftId.value) {
+        formData.append('draft_uuid', activeDraftId.value);
+      }
+
       formData.append('sandbox_mode', form.sandbox_mode ? '1' : '0');
 
       // Admin-only curated related-product overrides
@@ -2228,6 +2486,7 @@ export function useProductForm() {
         globalFormState.premiumLaunchPriceCents.value = parseInt(element.getAttribute('data-premium-launch-price-cents') || '1200', 10) || 1200;
         globalFormState.freeLaunchQueueMonths.value = parseInt(element.getAttribute('data-free-launch-queue-months') || '6', 10) || 0;
         globalFormState.productPublishTime.value = element.getAttribute('data-product-publish-time') || '07:00';
+        loadDraftContextFromElement(element);
         form.free_schedule_date = getDefaultFreeScheduleDate(globalFormState.freeLaunchQueueMonths.value);
         syncAdminSandboxAvailability();
         syncAdminDirectSubmissionState();
@@ -2332,6 +2591,9 @@ export function useProductForm() {
       if (displayData) {
         try {
           const initialData = JSON.parse(displayData);
+          if (initialData?.draft_uuid) {
+            activeDraftId.value = initialData.draft_uuid;
+          }
           console.log('Parsed initial data:', initialData);
 
           // For admin users, always load the original product data regardless of pending edits
@@ -2737,6 +2999,11 @@ export function useProductForm() {
     premiumLaunchPriceCents: globalFormState.premiumLaunchPriceCents,
     freeLaunchQueueMonths: globalFormState.freeLaunchQueueMonths,
     productPublishTime: globalFormState.productPublishTime,
+    canSaveDrafts,
+    activeDraftId,
+    submissionDrafts,
+    draftAutosaveState,
+    draftAutosavedAtLabel,
     extractionErrors: globalFormState.extractionErrors,
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,
@@ -2781,6 +3048,9 @@ export function useProductForm() {
     loadSavedData,
     saveFormData,
     clearSavedData,
+    draftAutosaveSignature,
+    scheduleDraftAutosave,
+    cancelDraftAutosave,
     checkUrlExists,
     touchField,
     validateField,

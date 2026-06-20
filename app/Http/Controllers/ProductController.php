@@ -10,6 +10,7 @@ use App\Models\PremiumProduct;
 use App\Models\TechStack;
 use App\Models\ProductClaim;
 use App\Models\ProductCollection;
+use App\Models\ProductSubmissionDraft;
 use App\Models\UserProductUpvote; // Added for upvote checking
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
@@ -156,7 +157,7 @@ class ProductController extends Controller
         ));
     }
 
-    public function createSubmission()
+    public function createSubmission(Request $request)
     {
         $allTechStacks = TechStack::orderBy('name')->get();
         $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
@@ -171,24 +172,50 @@ class ProductController extends Controller
         ] = $this->loadProductCategoryGroups();
 
         $oldInput = session()->getOldInput();
+        $activeDraft = $this->resolveRequestedSubmissionDraft($request);
+        $draftDisplayData = $activeDraft ? $this->mapSubmissionDraftToDisplayData($activeDraft) : [];
         $displayData = [
-            'name' => $oldInput['name'] ?? '',
-            'slug' => $oldInput['slug'] ?? '',
-            'link' => $oldInput['link'] ?? '',
-            'additional_resources' => $oldInput['additional_resources'] ?? '',
-            'tagline' => $oldInput['tagline'] ?? '',
-            'product_page_tagline' => $oldInput['product_page_tagline'] ?? '',
-            'description' => $oldInput['description'] ?? '',
-            'logo' => null,
-            'video_url' => null,
-            'current_categories' => $oldInput['categories'] ?? [],
-            'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
+            'name' => $oldInput['name'] ?? ($draftDisplayData['name'] ?? ''),
+            'slug' => $oldInput['slug'] ?? ($draftDisplayData['slug'] ?? ''),
+            'link' => $oldInput['link'] ?? ($draftDisplayData['link'] ?? ''),
+            'additional_resources' => $oldInput['additional_resources'] ?? ($draftDisplayData['additional_resources'] ?? ''),
+            'tagline' => $oldInput['tagline'] ?? ($draftDisplayData['tagline'] ?? ''),
+            'product_page_tagline' => $oldInput['product_page_tagline'] ?? ($draftDisplayData['product_page_tagline'] ?? ''),
+            'description' => $oldInput['description'] ?? ($draftDisplayData['description'] ?? ''),
+            'logo' => $draftDisplayData['logo'] ?? null,
+            'logo_url' => $draftDisplayData['logo_url'] ?? null,
+            'video_url' => $draftDisplayData['video_url'] ?? null,
+            'current_categories' => $oldInput['categories'] ?? ($draftDisplayData['current_categories'] ?? []),
+            'current_tech_stacks' => $oldInput['tech_stacks'] ?? ($draftDisplayData['current_tech_stacks'] ?? []),
+            'maker_links' => $oldInput['maker_links'] ?? ($draftDisplayData['maker_links'] ?? []),
+            'sell_product' => $oldInput['sell_product'] ?? ($draftDisplayData['sell_product'] ?? false),
+            'asking_price' => $oldInput['asking_price'] ?? ($draftDisplayData['asking_price'] ?? null),
+            'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($draftDisplayData['pricing_page_url'] ?? ''),
+            'x_account' => $oldInput['x_account'] ?? ($draftDisplayData['x_account'] ?? ''),
+            'logos' => $draftDisplayData['logos'] ?? [],
+            'gallery' => $draftDisplayData['gallery'] ?? [],
+            'categories_custom' => $draftDisplayData['categories_custom'] ?? [],
+            'useCases_custom' => $draftDisplayData['useCases_custom'] ?? [],
+            'platforms_custom' => $draftDisplayData['platforms_custom'] ?? [],
+            'bestFor_custom' => $draftDisplayData['bestFor_custom'] ?? [],
+            'tech_stack_custom' => $draftDisplayData['tech_stack_custom'] ?? [],
+            'draft_uuid' => $draftDisplayData['draft_uuid'] ?? null,
         ];
 
         $types = Type::with('categories')->get();
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
         $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
+        $submissionDrafts = $request->user()
+            ? ProductSubmissionDraft::query()
+                ->forUser($request->user())
+                ->latest('updated_at')
+                ->get()
+                ->map(fn (ProductSubmissionDraft $draft) => $draft->toSummaryArray())
+                ->values()
+                ->all()
+            : [];
+        $activeDraftId = $activeDraft?->uuid;
 
         return view('products.create', compact(
             'displayData',
@@ -202,7 +229,9 @@ class ProductController extends Controller
             'submissionBgUrl',
             'adminSandboxEnabled',
             'premiumLaunchPriceCents',
-            'freeLaunchQueueMonths'
+            'freeLaunchQueueMonths',
+            'submissionDrafts',
+            'activeDraftId'
         ));
     }
 
@@ -318,6 +347,7 @@ class ProductController extends Controller
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'custom_tech_stacks' => 'nullable|array|max:3',
             'custom_tech_stacks.*.name' => 'required|string|max:100',
+            'draft_uuid' => 'nullable|string|size:36',
         ]);
 
         $validated['link'] = Product::normalizeLink($validated['link']);
@@ -577,6 +607,13 @@ class ProductController extends Controller
             \App\Jobs\VerifyBadgePlacement::dispatch($product)->delay($verifyAt);
         }
 
+        if ($user && filled($request->input('draft_uuid'))) {
+            ProductSubmissionDraft::query()
+                ->forUser($user)
+                ->where('uuid', $request->input('draft_uuid'))
+                ->delete();
+        }
+
         // Return JSON response for API calls, redirect for regular form submissions
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -588,6 +625,61 @@ class ProductController extends Controller
         }
 
         return redirect()->route('products.submission.success', ['product' => $product->id]);
+    }
+
+    protected function resolveRequestedSubmissionDraft(Request $request): ?ProductSubmissionDraft
+    {
+        $draftUuid = trim((string) $request->query('draft', ''));
+
+        if ($draftUuid === '' || ! $request->user()) {
+            return null;
+        }
+
+        return ProductSubmissionDraft::query()
+            ->forUser($request->user())
+            ->where('uuid', $draftUuid)
+            ->firstOrFail();
+    }
+
+    protected function mapSubmissionDraftToDisplayData(ProductSubmissionDraft $draft): array
+    {
+        $payload = $draft->payload ?? [];
+        $logoPreview = $payload['logoPreview'] ?? ($payload['favicon'] ?? null);
+        $gallery = array_values(array_filter((array) ($payload['galleryPreviews'] ?? []), fn ($value) => filled($value)));
+
+        return [
+            'name' => $payload['name'] ?? '',
+            'slug' => $payload['slug'] ?? '',
+            'link' => $payload['link'] ?? '',
+            'additional_resources' => $payload['additional_resources'] ?? '',
+            'tagline' => $payload['tagline'] ?? '',
+            'product_page_tagline' => $payload['tagline_detailed'] ?? ($payload['tagline'] ?? ''),
+            'description' => $payload['description'] ?? '',
+            'logo' => $payload['logo'] ?? null,
+            'logo_url' => $logoPreview,
+            'video_url' => $payload['video_url'] ?? null,
+            'current_categories' => array_values(array_merge(
+                (array) ($payload['categories'] ?? []),
+                (array) ($payload['useCases'] ?? []),
+                (array) ($payload['platforms'] ?? []),
+                (array) ($payload['bestFor'] ?? []),
+                (array) ($payload['pricing'] ?? [])
+            )),
+            'current_tech_stacks' => array_values((array) ($payload['tech_stack'] ?? [])),
+            'maker_links' => array_values((array) ($payload['maker_links'] ?? [])),
+            'sell_product' => (bool) ($payload['sell_product'] ?? false),
+            'asking_price' => $payload['asking_price'] ?? null,
+            'pricing_page_url' => $payload['pricing_page_url'] ?? '',
+            'x_account' => $payload['x_account'] ?? '',
+            'logos' => array_values((array) ($payload['logos'] ?? [])),
+            'gallery' => $gallery,
+            'categories_custom' => array_values((array) ($payload['categories_custom'] ?? [])),
+            'useCases_custom' => array_values((array) ($payload['useCases_custom'] ?? [])),
+            'platforms_custom' => array_values((array) ($payload['platforms_custom'] ?? [])),
+            'bestFor_custom' => array_values((array) ($payload['bestFor_custom'] ?? [])),
+            'tech_stack_custom' => array_values((array) ($payload['tech_stack_custom'] ?? [])),
+            'draft_uuid' => $draft->uuid,
+        ];
     }
 
     public function showSubmissionSuccess(Product $product)

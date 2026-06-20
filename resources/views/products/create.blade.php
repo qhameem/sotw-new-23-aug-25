@@ -72,6 +72,10 @@
                 <!-- Simplified Container: Direct flex child, full height/width -->
                 <div id="product-submit-app" class="w-full flex-1 flex flex-col h-full" x-ignore
                     data-display-data="{{ json_encode($displayData ?? []) }}"
+                    data-submission-drafts="{{ json_encode($submissionDrafts ?? []) }}"
+                    data-active-draft-id="{{ $activeDraftId ?? '' }}"
+                    data-can-save-drafts="{{ Auth::check() ? 'true' : 'false' }}"
+                    data-draft-autosave-url="{{ route('product-submission-drafts.store') }}"
                     data-submission-bg-url="{{ $submissionBgUrl }}"
                     data-premium-launch-price-cents="{{ $premiumLaunchPriceCents ?? \App\Support\PremiumLaunchPricing::cents() }}"
                     data-free-launch-queue-months="{{ $freeLaunchQueueMonths ?? \App\Support\FreeLaunchQueueSettings::months() }}"

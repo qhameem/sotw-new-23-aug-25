@@ -62,6 +62,31 @@
                 <p class="text-gray-400 font-medium text-sm">Or click here to fill manually</p>
               </div>
             </div>
+
+            <div v-if="showDraftList" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h2 class="text-sm font-semibold text-slate-900">Unfinished submissions</h2>
+                  <p class="text-xs text-slate-500">Resume an earlier product draft.</p>
+                </div>
+                <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                  {{ submissionDrafts.length }}
+                </span>
+              </div>
+
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <a
+                  v-for="draft in submissionDrafts"
+                  :key="draft.uuid"
+                  :href="draft.resume_url"
+                  class="rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-sky-300 hover:bg-sky-50/40"
+                >
+                  <p class="text-sm font-semibold text-slate-900">{{ draft.title }}</p>
+                  <p v-if="draft.link" class="mt-1 line-clamp-2 text-xs text-slate-500">{{ draft.link }}</p>
+                  <p class="mt-3 text-xs text-slate-400">Saved {{ draft.updated_at_label || 'recently' }}</p>
+                </a>
+              </div>
+            </div>
           </div>
 
           <!-- Right Column: Sidebar Previews -->
@@ -117,6 +142,13 @@
                 class="mb-4 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs text-sky-700"
               >
                 We’re filling this out step by step. Fields unlock as each piece of product info is ready.
+              </div>
+
+              <div
+                v-if="draftStatusMessage"
+                class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600"
+              >
+                {{ draftStatusMessage }}
               </div>
 
               <!-- Submission Error Message -->
@@ -324,6 +356,11 @@ const {
   productPublishTime,
   isAdmin,
   adminSandboxEnabled,
+  canSaveDrafts,
+  activeDraftId,
+  submissionDrafts,
+  draftAutosaveState,
+  draftAutosavedAtLabel,
   isUrlInvalid,
   urlTrimSuggestion,
   initializeFormData,
@@ -338,6 +375,10 @@ const {
   validationErrors,
   validationSummary,
   isRestored,
+  draftAutosaveSignature,
+  scheduleDraftAutosave,
+  cancelDraftAutosave,
+  saveFormData,
   touchField,
   validateField,
   resetValidationState,
@@ -363,6 +404,30 @@ const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 const showAiContext = computed(() => !form.id);
+const showDraftList = computed(() => !isEditMode.value && submissionDrafts.value.length > 0);
+const draftStatusMessage = computed(() => {
+  if (!canSaveDrafts.value || isEditMode.value) {
+    return '';
+  }
+
+  if (draftAutosaveState.value === 'saving') {
+    return 'Saving unfinished submission...';
+  }
+
+  if (draftAutosaveState.value === 'error') {
+    return 'Autosave failed. Changes remain in this tab.';
+  }
+
+  if (draftAutosaveState.value === 'saved' && draftAutosavedAtLabel.value) {
+    return `Saved as unfinished submission ${draftAutosavedAtLabel.value}.`;
+  }
+
+  if (activeDraftId.value) {
+    return 'This unfinished submission autosaves while you edit.';
+  }
+
+  return '';
+});
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {
@@ -399,6 +464,11 @@ watch(showAdminSandboxControls, (isVisible) => {
     form.sandbox_mode = false;
   }
 }, { immediate: true });
+
+watch(draftAutosaveSignature, () => {
+  saveFormData();
+  scheduleDraftAutosave();
+});
 
 // Navigation Steps
 const steps = [
@@ -441,6 +511,7 @@ onUnmounted(() => {
     clearTimeout(urlExistsCheckTimeout);
   }
   if (observer) observer.disconnect();
+  cancelDraftAutosave();
 });
 
 // Handle URL Fetch Action (formerly "Get Started")

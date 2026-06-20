@@ -103,6 +103,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ProductCollection::class);
     }
 
+    public function productSubmissionDrafts(): HasMany
+    {
+        return $this->hasMany(ProductSubmissionDraft::class);
+    }
+
     public static function reservedPublicHandles(): array
     {
         return self::RESERVED_PUBLIC_HANDLES;
