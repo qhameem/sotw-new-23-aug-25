@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Product;
+use App\Models\Type;
 use App\Models\User;
+use App\Support\CategoryTypeRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -71,6 +76,38 @@ class AdminAddProductSandboxSettingTest extends TestCase
         $this->assertSame(0, Product::count());
     }
 
+    public function test_admin_can_submit_a_product_without_using_submission_types(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+        Queue::fake();
+
+        $admin = $this->createAdmin();
+        [$softwareCategory, $pricingCategory, $useCaseCategory] = $this->createSubmissionCategories();
+
+        $response = $this->actingAs($admin)->postJson(route('products.store'), [
+            'name' => 'Admin Direct Submit',
+            'tagline' => 'Admin can submit directly',
+            'description' => '<p>Admin direct submit regression test.</p>',
+            'link' => 'https://admin-direct-submit.example',
+            'categories' => [
+                $softwareCategory->id,
+                $pricingCategory->id,
+                $useCaseCategory->id,
+            ],
+            'submission_type' => 'paid',
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $product = Product::where('slug', 'admin-direct-submit')->firstOrFail();
+
+        $this->assertSame('free', $product->submission_type);
+    }
+
     private function createAdmin(): User
     {
         Role::firstOrCreate(['name' => 'admin']);
@@ -79,5 +116,28 @@ class AdminAddProductSandboxSettingTest extends TestCase
         $admin->assignRole('admin');
 
         return $admin;
+    }
+
+    private function createSubmissionCategories(): array
+    {
+        $softwareType = Type::create([
+            'name' => CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::SOFTWARE),
+        ]);
+        $pricingType = Type::create([
+            'name' => CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::PRICING),
+        ]);
+        $useCaseType = Type::create([
+            'name' => CategoryTypeRegistry::primaryNameFor(CategoryTypeRegistry::USE_CASE),
+        ]);
+
+        $softwareCategory = Category::factory()->create();
+        $pricingCategory = Category::factory()->create();
+        $useCaseCategory = Category::factory()->create();
+
+        $softwareCategory->types()->attach($softwareType);
+        $pricingCategory->types()->attach($pricingType);
+        $useCaseCategory->types()->attach($useCaseType);
+
+        return [$softwareCategory, $pricingCategory, $useCaseCategory];
     }
 }

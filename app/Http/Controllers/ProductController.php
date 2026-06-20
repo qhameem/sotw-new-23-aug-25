@@ -208,6 +208,8 @@ class ProductController extends Controller
 
     public function verifyBadgePlacement(Request $request)
     {
+        $allowedSubmissionTypes = $isAdmin ? ['free', 'badge', 'paid'] : ['free', 'badge'];
+
         $validated = $request->validate([
             'url' => 'required|url|max:2048',
         ]);
@@ -266,6 +268,8 @@ class ProductController extends Controller
             return back()->with('status', $message);
         }
 
+        $allowedSubmissionTypes = $isAdmin ? ['free', 'badge', 'paid'] : ['free', 'badge'];
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'required|string|max:255',
@@ -286,7 +290,7 @@ class ProductController extends Controller
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
             'x_account' => 'nullable|string|max:255',
-            'submission_type' => 'nullable|in:free,badge',
+            'submission_type' => ['nullable', Rule::in($allowedSubmissionTypes)],
             'badge_placement_url' => 'nullable|url|max:2048',
             'badge_week_start' => 'nullable|date_format:Y-m-d',
             'categories' => [
@@ -383,6 +387,9 @@ class ProductController extends Controller
 
         // Handle submission type: 'badge' submissions get instant approval
         $submissionType = $request->input('submission_type', 'free');
+        if ($isAdmin && !in_array($submissionType, ['free', 'badge'], true)) {
+            $submissionType = 'free';
+        }
         $validated['submission_type'] = in_array($submissionType, ['free', 'badge']) ? $submissionType : 'free';
 
         if ($submissionType === 'badge') {

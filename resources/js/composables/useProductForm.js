@@ -218,6 +218,19 @@ export function useProductForm() {
   const sidebarSteps = [...globalFormState.sidebarSteps];
   const autofillReveal = globalFormState.autofillReveal;
 
+  const syncAdminDirectSubmissionState = () => {
+    if (!globalFormState.isAdmin.value || form.id) {
+      return;
+    }
+
+    form.submissionOption = 'free';
+    form.submission_type = 'free';
+    form.badge_opt_in = false;
+    form.badge_verified = false;
+    form.badge_placement_url = '';
+    form.badge_week_start = '';
+  };
+
   // Create local refs for form-specific error messages to avoid conflicts
   const errorMessage = ref('');
   const showErrorMessage = ref(false);
@@ -1172,6 +1185,7 @@ export function useProductForm() {
     globalFormState.logoPreview.value = null;
     globalFormState.galleryPreviews.value = [null];
     resetManualMediaChoices();
+    syncAdminDirectSubmissionState();
   };
 
   const goToNextStep = (tabId) => {
@@ -1402,9 +1416,12 @@ export function useProductForm() {
         });
       }
 
-      // Add submission type ('free' or 'badge')
-      if (form.submission_type) {
-        formData.append('submission_type', form.submission_type);
+      const submissionType = globalFormState.isAdmin.value && !form.id
+        ? 'free'
+        : form.submission_type;
+
+      if (submissionType) {
+        formData.append('submission_type', submissionType);
       }
 
       if (form.badge_placement_url) {
@@ -1596,6 +1613,9 @@ export function useProductForm() {
       errorMessage.value = '';
       return true;
     }
+
+    syncAdminDirectSubmissionState();
+
     showErrorMessage.value = false;
     errorMessage.value = '';
     submitAttempted.value = true;
@@ -2181,6 +2201,7 @@ export function useProductForm() {
     globalFormState.urlExistsError.value = false;
     globalFormState.existingProduct.value = null;
     showErrorMessage.value = false;
+    syncAdminDirectSubmissionState();
   };
 
   // Initialize form data
@@ -2209,6 +2230,7 @@ export function useProductForm() {
         globalFormState.productPublishTime.value = element.getAttribute('data-product-publish-time') || '07:00';
         form.free_schedule_date = getDefaultFreeScheduleDate(globalFormState.freeLaunchQueueMonths.value);
         syncAdminSandboxAvailability();
+        syncAdminDirectSubmissionState();
       }
     } catch (error) {
       console.error('Failed to fetch initial form data:', error);
