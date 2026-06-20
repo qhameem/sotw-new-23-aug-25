@@ -66,21 +66,25 @@
     </div>
     <div class="mb-4">
       <input
+        :id="screenshotInputId"
         ref="screenshotInput"
         type="file"
         :accept="supportedImageAcceptList"
-        class="hidden"
+        class="sr-only"
         @change="onScreenshotChange"
       >
 
       <div class="relative group">
-        <button
-          type="button"
+        <label
+          :for="screenshotInputId"
+          role="button"
+          tabindex="0"
           :class="screenshotPreview
             ? 'border border-gray-100 bg-gray-50 hover:border-gray-200 hover:bg-gray-100/70'
             : 'min-h-[220px] border-2 border-dashed border-gray-300 bg-transparent hover:border-gray-400'"
           class="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl transition"
-          @click="openScreenshotPicker"
+          @keydown.enter.prevent="openScreenshotPicker"
+          @keydown.space.prevent="openScreenshotPicker"
         >
           <img
             v-if="screenshotPreview"
@@ -114,7 +118,7 @@
               Supports JPG, JPEG, PNG, GIF, SVG, WEBP, and AVIF
             </p>
           </div>
-        </button>
+        </label>
 
       </div>
 
@@ -179,6 +183,7 @@ const emit = defineEmits(['open-logo-picker', 'remove-logo', 'upload-screenshot'
 
 const screenshotInput = ref(null);
 const screenshotUploadError = ref('');
+const screenshotInputId = `product-screenshot-upload-${Math.random().toString(36).slice(2, 10)}`;
 const supportedImageAcceptList = 'image/jpeg,image/png,image/gif,image/svg+xml,image/webp,image/avif,.jpg,.jpeg,.png,.gif,.svg,.webp,.avif';
 const supportedImageMimeTypes = [
   'image/jpeg',
