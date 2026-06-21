@@ -22,6 +22,13 @@
     $mobileFaviconUrl = $generatedMobileFaviconPath && $publicDisk->exists($generatedMobileFaviconPath)
         ? $versionedStorageUrl($generatedMobileFaviconPath)
         : ($hasCustomFavicon ? $versionedStorageUrl($customFaviconPath) : asset('favicon/favicon-32x32.png'));
+    $mobileFaviconAltText = trim((string) config('theme.logo_alt_text', config('app.name', 'Logo')));
+
+    if ($mobileFaviconAltText === '') {
+        $mobileFaviconAltText = config('app.name', 'Software on the Web') . ' logo';
+    } elseif (preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)+$/i', $mobileFaviconAltText)) {
+        $mobileFaviconAltText = \Illuminate\Support\Str::headline($mobileFaviconAltText);
+    }
 @endphp
 
 <div
@@ -39,9 +46,10 @@
                 </div>
             @endif
             <div class="flex min-w-0 items-center gap-3">
-                <a href="{{ route('home') }}" wire:navigate.hover>
-                    <img src="{{ $mobileFaviconUrl }}" alt="{{ config('theme.logo_alt_text', config('app.name', 'Logo')) }}"
+                <a href="{{ route('home') }}" wire:navigate.hover aria-label="{{ config('app.name', 'Software on the Web') }} home">
+                    <img src="{{ $mobileFaviconUrl }}" alt="{{ $mobileFaviconAltText }}"
                         class="mobile-favicon h-10 w-10 shrink-0 object-contain md:hidden">
+                    <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
                 @if($hasTitle)
                     @if($hasRichTitle)
