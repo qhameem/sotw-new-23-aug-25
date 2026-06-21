@@ -1,6 +1,12 @@
 <div data-modal-scroll-lock-fixed class="fixed top-0 w-full z-50 h-[3.7rem] border-b border-gray-200 flex-shrink-0 hidden md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
     @php
         $isCategoriesRoute = request()->routeIs('categories.*');
+        $launchReadinessBranding = app(\App\Support\LaunchReadinessBranding::class);
+        $launchReadinessToolSettings = app(\App\Support\ToolSettings::class);
+        $launchReadinessToolName = $launchReadinessBranding->siteName();
+        $launchReadinessToolLogoUrl = $launchReadinessBranding->publicLogoUrl();
+        $launchReadinessToolUrl = $launchReadinessToolSettings->path(\App\Support\ToolSettings::LAUNCH_READINESS_KEY);
+        $launchReadinessTopBarLabel = 'Free Launch Audit';
     @endphp
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
@@ -23,6 +29,19 @@
                             <span class="truncate text-sm text-gray-500" x-text="isMac ? 'Search (⌘ + K)' : 'Search (Ctrl + K)'"></span>
                         </button>
                     </div>
+                    <a
+                        href="{{ $launchReadinessToolUrl }}"
+                        class="group flex min-w-0 shrink items-center gap-1 px-1 py-1 transition hover:opacity-80"
+                        title="{{ $launchReadinessToolName }}"
+                    >
+                        <img
+                            src="{{ $launchReadinessToolLogoUrl }}"
+                            alt="{{ $launchReadinessToolName }} logo"
+                            class="h-5 w-5 shrink-0 object-contain"
+                            loading="lazy"
+                        >
+                        <span class="max-w-[140px] truncate text-sm font-semibold text-gray-800 group-hover:underline">{{ $launchReadinessTopBarLabel }}</span>
+                    </a>
                 @endif
             </div>
             <div class="flex min-w-0 flex-1 justify-center px-2 lg:px-6">
