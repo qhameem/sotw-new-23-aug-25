@@ -21,7 +21,7 @@ $logout = function (Logout $logout) {
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('home') }}" wire:navigate> {{-- Changed to home --}}
+                    <a href="{{ route('home') }}" wire:navigate aria-label="{{ config('app.name', 'Software on the Web') }} home"> {{-- Changed to home --}}
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                     </a>
                 </div>

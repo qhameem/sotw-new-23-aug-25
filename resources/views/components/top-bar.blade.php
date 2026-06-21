@@ -6,7 +6,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
-                <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0">
+                <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                 </a>
                 @if(!request()->routeIs('todolists.*'))

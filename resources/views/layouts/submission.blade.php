@@ -477,7 +477,7 @@
         <!-- Mobile Header (visible only on mobile) -->
         <div data-modal-scroll-lock-fixed class="md:hidden fixed top-0 w-full z-50 bg-white border-b border-gray-200 flex-shrink-0">
             <div class="flex h-[75px] items-center justify-between gap-3 px-4">
-                <a href="{{ route('home') }}">
+                <a href="{{ route('home') }}" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                 </a>
                 <div class="flex shrink-0 items-center gap-2">
