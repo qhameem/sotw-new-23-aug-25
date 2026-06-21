@@ -139,8 +139,7 @@
                 <p>&copy; {{ date('Y') }} {{ $toolBrandingSiteName }}</p>
                 <div class="flex items-center gap-4">
                     <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">History</a>
-                    <a href="/robots.txt" class="transition hover:text-slate-700">Robots</a>
-                    <a href="/sitemap.xml" class="transition hover:text-slate-700">Sitemap</a>
+                    <a href="https://softwareontheweb.com" class="transition hover:text-slate-700">Software on the Web</a>
                 </div>
             </div>
         </footer>
