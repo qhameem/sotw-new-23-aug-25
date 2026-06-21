@@ -479,6 +479,7 @@
             <div class="flex h-[75px] items-center justify-between gap-3 px-4">
                 <a href="{{ route('home') }}" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
                 <div class="flex shrink-0 items-center gap-2">
                     @guest

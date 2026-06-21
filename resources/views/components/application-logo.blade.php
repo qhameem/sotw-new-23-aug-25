@@ -1,6 +1,12 @@
 @php
     $customLogoUrl = config('theme.logo_url');
-    $customLogoAltText = config('theme.logo_alt_text', config('app.name', 'Logo'));
+    $customLogoAltText = trim((string) config('theme.logo_alt_text', config('app.name', 'Logo')));
+
+    if ($customLogoAltText === '') {
+        $customLogoAltText = config('app.name', 'Software on the Web') . ' logo';
+    } elseif (preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)+$/i', $customLogoAltText)) {
+        $customLogoAltText = \Illuminate\Support\Str::headline($customLogoAltText);
+    }
 @endphp
 
 @if ($customLogoUrl)

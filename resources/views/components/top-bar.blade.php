@@ -8,6 +8,7 @@
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
                 <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
+                    <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
                 @if(!request()->routeIs('todolists.*'))
                     <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">

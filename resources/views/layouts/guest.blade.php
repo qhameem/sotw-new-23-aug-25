@@ -156,6 +156,7 @@
         <div>
             <a href="/" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                 <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
             </a>
         </div>
 
