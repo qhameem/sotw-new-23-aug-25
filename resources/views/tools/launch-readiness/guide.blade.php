@@ -80,13 +80,13 @@
         </style>
 
         <div class="rounded-[28px] border border-slate-200 bg-white px-6 py-8 shadow-sm shadow-slate-200/60 sm:px-8 sm:py-10">
-            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="underline decoration-slate-300 underline-offset-4 transition hover:text-slate-900 hover:decoration-slate-900">
-                    Website Launch Checker
-                </a>
-                <span aria-hidden="true">/</span>
-                <span>{{ $guide['label'] }}</span>
-            </div>
+                <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="underline decoration-slate-300 underline-offset-4 transition hover:text-slate-900 hover:decoration-slate-900">
+                        {{ $toolBrandingSiteName }}
+                    </a>
+                    <span aria-hidden="true">/</span>
+                    <span>{{ $guide['label'] }}</span>
+                </div>
 
             <article class="mt-6">
                 <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-[2.1rem]">{{ $guide['article_title'] }}</h1>
