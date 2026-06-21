@@ -434,4 +434,8 @@ Route::prefix('tools/{toolSlug}')
             Route::delete('/settings/account', [LaunchReadinessWorkspaceController::class, 'destroyAccount'])->name('settings.account.destroy');
             Route::post('/logout', [ToolAuthController::class, 'destroy'])->name('auth.logout');
         });
+
+        Route::get('/{guideSlug}', [LaunchReadinessController::class, 'guide'])
+            ->where(['guideSlug' => '[A-Za-z0-9\-]+'])
+            ->name('guides.show');
     });

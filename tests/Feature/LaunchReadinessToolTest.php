@@ -31,6 +31,37 @@ class LaunchReadinessToolTest extends TestCase
         $response->assertSee('Meta Information');
     }
 
+    public function test_launch_readiness_homepage_links_checks_to_guide_pages(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+
+        $response = $this->get(route('launch-readiness.index', ['toolSlug' => $slug]));
+
+        $response->assertOk();
+        $response->assertSee(route('launch-readiness.guides.show', ['toolSlug' => $slug, 'guideSlug' => 'title-tag']), false);
+        $response->assertSee(route('launch-readiness.guides.show', ['toolSlug' => $slug, 'guideSlug' => 'meta-description']), false);
+    }
+
+    public function test_launch_readiness_guide_page_renders_with_seo_metadata(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+
+        $response = $this->get(route('launch-readiness.guides.show', ['toolSlug' => $slug, 'guideSlug' => 'title-tag']));
+
+        $response->assertOk();
+        $response->assertSee('Title Tag: Write Search Titles That Explain the Page Fast');
+        $response->assertSee('<title>Title Tag Guide for Better Search Clicks</title>', false);
+        $response->assertSee('Learn what a title tag does, why it matters, and how to write cleaner titles before launching a page.', false);
+    }
+
+    public function test_launch_readiness_unknown_guide_page_returns_not_found(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+
+        $this->get(route('launch-readiness.guides.show', ['toolSlug' => $slug, 'guideSlug' => 'not-a-real-check']))
+            ->assertNotFound();
+    }
+
     public function test_launch_readiness_scan_is_saved_and_redirects_to_results(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);

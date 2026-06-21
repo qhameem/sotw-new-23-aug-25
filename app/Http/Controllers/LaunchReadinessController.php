@@ -7,6 +7,7 @@ use App\Models\ToolUser;
 use App\Services\LaunchReadinessAuditService;
 use App\Support\LaunchReadinessGuestSession;
 use App\Support\LaunchReadinessPageData;
+use App\Support\LaunchReadinessGuideLibrary;
 use App\Support\ToolSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class LaunchReadinessController extends Controller
         private readonly ToolSettings $toolSettings,
         private readonly LaunchReadinessPageData $pageData,
         private readonly LaunchReadinessGuestSession $guestSession,
+        private readonly LaunchReadinessGuideLibrary $guideLibrary,
     ) {}
 
     public function index(): View
@@ -121,6 +123,18 @@ class LaunchReadinessController extends Controller
             'scan' => $toolScan,
             'recentHistory' => $this->recentHistory(),
             'toolTablesReady' => $this->toolTablesReady(),
+        ]));
+    }
+
+    public function guide(string $toolSlug, string $guideSlug): View
+    {
+        $guide = $this->guideLibrary->findBySlug($guideSlug);
+
+        abort_if($guide === null, 404);
+
+        return view('tools.launch-readiness.guide', $this->pageData->merge([
+            'guide' => $guide,
+            'guideHtml' => Str::markdown($guide['markdown']),
         ]));
     }
 

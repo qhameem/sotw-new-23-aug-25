@@ -67,6 +67,8 @@
         'links_analysis' => 'text-slate-400',
         'ai_and_launch_signals' => 'text-slate-400',
     ];
+    $resolvedToolSlug = request()->route('toolSlug') ?? app(\App\Support\ToolSettings::class)->slug(\App\Support\ToolSettings::LAUNCH_READINESS_KEY);
+    $guideLibrary = app(\App\Support\LaunchReadinessGuideLibrary::class);
 @endphp
 
 <div class="space-y-6">
@@ -188,6 +190,9 @@
             <div class="border-t border-slate-100 px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
                 <div class="space-y-4">
                 @foreach($category['checks'] as $check)
+                    @php
+                        $guideUrl = !empty($check['key']) ? $guideLibrary->urlForKey($resolvedToolSlug, $check['key']) : null;
+                    @endphp
                     <div class="pb-4 last:pb-0">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
@@ -213,7 +218,13 @@
                                             </svg>
                                         @endif
                                     </span>
-                                    <p class="text-sm font-medium text-slate-900">{{ $check['label'] }}</p>
+                                    @if($guideUrl)
+                                        <a href="{{ $guideUrl }}" class="text-sm font-medium text-slate-900 underline decoration-slate-200 underline-offset-4 transition hover:decoration-slate-700">
+                                            {{ $check['label'] }}
+                                        </a>
+                                    @else
+                                        <p class="text-sm font-medium text-slate-900">{{ $check['label'] }}</p>
+                                    @endif
                                 </div>
                                 <p class="mt-1 text-xs text-slate-500">{{ $check['summary'] }}</p>
                                 @if(!empty($check['meta']['preview_url']))
