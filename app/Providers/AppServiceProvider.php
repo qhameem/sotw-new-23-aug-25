@@ -7,6 +7,7 @@ use App\Services\CategoryClassifier;
 use App\Services\TechStackDetectorService;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
+use App\Models\Article;
 use App\Models\Category;
 use App\Models\PageMetaTag;
 use App\Models\Product;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\View\Composers\ScheduledProductsStatsComposer;
 use App\Models\ProductMedia;
 use App\Services\CategoryNavigationService;
+use App\Observers\ArticleObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ProductMediaObserver;
 use App\Services\OutboundLinkPolicyService;
@@ -56,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Article::observe(ArticleObserver::class);
         Product::observe(ProductObserver::class);
         ProductMedia::observe(ProductMediaObserver::class);
 

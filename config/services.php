@@ -33,6 +33,13 @@ return [
         'tool_redirect' => env('GOOGLE_TOOL_REDIRECT_URI'),
     ],
 
+    'google_indexing' => [
+        'enabled' => env('GOOGLE_INDEXING_ENABLED', false),
+        'service_account_json_path' => env('GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON_PATH'),
+        'service_account_json' => env('GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON'),
+        'timeout' => (int) env('GOOGLE_INDEXING_TIMEOUT', 10),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

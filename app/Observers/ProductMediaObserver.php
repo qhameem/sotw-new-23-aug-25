@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
-use App\Jobs\SubmitIndexNowUrls;
+use App\Jobs\SubmitUrlNotifications;
 use App\Models\ProductMedia;
-use App\Services\IndexNowService;
+use App\Services\UrlNotificationService;
 
 class ProductMediaObserver
 {
@@ -25,7 +25,7 @@ class ProductMediaObserver
 
     protected function dispatchForProduct(ProductMedia $media): void
     {
-        if (! app(IndexNowService::class)->isEnabled()) {
+        if (! app(UrlNotificationService::class)->isEnabled()) {
             return;
         }
 
@@ -35,6 +35,6 @@ class ProductMediaObserver
             return;
         }
 
-        SubmitIndexNowUrls::dispatch([route('products.show', $product->slug)]);
+        SubmitUrlNotifications::dispatch([route('products.show', $product->slug)], []);
     }
 }

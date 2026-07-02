@@ -2,13 +2,13 @@
 
 namespace App\Observers;
 
-use App\Jobs\SubmitIndexNowUrls;
+use App\Jobs\SubmitUrlNotifications;
 use App\Models\Product;
-use App\Services\IndexNowService;
+use App\Services\UrlNotificationService;
 
 class ProductObserver
 {
-    protected static array $pendingSubmissionUrls = [];
+    protected static array $pendingNotifications = [];
 
     protected const INDEXABLE_ATTRIBUTES = [
         'approved',
@@ -32,70 +32,67 @@ class ProductObserver
 
     public function created(Product $product): void
     {
-        if (! $this->indexNowEnabled()) {
+        if (! $this->notificationsEnabled()) {
             return;
         }
 
         if ($this->isLive($product)) {
-            $this->dispatchUrls([$this->productUrl($product)]);
+            $this->dispatchNotifications([$this->productUrl($product)]);
         }
     }
 
     public function updating(Product $product): void
     {
-        if (! $this->indexNowEnabled()) {
+        if (! $this->notificationsEnabled()) {
             return;
         }
 
+        $wasLive = $this->wasLive($product);
         $isLive = $this->isLive($product);
         $dirtyAttributes = array_keys($product->getDirty());
-        $urls = [];
+        $updatedUrls = [];
+        $deletedUrls = [];
 
-        if (in_array('approved', $dirtyAttributes, true) && ! $product->approved) {
-            $urls[] = $this->originalProductUrl($product);
-        }
-
-        if (in_array('is_published', $dirtyAttributes, true) && ! $product->is_published) {
-            $urls[] = $this->originalProductUrl($product);
+        if ($wasLive && ! $isLive) {
+            $deletedUrls[] = $this->originalProductUrl($product);
         }
 
         if ($isLive && $this->hasRelevantDirtyChanges($dirtyAttributes)) {
-            if (in_array('slug', $dirtyAttributes, true)) {
-                $urls[] = $this->originalProductUrl($product);
+            if ($wasLive && in_array('slug', $dirtyAttributes, true)) {
+                $deletedUrls[] = $this->originalProductUrl($product);
             }
 
-            $urls[] = $this->productUrl($product);
+            $updatedUrls[] = $this->productUrl($product);
         }
 
-        self::$pendingSubmissionUrls[spl_object_id($product)] = collect($urls)
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        self::$pendingNotifications[spl_object_id($product)] = [
+            'updated' => collect($updatedUrls)->filter()->unique()->values()->all(),
+            'deleted' => collect($deletedUrls)->filter()->unique()->values()->all(),
+        ];
     }
 
     public function updated(Product $product): void
     {
-        if (! $this->indexNowEnabled()) {
+        if (! $this->notificationsEnabled()) {
             return;
         }
 
         $objectId = spl_object_id($product);
-        $urls = self::$pendingSubmissionUrls[$objectId] ?? [];
+        $notifications = self::$pendingNotifications[$objectId] ?? ['updated' => [], 'deleted' => []];
 
-        unset(self::$pendingSubmissionUrls[$objectId]);
+        unset(self::$pendingNotifications[$objectId]);
 
-        $this->dispatchUrls($urls);
+        $this->dispatchNotifications($notifications['updated'], $notifications['deleted']);
     }
 
     public function deleted(Product $product): void
     {
-        if (! $this->indexNowEnabled()) {
+        if (! $this->notificationsEnabled()) {
             return;
         }
 
-        if ((bool) $product->getOriginal('approved') && (bool) $product->getOriginal('is_published')) {
-            $this->dispatchUrls([$this->originalProductUrl($product)]);
+        if ($this->wasLive($product)) {
+            $this->dispatchNotifications([], [$this->originalProductUrl($product)]);
         }
     }
 
@@ -109,29 +106,31 @@ class ProductObserver
         return route('products.show', $product->slug);
     }
 
+    protected function wasLive(Product $product): bool
+    {
+        return (bool) $product->getOriginal('approved') && (bool) $product->getOriginal('is_published');
+    }
+
     protected function originalProductUrl(Product $product): string
     {
         return route('products.show', $product->getOriginal('slug') ?: $product->slug);
     }
 
-    protected function dispatchUrls(array $urls): void
+    protected function dispatchNotifications(array $updatedUrls = [], array $deletedUrls = []): void
     {
-        $urls = collect($urls)
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $updatedUrls = collect($updatedUrls)->filter()->unique()->values()->all();
+        $deletedUrls = collect($deletedUrls)->filter()->unique()->values()->all();
 
-        if ($urls === []) {
+        if ($updatedUrls === [] && $deletedUrls === []) {
             return;
         }
 
-        SubmitIndexNowUrls::dispatch($urls);
+        SubmitUrlNotifications::dispatch($updatedUrls, $deletedUrls);
     }
 
-    protected function indexNowEnabled(): bool
+    protected function notificationsEnabled(): bool
     {
-        return app(IndexNowService::class)->isEnabled();
+        return app(UrlNotificationService::class)->isEnabled();
     }
 
     protected function hasRelevantDirtyChanges(array $dirtyAttributes): bool

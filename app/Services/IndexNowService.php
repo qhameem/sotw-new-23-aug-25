@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\UrlNotificationProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
-class IndexNowService
+class IndexNowService implements UrlNotificationProvider
 {
     public function isEnabled(): bool
     {
@@ -69,6 +70,11 @@ class IndexNowService
             'host' => $host,
             'count' => $normalizedUrls->count(),
         ]);
+    }
+
+    public function notifyUrls(array $urls, string $type = self::TYPE_UPDATED): void
+    {
+        $this->submitUrls($urls);
     }
 
     protected function normalizeUrls(array $urls): Collection

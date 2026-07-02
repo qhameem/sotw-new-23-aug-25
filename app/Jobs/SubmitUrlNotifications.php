@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\IndexNowService;
+use App\Services\UrlNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,24 +10,26 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class SubmitIndexNowUrls implements ShouldQueue
+class SubmitUrlNotifications implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
 
     public function __construct(
-        public array $urls
+        public array $updatedUrls = [],
+        public array $deletedUrls = [],
     ) {
     }
 
-    public function handle(IndexNowService $indexNow): void
+    public function handle(UrlNotificationService $notifications): void
     {
         try {
-            $indexNow->submitUrls($this->urls);
+            $notifications->submit($this->updatedUrls, $this->deletedUrls);
         } catch (\Throwable $exception) {
-            Log::warning('IndexNow URL submission failed.', [
-                'urls' => $this->urls,
+            Log::warning('URL notification submission failed.', [
+                'updated_urls' => $this->updatedUrls,
+                'deleted_urls' => $this->deletedUrls,
                 'error' => $exception->getMessage(),
             ]);
         }
@@ -35,8 +37,9 @@ class SubmitIndexNowUrls implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        Log::warning('IndexNow URL submission failed.', [
-            'urls' => $this->urls,
+        Log::warning('URL notification submission failed.', [
+            'updated_urls' => $this->updatedUrls,
+            'deleted_urls' => $this->deletedUrls,
             'error' => $exception->getMessage(),
         ]);
     }
