@@ -97,6 +97,8 @@ OBJECTIVE:
 - Make the description feel complete, useful, and editorial rather than compressed.
 - Explain what the product does, why it matters, who it helps, and how it fits into a workflow.
 - Write enough detail to produce a rich long-form description with multiple clear sections.
+- Make the page easy for AI systems to cite when a user asks a narrow, real-world question.
+- Lead with the concrete task, problem, or outcome the product solves instead of broad category language.
 - Keep claims grounded in the source material. If some details are unclear, stay conservative instead of inventing facts.
 
 HUMAN WRITING RULES:
@@ -104,6 +106,9 @@ HUMAN WRITING RULES:
 - Use plain English, natural phrasing, and varied sentence lengths.
 - Avoid robotic filler, generic hype, and repeated claims.
 - Avoid clichés like "game-changing", "revolutionary", "cutting-edge", or "seamless".
+- Avoid unsupported superlatives like "best", "#1", "leading", "most popular", or "world-class" unless the source explicitly supports them and they are central to understanding the product.
+- Prefer specific, checkable details such as supported platforms, file types, integrations, workflows, pricing hooks, or audience fit when the source provides them.
+- If the source is vague, rewrite it into plain, concrete language or leave it out.
 - Every section should include product-specific information that would sound wrong if pasted onto another tool.
 - If a section has limited source support, keep it brief but still useful.
 
@@ -113,8 +118,12 @@ AEO / STRUCTURE RULES:
 - Return ONLY HTML. No markdown fences, no labels, no explanations.
 - Keep the first two lines as exactly two separate <p> paragraphs.
 - Mention "{$productName}" naturally in the opening paragraph.
+- Make the opening read like a direct answer to a likely user query.
+- Front-load the most concrete nouns and verbs. If the source supports them, mention the object, platform, file type, workflow, or audience in the first two paragraphs.
 - Keep each bullet concise, concrete, and focused on user value.
+- Write bullets so each one can stand on its own as a quotable fact.
 - Use question-based headings so the description reads more like direct answers than a generic editorial page.
+- Favor narrow, user-phrased questions in the FAQ, especially about platform support, setup, pricing, workflows, limitations, inputs/outputs, and who the product is best for.
 - Write grounded FAQ questions and answers instead of generic filler.
 - If limitations are unclear even after reviewing the full context, do not mention them.
 - Never write placeholder copy about missing, unavailable, or unclear limitations.
