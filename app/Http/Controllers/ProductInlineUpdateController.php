@@ -39,10 +39,11 @@ class ProductInlineUpdateController extends Controller
 
         // Validation based on field
         $rules = [
-            'field' => 'required|string|in:tagline,product_page_tagline,description,x_account,sell_product,asking_price,maker_links,categories,tech_stacks,video_url,pricing_page_url',
+            'field' => 'required|string|in:name,tagline,product_page_tagline,description,x_account,sell_product,asking_price,maker_links,categories,tech_stacks,video_url,pricing_page_url',
         ];
 
         switch ($field) {
+            case 'name':
             case 'tagline':
             case 'product_page_tagline':
             case 'x_account':
@@ -135,6 +136,9 @@ class ProductInlineUpdateController extends Controller
                     break;
                 case 'tagline':
                     $product->proposed_tagline = $value;
+                    break;
+                case 'name':
+                    $product->proposed_name = $value;
                     break;
                 case 'product_page_tagline':
                     $product->proposed_product_page_tagline = $value;

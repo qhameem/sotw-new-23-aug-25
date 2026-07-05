@@ -484,13 +484,12 @@ class ProductController extends Controller
         }
 
         // Process description to ensure proper paragraph structure
-        if (isset($validated['description'])) {
-            $productController = app(\App\Http\Controllers\ProductController::class);
-
-            $validated['description'] = $productController->ensureProperParagraphStructure(
+        $productController = app(\App\Http\Controllers\ProductController::class);
+        $processedDescription = array_key_exists('description', $validated)
+            ? $productController->ensureProperParagraphStructure(
                 $productController->addNofollowToLinks($validated['description'])
-            );
-        }
+            )
+            : null;
 
         if (array_key_exists('x_account', $validated)) {
             $validated['x_account'] = Product::normalizeXAccount($validated['x_account']);
@@ -510,13 +509,51 @@ class ProductController extends Controller
         );
         unset($validated['comparison_overrides_input'], $validated['alternative_overrides_input']);
 
+        $currentCategoryIds = $product->categories->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $newCategories = collect($validated['categories'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $categoriesChanged = $request->has('categories') && $currentCategoryIds !== $newCategories;
+
+        $currentTechStackIds = $product->techStacks->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $newTechStacks = collect($validated['tech_stacks'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $techStacksChanged = $request->has('tech_stacks') && $currentTechStackIds !== $newTechStacks;
+
+        $fieldChanges = [
+            'name' => $validated['name'] !== (string) $product->name,
+            'slug' => $validated['slug'] !== (string) $product->slug,
+            'tagline' => $validated['tagline'] !== (string) $product->tagline,
+            'product_page_tagline' => $validated['product_page_tagline'] !== (string) $product->product_page_tagline,
+            'description' => $processedDescription !== (string) ($product->description ?? ''),
+            'link' => Product::normalizeLink($validated['link']) !== Product::normalizeLink($product->link),
+            'video_url' => ($validated['video_url'] ?? null) !== $product->video_url,
+            'maker_links' => ($validated['maker_links'] ?? []) != ($product->maker_links ?? []),
+            'sell_product' => (bool) ($validated['sell_product'] ?? false) !== (bool) $product->sell_product,
+            'asking_price' => ($validated['asking_price'] ?? null) != $product->asking_price,
+            'pricing_page_url' => ($validated['pricing_page_url'] ?? null) !== $product->pricing_page_url,
+            'x_account' => ($validated['x_account'] ?? null) !== Product::normalizeXAccount($product->x_account),
+            'comparison_product_ids' => ($validated['comparison_product_ids'] ?? []) != ($product->comparison_product_ids ?? []),
+            'alternative_product_ids' => ($validated['alternative_product_ids'] ?? []) != ($product->alternative_product_ids ?? []),
+        ];
+
         // Check if the user came from the product approvals page
         $fromApprovals = $request->input('from') === 'approvals';
 
         if ($product->approved) {
-            $newCategories = $validated['categories'] ?? [];
-            $newTechStacks = $validated['tech_stacks'] ?? [];
-
             if ($request->boolean('remove_logo')) {
                 if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
@@ -529,22 +566,64 @@ class ProductController extends Controller
                 $product->proposed_logo_path = $validated['logo'];
             }
 
-            $product->proposed_name = $validated['name'];
-            $product->proposed_link = Product::normalizeLink($validated['link']);
-            $product->proposed_tagline = $validated['tagline'];
-            $product->proposed_product_page_tagline = $validated['product_page_tagline'];
-            $product->proposed_description = $validated['description'] ?? null;
-            $product->proposed_video_url = $validated['video_url'] ?? null;
-            $product->proposed_maker_links = $validated['maker_links'] ?? [];
-            $product->proposed_sell_product = $validated['sell_product'] ?? false;
-            $product->proposed_asking_price = $validated['asking_price'] ?? null;
-            $product->proposed_pricing_page_url = $validated['pricing_page_url'] ?? null;
-            $product->proposed_x_account = $validated['x_account'] ?? null;
-            $product->comparison_product_ids = $validated['comparison_product_ids'] ?? [];
-            $product->alternative_product_ids = $validated['alternative_product_ids'] ?? [];
-            $product->proposedCategories()->sync($newCategories);
-            $product->proposedTechStacks()->sync($newTechStacks);
-            $product->has_pending_edits = true;
+            if ($fieldChanges['name']) {
+                $product->proposed_name = $validated['name'];
+            }
+            if ($fieldChanges['link']) {
+                $product->proposed_link = Product::normalizeLink($validated['link']);
+            }
+            if ($fieldChanges['tagline']) {
+                $product->proposed_tagline = $validated['tagline'];
+            }
+            if ($fieldChanges['product_page_tagline']) {
+                $product->proposed_product_page_tagline = $validated['product_page_tagline'];
+            }
+            if ($fieldChanges['description']) {
+                $product->proposed_description = $processedDescription;
+            }
+            if ($fieldChanges['video_url']) {
+                $product->proposed_video_url = $validated['video_url'] ?? null;
+            }
+            if ($fieldChanges['maker_links']) {
+                $product->proposed_maker_links = $validated['maker_links'] ?? [];
+            }
+            if ($fieldChanges['sell_product']) {
+                $product->proposed_sell_product = $validated['sell_product'] ?? false;
+            }
+            if ($fieldChanges['asking_price']) {
+                $product->proposed_asking_price = $validated['asking_price'] ?? null;
+            }
+            if ($fieldChanges['pricing_page_url']) {
+                $product->proposed_pricing_page_url = $validated['pricing_page_url'] ?? null;
+            }
+            if ($fieldChanges['x_account']) {
+                $product->proposed_x_account = $validated['x_account'] ?? null;
+            }
+            if ($fieldChanges['comparison_product_ids']) {
+                $product->comparison_product_ids = $validated['comparison_product_ids'] ?? [];
+            }
+            if ($fieldChanges['alternative_product_ids']) {
+                $product->alternative_product_ids = $validated['alternative_product_ids'] ?? [];
+            }
+            if ($categoriesChanged) {
+                $product->proposedCategories()->sync($newCategories);
+            }
+            if ($techStacksChanged) {
+                $product->proposedTechStacks()->sync($newTechStacks);
+            }
+            if (
+                array_filter($fieldChanges)
+                || $categoriesChanged
+                || $techStacksChanged
+                || $request->boolean('remove_logo')
+                || isset($validated['logo'])
+                || $request->hasFile('media')
+                || filled(collect((array) $request->input('media_urls', []))->filter(fn ($url) => filled($url))->first())
+                || $request->has('custom_categories')
+                || $request->has('custom_tech_stacks')
+            ) {
+                $product->has_pending_edits = true;
+            }
             $product->last_edited_by_id = Auth::id();
 
             $mediaUrl = collect((array) $request->input('media_urls', []))
@@ -559,20 +638,57 @@ class ProductController extends Controller
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
-            $this->syncPendingCustomSubmissions($product, $request);
+            if ($categoriesChanged || $techStacksChanged || $request->has('custom_categories') || $request->has('custom_tech_stacks')) {
+                $this->syncPendingCustomSubmissions($product, $request);
+            }
             $product->save();
 
             $redirectRoute = 'admin.products.pending-edits.index';
             $message = 'Approved product changes were saved as pending edits for review.';
         } else {
-            $product->update($validated);
+            $directUpdateData = [];
 
-            if ($request->has('categories')) {
-                $product->categories()->sync($validated['categories']);
+            foreach ([
+                'name',
+                'slug',
+                'tagline',
+                'product_page_tagline',
+                'video_url',
+                'maker_links',
+                'sell_product',
+                'asking_price',
+                'pricing_page_url',
+                'x_account',
+                'comparison_product_ids',
+                'alternative_product_ids',
+            ] as $field) {
+                if (!empty($fieldChanges[$field])) {
+                    $directUpdateData[$field] = $validated[$field] ?? null;
+                }
             }
 
-            if ($request->has('tech_stacks')) {
-                $product->techStacks()->sync($validated['tech_stacks']);
+            if ($fieldChanges['link']) {
+                $directUpdateData['link'] = Product::normalizeLink($validated['link']);
+            }
+
+            if ($fieldChanges['description']) {
+                $directUpdateData['description'] = $processedDescription;
+            }
+
+            if (isset($validated['logo'])) {
+                $directUpdateData['logo'] = $validated['logo'];
+            }
+
+            if (!empty($directUpdateData)) {
+                $product->update($directUpdateData);
+            }
+
+            if ($categoriesChanged) {
+                $product->categories()->sync($newCategories);
+            }
+
+            if ($techStacksChanged) {
+                $product->techStacks()->sync($newTechStacks);
             }
 
             $mediaUrl = collect((array) $request->input('media_urls', []))
@@ -587,7 +703,9 @@ class ProductController extends Controller
                 $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
-            $this->syncPendingCustomSubmissions($product, $request);
+            if ($categoriesChanged || $techStacksChanged || $request->has('custom_categories') || $request->has('custom_tech_stacks')) {
+                $this->syncPendingCustomSubmissions($product, $request);
+            }
 
             $redirectRoute = $fromApprovals ? 'admin.product-approvals.index' : 'admin.products.index';
             $message = 'Product updated successfully.';

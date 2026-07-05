@@ -969,6 +969,50 @@ class ProductController extends Controller
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
 
+        $processedDescription = $this->ensureProperParagraphStructure($this->addNofollowToLinks($validated['description']));
+
+        $currentCategoryIds = $product->categories->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $newCategories = collect($validated['categories'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $categoriesChanged = $currentCategoryIds !== $newCategories;
+
+        $currentTechStackIds = $product->techStacks->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $newTechStacks = collect($validated['tech_stacks'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $techStacksChanged = $currentTechStackIds !== $newTechStacks;
+
+        $hasCustomCategoryPayload = $request->has('custom_categories');
+        $hasCustomTechStackPayload = $request->has('custom_tech_stacks');
+        $shouldSyncPendingCustomSubmissions = $categoriesChanged
+            || $techStacksChanged
+            || $hasCustomCategoryPayload
+            || $hasCustomTechStackPayload;
+
+        $fieldChanges = [
+            'tagline' => $validated['tagline'] !== (string) $product->tagline,
+            'product_page_tagline' => $validated['product_page_tagline'] !== (string) $product->product_page_tagline,
+            'description' => $processedDescription !== (string) $product->description,
+            'video_url' => ($validated['video_url'] ?? null) !== $product->video_url,
+            'maker_links' => ($validated['maker_links'] ?? []) != ($product->maker_links ?? []),
+            'sell_product' => (bool) ($validated['sell_product'] ?? false) !== (bool) $product->sell_product,
+            'asking_price' => ($validated['asking_price'] ?? null) != $product->asking_price,
+            'pricing_page_url' => ($validated['pricing_page_url'] ?? null) !== $product->pricing_page_url,
+        ];
+
         // Category validation (ensure at least one from each required type is selected)
         // This logic can be kept or adjusted based on whether proposed edits should also adhere to it.
         // For simplicity, we'll assume it applies.
@@ -1023,21 +1067,46 @@ class ProductController extends Controller
         // bestFor remains optional
 
         // Prepare data for update
-        $updateData = [
-            'tagline' => $validated['tagline'],
-            'product_page_tagline' => $validated['product_page_tagline'],
-            'description' => $this->ensureProperParagraphStructure($this->addNofollowToLinks($validated['description'])),
-            'video_url' => $validated['video_url'] ?? null,
-            'maker_links' => $validated['maker_links'] ?? [],
-            'sell_product' => $validated['sell_product'] ?? false,
-            'asking_price' => $validated['asking_price'] ?? null,
-            'pricing_page_url' => $validated['pricing_page_url'] ?? null,
-        ];
+        $updateData = [];
+
+        if ($fieldChanges['tagline']) {
+            $updateData['tagline'] = $validated['tagline'];
+        }
+
+        if ($fieldChanges['product_page_tagline']) {
+            $updateData['product_page_tagline'] = $validated['product_page_tagline'];
+        }
+
+        if ($fieldChanges['description']) {
+            $updateData['description'] = $processedDescription;
+        }
+
+        if ($fieldChanges['video_url']) {
+            $updateData['video_url'] = $validated['video_url'] ?? null;
+        }
+
+        if ($fieldChanges['maker_links']) {
+            $updateData['maker_links'] = $validated['maker_links'] ?? [];
+        }
+
+        if ($fieldChanges['sell_product']) {
+            $updateData['sell_product'] = $validated['sell_product'] ?? false;
+        }
+
+        if ($fieldChanges['asking_price']) {
+            $updateData['asking_price'] = $validated['asking_price'] ?? null;
+        }
+
+        if ($fieldChanges['pricing_page_url']) {
+            $updateData['pricing_page_url'] = $validated['pricing_page_url'] ?? null;
+        }
 
         $updateData['x_account'] = Product::normalizeXAccount($validated['x_account'] ?? null);
+        $fieldChanges['x_account'] = $updateData['x_account'] !== Product::normalizeXAccount($product->x_account);
+        if (!$fieldChanges['x_account']) {
+            unset($updateData['x_account']);
+        }
 
-        $newCategories = $validated['categories'] ?? [];
-        $newTechStacks = $validated['tech_stacks'] ?? [];
         $logoPath = null;
 
         // Handle logo upload
@@ -1082,19 +1151,45 @@ class ProductController extends Controller
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
-            $product->proposed_tagline = $updateData['tagline'];
-            $product->proposed_product_page_tagline = $updateData['product_page_tagline'];
-            $product->proposed_description = $this->ensureProperParagraphStructure($updateData['description']);
-            $product->proposed_video_url = $updateData['video_url'] ?? null;
-            $product->proposed_x_account = $updateData['x_account'] ?? null;
-            $product->proposed_sell_product = $updateData['sell_product'];
-            $product->proposed_asking_price = $updateData['asking_price'];
-            $product->proposed_maker_links = $updateData['maker_links'];
-            $product->proposed_pricing_page_url = $updateData['pricing_page_url'];
-            $product->proposedCategories()->sync($newCategories);
-            $product->proposedTechStacks()->sync($newTechStacks);
-            $this->syncPendingCustomSubmissions($product, $request);
-            $product->has_pending_edits = true;
+            if (array_key_exists('tagline', $updateData)) {
+                $product->proposed_tagline = $updateData['tagline'];
+            }
+            if (array_key_exists('product_page_tagline', $updateData)) {
+                $product->proposed_product_page_tagline = $updateData['product_page_tagline'];
+            }
+            if (array_key_exists('description', $updateData)) {
+                $product->proposed_description = $updateData['description'];
+            }
+            if (array_key_exists('video_url', $updateData)) {
+                $product->proposed_video_url = $updateData['video_url'];
+            }
+            if (array_key_exists('x_account', $updateData)) {
+                $product->proposed_x_account = $updateData['x_account'];
+            }
+            if (array_key_exists('sell_product', $updateData)) {
+                $product->proposed_sell_product = $updateData['sell_product'];
+            }
+            if (array_key_exists('asking_price', $updateData)) {
+                $product->proposed_asking_price = $updateData['asking_price'];
+            }
+            if (array_key_exists('maker_links', $updateData)) {
+                $product->proposed_maker_links = $updateData['maker_links'];
+            }
+            if (array_key_exists('pricing_page_url', $updateData)) {
+                $product->proposed_pricing_page_url = $updateData['pricing_page_url'];
+            }
+            if ($categoriesChanged) {
+                $product->proposedCategories()->sync($newCategories);
+            }
+            if ($techStacksChanged) {
+                $product->proposedTechStacks()->sync($newTechStacks);
+            }
+            if ($shouldSyncPendingCustomSubmissions) {
+                $this->syncPendingCustomSubmissions($product, $request);
+            }
+            if (!empty($updateData) || $categoriesChanged || $techStacksChanged || $logoPath || $request->boolean('remove_logo') || $request->hasFile('media') || $mediaUrl || $shouldSyncPendingCustomSubmissions) {
+                $product->has_pending_edits = true;
+            }
             $product->save();
 
             // Return JSON response for API calls
@@ -1150,10 +1245,18 @@ class ProductController extends Controller
             $product->has_pending_edits = false;
 
             // Update main product fields
-            $product->update($updateData);
-            $product->categories()->sync($newCategories);
-            $product->techStacks()->sync($newTechStacks);
-            $this->syncPendingCustomSubmissions($product, $request);
+            if (!empty($updateData)) {
+                $product->update($updateData);
+            }
+            if ($categoriesChanged) {
+                $product->categories()->sync($newCategories);
+            }
+            if ($techStacksChanged) {
+                $product->techStacks()->sync($newTechStacks);
+            }
+            if ($shouldSyncPendingCustomSubmissions) {
+                $this->syncPendingCustomSubmissions($product, $request);
+            }
 
             $mediaUrl = collect((array) $request->input('media_urls', []))
                 ->filter(fn ($url) => filled($url))
