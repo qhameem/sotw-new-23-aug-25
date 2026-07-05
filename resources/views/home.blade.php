@@ -4,10 +4,10 @@
     @section('title', $meta_title ?? $pageTitle ?? 'Software on the Web')
 @endif
 
-@section('meta_description', $metaDescription ?? $meta_description ?? '')
+@section('meta_description', request()->routeIs('home') ? 'Find new SaaS tools every week. Browse curated picks across AI, productivity, developer tools, and design software on Software on the Web.' : ($metaDescription ?? $meta_description ?? ''))
 
 @section('header-title')
-    <span class="site-heading-text text-base md:text-[1.35rem] font-bold text-gray-700">{{ $title ?? '' }}</span>
+    {{ $title ?? '' }}
 @endsection
 
 @section('before_header_title')
@@ -30,18 +30,25 @@
     @if (Route::currentRouteName() == 'home')
         <link rel="canonical" href="{{ url('/') }}" />
     @elseif (Route::currentRouteName() == 'products.byWeek')
-        <link rel="canonical" href="{{ route('products.byWeek', ['year' => $year, 'week' => $weekOfYear]) }}" />
+        <link rel="canonical" href="{{ route('home') }}" />
     @elseif (Route::currentRouteName() == 'products.byDate')
         <link rel="canonical" href="{{ url()->current() }}" />
     @elseif (Route::currentRouteName() == 'products.byMonth')
         <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byMonth', ['year' => request()->route('year'), 'month' => request()->route('month')]) }}" />
     @elseif (Route::currentRouteName() == 'products.byYear')
         <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byYear', ['year' => request()->route('year')]) }}" />
-    @elseif (Route::currentRouteName() == 'categories.show')
-        <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('categories.show', ['category' => $category->slug]) }}" />
+    @elseif (in_array(Route::currentRouteName(), ['categories.show', 'categories.show.page'], true))
+        <link rel="canonical" href="{{ $categoryCanonicalUrl ?? url()->current() }}" />
     @endif
 
-    @if (isset($regularProducts) && $regularProducts instanceof \Illuminate\Contracts\Pagination\Paginator)
+    @if (!empty($categoryPagination))
+        @if (!empty($categoryPagination['previous_url']))
+            <link rel="prev" href="{{ $categoryPagination['previous_url'] }}">
+        @endif
+        @if (!empty($categoryPagination['next_url']))
+            <link rel="next" href="{{ $categoryPagination['next_url'] }}">
+        @endif
+    @elseif (isset($regularProducts) && $regularProducts instanceof \Illuminate\Contracts\Pagination\Paginator)
         @if ($regularProducts->previousPageUrl())
             <link rel="prev" href="{{ $regularProducts->previousPageUrl() }}">
         @endif

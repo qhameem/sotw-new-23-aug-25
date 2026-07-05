@@ -1332,8 +1332,8 @@ class ProductController extends Controller
 
     public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
-        $currentPage = max(1, (int) $request->query('page', 1));
-        $perPage = 48;
+        $currentPage = max(1, (int) ($request->route('page') ?? $request->query('page', 1)));
+        $perPage = 50;
 
         // 1. Fetch Promoted Products (always shown, regardless of category filter for regular products)
         // Note: For category pages, you might decide if promoted products should *also* belong to the current category.
@@ -1373,8 +1373,7 @@ class ProductController extends Controller
         $regularProducts = $regularProductsQuery
             ->orderByRaw('(votes_count + impressions) DESC')
             ->orderBy('name', 'asc')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->paginate($perPage, ['*'], 'page', $currentPage);
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
@@ -1419,17 +1418,30 @@ class ProductController extends Controller
         ])->orderBy('name')->get();
 
         $currentYear = Carbon::now()->year;
-        $pageSuffix = $regularProducts->currentPage() > 1 ? ' - Page ' . $regularProducts->currentPage() : '';
-        $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear . $pageSuffix;
-        $meta_title = "Best " . strip_tags($category->name) . " Tools & Software (" . $currentYear . ")" . $pageSuffix . " | Software on the Web";
+        $lastPage = max(1, $regularProducts->lastPage());
+        $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear;
+        $meta_title = "{$category->name} Software, Page {$currentPage} of {$lastPage} | Software on the Web.";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
             $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
         }
-        $meta_description = $regularProducts->currentPage() > 1
-            ? trim($metaDescriptionBase . ' Page ' . $regularProducts->currentPage() . '.')
-            : $metaDescriptionBase;
+        $meta_description = trim($metaDescriptionBase . " Page {$currentPage} of {$lastPage}.");
+        $categoryCanonicalUrl = $currentPage > 1
+            ? route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage])
+            : route('categories.show', ['category' => $category->slug]);
+        $categoryPagination = [
+            'current_page' => $currentPage,
+            'last_page' => $lastPage,
+            'previous_url' => $currentPage > 1
+                ? ($currentPage === 2
+                    ? route('categories.show', ['category' => $category->slug])
+                    : route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage - 1]))
+                : null,
+            'next_url' => $currentPage < $lastPage
+                ? route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage + 1])
+                : null,
+        ];
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -1454,6 +1466,8 @@ class ProductController extends Controller
             'isCategoryPage',
             'meta_description',
             'meta_title',
+            'categoryCanonicalUrl',
+            'categoryPagination',
             'nextLaunchTime'
         ));
     }

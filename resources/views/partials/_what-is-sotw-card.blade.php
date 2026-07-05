@@ -36,6 +36,6 @@
     @endif
 
     <div class="mt-4 px-2">
-        <a href="{{ route('register') }}" class="rounded-lg bg-gray-900 px-4 py-1 text-sm font-semibold text-white">Sign up <span aria-hidden="true">&rarr;</span></a>
+        <a href="{{ route('signup') }}" class="rounded-lg bg-gray-900 px-4 py-1 text-sm font-semibold text-white">Sign up <span aria-hidden="true">&rarr;</span></a>
     </div>
 </div>

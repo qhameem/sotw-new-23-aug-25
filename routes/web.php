@@ -256,6 +256,9 @@ Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
 Route::get('/topics/{category:slug}', [TopicController::class, 'show'])->name('topics.category');
 // Categories page (alias for topics)
 Route::get('/categories', [TopicController::class, 'index'])->name('categories.index');
+Route::get('/category/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
+    ->whereNumber('page')
+    ->name('categories.show.page');
 Route::get('/category/{category:slug}', [ProductController::class, 'categoryProducts'])->name('categories.show');
 Route::get('/products/dates', [ProductController::class, 'getProductDates']);
 Route::get('/date/{date}', [ProductController::class, 'productsByDate'])->where('date', '\d{4}-\d{2}-\d{2}')->name('products.byDate');
@@ -337,7 +340,7 @@ Route::get('/{product_name}', function ($product_name) {
     // If no product is found, it might be a request for a non-existent page,
     // so we let Laravel handle it (which will likely result in a 404).
     abort(404);
-})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|software-review|premium-spot-details|changelog|free-todo-list-tool|tools|best|alternatives|built-with|compare|software)[^/]+$');
+})->where('product_name', '^(?!admin|api|auth|images|storage|css|js|articles|topics|category|date|weekly|monthly|yearly|my-products|add-product|subscribe|promote|fast-track|premium-spot|product-reviews|about|legal|faq|dashboard|profile|login|register|signup|password|email|logout|home|set-intended-url|thank-you|stripe|temporary-bulk-delete-test-no-name|check-product-url|test-notification|software-review|premium-spot-details|changelog|free-todo-list-tool|tools|best|alternatives|built-with|compare|software)[^/]+$');
 
 Route::post('/products/{product}/upvote', [ProductController::class, 'upvote'])->name('products.upvote');
 Route::get('/product/{product:slug}', [ProductController::class, 'showProductPage'])->name('products.show');

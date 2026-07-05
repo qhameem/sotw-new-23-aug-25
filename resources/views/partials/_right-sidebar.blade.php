@@ -2,14 +2,14 @@
     @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->routeIs('todolists.*'))
         <div x-show="!searchFocused">
-            @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'products.search']))
+            @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'categories.show.page', 'products.search']))
                 @include('partials._sidebar-ads')
 
                 <x-top-categories />
 
                 @guest
                     <div class="p-4">
-                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show')])
+                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show', 'categories.show.page')])
                     </div>
                 @endguest
             @elseif(request()->is('articles*'))

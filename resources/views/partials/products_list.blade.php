@@ -40,7 +40,7 @@
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
-            $isCategoryPage = request()->routeIs('categories.show');
+            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page');
             $showMomentumMeta = $isHomePage || $isWeeklyPage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
@@ -60,7 +60,7 @@
                 request()->routeIs('products.byDate') => 'date_list',
                 request()->routeIs('products.byMonth') => 'month_list',
                 request()->routeIs('products.byYear') => 'year_list',
-                request()->routeIs('categories.show') => 'category_list',
+                request()->routeIs('categories.show', 'categories.show.page') => 'category_list',
                 default => 'product_list',
             };
         @endphp
@@ -237,7 +237,25 @@
         @php $adDisplayed = true; @endphp
     @endif
 
-    @if ($regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator)
+    @if (!empty($categoryPagination))
+        <nav class="mt-6 flex items-center justify-between gap-4 border-t border-gray-100 pt-4" aria-label="Category pagination">
+            <div class="text-sm text-gray-500">
+                Page {{ $categoryPagination['current_page'] }} of {{ $categoryPagination['last_page'] }}
+            </div>
+            <div class="flex items-center gap-3">
+                @if(!empty($categoryPagination['previous_url']))
+                    <a href="{{ $categoryPagination['previous_url'] }}" rel="prev" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                        Previous
+                    </a>
+                @endif
+                @if(!empty($categoryPagination['next_url']))
+                    <a href="{{ $categoryPagination['next_url'] }}" rel="next" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                        Next
+                    </a>
+                @endif
+            </div>
+        </nav>
+    @elseif ($regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator)
         <div class="mt-4">
             {{ $regularProductsList->links() }}
         </div>

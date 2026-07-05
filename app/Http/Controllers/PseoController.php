@@ -219,7 +219,7 @@ class PseoController extends Controller
         $alternative->setAttribute('top_use_case_points', array_slice($editorial['top_use_cases'] ?? [], 0, 2));
         $alternative->setAttribute('editorial_take', $this->buildEditorialTake($source, $alternative, $editorial));
         $alternative->setAttribute('better_for_text', $this->buildBetterForText($editorial, $softwareCategories, $bestForCategories));
-        $alternative->setAttribute('watch_out_text', $this->buildWatchOutText($source, $sourceEditorial, $editorial));
+        $alternative->setAttribute('watch_out_text', $this->buildWatchOutText($source, $alternative, $sourceEditorial, $editorial));
         $alternative->setAttribute('decision_summary', $this->buildDecisionSummary(
             $source,
             $alternative,
@@ -312,7 +312,7 @@ class PseoController extends Controller
         return $softwareCategories[0] ?? null;
     }
 
-    private function buildWatchOutText(Product $source, array $sourceEditorial, array $editorial): ?string
+    private function buildWatchOutText(Product $source, Product $alternative, array $sourceEditorial, array $editorial): ?string
     {
         $limitation = $editorial['limitations'][0] ?? null;
 
@@ -323,7 +323,14 @@ class PseoController extends Controller
         $sourceStrength = $sourceEditorial['key_features'][0] ?? null;
 
         if ($sourceStrength) {
-            return "Compare it carefully against {$source->name} if {$sourceStrength} is the main reason you are considering staying put.";
+            $variants = [
+                "Compare {$alternative->name} against {$source->name} if {$sourceStrength} is the main reason you are hesitant to switch.",
+                "If {$sourceStrength} is the feature keeping you on {$source->name}, stack {$alternative->name} up against it before changing tools.",
+                "Readers who stay with {$source->name} because of {$sourceStrength} should test whether {$alternative->name} matches that strength closely enough.",
+                "Before moving from {$source->name} to {$alternative->name}, double-check how both tools handle {$sourceStrength}.",
+            ];
+
+            return $variants[abs(crc32((string) ($alternative->slug ?? $alternative->id))) % count($variants)];
         }
 
         return null;
