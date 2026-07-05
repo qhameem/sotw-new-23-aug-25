@@ -102,7 +102,7 @@
             </div>
         </div>
 
-        <div class="flex shrink-0 items-center gap-3 md:self-center">
+        <div class="flex w-full items-center gap-3 md:w-auto md:shrink-0 md:self-center">
             <div
                 x-data="{ saved: {{ $isSavedByCurrentUser ? 'true' : 'false' }} }"
                 @product-collections-synced.window="saved = $event.detail.isSaved"
@@ -134,7 +134,7 @@
                 </span>
             </div>
 
-            <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] flex-1 md:flex-none md:min-w-[140px]" />
+            <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] min-w-0 flex-1 md:w-auto md:flex-none md:min-w-[140px]" />
         </div>
     </div>
 </div>
