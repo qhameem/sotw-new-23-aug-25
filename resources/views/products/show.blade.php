@@ -155,12 +155,7 @@
         <div class="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm">
             <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
                 <h1 class="sr-only">{{ $product->name }}</h1>
-                <div class="md:hidden">
-                    @include('products.partials._header-mobile')
-                </div>
-                <div class="hidden md:block">
-                    @include('products.partials._header-desktop')
-                </div>
+                @include('products.partials._hero')
 
                 @if($quickFacts->isNotEmpty())
                     <div class="mt-8 py-2">

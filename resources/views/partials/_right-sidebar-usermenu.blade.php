@@ -12,7 +12,7 @@
             </div>
         @endif
         @guest
-            <a href="#" @click.prevent="$dispatch('open-modal', { name: 'login-required-modal' })" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
+            <a href="{{ route('login') }}" class="text-sm bg-gray-900 text-white py-1 px-4 rounded-lg font-semibold whitespace-nowrap">Log in <span aria-hidden="true">&rarr;</span></a>
         @else
             @if(!request()->routeIs('todolists.*'))
                 @auth

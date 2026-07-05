@@ -9,7 +9,7 @@
 
                 @guest
                     <div class="p-4">
-                        @include('partials._what-is-sotw-card')
+                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show')])
                     </div>
                 @endguest
             @elseif(request()->is('articles*'))

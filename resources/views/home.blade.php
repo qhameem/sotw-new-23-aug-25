@@ -19,6 +19,14 @@
 @endsection
 
 @section('canonical')
+    @php
+        $paginatedCanonicalUrl = null;
+
+        if (isset($regularProducts) && $regularProducts instanceof \Illuminate\Pagination\LengthAwarePaginator && $regularProducts->currentPage() > 1) {
+            $paginatedCanonicalUrl = $regularProducts->url($regularProducts->currentPage());
+        }
+    @endphp
+
     @if (Route::currentRouteName() == 'home')
         <link rel="canonical" href="{{ url('/') }}" />
     @elseif (Route::currentRouteName() == 'products.byWeek')
@@ -26,11 +34,11 @@
     @elseif (Route::currentRouteName() == 'products.byDate')
         <link rel="canonical" href="{{ url()->current() }}" />
     @elseif (Route::currentRouteName() == 'products.byMonth')
-        <link rel="canonical" href="{{ route('products.byMonth', ['year' => request()->route('year'), 'month' => request()->route('month')]) }}" />
+        <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byMonth', ['year' => request()->route('year'), 'month' => request()->route('month')]) }}" />
     @elseif (Route::currentRouteName() == 'products.byYear')
-        <link rel="canonical" href="{{ route('products.byYear', ['year' => request()->route('year')]) }}" />
+        <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byYear', ['year' => request()->route('year')]) }}" />
     @elseif (Route::currentRouteName() == 'categories.show')
-        <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
+        <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('categories.show', ['category' => $category->slug]) }}" />
     @endif
 
     @if (isset($regularProducts) && $regularProducts instanceof \Illuminate\Contracts\Pagination\Paginator)
@@ -55,8 +63,8 @@
 @endsection
 
 
-@if(isset($isFuture) && $isFuture)
-    @section('robots', 'noindex')
+@if((isset($isFuture) && $isFuture) || !empty($shouldNoindexArchive))
+    @section('robots', 'noindex, follow')
 @endif
 
 @section('content')

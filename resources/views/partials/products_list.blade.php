@@ -5,7 +5,9 @@
         $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
         $adDisplayed = false;
         $productCountForAd = count($finalProductList); // Count of products to display for ad logic
-        $organicRank = 0;
+        $regularProductsList = $regularProducts ?? collect();
+        $isPaginator = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator;
+        $organicRank = $isPaginator ? (($regularProductsList->currentPage() - 1) * $regularProductsList->perPage()) : 0;
     @endphp
 
     @if($productCountForAd > 0)
@@ -233,5 +235,11 @@
         {{-- Display ad after the last product if N was too large or not met by loop --}}
         @include('partials.render_ad_block', ['ad' => $belowProductListingAd, 'zoneSlug' => 'below-product-listing'])
         @php $adDisplayed = true; @endphp
+    @endif
+
+    @if ($regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator)
+        <div class="mt-4">
+            {{ $regularProductsList->links() }}
+        </div>
     @endif
 </div>

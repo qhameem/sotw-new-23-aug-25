@@ -1229,6 +1229,9 @@ class ProductController extends Controller
 
     public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
+        $currentPage = max(1, (int) $request->query('page', 1));
+        $perPage = 48;
+
         // 1. Fetch Promoted Products (always shown, regardless of category filter for regular products)
         // Note: For category pages, you might decide if promoted products should *also* belong to the current category.
         // The current requirement is "immunity to filters", so we fetch all promoted products.
@@ -1246,7 +1249,9 @@ class ProductController extends Controller
             ->promoted()
             ->orderBy('promoted_position', 'asc');
 
-        $promotedProducts = $promotedProductsQuery->get();
+        $promotedProducts = $currentPage === 1
+            ? $promotedProductsQuery->get()
+            : collect();
 
         // 2. Fetch Regular (non-promoted) Products for the current category
         $regularProductsQuery = $category->products()
@@ -1262,7 +1267,11 @@ class ProductController extends Controller
                 }
             ]);
 
-        $regularProducts = $regularProductsQuery->orderByRaw('(votes_count + impressions) DESC')->orderBy('name', 'asc')->get();
+        $regularProducts = $regularProductsQuery
+            ->orderByRaw('(votes_count + impressions) DESC')
+            ->orderBy('name', 'asc')
+            ->paginate($perPage)
+            ->withQueryString();
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
@@ -1307,10 +1316,17 @@ class ProductController extends Controller
         ])->orderBy('name')->get();
 
         $currentYear = Carbon::now()->year;
-        $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear;
-        $meta_title = "Best " . strip_tags($category->name) . " Tools & Software (" . $currentYear . ") | Software on the Web";
+        $pageSuffix = $regularProducts->currentPage() > 1 ? ' - Page ' . $regularProducts->currentPage() : '';
+        $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear . $pageSuffix;
+        $meta_title = "Best " . strip_tags($category->name) . " Tools & Software (" . $currentYear . ")" . $pageSuffix . " | Software on the Web";
         $isCategoryPage = true;
-        $meta_description = $category->meta_description ?: $category->description;
+        $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
+        if ($metaDescriptionBase === '') {
+            $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
+        }
+        $meta_description = $regularProducts->currentPage() > 1
+            ? trim($metaDescriptionBase . ' Page ' . $regularProducts->currentPage() . '.')
+            : $metaDescriptionBase;
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -1517,7 +1533,13 @@ class ProductController extends Controller
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
         $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
-        $metaDescription = $this->buildArchiveMetaDescription('week', $startOfWeek, $endOfWeek, $combinedProducts->count());
+        $meta_title = $isHomepage
+            ? 'Discover New SaaS Tools Every Week | ' . config('app.name', 'Software on the Web')
+            : $pageTitle;
+        $metaDescription = $isHomepage
+            ? 'Discover new SaaS tools and software launches every week. Browse curated products across AI, productivity, design, and developer tools on Software on the Web.'
+            : $this->buildArchiveMetaDescription('week', $startOfWeek, $endOfWeek, $combinedProducts->count());
+        $shouldNoindexArchive = !$isHomepage;
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1527,7 +1549,7 @@ class ProductController extends Controller
 
         $weekNavigationItems = $this->buildWeekNavigationItems($year, $week);
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'metaDescription'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'meta_title', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'metaDescription', 'shouldNoindexArchive'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
