@@ -2298,8 +2298,13 @@ class ProductController extends Controller
         $taglineText = $this->cleanSeoText($product->product_page_tagline ?: $product->tagline);
         $name = $this->cleanSeoText($product->name);
         $topic = $this->firstProductSeoTopic($primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $platformHint = $this->firstProductPlatformHint($product);
+        $pricingHint = $this->firstProductPricingHint($product);
+        $useCaseHint = $this->firstProductUseCaseHint($product);
 
-        $intro = $this->extractFirstSeoSentence($descriptionText, 110);
+        $intro = $taglineText !== ''
+            ? $this->buildSeoIntroFromTagline($name, $taglineText, 88)
+            : $this->extractFirstSeoSentence($descriptionText, 110);
 
         if ($intro === '' && $taglineText !== '') {
             $intro = preg_match('/^' . preg_quote($name, '/') . '\b/i', $taglineText)
@@ -2312,11 +2317,11 @@ class ProductController extends Controller
         }
 
         $intro = $this->ensureSentenceEnding($intro);
-        $secondary = $topic !== '' ? 'Best for ' . $topic . '.' : 'See features, pricing, and alternatives.';
+        $secondary = $this->buildProductMetaSecondary($topic, $useCaseHint, $platformHint, $pricingHint);
         $description = $intro;
 
         $shouldAppendSecondary = $secondary !== ''
-            && ($topic === '' || !Str::contains(Str::lower($intro), Str::lower($topic)));
+            && !$this->seoTextContainsAny($intro, array_filter([$topic, $useCaseHint, $platformHint, $pricingHint]));
 
         if ($shouldAppendSecondary) {
             $candidate = trim($intro . ' ' . $secondary);
@@ -2327,6 +2332,48 @@ class ProductController extends Controller
         }
 
         return $this->ensureSentenceEnding($this->trimSeoTextToLength($description, $maxLength));
+    }
+
+    protected function buildSeoIntroFromTagline(string $name, string $tagline, int $maxLength = 88): string
+    {
+        $tagline = $this->cleanSeoText($tagline);
+
+        if ($tagline === '') {
+            return '';
+        }
+
+        if ($name !== '' && !preg_match('/^' . preg_quote($name, '/') . '\b/i', $tagline)) {
+            $tagline = $name . ': ' . $tagline;
+        }
+
+        return $this->trimSeoTextToLength($tagline, $maxLength);
+    }
+
+    protected function buildProductMetaSecondary(string $topic, string $useCaseHint, string $platformHint, string $pricingHint): string
+    {
+        $parts = [];
+
+        if ($useCaseHint !== '') {
+            $parts[] = 'For ' . $useCaseHint;
+        }
+
+        if ($platformHint !== '') {
+            $parts[] = 'Works on ' . $platformHint;
+        }
+
+        if ($pricingHint !== '') {
+            $parts[] = $pricingHint;
+        } elseif ($topic !== '') {
+            $parts[] = 'Best for ' . $topic;
+        }
+
+        $parts = array_values(array_unique(array_filter(array_map(fn (string $part) => $this->cleanSeoText($part), $parts))));
+
+        if ($parts === []) {
+            return 'See features, pricing, and alternatives.';
+        }
+
+        return $this->ensureSentenceEnding(implode('. ', $parts));
     }
 
     protected function firstProductSeoTopic(
@@ -2340,6 +2387,55 @@ class ProductController extends Controller
             ?: '';
 
         return $this->cleanSeoText($topic);
+    }
+
+    protected function firstProductPlatformHint(Product $product): string
+    {
+        return $this->cleanSeoText($this->categoryNamesForTypes(
+            $product,
+            CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM)
+        )[0] ?? '');
+    }
+
+    protected function firstProductUseCaseHint(Product $product): string
+    {
+        return $this->cleanSeoText($this->categoryNamesForTypes(
+            $product,
+            CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE)
+        )[0] ?? '');
+    }
+
+    protected function firstProductPricingHint(Product $product): string
+    {
+        $pricing = $this->cleanSeoText($this->categoryNamesForTypes(
+            $product,
+            CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING)
+        )[0] ?? '');
+
+        if ($pricing === '') {
+            return '';
+        }
+
+        return match (Str::lower($pricing)) {
+            'free' => 'Free to use',
+            'freemium' => 'Freemium pricing',
+            default => $pricing . ' pricing',
+        };
+    }
+
+    protected function seoTextContainsAny(string $text, array $needles): bool
+    {
+        $haystack = Str::lower($this->cleanSeoText($text));
+
+        foreach ($needles as $needle) {
+            $normalizedNeedle = Str::lower($this->cleanSeoText((string) $needle));
+
+            if ($normalizedNeedle !== '' && Str::contains($haystack, $normalizedNeedle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function cleanSeoText(?string $text): string

@@ -109,6 +109,8 @@ HUMAN WRITING RULES:
 - Avoid unsupported superlatives like "best", "#1", "leading", "most popular", or "world-class" unless the source explicitly supports them and they are central to understanding the product.
 - Prefer specific, checkable details such as supported platforms, file types, integrations, workflows, pricing hooks, or audience fit when the source provides them.
 - If the source is vague, rewrite it into plain, concrete language or leave it out.
+- Do not make future-looking claims, roadmap statements, or expansion guesses unless the source clearly says them.
+- Do not pad audience or use-case lists with vague filler such as "business users", "professionals", or "individuals" unless the source actually supports those labels.
 - Every section should include product-specific information that would sound wrong if pasted onto another tool.
 - If a section has limited source support, keep it brief but still useful.
 
@@ -122,11 +124,13 @@ AEO / STRUCTURE RULES:
 - Front-load the most concrete nouns and verbs. If the source supports them, mention the object, platform, file type, workflow, or audience in the first two paragraphs.
 - Keep each bullet concise, concrete, and focused on user value.
 - Write bullets so each one can stand on its own as a quotable fact.
+- Do not pad sections to hit an arbitrary bullet count. If the source only strongly supports 2 items, return 2 strong items instead of 3 weak ones.
 - Use question-based headings so the description reads more like direct answers than a generic editorial page.
 - Favor narrow, user-phrased questions in the FAQ, especially about platform support, setup, pricing, workflows, limitations, inputs/outputs, and who the product is best for.
 - Write grounded FAQ questions and answers instead of generic filler.
 - If limitations are unclear even after reviewing the full context, do not mention them.
 - Never write placeholder copy about missing, unavailable, or unclear limitations.
+- In the alternatives section, mention named competitors only if the source or context clearly supports them. Otherwise compare the product to the real baseline implied by the source, such as manual work, local tools, cloud-based tools, or native platform features.
 
 HTML STRUCTURE TO FOLLOW EXACTLY:
 <p><strong>[Write a 40-70 word opening paragraph that clearly explains what {$productName} is, who it helps, and why someone would choose it.]</strong></p>
