@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\LastSignInMethod;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,10 @@ class GoogleLoginController extends Controller
             if ($user) {
                 Auth::login($user, true);
 
-                return redirect()->intended('/')->with('auth_sync_event', 'signed-in');
+                return LastSignInMethod::remember(
+                    redirect()->intended('/')->with('auth_sync_event', 'signed-in'),
+                    LastSignInMethod::GOOGLE
+                );
             }
 
             // User not found by google_id, try to find by email
@@ -68,7 +72,10 @@ class GoogleLoginController extends Controller
 
             Auth::login($user, true);
 
-            return redirect()->intended('/')->with('auth_sync_event', 'signed-in');
+            return LastSignInMethod::remember(
+                redirect()->intended('/')->with('auth_sync_event', 'signed-in'),
+                LastSignInMethod::GOOGLE
+            );
         } catch (Exception $e) {
             return redirect()->route('login')->withErrors(['email' => 'Unable to login using Google. Please try again.']);
         }

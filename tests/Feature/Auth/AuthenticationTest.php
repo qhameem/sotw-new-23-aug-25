@@ -4,6 +4,7 @@ use App\Models\AuthMagicLink;
 use App\Models\Ad;
 use App\Models\User;
 use App\Notifications\EmailOtpNotification;
+use App\Support\LastSignInMethod;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -40,6 +41,7 @@ test('existing users can request an email otp and sign in', function () {
     $this->assertAuthenticatedAs($user->fresh());
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     $response->assertRedirect('/dashboard');
+    $response->assertCookie(LastSignInMethod::COOKIE, LastSignInMethod::EMAIL);
 });
 
 test('ad impression requests do not overwrite the intended url in session', function () {
@@ -75,7 +77,7 @@ test('google login callback redirects authenticated users to their intended url'
     $user = User::factory()->unverified()->create();
 
     $googleUser = \Mockery::mock();
-    $googleUser->shouldReceive('getId')->once()->andReturn('google-user-123');
+    $googleUser->shouldReceive('getId')->twice()->andReturn('google-user-123');
     $googleUser->shouldReceive('getEmail')->once()->andReturn($user->email);
     $googleUser->shouldReceive('getAvatar')->once()->andReturn('https://example.com/avatar.jpg');
 
@@ -95,7 +97,19 @@ test('google login callback redirects authenticated users to their intended url'
     expect($user->fresh()->google_avatar)->toBe('https://example.com/avatar.jpg');
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     $response->assertRedirect('/dashboard');
+    $response->assertCookie(LastSignInMethod::COOKIE, LastSignInMethod::GOOGLE);
 });
+
+test('login screen marks the last successful sign in method', function (string $method, string $expectedButton) {
+    $this->withCookie(LastSignInMethod::COOKIE, $method)
+        ->get('/login')
+        ->assertOk()
+        ->assertSee($expectedButton)
+        ->assertSee('Last used');
+})->with([
+    'google' => [LastSignInMethod::GOOGLE, 'Continue with Google'],
+    'email' => [LastSignInMethod::EMAIL, 'Continue with email'],
+]);
 
 test('users can logout after email otp authentication', function () {
     $user = User::factory()->create();

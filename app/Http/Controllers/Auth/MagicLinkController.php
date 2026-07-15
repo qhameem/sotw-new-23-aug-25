@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuthMagicLink;
 use App\Models\User;
 use App\Notifications\EmailOtpNotification;
+use App\Support\LastSignInMethod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -219,14 +220,20 @@ class MagicLinkController extends Controller
                 $magicLink->redirect_to ?: route('home')
             );
 
-            return redirect()
-                ->route('auth.complete-profile.show')
-                ->with('auth_sync_event', 'signed-in');
+            return LastSignInMethod::remember(
+                redirect()
+                    ->route('auth.complete-profile.show')
+                    ->with('auth_sync_event', 'signed-in'),
+                LastSignInMethod::EMAIL
+            );
         }
 
-        return redirect()
-            ->to($magicLink->redirect_to ?: route('home'))
-            ->with('auth_sync_event', 'signed-in');
+        return LastSignInMethod::remember(
+            redirect()
+                ->to($magicLink->redirect_to ?: route('home'))
+                ->with('auth_sync_event', 'signed-in'),
+            LastSignInMethod::EMAIL
+        );
     }
 
     private function ensureNotRateLimited(string $throttleKey, int $maxAttempts, string $field): void
