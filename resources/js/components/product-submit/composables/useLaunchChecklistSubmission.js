@@ -51,14 +51,14 @@ export function useLaunchChecklistSubmission(props, emit) {
       if (value) {
         badgeVerificationSuccess.value = true;
         if (!badgeVerificationMessage.value) {
-          badgeVerificationMessage.value = 'Badge verified. Choose your launch week.';
+          badgeVerificationMessage.value = 'Badge verified. Choose your launch date.';
         }
         return;
       }
 
       if (badgeVerificationSuccess.value) {
         badgeVerificationSuccess.value = false;
-        badgeVerificationMessage.value = 'Badge URL changed. Verify again to unlock week selection.';
+        badgeVerificationMessage.value = 'Badge URL changed. Verify again to unlock date selection.';
       }
     }
   );
@@ -86,7 +86,7 @@ export function useLaunchChecklistSubmission(props, emit) {
     'Standard visibility',
     'Up to 365 days scheduling',
     {
-      textBefore: 'Display our badge, skip the wait.',
+      textBefore: 'Display our badge to launch free.',
       linkText: '',
       action: 'badge-modal',
     },
@@ -172,36 +172,27 @@ export function useLaunchChecklistSubmission(props, emit) {
     availabilityLabel,
   });
 
-  const formatWeekLabel = (start, end) => {
-    const startMonthLabel = start.toLocaleDateString('en-US', { month: 'short' });
-    const endMonthLabel = end.toLocaleDateString('en-US', { month: 'short' });
-
-    if (startMonthLabel === endMonthLabel) {
-      return `${startMonthLabel} ${start.getDate()} - ${end.getDate()}, ${end.getFullYear()}`;
-    }
-
-    return `${startMonthLabel} ${start.getDate()} - ${endMonthLabel} ${end.getDate()}, ${end.getFullYear()}`;
-  };
-
   const launchWeekOptions = computed(() => {
-    const weeks = [];
+    const dates = [];
     const nextMonday = getNextMonday(new Date());
-    nextMonday.setHours(0, 0, 0, 0);
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 365);
+    maxDate.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 12; i += 1) {
-      const start = new Date(nextMonday);
-      start.setDate(nextMonday.getDate() + (i * 7));
-
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-
-      weeks.push({
-        value: formatLocalDateValue(start),
-        label: formatWeekLabel(start, end),
+    for (let current = new Date(nextMonday); current <= maxDate; current.setDate(current.getDate() + 1)) {
+      const launchDate = new Date(current);
+      dates.push({
+        value: formatLocalDateValue(launchDate),
+        label: launchDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        }),
       });
     }
 
-    return weeks;
+    return dates;
   });
 
   const paidScheduleOptions = computed(() => {
@@ -402,7 +393,7 @@ export function useLaunchChecklistSubmission(props, emit) {
 
   const badgeActionLabel = computed(() => {
     if (!wantsBadgeLaunch.value) {
-      return 'Click here to set up badge to launch faster';
+      return 'Set up the required badge';
     }
 
     if (props.modelValue.badge_verified) {
@@ -525,7 +516,7 @@ export function useLaunchChecklistSubmission(props, emit) {
       });
 
       badgeVerificationSuccess.value = true;
-      badgeVerificationMessage.value = response.data?.message || 'Badge verified. Choose your launch week.';
+      badgeVerificationMessage.value = response.data?.message || 'Badge verified. Choose your launch date.';
 
       emit('update:modelValue', {
         ...props.modelValue,
@@ -597,20 +588,9 @@ export function useLaunchChecklistSubmission(props, emit) {
 
   const selectFreeSubmission = () => {
     selectedSubmissionCard.value = 'free';
-    const nextAvailableFreeDate = isFreeScheduleDateAvailable(props.modelValue.free_schedule_date)
-      ? props.modelValue.free_schedule_date
-      : freeScheduleMinDate.value;
-
-    emit('update:modelValue', {
-      ...props.modelValue,
-      submissionOption: wantsBadgeLaunch.value && props.modelValue.badge_verified ? 'badge' : 'free',
-      submission_type: wantsBadgeLaunch.value && props.modelValue.badge_verified ? 'badge' : 'free',
-      free_schedule_date: nextAvailableFreeDate,
-      tech_stack_custom: props.modelValue.tech_stack_custom,
-    });
-
     closePaidScheduleDropdown();
     closeFreeScheduleDropdown();
+    openBadgeModal();
   };
 
   const handleFreeScheduleDateInput = (value) => {
@@ -696,14 +676,14 @@ export function useLaunchChecklistSubmission(props, emit) {
   const handleFreeCardSubmission = () => {
     activeSubmissionCard.value = 'free';
 
-    if (wantsBadgeLaunch.value && !props.modelValue.badge_verified) {
+    if (!props.modelValue.badge_verified) {
       openBadgeModal();
       emit('focus-field', 'badge_verified');
       activeSubmissionCard.value = null;
       return;
     }
 
-    if (wantsBadgeLaunch.value && !props.modelValue.badge_week_start) {
+    if (!props.modelValue.badge_week_start) {
       openBadgeModal();
       emit('focus-field', 'badge_week_start');
       activeSubmissionCard.value = null;

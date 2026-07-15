@@ -92,7 +92,7 @@
               <div class="space-y-1">
                 <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <p class="text-sm font-medium text-gray-900"><span class="text-primary-700">[Free]</span> Choose the launch date</p>
-                  <p class="text-[11px] text-gray-500">{{ freeLaunchQueueHelperText }}</p>
+                  <p class="text-[11px] text-gray-500">Badge required. Choose any date from next Monday.</p>
                   <button
                     type="button"
                     class="text-[11px] font-medium text-primary-700 underline underline-offset-4 transition hover:text-primary-800"
@@ -130,25 +130,14 @@
               </p>
             </div>
 
-            <LaunchChecklistSchedulePicker
-              dropdown-id="free-schedule-date"
-              :dropdown-ref="freeScheduleDropdownRef"
-              :selected-value="selectedFreeScheduleDate"
-              :selected-option="selectedFreeScheduleOption"
-              :options="freeScheduleOptions"
-              :is-open="isFreeScheduleDropdownOpen"
-              :scheduled-date-label="freeScheduleMessageDateLabel"
-              :publish-time-label="publishTimeLabel"
-              :action-label="freeButtonLabel"
-              :action-state="freeButtonState"
-              :action-disabled="cardButtonDisabled"
-              variant="free"
-              @toggle="$emit('toggle-free-schedule-dropdown')"
-              @open="$emit('open-free-schedule-dropdown')"
-              @close="$emit('close-free-schedule-dropdown')"
-              @select="$emit('select-free-schedule-option', $event)"
-              @submit="$emit('submit-free-card')"
-            />
+            <button
+              type="button"
+              :disabled="cardButtonDisabled"
+              class="inline-flex min-h-11 items-center justify-center self-start rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+              @click="$emit('submit-free-card')"
+            >
+              {{ modelValue.badge_verified && modelValue.badge_week_start ? freeButtonLabel : 'Set up badge to launch free' }}
+            </button>
           </div>
         </div>
 
@@ -162,7 +151,7 @@
             Fill all required fields before submitting.
           </div>
           <div v-else-if="selectedSubmissionCard === 'free' && wantsBadgeLaunch && (!modelValue.badge_verified || !modelValue.badge_week_start)" class="text-sm font-medium text-amber-600">
-            Finish badge setup to skip the queue.
+            Finish badge setup to unlock the free launch.
           </div>
         </div>
       </div>

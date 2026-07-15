@@ -237,8 +237,6 @@ class ProductController extends Controller
 
     public function verifyBadgePlacement(Request $request)
     {
-        $allowedSubmissionTypes = $isAdmin ? ['free', 'badge', 'paid'] : ['free', 'badge'];
-
         $validated = $request->validate([
             'url' => 'required|url|max:2048',
         ]);
@@ -297,7 +295,7 @@ class ProductController extends Controller
             return back()->with('status', $message);
         }
 
-        $allowedSubmissionTypes = $isAdmin ? ['free', 'badge', 'paid'] : ['free', 'badge'];
+        $allowedSubmissionTypes = $isAdmin ? ['free', 'badge', 'paid'] : ['badge'];
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -416,11 +414,11 @@ class ProductController extends Controller
         };
 
         // Handle submission type: 'badge' submissions get instant approval
-        $submissionType = $request->input('submission_type', 'free');
+        $submissionType = $request->input('submission_type', $isAdmin ? 'free' : 'badge');
         if ($isAdmin && !in_array($submissionType, ['free', 'badge'], true)) {
             $submissionType = 'free';
         }
-        $validated['submission_type'] = in_array($submissionType, ['free', 'badge']) ? $submissionType : 'free';
+        $validated['submission_type'] = in_array($submissionType, ['free', 'badge'], true) ? $submissionType : 'badge';
 
         if ($submissionType === 'badge') {
             $badgePlacementUrl = $validated['badge_placement_url'] ?? $validated['link'];
@@ -431,7 +429,7 @@ class ProductController extends Controller
             }
 
             if (empty($selectedWeekStart)) {
-                return $submissionError('badge_week_start', 'Choose a launch week after badge verification.');
+                return $submissionError('badge_week_start', 'Choose a launch date after badge verification.');
             }
 
             try {

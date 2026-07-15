@@ -9,7 +9,7 @@
         <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-4 sm:px-6">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-500">Free listing</p>
-            <h2 class="mt-1 text-xl font-semibold text-gray-900">Add our badge to skip the queue</h2>
+            <h2 class="mt-1 text-xl font-semibold text-gray-900">Add our badge to launch for free</h2>
             <p class="mt-1 text-sm text-gray-500">Copy the badge, place it on your site, then verify the page.</p>
           </div>
           <button
@@ -44,7 +44,7 @@
                     </span>
                     <div>
                       <p class="text-sm font-semibold text-gray-900">{{ modelValue.badge_verified ? 'Badge verified' : '3 quick steps' }}</p>
-                      <p class="text-xs text-gray-600 sm:text-sm">{{ modelValue.badge_verified ? 'Your listing can move into the badge queue.' : 'Your free listing stays the same, but moves ahead in the queue.' }}</p>
+                      <p class="text-xs text-gray-600 sm:text-sm">{{ modelValue.badge_verified ? 'Your free launch is unlocked.' : 'The badge is required to unlock a free launch.' }}</p>
                     </div>
                   </div>
                 </div>
@@ -71,8 +71,8 @@
                 </div>
                 <div class="rounded-xl border border-white/70 bg-white/80 p-3">
                   <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Step 3</p>
-                  <p class="mt-1 text-xs font-medium text-gray-900 sm:text-sm">Verify and pick a week.</p>
-                  <p class="mt-1 text-[11px] leading-[1.3] text-gray-500 sm:text-xs">We will use that week for your launch.</p>
+                  <p class="mt-1 text-xs font-medium text-gray-900 sm:text-sm">Verify and pick a date.</p>
+                  <p class="mt-1 text-[11px] leading-[1.3] text-gray-500 sm:text-xs">Choose any date starting from next Monday.</p>
                 </div>
               </div>
             </div>
@@ -184,8 +184,8 @@
             <div id="field-badge-week-start" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
               <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <label for="badge-week-start" class="block text-sm font-semibold text-gray-900">Launch week</label>
-                  <p class="mt-1 text-sm text-gray-500">Pick the week you want us to use.</p>
+                  <label for="badge-week-start" class="block text-sm font-semibold text-gray-900">Launch date</label>
+                  <p class="mt-1 text-sm text-gray-500">Choose any available date starting from next Monday.</p>
                 </div>
                 <p
                   v-if="validationErrors.badge_week_start"
@@ -202,7 +202,7 @@
                 class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                 @change="emit('update-badge-week-start', $event.target.value)"
               >
-                <option value="">Select a week</option>
+                <option value="">Select a date</option>
                 <option v-for="week in launchWeekOptions" :key="week.value" :value="week.value">
                   {{ week.label }}
                 </option>

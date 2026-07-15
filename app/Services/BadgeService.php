@@ -85,16 +85,16 @@ class BadgeService
         return Carbon::now('UTC')->next(Carbon::MONDAY)->setTime(7, 0, 0);
     }
 
-    public function resolveBadgeLaunchDate(string $weekStart): Carbon
+    public function resolveBadgeLaunchDate(string $launchDateValue): Carbon
     {
-        $launchDate = Carbon::createFromFormat('Y-m-d', $weekStart, 'UTC')->setTime(7, 0, 0);
-
-        if (!$launchDate->isMonday()) {
-            throw new \InvalidArgumentException('Launch week must start on a Monday.');
-        }
+        $launchDate = Carbon::createFromFormat('Y-m-d', $launchDateValue, 'UTC')->setTime(7, 0, 0);
 
         if ($launchDate->lt($this->getEarliestBadgeLaunchDate())) {
-            throw new \InvalidArgumentException('Please choose a week starting from next Monday.');
+            throw new \InvalidArgumentException('Please choose a launch date starting from next Monday.');
+        }
+
+        if ($launchDate->gt(Carbon::now('UTC')->addDays(365)->endOfDay())) {
+            throw new \InvalidArgumentException('Please choose a launch date within the next 365 days.');
         }
 
         return $launchDate;
@@ -146,7 +146,7 @@ class BadgeService
             if ($this->linkContainsExpectedBadgeImage($link, $allowedBadgePaths)) {
                 return [
                     'verified' => true,
-                    'message' => 'Badge verified. You can now choose your launch week.',
+                    'message' => 'Badge verified. You can now choose your launch date.',
                 ];
             }
         }

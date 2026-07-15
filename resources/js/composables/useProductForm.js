@@ -498,7 +498,7 @@ export function useProductForm() {
         if (!form.badge_opt_in || !form.badge_verified) {
           return '';
         }
-        return String(form.badge_week_start || '').trim() ? '' : 'Choose your launch week after verification';
+        return String(form.badge_week_start || '').trim() ? '' : 'Choose your launch date after verification';
       case 'paid_schedule_date':
         if (form.submission_type !== 'paid') {
           return '';
