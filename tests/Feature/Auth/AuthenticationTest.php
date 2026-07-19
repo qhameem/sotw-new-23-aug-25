@@ -111,6 +111,13 @@ test('login screen marks the last successful sign in method', function (string $
     'email' => [LastSignInMethod::EMAIL, 'Continue with email'],
 ]);
 
+test('email login button reveals the email form without a parent helper', function () {
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('showEmail = true; $nextTick(() => $refs.emailInput?.focus())', false)
+        ->assertDontSee('openEmailLogin()', false);
+});
+
 test('users can logout after email otp authentication', function () {
     $user = User::factory()->create();
 

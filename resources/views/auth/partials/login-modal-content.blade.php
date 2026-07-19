@@ -6,19 +6,7 @@
         emailSubmitting: false,
         otpSubmitting: false,
         otpSent: {{ session('status') === 'otp-sent' || $errors->has('otp') ? 'true' : 'false' }},
-        otpEmail: @js(old('email', session('auth_email'))),
-        openEmailLogin() {
-            if (this.showEmail) {
-                this.$nextTick(() => this.$refs.emailInput?.focus());
-                return;
-            }
-
-            this.showEmail = true;
-
-            this.$nextTick(() => {
-                this.$refs.emailInput?.focus();
-            });
-        }
+        otpEmail: @js(old('email', session('auth_email')))
     }"
     x-init="intendedUrl = window.location.href"
     class="px-8 py-5 sm:px-10 sm:py-6"

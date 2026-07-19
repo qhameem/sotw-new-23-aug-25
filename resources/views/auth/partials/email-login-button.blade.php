@@ -1,6 +1,6 @@
 <button
     type="button"
-    @click="openEmailLogin()"
+    @click="showEmail = true; $nextTick(() => $refs.emailInput?.focus())"
     class="relative flex items-center justify-center w-full px-4 py-3 border border-gray-300 rounded-lg text-sm font-semibold tracking-wide text-gray-800 bg-white shadow-sm transition-colors hover:bg-gray-100"
 >
     @if(request()->cookie(\App\Support\LastSignInMethod::COOKIE) === \App\Support\LastSignInMethod::EMAIL)
