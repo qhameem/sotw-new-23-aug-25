@@ -50,8 +50,24 @@
                 </p>
             </div>
 
-            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="w-full lg:max-w-xs">
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
+            <div class="flex w-full flex-col gap-3 sm:flex-row lg:max-w-lg lg:justify-end">
+                <div class="flex shrink-0 rounded-xl border border-slate-200 bg-white p-1 shadow-sm shadow-slate-200/30" aria-label="Sort history">
+                    <a
+                        href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'latest'])) }}"
+                        class="inline-flex h-9 items-center rounded-lg px-3 text-xs font-medium transition {{ $sort === 'latest' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                    >Latest</a>
+                    <a
+                        href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'score'])) }}"
+                        class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition {{ $sort === 'score' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                    >
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.75 4a.75.75 0 0 1 .75.75v8.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06L3 13.44V4.75A.75.75 0 0 1 3.75 4ZM11 5.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" /></svg>
+                        Highest score
+                    </a>
+                </div>
+
+                <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="min-w-0 flex-1">
+                    <input type="hidden" name="per_page" value="{{ $perPage }}">
+                    <input type="hidden" name="sort" value="{{ $sort }}">
                 <label for="q" class="sr-only">Search domains</label>
                 <div class="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm shadow-slate-200/30">
                     <svg class="mr-2 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -59,7 +75,8 @@
                     </svg>
                     <input id="q" name="q" type="text" value="{{ $query }}" placeholder="Search domains..." class="h-full w-full border-0 bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0">
                 </div>
-            </form>
+                </form>
+            </div>
         </section>
 
         @unless($toolTablesReady ?? false)
@@ -181,6 +198,7 @@
                             </div>
 
                             <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="sort" value="{{ $sort }}">
                                 @if($query !== '')
                                     <input type="hidden" name="q" value="{{ $query }}">
                                 @endif
@@ -198,6 +216,7 @@
                             </form>
 
                             <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-2">
+                                <input type="hidden" name="sort" value="{{ $sort }}">
                                 @if($query !== '')
                                     <input type="hidden" name="q" value="{{ $query }}">
                                 @endif

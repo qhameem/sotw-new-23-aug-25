@@ -300,6 +300,46 @@ class LaunchReadinessToolTest extends TestCase
         $response->assertSee('92');
     }
 
+    public function test_launch_readiness_history_can_sort_by_highest_score_then_latest_scan(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+
+        foreach ([
+            ['token' => 'lower-score', 'url' => 'https://lower.test', 'score' => 70, 'scanned_at' => now()],
+            ['token' => 'older-high-score', 'url' => 'https://older.test', 'score' => 95, 'scanned_at' => now()->subHour()],
+            ['token' => 'newer-high-score', 'url' => 'https://newer.test', 'score' => 95, 'scanned_at' => now()->subMinute()],
+        ] as $scan) {
+            ToolScan::query()->create([
+                'tool_key' => ToolSettings::LAUNCH_READINESS_KEY,
+                'result_token' => $scan['token'],
+                'submitted_url' => $scan['url'],
+                'normalized_url' => $scan['url'],
+                'final_url' => $scan['url'],
+                'final_host' => parse_url($scan['url'], PHP_URL_HOST),
+                'launch_score' => $scan['score'],
+                'seo_score' => $scan['score'],
+                'ai_score' => $scan['score'],
+                'trust_score' => $scan['score'],
+                'passed_checks' => 1,
+                'warning_checks' => 0,
+                'failed_checks' => 0,
+                'status_label' => 'Test score',
+                'save_to_history' => true,
+                'audit_payload' => [],
+                'scanned_at' => $scan['scanned_at'],
+            ]);
+        }
+
+        $response = $this->get(route('launch-readiness.history', ['toolSlug' => $slug, 'sort' => 'score']));
+
+        $response->assertOk();
+        $response->assertSee('Highest score');
+        $this->assertSame(
+            ['newer-high-score', 'older-high-score', 'lower-score'],
+            collect($response->viewData('history')->items())->pluck('result_token')->all(),
+        );
+    }
+
     public function test_authenticated_tool_user_can_view_dashboard(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);

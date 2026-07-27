@@ -141,6 +141,7 @@ class LaunchReadinessController extends Controller
     public function history(Request $request): View
     {
         $query = trim((string) $request->query('q'));
+        $sort = $request->query('sort') === 'score' ? 'score' : 'latest';
         $perPage = (int) $request->query('per_page', 10);
         $allowedPerPage = [10, 20, 30, 50];
 
@@ -149,7 +150,7 @@ class LaunchReadinessController extends Controller
         }
 
         $history = $this->toolTablesReady()
-            ? $this->latestHistoryQuery($query)
+            ? $this->latestHistoryQuery($query, $sort)
                 ->paginate($perPage)
                 ->withQueryString()
             : new LengthAwarePaginator(
@@ -166,6 +167,7 @@ class LaunchReadinessController extends Controller
         return view('tools.launch-readiness.history', $this->pageData->merge([
             'history' => $history,
             'query' => $query,
+            'sort' => $sort,
             'perPage' => $perPage,
             'allowedPerPage' => $allowedPerPage,
             'toolTablesReady' => $this->toolTablesReady(),
@@ -209,7 +211,7 @@ class LaunchReadinessController extends Controller
             ->get();
     }
 
-    private function latestHistoryQuery(string $query)
+    private function latestHistoryQuery(string $query, string $sort = 'latest')
     {
         $latestScanIds = ToolScan::query()
             ->selectRaw('MAX(id) as id')
@@ -224,8 +226,13 @@ class LaunchReadinessController extends Controller
             })
             ->groupBy(DB::raw('LOWER(normalized_url)'));
 
-        return ToolScan::query()
-            ->whereIn('id', $latestScanIds)
+        $history = ToolScan::query()->whereIn('id', $latestScanIds);
+
+        if ($sort === 'score') {
+            $history->orderByDesc('launch_score');
+        }
+
+        return $history
             ->latest('scanned_at')
             ->latest('id');
     }
