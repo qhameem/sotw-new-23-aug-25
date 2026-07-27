@@ -102,6 +102,12 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertSame('Favicon found and reachable: favicon.ico (HTTP 200).', $faviconCheck['summary'] ?? null);
         $this->assertSame('https://example.com/favicon.ico', $faviconCheck['meta']['preview_url'] ?? null);
         $this->assertSame('https://example.com/og.png', $openGraphImageCheck['meta']['preview_url'] ?? null);
+
+        $resultResponse = $this->get(route('launch-readiness.results.show', ['toolSlug' => $slug, 'toolScan' => $scan]));
+        $resultResponse->assertOk();
+        $resultResponse->assertSee('Generate fix prompt');
+        $resultResponse->assertSee('Fix issues with an LLM');
+        $resultResponse->assertSee('Act as a senior web engineer specializing in technical SEO', false);
     }
 
     public function test_launch_readiness_meta_description_check_warns_when_description_is_too_short(): void

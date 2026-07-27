@@ -320,6 +320,9 @@ function registerAlpineComponents(Alpine) {
         shareWarningChecks: 0,
         shareFailedChecks: 0,
         shareLinkCopied: false,
+        fixPromptModalOpen: false,
+        fixPrompt: '',
+        fixPromptCopied: false,
         previousBodyOverflow: '',
         previousBodyPaddingRight: '',
 
@@ -350,6 +353,7 @@ function registerAlpineComponents(Alpine) {
 
                 if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
                     this.$refs.reportContainer.innerHTML = payload.report_html;
+                    Alpine.initTree(this.$refs.reportContainer);
                 }
 
                 if (typeof payload.notice_message === 'string') {
@@ -387,6 +391,31 @@ function registerAlpineComponents(Alpine) {
         closeShareModal() {
             this.shareModalOpen = false;
             this.unlockShareScroll();
+        },
+
+        openFixPrompt(prompt) {
+            this.fixPrompt = String(prompt ?? '');
+            this.fixPromptCopied = false;
+            this.fixPromptModalOpen = true;
+            this.$nextTick(() => this.$refs.fixPromptTextarea?.focus());
+        },
+
+        closeFixPrompt() {
+            this.fixPromptModalOpen = false;
+        },
+
+        async copyFixPrompt() {
+            if (!this.fixPrompt) return;
+
+            try {
+                await navigator.clipboard.writeText(this.fixPrompt);
+            } catch (error) {
+                this.$refs.fixPromptTextarea?.select();
+                document.execCommand('copy');
+            }
+
+            this.fixPromptCopied = true;
+            window.setTimeout(() => { this.fixPromptCopied = false; }, 1800);
         },
 
         shareMessage() {
