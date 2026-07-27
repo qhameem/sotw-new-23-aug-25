@@ -165,9 +165,8 @@
                     <button
                         type="button"
                         @click="openFixPrompt(@js($remediationPrompt))"
-                        class="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-[#b17915] bg-[#eb9e2b] px-4 text-sm font-bold text-black shadow-[0_4px_0_#c77f12,0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none focus:outline-none focus:ring-2 focus:ring-[#eb9e2b]/30 focus:ring-offset-2"
+                        class="inline-flex h-8 items-center rounded-lg border border-[#b17915] bg-[#eb9e2b] px-3 text-xs font-bold text-black shadow-[0_2px_0_#c77f12,0_4px_8px_rgba(15,23,42,0.12)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none focus:outline-none focus:ring-2 focus:ring-[#eb9e2b]/30 focus:ring-offset-2"
                     >
-                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.983 1.904a1 1 0 0 0-1.966 0l-.225 1.35a6.987 6.987 0 0 0-1.443.599L7.233 3.06a1 1 0 0 0-1.39.226L4.667 4.904a1 1 0 0 0 .226 1.39l1.116.793a7.06 7.06 0 0 0-.156 1.557l-1.34.447a1 1 0 0 0-.633 1.265l.618 1.854a1 1 0 0 0 1.265.632l1.297-.432c.35.43.75.818 1.19 1.156l-.382 1.316a1 1 0 0 0 .682 1.238l1.876.544a1 1 0 0 0 1.238-.682l.38-1.31a7.02 7.02 0 0 0 1.56-.207l.83 1.087a1 1 0 0 0 1.402.188l1.552-1.185a1 1 0 0 0 .188-1.402l-.832-1.09c.226-.47.4-.965.517-1.478l1.34-.252a1 1 0 0 0 .799-1.167l-.362-1.92a1 1 0 0 0-1.167-.8l-1.346.254a7.023 7.023 0 0 0-.754-1.375l.745-1.15a1 1 0 0 0-.295-1.383l-1.64-1.062a1 1 0 0 0-1.383.295l-.746 1.152a7.017 7.017 0 0 0-1.512-.416l-.23-1.34ZM11 11.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" /></svg>
                         Generate fix prompt
                     </button>
                 </div>
