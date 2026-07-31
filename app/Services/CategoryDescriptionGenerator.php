@@ -226,6 +226,7 @@ class CategoryDescriptionGenerator
                 . "- The last attempt was too repetitive, too similar across both fields, too generic, or did not follow the length constraint.\n"
                 . "- Use noticeably different wording, rhythm, and sentence construction between the description and the meta description.\n"
                 . "- Never repeat the description's opening phrase inside the meta description.\n"
+                . "- Do not begin either field with 'When'. Choose a direct, category-specific opening.\n"
                 . "- Avoid generic openings such as '{$categoryName} software helps businesses' or 'This type of software is perfect for'.";
         }
 
@@ -267,6 +268,8 @@ HUMAN WRITING RULES:
 - Do not use cliches like "game-changing", "revolutionary", "cutting-edge", or "unleash your potential".
 - Be honest. If the source material is limited, stay specific to what is commonly true about the category and avoid empty claims.
 - You may add at most 1-2 subtle, natural phrases that make the copy feel less mechanical, but do not become chatty.
+- Vary openings naturally based on the category. Lead with the task, outcome, audience, problem, or product capability that is most relevant.
+- Never begin the description or meta description with "When".
 - Do not open with "{$categoryName} software helps businesses".
 - Do not write "This type of software is perfect for".
 - Do not write "must-have for".
@@ -280,7 +283,7 @@ CATEGORY SEO RULES:
 - The description should feel like natural editorial copy.
 - The meta description should feel like a distinct search snippet written to earn the click.
 - Prefer concrete workflows, outputs, or buyer concerns over abstract claims.
-- If the taxonomy type is "Use Case", describe the job to be done and when someone starts looking for tools in this area.
+- If the taxonomy type is "Use Case", describe the job to be done, the desired outcome, and the circumstances that create demand for these tools.
 - If the taxonomy type is "Best for", describe the audience fit and the team profile it serves well.
 - If the taxonomy type is "Platform", describe where the software runs and what platform-specific buyers care about.
 - If the taxonomy type is "Software Category", describe what teams compare, what the tools do, and the problems they solve.
@@ -552,7 +555,7 @@ PROMPT;
     private function typeSpecificInstruction(?string $type, string $categoryName): string
     {
         return match ($type) {
-            CategoryTypeRegistry::USE_CASE => "Frame {$categoryName} as a job to be done. Explain the workflow or outcome someone wants, and when they start looking for tools in this area.",
+            CategoryTypeRegistry::USE_CASE => "Frame {$categoryName} as a job to be done. Explain the desired workflow, practical outcome, and problem that creates demand for these tools.",
             CategoryTypeRegistry::BEST_FOR => "Treat {$categoryName} as an audience or team profile. Focus on who it suits, what they care about, and why the fit is practical.",
             CategoryTypeRegistry::PLATFORM => "Explain what buyers on {$categoryName} care about, including platform compatibility, workflow constraints, and day-to-day usage.",
             CategoryTypeRegistry::SOFTWARE => "Describe what this software category does, what teams compare, and which practical problems it helps solve.",
@@ -590,6 +593,11 @@ PROMPT;
 
     private function contentSoundsOverTemplated(string $categoryName, string $description, string $metaDescription): bool
     {
+        if (preg_match('/^when\b/i', ltrim($description)) === 1
+            || preg_match('/^when\b/i', ltrim($metaDescription)) === 1) {
+            return true;
+        }
+
         $combined = strtolower($description . ' ' . $metaDescription);
         $genericPhrases = [
             strtolower($categoryName . ' software helps businesses'),

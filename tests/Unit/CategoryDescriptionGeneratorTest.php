@@ -119,3 +119,27 @@ test('category description generator repairs short meta descriptions instead of 
     expect(strlen($result['meta_description']))->toBeGreaterThanOrEqual(140);
     expect(strlen($result['meta_description']))->toBeLessThanOrEqual(155);
 });
+
+test('category description generator rejects repetitive when openings', function () {
+    $service = new CategoryDescriptionGenerator();
+    $validator = new ReflectionMethod($service, 'contentSoundsOverTemplated');
+    $promptBuilder = new ReflectionMethod($service, 'buildPrompt');
+
+    $isOverTemplated = $validator->invoke(
+        $service,
+        'Launch Preparation',
+        'When teams prepare a launch, they need to coordinate tasks and deadlines.',
+        'Compare launch preparation tools for planning smoother product releases and keeping work organized across the team from start to final sign-off.'
+    );
+    $prompt = $promptBuilder->invoke($service, 'Launch Preparation', [
+        'type_label' => 'Use Case',
+        'type_specific_instruction' => 'Explain the desired workflow and practical outcome.',
+        'keyword_hints' => [],
+        'sample_products' => [],
+        'peer_categories' => [],
+    ], 1);
+
+    expect($isOverTemplated)->toBeTrue();
+    expect($prompt)->toContain('Never begin the description or meta description with "When".');
+    expect($prompt)->not->toContain('and when someone starts looking for tools');
+});
