@@ -14,6 +14,35 @@ class AdminProductPublishTimeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_approval_calendars_default_to_next_monday(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-10 12:00:00', 'UTC'));
+
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $product = Product::factory()->create([
+            'approved' => false,
+            'is_published' => false,
+            'published_at' => null,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index'));
+
+        $response->assertOk();
+        $this->assertMatchesRegularExpression(
+            '/name="bulk_published_at"\s+value="2026-05-11"/',
+            $response->getContent()
+        );
+        $this->assertMatchesRegularExpression(
+            '/name="published_at\[' . $product->id . '\]"\s+value="2026-05-11"/',
+            $response->getContent()
+        );
+
+        Carbon::setTestNow();
+    }
+
     public function test_specific_date_approval_uses_configured_publish_time(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-05-10 12:00:00', 'UTC'));

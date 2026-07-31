@@ -232,7 +232,7 @@
             <div>
                 <label for="published_at_{{ $product->id }}"
                     class="block text-xs font-medium text-gray-700 mb-1">Publish On:</label>
-                <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today()->toDateString() }}" />
+                <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
                 <div id="utc-time-info-{{ $product->id }}" class="text-xs text-gray-500 mt-1"></div>
             </div>
             <div class="flex items-center gap-3">

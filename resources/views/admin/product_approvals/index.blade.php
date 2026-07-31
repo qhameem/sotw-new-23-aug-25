@@ -119,7 +119,7 @@
                             <input type="checkbox" id="select-all" class="mr-2 h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
                             <span>Select all pending</span>
                         </label>
-                        <x-scheduled-datepicker name="bulk_published_at" />
+                        <x-scheduled-datepicker name="bulk_published_at" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
                         <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700">Approve selected</button>
                     </div>
                 </div>
