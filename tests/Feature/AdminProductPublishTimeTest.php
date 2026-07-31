@@ -39,6 +39,15 @@ class AdminProductPublishTimeTest extends TestCase
             '/name="published_at\[' . $product->id . '\]"\s+value="2026-05-11"/',
             $response->getContent()
         );
+        $response->assertSeeInOrder([
+            'js-publish-approval-form',
+            'js-publish-spinner',
+            'Publish on selected date',
+            'js-publish-approval-form',
+            'js-publish-spinner',
+            'Publish now',
+        ], false);
+        $response->assertSee("label.textContent = 'Publishing...'", false);
 
         Carbon::setTestNow();
     }

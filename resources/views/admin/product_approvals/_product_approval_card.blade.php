@@ -244,23 +244,31 @@
         </div>
         <div class="mt-4 flex justify-end items-center gap-3">
             <form id="approve-date-form-{{ $product->id }}"
-                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
+                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form inline">
                 @csrf
                 <input type="hidden" name="publish_option" value="specific_date">
                 <input type="hidden" name="published_at" id="hidden_published_at_{{ $product->id }}">
                 <button type="submit"
-                    class="px-4 py-1 border border-sky-500 hover:bg-sky-50 text-sky-600 rounded-md text-sm font-medium  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-1 border border-sky-500 hover:bg-sky-50 text-sky-600 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
                     onclick="document.getElementById('hidden_published_at_{{ $product->id }}').value = document.querySelector('[name=\'published_at[{{ $product->id }}]\']').value;">
-                    Publish on selected date
+                    <svg class="js-publish-spinner hidden h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span class="js-publish-label">Publish on selected date</span>
                 </button>
             </form>
             <form id="approve-now-form-{{ $product->id }}"
-                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="inline">
+                action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form inline">
                 @csrf
                 <input type="hidden" name="publish_option" value="now">
                 <button type="submit"
-                    class="px-4 py-1 border border-gray-500 hover:bg-gray-50 text-gray-600 rounded-md text-sm font-medium  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
-                    Publish now
+                    class="inline-flex items-center justify-center gap-2 px-4 py-1 border border-gray-500 hover:bg-gray-50 text-gray-600 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-60">
+                    <svg class="js-publish-spinner hidden h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span class="js-publish-label">Publish now</span>
                 </button>
             </form>
         </div>
@@ -301,6 +309,29 @@
                 document.querySelectorAll(`[form="approve-date-form-${productId}"]`).forEach(input => {
                     input.setAttribute('form', `approve-now-form-${productId}`);
                 });
+            });
+        });
+
+        document.querySelectorAll('.js-publish-approval-form').forEach(form => {
+            if (form.dataset.loadingStateBound === '1') {
+                return;
+            }
+            form.dataset.loadingStateBound = '1';
+
+            form.addEventListener('submit', function () {
+                const button = this.querySelector('button[type="submit"]');
+                if (!button) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.setAttribute('aria-busy', 'true');
+                button.querySelector('.js-publish-spinner')?.classList.remove('hidden');
+
+                const label = button.querySelector('.js-publish-label');
+                if (label) {
+                    label.textContent = 'Publishing...';
+                }
             });
         });
 
