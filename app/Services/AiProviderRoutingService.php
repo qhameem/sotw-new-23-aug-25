@@ -122,8 +122,8 @@ class AiProviderRoutingService
     {
         $status = $this->effectiveStatus($provider);
         $score = match ($provider) {
-            'groq' => 300,
-            'gemini' => 250,
+            'gemini' => 300,
+            'groq' => 250,
             'openrouter' => 220,
             default => 0,
         };
