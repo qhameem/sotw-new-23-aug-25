@@ -252,6 +252,11 @@ OBJECTIVE:
 - Help readers quickly understand what "{$categoryName}" is, why it matters, and who it helps.
 - Keep the writing grounded, specific, and easy to scan.
 
+PAGE PURPOSE:
+- This copy appears at the top of a category hub page containing several products that belong to "{$categoryName}".
+- Visitors will usually reach this page by clicking the category name and then browse or compare the products listed beneath the description.
+- Introduce and frame the category as a whole. Do not describe one product, imply there is only one option, or write as if this were a product detail page.
+
 CATEGORY CONTEXT:
 - Taxonomy type: {$typeLabel}
 - Writing angle: {$typeSpecificInstruction}
@@ -276,7 +281,7 @@ HUMAN WRITING RULES:
 - Do not reuse stock endings like "Compare features and buyer fit".
 
 CATEGORY SEO RULES:
-- "description": Write 2-3 short, compelling sentences. Make it specific to the taxonomy type above instead of forcing a generic "software helps businesses" structure every time.
+- "description": Write 2-3 short, compelling sentences for the category hub page. Orient visitors before they browse the multiple products listed below it. Make it specific to the taxonomy type above instead of forcing a generic "software helps businesses" structure every time.
 - "meta_description": Write a punchy, click-optimized meta description that is exactly between 140 and 155 characters long.
 - The description and meta description must not sound like rewrites of each other.
 - Do not reuse the same opening phrase, sentence structure, or key wording across both fields.

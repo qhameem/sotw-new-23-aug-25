@@ -141,5 +141,8 @@ test('category description generator rejects repetitive when openings', function
 
     expect($isOverTemplated)->toBeTrue();
     expect($prompt)->toContain('Never begin the description or meta description with "When".');
+    expect($prompt)->toContain('category hub page containing several products');
+    expect($prompt)->toContain('Visitors will usually reach this page by clicking the category name');
+    expect($prompt)->toContain('Do not describe one product');
     expect($prompt)->not->toContain('and when someone starts looking for tools');
 });
