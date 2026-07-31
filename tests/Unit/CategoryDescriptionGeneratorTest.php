@@ -144,5 +144,23 @@ test('category description generator rejects repetitive when openings', function
     expect($prompt)->toContain('category hub page containing several products');
     expect($prompt)->toContain('Visitors will usually reach this page by clicking the category name');
     expect($prompt)->toContain('Do not describe one product');
+    expect($prompt)->toContain('Detailed category: Open with the category\'s practical value');
+    expect($prompt)->toContain('Concise utility: Summarize the main activity and outcome');
+    expect($prompt)->toContain('Light editorial: For broad lifestyle or productivity topics');
+    expect($prompt)->toContain('Do not force every category into the same length');
+    expect($prompt)->toContain('Never copy their wording');
     expect($prompt)->not->toContain('and when someone starts looking for tools');
+});
+
+test('category description generator preserves intentional paragraph breaks', function () {
+    $service = new CategoryDescriptionGenerator();
+    $normalizer = new ReflectionMethod($service, 'normalizeResult');
+
+    $result = $normalizer->invoke($service, [
+        'description' => "First paragraph with useful context.\n\nSecond paragraph for discovery.  ",
+        'meta_description' => "  A concise meta description.  ",
+    ]);
+
+    expect($result['description'])->toBe("First paragraph with useful context.\n\nSecond paragraph for discovery.");
+    expect($result['meta_description'])->toBe('A concise meta description.');
 });

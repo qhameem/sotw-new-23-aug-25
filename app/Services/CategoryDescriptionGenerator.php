@@ -212,7 +212,7 @@ class CategoryDescriptionGenerator
     private function normalizeResult(array $result): array
     {
         return [
-            'description' => $this->normalizeWhitespace((string) ($result['description'] ?? '')),
+            'description' => $this->normalizeDescription((string) ($result['description'] ?? '')),
             'meta_description' => $this->normalizeWhitespace((string) ($result['meta_description'] ?? '')),
         ];
     }
@@ -257,6 +257,13 @@ PAGE PURPOSE:
 - Visitors will usually reach this page by clicking the category name and then browse or compare the products listed beneath the description.
 - Introduce and frame the category as a whole. Do not describe one product, imply there is only one option, or write as if this were a product detail page.
 
+REFERENCE STYLES:
+- Detailed category: Open with the category's practical value, name a few concrete capabilities, explain the benefit, then optionally invite visitors to discover or compare the products below.
+- Concise utility: Summarize the main activity and outcome in one direct, memorable sentence.
+- Light editorial: For broad lifestyle or productivity topics, a brief, tasteful human observation is welcome when it genuinely fits.
+- Choose the structure that best suits the category's depth. Do not force every category into the same length, rhythm, opening, or closing call to action.
+- Use the supplied examples only as style direction. Never copy their wording, distinctive phrases, or sentence structures.
+
 CATEGORY CONTEXT:
 - Taxonomy type: {$typeLabel}
 - Writing angle: {$typeSpecificInstruction}
@@ -281,7 +288,9 @@ HUMAN WRITING RULES:
 - Do not reuse stock endings like "Compare features and buyer fit".
 
 CATEGORY SEO RULES:
-- "description": Write 2-3 short, compelling sentences for the category hub page. Orient visitors before they browse the multiple products listed below it. Make it specific to the taxonomy type above instead of forcing a generic "software helps businesses" structure every time.
+- "description": Write 1-3 concise sentences for the category hub page. Use one compact paragraph for a simple topic or up to two short paragraphs for a capability-rich category. Orient visitors before they browse the multiple products listed below it.
+- For a capability-rich category, naturally mention 3-5 representative capabilities only when they are relevant and supported by the context.
+- An optional final sentence may invite visitors to discover, explore, or compare products, but vary or omit it when it would feel formulaic.
 - "meta_description": Write a punchy, click-optimized meta description that is exactly between 140 and 155 characters long.
 - The description and meta description must not sound like rewrites of each other.
 - Do not reuse the same opening phrase, sentence structure, or key wording across both fields.
@@ -411,6 +420,18 @@ PROMPT;
     private function normalizeWhitespace(string $text): string
     {
         return trim((string) preg_replace('/\s+/u', ' ', $text));
+    }
+
+    private function normalizeDescription(string $text): string
+    {
+        $text = str_replace(["\r\n", "\r"], "\n", trim($text));
+        $paragraphs = preg_split('/\n\s*\n/u', $text) ?: [];
+        $paragraphs = array_values(array_filter(array_map(
+            fn (string $paragraph) => $this->normalizeWhitespace($paragraph),
+            $paragraphs
+        )));
+
+        return implode("\n\n", $paragraphs);
     }
 
     private function dedupeSentences(string $text): string
