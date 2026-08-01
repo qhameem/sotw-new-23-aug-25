@@ -23,7 +23,7 @@ function publishedArticle(array $overrides = []): Article
     ], $overrides));
 }
 
-it('renders the redesigned article index with sidebar collections', function () {
+it('renders the minimal article index with discovery collections', function () {
     config()->set('analytics.property_id', null);
     config()->set('analytics.service_account_credentials_json', null);
 
@@ -46,9 +46,10 @@ it('renders the redesigned article index with sidebar collections', function () 
     $response = $this->get(route('articles.index'));
 
     $response->assertOk();
-    $response->assertSee('Featured');
-    $response->assertSee('Most Popular');
-    $response->assertSee('Explore Topics');
+    $response->assertSee('Practical guides for discovering, evaluating, and launching better software.');
+    $response->assertSee('Search articles');
+    $response->assertSee('Latest articles');
+    $response->assertSee('Featured deep dive');
 
     expect($response->viewData('feed'))->toBe('latest');
     expect($response->viewData('featuredPosts')->pluck('id')->all())->toBe([$featured->id]);
@@ -102,4 +103,28 @@ it('falls back to recently published articles for the popular feed when analytic
     expect($posts->items())->toHaveCount(2);
     expect($posts->items()[0]->id)->toBe($newer->id);
     expect($posts->items()[1]->id)->toBe($older->id);
+});
+
+it('uses the first content image when an article has no featured image', function () {
+    $article = publishedArticle([
+        'title' => 'Article with an inline image',
+        'slug' => 'article-with-inline-image',
+        'featured_image_path' => null,
+        'content' => '<p>Introduction</p><img src="/storage/articles/inline-cover.webp" alt="Example"><p>Body</p>',
+    ]);
+
+    expect($article->display_image_url)->toBe(asset('storage/articles/inline-cover.webp'));
+
+    $this->get(route('articles.index'))
+        ->assertOk()
+        ->assertSee(asset('storage/articles/inline-cover.webp'), false);
+});
+
+it('prefers an explicit featured image over content images', function () {
+    $article = publishedArticle([
+        'featured_image_path' => 'articles/featured.webp',
+        'content' => '<img src="/storage/articles/inline.webp" alt="Inline">',
+    ]);
+
+    expect($article->display_image_url)->toBe(asset('storage/articles/featured.webp'));
 });

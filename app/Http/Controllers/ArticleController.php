@@ -76,6 +76,9 @@ class ArticleController extends Controller
             ['view' => ['required', Rule::in(['latest', 'featured', 'popular'])]]
         )->validate();
 
+        $featuredPosts = $articleDiscoveryService->featuredArticles();
+        $leadArticle = $feed === 'latest' ? $featuredPosts->first() : null;
+
         $posts = match ($feed) {
             'featured' => Article::query()
                 ->published()
@@ -87,9 +90,10 @@ class ArticleController extends Controller
             'popular' => $articleDiscoveryService->popularArticlesPaginator(10),
             default => Article::query()
                 ->published()
+                ->when($leadArticle, fn ($query) => $query->whereKeyNot($leadArticle->id))
                 ->with('author', 'categories', 'tags')
                 ->latest('published_at')
-                ->paginate(10)
+                ->paginate(12)
                 ->withQueryString(),
         };
 
@@ -97,7 +101,8 @@ class ArticleController extends Controller
             'posts' => $posts,
             'title' => 'Articles - ' . config('app.name', 'Software on the Web'),
             'feed' => $feed,
-            'featuredPosts' => $articleDiscoveryService->featuredArticles(),
+            'leadArticle' => $leadArticle,
+            'featuredPosts' => $featuredPosts,
             'popularPosts' => $articleDiscoveryService->popularArticles(),
             'topicCategories' => $articleDiscoveryService->topicCategories(),
             'mainContentMaxWidth' => 'max-w-4xl',
@@ -111,9 +116,31 @@ class ArticleController extends Controller
             abort(404);
         }
 
-        $article->load('author', 'categories', 'tags');
+        $article->load('author.profile', 'categories', 'tags');
 
-        return view('articles.show', ['post' => $article]);
+        $relatedArticles = Article::query()
+            ->published()
+            ->whereKeyNot($article->id)
+            ->when(
+                $article->categories->isNotEmpty(),
+                fn ($query) => $query->whereHas(
+                    'categories',
+                    fn ($categoryQuery) => $categoryQuery->whereKey($article->categories->modelKeys())
+                )
+            )
+            ->with('author', 'categories')
+            ->latest('published_at')
+            ->take(3)
+            ->get();
+
+        return view('articles.show', [
+            'post' => $article,
+            'relatedArticles' => $relatedArticles,
+            'mainContentMaxWidth' => 'max-w-none',
+            'containerMaxWidth' => 'max-w-none',
+            'hideSidebar' => true,
+            'meta_og_image' => $article->display_image_url,
+        ]);
     }
 
     public function category(ArticleCategory $articleCategory)

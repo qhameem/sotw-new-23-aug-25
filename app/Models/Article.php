@@ -205,6 +205,45 @@ class Article extends Model implements Feedable, Sitemapable
         return Str::limit(strip_tags($this->content), 150);
     }
 
+    public function getDisplayImageUrlAttribute(): ?string
+    {
+        $usesFeaturedImage = filled($this->featured_image_path);
+        $image = $usesFeaturedImage
+            ? $this->featured_image_path
+            : $this->firstContentImageSource();
+
+        if (blank($image)) {
+            return null;
+        }
+
+        $image = html_entity_decode(trim($image), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if (Str::startsWith($image, ['http://', 'https://', 'data:'])) {
+            return $image;
+        }
+
+        if (Str::startsWith($image, '//')) {
+            return 'https:' . $image;
+        }
+
+        if ($usesFeaturedImage && !Str::startsWith($image, ['/storage/', 'storage/'])) {
+            return asset('storage/' . ltrim($image, '/'));
+        }
+
+        return asset(ltrim($image, '/'));
+    }
+
+    private function firstContentImageSource(): ?string
+    {
+        if (blank($this->content)) {
+            return null;
+        }
+
+        preg_match('/<img\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1/i', $this->content, $matches);
+
+        return filled($matches[2] ?? null) ? $matches[2] : null;
+    }
+
     public function toFeedItem(): FeedItem
     {
         return FeedItem::create()
