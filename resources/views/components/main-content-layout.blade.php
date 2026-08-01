@@ -1,6 +1,8 @@
-@persist('site-top-bar')
-    <x-top-bar />
-@endpersist
+@unless($distractionFree)
+    @persist('site-top-bar')
+        <x-top-bar />
+    @endpersist
+@endunless
 
 <div @class(['flex flex-col min-h-screen', 'md:h-screen' => $lockHeight])>
 
@@ -21,7 +23,8 @@
             <!-- Main Content -->
             <main
                 @class([
-                    'flex-1 w-full min-w-0 order-1 md:order-2 md:pt-[3.7rem] min-h-0',
+                    'flex-1 w-full min-w-0 order-1 md:order-2 min-h-0',
+                    'md:pt-[3.7rem]' => !$distractionFree,
                     $mainPadding,
                     $mainContentMaxWidth,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
@@ -93,9 +96,11 @@
     </div>
 
     <!-- Footer Container (Outside Body) -->
-    @persist('site-footer')
-        <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
-            <x-footer />
-        </div>
-    @endpersist
+    @unless($distractionFree)
+        @persist('site-footer')
+            <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
+                <x-footer />
+            </div>
+        @endpersist
+    @endunless
 </div>

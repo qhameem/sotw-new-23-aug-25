@@ -11,13 +11,32 @@
     <div class="min-h-screen bg-[#fafaf8] pb-24 pt-28 text-stone-950 md:pt-12">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
             <header class="border-b border-stone-200 pb-10 sm:pb-12">
-                <div class="max-w-3xl">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600">Software on the Web</p>
-                    <h1 class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl lg:text-6xl">Articles</h1>
-                    <p class="mt-5 max-w-2xl text-lg leading-8 text-stone-600">
-                        Practical guides for discovering, evaluating, and launching better software.
-                    </p>
+                <div class="flex items-center justify-between gap-5">
+                    <h1 class="text-3xl font-semibold tracking-[-0.035em] text-stone-950 sm:text-4xl lg:text-5xl">Articles</h1>
+
+                    <a
+                        href="{{ route('articles.create') }}"
+                        x-data="{ loading: false }"
+                        @click="if (loading) { $event.preventDefault() } else { loading = true }"
+                        :aria-busy="loading"
+                        :class="{ 'pointer-events-none opacity-80': loading }"
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-primary-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-700 focus:outline-none"
+                    >
+                        <svg x-show="!loading" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M13.5 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.5"></path>
+                            <path d="M17.5 3.5a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4 9.5-9.5Z"></path>
+                        </svg>
+                        <svg x-show="loading" x-cloak class="h-[18px] w-[18px] animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle class="opacity-30" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle>
+                            <path class="opacity-90" d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                        </svg>
+                        <span>Write</span>
+                    </a>
                 </div>
+
+                <p class="mt-5 max-w-2xl text-lg leading-8 text-stone-600">
+                    Practical guides for discovering, evaluating, and launching better software.
+                </p>
 
                 <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <form action="{{ route('articles.search') }}" method="GET" class="relative w-full max-w-xl">

@@ -19,6 +19,7 @@ class MainContentLayout extends Component
     public $mainPadding;
     public $hideSidebar;
     public $hideDesktopPageHeader;
+    public $distractionFree;
 
     public function __construct(
         $mainContentMaxWidth = 'max-w-3xl',
@@ -28,7 +29,8 @@ class MainContentLayout extends Component
         $headerPadding = 'px-4 sm:px-6 lg:px-4',
         $mainPadding = 'px-4 sm:px-6 lg:px-8',
         $hideSidebar = false,
-        $hideDesktopPageHeader = false
+        $hideDesktopPageHeader = false,
+        $distractionFree = false
     ) {
         $this->mainContentMaxWidth = $mainContentMaxWidth;
         $this->sidebarSticky = $sidebarSticky;
@@ -38,6 +40,7 @@ class MainContentLayout extends Component
         $this->mainPadding = $mainPadding;
         $this->hideSidebar = $hideSidebar;
         $this->hideDesktopPageHeader = $hideDesktopPageHeader;
+        $this->distractionFree = $distractionFree;
     }
 
     /**

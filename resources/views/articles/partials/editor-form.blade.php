@@ -26,9 +26,8 @@
         <style>
             .article-editor-card {
                 border: 1px solid rgb(229 231 235);
-                border-radius: 1rem;
+                border-radius: 0.875rem;
                 background: #ffffff;
-                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
             }
 
             .article-editor-field-help {
@@ -38,29 +37,36 @@
             }
 
             .article-editor-quill .ql-editor {
-                min-height: 24rem;
-                font-size: 1rem;
-                line-height: 1.75;
+                min-height: calc(100vh - 18rem);
+                padding: 1.5rem 0;
+                font-size: 1.125rem;
+                line-height: 1.8;
             }
 
             .article-editor-quill .ql-toolbar.ql-snow,
             .article-editor-quill .ql-container.ql-snow {
-                border-color: rgb(209 213 219);
+                border-left: 0;
+                border-right: 0;
+                border-color: rgb(231 229 228);
             }
 
             .article-editor-quill .ql-toolbar.ql-snow {
-                border-top-left-radius: 1rem;
-                border-top-right-radius: 1rem;
+                position: sticky;
+                top: 4.25rem;
+                z-index: 20;
+                border-top: 0;
+                background: rgba(250, 250, 249, 0.96);
+                backdrop-filter: blur(10px);
+                padding-left: 0;
+                padding-right: 0;
             }
 
             .article-editor-quill .ql-container.ql-snow {
-                border-bottom-left-radius: 1rem;
-                border-bottom-right-radius: 1rem;
+                border-bottom: 0;
             }
 
             .article-editor-layout {
-                display: grid;
-                gap: 2rem;
+                display: block;
             }
 
             main:has(form[data-article-editor-root]) {
@@ -71,25 +77,42 @@
 
             .article-editor-shell {
                 width: 100%;
-                max-width: 112rem;
                 margin: 0 auto;
             }
 
             .article-editor-main {
                 min-width: 0;
+                width: 100%;
+                max-width: 52rem;
+                margin: 0 auto;
             }
 
-            @media (min-width: 1280px) {
-                .article-editor-layout {
-                    grid-template-columns: minmax(0, 1.9fr) minmax(18rem, 0.72fr);
-                    align-items: start;
-                }
+            .article-editor-writing-surface {
+                border: 0;
+                border-radius: 0;
+                background: transparent;
             }
 
-            @media (min-width: 1536px) {
-                .article-editor-layout {
-                    grid-template-columns: minmax(0, 2.2fr) 22rem;
-                }
+            .article-editor-title-input {
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                padding: 0 !important;
+                font-size: clamp(2rem, 5vw, 3rem) !important;
+                line-height: 1.15 !important;
+                font-weight: 650 !important;
+                letter-spacing: -0.035em;
+                box-shadow: none !important;
+            }
+
+            .article-editor-title-input:focus {
+                box-shadow: none !important;
+                outline: none !important;
+                --tw-ring-shadow: 0 0 #0000 !important;
+            }
+
+            .article-editor-settings-panel {
+                width: min(34rem, 100vw);
             }
         </style>
     @endpush
@@ -98,7 +121,9 @@
 <form
     action="{{ $formAction }}"
     method="POST"
-    class="w-full px-4 py-8 sm:px-6 lg:px-8"
+    class="w-full"
+    x-data="{ settingsOpen: false }"
+    @keydown.escape.window="settingsOpen = false"
     data-article-editor-root
     data-context="{{ $context }}"
     data-article-id="{{ $isEditing ? $article->id : '' }}"
@@ -115,42 +140,74 @@
         @method($formMethod)
     @endif
 
-    <div class="article-editor-shell">
+    <header class="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div class="flex min-w-0 items-center gap-3">
+                <a href="{{ $cancelUrl }}" class="shrink-0" aria-label="Leave editor">
+                    <x-application-logo class="block h-8 w-auto fill-current text-gray-800" />
+                </a>
+                <span class="hidden h-5 w-px bg-stone-200 sm:block" aria-hidden="true"></span>
+                <span class="hidden truncate text-sm font-medium text-stone-600 sm:block">
+                    {{ $isEditing ? 'Editing article' : 'New article' }}
+                </span>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+                <span class="hidden text-xs text-stone-500 md:block" data-article-save-state>
+                    {{ $isEditing ? 'All changes saved' : 'Start writing to autosave' }}
+                </span>
+
+                <button
+                    type="button"
+                    class="hidden rounded-md px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-950 sm:inline-flex"
+                    data-article-preview-button
+                >
+                    Preview
+                </button>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+                    @click="settingsOpen = true"
+                    :aria-expanded="settingsOpen"
+                    aria-controls="article-settings-drawer"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <circle cx="10" cy="10" r="2.5"></circle>
+                        <path d="M16.2 11.2a6.8 6.8 0 0 0 0-2.4l1.3-1-1.5-2.6-1.6.6a7 7 0 0 0-2.1-1.2L12 3H8l-.3 1.6a7 7 0 0 0-2.1 1.2L4 5.2 2.5 7.8l1.3 1a6.8 6.8 0 0 0 0 2.4l-1.3 1L4 14.8l1.6-.6a7 7 0 0 0 2.1 1.2L8 17h4l.3-1.6a7 7 0 0 0 2.1-1.2l1.6.6 1.5-2.6-1.3-1Z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Settings</span>
+                </button>
+
+                <button
+                    type="button"
+                    @click="settingsOpen = true"
+                    class="inline-flex items-center justify-center rounded-md bg-primary-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-700"
+                >
+                    Publish
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="article-editor-shell max-w-7xl px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-12">
         <div class="article-editor-layout">
-            <div class="article-editor-main space-y-6">
-                <div class="article-editor-card p-6">
+            <div class="article-editor-main">
+                <div class="article-editor-card article-editor-writing-surface">
                     <div class="space-y-6">
                     <div>
-                        <x-input-label for="title" :value="__('Title')" />
+                        <label for="title" class="sr-only">Title</label>
                         <x-text-input
                             id="title"
-                            class="mt-2 block w-full text-lg"
+                            class="article-editor-title-input block w-full"
                             type="text"
                             name="title"
                             :value="old('title', $article->title ?? '')"
+                            placeholder="Article title"
                             required
                             autofocus
                         />
                         <x-input-error :messages="$errors->get('title')" class="mt-2" />
-                    </div>
-
-                    <div>
-                        <div class="flex items-center justify-between gap-3">
-                            <x-input-label for="slug" :value="__('Slug')" />
-                            <span class="text-xs text-gray-500">Auto-generated until you edit it manually</span>
-                        </div>
-                        <x-text-input
-                            id="slug"
-                            class="mt-2 block w-full"
-                            type="text"
-                            name="slug"
-                            :value="old('slug', $article->slug ?? '')"
-                        />
-                        <p class="article-editor-field-help">
-                            Preview URL:
-                            <span class="font-medium text-gray-700" data-article-seo-url-preview>{{ $currentCanonical }}</span>
-                        </p>
-                        <x-input-error :messages="$errors->get('slug')" class="mt-2" />
                     </div>
 
                     <div>
@@ -167,15 +224,70 @@
                             <div data-article-quill></div>
                         </div>
                         <input type="hidden" name="content" id="content" value="{{ old('content', $article->content ?? '') }}">
-                        <p class="article-editor-field-help">
-                            Autosave keeps draft edits safe while you write. Use Preview to open the rendered article in a new tab.
-                        </p>
                         <x-input-error :messages="$errors->get('content')" class="mt-2" />
                     </div>
                     </div>
                 </div>
+            </div>
 
-            <div class="article-editor-card p-6">
+            <div
+                id="article-settings-drawer"
+                x-show="settingsOpen"
+                x-cloak
+                class="fixed inset-0 z-50"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="article-settings-title"
+            >
+                <button
+                    type="button"
+                    class="absolute inset-0 bg-stone-950/30"
+                    @click="settingsOpen = false"
+                    aria-label="Close article settings"
+                ></button>
+
+                <div
+                    class="article-editor-settings-panel absolute inset-y-0 right-0 flex flex-col bg-stone-50 shadow-2xl"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="translate-x-full"
+                    x-transition:enter-end="translate-x-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="translate-x-0"
+                    x-transition:leave-end="translate-x-full"
+                >
+                    <div class="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-5 sm:px-6">
+                        <div>
+                            <h2 id="article-settings-title" class="text-base font-semibold text-stone-950">Article settings</h2>
+                            <p class="text-xs text-stone-500">Publishing, media, and discoverability</p>
+                        </div>
+                        <button type="button" class="rounded-md p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-950" @click="settingsOpen = false" aria-label="Close settings">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                                <path d="m5 5 10 10M15 5 5 15"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-1 flex-col gap-5 overflow-y-auto p-5 pb-12 sm:p-6">
+                        <div class="article-editor-card order-1 p-6">
+                            <div class="flex items-center justify-between gap-3">
+                                <x-input-label for="slug" :value="__('URL slug')" />
+                                <span class="text-xs text-gray-500">Generated automatically</span>
+                            </div>
+                            <x-text-input
+                                id="slug"
+                                class="mt-2 block w-full"
+                                type="text"
+                                name="slug"
+                                :value="old('slug', $article->slug ?? '')"
+                            />
+                            <p class="article-editor-field-help break-all">
+                                Preview URL:
+                                <span class="font-medium text-gray-700" data-article-seo-url-preview>{{ $currentCanonical }}</span>
+                            </p>
+                            <x-input-error :messages="$errors->get('slug')" class="mt-2" />
+                        </div>
+
+            <div class="article-editor-card order-3 p-6">
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div class="lg:col-span-2">
                         <div class="flex items-center justify-between gap-3">
@@ -271,7 +383,7 @@
                 </div>
             </div>
 
-            <div class="article-editor-card p-6">
+            <div class="article-editor-card order-4 p-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
                         <x-input-label for="meta_title" :value="__('Meta Title')" />
@@ -351,10 +463,9 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-            <aside class="space-y-6 xl:sticky xl:top-6 xl:self-start xl:min-w-[18rem]">
-                <div class="article-editor-card p-6">
+            <aside class="contents">
+                <div class="article-editor-card order-2 p-6">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Publishing</h2>
 
                     <div class="mt-4 space-y-4">
@@ -386,7 +497,7 @@
                         </div>
 
                         <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
-                            <div class="font-medium text-gray-700" data-article-save-state>
+                            <div class="font-medium text-gray-700">
                                 {{ $isEditing ? 'Saved changes will appear here' : 'Draft autosave starts once you begin writing' }}
                             </div>
                             <div class="mt-1 text-xs text-gray-500">
@@ -425,7 +536,7 @@
                     </div>
                 </div>
 
-                <div class="article-editor-card p-6">
+                <div class="article-editor-card order-5 p-6">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">SEO Preview</h2>
 
                     <div class="mt-4 rounded-xl border border-gray-200 p-4">
@@ -442,7 +553,7 @@
                 </div>
 
                 @if($isEditing && ($revisions ?? collect())->isNotEmpty())
-                    <div class="article-editor-card p-6">
+                    <div class="article-editor-card order-6 p-6">
                         <div class="flex items-center justify-between gap-3">
                             <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Recent Revisions</h2>
                             <span class="text-xs text-gray-400">{{ $revisions->count() }}</span>
@@ -481,6 +592,9 @@
                     </div>
                 @endif
             </aside>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </form>
