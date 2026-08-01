@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Models\PageMetaTag;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -37,7 +39,7 @@ class SeoApiController extends Controller
 
             $routes = collect(Route::getRoutes()->getRoutes())->map(function ($route) use ($friendlyNames) {
                 $routeName = $route->getName();
-                if (!$routeName || !in_array('GET', $route->methods())) {
+                if (! $routeName || ! in_array('GET', $route->methods())) {
                     return null;
                 }
 
@@ -56,7 +58,7 @@ class SeoApiController extends Controller
             // Format to match the JS frontend expectations (using 'name' for the primary label)
             $formattedRoutes = array_map(function ($route) {
                 return [
-                    'name' => $route['friendly_name'] . ' (' . $route['uri'] . ')',
+                    'name' => $route['friendly_name'].' ('.$route['uri'].')',
                     'id' => $route['name'], // Store actual route name for backend indexing
                     'uri' => $route['uri'],
                 ];
@@ -70,9 +72,11 @@ class SeoApiController extends Controller
             ]);
 
             \Illuminate\Support\Facades\Log::info('Successfully fetched pages for SEO manager.', ['count' => count($formattedRoutes)]);
+
             return response()->json($formattedRoutes);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error fetching pages for SEO manager: ' . $e->getMessage(), ['exception' => $e]);
+            \Illuminate\Support\Facades\Log::error('Error fetching pages for SEO manager: '.$e->getMessage(), ['exception' => $e]);
+
             return response()->json(['message' => 'Error loading pages.', 'error' => $e->getMessage()], 500);
         }
     }
@@ -82,7 +86,7 @@ class SeoApiController extends Controller
         $meta = PageMetaTag::where('page_id', $page_id)->first();
         $globalMeta = PageMetaTag::where('page_id', self::GLOBAL_DEFAULTS_PAGE_ID)->first();
 
-        if (!$meta) {
+        if (! $meta) {
             return response()->json([
                 'meta_title' => '',
                 'meta_description' => '',
@@ -123,24 +127,21 @@ class SeoApiController extends Controller
         );
 
         if ($request->hasFile('og_image')) {
-            // Delete the old image if it exists
-            if ($pageMetaTag->og_image_path) {
-                \Illuminate\Support\Facades\Storage::delete($pageMetaTag->og_image_path);
-            }
+            $oldImagePath = $pageMetaTag->og_image_path;
             $image = $request->file('og_image');
-            $filename = uniqid() . '.webp';
-            $imagePath = storage_path('app/public/og_images/' . $filename);
+            $filename = Str::uuid().'.jpg';
+            $imagePath = storage_path('app/public/og_images/'.$filename);
 
             // Ensure the directory exists
             $directory = dirname($imagePath);
-            if (!file_exists($directory)) {
+            if (! file_exists($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create an image resource from the uploaded file
             $sourceImage = imagecreatefromstring(file_get_contents($image->getRealPath()));
 
-            if (!$sourceImage) {
+            if (! $sourceImage) {
                 return response()->json([
                     'message' => 'The uploaded image could not be processed. Please upload a JPG, PNG, or WEBP image.',
                 ], 422);
@@ -155,9 +156,8 @@ class SeoApiController extends Controller
 
             // Create a new true color image
             $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
-
-            imagealphablending($targetImage, true);
-            imagesavealpha($targetImage, true);
+            $white = imagecolorallocate($targetImage, 255, 255, 255);
+            imagefill($targetImage, 0, 0, $white);
 
             $sourceAspectRatio = $sourceWidth / max($sourceHeight, 1);
             $targetAspectRatio = $targetWidth / $targetHeight;
@@ -187,16 +187,27 @@ class SeoApiController extends Controller
                 $sourceHeight
             );
 
-            // Save the image as a WEBP file
-            imagewebp($targetImage, $imagePath, 80);
+            $saved = imagejpeg($targetImage, $imagePath, 88);
 
             // Free up memory
             imagedestroy($sourceImage);
             imagedestroy($targetImage);
 
-            $path = 'public/og_images/' . $filename;
+            if (! $saved) {
+                return response()->json([
+                    'message' => 'The social preview image could not be saved. Please try another image.',
+                ], 422);
+            }
+
+            $path = 'public/og_images/'.$filename;
             $pageMetaTag->og_image_path = $path;
             $pageMetaTag->save();
+
+            if ($oldImagePath && $oldImagePath !== $path) {
+                Storage::delete($oldImagePath);
+            }
+
+            Cache::forget('page_meta_tags.global_defaults_og_image');
         }
 
         return response()->json([
@@ -218,7 +229,7 @@ class SeoApiController extends Controller
 
     private function absoluteUrl(?string $value): ?string
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 

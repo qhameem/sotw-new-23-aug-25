@@ -363,10 +363,7 @@
     <meta name="twitter:card" content="{{ $resolvedSocialImage ? 'summary_large_image' : 'summary' }}">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     <meta name="twitter:description" content="@yield('meta_description', $meta_description ?? '')">
-    @if($resolvedSocialImage)
-        <meta property="og:image" content="{{ $resolvedSocialImage }}">
-        <meta name="twitter:image" content="{{ $resolvedSocialImage }}">
-    @endif
+    @include('partials.social-image-meta')
     @php
         $customLogoUrl = config('theme.logo_url');
         $siteLogo = $customLogoUrl ? \Illuminate\Support\Facades\Storage::url($customLogoUrl) : asset('favicon/apple-touch-icon.png');

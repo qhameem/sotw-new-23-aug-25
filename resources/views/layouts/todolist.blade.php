@@ -33,10 +33,7 @@
     <meta name="twitter:card" content="{{ $resolvedSocialImage ? 'summary_large_image' : 'summary' }}">
     <meta name="twitter:title" content="@yield('title', 'Software on the Web')">
     <meta name="twitter:description" content="@yield('meta_description', '')">
-    @if($resolvedSocialImage)
-        <meta property="og:image" content="{{ $resolvedSocialImage }}">
-        <meta name="twitter:image" content="{{ $resolvedSocialImage }}">
-    @endif
+    @include('partials.social-image-meta')
 
     @include('partials.theme.favicon-links')
 
