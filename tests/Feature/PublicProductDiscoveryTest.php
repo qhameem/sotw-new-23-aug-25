@@ -62,6 +62,31 @@ class PublicProductDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function the_homepage_ends_with_links_to_previous_product_weeks()
+    {
+        $previousUrl = route('products.byWeek', ['year' => 2026, 'week' => 27]);
+        $currentUrl = route('products.byWeek', ['year' => 2026, 'week' => 28]);
+        $html = view('partials.week_pagination', [
+            'weekPagination' => [
+                'previous' => ['url' => $previousUrl],
+                'weeks' => [
+                    ['url' => $previousUrl, 'year' => 2026, 'week' => 27, 'isSelected' => false],
+                    ['url' => $currentUrl, 'year' => 2026, 'week' => 28, 'isSelected' => true],
+                ],
+            ],
+        ])->render();
+
+        $this->assertStringContainsString("Check previous week's product", $html);
+        $this->assertStringContainsString('aria-label="Product weeks"', $html);
+        $this->assertStringContainsString($previousUrl, $html);
+        $this->assertStringContainsString('aria-current="page"', $html);
+        $this->assertLessThan(
+            strpos($html, "Check previous week's product"),
+            strpos($html, 'aria-label="View Week 27 of 2026"')
+        );
+    }
+
+    /** @test */
     public function week_archive_pages_output_a_self_referencing_canonical_tag()
     {
         $weekStart = now()->copy()->subWeek()->startOfWeek(Carbon::MONDAY);

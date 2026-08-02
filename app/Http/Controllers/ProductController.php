@@ -1663,8 +1663,9 @@ class ProductController extends Controller
         $weekOfYear = $week;
 
         $weekNavigationItems = $this->buildWeekNavigationItems($year, $week);
+        $weekPagination = $this->buildWeekPagination($weekNavigationItems);
 
-        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'meta_title', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'startOfWeek', 'endOfWeek', 'isFuture', 'metaDescription', 'shouldNoindexArchive'));
+        return view('home', compact('regularProducts', 'categories', 'types', 'serverTodayDateString', 'displayDateString', 'title', 'pageTitle', 'meta_title', 'nextLaunchTime', 'weekOfYear', 'year', 'weekNavigationItems', 'weekPagination', 'startOfWeek', 'endOfWeek', 'isFuture', 'metaDescription', 'shouldNoindexArchive'));
     }
 
     public function productsByMonth(Request $request, $year, $month)
@@ -2925,6 +2926,26 @@ class ProductController extends Controller
             ->all();
     }
 
+    private function buildWeekPagination(array $weekNavigationItems, int $windowSize = 7): array
+    {
+        $weeks = collect($weekNavigationItems);
+        $selectedIndex = $weeks->search(fn (array $week) => $week['isSelected']);
+
+        if ($selectedIndex === false) {
+            return ['previous' => null, 'weeks' => []];
+        }
+
+        $start = max(0, min(
+            $selectedIndex - intdiv($windowSize, 2),
+            $weeks->count() - $windowSize
+        ));
+
+        return [
+            'previous' => $selectedIndex > 0 ? $weeks->get($selectedIndex - 1) : null,
+            'weeks' => $weeks->slice($start, $windowSize)->values()->all(),
+        ];
+    }
+
     private function productDateExpressions(): array
     {
         if (DB::connection()->getDriverName() === 'mysql') {
@@ -2936,8 +2957,8 @@ class ProductController extends Controller
         }
 
         return [
-            'year' => "CAST(strftime('%Y', COALESCE(published_at, created_at)) AS INTEGER)",
-            'week' => "CAST(strftime('%W', COALESCE(published_at, created_at)) AS INTEGER)",
+            'year' => "CAST(strftime('%G', COALESCE(published_at, created_at)) AS INTEGER)",
+            'week' => "CAST(strftime('%V', COALESCE(published_at, created_at)) AS INTEGER)",
             'month' => "CAST(strftime('%m', COALESCE(published_at, created_at)) AS INTEGER)",
         ];
     }

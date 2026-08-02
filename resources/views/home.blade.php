@@ -142,6 +142,10 @@
                     'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
                 ])
             </div>
+
+            @include('partials.week_pagination', [
+                'weekPagination' => $weekPagination ?? ['previous' => null, 'weeks' => []],
+            ])
         @endif
     </div>
 @endsection
