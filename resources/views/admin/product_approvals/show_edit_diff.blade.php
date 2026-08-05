@@ -417,7 +417,7 @@
 
                     <div class="flex items-center justify-end gap-4 font-semibold">
                         <button type="submit"
-                            class="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors">
+                            class="rounded-lg border border-transparent bg-sky-600 px-6 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
                             Approve & Apply All Edits
                         </button>
                     </div>
