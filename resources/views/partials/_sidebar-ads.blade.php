@@ -63,21 +63,31 @@
         <ul class="space-y-4">
             @foreach($sponsors as $sponsor)
                 <li>
-                    <a href="{{ route('ads.click', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($sponsor->target_url, 'ad') }}" class="group flex items-center space-x-3 rounded-lg p-2" aria-label="Open {{ $sponsor->internal_name }} website">
-                        <img src="{{ $sponsor->image_url }}" alt="{{ $sponsor->internal_name }}"
-                            class="w-10 h-10 rounded-xl object-cover">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-1 font-semibold text-gray-900">
-                                <span class="truncate">{{ $sponsor->internal_name }}</span>
-                                <span class="ad-link-out-icon inline-flex h-4 w-4 flex-shrink-0 items-center justify-center text-gray-400 transition group-hover:text-gray-700" aria-hidden="true">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8" />
-                                    </svg>
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-500 line-clamp-2">{{ $sponsor->tagline }}</p>
+                    @if($sponsor->type === 'html_snippet')
+                        <div class="min-w-0 overflow-hidden">
+                            {!! $sponsor->content !!}
                         </div>
-                    </a>
+                    @else
+                        <a href="{{ route('ads.click', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($sponsor->target_url, 'ad') }}" class="group flex items-center space-x-3 rounded-lg p-2" aria-label="Open {{ $sponsor->internal_name }} website">
+                            @if($sponsor->image_url)
+                                <img src="{{ $sponsor->image_url }}" alt="{{ $sponsor->internal_name }}"
+                                    class="w-10 h-10 rounded-xl object-cover">
+                            @endif
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1 font-semibold text-gray-900">
+                                    <span class="truncate">{{ $sponsor->type === 'text_link' ? $sponsor->content : $sponsor->internal_name }}</span>
+                                    <span class="ad-link-out-icon inline-flex h-4 w-4 flex-shrink-0 items-center justify-center text-gray-400 transition group-hover:text-gray-700" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                @if($sponsor->tagline)
+                                    <p class="text-sm text-gray-500 line-clamp-2">{{ $sponsor->tagline }}</p>
+                                @endif
+                            </div>
+                        </a>
+                    @endif
                     <img src="{{ route('ads.impression', ['ad' => $sponsor, 'zone' => 'sponsors']) }}" alt="" class="hidden" width="1" height="1">
                 </li>
             @endforeach

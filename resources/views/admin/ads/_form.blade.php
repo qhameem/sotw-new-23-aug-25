@@ -30,6 +30,24 @@
     $targetRoutes = old('target_routes', isset($ad) && is_array($ad->target_routes) ? implode(', ', $ad->target_routes) : '');
 @endphp
 
+@push('styles')
+<style>
+    .ad-editor-shell { border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / .08); }
+    .ad-editor-section { border: 1px solid #e2e8f0; border-radius: .875rem; padding: 1.25rem; background: #fff; }
+    .ad-editor-section-title { color: #0f172a; font-size: 1rem; font-weight: 700; }
+    .ad-editor-section-help { margin-top: .25rem; color: #64748b; font-size: .8125rem; }
+    .ad-choice { display: block; cursor: pointer; border: 1px solid #cbd5e1; border-radius: .75rem; padding: .875rem; transition: .15s ease; }
+    .ad-choice:hover { border-color: #60a5fa; background: #eff6ff; }
+    .ad-choice.is-selected { border-color: var(--color-primary-500, #2563eb); background: #eff6ff; box-shadow: 0 0 0 2px rgb(37 99 235 / .12); }
+    .ad-choice.is-disabled { cursor: not-allowed; opacity: .48; background: #f8fafc; }
+    .ad-preview-stage { min-height: 22rem; border-radius: .875rem; background: #e2e8f0; padding: 1rem; overflow: auto; }
+    .ad-preview-device { margin-inline: auto; min-height: 19rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #f8fafc; padding: .875rem; transition: max-width .2s ease; }
+    .ad-preview-slot { overflow: hidden; border: 1px dashed #94a3b8; border-radius: .625rem; background: #fff; padding: .75rem; }
+    .ad-editor-actions { position: sticky; bottom: 0; z-index: 20; margin: 2rem -2rem -2rem; border-top: 1px solid #e2e8f0; border-radius: 0 0 1rem 1rem; background: rgb(255 255 255 / .96); padding: 1rem 2rem; backdrop-filter: blur(10px); }
+    @media (max-width: 640px) { .ad-editor-actions { margin-inline: -1rem; padding-inline: 1rem; } }
+</style>
+@endpush
+
 @if ($errors->any())
     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
         <strong class="font-bold">Please fix the highlighted fields:</strong>
@@ -45,7 +63,7 @@
     action="{{ $isEdit ? route('admin.ads.update', $ad) : route('admin.ads.store') }}"
     method="POST"
     enctype="multipart/form-data"
-    class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4"
+    class="ad-editor-shell px-4 pt-5 pb-8 mb-4 sm:px-8 sm:pt-6"
     x-data="adAdminForm({
         initialType: @js($presetTypeByTemplate[$selectedTemplate] ?? ''),
         initialImage: @js($ad->image_url ?? null),
@@ -58,6 +76,17 @@
             'product_listing_card' => ['type' => 'product_listing_card', 'zones' => $adZones->where('slug', 'sidebar-top')->pluck('id')->values()->all()],
         ]),
         isEdit: @js($isEdit),
+        initialName: @js(old('internal_name', $ad->internal_name ?? '')),
+        initialTagline: @js(old('tagline', $ad->tagline ?? '')),
+        initialText: @js(old('content_text', isset($ad) && $ad->type === 'text_link' ? $ad->content : '')),
+        initialHtml: @js(old('content_html', isset($ad) && $ad->type === 'html_snippet' ? $ad->content : '')),
+        initialZones: @js(array_map('strval', $selectedZoneIds)),
+        zones: @js($adZones->map(fn ($zone) => [
+            'id' => (string) $zone->id,
+            'name' => $zone->name,
+            'location' => $zone->render_location ?: $zone->description,
+            'placement' => $zone->placement_type,
+        ])->values()),
     })"
     x-init="init()"
 >
@@ -67,13 +96,16 @@
     @endif
 
     <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div class="space-y-6">
+        <div class="space-y-5">
             <div>
                 <h2 class="text-xl font-semibold text-gray-800">{{ $isEdit ? 'Edit Ad' : 'Create Ad' }}</h2>
-                <p class="text-sm text-gray-500 mt-1">One form now handles sponsor ads, sidebar banners, and inline placements.</p>
+                <p class="text-sm text-gray-500 mt-1">Choose a format, add its content, select placements, then confirm the preview.</p>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <section class="ad-editor-section">
+                <h3 class="ad-editor-section-title">1. Starting point</h3>
+                <p class="ad-editor-section-help">Use a preset or import a product to fill common fields.</p>
+                <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2" for="template">Template</label>
                     <select
@@ -116,49 +148,65 @@
                     <p class="text-xs text-gray-500 mt-1">Useful for sponsor ads copied from an approved product.</p>
                 </div>
             </div>
+            </section>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <section class="ad-editor-section">
+                <h3 class="ad-editor-section-title">2. Identity and format</h3>
+                <p class="ad-editor-section-help">The internal name is for admins. Visitors only see content you add below.</p>
+                <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2" for="internal_name">Internal Name</label>
-                    <input id="internal_name" name="internal_name" type="text" value="{{ old('internal_name', $ad->internal_name ?? '') }}" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('internal_name') border-red-500 @enderror" placeholder="Homepage sponsor, launch week banner, etc.">
+                    <input id="internal_name" name="internal_name" type="text" x-model="internalName" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('internal_name') border-red-500 @enderror" placeholder="Homepage sponsor, launch week banner, etc.">
                     @error('internal_name') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2" for="tagline">Tagline</label>
-                    <input id="tagline" name="tagline" type="text" value="{{ old('tagline', $ad->tagline ?? '') }}" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('tagline') border-red-500 @enderror" placeholder="Optional short description">
+                    <input id="tagline" name="tagline" type="text" x-model="tagline" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('tagline') border-red-500 @enderror" placeholder="Optional short description">
                     @error('tagline') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
                 </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2" for="type">Ad Type</label>
-                    <select id="type" name="type" x-model="adType" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('type') border-red-500 @enderror">
-                        <option value="">Select ad type</option>
-                        <option value="image_banner">Image Banner</option>
-                        <option value="product_listing_card">Product Listing Card</option>
-                        <option value="text_link">Text Link</option>
-                        <option value="html_snippet">HTML Snippet</option>
-                    </select>
+                <div class="mt-5">
+                    <span class="block text-sm font-bold text-gray-700 mb-2">Ad format</span>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        @foreach([
+                            'image_banner' => ['Image banner', 'A responsive uploaded graphic'],
+                            'product_listing_card' => ['Product card', 'Logo, name, and tagline'],
+                            'text_link' => ['Text link', 'A compact clickable link'],
+                            'html_snippet' => ['HTML / JavaScript', 'Custom markup, embed, or script'],
+                        ] as $typeValue => [$typeLabel, $typeHelp])
+                            <label class="ad-choice" :class="{ 'is-selected': adType === '{{ $typeValue }}' }">
+                                <input class="sr-only" type="radio" name="type" value="{{ $typeValue }}" x-model="adType">
+                                <span class="block text-sm font-semibold text-slate-900">{{ $typeLabel }}</span>
+                                <span class="mt-1 block text-xs text-slate-500">{{ $typeHelp }}</span>
+                            </label>
+                        @endforeach
+                    </div>
                     @error('type') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
                 </div>
+            </section>
+
+            <section class="ad-editor-section">
+                <h3 class="ad-editor-section-title">3. Ad content</h3>
+                <p class="ad-editor-section-help" x-text="contentHelp()"></p>
+                <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div x-show="['image_banner', 'product_listing_card'].includes(adType)" x-cloak>
                     <label class="block text-sm font-bold text-gray-700 mb-2" for="content_image">Image</label>
                     <input id="content_image" name="content_image" type="file" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('content_image') border-red-500 @enderror" @change="updateImagePreview($event)">
                     <p class="text-xs text-gray-500 mt-1" x-text="adType === 'product_listing_card' ? 'Upload the product logo or import an existing product.' : 'Upload a new file or import a product logo.'"></p>
                     @error('content_image') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
                 </div>
-            </div>
 
             <div x-show="adType === 'text_link'" x-cloak>
                 <label class="block text-sm font-bold text-gray-700 mb-2" for="content_text">Link Text</label>
-                <input id="content_text" name="content_text" type="text" value="{{ old('content_text', isset($ad) && $ad->type === 'text_link' ? $ad->content : '') }}" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('content_text') border-red-500 @enderror">
+                <input id="content_text" name="content_text" type="text" x-model="contentText" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('content_text') border-red-500 @enderror">
                 @error('content_text') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
             </div>
 
             <div x-show="adType === 'html_snippet'" x-cloak>
                 <label class="block text-sm font-bold text-gray-700 mb-2" for="content_html">HTML Snippet</label>
-                <textarea id="content_html" name="content_html" rows="6" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('content_html') border-red-500 @enderror">{{ old('content_html', isset($ad) && $ad->type === 'html_snippet' ? $ad->content : '') }}</textarea>
+                <textarea id="content_html" name="content_html" rows="10" x-model="contentHtml" class="shadow border rounded w-full py-2 px-3 font-mono text-sm text-gray-700 @error('content_html') border-red-500 @enderror" placeholder="<div>...</div>&#10;<script>...</script>"></textarea>
+                <p class="mt-2 text-xs text-amber-700">Trusted code only. Scripts run on live pages. Preview scripts run inside an isolated frame.</p>
                 @error('content_html') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
             </div>
 
@@ -171,19 +219,32 @@
                     Open in new tab
                 </label>
             </div>
+                </div>
+            </section>
 
-            <div>
-                <label class="block text-sm font-bold text-gray-700 mb-2" for="ad_zones">Zone Assignments</label>
-                <select id="ad_zones" name="ad_zones[]" multiple size="6" class="shadow border rounded w-full py-2 px-3 text-gray-700 @error('ad_zones') border-red-500 @enderror">
+            <section class="ad-editor-section">
+                <h3 class="ad-editor-section-title">4. Placements</h3>
+                <p class="ad-editor-section-help">Select every location where this ad may appear. HTML / JavaScript works in all standard placements.</p>
+                <div id="ad_zones" class="mt-4 grid gap-3 sm:grid-cols-2">
                     @foreach($adZones as $zone)
-                        <option value="{{ $zone->id }}" @selected(in_array($zone->id, $selectedZoneIds))>
-                            {{ $zone->name }} · {{ $zone->slug }} · max {{ $zone->max_ads }}
-                        </option>
+                        @php($zoneTypes = $zone->supported_ad_types ?: \App\Models\AdZone::SUPPORTED_AD_TYPES)
+                        <label
+                            class="ad-choice"
+                            :class="{ 'is-selected': selectedZones.includes('{{ $zone->id }}'), 'is-disabled': !zoneSupports(@js($zoneTypes)) }"
+                        >
+                            <span class="flex items-start gap-3">
+                                <input type="checkbox" name="ad_zones[]" value="{{ $zone->id }}" x-model="selectedZones" :disabled="!zoneSupports(@js($zoneTypes))" class="mt-1">
+                                <span>
+                                    <span class="block text-sm font-semibold text-slate-900">{{ $zone->name }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500">{{ $zone->render_location ?: $zone->description }}</span>
+                                    <span class="mt-2 block text-[11px] font-medium text-slate-400">{{ ucfirst(str_replace('_', ' ', $zone->placement_type)) }} · {{ ucfirst($zone->device_scope) }} · Up to {{ $zone->max_ads }}</span>
+                                </span>
+                            </span>
+                        </label>
                     @endforeach
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Each selected zone will use its own delivery rules, max-ads limit, and rotation mode.</p>
+                </div>
                 @error('ad_zones') <p class="text-red-500 text-xs italic">{{ $message }}</p> @enderror
-            </div>
+            </section>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
@@ -268,10 +329,37 @@
             </div>
         </div>
 
-        <aside class="space-y-4">
-            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <h3 class="text-sm font-semibold text-gray-800">Preview</h3>
-                <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-white p-4 min-h-[180px]">
+        <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800">Placement preview</h3>
+                        <p class="mt-1 text-xs text-gray-500">Approximate responsive size and layout.</p>
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500" x-text="adTypeLabel()"></span>
+                </div>
+
+                <label class="mt-4 block text-xs font-semibold text-slate-600" for="preview_zone">Placement</label>
+                <select id="preview_zone" x-model="previewZone" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
+                    <template x-for="zone in previewableZones()" :key="zone.id">
+                        <option :value="zone.id" x-text="zone.name"></option>
+                    </template>
+                </select>
+
+                <div class="mt-3 grid grid-cols-3 gap-2" role="group" aria-label="Preview device">
+                    <template x-for="device in ['desktop', 'tablet', 'mobile']" :key="device">
+                        <button type="button" class="rounded-lg border px-2 py-2 text-xs font-semibold capitalize" :class="previewDevice === device ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'" @click="previewDevice = device" x-text="device"></button>
+                    </template>
+                </div>
+
+                <div class="ad-preview-stage mt-4">
+                    <div class="ad-preview-device" :style="`max-width: ${deviceWidth()}`">
+                        <div class="mb-3 flex items-center gap-1.5">
+                            <span class="h-2 w-2 rounded-full bg-red-300"></span><span class="h-2 w-2 rounded-full bg-amber-300"></span><span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+                            <span class="ml-2 truncate text-[10px] text-slate-400" x-text="previewZoneDetails()"></span>
+                        </div>
+                        <div class="mb-3 h-8 rounded bg-slate-200"></div>
+                        <div class="ad-preview-slot" :style="previewSlotStyle()">
                     <template x-if="adType === 'image_banner'">
                         <div class="space-y-3">
                             <template x-if="previewImage">
@@ -279,8 +367,8 @@
                             </template>
                             <p x-show="!previewImage" class="text-sm text-gray-400">Upload an image or import a product logo to preview it here.</p>
                             <div>
-                                <p class="text-sm font-semibold text-gray-800" x-text="fieldValue('internal_name', 'Ad title')"></p>
-                                <p class="text-xs text-gray-500" x-text="fieldValue('tagline', 'Optional tagline')"></p>
+                                <p class="text-sm font-semibold text-gray-800" x-text="internalName || 'Ad title'"></p>
+                                <p class="text-xs text-gray-500" x-text="tagline || 'Optional tagline'"></p>
                             </div>
                         </div>
                     </template>
@@ -294,38 +382,43 @@
                                     <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 flex-shrink-0">Logo</div>
                                 </template>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 truncate" x-text="fieldValue('internal_name', 'Product name')"></p>
-                                    <p class="text-sm text-gray-600 line-clamp-2" x-text="fieldValue('tagline', 'Short tagline')"></p>
+                                    <p class="text-sm font-semibold text-gray-800 truncate" x-text="internalName || 'Product name'"></p>
+                                    <p class="text-sm text-gray-600 line-clamp-2" x-text="tagline || 'Short tagline'"></p>
                                 </div>
                             </div>
                         </div>
                     </template>
                     <template x-if="adType === 'text_link'">
-                        <a href="#" class="text-blue-600 hover:underline text-sm" x-text="fieldValue('content_text', 'Preview link text')"></a>
+                        <a href="#" class="text-blue-600 hover:underline text-sm" x-text="contentText || 'Preview link text'"></a>
                     </template>
                     <template x-if="adType === 'html_snippet'">
-                        <div class="text-xs text-gray-600 whitespace-pre-wrap" x-text="fieldValue('content_html', 'HTML preview source will appear here.')"></div>
+                        <iframe
+                            title="Isolated HTML ad preview"
+                            sandbox="allow-scripts"
+                            :srcdoc="htmlPreviewDocument()"
+                            class="block min-h-40 w-full border-0 bg-white"
+                        ></iframe>
                     </template>
+                    <p x-show="!adType" class="py-12 text-center text-sm text-slate-400">Choose an ad format to begin.</p>
+                        </div>
+                        <div class="mt-3 grid grid-cols-3 gap-2"><div class="h-16 rounded bg-slate-200"></div><div class="h-16 rounded bg-slate-200"></div><div class="h-16 rounded bg-slate-200"></div></div>
+                    </div>
                 </div>
             </div>
 
             <div class="rounded-xl border border-gray-200 bg-white p-4">
-                <h3 class="text-sm font-semibold text-gray-800">Zone Notes</h3>
-                <div class="mt-3 space-y-3 text-xs text-gray-600">
-                    @foreach($adZones as $zone)
-                        <div class="rounded-lg bg-gray-50 p-3">
-                            <div class="font-semibold text-gray-800">{{ $zone->name }}</div>
-                            <div>{{ $zone->render_location ?: $zone->description }}</div>
-                            <div>Supports: {{ implode(', ', $zone->supported_ad_types ?: \App\Models\AdZone::SUPPORTED_AD_TYPES) }}</div>
-                            <div>Rotation: {{ ucfirst($zone->rotation_mode) }} · Max ads: {{ $zone->max_ads }}</div>
-                        </div>
-                    @endforeach
-                </div>
+                <h3 class="text-sm font-semibold text-gray-800">Before publishing</h3>
+                <ol class="mt-3 space-y-2 text-xs text-gray-600">
+                    <li>1. Check desktop, tablet, and mobile previews.</li>
+                    <li>2. Confirm at least one placement is selected.</li>
+                    <li>3. Use targeting only when the ad should not run everywhere.</li>
+                    <li x-show="adType === 'html_snippet'">4. Test third-party scripts after saving; the preview is intentionally isolated.</li>
+                </ol>
             </div>
         </aside>
     </div>
 
-    <div class="flex items-center justify-between mt-8">
+    <div class="ad-editor-actions flex items-center justify-between gap-4">
         <button
             class="inline-flex items-center justify-center rounded px-4 py-2 font-bold text-white transition hover:brightness-95"
             style="background-color: var(--color-primary-500, #2563eb); color: #fff;"
@@ -346,16 +439,28 @@
             template: @js($selectedTemplate),
             adType: config.initialType,
             previewImage: config.initialImage,
+            internalName: config.initialName,
+            tagline: config.initialTagline,
+            contentText: config.initialText,
+            contentHtml: config.initialHtml,
+            selectedZones: config.initialZones,
+            zones: config.zones,
+            previewZone: config.initialZones[0] || config.zones[0]?.id || '',
+            previewDevice: 'desktop',
             init() {
+                this.$watch('selectedZones', (zones) => {
+                    if (zones.length && !zones.includes(this.previewZone)) {
+                        this.previewZone = zones[0];
+                    }
+                });
             },
             applyTemplate(template) {
                 this.template = template;
                 if (!config.isEdit && config.templateDefaults[template]) {
                     this.adType = config.templateDefaults[template].type;
                     const zoneIds = config.templateDefaults[template].zones.map(String);
-                    Array.from(document.getElementById('ad_zones').options).forEach((option) => {
-                        option.selected = zoneIds.includes(option.value);
-                    });
+                    this.selectedZones = zoneIds;
+                    this.previewZone = zoneIds[0] || this.previewZone;
                 }
             },
             applyProduct(option) {
@@ -363,8 +468,8 @@
                     return;
                 }
 
-                document.getElementById('internal_name').value = option.dataset.name || '';
-                document.getElementById('tagline').value = option.dataset.tagline || '';
+                this.internalName = option.dataset.name || '';
+                this.tagline = option.dataset.tagline || '';
                 document.getElementById('target_url').value = option.dataset.targetUrl || '';
                 this.previewImage = option.dataset.logo || this.previewImage;
             },
@@ -376,9 +481,52 @@
 
                 this.previewImage = URL.createObjectURL(file);
             },
-            fieldValue(id, fallback) {
-                const element = document.getElementById(id);
-                return element && element.value ? element.value : fallback;
+            zoneSupports(types) {
+                return this.adType === 'html_snippet' || !this.adType || types.includes(this.adType);
+            },
+            previewableZones() {
+                const selected = this.zones.filter((zone) => this.selectedZones.includes(zone.id));
+                return selected.length ? selected : this.zones;
+            },
+            previewZoneObject() {
+                return this.zones.find((zone) => zone.id === this.previewZone) || this.previewableZones()[0] || null;
+            },
+            previewZoneDetails() {
+                const zone = this.previewZoneObject();
+                return zone ? `${zone.name} · ${zone.location}` : 'Select a placement';
+            },
+            deviceWidth() {
+                return { desktop: '100%', tablet: '28rem', mobile: '18rem' }[this.previewDevice];
+            },
+            previewSlotStyle() {
+                const placement = this.previewZoneObject()?.placement;
+                if (placement === 'sidebar') {
+                    return 'max-width: 18rem; margin-left: auto;';
+                }
+                if (placement === 'header' || placement === 'footer') {
+                    return 'width: 100%; min-height: 5rem;';
+                }
+                return 'width: 100%; min-height: 7rem;';
+            },
+            contentHelp() {
+                return {
+                    image_banner: 'Upload a responsive banner and add its destination URL.',
+                    product_listing_card: 'Upload a square logo and provide a short tagline.',
+                    text_link: 'Enter the visible link text and its destination URL.',
+                    html_snippet: 'Paste trusted HTML, CSS, and JavaScript. No destination URL is required.',
+                }[this.adType] || 'Choose an ad format above.';
+            },
+            adTypeLabel() {
+                return {
+                    image_banner: 'Image banner',
+                    product_listing_card: 'Product card',
+                    text_link: 'Text link',
+                    html_snippet: 'HTML / JavaScript',
+                }[this.adType] || 'No format';
+            },
+            htmlPreviewDocument() {
+                const content = this.contentHtml || '<div style="padding:24px;text-align:center;color:#94a3b8;font-family:sans-serif">HTML preview appears here</div>';
+                return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;max-width:100%;overflow-x:hidden}*{box-sizing:border-box}img,iframe,video{max-width:100%}</style></head><body>${content}</body></html>`;
             },
         };
     }

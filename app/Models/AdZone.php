@@ -75,6 +75,10 @@ class AdZone extends Model
 
     public function supportsAdType(string $type): bool
     {
+        if ($type === 'html_snippet') {
+            return true;
+        }
+
         $supportedTypes = $this->supported_ad_types ?: self::SUPPORTED_AD_TYPES;
 
         return in_array($type, $supportedTypes, true);

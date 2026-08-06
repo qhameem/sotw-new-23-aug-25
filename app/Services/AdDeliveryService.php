@@ -45,7 +45,10 @@ class AdDeliveryService
 
         $ads = $zone->ads()
             ->where('is_active', true)
-            ->when($zone->supported_ad_types, fn ($query) => $query->whereIn('type', $zone->supported_ad_types))
+            ->when($zone->supported_ad_types, fn ($query) => $query->whereIn('type', array_values(array_unique([
+                ...$zone->supported_ad_types,
+                'html_snippet',
+            ]))))
             ->where(function ($query) {
                 $query->whereNull('start_date')
                     ->orWhere('start_date', '<=', now());

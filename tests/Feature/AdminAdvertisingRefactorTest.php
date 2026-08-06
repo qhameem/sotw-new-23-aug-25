@@ -199,6 +199,54 @@ test('a single ad can be assigned to multiple zones', function () {
     expect($ad->adZones()->count())->toBe(2);
 });
 
+test('admin can create an html and javascript snippet in any ad zone', function () {
+    $admin = makeAdminUser();
+    $zone = AdZone::factory()->create([
+        'slug' => 'legacy-image-only-zone',
+        'supported_ad_types' => ['image_banner'],
+    ]);
+    $snippet = '<div id="custom-ad">Custom embed</div><script>window.customAdLoaded = true;</script>';
+
+    $this->actingAs($admin)->post(route('admin.ads.store'), [
+        'template' => 'custom',
+        'internal_name' => 'Custom JavaScript Embed',
+        'type' => 'html_snippet',
+        'content_html' => $snippet,
+        'ad_zones' => [$zone->id],
+        'is_active' => 1,
+    ])->assertRedirect(route('admin.advertising.index', ['tab' => 'ads']));
+
+    $ad = Ad::firstOrFail();
+
+    expect($ad->content)->toBe($snippet)
+        ->and($zone->supportsAdType('html_snippet'))->toBeTrue()
+        ->and(app(AdDeliveryService::class)->forZone($zone, [
+            'route_name' => 'home',
+            'page_type' => 'home',
+            'audience_scope' => 'guest',
+            'device_type' => 'desktop',
+        ])->pluck('id')->all())->toBe([$ad->id]);
+});
+
+test('html snippets render in the sponsors placement', function () {
+    $zone = AdZone::query()->where('slug', 'sponsors')->firstOrFail();
+    $zone->update([
+        'supported_ad_types' => ['image_banner'],
+        'rotation_mode' => 'priority',
+    ]);
+    $ad = Ad::factory()->create([
+        'internal_name' => 'Sponsor Embed',
+        'type' => 'html_snippet',
+        'content' => '<div id="sponsor-embed">Sponsor script placement</div>',
+        'priority' => 100,
+    ]);
+    $zone->ads()->sync([$ad->id]);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('<div id="sponsor-embed">Sponsor script placement</div>', false);
+});
+
 test('delivery service filters inactive and scheduled ads and falls back to house ads when configured', function () {
     $zone = AdZone::query()->where('slug', 'sponsors')->firstOrFail();
     $zone->update([
