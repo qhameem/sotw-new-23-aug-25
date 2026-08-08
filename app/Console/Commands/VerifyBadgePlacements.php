@@ -9,12 +9,17 @@ use Illuminate\Console\Command;
 class VerifyBadgePlacements extends Command
 {
     protected $signature = 'badge:verify';
+
     protected $description = 'Verify badge placements for all badge-submitted products';
 
     public function handle(): int
     {
         $products = Product::where('submission_type', 'badge')
-            ->where('is_published', true)
+            ->where('approved', true)
+            ->where(function ($query) {
+                $query->where('is_published', true)
+                    ->orWhereNotNull('published_at');
+            })
             ->get();
 
         $this->info("Found {$products->count()} badge-submitted products to verify.");
@@ -25,6 +30,7 @@ class VerifyBadgePlacements extends Command
         }
 
         $this->info('All verification jobs dispatched.');
+
         return Command::SUCCESS;
     }
 }

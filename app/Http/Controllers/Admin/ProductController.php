@@ -3,24 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Type;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage; // Added Storage facade
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Auth;
-use App\Services\ProductLogoStorageService;
+use App\Services\BadgeVerificationManager;
 use App\Services\FaviconExtractorService;
 use App\Services\LogoExtractorService;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+use App\Services\ProductLogoStorageService; // Added Storage facade
 use App\Support\CategoryTypeRegistry;
 use App\Support\ProductLogo;
-use App\Support\SocialLinkValidator;
 use App\Support\ProductMediaSeo;
+use App\Support\SocialLinkValidator;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class ProductController extends Controller
 {
@@ -105,11 +106,13 @@ class ProductController extends Controller
     {
         if ($sortBy === 'is_promoted') {
             $query->orderBy('promoted_position', $sortDir);
+
             return;
         }
 
         if (in_array($sortBy, ['created_at', 'name', 'id', 'votes_count', 'user_upvotes_count', 'impressions', 'outbound_clicks_count'], true)) {
             $query->orderBy($sortBy, $sortDir);
+
             return;
         }
 
@@ -210,9 +213,25 @@ class ProductController extends Controller
                     'sort_dir' => $sortDir,
                     'logo_filter' => $logoFilter,
                     'selected_product_id' => $product->id,
-                ]) . '#selected-product-card',
+                ]).'#selected-product-card',
             ];
         })->values());
+    }
+
+    public function verifyBadge(Request $request, Product $product, BadgeVerificationManager $manager)
+    {
+        if ($product->submission_type !== 'badge') {
+            return back()->with('error', 'This product was not scheduled through badge verification.');
+        }
+
+        $result = $manager->verify($product, 'manual_admin', $request->user(), $request->ip());
+
+        return back()->with(
+            $result['verified'] ? 'success' : 'error',
+            $result['verified']
+                ? 'Badge verification passed for '.$product->name.'.'
+                : 'Badge verification failed for '.$product->name.'. Publication is blocked.'
+        );
     }
 
     /**
@@ -229,7 +248,7 @@ class ProductController extends Controller
         ] = $this->loadProductCategoryGroups();
 
         $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
-        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $allTechStacksData = $allTechStacks->map(fn ($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
         $displayData = [
             'name' => old('name'),
@@ -293,7 +312,7 @@ class ProductController extends Controller
         ]);
 
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
-        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn($id) => (int) $id);
+        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn ($id) => (int) $id);
         $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
 
         if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty()) {
@@ -324,6 +343,7 @@ class ProductController extends Controller
         $productController = app(\App\Http\Controllers\ProductController::class);
 
         $view = $productController->showProductPage($product);
+
         return $view->with('isAdminView', true);
     }
 
@@ -343,7 +363,7 @@ class ProductController extends Controller
         ] = $this->loadProductCategoryGroups();
 
         $allTechStacks = \App\Models\TechStack::orderBy('name')->get();
-        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $allTechStacksData = $allTechStacks->map(fn ($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
         // For admin editing, always show the original product data, not proposed changes
         $product->load('media');
@@ -367,8 +387,8 @@ class ProductController extends Controller
             'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
             'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
             'id' => $product->id,
-            'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
-            'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->take(1)->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+            'gallery' => $product->media->whereIn('type', ['image', 'screenshot'])->take(1)->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
@@ -378,7 +398,7 @@ class ProductController extends Controller
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR));
             })
             ->pluck('categories.id')
-            ->map(fn($id) => (string) $id)
+            ->map(fn ($id) => (string) $id)
             ->toArray();
 
         $selectedUseCaseCategories = $product->categories()
@@ -386,7 +406,7 @@ class ProductController extends Controller
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE));
             })
             ->pluck('categories.id')
-            ->map(fn($id) => (string) $id)
+            ->map(fn ($id) => (string) $id)
             ->toArray();
 
         $selectedPlatformCategories = $product->categories()
@@ -394,7 +414,7 @@ class ProductController extends Controller
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM));
             })
             ->pluck('categories.id')
-            ->map(fn($id) => (string) $id)
+            ->map(fn ($id) => (string) $id)
             ->toArray();
 
         return view('admin.products.edit', compact('product', 'displayData', 'regularCategories', 'useCaseCategories', 'bestForCategories', 'pricingCategories', 'platformCategories', 'allTechStacksData', 'allCategories', 'types', 'selectedUseCaseCategories', 'selectedBestForCategories', 'selectedPlatformCategories'));
@@ -409,7 +429,7 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:products,slug,' . $product->id,
+            'slug' => 'required|string|max:255|unique:products,slug,'.$product->id,
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -428,7 +448,7 @@ class ProductController extends Controller
                 'url',
                 'max:2048',
                 function ($attribute, $value, $fail) {
-                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                    if (! SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
                         $fail(SocialLinkValidator::allowedMakerLinkMessage());
                     }
                 },
@@ -450,20 +470,20 @@ class ProductController extends Controller
         ]);
 
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
-        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn($id) => (int) $id);
+        $selected = collect(is_array($request->input('categories')) ? $request->input('categories') : [])->map(fn ($id) => (int) $id);
         $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
         $customCategories = $request->input('custom_categories', []);
         $hasCustomUseCase = collect($customCategories)->contains(function ($category) {
             return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
         });
 
-        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && ! $hasCustomUseCase) {
             return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
         }
 
         // Handle logo removal
         if (($request->has('remove_logo') || $request->input('logo') === 'null') && $product->logo) {
-            if (!Str::startsWith($product->logo, 'http')) {
+            if (! Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
             $product->logo = null;
@@ -471,7 +491,7 @@ class ProductController extends Controller
 
         // Handle new logo upload
         if ($request->hasFile('logo')) {
-            if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+            if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
             $validated['logo'] = app(ProductLogoStorageService::class)
@@ -495,7 +515,7 @@ class ProductController extends Controller
             $validated['x_account'] = Product::normalizeXAccount($validated['x_account']);
         }
 
-        if (!empty($validated['pricing_page_url'])) {
+        if (! empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
 
@@ -555,12 +575,12 @@ class ProductController extends Controller
 
         if ($product->approved) {
             if ($request->boolean('remove_logo')) {
-                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = null;
             } elseif (isset($validated['logo'])) {
-                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = $validated['logo'];
@@ -631,10 +651,10 @@ class ProductController extends Controller
                 ->first();
 
             if ($request->hasFile('media')) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotMedia($product, $request->file('media')[0], $manager);
             } elseif ($mediaUrl) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
@@ -662,7 +682,7 @@ class ProductController extends Controller
                 'comparison_product_ids',
                 'alternative_product_ids',
             ] as $field) {
-                if (!empty($fieldChanges[$field])) {
+                if (! empty($fieldChanges[$field])) {
                     $directUpdateData[$field] = $validated[$field] ?? null;
                 }
             }
@@ -679,7 +699,7 @@ class ProductController extends Controller
                 $directUpdateData['logo'] = $validated['logo'];
             }
 
-            if (!empty($directUpdateData)) {
+            if (! empty($directUpdateData)) {
                 $product->update($directUpdateData);
             }
 
@@ -696,10 +716,10 @@ class ProductController extends Controller
                 ->first();
 
             if ($request->hasFile('media')) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotMedia($product, $request->file('media')[0], $manager);
             } elseif ($mediaUrl) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
@@ -713,10 +733,11 @@ class ProductController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             $redirectUrl = route($redirectRoute);
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'redirect_url' => $redirectUrl
+                'redirect_url' => $redirectUrl,
             ]);
         }
 
@@ -735,7 +756,7 @@ class ProductController extends Controller
         $logoPath = null;
 
         if ($action === 'upload') {
-            if (!$request->hasFile('logo')) {
+            if (! $request->hasFile('logo')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Choose a logo file to upload.',
@@ -772,7 +793,7 @@ class ProductController extends Controller
 
             $logoPath = $this->resolveLogoPathFromInput($logoInput, (string) $product->link);
 
-            if (!$logoPath) {
+            if (! $logoPath) {
                 return response()->json([
                     'success' => false,
                     'message' => 'The selected logo could not be saved.',
@@ -821,7 +842,7 @@ class ProductController extends Controller
     {
         $normalizedLink = Product::normalizeLink($productLink);
 
-        if (!filled($normalizedLink) || !filter_var($normalizedLink, FILTER_VALIDATE_URL)) {
+        if (! filled($normalizedLink) || ! filter_var($normalizedLink, FILTER_VALIDATE_URL)) {
             return [];
         }
 
@@ -848,7 +869,7 @@ class ProductController extends Controller
 
         $logoCandidates = $this->usableLogoCandidates($logoCandidates);
 
-        if (!empty($logoCandidates)) {
+        if (! empty($logoCandidates)) {
             return $logoCandidates;
         }
 
@@ -862,7 +883,7 @@ class ProductController extends Controller
         $usableCandidates = [];
 
         foreach ($candidates as $candidate) {
-            if (!is_string($candidate)) {
+            if (! is_string($candidate)) {
                 continue;
             }
 
@@ -872,7 +893,7 @@ class ProductController extends Controller
                 continue;
             }
 
-            if (!in_array($candidate, $usableCandidates, true)) {
+            if (! in_array($candidate, $usableCandidates, true)) {
                 $usableCandidates[] = $candidate;
             }
         }
@@ -901,8 +922,8 @@ class ProductController extends Controller
         if (filter_var($logoInput, FILTER_VALIDATE_URL)) {
             $appUrl = rtrim((string) config('app.url'), '/');
 
-            if ($appUrl !== '' && Str::startsWith($logoInput, $appUrl . '/storage/')) {
-                return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, $appUrl . '/storage/'), '/'));
+            if ($appUrl !== '' && Str::startsWith($logoInput, $appUrl.'/storage/')) {
+                return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, $appUrl.'/storage/'), '/'));
             }
 
             try {
@@ -922,11 +943,11 @@ class ProductController extends Controller
 
     private function replaceLiveLogoFromAdminPanel(Product $product, string $logoPath): void
     {
-        if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+        if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
             Storage::disk('public')->delete($product->logo);
         }
 
-        if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+        if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
             Storage::disk('public')->delete($product->proposed_logo_path);
         }
 
@@ -958,19 +979,19 @@ class ProductController extends Controller
 
         foreach ($pendingFields as $value) {
             if (is_array($value)) {
-                if (!empty($value)) {
+                if (! empty($value)) {
                     return true;
                 }
 
                 continue;
             }
 
-            if (!is_null($value) && $value !== '') {
+            if (! is_null($value) && $value !== '') {
                 return true;
             }
         }
 
-        if (!is_null($product->proposed_sell_product)) {
+        if (! is_null($product->proposed_sell_product)) {
             return true;
         }
 
@@ -987,7 +1008,7 @@ class ProductController extends Controller
     {
         $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
 
-        if (!$downloadedPath) {
+        if (! $downloadedPath) {
             return;
         }
 
@@ -999,7 +1020,7 @@ class ProductController extends Controller
     {
         $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath);
 
-        if (!$storedMedia) {
+        if (! $storedMedia) {
             return;
         }
 
@@ -1033,7 +1054,7 @@ class ProductController extends Controller
     {
         $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
 
-        if (!$downloadedPath) {
+        if (! $downloadedPath) {
             return;
         }
 
@@ -1045,7 +1066,7 @@ class ProductController extends Controller
     {
         $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath, 'proposed-');
 
-        if (!$storedMedia) {
+        if (! $storedMedia) {
             return;
         }
 
@@ -1069,7 +1090,7 @@ class ProductController extends Controller
             $mimeType = $file->getMimeType();
         }
 
-        if (!Str::startsWith((string) $mimeType, 'image')) {
+        if (! Str::startsWith((string) $mimeType, 'image')) {
             return null;
         }
 
@@ -1077,8 +1098,8 @@ class ProductController extends Controller
             ? strtolower(pathinfo((string) $file, PATHINFO_EXTENSION)) ?: 'png'
             : (strtolower($file->getClientOriginalExtension()) ?: 'png');
 
-        $filename = $filenamePrefix . ProductMediaSeo::productMediaFilename($product, 'screenshot', $extension, 1);
-        $path = 'product_media/' . $filename;
+        $filename = $filenamePrefix.ProductMediaSeo::productMediaFilename($product, 'screenshot', $extension, 1);
+        $path = 'product_media/'.$filename;
 
         if ($isExternalPath) {
             Storage::disk('public')->put($path, file_get_contents($absolutePath));
@@ -1096,15 +1117,15 @@ class ProductController extends Controller
 
             $imageThumb = $manager->read($absolutePath);
             $imageThumb->scale(width: 300);
-            $pathThumb = $directory . '/thumb_' . $storedFilename;
+            $pathThumb = $directory.'/thumb_'.$storedFilename;
             Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
 
             $imageMedium = $manager->read($absolutePath);
             $imageMedium->scale(width: 800);
-            $pathMedium = $directory . '/medium_' . $storedFilename;
+            $pathMedium = $directory.'/medium_'.$storedFilename;
             Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
         } catch (\Throwable $e) {
-            \Log::warning('Image resizing skipped: ' . $e->getMessage());
+            \Log::warning('Image resizing skipped: '.$e->getMessage());
         }
 
         return [
@@ -1118,7 +1139,7 @@ class ProductController extends Controller
     {
         try {
             $appUrl = config('app.url');
-            $isLocal = str_starts_with($url, $appUrl . '/storage/')
+            $isLocal = str_starts_with($url, $appUrl.'/storage/')
                 || str_starts_with($url, '/storage/')
                 || str_contains($url, '/storage/screenshots/');
 
@@ -1127,7 +1148,7 @@ class ProductController extends Controller
 
                 if (Storage::disk('public')->exists($storagePath)) {
                     $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
-                    $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+                    $path = 'product_media/tmp-'.Str::uuid().'.'.$extension;
                     Storage::disk('public')->copy($storagePath, $path);
 
                     return $path;
@@ -1135,7 +1156,7 @@ class ProductController extends Controller
             }
 
             $response = Http::get($url);
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -1148,12 +1169,12 @@ class ProductController extends Controller
                 $extension = 'avif';
             }
 
-            $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+            $path = 'product_media/tmp-'.Str::uuid().'.'.$extension;
             Storage::disk('public')->put($path, $response->body());
 
             return $path;
         } catch (\Throwable $e) {
-            \Log::error('Failed to process media from URL: ' . $url . ' - ' . $e->getMessage());
+            \Log::error('Failed to process media from URL: '.$url.' - '.$e->getMessage());
 
             return null;
         }
@@ -1162,7 +1183,7 @@ class ProductController extends Controller
     private function deleteMediaFiles(?string ...$paths): void
     {
         foreach ($paths as $path) {
-            if ($path && !Str::startsWith($path, 'http')) {
+            if ($path && ! Str::startsWith($path, 'http')) {
                 Storage::disk('public')->delete($path);
             }
         }
@@ -1176,7 +1197,7 @@ class ProductController extends Controller
         }
 
         $tokens = collect(preg_split('/[\s,;]+/', $rawInput) ?: [])
-            ->map(fn($token) => trim((string) $token))
+            ->map(fn ($token) => trim((string) $token))
             ->filter()
             ->values();
 
@@ -1207,7 +1228,7 @@ class ProductController extends Controller
             }
 
             return ['kind' => 'slug', 'value' => $slug];
-        })->filter(fn($entry) => !empty($entry['value']))->values();
+        })->filter(fn ($entry) => ! empty($entry['value']))->values();
 
         if ($normalized->isEmpty()) {
             return [];
@@ -1216,14 +1237,14 @@ class ProductController extends Controller
         $numericIds = $normalized
             ->where('kind', 'id')
             ->pluck('value')
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
 
         $slugs = $normalized
             ->where('kind', 'slug')
             ->pluck('value')
-            ->map(fn($slug) => (string) $slug)
+            ->map(fn ($slug) => (string) $slug)
             ->unique()
             ->values();
 
@@ -1255,7 +1276,7 @@ class ProductController extends Controller
                 $resolvedId = $slugMap->get((string) $entry['value']);
             }
 
-            if (!$resolvedId) {
+            if (! $resolvedId) {
                 continue;
             }
             if ($excludeProductId && (int) $resolvedId === (int) $excludeProductId) {
@@ -1280,6 +1301,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $product->delete();
+
         return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 
@@ -1315,7 +1337,7 @@ class ProductController extends Controller
         // Delete associated logos from storage if they are not external URLs
         $productsToDelete = Product::whereIn('id', $productIds)->get();
         foreach ($productsToDelete as $product) {
-            if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+            if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
             // Consider deleting other related files if necessary
@@ -1323,7 +1345,7 @@ class ProductController extends Controller
 
         Product::whereIn('id', $productIds)->delete();
 
-        return redirect()->route('admin.products.index')->with('success', count($productIds) . ' products deleted successfully.');
+        return redirect()->route('admin.products.index')->with('success', count($productIds).' products deleted successfully.');
     }
 
     public function updatePromotion(Request $request, Product $product)
@@ -1372,10 +1394,10 @@ class ProductController extends Controller
 
         collect($products)
             ->filter(fn (Product $product) => $product->published_at)
-            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->map(fn (Product $product) => $product->published_at->year.'_'.$product->published_at->weekOfYear)
             ->unique()
             ->each(function (string $weekKey): void {
-                $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+                $generalProductListCacheKey = 'product_list_week_'.$weekKey.'_'.now()->toDateString();
                 \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
             });
     }

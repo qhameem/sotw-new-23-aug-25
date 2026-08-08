@@ -27,12 +27,12 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductInlineUpdateController;
 use App\Http\Controllers\ProductInteractionController;
 use App\Http\Controllers\ProductReviewController;
+use App\Http\Controllers\ProductSubmissionDraftController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SearchModalContentController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StripeController;
-use App\Http\Controllers\ProductSubmissionDraftController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TodoListController;
 use App\Http\Controllers\ToolAuthController;
@@ -158,6 +158,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('products/{product}/update-promotion', [\App\Http\Controllers\Admin\ProductController::class, 'updatePromotion'])->name('products.updatePromotion');
     Route::post('products/{product}/panel-logo', [\App\Http\Controllers\Admin\ProductController::class, 'updatePanelLogo'])->name('products.panel-logo');
     Route::post('products/{product}/unpublish', [\App\Http\Controllers\Admin\ProductController::class, 'unpublish'])->name('products.unpublish');
+    Route::post('products/{product}/verify-badge', [\App\Http\Controllers\Admin\ProductController::class, 'verifyBadge'])->name('products.verify-badge');
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class); // Product resource routes last
     Route::resource('tech-stacks', \App\Http\Controllers\Admin\TechStackController::class);
     Route::resource('category-types', \App\Http\Controllers\Admin\CategoryTypeController::class);

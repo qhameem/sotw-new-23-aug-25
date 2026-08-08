@@ -125,6 +125,8 @@
                             <span class="text-sm text-slate-500">No categories assigned yet.</span>
                         @endforelse
                     </div>
+
+                    @include('admin.products._submission_source', ['product' => $product])
                 </div>
             </div>
         </div>

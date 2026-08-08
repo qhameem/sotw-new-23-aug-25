@@ -14,14 +14,14 @@ class BadgeWarningMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public Product $product
-    ) {
-    }
+        public Product $product,
+        public bool $wasPublished = false,
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Action Required: Badge missing on your site for {$this->product->name}",
+            subject: "Badge verification failed for {$this->product->name}",
         );
     }
 

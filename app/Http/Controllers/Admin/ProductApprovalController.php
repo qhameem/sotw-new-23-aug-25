@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\ProductApproved;
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\User; // Added for type hinting if needed, though Product model has user relationship
+use App\Models\Product; // Added for type hinting if needed, though Product model has user relationship
+use App\Models\User;
+use App\Services\BadgeVerificationManager; // Added event
+use App\Support\CategoryTypeRegistry; // Added for logging
+use App\Support\ProductMediaSeo; // Added for file operations
+use App\Support\ProductPublishSchedule; // Added for string operations
 use Illuminate\Http\Request;
-use App\Events\ProductApproved; // Added event
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Log; // Added for logging
-use Illuminate\Support\Facades\Storage; // Added for file operations
-use Illuminate\Support\Str; // Added for string operations
-use App\Support\CategoryTypeRegistry;
-use App\Support\ProductMediaSeo;
-use App\Support\ProductPublishSchedule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductApprovalController extends Controller
 {
@@ -31,10 +31,10 @@ class ProductApprovalController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc'); // Default sort direction
 
         $validSortColumns = ['name', 'published_at'];
-        if (!in_array($sortBy, $validSortColumns)) {
+        if (! in_array($sortBy, $validSortColumns)) {
             $sortBy = 'published_at';
         }
-        if (!in_array($sortDirection, ['asc', 'desc'])) {
+        if (! in_array($sortDirection, ['asc', 'desc'])) {
             $sortDirection = 'desc';
         }
 
@@ -84,7 +84,7 @@ class ProductApprovalController extends Controller
         switch ($publishOption) {
             case 'specific_date':
                 $publishDate = $request->input('published_at');
-                if (!empty($publishDate)) {
+                if (! empty($publishDate)) {
                     try {
                         $parsedDate = ProductPublishSchedule::forDate($publishDate);
                         $product->published_at = $parsedDate;
@@ -104,7 +104,7 @@ class ProductApprovalController extends Controller
                     }
                 } else {
                     // If no specific date is provided (e.g., field was empty), publish immediately
-                    Log::info("ProductApprovalController: No published_at date provided. Publishing immediately.");
+                    Log::info('ProductApprovalController: No published_at date provided. Publishing immediately.');
                     $product->published_at = now()->utc();
                     $product->is_published = true;
                 }
@@ -125,13 +125,13 @@ class ProductApprovalController extends Controller
         $pendingCustomSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
         foreach ($pendingCustomSubmissions as $submission) {
             // Check if there's a decision for this submission in the request
-            $decisionKey = 'custom_category_' . $submission->id;
+            $decisionKey = 'custom_category_'.$submission->id;
             if ($request->has($decisionKey)) {
                 $decision = $request->input($decisionKey);
                 if ($decision === 'approve') {
-                    $slug = $request->input('custom_category_' . $submission->id . '_slug') ?: \Illuminate\Support\Str::slug($submission->name);
-                    $description = $request->input('custom_category_' . $submission->id . '_description') ?? $submission->name;
-                    $metaDescription = $request->input('custom_category_' . $submission->id . '_meta_description') ?? $submission->name;
+                    $slug = $request->input('custom_category_'.$submission->id.'_slug') ?: \Illuminate\Support\Str::slug($submission->name);
+                    $description = $request->input('custom_category_'.$submission->id.'_description') ?? $submission->name;
+                    $metaDescription = $request->input('custom_category_'.$submission->id.'_meta_description') ?? $submission->name;
 
                     $this->persistCustomSubmission($product, $submission, $slug, $description, $metaDescription);
                 } elseif ($decision === 'reject') {
@@ -155,7 +155,7 @@ class ProductApprovalController extends Controller
             \Illuminate\Support\Facades\Cache::forget('all_categories');
 
             // Clear the general product list cache for this week and date to ensure new products appear
-            $generalProductListCacheKey = 'product_list_week_' . $product->published_at->year . '_' . $product->published_at->weekOfYear . '_' . now()->toDateString();
+            $generalProductListCacheKey = 'product_list_week_'.$product->published_at->year.'_'.$product->published_at->weekOfYear.'_'.now()->toDateString();
             \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
         }
 
@@ -174,6 +174,7 @@ class ProductApprovalController extends Controller
     {
         $product->approved = false;
         $product->save();
+
         return back()->with('success', 'Product disapproved.');
     }
 
@@ -182,7 +183,7 @@ class ProductApprovalController extends Controller
         $productIds = $request->input('products', []);
         $bulkPublishDate = $request->input('bulk_published_at');
 
-        if (!empty($productIds)) {
+        if (! empty($productIds)) {
             $approvedCount = 0;
             $weeksToClear = []; // Track weeks that need cache clearing
 
@@ -191,7 +192,7 @@ class ProductApprovalController extends Controller
                 if ($product) {
                     $product->approved = true;
 
-                    if (!empty($bulkPublishDate)) {
+                    if (! empty($bulkPublishDate)) {
                         try {
                             $product->published_at = ProductPublishSchedule::forDate($bulkPublishDate);
                             $product->is_published = false; // Scheduled
@@ -207,7 +208,7 @@ class ProductApprovalController extends Controller
 
                     // Collect weeks that need cache clearing
                     if ($product->is_published && $product->published_at) {
-                        $weekKey = $product->published_at->year . '_' . $product->published_at->weekOfYear;
+                        $weekKey = $product->published_at->year.'_'.$product->published_at->weekOfYear;
                         $weeksToClear[$weekKey] = true;
                     }
 
@@ -224,7 +225,7 @@ class ProductApprovalController extends Controller
             }
 
             // Clear caches for affected weeks after all products are processed
-            if (!empty($weeksToClear)) {
+            if (! empty($weeksToClear)) {
                 \Illuminate\Support\Facades\Cache::forget('promoted_products_homepage');
                 \Illuminate\Support\Facades\Cache::forget('all_categories_homepage');
                 \Illuminate\Support\Facades\Cache::forget('all_types_homepage');
@@ -233,19 +234,20 @@ class ProductApprovalController extends Controller
 
                 // Clear the general product list cache for each affected week
                 foreach (array_keys($weeksToClear) as $weekKey) {
-                    $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+                    $generalProductListCacheKey = 'product_list_week_'.$weekKey.'_'.now()->toDateString();
                     \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
                 }
             }
 
             if ($approvedCount > 0) {
-                return back()->with('success', $approvedCount . ' product(s) approved.');
+                return back()->with('success', $approvedCount.' product(s) approved.');
             }
         }
+
         return back()->with('success', 'No products selected or found for approval.');
     }
 
-    public function publishScheduledNow(Request $request)
+    public function publishScheduledNow(Request $request, BadgeVerificationManager $badgeVerification)
     {
         $scope = $request->input('publish_scope', 'selected');
 
@@ -275,25 +277,39 @@ class ProductApprovalController extends Controller
 
         $oldWeekKeys = $products
             ->filter(fn (Product $product) => $product->published_at)
-            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->map(fn (Product $product) => $product->published_at->year.'_'.$product->published_at->weekOfYear)
             ->unique()
             ->values()
             ->all();
 
         $publishTimestamp = now()->utc();
 
+        $publishedProducts = collect();
+        $badgeFailures = 0;
         foreach ($products as $product) {
+            if ($product->submission_type === 'badge') {
+                $verification = $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
+                if (! $verification['verified']) {
+                    $badgeFailures++;
+
+                    continue;
+                }
+            }
+
             $product->published_at = $publishTimestamp->copy();
             $product->is_published = true;
             $product->save();
+            $publishedProducts->push($product);
         }
 
-        $this->clearPublishedProductCaches($products, $oldWeekKeys);
+        $this->clearPublishedProductCaches($publishedProducts, $oldWeekKeys);
 
-        return back()->with('success', sprintf(
-            '%d scheduled product(s) published immediately.',
-            $products->count()
-        ));
+        $message = sprintf('%d scheduled product(s) published immediately.', $publishedProducts->count());
+        if ($badgeFailures > 0) {
+            $message .= sprintf(' %d badge product(s) were blocked after failed verification.', $badgeFailures);
+        }
+
+        return back()->with($publishedProducts->isNotEmpty() ? 'success' : 'error', $message);
     }
 
     public function pendingEditsIndex()
@@ -310,33 +326,33 @@ class ProductApprovalController extends Controller
     public function showEditDiff(Product $product)
     {
         // Ensure the product actually has pending edits and is approved
-        if (!$product->approved || !$product->has_pending_edits) {
+        if (! $product->approved || ! $product->has_pending_edits) {
             return redirect()->route('admin.products.pending-edits.index')->with('error', 'Product does not have pending edits or is not approved.');
         }
 
         $product->load(['user', 'categories', 'proposedCategories', 'lastEditor', 'techStacks', 'proposedTechStacks', 'media', 'customCategorySubmissions']);
+
         return view('admin.product_approvals.show_edit_diff', compact('product'));
     }
 
     public function approveEdits(Request $request, Product $product)
     {
-        if (!$product->approved || !$product->has_pending_edits) {
+        if (! $product->approved || ! $product->has_pending_edits) {
             return back()->with('error', 'Product does not have pending edits to approve or is not an approved product.');
         }
 
         // Update live data from proposed data
         if ($product->proposed_logo_path) {
             // Delete old live logo if it exists and is a stored file
-            if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+            if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
                 Storage::disk('public')->delete($product->logo);
             }
             $product->logo = $product->proposed_logo_path;
-        } elseif (isset($product->proposed_logo_path) && is_null($product->proposed_logo_path) && $product->logo && !Str::startsWith($product->logo, 'http')) {
+        } elseif (isset($product->proposed_logo_path) && is_null($product->proposed_logo_path) && $product->logo && ! Str::startsWith($product->logo, 'http')) {
             // Handle explicit removal
             Storage::disk('public')->delete($product->logo);
             $product->logo = null;
         }
-
 
         // Handle Name/Link changes and Slug regeneration
         if ($product->proposed_name || $product->proposed_link) {
@@ -353,7 +369,7 @@ class ProductApprovalController extends Controller
             // If name changed, regenerate slug from name. If only link changed, maybe regenerate from link?
             // Let's stick to the logic used in InlineUpdateController: Name takes precedence.
             $textForSlug = $nameForSlug;
-            if ($product->proposed_link && !$product->proposed_name) {
+            if ($product->proposed_link && ! $product->proposed_name) {
                 $textForSlug = $this->extractNameFromUrl($linkForSlug);
             }
 
@@ -365,8 +381,8 @@ class ProductApprovalController extends Controller
         $product->description = $product->proposed_description ?? $product->description;
         $product->video_url = $product->proposed_video_url ?? $product->video_url;
         $product->x_account = Product::normalizeXAccount($product->proposed_x_account ?? $product->x_account);
-        $product->sell_product = !is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product;
-        $product->asking_price = !is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
+        $product->sell_product = ! is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product;
+        $product->asking_price = ! is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
         $product->maker_links = $product->proposed_maker_links ?? $product->maker_links;
         $product->pricing_page_url = $product->proposed_pricing_page_url ?? $product->pricing_page_url;
 
@@ -377,12 +393,12 @@ class ProductApprovalController extends Controller
 
         $pendingCustomSubmissions = $product->customCategorySubmissions()->where('status', 'pending')->get();
         foreach ($pendingCustomSubmissions as $submission) {
-            $decision = $request->input('custom_category_' . $submission->id);
+            $decision = $request->input('custom_category_'.$submission->id);
 
             if ($decision === 'approve') {
-                $slug = $request->input('custom_category_' . $submission->id . '_slug') ?: Str::slug($submission->name);
-                $description = $request->input('custom_category_' . $submission->id . '_description') ?? $submission->name;
-                $metaDescription = $request->input('custom_category_' . $submission->id . '_meta_description') ?? $submission->name;
+                $slug = $request->input('custom_category_'.$submission->id.'_slug') ?: Str::slug($submission->name);
+                $description = $request->input('custom_category_'.$submission->id.'_description') ?? $submission->name;
+                $metaDescription = $request->input('custom_category_'.$submission->id.'_meta_description') ?? $submission->name;
 
                 $this->persistCustomSubmission($product, $submission, $slug, $description, $metaDescription);
             } elseif ($decision === 'reject') {
@@ -418,7 +434,7 @@ class ProductApprovalController extends Controller
 
     public function rejectEdits(Product $product)
     {
-        if (!$product->approved || !$product->has_pending_edits) {
+        if (! $product->approved || ! $product->has_pending_edits) {
             return back()->with('error', 'Product does not have pending edits to reject.');
         }
 
@@ -482,10 +498,11 @@ class ProductApprovalController extends Controller
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error approving custom category: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error approving custom category: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve custom category: ' . $e->getMessage(),
+                'message' => 'Failed to approve custom category: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -505,7 +522,7 @@ class ProductApprovalController extends Controller
             if ($result) {
                 return response()->json([
                     'success' => true,
-                    'data' => $result
+                    'data' => $result,
                 ]);
             }
 
@@ -515,7 +532,8 @@ class ProductApprovalController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('generateCategorySeo Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('generateCategorySeo Error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while generating content.',
@@ -573,7 +591,7 @@ class ProductApprovalController extends Controller
 
     private function applyProposedScreenshot(Product $product): void
     {
-        if (!$product->proposed_screenshot_path) {
+        if (! $product->proposed_screenshot_path) {
             return;
         }
 
@@ -615,7 +633,7 @@ class ProductApprovalController extends Controller
     private function deleteMediaFiles(?string ...$paths): void
     {
         foreach ($paths as $path) {
-            if ($path && !Str::startsWith($path, 'http')) {
+            if ($path && ! Str::startsWith($path, 'http')) {
                 Storage::disk('public')->delete($path);
             }
         }
@@ -625,11 +643,13 @@ class ProductApprovalController extends Controller
     {
         try {
             $host = parse_url($url, PHP_URL_HOST);
-            if (!$host)
+            if (! $host) {
                 return $url;
+            }
 
             $name = str_replace('www.', '', $host);
             $parts = explode('.', $name);
+
             return $parts[0];
         } catch (\Exception $e) {
             return $url;
@@ -646,12 +666,12 @@ class ProductApprovalController extends Controller
 
         $weekKeys = collect($products)
             ->filter(fn (Product $product) => $product->published_at)
-            ->map(fn (Product $product) => $product->published_at->year . '_' . $product->published_at->weekOfYear)
+            ->map(fn (Product $product) => $product->published_at->year.'_'.$product->published_at->weekOfYear)
             ->merge($extraWeekKeys)
             ->unique();
 
         foreach ($weekKeys as $weekKey) {
-            $generalProductListCacheKey = 'product_list_week_' . $weekKey . '_' . now()->toDateString();
+            $generalProductListCacheKey = 'product_list_week_'.$weekKey.'_'.now()->toDateString();
             \Illuminate\Support\Facades\Cache::forget($generalProductListCacheKey);
         }
     }

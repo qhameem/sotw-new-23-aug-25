@@ -2,16 +2,16 @@
 
 namespace App\Console;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\BackfillProductEditorialContent;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\NotifyUrlIndexing;
 use App\Console\Commands\OptimizeProductLogos;
-use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\PruneMagicLoginLinks;
+use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\RepairBlockedProductLogos;
 use App\Support\ProductPublishSchedule;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
@@ -33,9 +33,6 @@ class Kernel extends ConsoleKernel
 
     /**
      * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
-     * @return void
      */
     protected function schedule(Schedule $schedule): void
     {
@@ -43,18 +40,16 @@ class Kernel extends ConsoleKernel
         $schedule->command('sitemap:generate')->daily();
         $schedule->command('products:publish-scheduled')->dailyAt(ProductPublishSchedule::getPublishTime());
         $schedule->command('reminders:send-deadline')->everyMinute();
-        $schedule->command('badge:verify')->weekly()->mondays()->at('09:00');
+        $schedule->command('badge:verify')->dailyAt('03:00');
         $schedule->command('auth:prune-magic-links')->daily();
     }
 
     /**
      * Register the commands for the application.
-     *
-     * @return void
      */
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

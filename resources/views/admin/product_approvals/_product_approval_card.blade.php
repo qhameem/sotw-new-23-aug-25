@@ -45,6 +45,9 @@
                     <div class="text-xs text-gray-500 mt-1">
                         <strong>Slug:</strong> {{ $product->slug }}
                     </div>
+                    <div class="mt-3">
+                        @include('admin.products._submission_source', ['product' => $product])
+                    </div>
                 </div>
                 <label class="absolute top-4 right-4">
                     <input type="checkbox" name="products[]" value="{{ $product->id }}"

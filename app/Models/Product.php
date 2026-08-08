@@ -2,29 +2,31 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
+use App\Helpers\HtmlHelper;
 use App\Support\CategoryTypeRegistry;
 use App\Support\ProductLogo;
-use Spatie\Sitemap\Contracts\Sitemapable;
-use Spatie\Sitemap\Tags\Url;
+use App\Support\ProductMediaSeo;
 use Carbon\Carbon;
-use App\Helpers\HtmlHelper;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Support\ProductMediaSeo;
+use Illuminate\Support\Str;
+use Spatie\Sitemap\Contracts\Sitemapable;
+use Spatie\Sitemap\Tags\Url;
 
 class Product extends Model implements Sitemapable
 {
     use HasFactory;
 
     public const AUTO_UPVOTE_VIEW_THRESHOLD = 4;
+
     public const AUTO_UPVOTE_OUTBOUND_CLICK_THRESHOLD = 2;
+
     public const PASSIVE_AUTO_UPVOTE_WINDOW_DAYS = 14;
 
     protected $fillable = [
@@ -84,6 +86,9 @@ class Product extends Model implements Sitemapable
         'is_published' => 'boolean',
         'has_pending_edits' => 'boolean',
         'published_at' => 'datetime',
+        'badge_verified' => 'boolean',
+        'badge_verified_at' => 'datetime',
+        'badge_warning_sent_at' => 'datetime',
         'maker_links' => 'array',
         'sell_product' => 'boolean',
         'asking_price' => 'decimal:2',
@@ -109,7 +114,7 @@ class Product extends Model implements Sitemapable
 
     public static function normalizeLink(?string $url): ?string
     {
-        if (!is_string($url)) {
+        if (! is_string($url)) {
             return $url;
         }
 
@@ -119,7 +124,7 @@ class Product extends Model implements Sitemapable
         }
 
         $parts = parse_url($url);
-        if ($parts === false || !isset($parts['host'])) {
+        if ($parts === false || ! isset($parts['host'])) {
             return $url;
         }
 
@@ -132,36 +137,41 @@ class Product extends Model implements Sitemapable
         $path = $parts['path'] ?? '';
         $path = $path === '/' ? '' : rtrim($path, '/');
 
-        $normalized = $scheme . '://' . $host;
+        $normalized = $scheme.'://'.$host;
 
-        if (isset($parts['port']) && !in_array([$scheme, $parts['port']], [['http', 80], ['https', 443]], true)) {
-            $normalized .= ':' . $parts['port'];
+        if (isset($parts['port']) && ! in_array([$scheme, $parts['port']], [['http', 80], ['https', 443]], true)) {
+            $normalized .= ':'.$parts['port'];
         }
 
         $normalized .= $path;
 
-        if (!empty($parts['query'])) {
+        if (! empty($parts['query'])) {
             parse_str($parts['query'], $query);
             $query = collect($query)
-                ->reject(fn($_, $key) => str_starts_with(strtolower((string) $key), 'utm_'))
+                ->reject(fn ($_, $key) => str_starts_with(strtolower((string) $key), 'utm_'))
                 ->all();
 
-            if (!empty($query)) {
+            if (! empty($query)) {
                 ksort($query);
-                $normalized .= '?' . http_build_query($query);
+                $normalized .= '?'.http_build_query($query);
             }
         }
 
-        if (!empty($parts['fragment'])) {
-            $normalized .= '#' . $parts['fragment'];
+        if (! empty($parts['fragment'])) {
+            $normalized .= '#'.$parts['fragment'];
         }
 
         return $normalized;
     }
 
+    public function badgeVerificationAttempts(): HasMany
+    {
+        return $this->hasMany(BadgeVerificationAttempt::class);
+    }
+
     public static function normalizeXAccount(?string $value): ?string
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return null;
         }
 
@@ -186,11 +196,11 @@ class Product extends Model implements Sitemapable
     {
         $handle = static::normalizeXAccount($value);
 
-        if (!$handle || !preg_match('/^[A-Za-z0-9_]{1,15}$/', $handle)) {
+        if (! $handle || ! preg_match('/^[A-Za-z0-9_]{1,15}$/', $handle)) {
             return null;
         }
 
-        return 'https://x.com/' . $handle;
+        return 'https://x.com/'.$handle;
     }
 
     public function getLogoUrlAttribute()
@@ -356,7 +366,7 @@ class Product extends Model implements Sitemapable
         $sources = array_map(function (array $source) use ($totalVotes) {
             $percentage = $totalVotes > 0 ? round(($source['count'] / $totalVotes) * 100, 1) : 0.0;
             $source['percentage'] = $percentage;
-            $source['percentage_label'] = rtrim(rtrim(number_format($percentage, 1), '0'), '.') . '%';
+            $source['percentage_label'] = rtrim(rtrim(number_format($percentage, 1), '0'), '.').'%';
 
             return $source;
         }, $sources);
@@ -419,7 +429,7 @@ class Product extends Model implements Sitemapable
 
     public function weekRankingCacheKey(): string
     {
-        return 'ranking:week:' . $this->rankingWeekStart()->toDateString() . ':organic';
+        return 'ranking:week:'.$this->rankingWeekStart()->toDateString().':organic';
     }
 
     public function rankingCacheKeys(): array
@@ -431,10 +441,10 @@ class Product extends Model implements Sitemapable
         $yearStart = $publishedOn->copy()->startOfYear()->toDateString();
 
         return [
-            'ranking:date:' . $dayStart . ':organic',
-            'ranking:week:' . $weekStart . ':organic',
-            'ranking:month:' . $monthStart . ':organic',
-            'ranking:year:' . $yearStart . ':organic',
+            'ranking:date:'.$dayStart.':organic',
+            'ranking:week:'.$weekStart.':organic',
+            'ranking:month:'.$monthStart.':organic',
+            'ranking:year:'.$yearStart.':organic',
         ];
     }
 
@@ -465,7 +475,7 @@ class Product extends Model implements Sitemapable
 
     public function getIsUpvotedByCurrentUserAttribute()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return false;
         }
 
@@ -524,7 +534,7 @@ class Product extends Model implements Sitemapable
     {
         $videoUrl = $this->video_url;
 
-        if (!$videoUrl) {
+        if (! $videoUrl) {
             return null;
         }
 
@@ -553,7 +563,8 @@ class Product extends Model implements Sitemapable
             if (preg_match('/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $matches)) {
                 $videoId = $matches[1];
             }
-            return 'https://www.youtube.com/embed/' . $videoId;
+
+            return 'https://www.youtube.com/embed/'.$videoId;
         }
 
         if (str_contains($videoUrl, 'vimeo.com')) {
@@ -561,7 +572,8 @@ class Product extends Model implements Sitemapable
             if (preg_match('/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/', $videoUrl, $matches)) {
                 $videoId = $matches[3];
             }
-            return 'https://player.vimeo.com/video/' . $videoId;
+
+            return 'https://player.vimeo.com/video/'.$videoId;
         }
 
         return $videoUrl; // Return as is if already a valid URL or not recognized
@@ -571,7 +583,7 @@ class Product extends Model implements Sitemapable
     {
         $videoUrl = $this->getEmbedUrl();
 
-        if (!$videoUrl) {
+        if (! $videoUrl) {
             return null;
         }
 
@@ -605,7 +617,7 @@ class Product extends Model implements Sitemapable
 
     public function toSitemapTag(): Url|string|array
     {
-        if (!$this->slug || !$this->approved) {
+        if (! $this->slug || ! $this->approved) {
             return [];
         }
 
@@ -635,20 +647,20 @@ class Product extends Model implements Sitemapable
             $images[] = [
                 'url' => $this->logo_url,
                 'caption' => ProductMediaSeo::productMediaAltText($this, 'logo'),
-                'title' => $this->name . ' logo',
+                'title' => $this->name.' logo',
             ];
         }
 
         foreach ($this->media as $index => $media) {
             $url = $media->medium_url ?: $media->url;
-            if (!$url) {
+            if (! $url) {
                 continue;
             }
 
             $images[] = [
                 'url' => $url,
                 'caption' => $media->alt_text ?: ProductMediaSeo::productMediaAltText($this, $media->type === 'screenshot' ? 'screenshot' : 'image', $index + 1),
-                'title' => $this->name . ' ' . ($media->type === 'screenshot' ? 'screenshot' : 'image'),
+                'title' => $this->name.' '.($media->type === 'screenshot' ? 'screenshot' : 'image'),
             ];
         }
 
@@ -682,7 +694,7 @@ class Product extends Model implements Sitemapable
     {
         return $query->whereBetween(DB::raw('COALESCE(published_at, created_at)'), [
             $startOfWeek->toDateString(),
-            $endOfWeek->toDateString()
+            $endOfWeek->toDateString(),
         ]);
     }
 

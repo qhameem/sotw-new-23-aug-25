@@ -33,7 +33,7 @@ class BadgeService
         $badge = Badge::first();
 
         if ($badge && $badge->path) {
-            return asset('storage/' . $badge->path);
+            return asset('storage/'.$badge->path);
         }
 
         return $this->appendCacheBustToPublicImageUrl(url('/images/badge.png'));
@@ -111,19 +111,32 @@ class BadgeService
             ];
         }
 
+        $userAgents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        ];
+
         $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent' => $userAgents[array_rand($userAgents)],
+            'Accept' => 'text/html,application/xhtml+xml',
         ])->timeout(15)->get($url);
 
         if ($response->failed()) {
             return [
                 'verified' => false,
+                'http_status' => $response->status(),
+                'response_hash' => hash('sha256', $response->body()),
                 'message' => "We couldn't reach that page right now (HTTP {$response->status()}).",
             ];
         }
 
         $html = $response->body();
-        $doc = new \DOMDocument();
+        $evidence = [
+            'http_status' => $response->status(),
+            'response_hash' => hash('sha256', $html),
+        ];
+        $doc = new \DOMDocument;
         @$doc->loadHTML($html);
 
         $links = $doc->getElementsByTagName('a');
@@ -134,7 +147,7 @@ class BadgeService
             $href = trim($link->getAttribute('href'));
             $linkHost = parse_url($href, PHP_URL_HOST);
 
-            if (!$href || !$linkHost || strcasecmp($linkHost, $expectedHost) !== 0) {
+            if (! $href || ! $linkHost || strcasecmp($linkHost, $expectedHost) !== 0) {
                 continue;
             }
 
@@ -146,6 +159,8 @@ class BadgeService
             if ($this->linkContainsExpectedBadgeImage($link, $allowedBadgePaths)) {
                 return [
                     'verified' => true,
+                    ...$evidence,
+                    'matched_element' => $doc->saveHTML($link) ?: null,
                     'message' => 'Badge verified. You can now choose your launch date.',
                 ];
             }
@@ -153,6 +168,7 @@ class BadgeService
 
         return [
             'verified' => false,
+            ...$evidence,
             'message' => 'We found the page, but not a dofollow Software on the Web badge yet.',
         ];
     }
@@ -162,7 +178,7 @@ class BadgeService
      */
     public function getLaunchDateFormatted(Carbon $date): string
     {
-        return $date->format('l, F j, Y') . ' at 7:00 AM UTC';
+        return $date->format('l, F j, Y').' at 7:00 AM UTC';
     }
 
     private function getAllowedBadgeImagePaths(): array
@@ -207,7 +223,7 @@ class BadgeService
 
     private function getSettingsBadgeImageUrls(): array
     {
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return [
                 'svg' => null,
                 'png' => null,
@@ -222,19 +238,19 @@ class BadgeService
         $badgeImageWebpUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_webp_url'] ?? null);
         $legacyBadgeImageUrl = $this->normalizeBadgeAssetUrl($settings['badge_image_url'] ?? null);
 
-        if (!$badgeImageSvgUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.svg')) {
+        if (! $badgeImageSvgUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.svg')) {
             $badgeImageSvgUrl = $legacyBadgeImageUrl;
         }
 
-        if (!$badgeImagePngUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.png')) {
+        if (! $badgeImagePngUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.png')) {
             $badgeImagePngUrl = $legacyBadgeImageUrl;
         }
 
-        if (!$badgeImageWebpUrl) {
+        if (! $badgeImageWebpUrl) {
             $badgeImageWebpUrl = $this->normalizeBadgeAssetUrl($this->publicBadgeAssetUrlIfExists('badge.webp'));
         }
 
-        if (!$badgeImageWebpUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.webp')) {
+        if (! $badgeImageWebpUrl && $legacyBadgeImageUrl && str_ends_with(strtolower(parse_url($legacyBadgeImageUrl, PHP_URL_PATH) ?? ''), '.webp')) {
             $badgeImageWebpUrl = $legacyBadgeImageUrl;
         }
 
@@ -248,14 +264,14 @@ class BadgeService
 
     private function publicBadgeAssetUrlIfExists(string $filename): ?string
     {
-        $path = public_path('images/' . $filename);
+        $path = public_path('images/'.$filename);
 
-        return is_file($path) ? url('/images/' . $filename) : null;
+        return is_file($path) ? url('/images/'.$filename) : null;
     }
 
     private function normalizeBadgeAssetUrl(mixed $url): ?string
     {
-        if (!is_string($url) || trim($url) === '') {
+        if (! is_string($url) || trim($url) === '') {
             return null;
         }
 
@@ -267,8 +283,7 @@ class BadgeService
         ?string $badgeImageSvgUrl = null,
         ?string $badgeImagePngUrl = null,
         ?string $badgeImageUrl = null
-    ): string
-    {
+    ): string {
         $savedBadgeEmbedCode = $this->getSavedBadgeEmbedCode();
 
         if ($savedBadgeEmbedCode) {
@@ -285,7 +300,7 @@ class BadgeService
 
     private function getSavedBadgeEmbedCode(): ?string
     {
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return null;
         }
 
@@ -300,39 +315,38 @@ class BadgeService
         ?string $badgeImageSvgUrl,
         ?string $badgeImagePngUrl,
         string $badgeImageUrl
-    ): string
-    {
+    ): string {
         $altText = 'Featured on Software on the Web';
 
         if ($badgeImageSvgUrl && $badgeImagePngUrl) {
-            return '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
-                . '  <picture>' . "\n"
-                . '    <source srcset="' . $badgeImageSvgUrl . '" type="image/svg+xml">' . "\n"
-                . '    <img src="' . $badgeImagePngUrl . '" alt="' . $altText . '" width="200">' . "\n"
-                . '  </picture>' . "\n"
-                . '</a>';
+            return '<a href="'.$destinationUrl.'" rel="dofollow">'."\n"
+                .'  <picture>'."\n"
+                .'    <source srcset="'.$badgeImageSvgUrl.'" type="image/svg+xml">'."\n"
+                .'    <img src="'.$badgeImagePngUrl.'" alt="'.$altText.'" width="200">'."\n"
+                .'  </picture>'."\n"
+                .'</a>';
         }
 
-        return '<a href="' . $destinationUrl . '" rel="dofollow">' . "\n"
-            . '  <img src="' . $badgeImageUrl . '" alt="' . $altText . '" width="200">' . "\n"
-            . '</a>';
+        return '<a href="'.$destinationUrl.'" rel="dofollow">'."\n"
+            .'  <img src="'.$badgeImageUrl.'" alt="'.$altText.'" width="200">'."\n"
+            .'</a>';
     }
 
     private function appendCacheBustToPublicImageUrl(string $url): string
     {
         $path = parse_url($url, PHP_URL_PATH);
-        if (!$path) {
+        if (! $path) {
             return $url;
         }
 
         $publicFilePath = public_path(ltrim($path, '/'));
-        if (!is_file($publicFilePath)) {
+        if (! is_file($publicFilePath)) {
             return $url;
         }
 
         $separator = str_contains($url, '?') ? '&' : '?';
 
-        return $url . $separator . 'v=' . filemtime($publicFilePath);
+        return $url.$separator.'v='.filemtime($publicFilePath);
     }
 
     private function linkContainsExpectedBadgeImage(\DOMElement $link, array $allowedBadgePaths): bool

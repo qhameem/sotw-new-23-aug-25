@@ -238,6 +238,9 @@
                                         <div class="min-w-0">
                                             <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="font-semibold text-slate-900 hover:underline">{{ $product->name }}</a>
                                             <p class="mt-1 break-words text-sm text-slate-600">{{ Str::limit($product->tagline, 90) }}</p>
+                                            <div class="mt-3">
+                                                @include('admin.products._submission_source', ['product' => $product])
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

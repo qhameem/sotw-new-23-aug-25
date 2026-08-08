@@ -64,7 +64,7 @@
 
 <body>
     <div class="header">
-        <h1 style="margin:0;font-size:20px;">⚠️ Badge Verification Warning</h1>
+        <h1 style="margin:0;font-size:20px;">Badge Verification Failed</h1>
     </div>
     <div class="content">
         <p>Hi,</p>
@@ -72,8 +72,12 @@
             <strong>{{ $product->name }}</strong>.</p>
 
         <div class="warning">
-            <strong>⚠️ Important:</strong> If the badge remains missing, your listing will be unpublished after a grace
-            period.
+            <strong>Important:</strong>
+            @if($wasPublished)
+                Your product has been unpublished because the badge could not be verified.
+            @else
+                Your product will not be published while the badge cannot be verified.
+            @endif
         </div>
 
         <p>To keep your listing active, please ensure the following HTML snippet is placed on your website:</p>
@@ -82,7 +86,7 @@
             &lt;img src="{{ url('/images/badge.png') }}" alt="Featured on Software on the Web"&gt;
             &lt;/a&gt;</div>
 
-        <p>If you've already added the badge, please allow up to a week for our next verification check.</p>
+        <p>After restoring the badge, contact us or wait for the next automatic verification.</p>
 
         <a href="{{ url('/product/' . $product->slug) }}" class="btn">View Your Listing</a>
 

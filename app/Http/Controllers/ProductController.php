@@ -2,67 +2,76 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Product;
+use App\Jobs\FetchOgImage;
 use App\Models\Category;
-use App\Models\Type;
 use App\Models\PremiumProduct;
-use App\Models\TechStack;
+use App\Models\Product;
 use App\Models\ProductClaim;
 use App\Models\ProductCollection;
 use App\Models\ProductSubmissionDraft;
-use App\Models\UserProductUpvote; // Added for upvote checking
-use App\Models\User;
+use App\Models\TechStack;
+use App\Models\Type;
+use App\Models\User; // Added for upvote checking
+use App\Models\UserProductUpvote;
 use App\Notifications\ProductSubmitted;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage; // Ensure Storage facade is imported
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Session; // Added for session management
-use Illuminate\Support\Facades\Log; // Added for logging
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Services\AdDeliveryService;
+use App\Services\BadgeService;
+use App\Services\DescriptionRewriterService;
 use App\Services\FaviconExtractorService;
+use App\Services\LogoExtractorService;
+use App\Services\NameExtractorService;
+use App\Services\ProductEditorialContentService; // Ensure Storage facade is imported
+use App\Services\ProductLimitationResearchService;
+use App\Services\ProductLogoResolver; // Added for session management
+use App\Services\ProductLogoStorageService; // Added for logging
+use App\Services\RelatedProductService;
+use App\Services\ScreenshotService;
 use App\Services\SlugService;
 use App\Services\TechStackDetectorService;
-use App\Services\NameExtractorService;
-use App\Services\LogoExtractorService;
-use App\Services\DescriptionRewriterService;
-use App\Services\ProductLimitationResearchService;
-use App\Services\ProductLogoStorageService;
-use App\Services\ProductLogoResolver;
-use App\Services\ScreenshotService;
-use App\Services\BadgeService;
-use App\Services\AdDeliveryService;
-use App\Services\RelatedProductService;
-use App\Services\ProductEditorialContentService;
-use App\Jobs\FetchOgImage;
 use App\Support\CategoryTypeRegistry;
 use App\Support\FreeLaunchQueueSettings;
 use App\Support\PremiumLaunchPricing;
-use App\Support\SocialLinkValidator;
-use App\Support\PublicUrlGuard;
 use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
+use App\Support\PublicUrlGuard;
+use App\Support\SocialLinkValidator;
 use DOMDocument;
 use DOMXPath;
-use Intervention\Image\ImageManager;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductController extends Controller
 {
     protected FaviconExtractorService $faviconExtractor;
+
     protected SlugService $slugService;
+
     protected TechStackDetectorService $techStackDetector;
+
     protected NameExtractorService $nameExtractor;
+
     protected LogoExtractorService $logoExtractor;
+
     protected ProductLogoResolver $productLogoResolver;
+
     protected \App\Services\CategoryClassifier $categoryClassifier;
+
     protected ScreenshotService $screenshotService;
+
     protected BadgeService $badgeService;
+
     protected RelatedProductService $relatedProductService;
 
     public function __construct(FaviconExtractorService $faviconExtractor, SlugService $slugService, TechStackDetectorService $techStackDetector, NameExtractorService $nameExtractor, LogoExtractorService $logoExtractor, \App\Services\CategoryClassifier $categoryClassifier, ScreenshotService $screenshotService, BadgeService $badgeService, RelatedProductService $relatedProductService, ProductLogoResolver $productLogoResolver)
@@ -106,7 +115,7 @@ class ProductController extends Controller
     public function create()
     {
         $allTechStacks = TechStack::orderBy('name')->get();
-        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $allTechStacksData = $allTechStacks->map(fn ($ts) => ['id' => $ts->id, 'name' => $ts->name]);
         $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
 
         [
@@ -142,6 +151,7 @@ class ProductController extends Controller
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
         $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
+
         return view('products.create', compact(
             'displayData',
             'regularCategories',
@@ -160,7 +170,7 @@ class ProductController extends Controller
     public function createSubmission(Request $request)
     {
         $allTechStacks = TechStack::orderBy('name')->get();
-        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $allTechStacksData = $allTechStacks->map(fn ($ts) => ['id' => $ts->id, 'name' => $ts->name]);
         $adminSandboxEnabled = $this->isAdminAddProductSandboxEnabled();
 
         [
@@ -244,7 +254,7 @@ class ProductController extends Controller
         $checkedUrl = Product::normalizeLink($validated['url']);
         $verification = $this->badgeService->verifyPlacementUrl($checkedUrl);
 
-        if (!$verification['verified']) {
+        if (! $verification['verified']) {
             return response()->json([
                 'verified' => false,
                 'checked_url' => $checkedUrl,
@@ -308,7 +318,7 @@ class ProductController extends Controller
                 'url',
                 'max:2048',
                 function ($attribute, $value, $fail) {
-                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                    if (! SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
                         $fail(SocialLinkValidator::allowedMakerLinkMessage());
                     }
                 },
@@ -325,7 +335,7 @@ class ProductController extends Controller
                     $hasExisting = is_array($value) && count($value) > 0;
                     $hasCustom = $request->has('custom_categories') && is_array($request->input('custom_categories')) && count($request->input('custom_categories')) > 0;
 
-                    if (!$hasExisting && !$hasCustom) {
+                    if (! $hasExisting && ! $hasCustom) {
                         $fail('The categories field is required.');
                     }
                 },
@@ -352,10 +362,10 @@ class ProductController extends Controller
         $validated['product_page_tagline'] = filled(trim((string) ($validated['product_page_tagline'] ?? '')))
             ? trim((string) $validated['product_page_tagline'])
             : trim((string) $validated['tagline']);
-        if (!empty($validated['pricing_page_url'])) {
+        if (! empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
-        if (!empty($validated['badge_placement_url'])) {
+        if (! empty($validated['badge_placement_url'])) {
             $validated['badge_placement_url'] = Product::normalizeLink($validated['badge_placement_url']);
         }
 
@@ -375,7 +385,7 @@ class ProductController extends Controller
         $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
-        $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
+        $selected = collect($submittedCategories)->map(fn ($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
         $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
@@ -387,13 +397,13 @@ class ProductController extends Controller
             return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
         });
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
+        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && ! $hasCustomPricing) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
-        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
+        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && ! $hasCustomSoftware) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && ! $hasCustomUseCase) {
             return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
         }
         // bestFor remains optional
@@ -415,11 +425,12 @@ class ProductController extends Controller
 
         // Handle submission type: 'badge' submissions get instant approval
         $submissionType = $request->input('submission_type', $isAdmin ? 'free' : 'badge');
-        if ($isAdmin && !in_array($submissionType, ['free', 'badge'], true)) {
+        if ($isAdmin && ! in_array($submissionType, ['free', 'badge'], true)) {
             $submissionType = 'free';
         }
         $validated['submission_type'] = in_array($submissionType, ['free', 'badge'], true) ? $submissionType : 'badge';
 
+        $badgeVerificationResult = null;
         if ($submissionType === 'badge') {
             $badgePlacementUrl = $validated['badge_placement_url'] ?? $validated['link'];
             $selectedWeekStart = $request->input('badge_week_start');
@@ -439,7 +450,7 @@ class ProductController extends Controller
             }
 
             $verification = $this->badgeService->verifyPlacementUrl($badgePlacementUrl);
-            if (!$verification['verified']) {
+            if (! $verification['verified']) {
                 return $submissionError('badge_placement_url', $verification['message']);
             }
 
@@ -451,6 +462,7 @@ class ProductController extends Controller
             $validated['badge_verified_at'] = now();
             $validated['badge_consecutive_failures'] = 0;
             $validated['badge_warning_sent_at'] = null;
+            $badgeVerificationResult = $verification;
         } else {
             $validated['approved'] = false;
         }
@@ -479,7 +491,7 @@ class ProductController extends Controller
                         $validated['logo'] = $storedLogo;
                     }
                 } catch (\Exception $e) {
-                    Log::error('Failed to save base64 logo: ' . $e->getMessage());
+                    Log::error('Failed to save base64 logo: '.$e->getMessage());
                     // Fallback to URL if saving fails (though it might still fail validation later)
                     $validated['logo'] = $logoUrl;
                 }
@@ -514,7 +526,7 @@ class ProductController extends Controller
                         'product_id' => $product->id,
                         'type' => $customCategory['type'],
                         'name' => $customCategory['name'],
-                        'status' => 'pending'
+                        'status' => 'pending',
                     ]);
                 }
             }
@@ -525,7 +537,7 @@ class ProductController extends Controller
                         'product_id' => $product->id,
                         'type' => 'tech_stack',
                         'name' => $customTechStack['name'],
-                        'status' => 'pending'
+                        'status' => 'pending',
                     ]);
                 }
             }
@@ -533,8 +545,18 @@ class ProductController extends Controller
             return $product;
         });
 
+        if ($badgeVerificationResult) {
+            app(\App\Services\BadgeVerificationManager::class)->record(
+                $product,
+                $badgeVerificationResult,
+                'submission',
+                $isAdmin ? $user : null,
+                $request->ip()
+            );
+        }
+
         if ($request->hasFile('media')) {
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
 
             foreach ($request->file('media') as $file) {
                 $this->processMediaItem($product, $file, $manager);
@@ -542,13 +564,13 @@ class ProductController extends Controller
         }
 
         if ($request->filled('media_urls')) {
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             foreach ($request->input('media_urls') as $url) {
                 if ($url) {
                     try {
                         // Check if this is a local screenshot URL (already on disk)
                         $appUrl = config('app.url');
-                        $isLocal = str_starts_with($url, $appUrl . '/storage/') || str_contains($url, '/storage/screenshots/');
+                        $isLocal = str_starts_with($url, $appUrl.'/storage/') || str_contains($url, '/storage/screenshots/');
 
                         if ($isLocal) {
                             // Extract the relative storage path from the URL
@@ -558,10 +580,11 @@ class ProductController extends Controller
                             if (Storage::disk('public')->exists($storagePath)) {
                                 // Copy directly from disk — no HTTP request needed
                                 $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
-                                $filename = Str::uuid() . '.' . $extension;
-                                $newPath = 'product_media/' . $filename;
+                                $filename = Str::uuid().'.'.$extension;
+                                $newPath = 'product_media/'.$filename;
                                 Storage::disk('public')->copy($storagePath, $newPath);
                                 $this->processMediaItem($product, Storage::disk('public')->path($newPath), $manager, true);
+
                                 continue;
                             }
                         }
@@ -569,24 +592,26 @@ class ProductController extends Controller
                         // Fallback: download from external URL
                         $imageContents = Http::get($url)->body();
                         $extension = 'jpg';
-                        if (str_contains($url, '.png'))
+                        if (str_contains($url, '.png')) {
                             $extension = 'png';
-                        if (str_contains($url, '.webp'))
+                        }
+                        if (str_contains($url, '.webp')) {
                             $extension = 'webp';
+                        }
 
-                        $filename = Str::uuid() . '.' . $extension;
-                        $path = 'product_media/' . $filename;
+                        $filename = Str::uuid().'.'.$extension;
+                        $path = 'product_media/'.$filename;
                         Storage::disk('public')->put($path, $imageContents);
 
                         $this->processMediaItem($product, Storage::disk('public')->path($path), $manager, true);
                     } catch (\Exception $e) {
-                        Log::error('Failed to process media from URL: ' . $url . ' - ' . $e->getMessage());
+                        Log::error('Failed to process media from URL: '.$url.' - '.$e->getMessage());
                     }
                 }
             }
         }
 
-        if (!$request->hasFile('media') && !$request->filled('media_urls')) {
+        if (! $request->hasFile('media') && ! $request->filled('media_urls')) {
             FetchOgImage::dispatch($product);
         }
 
@@ -618,7 +643,7 @@ class ProductController extends Controller
                 'success' => true,
                 'message' => 'Product submitted successfully',
                 'product_id' => $product->id,
-                'redirect_url' => route('products.submission.success', ['product' => $product->id])
+                'redirect_url' => route('products.submission.success', ['product' => $product->id]),
             ]);
         }
 
@@ -684,7 +709,7 @@ class ProductController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        if (Auth::id() !== $product->user_id && !(Auth::check() && $user && $user->hasRole('admin'))) {
+        if (Auth::id() !== $product->user_id && ! (Auth::check() && $user && $user->hasRole('admin'))) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -722,12 +747,12 @@ class ProductController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        if (Auth::id() !== $product->user_id && !(Auth::check() && $user && $user->hasRole('admin'))) {
+        if (Auth::id() !== $product->user_id && ! (Auth::check() && $user && $user->hasRole('admin'))) {
             abort(403, 'Unauthorized action.');
         }
 
         $allTechStacks = TechStack::orderBy('name')->get();
-        $allTechStacksData = $allTechStacks->map(fn($ts) => ['id' => $ts->id, 'name' => $ts->name]);
+        $allTechStacksData = $allTechStacks->map(fn ($ts) => ['id' => $ts->id, 'name' => $ts->name]);
 
         [
             'regularCategories' => $regularCategories,
@@ -746,7 +771,7 @@ class ProductController extends Controller
         $pendingCustomCategories = $pendingCustomSubmissions
             ->where('type', 'category')
             ->map(fn ($submission) => [
-                'id' => 'pending-category-' . $submission->id,
+                'id' => 'pending-category-'.$submission->id,
                 'name' => $submission->name,
                 'is_custom' => true,
             ])
@@ -756,7 +781,7 @@ class ProductController extends Controller
         $pendingCustomUseCases = $pendingCustomSubmissions
             ->where('type', 'use_case')
             ->map(fn ($submission) => [
-                'id' => 'pending-use-case-' . $submission->id,
+                'id' => 'pending-use-case-'.$submission->id,
                 'name' => $submission->name,
                 'is_custom' => true,
             ])
@@ -766,7 +791,7 @@ class ProductController extends Controller
         $pendingCustomPlatforms = $pendingCustomSubmissions
             ->where('type', 'platform')
             ->map(fn ($submission) => [
-                'id' => 'pending-platform-' . $submission->id,
+                'id' => 'pending-platform-'.$submission->id,
                 'name' => $submission->name,
                 'is_custom' => true,
             ])
@@ -776,7 +801,7 @@ class ProductController extends Controller
         $pendingCustomBestFor = $pendingCustomSubmissions
             ->where('type', 'best_for')
             ->map(fn ($submission) => [
-                'id' => 'pending-best-for-' . $submission->id,
+                'id' => 'pending-best-for-'.$submission->id,
                 'name' => $submission->name,
                 'is_custom' => true,
             ])
@@ -786,7 +811,7 @@ class ProductController extends Controller
         $pendingCustomTechStacks = $pendingCustomSubmissions
             ->where('type', 'tech_stack')
             ->map(fn ($submission) => [
-                'id' => 'pending-tech-stack-' . $submission->id,
+                'id' => 'pending-tech-stack-'.$submission->id,
                 'name' => $submission->name,
                 'is_custom' => true,
             ])
@@ -797,7 +822,7 @@ class ProductController extends Controller
             ->whereIn('type', ['image', 'screenshot'])
             ->take(1)
             ->pluck('path')
-            ->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))
+            ->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))
             ->toArray();
 
         $proposedGallery = $product->proposed_screenshot_path
@@ -821,12 +846,12 @@ class ProductController extends Controller
                 'current_categories' => $product->proposedCategories->pluck('id')->toArray(),
                 'current_tech_stacks' => $oldInput['tech_stacks'] ?? $product->techStacks->pluck('id')->toArray(),
                 'maker_links' => $oldInput['maker_links'] ?? ($product->proposed_maker_links ?? $product->maker_links),
-                'sell_product' => $oldInput['sell_product'] ?? (!is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product),
-                'asking_price' => $oldInput['asking_price'] ?? (!is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price),
+                'sell_product' => $oldInput['sell_product'] ?? (! is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product),
+                'asking_price' => $oldInput['asking_price'] ?? (! is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price),
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($product->proposed_pricing_page_url ?? $product->pricing_page_url),
                 'x_account' => $oldInput['x_account'] ?? ($product->proposed_x_account ?? $product->x_account),
                 'id' => $product->id,
-                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
                 'gallery' => $proposedGallery,
                 'categories_custom' => $pendingCustomCategories,
                 'useCases_custom' => $pendingCustomUseCases,
@@ -854,7 +879,7 @@ class ProductController extends Controller
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? $product->pricing_page_url,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
-                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
+                'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
                 'gallery' => $liveGallery,
                 'categories_custom' => $pendingCustomCategories,
                 'useCases_custom' => $pendingCustomUseCases,
@@ -877,7 +902,7 @@ class ProductController extends Controller
             'product_id' => $product->id,
             'display_data' => $displayData,
             'selected_best_for_categories' => $selectedBestForCategories,
-            'categories_count' => count($displayData['current_categories'] ?? [])
+            'categories_count' => count($displayData['current_categories'] ?? []),
         ]);
 
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
@@ -910,7 +935,7 @@ class ProductController extends Controller
         // Authorization: User can only update their own products. Admins can update any.
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        if (Auth::id() !== $product->user_id && !(Auth::check() && $user && $user->hasRole('admin'))) {
+        if (Auth::id() !== $product->user_id && ! (Auth::check() && $user && $user->hasRole('admin'))) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -926,7 +951,7 @@ class ProductController extends Controller
                     $hasExisting = is_array($value) && count($value) > 0;
                     $hasCustom = $request->has('custom_categories') && is_array($request->input('custom_categories')) && count($request->input('custom_categories')) > 0;
 
-                    if (!$hasExisting && !$hasCustom) {
+                    if (! $hasExisting && ! $hasCustom) {
                         $fail('The categories field is required.');
                     }
                 },
@@ -952,7 +977,7 @@ class ProductController extends Controller
                 'url',
                 'max:2048',
                 function ($attribute, $value, $fail) {
-                    if (!SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
+                    if (! SocialLinkValidator::isAllowedMakerLinkUrl($value)) {
                         $fail(SocialLinkValidator::allowedMakerLinkMessage());
                     }
                 },
@@ -963,7 +988,7 @@ class ProductController extends Controller
             'x_account' => 'nullable|string|max:255',
         ]);
 
-        if (!empty($validated['pricing_page_url'])) {
+        if (! empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
 
@@ -1018,7 +1043,7 @@ class ProductController extends Controller
         $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
-        $selected = collect($submittedCategories)->map(fn($id) => (int) $id);
+        $selected = collect($submittedCategories)->map(fn ($id) => (int) $id);
         $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
         $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
         $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
@@ -1030,36 +1055,39 @@ class ProductController extends Controller
             return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
         });
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
+        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && ! $hasCustomPricing) {
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please select at least one category from the Pricing group.',
-                    'errors' => ['categories' => ['Please select at least one category from the Pricing group.']]
+                    'errors' => ['categories' => ['Please select at least one category from the Pricing group.']],
                 ], 422);
             }
+
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
-        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
+        if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && ! $hasCustomSoftware) {
             // Return JSON response for API calls
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please select at least one category from the Software Categories group.',
-                    'errors' => ['categories' => ['Please select at least one category from the Software Categories group.']]
+                    'errors' => ['categories' => ['Please select at least one category from the Software Categories group.']],
                 ], 422);
             }
+
             return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
         }
-        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && !$hasCustomUseCase) {
+        if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && ! $hasCustomUseCase) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please select at least one use case.',
-                    'errors' => ['categories' => ['Please select at least one use case.']]
+                    'errors' => ['categories' => ['Please select at least one use case.']],
                 ], 422);
             }
+
             return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
         }
         // bestFor remains optional
@@ -1101,7 +1129,7 @@ class ProductController extends Controller
 
         $updateData['x_account'] = Product::normalizeXAccount($validated['x_account'] ?? null);
         $fieldChanges['x_account'] = $updateData['x_account'] !== Product::normalizeXAccount($product->x_account);
-        if (!$fieldChanges['x_account']) {
+        if (! $fieldChanges['x_account']) {
             unset($updateData['x_account']);
         }
 
@@ -1123,13 +1151,13 @@ class ProductController extends Controller
             // Product is approved, store edits as proposed changes
             if ($request->boolean('remove_logo')) {
                 // If there was a proposed logo, delete it. The live logo remains.
-                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = null;
             } elseif ($logoPath) {
                 // If there was a previous proposed logo, delete it before storing the new one
-                if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
+                if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
                 }
                 $product->proposed_logo_path = $logoPath;
@@ -1142,10 +1170,10 @@ class ProductController extends Controller
                 ->first();
 
             if ($request->hasFile('media')) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotMedia($product, $request->file('media')[0], $manager);
             } elseif ($mediaUrl) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
@@ -1185,7 +1213,7 @@ class ProductController extends Controller
             if ($shouldSyncPendingCustomSubmissions) {
                 $this->syncPendingCustomSubmissions($product, $request);
             }
-            if (!empty($updateData) || $categoriesChanged || $techStacksChanged || $logoPath || $request->boolean('remove_logo') || $request->hasFile('media') || $mediaUrl || $shouldSyncPendingCustomSubmissions) {
+            if (! empty($updateData) || $categoriesChanged || $techStacksChanged || $logoPath || $request->boolean('remove_logo') || $request->hasFile('media') || $mediaUrl || $shouldSyncPendingCustomSubmissions) {
                 $product->has_pending_edits = true;
             }
             $product->save();
@@ -1196,7 +1224,7 @@ class ProductController extends Controller
                     'success' => true,
                     'message' => 'Your proposed edits have been submitted for review.',
                     'product_id' => $product->id,
-                    'redirect_url' => route('products.my')
+                    'redirect_url' => route('products.my'),
                 ]);
             }
 
@@ -1205,12 +1233,12 @@ class ProductController extends Controller
         } else {
             // Product is not yet approved, update directly
             if ($request->boolean('remove_logo')) {
-                if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+                if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
                     Storage::disk('public')->delete($product->logo);
                 }
                 $updateData['logo'] = null;
             } elseif ($logoPath) {
-                if ($product->logo && !Str::startsWith($product->logo, 'http')) {
+                if ($product->logo && ! Str::startsWith($product->logo, 'http')) {
                     Storage::disk('public')->delete($product->logo);
                 }
                 $updateData['logo'] = $logoPath;
@@ -1243,7 +1271,7 @@ class ProductController extends Controller
             $product->has_pending_edits = false;
 
             // Update main product fields
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $product->update($updateData);
             }
             if ($categoriesChanged) {
@@ -1261,10 +1289,10 @@ class ProductController extends Controller
                 ->first();
 
             if ($request->hasFile('media')) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotMedia($product, $request->file('media')[0], $manager);
             } elseif ($mediaUrl) {
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
             }
 
@@ -1276,7 +1304,7 @@ class ProductController extends Controller
                     'success' => true,
                     'message' => 'Product updated successfully. It is awaiting approval.',
                     'product_id' => $product->id,
-                    'redirect_url' => route('products.my')
+                    'redirect_url' => route('products.my'),
                 ]);
             }
 
@@ -1288,9 +1316,10 @@ class ProductController extends Controller
     {
         $url = Product::normalizeLink($request->input('url'));
         $excludeId = $request->input('exclude_id');
-        \Log::info('Checking URL for existence: ' . $url . ($excludeId ? ' (excluding ID: ' . $excludeId . ')' : ''));
-        if (!$url) {
+        \Log::info('Checking URL for existence: '.$url.($excludeId ? ' (excluding ID: '.$excludeId.')' : ''));
+        if (! $url) {
             \Log::info('URL is empty, returning false');
+
             return response()->json(['exists' => false]);
         }
 
@@ -1299,10 +1328,10 @@ class ProductController extends Controller
             $query->where('id', '!=', $excludeId);
         }
         $product = $query->first(); // Check all products, not just approved ones
-        \Log::info('Product found for URL: ' . $url . ', exists: ' . ($product ? 'true' : 'false'));
+        \Log::info('Product found for URL: '.$url.', exists: '.($product ? 'true' : 'false'));
 
         if ($product) {
-            \Log::info('URL exists, product name: ' . $product->name);
+            \Log::info('URL exists, product name: '.$product->name);
             /** @var \App\Models\User|null $user */
             $user = Auth::user();
             $canEdit = Auth::check() && $user && ($user->id === $product->user_id || $user->hasRole('admin'));
@@ -1325,6 +1354,7 @@ class ProductController extends Controller
         }
 
         \Log::info('URL does not exist in database');
+
         return response()->json(['exists' => false]);
     }
 
@@ -1344,7 +1374,7 @@ class ProductController extends Controller
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }
+            },
         ])
             ->approvedAndPublished()
             ->promoted()
@@ -1365,7 +1395,7 @@ class ProductController extends Controller
                     if (Auth::check()) {
                         $query->where('user_id', Auth::id());
                     }
-                }
+                },
             ]);
 
         $regularProducts = $regularProductsQuery
@@ -1380,7 +1410,7 @@ class ProductController extends Controller
         $allTypesCollection = Type::with([
             'categories' => function ($query) {
                 $query->withCount('products')->orderByDesc('products_count')->orderBy('name');
-            }
+            },
         ])->orderBy('name')->get();
 
         // Separate types into Software, Pricing, and Others
@@ -1393,7 +1423,7 @@ class ProductController extends Controller
         });
 
         $otherTypes = $allTypesCollection->filter(function ($type) {
-            return !in_array($type->name, ['Software Categories', 'Pricing']);
+            return ! in_array($type->name, ['Software Categories', 'Pricing']);
         });
 
         $types = $softwareTypes->concat($otherTypes)->concat($pricingTypes);
@@ -1412,19 +1442,19 @@ class ProductController extends Controller
             'products' => function ($query) {
                 $query->where('approved', true)
                     ->where('is_published', true);
-            }
+            },
         ])->orderBy('name')->get();
 
         $currentYear = Carbon::now()->year;
         $lastPage = max(1, $regularProducts->lastPage());
-        $title = "The Best " . strip_tags($category->name) . " Apps of " . $currentYear;
+        $title = 'The Best '.strip_tags($category->name).' Apps of '.$currentYear;
         $meta_title = "{$category->name} Software, Page {$currentPage} of {$lastPage} | Software on the Web.";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
             $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
         }
-        $meta_description = trim($metaDescriptionBase . " Page {$currentPage} of {$lastPage}.");
+        $meta_description = trim($metaDescriptionBase." Page {$currentPage} of {$lastPage}.");
         $categoryCanonicalUrl = $currentPage > 1
             ? route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage])
             : route('categories.show', ['category' => $category->slug]);
@@ -1499,21 +1529,25 @@ class ProductController extends Controller
             'week' => $date->weekOfYear,
         ], 301);
     }
+
     public function redirectToCurrentWeek()
     {
         $now = Carbon::now();
+
         return redirect()->route('products.byWeek', ['year' => $now->year, 'week' => $now->weekOfYear]);
     }
 
     public function redirectToCurrentMonth()
     {
         $now = Carbon::now();
+
         return redirect()->route('products.byMonth', ['year' => $now->year, 'month' => $now->month]);
     }
 
     public function redirectToCurrentYear()
     {
         $now = Carbon::now();
+
         return redirect()->route('products.byYear', ['year' => $now->year]);
     }
 
@@ -1529,7 +1563,7 @@ class ProductController extends Controller
             abort(404);
         }
 
-        if (!$isHomepage && $year == $now->year && $week == $now->weekOfYear) {
+        if (! $isHomepage && $year == $now->year && $week == $now->weekOfYear) {
             return redirect()->route('home');
         }
 
@@ -1545,7 +1579,7 @@ class ProductController extends Controller
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }
+            },
         ])
             ->where('approved', true)
             ->where('is_promoted', true)
@@ -1562,18 +1596,18 @@ class ProductController extends Controller
 
         // Only check for missing products if this is not called from the home page
         // This prevents double redirects when home() method already handled the redirect
-        if ($rankedRegularProductIds->isEmpty() && !$isHomepage && !$isFuture) {
+        if ($rankedRegularProductIds->isEmpty() && ! $isHomepage && ! $isFuture) {
             // Check if there are promoted products for this week - if so, we don't need to redirect
             // Only redirect if there are no products at all (regular or promoted)
             $hasAnyProductsThisWeek = Product::where('approved', true)
                 ->where('is_published', true)
                 ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
                     $startOfWeek->toDateString(),
-                    $endOfWeek->toDateString()
+                    $endOfWeek->toDateString(),
                 ])
                 ->exists();
 
-            if (!$hasAnyProductsThisWeek) {
+            if (! $hasAnyProductsThisWeek) {
                 // Find the last available week with products when no products exist for the requested week
                 $lastAvailableWeek = $this->findLastAvailableWeekWithProducts($startOfWeek);
 
@@ -1603,7 +1637,7 @@ class ProductController extends Controller
             }
         }
 
-        $regularProductIdsOnPage = collect($finalProductOrder)->filter(fn($item) => is_numeric($item))->values();
+        $regularProductIdsOnPage = collect($finalProductOrder)->filter(fn ($item) => is_numeric($item))->values();
 
         $regularProductsOnPageQuery = Product::with([
             'categories.types',
@@ -1612,7 +1646,7 @@ class ProductController extends Controller
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }
+            },
         ])
             ->whereIn('id', $regularProductIdsOnPage);
 
@@ -1647,14 +1681,14 @@ class ProductController extends Controller
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
-        $pageTitle = 'Best of Week ' . $week . ' of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $pageTitle = 'Best of Week '.$week.' of '.$year.' | '.config('app.name', 'Software on the Web'); // For <title> tag
         $meta_title = $isHomepage
-            ? 'Discover New SaaS Tools Every Week | ' . config('app.name', 'Software on the Web')
+            ? 'Discover New SaaS Tools Every Week | '.config('app.name', 'Software on the Web')
             : $pageTitle;
         $metaDescription = $isHomepage
             ? 'Discover new SaaS tools and software launches every week. Browse curated products across AI, productivity, design, and developer tools on Software on the Web.'
             : $this->buildArchiveMetaDescription('week', $startOfWeek, $endOfWeek, $combinedProducts->count());
-        $shouldNoindexArchive = !$isHomepage;
+        $shouldNoindexArchive = ! $isHomepage;
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
@@ -1691,8 +1725,8 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfMonth->toDateString();
-        $title = 'on ' . $startOfMonth->format('F Y'); // For potential in-page display
-        $pageTitle = 'Best of ' . $startOfMonth->format('F Y') . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $title = 'on '.$startOfMonth->format('F Y'); // For potential in-page display
+        $pageTitle = 'Best of '.$startOfMonth->format('F Y').' | '.config('app.name', 'Software on the Web'); // For <title> tag
         $metaDescription = $this->buildArchiveMetaDescription('month', $startOfMonth, $endOfMonth, $combinedProducts->count());
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
@@ -1725,8 +1759,8 @@ class ProductController extends Controller
         $types = Type::with('categories')->get();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfYear->toDateString();
-        $title = 'in ' . $year; // For potential in-page display
-        $pageTitle = 'Best of ' . $year . ' | ' . config('app.name', 'Software on the Web'); // For <title> tag
+        $title = 'in '.$year; // For potential in-page display
+        $pageTitle = 'Best of '.$year.' | '.config('app.name', 'Software on the Web'); // For <title> tag
         $metaDescription = $this->buildArchiveMetaDescription('year', $startOfYear, $endOfYear, $combinedProducts->count());
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
@@ -1763,14 +1797,14 @@ class ProductController extends Controller
                 'slug' => $product->slug,
                 'tagline' => $product->tagline,
                 'description' => $product->description,
-                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null,
-                'favicon' => 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link),
+                'logo' => $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/'.$product->logo)) : null,
+                'favicon' => 'https://www.google.com/s2/favicons?sz=64&domain_url='.urlencode($product->link),
                 'link' => $product->link,
                 'categories' => $product->categories->map(function ($category) {
                     return [
                         'id' => $category->id,
                         'name' => $category->name,
-                        'types' => $category->types->map(fn($type) => ['name' => $type->name])->values()
+                        'types' => $category->types->map(fn ($type) => ['name' => $type->name])->values(),
                     ];
                 })->values(),
                 'category_ids' => $product->categories->pluck('id')->all(),
@@ -1787,7 +1821,7 @@ class ProductController extends Controller
         $user = Auth::user();
         $perPage = $request->input('per_page', 15);
         $allowedPerPages = [15, 30, 50, 100];
-        if (!in_array($perPage, $allowedPerPages)) {
+        if (! in_array($perPage, $allowedPerPages)) {
             $perPage = 15;
         }
 
@@ -1808,11 +1842,11 @@ class ProductController extends Controller
 
     public function showProductPage(Product $product)
     {
-        if (!$product->approved) {
+        if (! $product->approved) {
             abort(404);
         }
 
-        $isUnpublishedProduct = !$product->is_published;
+        $isUnpublishedProduct = ! $product->is_published;
 
         $product->load([
             'categories.types',
@@ -1829,18 +1863,18 @@ class ProductController extends Controller
         ]);
 
         $pricingTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))
-            ->map(fn(string $name) => Str::lower($name));
+            ->map(fn (string $name) => Str::lower($name));
         $bestForTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR))
-            ->map(fn(string $name) => Str::lower($name));
+            ->map(fn (string $name) => Str::lower($name));
         $useCaseTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))
-            ->map(fn(string $name) => Str::lower($name));
+            ->map(fn (string $name) => Str::lower($name));
         $platformTypeNames = collect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM))
-            ->map(fn(string $name) => Str::lower($name));
+            ->map(fn (string $name) => Str::lower($name));
 
         $pricingCategory = $product->categories->first(function ($category) use ($pricingTypeNames) {
             return $category->types
                 ->pluck('name')
-                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->map(fn ($typeName) => Str::lower((string) $typeName))
                 ->intersect($pricingTypeNames)
                 ->isNotEmpty();
         });
@@ -1849,7 +1883,7 @@ class ProductController extends Controller
         $bestForCategories = $product->categories->filter(function ($category) use ($bestForTypeNames) {
             return $category->types
                 ->pluck('name')
-                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->map(fn ($typeName) => Str::lower((string) $typeName))
                 ->intersect($bestForTypeNames)
                 ->isNotEmpty();
         });
@@ -1857,7 +1891,7 @@ class ProductController extends Controller
         $useCaseCategories = $product->categories->filter(function ($category) use ($useCaseTypeNames) {
             return $category->types
                 ->pluck('name')
-                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->map(fn ($typeName) => Str::lower((string) $typeName))
                 ->intersect($useCaseTypeNames)
                 ->isNotEmpty();
         });
@@ -1865,7 +1899,7 @@ class ProductController extends Controller
         $platformCategories = $product->categories->filter(function ($category) use ($platformTypeNames) {
             return $category->types
                 ->pluck('name')
-                ->map(fn($typeName) => Str::lower((string) $typeName))
+                ->map(fn ($typeName) => Str::lower((string) $typeName))
                 ->intersect($platformTypeNames)
                 ->isNotEmpty();
         });
@@ -1879,7 +1913,7 @@ class ProductController extends Controller
         );
         $descriptionContent['details_html'] = $this->normalizeProductDetailHeadings($descriptionContent['details_html'] ?? null);
         $alternativeProducts = $this->relatedProductService->getAlternatives($product, 3)
-            ->map(fn(Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
+            ->map(fn (Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
             ->values();
         $hasEditorialSections = $this->productEditorialHasSections($productEditorial);
 
@@ -1899,7 +1933,7 @@ class ProductController extends Controller
         if (Auth::check()) {
             /** @var \App\Models\User $currentUser */
             $currentUser = Auth::user();
-            $canClaimProduct = $currentUser->id !== $product->user_id && !$currentUser->hasRole('admin');
+            $canClaimProduct = $currentUser->id !== $product->user_id && ! $currentUser->hasRole('admin');
 
             $userCollections = $currentUser->productCollections()
                 ->with(['items' => fn ($query) => $query->where('product_id', $product->id)])
@@ -2038,7 +2072,7 @@ class ProductController extends Controller
 
     protected function normalizeInternalBreadcrumbUrl(?string $url, Request $request, Product $product): ?string
     {
-        if (!filled($url)) {
+        if (! filled($url)) {
             return null;
         }
 
@@ -2050,7 +2084,7 @@ class ProductController extends Controller
 
         $path = parse_url($url, PHP_URL_PATH) ?: '/';
         $query = parse_url($url, PHP_URL_QUERY);
-        $normalizedUrl = $path . ($query ? '?' . $query : '');
+        $normalizedUrl = $path.($query ? '?'.$query : '');
         $currentPath = route('products.show', ['product' => $product->slug], false);
 
         if ($path === $currentPath) {
@@ -2065,7 +2099,7 @@ class ProductController extends Controller
         try {
             $path = parse_url($url, PHP_URL_PATH) ?: '/';
             $query = parse_url($url, PHP_URL_QUERY);
-            $routeRequest = Request::create($path . ($query ? '?' . $query : ''), 'GET');
+            $routeRequest = Request::create($path.($query ? '?'.$query : ''), 'GET');
             $route = app('router')->getRoutes()->match($routeRequest);
 
             return match ($route->getName()) {
@@ -2091,8 +2125,8 @@ class ProductController extends Controller
         $fallbackTake = trim(strip_tags((string) ($alternative->product_page_tagline ?: $alternative->tagline ?: $alternative->description)));
 
         $alternative->setAttribute('primary_category_label', $softwareCategories[0] ?? null);
-        $alternative->setAttribute('best_for_label', !empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
-        $alternative->setAttribute('pricing_label', !empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
+        $alternative->setAttribute('best_for_label', ! empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
+        $alternative->setAttribute('pricing_label', ! empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
         $alternative->setAttribute('feature_highlights', array_slice($editorial['key_features'] ?? [], 0, 3));
         $alternative->setAttribute('editorial_take', $editorial['summary'] ?? $editorial['headline'] ?? Str::limit($fallbackTake, 160));
 
@@ -2102,7 +2136,7 @@ class ProductController extends Controller
     protected function productEditorialHasSections(array $productEditorial): bool
     {
         foreach (['key_features', 'ideal_for', 'top_use_cases', 'integrations', 'pros', 'limitations', 'faq'] as $key) {
-            if (!empty($productEditorial[$key])) {
+            if (! empty($productEditorial[$key])) {
                 return true;
             }
         }
@@ -2124,7 +2158,7 @@ class ProductController extends Controller
         $dom = new DOMDocument('1.0', 'UTF-8');
         $previousLibxmlState = libxml_use_internal_errors(true);
         $dom->loadHTML(
-            '<?xml encoding="utf-8" ?><div id="product-description-root">' . $html . '</div>',
+            '<?xml encoding="utf-8" ?><div id="product-description-root">'.$html.'</div>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
         libxml_clear_errors();
@@ -2132,7 +2166,7 @@ class ProductController extends Controller
 
         $root = $dom->getElementById('product-description-root');
 
-        if (!$root) {
+        if (! $root) {
             return [
                 'overview_blocks' => [],
                 'details_html' => $html,
@@ -2165,7 +2199,7 @@ class ProductController extends Controller
                 continue;
             }
 
-            if (!$this->isOverviewDescriptionNode($node)) {
+            if (! $this->isOverviewDescriptionNode($node)) {
                 continue;
             }
 
@@ -2207,7 +2241,7 @@ class ProductController extends Controller
         $dom = new DOMDocument('1.0', 'UTF-8');
         $previousLibxmlState = libxml_use_internal_errors(true);
         $dom->loadHTML(
-            '<?xml encoding="utf-8" ?><div id="product-detail-heading-root">' . $html . '</div>',
+            '<?xml encoding="utf-8" ?><div id="product-detail-heading-root">'.$html.'</div>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
         libxml_clear_errors();
@@ -2215,14 +2249,14 @@ class ProductController extends Controller
 
         $root = $dom->getElementById('product-detail-heading-root');
 
-        if (!$root) {
+        if (! $root) {
             return $html;
         }
 
         $xpath = new DOMXPath($dom);
 
         foreach ($xpath->query('.//h1 | .//h2', $root) ?: [] as $headingNode) {
-            if (!$headingNode instanceof \DOMElement || !$headingNode->parentNode) {
+            if (! $headingNode instanceof \DOMElement || ! $headingNode->parentNode) {
                 continue;
             }
 
@@ -2258,10 +2292,10 @@ class ProductController extends Controller
         $maxLength = 68;
         $name = $this->cleanSeoText($product->name);
         $tagline = $this->cleanSeoText($product->product_page_tagline ?: $product->tagline);
-        $fullTitle = $tagline !== '' ? $name . ': ' . $tagline : $name;
+        $fullTitle = $tagline !== '' ? $name.': '.$tagline : $name;
 
-        if (Str::length($fullTitle . $brandSuffix) <= $maxLength) {
-            return $fullTitle . $brandSuffix;
+        if (Str::length($fullTitle.$brandSuffix) <= $maxLength) {
+            return $fullTitle.$brandSuffix;
         }
 
         if (Str::length($fullTitle) <= $maxLength) {
@@ -2269,7 +2303,7 @@ class ProductController extends Controller
         }
 
         if ($tagline !== '') {
-            $trimmedTitle = $name . ': ' . $this->trimSeoTextToLength(
+            $trimmedTitle = $name.': '.$this->trimSeoTextToLength(
                 $tagline,
                 max(0, $maxLength - Str::length($name) - 2)
             );
@@ -2279,8 +2313,8 @@ class ProductController extends Controller
             }
         }
 
-        if (Str::length($name . $brandSuffix) <= $maxLength) {
-            return $name . $brandSuffix;
+        if (Str::length($name.$brandSuffix) <= $maxLength) {
+            return $name.$brandSuffix;
         }
 
         return $this->trimSeoTextToLength($name, $maxLength);
@@ -2306,13 +2340,13 @@ class ProductController extends Controller
             : $this->extractFirstSeoSentence($descriptionText, 110);
 
         if ($intro === '' && $taglineText !== '') {
-            $intro = preg_match('/^' . preg_quote($name, '/') . '\b/i', $taglineText)
+            $intro = preg_match('/^'.preg_quote($name, '/').'\b/i', $taglineText)
                 ? $taglineText
-                : $name . ': ' . $taglineText;
+                : $name.': '.$taglineText;
         }
 
         if ($intro === '') {
-            $intro = $name . ' on Software on the Web.';
+            $intro = $name.' on Software on the Web.';
         }
 
         $intro = $this->ensureSentenceEnding($intro);
@@ -2320,10 +2354,10 @@ class ProductController extends Controller
         $description = $intro;
 
         $shouldAppendSecondary = $secondary !== ''
-            && !$this->seoTextContainsAny($intro, array_filter([$topic, $useCaseHint, $platformHint, $pricingHint]));
+            && ! $this->seoTextContainsAny($intro, array_filter([$topic, $useCaseHint, $platformHint, $pricingHint]));
 
         if ($shouldAppendSecondary) {
-            $candidate = trim($intro . ' ' . $secondary);
+            $candidate = trim($intro.' '.$secondary);
 
             if (Str::length($candidate) <= $maxLength) {
                 return $candidate;
@@ -2341,8 +2375,8 @@ class ProductController extends Controller
             return '';
         }
 
-        if ($name !== '' && !preg_match('/^' . preg_quote($name, '/') . '\b/i', $tagline)) {
-            $tagline = $name . ': ' . $tagline;
+        if ($name !== '' && ! preg_match('/^'.preg_quote($name, '/').'\b/i', $tagline)) {
+            $tagline = $name.': '.$tagline;
         }
 
         return $this->trimSeoTextToLength($tagline, $maxLength);
@@ -2353,17 +2387,17 @@ class ProductController extends Controller
         $parts = [];
 
         if ($useCaseHint !== '') {
-            $parts[] = 'For ' . $useCaseHint;
+            $parts[] = 'For '.$useCaseHint;
         }
 
         if ($platformHint !== '') {
-            $parts[] = 'Works on ' . $platformHint;
+            $parts[] = 'Works on '.$platformHint;
         }
 
         if ($pricingHint !== '') {
             $parts[] = $pricingHint;
         } elseif ($topic !== '') {
-            $parts[] = 'Best for ' . $topic;
+            $parts[] = 'Best for '.$topic;
         }
 
         $parts = array_values(array_unique(array_filter(array_map(fn (string $part) => $this->cleanSeoText($part), $parts))));
@@ -2418,7 +2452,7 @@ class ProductController extends Controller
         return match (Str::lower($pricing)) {
             'free' => 'Free to use',
             'freemium' => 'Freemium pricing',
-            default => $pricing . ' pricing',
+            default => $pricing.' pricing',
         };
     }
 
@@ -2491,13 +2525,13 @@ class ProductController extends Controller
             return '';
         }
 
-        return preg_match('/[.!?]$/u', $text) ? $text : $text . '.';
+        return preg_match('/[.!?]$/u', $text) ? $text : $text.'.';
     }
 
     protected function resolveDescriptionContentRoot(\DOMElement $root): \DOMElement
     {
         $elementChildren = collect(iterator_to_array($root->childNodes))
-            ->filter(fn($node) => $node instanceof \DOMElement)
+            ->filter(fn ($node) => $node instanceof \DOMElement)
             ->values();
 
         if ($elementChildren->count() !== 1) {
@@ -2534,7 +2568,7 @@ class ProductController extends Controller
             return trim((string) $node->textContent) !== '';
         }
 
-        if (!$node instanceof \DOMElement) {
+        if (! $node instanceof \DOMElement) {
             return false;
         }
 
@@ -2565,14 +2599,14 @@ class ProductController extends Controller
     protected function categoryNamesForTypes(Product $product, array $typeNames): array
     {
         $normalizedTypeNames = collect($typeNames)
-            ->map(fn(string $typeName) => Str::lower($typeName))
+            ->map(fn (string $typeName) => Str::lower($typeName))
             ->values();
 
         return $product->categories
             ->filter(function ($category) use ($normalizedTypeNames) {
                 return $category->types
                     ->pluck('name')
-                    ->map(fn($typeName) => Str::lower((string) $typeName))
+                    ->map(fn ($typeName) => Str::lower((string) $typeName))
                     ->intersect($normalizedTypeNames)
                     ->isNotEmpty();
             })
@@ -2585,17 +2619,17 @@ class ProductController extends Controller
      * Helper function to get shuffled product IDs for a given date range and filters.
      * The shuffle is seeded daily per session to ensure fairness and consistency for the user.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query The base query for regular products.
-     * @param string $cacheKeySuffix A suffix for the cache key to differentiate between different product lists (e.g., 'home', 'category_X', 'date_Y').
+     * @param  \Illuminate\Database\Eloquent\Builder  $query  The base query for regular products.
+     * @param  string  $cacheKeySuffix  A suffix for the cache key to differentiate between different product lists (e.g., 'home', 'category_X', 'date_Y').
      * @return \Illuminate\Support\Collection
      */
     protected function getShuffledProductIds($query, $cacheKeySuffix)
     {
         $today = Carbon::now()->toDateString();
         $sessionId = Session::getId();
-        $seed = crc32($today . '_' . $sessionId); // Generate a consistent seed for the day and session
+        $seed = crc32($today.'_'.$sessionId); // Generate a consistent seed for the day and session
 
-        $cacheKey = 'shuffled_product_ids_' . $cacheKeySuffix . '_' . $today . '_' . $sessionId;
+        $cacheKey = 'shuffled_product_ids_'.$cacheKeySuffix.'_'.$today.'_'.$sessionId;
 
         // Try to retrieve from cache first
         $shuffledIds = cache()->remember($cacheKey, Carbon::tomorrow()->diffInMinutes(), function () use ($query, $seed) {
@@ -2628,27 +2662,27 @@ class ProductController extends Controller
 
     protected function buildArchiveMetaDescription(string $period, Carbon $start, Carbon $end, int $productCount): string
     {
-        $productLabel = $productCount === 1 ? '1 curated product' : number_format(max(0, $productCount)) . ' curated products';
+        $productLabel = $productCount === 1 ? '1 curated product' : number_format(max(0, $productCount)).' curated products';
         $dateRange = match ($period) {
             'day' => $start->format('F j, Y'),
-            'week' => $start->format('M j') . '-' . $end->format('j, Y'),
+            'week' => $start->format('M j').'-'.$end->format('j, Y'),
             'month' => $start->format('F Y'),
             'year' => $start->format('Y'),
             default => $start->toDateString(),
         };
 
         $prefix = match ($period) {
-            'day' => 'Discover the top software launches for ' . $dateRange . ' on Software on the Web.',
-            'week' => 'Explore the best software from Week ' . $start->weekOfYear . ' of ' . $start->year . ' on Software on the Web.',
-            'month' => 'Browse the best software launches from ' . $dateRange . ' on Software on the Web.',
-            'year' => 'Browse the best software launches from ' . $dateRange . ' on Software on the Web.',
+            'day' => 'Discover the top software launches for '.$dateRange.' on Software on the Web.',
+            'week' => 'Explore the best software from Week '.$start->weekOfYear.' of '.$start->year.' on Software on the Web.',
+            'month' => 'Browse the best software launches from '.$dateRange.' on Software on the Web.',
+            'year' => 'Browse the best software launches from '.$dateRange.' on Software on the Web.',
             default => 'Discover curated software launches on Software on the Web.',
         };
 
-        $suffix = 'Review ' . $productLabel . ' across AI, productivity, and developer tools.';
+        $suffix = 'Review '.$productLabel.' across AI, productivity, and developer tools.';
 
         return $this->ensureSentenceEnding(
-            $this->trimSeoTextToLength(trim($prefix . ' ' . $suffix), 155)
+            $this->trimSeoTextToLength(trim($prefix.' '.$suffix), 155)
         );
     }
 
@@ -2661,7 +2695,7 @@ class ProductController extends Controller
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }
+            },
         ])
             ->where('approved', true)
             ->where('is_promoted', true)
@@ -2703,7 +2737,7 @@ class ProductController extends Controller
                 if (Auth::check()) {
                     $query->where('user_id', Auth::id());
                 }
-            }
+            },
         ])->whereIn('id', $regularProductIdsOnPage);
 
         if ($regularProductIdsOnPage->isNotEmpty()) {
@@ -2732,6 +2766,7 @@ class ProductController extends Controller
 
         return [$regularProducts, $combinedProducts];
     }
+
     // Ensure content has proper paragraph structure
     public function ensureProperParagraphStructure($html)
     {
@@ -2741,18 +2776,19 @@ class ProductController extends Controller
 
         // Check if content has any block-level elements
         // If not, wrap the content in paragraph tags
-        if (!preg_match('/<(p|div|h[1-6]|ul|ol|blockquote|pre|hr)/i', $html)) {
+        if (! preg_match('/<(p|div|h[1-6]|ul|ol|blockquote|pre|hr)/i', $html)) {
             // Split by newlines and wrap each line in a paragraph
             $paragraphs = array_filter(explode("\n", $html));
             if (count($paragraphs) > 1) {
                 $wrappedParagraphs = array_map(function ($p) {
                     $p = trim($p);
+
                     return $p ? "<p>{$p}</p>" : '';
                 }, $paragraphs);
                 $html = implode('', $wrappedParagraphs);
             } else {
                 // If it's a single block of text, wrap in one paragraph
-                $html = "<p>" . trim(strip_tags($html)) . "</p>";
+                $html = '<p>'.trim(strip_tags($html)).'</p>';
             }
         }
 
@@ -2765,7 +2801,7 @@ class ProductController extends Controller
             return $html;
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         // Suppress warnings for malformed HTML
         @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
@@ -2780,7 +2816,7 @@ class ProductController extends Controller
     /**
      * Find the last available week with products before the given date
      *
-     * @param Carbon $startDate The date to start searching backwards from
+     * @param  Carbon  $startDate  The date to start searching backwards from
      * @return Carbon|null The start of the week with products, or null if none found
      */
     private function findLastAvailableWeekWithProducts(Carbon $startDate)
@@ -2804,12 +2840,13 @@ class ProductController extends Controller
                 ->where('is_published', true)
                 ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
                     $startOfWeek->toDateString(),
-                    $endOfWeek->toDateString()
+                    $endOfWeek->toDateString(),
                 ])
                 ->exists();
 
             if ($hasProducts) {
                 \Log::info("findLastAvailableWeekWithProducts: Found products in week {$currentWeek} of year {$currentYear}");
+
                 return $startOfWeek;
             }
 
@@ -2817,7 +2854,8 @@ class ProductController extends Controller
             $searchDate = $searchDate->subWeek();
         }
 
-        \Log::info("findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks");
+        \Log::info('findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks');
+
         // If no week with products was found, return null
         return null;
     }
@@ -2836,7 +2874,7 @@ class ProductController extends Controller
 
         $bounds = $this->publishedWeekArchiveBounds();
 
-        if (!$bounds) {
+        if (! $bounds) {
             return;
         }
 
@@ -2850,7 +2888,7 @@ class ProductController extends Controller
         $dateExpressions = $this->productDateExpressions();
 
         $baseQuery = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week');
+            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week');
 
         $earliestWeek = (clone $baseQuery)
             ->orderBy('year')
@@ -2862,7 +2900,7 @@ class ProductController extends Controller
             ->orderByDesc('week')
             ->first();
 
-        if (!$earliestWeek || !$latestWeek) {
+        if (! $earliestWeek || ! $latestWeek) {
             return null;
         }
 
@@ -2895,7 +2933,7 @@ class ProductController extends Controller
             'referer' => $request->headers->get('referer'),
         ]);
 
-        throw new NotFoundHttpException();
+        throw new NotFoundHttpException;
     }
 
     private function buildWeekNavigationItems(int $selectedYear, int $selectedWeek): array
@@ -2904,7 +2942,7 @@ class ProductController extends Controller
         $dateExpressions = $this->productDateExpressions();
 
         return Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week')
+            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week')
             ->groupBy('year', 'week')
             ->orderBy('year')
             ->orderBy('week')
@@ -2917,7 +2955,7 @@ class ProductController extends Controller
                     'year' => $year,
                     'week' => $week,
                     'url' => route('products.byWeek', ['year' => $year, 'week' => $week]),
-                    'label' => 'Week ' . $week,
+                    'label' => 'Week '.$week,
                     'isSelected' => $year === $selectedYear && $week === $selectedWeek,
                     'isCurrent' => $year === (int) $now->year && $week === (int) $now->weekOfYear,
                 ];
@@ -2966,7 +3004,7 @@ class ProductController extends Controller
     public function fetchUrlData(Request $request)
     {
         $url = $request->input('url');
-        if (!$url) {
+        if (! $url) {
             return response()->json(['error' => 'URL is required.'], 400);
         }
 
@@ -2978,16 +3016,17 @@ class ProductController extends Controller
 
         try {
             $response = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url);
 
             if ($response->failed()) {
                 Log::error('Failed to fetch URL data', ['url' => $url, 'status' => $response->status()]);
+
                 return response()->json(['error' => 'Failed to fetch data from the URL.'], 500);
             }
 
             $html = $response->body();
-            $doc = new DOMDocument();
+            $doc = new DOMDocument;
             @$doc->loadHTML($html);
 
             $titleNode = $doc->getElementsByTagName('title')->item(0);
@@ -3015,7 +3054,7 @@ class ProductController extends Controller
             // Extract Logos using the dedicated service
             $logos = $this->logoExtractor->extract($url, $html);
 
-            if (!empty($logos)) {
+            if (! empty($logos)) {
                 $ogImage = $logos[0];
             } else {
                 $fallbackLogo = $this->productLogoResolver->discoverReplacementLogoUrl($url);
@@ -3024,7 +3063,6 @@ class ProductController extends Controller
                     $logos[] = $fallbackLogo;
                 }
             }
-
 
             // Category classification has been removed as part of AI functionality removal
             // $categoryNames = array_keys($this->categoryClassifier->classify($html));
@@ -3047,6 +3085,7 @@ class ProductController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Exception when fetching URL data', ['url' => $url, 'error' => $e->getMessage()]);
+
             return response()->json(['error' => 'An unexpected error occurred.'], 500);
         }
     }
@@ -3055,7 +3094,7 @@ class ProductController extends Controller
     {
         $url = $request->input('url');
 
-        if (!$url) {
+        if (! $url) {
             return response()->json(['error' => 'URL is required.'], 400);
         }
 
@@ -3069,7 +3108,7 @@ class ProductController extends Controller
             $response = Http::get($url);
             $html = $response->body();
 
-            $doc = new DOMDocument();
+            $doc = new DOMDocument;
             @$doc->loadHTML($html);
 
             $titleNode = $doc->getElementsByTagName('title')->item(0);
@@ -3094,11 +3133,12 @@ class ProductController extends Controller
             return response()->json(['error' => 'Failed to fetch data.'], 500);
         }
     }
+
     public function fetchMetadata(Request $request)
     {
         $url = $request->input('url');
 
-        if (!$url) {
+        if (! $url) {
             return response()->json(['error' => 'URL is required.'], 400);
         }
 
@@ -3110,11 +3150,11 @@ class ProductController extends Controller
 
         try {
             $response = Http::timeout(5)->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url);
             $html = $response->body();
 
-            $doc = new DOMDocument();
+            $doc = new DOMDocument;
             @$doc->loadHTML($html);
 
             $titleNode = $doc->getElementsByTagName('title')->item(0);
@@ -3139,7 +3179,8 @@ class ProductController extends Controller
                 'favicon' => $faviconUrl,
             ]);
         } catch (\Exception $e) {
-            Log::warning('Basic metadata fetch timed out or blocked: ' . $e->getMessage(), ['url' => $url]);
+            Log::warning('Basic metadata fetch timed out or blocked: '.$e->getMessage(), ['url' => $url]);
+
             return response()->json([
                 'name' => '',
                 'tagline' => '',
@@ -3160,15 +3201,16 @@ class ProductController extends Controller
                 'platformCategories' => $platformCategories,
             ] = $this->loadProductCategoryGroups(['id', 'name']);
 
-        return response()->json([
-            'categories' => $regularCategories,
-            'useCases' => $useCaseCategories,
-            'bestFor' => $bestForCategories,
-            'pricing' => $pricingCategories,
-            'platforms' => $platformCategories,
-        ]);
+            return response()->json([
+                'categories' => $regularCategories,
+                'useCases' => $useCaseCategories,
+                'bestFor' => $bestForCategories,
+                'pricing' => $pricingCategories,
+                'platforms' => $platformCategories,
+            ]);
         } catch (\Exception $e) {
-            Log::error('Failed to fetch categories for API: ' . $e->getMessage());
+            Log::error('Failed to fetch categories for API: '.$e->getMessage());
+
             return response()->json(['error' => 'Could not retrieve categories.'], 500);
         }
     }
@@ -3178,14 +3220,14 @@ class ProductController extends Controller
         $cleanDoc = clone $doc;
         $xpath = new DOMXPath($cleanDoc);
         $noiseQuery = '//footer | //nav | //script | //style | //noscript | //aside'
-            . ' | //video | //iframe | //form | //figure | //picture | //template'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "cookie")]'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "banner")]'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "intercom")]'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "chat")]'
-            . ' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "widget")]'
-            . ' | //*[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]';
+            .' | //video | //iframe | //form | //figure | //picture | //template'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "cookie")]'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "banner")]'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "intercom")]'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "chat")]'
+            .' | //*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "widget")]'
+            .' | //*[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "footer")]';
 
         foreach ($xpath->query($noiseQuery) as $node) {
             $node->parentNode?->removeChild($node);
@@ -3227,7 +3269,7 @@ class ProductController extends Controller
         ));
 
         $allCandidates = array_values(array_filter(array_unique($allCandidates), function ($candidate) use ($productName) {
-            return !$this->isWeakAutofillTaglineCandidate($candidate, $productName);
+            return ! $this->isWeakAutofillTaglineCandidate($candidate, $productName);
         }));
 
         $tagline = $this->selectBestAutofillTaglineCandidate($allCandidates, $productName, 140, true) ?? '';
@@ -3366,7 +3408,7 @@ class ProductController extends Controller
             return null;
         }
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             return 'AI autofill is unavailable right now, so we used a structured fallback. You can continue editing manually.';
         }
 
@@ -3388,23 +3430,23 @@ class ProductController extends Controller
             if (str_contains($normalized, 'no ai provider key is set')) {
                 $part = 'No AI provider key is configured.';
             } elseif ($status === 402 || $status === 429 || str_contains($normalized, 'rate_limit_exceeded') || str_contains($normalized, 'quota exceeded') || str_contains($normalized, 'resource_exhausted') || str_contains($normalized, 'credits')) {
-                $part = $provider . ' quota or rate limit was reached';
+                $part = $provider.' quota or rate limit was reached';
                 $retryAt = $this->extractAiRetryAt($body);
 
                 if ($retryAt) {
                     $retryLabel = $retryAt->isSameDay(Carbon::now())
                         ? $retryAt->format('g:i A')
                         : $retryAt->format('M j, g:i A');
-                    $part .= ' and may reset around ' . $retryLabel;
+                    $part .= ' and may reset around '.$retryLabel;
                 }
 
                 $part .= '.';
             } elseif ($status === 400) {
-                $part = $provider . ' rejected the request with a 400 response.';
+                $part = $provider.' rejected the request with a 400 response.';
             } elseif ($status) {
-                $part = $provider . ' returned HTTP ' . $status . '.';
+                $part = $provider.' returned HTTP '.$status.'.';
             } elseif ($body !== '') {
-                $part = $provider . ' error: ' . Str::limit($body, 140, '...');
+                $part = $provider.' error: '.Str::limit($body, 140, '...');
             }
 
             if ($part) {
@@ -3415,10 +3457,10 @@ class ProductController extends Controller
         $parts = array_values(array_unique($parts));
 
         if ($parts === []) {
-            return 'AI ' . $fieldLabel . ' generation failed, so fallback content was used.';
+            return 'AI '.$fieldLabel.' generation failed, so fallback content was used.';
         }
 
-        return 'AI ' . $fieldLabel . ' generation failed. ' . implode(' ', $parts) . ' Using fallback content for now.';
+        return 'AI '.$fieldLabel.' generation failed. '.implode(' ', $parts).' Using fallback content for now.';
     }
 
     protected function extractAiRetryAt(string $body): ?Carbon
@@ -3485,7 +3527,7 @@ class ProductController extends Controller
         set_time_limit(120);
 
         $url = $request->input('url');
-        if (!$url) {
+        if (! $url) {
             return response()->json(['error' => 'URL is required.'], 400);
         }
 
@@ -3510,11 +3552,11 @@ class ProductController extends Controller
         ];
         try {
             $response = Http::timeout(5)->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url);
             $html = $response->body();
 
-            $doc = new DOMDocument();
+            $doc = new DOMDocument;
             @$doc->loadHTML($html);
             $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
 
@@ -3534,7 +3576,7 @@ class ProductController extends Controller
             // Limit the length of the detailed tagline
             $taglineDetailed = Str::limit($taglineDetailed, 160, '...');
         } catch (\Exception $e) {
-            Log::error('Error extracting detailed tagline from URL: ' . $e->getMessage(), ['url' => $url]);
+            Log::error('Error extracting detailed tagline from URL: '.$e->getMessage(), ['url' => $url]);
             // Use the regular tagline as fallback
             $taglineDetailed = $metadata['tagline'] ?? '';
         }
@@ -3549,11 +3591,11 @@ class ProductController extends Controller
         ];
 
         // Smart assignment: short tagline ≤ 140 chars, detailed ≤ 160 chars
-            $metaTagline = $metadata['tagline'] ?? '';
+        $metaTagline = $metadata['tagline'] ?? '';
         $headingTagline = $taglineDetailed;
 
         // If both are available, the shorter one is the tagline, longer is detailed
-        if (!empty($metaTagline) && !empty($headingTagline) && $metaTagline !== $headingTagline) {
+        if (! empty($metaTagline) && ! empty($headingTagline) && $metaTagline !== $headingTagline) {
             if (strlen($metaTagline) <= strlen($headingTagline)) {
                 $responseData['tagline'] = Str::limit($metaTagline, 140, '...');
                 $responseData['tagline_detailed'] = Str::limit($headingTagline, 160, '...');
@@ -3563,7 +3605,7 @@ class ProductController extends Controller
             }
         } else {
             // Only one available — use it for whichever field it fits
-            $availableTagline = !empty($metaTagline) ? $metaTagline : $headingTagline;
+            $availableTagline = ! empty($metaTagline) ? $metaTagline : $headingTagline;
             if (strlen($availableTagline) <= 140) {
                 $responseData['tagline'] = $availableTagline;
                 $responseData['tagline_detailed'] = '';
@@ -3574,6 +3616,7 @@ class ProductController extends Controller
         }
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
+
         return response()->json($responseData);
     }
 
@@ -3587,26 +3630,28 @@ class ProductController extends Controller
 
         foreach ($this->collectAutofillLinkCandidates($doc) as $candidate) {
             $resolvedUrl = $this->resolveAutofillUrl($pageUrl, $candidate['href']);
-            if (!$resolvedUrl || isset($seenCandidates[$resolvedUrl])) {
+            if (! $resolvedUrl || isset($seenCandidates[$resolvedUrl])) {
                 continue;
             }
 
             $seenCandidates[$resolvedUrl] = true;
             $text = $candidate['text'];
 
-            if (!$pricingPageUrl && $this->isPricingLinkCandidate($resolvedUrl, $text)) {
+            if (! $pricingPageUrl && $this->isPricingLinkCandidate($resolvedUrl, $text)) {
                 $pricingPageUrl = $resolvedUrl;
+
                 continue;
             }
 
-            if (!$xAccount && $this->isXProfileUrl($resolvedUrl)) {
+            if (! $xAccount && $this->isXProfileUrl($resolvedUrl)) {
                 $xHandle = Product::normalizeXAccount($resolvedUrl);
                 $xAccount = $xHandle ? (Product::xProfileUrl($xHandle) ?? $xHandle) : null;
+
                 continue;
             }
 
             if ($this->isResourceLinkCandidate($pageUrl, $resolvedUrl, $text)) {
-                if (!isset($seenMakerLinks[$resolvedUrl])) {
+                if (! isset($seenMakerLinks[$resolvedUrl])) {
                     $makerLinks[] = $resolvedUrl;
                     $seenMakerLinks[$resolvedUrl] = true;
                 }
@@ -3672,7 +3717,7 @@ class ProductController extends Controller
 
         $scheme = $pageParts['scheme'] ?? 'https';
         $host = $pageParts['host'];
-        $port = isset($pageParts['port']) ? ':' . $pageParts['port'] : '';
+        $port = isset($pageParts['port']) ? ':'.$pageParts['port'] : '';
         $origin = "{$scheme}://{$host}{$port}";
 
         if (preg_match('~^https?://~i', $href)) {
@@ -3680,16 +3725,16 @@ class ProductController extends Controller
         } elseif (str_starts_with($href, '//')) {
             $absoluteUrl = "{$scheme}:{$href}";
         } elseif (str_starts_with($href, '/')) {
-            $absoluteUrl = $origin . $href;
+            $absoluteUrl = $origin.$href;
         } else {
             $basePath = $pageParts['path'] ?? '/';
             $directory = str_ends_with($basePath, '/') ? $basePath : rtrim(dirname($basePath), '.');
             $directory = $directory === '/' ? '' : trim($directory, '/');
-            $absoluteUrl = $origin . '/' . ltrim(($directory ? "{$directory}/" : '') . $href, '/');
+            $absoluteUrl = $origin.'/'.ltrim(($directory ? "{$directory}/" : '').$href, '/');
         }
 
         $normalized = Product::normalizeLink($absoluteUrl);
-        if (!is_string($normalized) || $normalized === '') {
+        if (! is_string($normalized) || $normalized === '') {
             return null;
         }
 
@@ -3698,7 +3743,7 @@ class ProductController extends Controller
 
     protected function isPricingLinkCandidate(string $url, string $text): bool
     {
-        $haystack = strtolower($url . ' ' . $text);
+        $haystack = strtolower($url.' '.$text);
 
         return str_contains($haystack, 'pricing')
             || str_contains($haystack, 'plans')
@@ -3724,7 +3769,7 @@ class ProductController extends Controller
 
     protected function parseAdditionalResources(?string $rawInput): array
     {
-        if (!is_string($rawInput) || trim($rawInput) === '') {
+        if (! is_string($rawInput) || trim($rawInput) === '') {
             return [
                 'notes' => [],
                 'urls' => [],
@@ -3749,13 +3794,14 @@ class ProductController extends Controller
             $seenEntries[$entryKey] = true;
             $candidateUrl = $entry;
 
-            if (!preg_match('~^https?://~i', $candidateUrl) && preg_match('/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[\/?#].*)?$/', $candidateUrl)) {
-                $candidateUrl = 'https://' . $candidateUrl;
+            if (! preg_match('~^https?://~i', $candidateUrl) && preg_match('/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[\/?#].*)?$/', $candidateUrl)) {
+                $candidateUrl = 'https://'.$candidateUrl;
             }
 
             if (filter_var($candidateUrl, FILTER_VALIDATE_URL)) {
                 try {
                     $urls[] = PublicUrlGuard::sanitizePublicHttpUrl($candidateUrl);
+
                     continue;
                 } catch (\InvalidArgumentException) {
                     // Fall through and keep the raw line as a note.
@@ -3778,7 +3824,7 @@ class ProductController extends Controller
         $titleNode = $doc->getElementsByTagName('title')->item(0);
         $title = trim((string) ($titleNode?->nodeValue ?? ''));
         if ($title !== '') {
-            $parts[] = 'Title: ' . $title;
+            $parts[] = 'Title: '.$title;
         }
 
         $descriptionContent = '';
@@ -3790,14 +3836,14 @@ class ProductController extends Controller
         }
 
         if ($descriptionContent !== '') {
-            $parts[] = 'Meta Description: ' . $descriptionContent;
+            $parts[] = 'Meta Description: '.$descriptionContent;
         }
 
         $cleanDoc = clone $doc;
         $cleanXpath = new DOMXPath($cleanDoc);
         $noiseQuery = '//nav | //header | //footer | //script | //style | //noscript | //aside'
-            . ' | //video | //iframe | //form | //figure | //picture | //template'
-            . ' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
+            .' | //video | //iframe | //form | //figure | //picture | //template'
+            .' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
 
         foreach ($cleanXpath->query($noiseQuery) as $node) {
             $node->parentNode?->removeChild($node);
@@ -3807,14 +3853,14 @@ class ProductController extends Controller
             foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
                 $text = trim((string) $node->textContent);
                 if ($text !== '') {
-                    $parts[] = strtoupper($tag) . ': ' . $text;
+                    $parts[] = strtoupper($tag).': '.$text;
                 }
             }
         }
 
         $bodyText = trim((string) ($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? ''));
         if ($bodyText !== '') {
-            $parts[] = 'Body: ' . mb_substr($bodyText, 0, $bodyLimit);
+            $parts[] = 'Body: '.mb_substr($bodyText, 0, $bodyLimit);
         }
 
         return implode("\n", $parts);
@@ -3829,21 +3875,21 @@ class ProductController extends Controller
 
         $sections = [];
 
-        if (!empty($resources['notes'])) {
-            $sections[] = "Admin notes:\n- " . implode("\n- ", $resources['notes']);
+        if (! empty($resources['notes'])) {
+            $sections[] = "Admin notes:\n- ".implode("\n- ", $resources['notes']);
         }
 
         foreach ($resources['urls'] as $resourceUrl) {
             try {
                 $response = Http::timeout(8)->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 ])->get($resourceUrl);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     continue;
                 }
 
-                $doc = new DOMDocument();
+                $doc = new DOMDocument;
                 @$doc->loadHTML($response->body());
 
                 $snippet = $this->buildDocumentTextSnippet($doc);
@@ -3879,7 +3925,7 @@ class ProductController extends Controller
             return $context;
         }
 
-        return $context . "\n\nLIMITATION RESEARCH:\n" . $researchContext;
+        return $context."\n\nLIMITATION RESEARCH:\n".$researchContext;
     }
 
     public function processUrlStream(Request $request)
@@ -3889,7 +3935,7 @@ class ProductController extends Controller
 
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request, $isAdmin) {
             $sendUpdate = function ($message, $progress, $data = null) {
-                echo json_encode(['message' => $message, 'progress' => $progress, 'data' => $data]) . "\n";
+                echo json_encode(['message' => $message, 'progress' => $progress, 'data' => $data])."\n";
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
@@ -3897,8 +3943,9 @@ class ProductController extends Controller
             };
 
             $url = $request->input('url');
-            if (!$url) {
+            if (! $url) {
                 $sendUpdate('URL is required.', 0, ['error' => 'URL is required.']);
+
                 return;
             }
 
@@ -3906,6 +3953,7 @@ class ProductController extends Controller
                 $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $url);
             } catch (\InvalidArgumentException $e) {
                 $sendUpdate($e->getMessage(), 0, ['error' => $e->getMessage()]);
+
                 return;
             }
 
@@ -3923,10 +3971,10 @@ class ProductController extends Controller
             try {
                 $sendUpdate('Connecting to website...', 5);
                 $htmlResponse = \Illuminate\Support\Facades\Http::withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 ])->timeout(15)->get($url);
 
-                if (!$htmlResponse->successful()) {
+                if (! $htmlResponse->successful()) {
                     $sendUpdate('Failed to fetch website.', 100, [
                         'description' => $description,
                         'logos' => [],
@@ -3942,10 +3990,11 @@ class ProductController extends Controller
                         'x_account' => null,
                         'maker_links' => [],
                     ]);
+
                     return;
                 }
                 $htmlContent = $htmlResponse->body();
-                $doc = new DOMDocument();
+                $doc = new DOMDocument;
                 @$doc->loadHTML($htmlContent);
                 $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
                 $sendUpdate('Website fetched successfully...', 15);
@@ -3975,27 +4024,27 @@ class ProductController extends Controller
                     // Remove common noise: layout elements, scripts, and third-party widgets
                     // (video embeds, iframes, cookie banners, chat widgets can pollute the AI context)
                     $noiseQuery = '//nav | //header | //footer | //script | //style | //noscript | //aside'
-                        . ' | //video | //iframe | //form | //figure | //picture | //template'
-                        . ' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
+                        .' | //video | //iframe | //form | //figure | //picture | //template'
+                        .' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
                     $noise = $cleanXpath->query($noiseQuery);
                     foreach ($noise as $node) {
                         $node->parentNode?->removeChild($node);
                     }
 
                     $textContent = "Title: {$title}\n";
-                    if (!empty($descriptionContent)) {
+                    if (! empty($descriptionContent)) {
                         $textContent .= "Meta Description: {$descriptionContent}\n";
                     }
                     foreach (['h1', 'h2', 'h3'] as $tag) {
                         foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
-                            $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
+                            $textContent .= "\n".strtoupper($tag).': '.trim($node->textContent);
                         }
                     }
                     // Cap body content to avoid drowning out product metadata in the AI context window
                     $rawBodyText = trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
-                    $textContent .= "\n\nBODY CONTENT:\n" . mb_substr($rawBodyText, 0, 4000);
+                    $textContent .= "\n\nBODY CONTENT:\n".mb_substr($rawBodyText, 0, 4000);
                     if ($additionalResourcesContext !== '') {
-                        $textContent .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                        $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                     }
 
                     $productNameForAI = trim((string) $name) !== ''
@@ -4005,7 +4054,7 @@ class ProductController extends Controller
 
                     $sendUpdate('Generating AI taglines...', 40);
                     try {
-                        $taglineRewriter = new \App\Services\TaglineRewriterService();
+                        $taglineRewriter = new \App\Services\TaglineRewriterService;
                         $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
                         $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
 
@@ -4048,8 +4097,8 @@ class ProductController extends Controller
                         $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
                     }
 
-                    if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
-                        $descRewriter = new \App\Services\DescriptionRewriterService();
+                    if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
+                        $descRewriter = new \App\Services\DescriptionRewriterService;
                         $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
                         if ($rewritten) {
                             $description = $rewritten;
@@ -4080,7 +4129,7 @@ class ProductController extends Controller
                 $sendUpdate('Classifying features and categories...', 95);
                 $classificationSource = $htmlContent;
                 if ($additionalResourcesContext !== '') {
-                    $classificationSource .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                    $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                 }
                 $classificationResult = $this->categoryClassifier->classify($classificationSource);
                 $categories = $classificationResult['categories'] ?? [];
@@ -4089,16 +4138,16 @@ class ProductController extends Controller
                 $pricing = $classificationResult['pricing'] ?? [];
                 $platforms = $classificationResult['platforms'] ?? [];
 
-                $categoryIds = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
-                $useCaseIds = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('id')->toArray() : [];
-                $bestForIds = !empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
-                $pricingIds = !empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
-                $platformIds = !empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
+                $categoryIds = ! empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
+                $useCaseIds = ! empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('id')->toArray() : [];
+                $bestForIds = ! empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
+                $pricingIds = ! empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
+                $platformIds = ! empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
                 $techStackIds = [];
 
                 try {
                     $techStackNames = $this->techStackDetector->detect($url);
-                    $techStackIds = !empty($techStackNames)
+                    $techStackIds = ! empty($techStackNames)
                         ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                         : [];
                 } catch (\Throwable $techStackError) {
@@ -4109,9 +4158,9 @@ class ProductController extends Controller
                 }
 
                 // Find category names the classifier suggested but that don't exist in DB
-                $matchedCategoryNames = !empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
+                $matchedCategoryNames = ! empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
                 $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
-                $matchedUseCaseNames = !empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
+                $matchedUseCaseNames = ! empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
                 $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
                 $sendUpdate('Categories ready. Finalizing extracted data and response...', 97, [
@@ -4148,7 +4197,7 @@ class ProductController extends Controller
 
                 $sendUpdate('Done!', 100, $responseData);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error in processUrlStream: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Error in processUrlStream: '.$e->getMessage());
                 $sendUpdate('An error occurred during processing.', 100, [
                     'description' => $description,
                     'logos' => [],
@@ -4181,7 +4230,7 @@ class ProductController extends Controller
         $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
         $url = $request->input('url');
-        if (!$url) {
+        if (! $url) {
             return response()->json(['error' => 'URL is required.'], 400);
         }
 
@@ -4206,9 +4255,9 @@ class ProductController extends Controller
         try {
             // 3. Fetch HTML for content extraction with timeout
             $htmlResponse = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->timeout(15)->get($url);
-            if (!$htmlResponse->successful()) {
+            if (! $htmlResponse->successful()) {
                 return response()->json([
                     'description' => $description,
                     'logos' => [],
@@ -4226,7 +4275,7 @@ class ProductController extends Controller
                 ]);
             }
             $htmlContent = $htmlResponse->body();
-            $doc = new DOMDocument();
+            $doc = new DOMDocument;
             @$doc->loadHTML($htmlContent);
             $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
 
@@ -4261,17 +4310,17 @@ class ProductController extends Controller
                 }
 
                 $textContent = "Title: {$title}\n";
-                if (!empty($descriptionContent)) {
+                if (! empty($descriptionContent)) {
                     $textContent .= "Meta Description: {$descriptionContent}\n";
                 }
                 foreach (['h1', 'h2', 'h3'] as $tag) {
                     foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
-                        $textContent .= "\n" . strtoupper($tag) . ": " . trim($node->textContent);
+                        $textContent .= "\n".strtoupper($tag).': '.trim($node->textContent);
                     }
                 }
-                $textContent .= "\n\nBODY CONTENT:\n" . trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
+                $textContent .= "\n\nBODY CONTENT:\n".trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
                 if ($additionalResourcesContext !== '') {
-                    $textContent .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                    $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                 }
 
                 $productNameForAI = trim((string) $name) !== ''
@@ -4281,7 +4330,7 @@ class ProductController extends Controller
 
                 // --- AI Tagline Generation (primary source) ---
                 try {
-                    $taglineRewriter = new \App\Services\TaglineRewriterService();
+                    $taglineRewriter = new \App\Services\TaglineRewriterService;
                     $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
                     $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
 
@@ -4329,8 +4378,8 @@ class ProductController extends Controller
                     $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
                 }
 
-                if (!empty($rawDescForRewrite) || !empty(trim($textContent))) {
-                    $descRewriter = new DescriptionRewriterService();
+                if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
+                    $descRewriter = new DescriptionRewriterService;
                     $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
                     if ($rewritten) {
                         $description = $rewritten;
@@ -4348,7 +4397,7 @@ class ProductController extends Controller
             // Classify categories and bestFor from the HTML content
             $classificationSource = $htmlContent;
             if ($additionalResourcesContext !== '') {
-                $classificationSource .= "\n\nADDITIONAL RESOURCES:\n" . $additionalResourcesContext;
+                $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
             }
             $classificationResult = $this->categoryClassifier->classify($classificationSource);
             $categories = $classificationResult['categories'] ?? [];
@@ -4360,7 +4409,7 @@ class ProductController extends Controller
             // Convert category names to IDs
             $categoryIds = [];
             $matchedCategoryNames = [];
-            if (!empty($categories)) {
+            if (! empty($categories)) {
                 $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
                 $matchedCategoryNames = Category::whereIn('name', $categories)->pluck('name')->toArray();
             }
@@ -4368,31 +4417,31 @@ class ProductController extends Controller
 
             $useCaseIds = [];
             $matchedUseCaseNames = [];
-            if (!empty($useCases)) {
+            if (! empty($useCases)) {
                 $useCaseIds = Category::whereIn('name', $useCases)->pluck('id')->toArray();
                 $matchedUseCaseNames = Category::whereIn('name', $useCases)->pluck('name')->toArray();
             }
             $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
             $bestForIds = [];
-            if (!empty($bestFor)) {
+            if (! empty($bestFor)) {
                 $bestForIds = Category::whereIn('name', $bestFor)->pluck('id')->toArray();
             }
 
             $pricingIds = [];
-            if (!empty($pricing)) {
+            if (! empty($pricing)) {
                 $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
             }
 
             $platformIds = [];
-            if (!empty($platforms)) {
+            if (! empty($platforms)) {
                 $platformIds = Category::whereIn('name', $platforms)->pluck('id')->toArray();
             }
 
             $techStackIds = [];
             try {
                 $techStackNames = $this->techStackDetector->detect($url);
-                $techStackIds = !empty($techStackNames)
+                $techStackIds = ! empty($techStackNames)
                     ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                     : [];
             } catch (\Throwable $techStackError) {
@@ -4424,12 +4473,13 @@ class ProductController extends Controller
             ];
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
+
             return response()->json($responseData);
         } catch (\Exception $e) {
-            Log::error('Error in processUrl: ' . $e->getMessage(), [
+            Log::error('Error in processUrl: '.$e->getMessage(), [
                 'url' => $url,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // Return a response with empty logos but maintain the structure to prevent frontend errors
@@ -4451,23 +4501,24 @@ class ProductController extends Controller
         }
     }
 
-
     public function getTechStacks()
     {
         try {
             $techStacks = TechStack::orderBy('name')->get(['id', 'name']);
+
             return response()->json($techStacks);
         } catch (\Exception $e) {
-            Log::error('Failed to fetch tech stacks for API: ' . $e->getMessage());
+            Log::error('Failed to fetch tech stacks for API: '.$e->getMessage());
+
             return response()->json(['error' => 'Could not retrieve tech stacks.'], 500);
         }
     }
 
     public function upvote(Request $request, Product $product, \App\Services\ProductMetricsService $metricsService)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
-                'message' => 'You must be logged in to upvote products.'
+                'message' => 'You must be logged in to upvote products.',
             ], 401);
         }
 
@@ -4496,7 +4547,7 @@ class ProductController extends Controller
             // Add the upvote (toggle on)
             UserProductUpvote::create([
                 'user_id' => $user->id,
-                'product_id' => $product->id
+                'product_id' => $product->id,
             ]);
             Product::withoutTimestamps(function () use ($product) {
                 $product->increment('votes_count');
@@ -4507,7 +4558,7 @@ class ProductController extends Controller
 
         return response()->json([
             'is_upvoted' => $isUpvoted,
-            'votes_count' => $product->fresh()->votes_count
+            'votes_count' => $product->fresh()->votes_count,
         ]);
     }
 
@@ -4527,7 +4578,7 @@ class ProductController extends Controller
             ? strtolower(pathinfo((string) $file, PATHINFO_EXTENSION)) ?: ($type === 'image' ? 'png' : 'bin')
             : (strtolower($file->getClientOriginalExtension()) ?: ($type === 'image' ? 'png' : 'bin'));
         $filename = ProductMediaSeo::productMediaFilename($product, $type === 'image' && $isExternalPath ? 'screenshot' : $type, $extension, $mediaPosition);
-        $path = 'product_media/' . $filename;
+        $path = 'product_media/'.$filename;
 
         if ($isExternalPath) {
             Storage::disk('public')->put($path, file_get_contents($absolutePath));
@@ -4547,20 +4598,20 @@ class ProductController extends Controller
                 // Generate Thumbnail (300px width)
                 $imageThumb = $manager->read($absolutePath);
                 $imageThumb->scale(width: 300);
-                $thumbFilename = 'thumb_' . $filename;
-                $pathThumb = $directory . '/' . $thumbFilename;
+                $thumbFilename = 'thumb_'.$filename;
+                $pathThumb = $directory.'/'.$thumbFilename;
                 Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
 
                 // Generate Medium (800px width)
                 $imageMedium = $manager->read($absolutePath);
                 $imageMedium->scale(width: 800);
-                $mediumFilename = 'medium_' . $filename;
-                $pathMedium = $directory . '/' . $mediumFilename;
+                $mediumFilename = 'medium_'.$filename;
+                $pathMedium = $directory.'/'.$mediumFilename;
                 Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
             } catch (\Throwable $e) {
                 // Some environments allow storing AVIF files but GD cannot decode them for resizing.
                 // Keep the original media and skip derivative thumbnails instead of failing submission.
-                \Illuminate\Support\Facades\Log::warning('Image resizing skipped: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Image resizing skipped: '.$e->getMessage());
             }
         }
 
@@ -4624,8 +4675,8 @@ class ProductController extends Controller
         if (filter_var($logoInput, FILTER_VALIDATE_URL)) {
             $appUrl = rtrim((string) config('app.url'), '/');
 
-            if ($appUrl !== '' && Str::startsWith($logoInput, $appUrl . '/storage/')) {
-                return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, $appUrl . '/storage/'), '/'));
+            if ($appUrl !== '' && Str::startsWith($logoInput, $appUrl.'/storage/')) {
+                return $storageService->storePublicDiskPath(ltrim(Str::after($logoInput, $appUrl.'/storage/'), '/'));
             }
 
             $resolvedLogoUrl = $this->productLogoResolver->resolvePreferredLogoUrl($productLink, $logoInput);
@@ -4651,7 +4702,7 @@ class ProductController extends Controller
     {
         $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
 
-        if (!$downloadedPath) {
+        if (! $downloadedPath) {
             return;
         }
 
@@ -4663,7 +4714,7 @@ class ProductController extends Controller
     {
         $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath);
 
-        if (!$storedMedia) {
+        if (! $storedMedia) {
             return;
         }
 
@@ -4697,7 +4748,7 @@ class ProductController extends Controller
     {
         $downloadedPath = $this->downloadMediaUrlToTemporaryPublicPath($url);
 
-        if (!$downloadedPath) {
+        if (! $downloadedPath) {
             return;
         }
 
@@ -4709,7 +4760,7 @@ class ProductController extends Controller
     {
         $storedMedia = $this->storeScreenshotAsset($product, $file, $manager, $isExternalPath, 'proposed-');
 
-        if (!$storedMedia) {
+        if (! $storedMedia) {
             return;
         }
 
@@ -4729,7 +4780,7 @@ class ProductController extends Controller
             $mimeType = $file->getMimeType();
         }
 
-        if (!Str::startsWith((string) $mimeType, 'image')) {
+        if (! Str::startsWith((string) $mimeType, 'image')) {
             return null;
         }
 
@@ -4737,8 +4788,8 @@ class ProductController extends Controller
             ? strtolower(pathinfo((string) $file, PATHINFO_EXTENSION)) ?: 'png'
             : (strtolower($file->getClientOriginalExtension()) ?: 'png');
 
-        $filename = $filenamePrefix . ProductMediaSeo::productMediaFilename($product, 'screenshot', $extension, 1);
-        $path = 'product_media/' . $filename;
+        $filename = $filenamePrefix.ProductMediaSeo::productMediaFilename($product, 'screenshot', $extension, 1);
+        $path = 'product_media/'.$filename;
 
         if ($isExternalPath) {
             Storage::disk('public')->put($path, file_get_contents($absolutePath));
@@ -4756,15 +4807,15 @@ class ProductController extends Controller
 
             $imageThumb = $manager->read($absolutePath);
             $imageThumb->scale(width: 300);
-            $pathThumb = $directory . '/thumb_' . $storedFilename;
+            $pathThumb = $directory.'/thumb_'.$storedFilename;
             Storage::disk('public')->put($pathThumb, (string) $imageThumb->encode());
 
             $imageMedium = $manager->read($absolutePath);
             $imageMedium->scale(width: 800);
-            $pathMedium = $directory . '/medium_' . $storedFilename;
+            $pathMedium = $directory.'/medium_'.$storedFilename;
             Storage::disk('public')->put($pathMedium, (string) $imageMedium->encode());
         } catch (\Throwable $e) {
-            Log::warning('Image resizing skipped: ' . $e->getMessage());
+            Log::warning('Image resizing skipped: '.$e->getMessage());
         }
 
         return [
@@ -4778,7 +4829,7 @@ class ProductController extends Controller
     {
         try {
             $appUrl = config('app.url');
-            $isLocal = str_starts_with($url, $appUrl . '/storage/')
+            $isLocal = str_starts_with($url, $appUrl.'/storage/')
                 || str_starts_with($url, '/storage/')
                 || str_contains($url, '/storage/screenshots/');
 
@@ -4787,7 +4838,7 @@ class ProductController extends Controller
 
                 if (Storage::disk('public')->exists($storagePath)) {
                     $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
-                    $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+                    $path = 'product_media/tmp-'.Str::uuid().'.'.$extension;
                     Storage::disk('public')->copy($storagePath, $path);
 
                     return $path;
@@ -4795,7 +4846,7 @@ class ProductController extends Controller
             }
 
             $response = Http::get($url);
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -4808,12 +4859,12 @@ class ProductController extends Controller
                 $extension = 'avif';
             }
 
-            $path = 'product_media/tmp-' . Str::uuid() . '.' . $extension;
+            $path = 'product_media/tmp-'.Str::uuid().'.'.$extension;
             Storage::disk('public')->put($path, $response->body());
 
             return $path;
         } catch (\Throwable $e) {
-            Log::error('Failed to process media from URL: ' . $url . ' - ' . $e->getMessage());
+            Log::error('Failed to process media from URL: '.$url.' - '.$e->getMessage());
 
             return null;
         }
@@ -4831,7 +4882,7 @@ class ProductController extends Controller
     protected function deleteMediaFiles(?string ...$paths): void
     {
         foreach ($paths as $path) {
-            if ($path && !Str::startsWith($path, 'http')) {
+            if ($path && ! Str::startsWith($path, 'http')) {
                 Storage::disk('public')->delete($path);
             }
         }
@@ -4880,13 +4931,13 @@ class ProductController extends Controller
 
     private function isAdminAddProductSandboxEnabled(): bool
     {
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return true;
         }
 
         $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
 
-        if (!is_array($settings)) {
+        if (! is_array($settings)) {
             return true;
         }
 
@@ -4902,8 +4953,9 @@ class ProductController extends Controller
     {
         if (Str::startsWith($relativeUrl, ['http://', 'https://', '//'])) {
             if (Str::startsWith($relativeUrl, '//')) {
-                return 'https:' . $relativeUrl;
+                return 'https:'.$relativeUrl;
             }
+
             return $relativeUrl;
         }
 
@@ -4918,6 +4970,6 @@ class ProductController extends Controller
 
         $path = rtrim($path, '/');
 
-        return $base['scheme'] . '://' . $base['host'] . $path . '/' . ltrim($relativeUrl, '/');
+        return $base['scheme'].'://'.$base['host'].$path.'/'.ltrim($relativeUrl, '/');
     }
 }
