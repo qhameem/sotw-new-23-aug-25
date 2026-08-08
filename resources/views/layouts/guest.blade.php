@@ -152,7 +152,7 @@
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 "> {{-- Added --}}
         <div>
             <a href="/" aria-label="{{ config('app.name', 'Software on the Web') }} home">
-                <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                <x-application-logo class="w-40 h-auto max-h-24 object-contain fill-current text-gray-500" />
                 <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
             </a>
         </div>
