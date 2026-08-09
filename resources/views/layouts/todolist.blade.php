@@ -70,6 +70,7 @@
 
     @vite(['resources/css/app.css', 'resources/css/todo-vendor.css', 'resources/js/app.js'])
     @stack('styles')
+    @include('partials.header-code-injection')
 </head>
 
 <body class="font-sans antialiased bg-gray-100 pt-16" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"

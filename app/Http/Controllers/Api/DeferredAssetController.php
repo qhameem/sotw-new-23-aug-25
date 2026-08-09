@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CodeSnippet;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class DeferredAssetController extends Controller
 {
@@ -15,7 +13,7 @@ class DeferredAssetController extends Controller
         $pageRequest = $this->buildPageRequest($request);
 
         return response()->json([
-            'ga_code' => $this->resolveGoogleAnalyticsCode(),
+            'ga_code' => '',
             'head_snippets' => $this->resolveSnippets('head', $pageRequest),
             'body_snippets' => $this->resolveSnippets('body', $pageRequest),
             'sidebar_snippets' => $this->resolveSnippets('sidebar', $pageRequest),
@@ -24,7 +22,7 @@ class DeferredAssetController extends Controller
 
     protected function buildPageRequest(Request $request): Request
     {
-        $path = '/' . ltrim((string) $request->query('path', '/'), '/');
+        $path = '/'.ltrim((string) $request->query('path', '/'), '/');
         $routeName = trim((string) $request->query('route_name', ''));
 
         $pageRequest = Request::create(
@@ -48,17 +46,6 @@ class DeferredAssetController extends Controller
         }
 
         return $pageRequest;
-    }
-
-    protected function resolveGoogleAnalyticsCode(): string
-    {
-        if (Auth::check() || !Storage::disk('local')->exists('settings.json')) {
-            return '';
-        }
-
-        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-
-        return (string) ($settings['google_analytics_code'] ?? '');
     }
 
     protected function resolveSnippets(string $location, Request $request): array

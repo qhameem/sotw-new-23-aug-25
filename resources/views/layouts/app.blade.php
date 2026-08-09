@@ -467,6 +467,8 @@
     @endphp
     <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
+    @include('partials.header-code-injection')
+
 </head>
 
 <body class="font-sans antialiased" style="background-color: var(--color-body-bg);" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"

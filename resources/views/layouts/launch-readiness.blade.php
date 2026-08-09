@@ -74,6 +74,7 @@
 
     @vite(['resources/css/public.css', 'resources/js/app.js'])
     @yield('schema')
+    @include('partials.header-code-injection')
 </head>
 <body
     class="min-h-screen antialiased"

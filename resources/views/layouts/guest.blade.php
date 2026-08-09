@@ -144,6 +144,7 @@
     <!-- Scripts -->
     @vite(['resources/css/public.css', 'resources/js/app.js'])
     @livewireStyles
+    @include('partials.header-code-injection')
 </head>
 
 <body class="font-sans text-gray-900 antialiased " data-auth-sync-event="{{ session('auth_sync_event', '') }}"
