@@ -95,7 +95,7 @@
     <div id="field-categories" :class="autofillLockClass('taxonomy')">
        <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
-            <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3)</span></label>
+            <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
             <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 rounded bg-gray-200"></div>
           </div>
           <p v-if="validationErrors.categories" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.categories }}</p>
@@ -823,11 +823,23 @@ function updateField(field, value) {
 }
 
 // Chip Logic for Categories
+function isOpenSourceCategory(id) {
+    const category = props.allCategories.find(category => category.id === id);
+    const normalizedName = category?.name?.toLowerCase().replace(/[-_\s]+/g, ' ').trim();
+
+    return normalizedName === 'open source';
+}
+
+function countedCategoryTotal(categoryIds) {
+    return categoryIds.filter(id => !isOpenSourceCategory(id)).length;
+}
+
 function toggleCategory(id) {
     const current = [...props.modelValue.categories];
     const index = current.indexOf(id);
     if (index === -1) {
-        if (current.length >= 3) return; // Max 3 limit
+        const updated = [...current, id];
+        if (countedCategoryTotal(updated) > 3) return;
         current.push(id);
     } else {
         current.splice(index, 1);
