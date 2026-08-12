@@ -824,7 +824,7 @@ function updateField(field, value) {
 
 // Chip Logic for Categories
 function isOpenSourceCategory(id) {
-    const category = props.allCategories.find(category => category.id === id);
+    const category = props.allCategories.find(category => String(category.id) === String(id));
     const normalizedName = category?.name?.toLowerCase().replace(/[-_\s]+/g, ' ').trim();
 
     return normalizedName === 'open source';
@@ -836,7 +836,7 @@ function countedCategoryTotal(categoryIds) {
 
 function toggleCategory(id) {
     const current = [...props.modelValue.categories];
-    const index = current.indexOf(id);
+    const index = current.findIndex(categoryId => String(categoryId) === String(id));
     if (index === -1) {
         const updated = [...current, id];
         if (countedCategoryTotal(updated) > 3) return;
