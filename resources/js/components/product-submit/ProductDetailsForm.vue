@@ -91,6 +91,30 @@
         <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
     </div>
 
+    <div v-if="isAdmin" class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
+      <label class="block text-xs font-bold text-gray-900">Description cohort</label>
+      <select
+        :value="modelValue.description_format || 'full'"
+        @change="updateField('description_format', $event.target.value)"
+        class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+      >
+        <option value="full">Cohort A — Full description</option>
+        <option value="facts">Cohort B — Product facts</option>
+      </select>
+      <p class="mt-2 text-[11px] text-gray-500">One stable format is shown to every visitor and crawler for this product.</p>
+
+      <template v-if="modelValue.description_format === 'facts'">
+        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="font-normal text-gray-400">(one per line, max 7)</span></label>
+        <textarea
+          :value="(modelValue.product_facts || []).join('\n')"
+          @input="updateProductFacts($event.target.value)"
+          rows="7"
+          placeholder="Leave empty to generate facts from the full description when saved."
+          class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+        ></textarea>
+      </template>
+    </div>
+
     <!-- Categories (Chip Selection) -->
     <div id="field-categories" :class="autofillLockClass('taxonomy')">
        <div class="mb-1 flex items-start justify-between gap-4">
@@ -820,6 +844,11 @@ function updateProductName(value) {
 
 function updateField(field, value) {
   emit('update:modelValue', { ...props.modelValue, [field]: value });
+}
+
+function updateProductFacts(value) {
+  const facts = value.split('\n').map(item => item.trim()).filter(Boolean).slice(0, 7);
+  updateField('product_facts', facts);
 }
 
 // Chip Logic for Categories

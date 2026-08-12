@@ -304,6 +304,9 @@ class ProductController extends Controller
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'description_format' => 'nullable|in:full,facts',
+            'product_facts' => 'nullable|array|max:7',
+            'product_facts.*' => 'string|max:300',
             'link' => 'required|url|max:255',
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
@@ -376,6 +379,8 @@ class ProductController extends Controller
             'tagline' => old('tagline', $product->tagline), // Use original tagline
             'product_page_tagline' => old('product_page_tagline', $product->product_page_tagline),
             'description' => old('description', $product->description), // Use original description
+            'description_format' => old('description_format', $product->description_format),
+            'product_facts' => old('product_facts', $product->product_facts ?? []),
             'current_categories' => old('categories', $product->categories->pluck('id')->toArray()), // Use original categories
             'current_tech_stacks' => old('tech_stacks', $product->techStacks->pluck('id')->toArray()),
             'video_url' => old('video_url', $product->video_url),
@@ -433,6 +438,9 @@ class ProductController extends Controller
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'description_format' => 'nullable|in:full,facts',
+            'product_facts' => 'nullable|array|max:7',
+            'product_facts.*' => 'string|max:300',
             'link' => 'required|url|max:255',
             'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
@@ -518,6 +526,9 @@ class ProductController extends Controller
         if (! empty($validated['pricing_page_url'])) {
             $validated['pricing_page_url'] = Product::normalizeLink($validated['pricing_page_url']);
         }
+
+        $product->description_format = $validated['description_format'] ?? 'full';
+        $product->product_facts = $validated['product_facts'] ?? [];
 
         $validated['comparison_product_ids'] = $this->resolveRelatedProductOverrides(
             $validated['comparison_overrides_input'] ?? null,

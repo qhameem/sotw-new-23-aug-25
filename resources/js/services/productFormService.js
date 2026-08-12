@@ -75,6 +75,8 @@ const createInitialFormValues = () => ({
   tagline: '',
   tagline_detailed: '',
   description: '',
+  description_format: 'full',
+  product_facts: [],
   categories: [],
   categories_custom: [],
   useCases: [],

@@ -67,7 +67,9 @@
     $softwareApplicationSchema = [
         "@type" => "SoftwareApplication",
         "name" => $product->name,
-        "description" => strip_tags(html_entity_decode($product->description ?? $product->tagline)),
+        "description" => $product->usesProductFacts()
+            ? implode(' ', $product->product_facts)
+            : strip_tags(html_entity_decode($product->description ?? $product->tagline)),
         "applicationCategory" => $product->application_category ?? 'BusinessApplication',
         "operatingSystem" => $product->operating_system ?? 'Web',
         "image" => $product->seoImageUrls(),

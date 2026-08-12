@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\HtmlHelper;
+use App\Services\ProductFactsExtractor;
 use App\Support\CategoryTypeRegistry;
 use App\Support\ProductLogo;
 use App\Support\ProductMediaSeo;
@@ -35,6 +36,10 @@ class Product extends Model implements Sitemapable
         'tagline',
         'product_page_tagline',
         'description',
+        'description_format',
+        'product_facts',
+        'content_test_group',
+        'content_test_started_at',
         'link',
         'maker_links',
         'sell_product',
@@ -97,7 +102,14 @@ class Product extends Model implements Sitemapable
         'proposed_maker_links' => 'array',
         'comparison_product_ids' => 'array',
         'alternative_product_ids' => 'array',
+        'product_facts' => 'array',
+        'content_test_started_at' => 'datetime',
     ];
+
+    public function usesProductFacts(): bool
+    {
+        return $this->description_format === 'facts' && ! empty($this->product_facts);
+    }
 
     protected static function boot()
     {
@@ -106,6 +118,20 @@ class Product extends Model implements Sitemapable
         static::saving(function ($product) {
             if ($product->description) {
                 $product->description = HtmlHelper::addNofollowToLinks($product->description);
+            }
+
+            if ($product->description_format === 'facts') {
+                if (empty($product->product_facts)) {
+                    $product->product_facts = app(ProductFactsExtractor::class)->extract($product->description);
+                }
+                $product->content_test_group = 'B';
+            } else {
+                $product->description_format = 'full';
+                $product->content_test_group = 'A';
+            }
+
+            if ($product->isDirty('description_format')) {
+                $product->content_test_started_at = now();
             }
         });
     }

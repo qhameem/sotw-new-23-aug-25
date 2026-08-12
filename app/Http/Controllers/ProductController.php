@@ -312,6 +312,9 @@ class ProductController extends Controller
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'description_format' => $isAdmin ? 'nullable|in:full,facts' : 'prohibited',
+            'product_facts' => $isAdmin ? 'nullable|array|max:7' : 'prohibited',
+            'product_facts.*' => 'string|max:300',
             'link' => 'required|url|max:255',
             'maker_links' => 'nullable|array',
             'maker_links.*' => [
@@ -949,6 +952,9 @@ class ProductController extends Controller
             'tagline' => 'required|string|max:140', // Max 140 chars
             'product_page_tagline' => 'required|string|max:255',
             'description' => 'required|string|max:5000', // Max 5000 chars
+            'description_format' => $user->hasRole('admin') ? 'nullable|in:full,facts' : 'prohibited',
+            'product_facts' => $user->hasRole('admin') ? 'nullable|array|max:7' : 'prohibited',
+            'product_facts.*' => 'string|max:300',
             // 'link' is not editable by users directly in this form
             'categories' => [
                 function ($attribute, $value, $fail) use ($request) {
@@ -1098,6 +1104,11 @@ class ProductController extends Controller
 
         // Prepare data for update
         $updateData = [];
+
+        if ($user->hasRole('admin')) {
+            $updateData['description_format'] = $validated['description_format'] ?? 'full';
+            $updateData['product_facts'] = $validated['product_facts'] ?? [];
+        }
 
         if ($fieldChanges['tagline']) {
             $updateData['tagline'] = $validated['tagline'];
@@ -1920,6 +1931,7 @@ class ProductController extends Controller
             ->map(fn (Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
             ->values();
         $hasEditorialSections = $this->productEditorialHasSections($productEditorial);
+        $usesProductFacts = $product->usesProductFacts();
 
         $title = $product->name;
         $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
@@ -2006,6 +2018,7 @@ class ProductController extends Controller
             'descriptionContent',
             'alternativeProducts',
             'hasEditorialSections',
+            'usesProductFacts',
             'isUnpublishedProduct'
         ));
 

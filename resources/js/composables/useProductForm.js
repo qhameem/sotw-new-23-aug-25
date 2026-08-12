@@ -1507,6 +1507,12 @@ export function useProductForm() {
       formData.append('tagline', form.tagline);
       formData.append('product_page_tagline', form.tagline);
       formData.append('description', form.description);
+      if (isAdmin.value) {
+        formData.append('description_format', form.description_format || 'full');
+        (form.product_facts || []).forEach((fact, index) => {
+          formData.append(`product_facts[${index}]`, fact);
+        });
+      }
       formData.append('link', form.link);
       // User ID is automatically set by the backend based on the authenticated user
 
@@ -2657,6 +2663,8 @@ export function useProductForm() {
               tagline: initialData.tagline || '',
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',
+              description_format: initialData.description_format || 'full',
+              product_facts: initialData.product_facts || [],
               link: initialData.link || '',
               categories: separatedCategories.categories,
               useCases: separatedCategories.useCases,
@@ -2764,6 +2772,8 @@ export function useProductForm() {
               tagline: initialData.tagline || '',
               tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
               description: initialData.description || '',
+              description_format: initialData.description_format || 'full',
+              product_facts: initialData.product_facts || [],
               link: initialData.link || '',
               categories: separatedCategories.categories,
               useCases: separatedCategories.useCases,
@@ -2876,6 +2886,8 @@ export function useProductForm() {
                     tagline: initialData.tagline || '',
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
                     description: initialData.description || '',
+                    description_format: initialData.description_format || 'full',
+                    product_facts: initialData.product_facts || [],
                     link: initialData.link || '',
                     categories: separatedCategories.categories,
                     useCases: separatedCategories.useCases,
@@ -2904,6 +2916,8 @@ export function useProductForm() {
                     tagline: initialData.tagline || '',
                     tagline_detailed: initialData.product_page_tagline || initialData.tagline_detailed || '',
                     description: initialData.description || '',
+                    description_format: initialData.description_format || 'full',
+                    product_facts: initialData.product_facts || [],
                     link: initialData.link || '',
                     categories: separatedCategories.categories,
                     useCases: separatedCategories.useCases,

@@ -100,7 +100,7 @@
             : collect();
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
-            ($hasEditorialSections || filled($detailDescriptionHtml)) ? ['id' => 'details', 'label' => 'Details'] : null,
+            (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml))) ? ['id' => 'details', 'label' => 'Details'] : null,
             $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
             !empty($productEditorial['faq']) ? ['id' => 'faq', 'label' => 'FAQ'] : null,
         ]));
@@ -225,7 +225,16 @@
                 <section id="overview" class="scroll-mt-28 pt-8">
                     <div class="max-w-3xl">
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Overview</p>
-                        @if(!empty($overviewBlocks))
+                        @if($usesProductFacts)
+                            <ul class="mt-4 space-y-3 text-base text-gray-600">
+                                @foreach($product->product_facts as $fact)
+                                    <li class="flex gap-3">
+                                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                                        <span>{{ $fact }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @elseif(!empty($overviewBlocks))
                             <div class="prose product-detail-description ql-editor-content mt-4 max-w-none text-base text-gray-600">
                                 @foreach($overviewBlocks as $overviewBlock)
                                     {!! \App\Support\OutboundLink::sanitizeHtml($overviewBlock, 'product_description') !!}
@@ -383,6 +392,7 @@
                     </section>
                 @endif
 
+                @unless($usesProductFacts)
                 <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Details</h2>
@@ -429,6 +439,7 @@
                         @endif
                     @endif
                 </section>
+                @endunless
 
                 @if($alternativeProducts->isNotEmpty())
                     <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8 md:hidden">
