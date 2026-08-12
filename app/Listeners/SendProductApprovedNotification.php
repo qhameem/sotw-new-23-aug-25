@@ -30,11 +30,13 @@ class SendProductApprovedNotification
         $user = $event->user;
         $product = $event->product;
 
-        // Send In-App Notification
-        try {
-            $user->notify(new ProductApprovedInApp($product));
-        } catch (Exception $e) {
-            Log::error("Failed to send in-app notification for product ID {$product->id}: " . $e->getMessage());
+        // Self-approval by an admin should not create an unread bell notification.
+        if ($event->sendEmail) {
+            try {
+                $user->notify(new ProductApprovedInApp($product));
+            } catch (Exception $e) {
+                Log::error("Failed to send in-app notification for product ID {$product->id}: " . $e->getMessage());
+            }
         }
 
         if (!$event->sendEmail) {

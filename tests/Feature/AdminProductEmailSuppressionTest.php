@@ -41,6 +41,7 @@ class AdminProductEmailSuppressionTest extends TestCase
             'slug' => 'admin-submitted-product',
             'user_id' => $admin->id,
         ]);
+        $this->assertCount(0, $admin->fresh()->notifications);
     }
 
     public function test_admin_approving_their_own_product_does_not_send_email(): void
@@ -72,7 +73,7 @@ class AdminProductEmailSuppressionTest extends TestCase
 
         $this->assertTrue($product->approved);
         $this->assertTrue($product->is_published);
-        $this->assertCount(1, $admin->notifications);
+        $this->assertCount(0, $admin->notifications);
         $this->assertDatabaseHas('email_logs', [
             'product_id' => $product->id,
             'user_id' => $admin->id,

@@ -615,12 +615,16 @@ class ProductController extends Controller
             FetchOgImage::dispatch($product);
         }
 
-        $admins = User::getAdmins();
-        Notification::send($admins, new ProductSubmitted($product));
-
-        // Send notification to the user who submitted the product
         $user = User::find($product->user_id);
-        if ($user) {
+
+        // Admin-originated submissions should not create unread bell notifications.
+        if (! $isAdmin) {
+            $admins = User::getAdmins();
+            Notification::send($admins, new ProductSubmitted($product));
+        }
+
+        // Send confirmation only to non-admin submitters.
+        if ($user && ! $isAdmin) {
             $user->notify(new \App\Notifications\ProductSubmissionConfirmation($product));
         }
 
