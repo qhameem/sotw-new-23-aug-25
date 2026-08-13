@@ -171,6 +171,35 @@ class ProductEditorialContentService
     {
         $normalized = strtolower(trim(preg_replace('/[^a-z0-9]+/i', ' ', $heading)));
 
+        if (str_starts_with($normalized, 'frequently asked questions')) {
+            return 'faq';
+        }
+
+        if (str_starts_with($normalized, 'what are the key features of ')) {
+            return 'key_features';
+        }
+
+        if (str_starts_with($normalized, 'who is ') && str_ends_with($normalized, ' best for')) {
+            return 'ideal_for';
+        }
+
+        if (str_starts_with($normalized, 'what can you use ') && str_ends_with($normalized, ' for')) {
+            return 'top_use_cases';
+        }
+
+        if (str_starts_with($normalized, 'how does ') && str_ends_with($normalized, ' compare to alternatives')) {
+            return 'known_alternatives';
+        }
+
+        if (str_starts_with($normalized, 'what integrations and ecosystem support does ')) {
+            return 'integrations';
+        }
+
+        if (str_starts_with($normalized, 'what are the pros of ')
+            || str_starts_with($normalized, 'what are the pros and limitations of ')) {
+            return 'pros_cons';
+        }
+
         return match ($normalized) {
             'key features' => 'key_features',
             'ideal for' => 'ideal_for',

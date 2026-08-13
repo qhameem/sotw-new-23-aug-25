@@ -382,4 +382,27 @@ class PublicProductDiscoveryTest extends TestCase
         $response->assertSee('"name": "Who is FAQ Product for?"', false);
         $response->assertSee('…', false);
     }
+
+    /** @test */
+    public function generated_description_faq_is_moved_to_the_accordion_and_schema()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Generated Product',
+            'slug' => 'generated-product',
+            'description' => '<p><strong>Generated Product manages team workflows.</strong></p>'
+                .'<p>It keeps project work organized.</p>'
+                .'<h2><strong>What are the key features of Generated Product?</strong></h2>'
+                .'<ul><li>Shared tasks</li><li>Approvals</li><li>Reporting</li></ul>'
+                .'<h2><strong>Frequently asked questions about Generated Product</strong></h2>'
+                .'<dl><dt><strong>Who can use Generated Product?</strong></dt><dd>Small teams can use it to organize project work.</dd></dl>',
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('FAQ about Generated Product');
+        $response->assertSee('Who can use Generated Product?');
+        $response->assertSee('"@type": "FAQPage"', false);
+        $response->assertDontSee('<h3><strong>Frequently asked questions about Generated Product</strong></h3>', false);
+    }
 }

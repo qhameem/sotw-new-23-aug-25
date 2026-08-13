@@ -1926,6 +1926,9 @@ class ProductController extends Controller
             $product->product_page_tagline,
             $product->tagline
         );
+        $descriptionContent['details_html'] = $this->removeFaqSectionFromDescription(
+            $descriptionContent['details_html'] ?? null
+        );
         $descriptionContent['details_html'] = $this->normalizeProductDetailHeadings($descriptionContent['details_html'] ?? null);
         $alternativeProducts = $this->relatedProductService->getAlternatives($product, 3)
             ->map(fn (Product $alternative) => $this->decorateProductDetailAlternative($alternative, $productEditorialService))
@@ -2297,6 +2300,56 @@ class ProductController extends Controller
         }
 
         return trim($normalizedHtml) !== '' ? trim($normalizedHtml) : null;
+    }
+
+    protected function removeFaqSectionFromDescription(?string $html): ?string
+    {
+        $html = trim((string) $html);
+
+        if ($html === '') {
+            return null;
+        }
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $previousLibxmlState = libxml_use_internal_errors(true);
+        $dom->loadHTML(
+            '<?xml encoding="utf-8" ?><div id="product-faq-strip-root">'.$html.'</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlState);
+
+        $root = $dom->getElementById('product-faq-strip-root');
+
+        if (! $root) {
+            return $html;
+        }
+
+        $removingFaq = false;
+
+        foreach (iterator_to_array($root->childNodes) as $node) {
+            if ($node instanceof \DOMElement && in_array(strtolower($node->tagName), ['h2', 'h3'], true)) {
+                $heading = strtolower(trim(preg_replace('/[^a-z0-9]+/i', ' ', $node->textContent)));
+
+                if (str_starts_with($heading, 'frequently asked questions')) {
+                    $removingFaq = true;
+                } elseif ($removingFaq) {
+                    $removingFaq = false;
+                }
+            }
+
+            if ($removingFaq) {
+                $root->removeChild($node);
+            }
+        }
+
+        $cleanedHtml = '';
+
+        foreach (iterator_to_array($root->childNodes) as $childNode) {
+            $cleanedHtml .= $dom->saveHTML($childNode);
+        }
+
+        return trim($cleanedHtml) !== '' ? trim($cleanedHtml) : null;
     }
 
     protected function buildProductPageTitle(
