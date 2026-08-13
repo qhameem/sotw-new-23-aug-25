@@ -40,17 +40,16 @@
         </button>
       </div>
       
-      <button
-        type="button"
-        @click="performValidationAndFetch"
-        :disabled="isAutoFillDisabled"
-        :class="[
-          'w-[168px] min-h-8 -translate-y-0.5 px-6 py-1.5 rounded-md border-2 border-[color:color-mix(in_srgb,var(--color-primary-700)_82%,black)] bg-primary-500 text-white font-bold text-sm flex items-center justify-center gap-2 shrink-0 whitespace-nowrap shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-700)_82%,black),0_8px_14px_rgba(15,23,42,0.14)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-150',
-          isAutoFillDisabled
-            ? 'cursor-not-allowed border-gray-300 bg-gray-300 text-gray-500 shadow-none opacity-80'
-            : 'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none'
-        ]"
-      >
+      <div class="relative shrink-0">
+        <button
+          type="button"
+          @click="handleAutoFillClick"
+          :aria-disabled="isAutoFillDisabled ? 'true' : 'false'"
+          :class="[
+            'w-[168px] min-h-8 -translate-y-0.5 px-6 py-1.5 rounded-md border-2 border-[color:color-mix(in_srgb,var(--color-primary-700)_82%,black)] bg-primary-500 text-white font-bold text-sm flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-700)_82%,black),0_8px_14px_rgba(15,23,42,0.14)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-150',
+            isAutoFillDisabled ? '' : 'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none'
+          ]"
+        >
         <span v-if="isLoading" class="flex items-center gap-2">
           <svg class="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -62,7 +61,15 @@
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M7 7L5.5 5.5M15 7L16.5 5.5M5.5 16.5L7 15M11 5L11 3M5 11L3 11M17.1603 16.9887L21.0519 15.4659C21.4758 15.3001 21.4756 14.7003 21.0517 14.5346L11.6992 10.8799C11.2933 10.7213 10.8929 11.1217 11.0515 11.5276L14.7062 20.8801C14.8719 21.304 15.4717 21.3042 15.6375 20.8803L17.1603 16.9887Z" stroke="currentColor"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
           AI Auto-fill
         </span>
-      </button>
+        </button>
+        <div
+          v-if="showDisabledTooltip"
+          role="tooltip"
+          class="absolute right-0 top-full z-20 mt-2 w-64 rounded-md bg-gray-900 px-3 py-2 text-left text-xs font-medium leading-4 text-white shadow-lg"
+        >
+          {{ disabledReason }}
+        </div>
+      </div>
     </div>
     <div v-if="showExtraContext" class="mt-4">
       <div class="flex items-center gap-2">
@@ -191,7 +198,7 @@ Internal note: focus on the API and automation features."
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
@@ -202,6 +209,7 @@ const props = defineProps({
   },
   isLoading: Boolean,
   isUrlChecking: Boolean,
+  urlCheckFailed: Boolean,
   loadingProgress: Number,
   loadingMessage: String,
   isUrlInvalid: Boolean,
@@ -228,14 +236,39 @@ const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
 const showAdditionalResources = ref(Boolean(props.additionalResources?.trim()));
+const showDisabledTooltip = ref(false);
+let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
   !props.isSandboxMode && (
     props.isUrlChecking
+    || props.urlCheckFailed
     || props.urlExistsError
     || props.isUrlInvalid
     || !String(props.modelValue || '').trim()
   )
 ));
+const disabledReason = computed(() => {
+  if (props.isLoading) return 'AI Auto-fill is already running.';
+  if (props.urlExistsError) return 'AI Auto-fill is unavailable because this product URL already exists.';
+  if (props.urlCheckFailed) return 'The duplicate check failed. Change the URL or try again shortly.';
+  if (props.isUrlChecking) return 'Wait until the product URL duplicate check finishes.';
+  if (!String(props.modelValue || '').trim()) return 'Enter a product URL first.';
+  if (props.isUrlInvalid) return 'Enter a valid product URL first.';
+  return 'AI Auto-fill is not available yet.';
+});
+
+const handleAutoFillClick = () => {
+  if (!isAutoFillDisabled.value) {
+    performValidationAndFetch();
+    return;
+  }
+
+  showDisabledTooltip.value = true;
+  window.clearTimeout(disabledTooltipTimeout);
+  disabledTooltipTimeout = window.setTimeout(() => {
+    showDisabledTooltip.value = false;
+  }, 3500);
+};
 
 const handleInput = (event) => {
   const value = event.target.value;
@@ -369,6 +402,8 @@ onMounted(() => {
     }
  }, 100);
 });
+
+onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 </script>
 
 <style scoped>

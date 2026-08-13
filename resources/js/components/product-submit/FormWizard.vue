@@ -41,6 +41,7 @@
               @validate-field="handleFieldValidationRequest"
               :isLoading="isLoading"
               :isUrlChecking="urlCheckPending"
+              :urlCheckFailed="urlCheckFailed"
               :showExtraContext="showAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
@@ -134,6 +135,7 @@
                     :sandboxNotice="sandboxNotice"
                     :isLoading="isLoading"
                     :isUrlChecking="urlCheckPending"
+                    :urlCheckFailed="urlCheckFailed"
                     @update:modelValue="handleFormDetailUpdate"
                   />
                 </div>
@@ -342,6 +344,7 @@ const isLogoPickerOpen = ref(false);
 const isScreenshotPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 const urlCheckPending = ref(false);
+const urlCheckFailed = ref(false);
 
 const {
   form,
@@ -547,13 +550,15 @@ const handleUrlFetch = async (url) => {
 
   const duplicateCheck = await checkUrlExists(url);
   if (duplicateCheck?.checkFailed) {
-    urlCheckPending.value = true;
+    urlCheckPending.value = false;
+    urlCheckFailed.value = true;
     isLoading.value = false;
     loadingProgress.value = 0;
     loadingMessage.value = '';
     return;
   }
   urlCheckPending.value = false;
+  urlCheckFailed.value = false;
   if (urlExistsError.value) {
     isLoading.value = false;
     loadingProgress.value = 0;
@@ -569,6 +574,7 @@ const handleUrlInputUpdate = (val) => {
   console.log('[FormWizard] update:modelValue:', val);
   form.link = val;
   urlCheckPending.value = Boolean(val) && !isUrlInvalid.value;
+  urlCheckFailed.value = false;
   touchField('link');
   validateField('link');
 
@@ -578,14 +584,16 @@ const handleUrlInputUpdate = (val) => {
 
   if (!val) {
     urlCheckPending.value = false;
+    urlCheckFailed.value = false;
     checkUrlExists('');
     return;
   }
 
   urlExistsCheckTimeout = setTimeout(async () => {
     const result = await checkUrlExists(val);
-    if (form.link === val && !result?.checkFailed) {
+    if (form.link === val) {
       urlCheckPending.value = false;
+      urlCheckFailed.value = Boolean(result?.checkFailed);
     }
   }, 300);
 };
@@ -597,6 +605,7 @@ const handleAdditionalResourcesUpdate = (val) => {
 const clearForm = () => {
     form.link = '';
     urlCheckPending.value = false;
+    urlCheckFailed.value = false;
     checkUrlExists('');
     resetManualMediaChoices();
     resetValidationState();
