@@ -95,7 +95,7 @@
         })
             ? $quickFacts->values()
             : collect();
-        $productFaqItems = collect($productEditorial['faq'] ?? [])
+        $editorialFaqItems = collect($productEditorial['faq'] ?? [])
             ->map(function ($item) {
                 $question = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['question'] ?? ''))));
                 $answer = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['answer'] ?? ''))));
@@ -110,7 +110,43 @@
                 ];
             })
             ->filter()
-            ->unique('question')
+            ->values();
+    $faqProductSummary = collect([
+        $productEditorial['summary'] ?? null,
+        $product->product_page_tagline,
+        $product->tagline,
+    ])->first(fn ($value) => filled($value));
+    $faqProductSummary = trim((string) $faqProductSummary);
+        $faqPrimaryCategory = $primaryBreadcrumbCategory ?? $product->primaryBreadcrumbCategory();
+        $faqAudience = collect($productEditorial['ideal_for'] ?? [])->take(2)->implode(' ');
+        if ($faqAudience === '' && $bestForCategories->isNotEmpty()) {
+            $faqAudience = $bestForCategories->pluck('name')->take(2)->implode(' and ');
+        }
+        $generatedFaqItems = collect([
+            $faqProductSummary !== '' ? [
+                'question' => "What is {$product->name}?",
+                'answer' => \Illuminate\Support\Str::words($faqProductSummary, 100, '…'),
+            ] : null,
+            $faqAudience !== '' ? [
+                'question' => "Who is {$product->name} for?",
+                'answer' => "{$product->name} is best suited to {$faqAudience}.",
+            ] : null,
+            $faqPrimaryCategory ? [
+                'question' => "What category does {$product->name} belong to?",
+                'answer' => "{$product->name} is listed in the {$faqPrimaryCategory->name} category on Software on the Web.",
+            ] : null,
+            $pricingValue ? [
+                'question' => "What is the pricing model for {$product->name}?",
+                'answer' => "The pricing information currently listed for {$product->name} is {$pricingValue}. Check the official pricing page for current plans, limits, and billing terms.",
+            ] : null,
+            filled($product->link) ? [
+                'question' => "Where can I try {$product->name}?",
+                'answer' => "Use the Visit website link on this page to open the official {$product->name} website and review its current product information.",
+            ] : null,
+        ])->filter();
+        $productFaqItems = $editorialFaqItems
+            ->concat($generatedFaqItems)
+            ->unique(fn ($item) => strtolower($item['question']))
             ->take(6)
             ->values();
         $sectionNavItems = array_values(array_filter([

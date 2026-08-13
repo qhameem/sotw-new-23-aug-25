@@ -382,4 +382,26 @@ class PublicProductDiscoveryTest extends TestCase
         $response->assertSee('"name": "Who is FAQ Product for?"', false);
         $response->assertSee('…', false);
     }
+
+    /** @test */
+    public function existing_product_pages_without_editorial_faqs_receive_factual_fallback_questions()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Legacy Product',
+            'slug' => 'legacy-product',
+            'tagline' => 'A focused workflow tool for small teams',
+            'product_page_tagline' => '',
+            'description' => '<p>A legacy description without FAQ markup.</p>',
+            'link' => 'https://example.com',
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('FAQ about Legacy Product');
+        $response->assertSee('What is Legacy Product?');
+        $response->assertSee('Where can I try Legacy Product?');
+        $response->assertSee('"@type": "FAQPage"', false);
+        $response->assertSee('"name": "What is Legacy Product?"', false);
+    }
 }
