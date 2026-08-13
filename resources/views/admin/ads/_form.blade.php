@@ -87,6 +87,14 @@
             'location' => $zone->render_location ?: $zone->description,
             'placement' => $zone->placement_type,
         ])->values()),
+        products: @js($products->map(fn ($product) => [
+            'id' => (string) $product->id,
+            'name' => $product->name,
+            'tagline' => $product->tagline,
+            'targetUrl' => $product->link,
+            'logo' => $product->logo_url,
+        ])->values()),
+        initialProductId: @js((string) old('product_id', '')),
     })"
     x-init="init()"
 >
@@ -125,26 +133,36 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2" for="product_id">Import Existing Product</label>
-                    <select
-                        id="product_id"
-                        name="product_id"
-                        class="shadow border rounded w-full py-2 px-3 text-gray-700"
-                        @change="applyProduct($event.target.options[$event.target.selectedIndex])"
-                    >
-                        <option value="">Manual ad</option>
-                        @foreach($products as $product)
-                            <option
-                                value="{{ $product->id }}"
-                                data-name="{{ $product->name }}"
-                                data-tagline="{{ $product->tagline }}"
-                                data-target-url="{{ $product->link }}"
-                                data-logo="{{ $product->logo_url }}"
-                                @selected(old('product_id') == $product->id)
-                            >
-                                {{ $product->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="relative" @click.outside="productSelectOpen = false">
+                        <input type="hidden" id="product_id" name="product_id" :value="productId">
+                        <input
+                            type="search"
+                            x-model="productSearch"
+                            @focus="productSelectOpen = true"
+                            @input="productSelectOpen = true; productId = ''"
+                            @keydown.escape="productSelectOpen = false"
+                            @keydown.enter.prevent="selectFirstFilteredProduct()"
+                            class="shadow border rounded w-full py-2 px-3 text-gray-700"
+                            placeholder="Search products..."
+                            autocomplete="off"
+                            role="combobox"
+                            aria-controls="product-search-options"
+                            :aria-expanded="productSelectOpen"
+                        >
+                        <div
+                            x-show="productSelectOpen"
+                            x-cloak
+                            id="product-search-options"
+                            class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+                            role="listbox"
+                        >
+                            <button type="button" class="block w-full px-3 py-2 text-left text-sm text-gray-600 hover:bg-blue-50" @click="clearProduct()">Manual ad</button>
+                            <template x-for="product in filteredProducts()" :key="product.id">
+                                <button type="button" class="block w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-blue-50" @click="selectProduct(product)" role="option" :aria-selected="productId === product.id" x-text="product.name"></button>
+                            </template>
+                            <p x-show="filteredProducts().length === 0" class="px-3 py-2 text-sm text-gray-500">No products found.</p>
+                        </div>
+                    </div>
                     <p class="text-xs text-gray-500 mt-1">Useful for sponsor ads copied from an approved product.</p>
                 </div>
             </div>
@@ -445,6 +463,10 @@
             contentHtml: config.initialHtml,
             selectedZones: config.initialZones,
             zones: config.zones,
+            products: config.products,
+            productId: config.initialProductId,
+            productSearch: config.products.find((product) => product.id === config.initialProductId)?.name || '',
+            productSelectOpen: false,
             previewZone: config.initialZones[0] || config.zones[0]?.id || '',
             previewDevice: 'desktop',
             init() {
@@ -463,15 +485,31 @@
                     this.previewZone = zoneIds[0] || this.previewZone;
                 }
             },
-            applyProduct(option) {
-                if (!option || !option.value) {
-                    return;
+            filteredProducts() {
+                const query = this.productSearch.trim().toLocaleLowerCase();
+                return query
+                    ? this.products.filter((product) => product.name.toLocaleLowerCase().includes(query))
+                    : this.products;
+            },
+            selectFirstFilteredProduct() {
+                const product = this.filteredProducts()[0];
+                if (product) {
+                    this.selectProduct(product);
                 }
-
-                this.internalName = option.dataset.name || '';
-                this.tagline = option.dataset.tagline || '';
-                document.getElementById('target_url').value = option.dataset.targetUrl || '';
-                this.previewImage = option.dataset.logo || this.previewImage;
+            },
+            selectProduct(product) {
+                this.productId = product.id;
+                this.productSearch = product.name;
+                this.productSelectOpen = false;
+                this.internalName = product.name || '';
+                this.tagline = product.tagline || '';
+                document.getElementById('target_url').value = product.targetUrl || '';
+                this.previewImage = product.logo || this.previewImage;
+            },
+            clearProduct() {
+                this.productId = '';
+                this.productSearch = '';
+                this.productSelectOpen = false;
             },
             updateImagePreview(event) {
                 const file = event.target.files?.[0];
