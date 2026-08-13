@@ -40,10 +40,10 @@ class RelatedProductService
     {
         $alternatives ??= $this->getAlternatives($product, 15);
 
-        $hasManualAlternatives = !empty($product->alternative_product_ids ?? []);
+        $hasManualAlternatives = ! empty($product->alternative_product_ids ?? []);
         $topScore = (int) ($alternatives->max('match_score') ?? 0);
 
-        return $alternatives->count() < 3 || (!$hasManualAlternatives && $topScore < 55);
+        return $alternatives->count() < 3 || (! $hasManualAlternatives && $topScore < 55);
     }
 
     public function scorePair(Product $productA, Product $productB): array
@@ -56,8 +56,8 @@ class RelatedProductService
 
     public function isCuratedComparisonPair(Product $productA, Product $productB): bool
     {
-        $a = collect($productA->comparison_product_ids ?? [])->map(fn($id) => (int) $id);
-        $b = collect($productB->comparison_product_ids ?? [])->map(fn($id) => (int) $id);
+        $a = collect($productA->comparison_product_ids ?? [])->map(fn ($id) => (int) $id);
+        $b = collect($productB->comparison_product_ids ?? [])->map(fn ($id) => (int) $id);
 
         return $a->contains((int) $productB->id) || $b->contains((int) $productA->id);
     }
@@ -67,7 +67,7 @@ class RelatedProductService
         $product->loadMissing('categories.types', 'techStacks');
 
         return Cache::remember(
-            "products.related.{$mode}.{$product->id}.{$limit}",
+            "products.related.v2.{$mode}.{$product->id}.{$limit}",
             now()->addMinutes(15),
             function () use ($product, $limit, $mode) {
                 $manualProducts = $this->getManualMatches($product, $mode);
@@ -98,18 +98,17 @@ class RelatedProductService
                     ->whereNotIn('id', $manualIds)
                     ->where(function ($query) use ($seedCategoryIds, $seedTechIds) {
                         if ($seedCategoryIds->isNotEmpty()) {
-                            $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $seedCategoryIds));
+                            $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $seedCategoryIds));
                         }
                         if ($seedTechIds->isNotEmpty()) {
                             if ($seedCategoryIds->isNotEmpty()) {
-                                $query->orWhereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
+                                $query->orWhereHas('techStacks', fn ($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
                             } else {
-                                $query->whereHas('techStacks', fn($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
+                                $query->whereHas('techStacks', fn ($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
                             }
                         }
                     })
                     ->with(['categories.types', 'techStacks'])
-                    ->orderByRaw('(votes_count + impressions) DESC')
                     ->orderByDesc('created_at')
                     ->take(250)
                     ->get()
@@ -131,9 +130,8 @@ class RelatedProductService
                         /** @var Product $product */
                         $product = $entry['product'];
                         $score = $entry['match']['score'];
-                        $popularity = (int) ($product->votes_count ?? 0) + (int) ($product->impressions ?? 0);
 
-                        return ($score * 100000) + $popularity;
+                        return $score;
                     })
                     ->pluck('product')
                     ->values()
@@ -152,8 +150,8 @@ class RelatedProductService
     {
         $field = $mode === 'comparison' ? 'comparison_product_ids' : 'alternative_product_ids';
         $ids = collect($product->{$field} ?? [])
-            ->map(fn($id) => (int) $id)
-            ->filter(fn($id) => $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
             ->unique()
             ->values();
 
@@ -177,7 +175,7 @@ class RelatedProductService
             ->map(function ($id, $index) use ($productsById, $manualLabel) {
                 /** @var Product|null $product */
                 $product = $productsById->get($id);
-                if (!$product) {
+                if (! $product) {
                     return null;
                 }
 
@@ -203,8 +201,8 @@ class RelatedProductService
         $sharedTechIds = array_values(array_intersect($sourceProfile['techStackIds'], $candidateProfile['techStackIds']));
 
         $sharedBroadSoftwareCount = collect($sharedSoftwareIds)
-            ->map(fn($id) => strtolower($sourceProfile['softwareNameMap'][$id] ?? ''))
-            ->filter(fn($name) => in_array($name, self::BROAD_CATEGORY_NAMES, true))
+            ->map(fn ($id) => strtolower($sourceProfile['softwareNameMap'][$id] ?? ''))
+            ->filter(fn ($name) => in_array($name, self::BROAD_CATEGORY_NAMES, true))
             ->count();
 
         $textSimilarity = $this->jaccardSimilarity($sourceProfile['textTokens'], $candidateProfile['textTokens']);
@@ -214,13 +212,13 @@ class RelatedProductService
 
         $sharedSoftwareCount = count($sharedSoftwareIds);
         if ($sharedSoftwareCount > 0) {
-            $score += min(70, 42 + (($sharedSoftwareCount - 1) * 16));
+            $score += min(59, 35 + (($sharedSoftwareCount - 1) * 12));
             $reasonLabels[] = 'shared software category';
         }
 
         $sharedBestForCount = count($sharedBestForIds);
         if ($sharedBestForCount > 0) {
-            $score += min(20, $sharedBestForCount * 8);
+            $score += min(15, $sharedBestForCount * 8);
             $reasonLabels[] = 'same target audience';
         }
 
@@ -232,22 +230,17 @@ class RelatedProductService
 
         $sharedTechCount = count($sharedTechIds);
         if ($sharedTechCount > 0) {
-            $score += min(24, $sharedTechCount * 12);
+            $score += min(5, $sharedTechCount * 5);
             $reasonLabels[] = 'overlapping tech stack';
         }
 
-        $score += (int) round($textSimilarity * 40);
+        $score += (int) round($textSimilarity * 30);
         if ($textSimilarity >= 0.18) {
             $reasonLabels[] = 'similar product positioning';
         }
 
         if ($sharedBroadSoftwareCount > 0) {
             $score -= min(20, $sharedBroadSoftwareCount * 10);
-        }
-
-        $popularity = (int) ($candidate->votes_count ?? 0) + (int) ($candidate->impressions ?? 0);
-        if ($popularity > 0) {
-            $score += min(6, (int) floor(log10($popularity + 1) * 2));
         }
 
         $score = max(0, $score);
@@ -258,16 +251,17 @@ class RelatedProductService
             && $sharedTechCount === 0
             && $textSimilarity < 0.14;
 
-        $qualifiesComparison = !$hasOnlyBroadOverlap
+        $qualifiesComparison = ! $hasOnlyBroadOverlap
             && $score >= 60
             && (
                 $sharedSoftwareCount >= 2
                 || ($sharedSoftwareCount >= 1 && ($textSimilarity >= 0.14 || $sharedTechCount >= 1 || $sharedBestForCount >= 1))
             );
 
-        $qualifiesAlternative = !$hasOnlyBroadOverlap
+        $qualifiesAlternative = ! $hasOnlyBroadOverlap
             && $score >= 42
-            && ($sharedSoftwareCount >= 1 || $sharedTechCount >= 1 || $textSimilarity >= 0.16);
+            && $sharedSoftwareCount >= 1
+            && ($sharedSoftwareCount > $sharedBroadSoftwareCount || $sharedBestForCount >= 1 || $textSimilarity >= 0.16);
 
         $summary = $this->buildSummary(
             $sourceProfile,
@@ -295,37 +289,37 @@ class RelatedProductService
         array $sharedTechIds,
         array $reasonLabels
     ): string {
-        if (!empty($sharedSoftwareIds)) {
+        if (! empty($sharedSoftwareIds)) {
             $names = collect($sharedSoftwareIds)
-                ->map(fn($id) => $sourceProfile['softwareNameMap'][$id] ?? null)
+                ->map(fn ($id) => $sourceProfile['softwareNameMap'][$id] ?? null)
                 ->filter()
                 ->take(2)
                 ->values()
                 ->implode(', ');
 
             if ($names !== '') {
-                if (!empty($sharedBestForIds)) {
-                    return 'A close match in ' . $names . ' for a similar audience.';
+                if (! empty($sharedBestForIds)) {
+                    return 'A close match in '.$names.' for a similar audience.';
                 }
 
-                if (!empty($sharedPricingIds)) {
-                    return 'A like-for-like option in ' . $names . ' with comparable pricing signals.';
+                if (! empty($sharedPricingIds)) {
+                    return 'A like-for-like option in '.$names.' with comparable pricing signals.';
                 }
 
-                return 'A strong like-for-like option in ' . $names . '.';
+                return 'A strong like-for-like option in '.$names.'.';
             }
         }
 
-        if (!empty($sharedBestForIds)) {
+        if (! empty($sharedBestForIds)) {
             return 'Targets a similar audience and use case.';
         }
 
-        if (!empty($sharedTechIds)) {
+        if (! empty($sharedTechIds)) {
             return 'Worth considering if technical overlap matters.';
         }
 
-        if (!empty($reasonLabels)) {
-            return Str::ucfirst($reasonLabels[0]) . '.';
+        if (! empty($reasonLabels)) {
+            return Str::ucfirst($reasonLabels[0]).'.';
         }
 
         return 'Related through overlapping product signals.';
@@ -365,7 +359,7 @@ class RelatedProductService
             'softwareNameMap' => $softwareNameMap,
             'bestForIds' => array_values(array_unique($bestForIds)),
             'pricingIds' => array_values(array_unique($pricingIds)),
-            'techStackIds' => $product->techStacks->pluck('id')->map(fn($id) => (int) $id)->unique()->values()->all(),
+            'techStackIds' => $product->techStacks->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all(),
             'textTokens' => $this->tokenize($text),
         ];
     }
@@ -374,7 +368,7 @@ class RelatedProductService
     {
         $typeNames = $category->types
             ->pluck('name')
-            ->map(fn($name) => strtolower((string) $name));
+            ->map(fn ($name) => strtolower((string) $name));
 
         if ($typeNames->isEmpty()) {
             return true;
@@ -391,7 +385,7 @@ class RelatedProductService
     {
         return $category->types
             ->pluck('name')
-            ->map(fn($name) => strtolower((string) $name))
+            ->map(fn ($name) => strtolower((string) $name))
             ->contains('best for');
     }
 
@@ -399,7 +393,7 @@ class RelatedProductService
     {
         return $category->types
             ->pluck('name')
-            ->map(fn($name) => strtolower((string) $name))
+            ->map(fn ($name) => strtolower((string) $name))
             ->contains('pricing');
     }
 
@@ -415,8 +409,8 @@ class RelatedProductService
         ];
 
         return collect($tokens)
-            ->filter(fn($token) => strlen($token) >= 3)
-            ->reject(fn($token) => in_array($token, $stopwords, true))
+            ->filter(fn ($token) => strlen($token) >= 3)
+            ->reject(fn ($token) => in_array($token, $stopwords, true))
             ->unique()
             ->values()
             ->all();

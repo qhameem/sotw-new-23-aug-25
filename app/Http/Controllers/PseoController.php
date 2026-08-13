@@ -35,7 +35,7 @@ class PseoController extends Controller
         $year = now()->year;
         $title = "Best {$category->name} Software in {$year}";
         $metaDescription = "Discover the top {$category->name} tools ranked by the community in {$year}. "
-            . ($category->meta_description ?: "Compare features, pricing, and more.");
+            .($category->meta_description ?: 'Compare features, pricing, and more.');
 
         return view('pseo.best-of', compact('category', 'products', 'title', 'metaDescription', 'year'));
     }
@@ -51,7 +51,7 @@ class PseoController extends Controller
         $productEditorial = $this->productEditorialContentService->extract($product);
 
         $alternatives = $this->relatedProductService->getAlternatives($product, 15)
-            ->map(fn(Product $alternative) => $this->decorateAlternative($product, $productEditorial, $alternative))
+            ->map(fn (Product $alternative) => $this->decorateAlternative($product, $productEditorial, $alternative))
             ->values();
         $shouldNoindex = $this->relatedProductService->shouldNoindexAlternatives($product, $alternatives);
 
@@ -60,7 +60,7 @@ class PseoController extends Controller
         $topAlternativeNames = $alternatives->take(3)->pluck('name')->implode(', ');
         $productCategory = $this->softwareCategoryNames($product)[0] ?? 'software';
         $metaDescription = "Looking for {$product->name} alternatives? "
-            . ($topAlternativeNames !== ''
+            .($topAlternativeNames !== ''
                 ? "Compare {$topAlternativeNames}, plus other {$productCategory} tools similar to {$product->name} in {$year}."
                 : "Browse tools similar to {$product->name} in {$year}.");
         $intro = $this->buildAlternativesIntro($product, $alternatives);
@@ -113,8 +113,8 @@ class PseoController extends Controller
 
         $products = Product::where('approved', true)
             ->where('is_published', true)
-            ->whereHas('categories', fn($q) => $q->where('categories.id', $category->id))
-            ->whereHas('categories', fn($q) => $q->where('categories.id', $bestfor->id))
+            ->whereHas('categories', fn ($q) => $q->where('categories.id', $category->id))
+            ->whereHas('categories', fn ($q) => $q->where('categories.id', $bestfor->id))
             ->with(['categories.types', 'user'])
             ->orderByRaw('(votes_count + impressions) DESC')
             ->take(20)
@@ -143,7 +143,6 @@ class PseoController extends Controller
         $slugA = substr($params, 0, $pos);
         $slugB = substr($params, $pos + 4); // 4 = strlen('-vs-')
 
-
         $productA = Product::where('slug', $slugA)
             ->where('approved', true)
             ->where('is_published', true)
@@ -161,7 +160,7 @@ class PseoController extends Controller
         $pairMatchSummary = $isCuratedPair
             ? 'This comparison is manually curated by the editorial team.'
             : $pairMatch['summary'];
-        $shouldNoindex = !$isCuratedPair && !$pairMatch['qualifiesComparison'];
+        $shouldNoindex = ! $isCuratedPair && ! $pairMatch['qualifiesComparison'];
 
         $title = "{$productA->name} vs {$productB->name}: Which is Better?";
         $metaDescription = "Compare {$productA->name} and {$productB->name} side-by-side — features, pricing, tech stack, and community votes.";
@@ -194,7 +193,7 @@ class PseoController extends Controller
 
     private function hasSoftwareType(Category $category): bool
     {
-        $typeNames = $category->types->pluck('name')->map(fn($name) => strtolower((string) $name));
+        $typeNames = $category->types->pluck('name')->map(fn ($name) => strtolower((string) $name));
 
         return $typeNames->contains('software')
             || $typeNames->contains('software categories')
@@ -209,8 +208,8 @@ class PseoController extends Controller
         $editorial = $this->productEditorialContentService->extract($alternative);
 
         $alternative->setAttribute('primary_category_label', $softwareCategories[0] ?? null);
-        $alternative->setAttribute('best_for_label', !empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
-        $alternative->setAttribute('pricing_label', !empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
+        $alternative->setAttribute('best_for_label', ! empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
+        $alternative->setAttribute('pricing_label', ! empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
         $alternative->setAttribute('editorial_headline', $editorial['headline'] ?? null);
         $alternative->setAttribute('feature_highlights', array_slice($editorial['key_features'] ?? [], 0, 3));
         $alternative->setAttribute('pros_points', array_slice($editorial['pros'] ?? [], 0, 2));
@@ -227,8 +226,32 @@ class PseoController extends Controller
             $bestForCategories,
             $pricingCategories
         ));
+        $alternative->setAttribute('relevance_label', $this->buildRelevanceLabel($alternative));
 
         return $alternative;
+    }
+
+    private function buildRelevanceLabel(Product $alternative): string
+    {
+        if (($alternative->match_source ?? null) === 'manual') {
+            return 'Editor-selected';
+        }
+
+        $reasonLabels = collect($alternative->match_reason_labels ?? []);
+
+        if ($reasonLabels->contains('shared software category') && $alternative->primary_category_label) {
+            return "Strong {$alternative->primary_category_label} match";
+        }
+
+        if ($reasonLabels->contains('same target audience')) {
+            return 'Similar audience';
+        }
+
+        if ($reasonLabels->contains('similar pricing model')) {
+            return 'Similar pricing model';
+        }
+
+        return 'Relevant product match';
     }
 
     private function buildAlternativesIntro(Product $product, $alternatives): string
@@ -238,10 +261,10 @@ class PseoController extends Controller
 
         if ($topNames !== '') {
             return "{$product->name} is a {$productCategory} product, but it will not fit every workflow. "
-                . "If you are comparing options, start with {$topNames}. This page focuses on tools that overlap with {$product->name} in category, audience, pricing style, or technical profile.";
+                ."If you are comparing options, start with {$topNames}. This page focuses on tools that overlap with {$product->name} in specific category, use case, audience, pricing style, or product positioning.";
         }
 
-        return "This page tracks alternatives to {$product->name} and highlights the closest matches by category, audience, pricing style, and technical profile.";
+        return "This page tracks alternatives to {$product->name} and highlights the closest matches by specific category, use case, audience, pricing style, and product positioning.";
     }
 
     private function buildAlternativeFaqItems(Product $product, $alternatives): array
@@ -254,18 +277,18 @@ class PseoController extends Controller
             [
                 'question' => "What are the best {$product->name} alternatives?",
                 'answer' => $topNames !== ''
-                    ? "The strongest options on this page are {$topNames}. They rank highly because they overlap with {$product->name} in category fit, audience, pricing signals, technical profile, and editorial product details like features, use cases, and tradeoffs."
-                    : "The page updates as new products are added, so the best alternatives list will improve as the directory grows.",
+                    ? "The strongest options on this page are {$topNames}. They rank highly because they overlap with {$product->name} in category fit, use case, audience, pricing signals, and editorial product details like features and tradeoffs."
+                    : 'The page updates as new products are added, so the best alternatives list will improve as the directory grows.',
             ],
             [
                 'question' => "Why would someone choose an alternative to {$product->name}?",
                 'answer' => $audiences !== ''
                     ? "Most readers switch when they need a better fit for {$audiences}, a different pricing model, or a product with a stronger match for their workflow."
-                    : "Most readers switch when they need a different pricing model, a different feature focus, or a product that fits their workflow better.",
+                    : 'Most readers switch when they need a different pricing model, a different feature focus, or a product that fits their workflow better.',
             ],
             [
                 'question' => "How are {$product->name} alternatives ranked on this page?",
-                'answer' => "Alternatives are ranked using shared software categories, audience overlap, pricing model overlap, technical overlap, product-positioning similarity, community activity, and structured editorial signals pulled from product descriptions. Some entries may also be manually curated by editors.",
+                'answer' => 'Alternatives are ranked using specific shared software categories, use-case and audience overlap, pricing compatibility, product-positioning similarity, and structured editorial product details. Votes and page views do not affect the ranking. Some entries may also be manually curated by editors.',
             ],
         ]));
     }
@@ -305,7 +328,7 @@ class PseoController extends Controller
             return $useCase;
         }
 
-        if (!empty($bestForCategories)) {
+        if (! empty($bestForCategories)) {
             return implode(', ', array_slice($bestForCategories, 0, 2));
         }
 
@@ -375,7 +398,7 @@ class PseoController extends Controller
     {
         return $product->categories
             ->filter(function ($category) {
-                $typeNames = $category->types->pluck('name')->map(fn($name) => strtolower((string) $name));
+                $typeNames = $category->types->pluck('name')->map(fn ($name) => strtolower((string) $name));
 
                 if ($typeNames->isEmpty()) {
                     return true;
@@ -398,7 +421,7 @@ class PseoController extends Controller
     private function categoryNamesByType(Product $product, string $typeName): array
     {
         return $product->categories
-            ->filter(fn($category) => $category->types->contains('name', $typeName))
+            ->filter(fn ($category) => $category->types->contains('name', $typeName))
             ->pluck('name')
             ->unique()
             ->values()
