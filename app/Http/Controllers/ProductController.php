@@ -375,7 +375,17 @@ class ProductController extends Controller
         // Check if a product with this URL already exists
         $existingProduct = Product::where('link', $validated['link'])->first();
         if ($existingProduct) {
-            return back()->withErrors(['link' => 'A product with this URL already exists. You cannot add the same product twice.'])->withInput();
+            $message = 'A product with this URL already exists. You cannot add the same product twice.';
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'errors' => ['link' => [$message]],
+                ], 422);
+            }
+
+            return back()->withErrors(['link' => $message])->withInput();
         }
 
         $existsCheck = function ($slug) {
