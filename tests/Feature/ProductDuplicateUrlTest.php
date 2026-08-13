@@ -17,7 +17,7 @@ class ProductDuplicateUrlTest extends TestCase
     public function test_url_check_identifies_an_existing_normalized_product_url(): void
     {
         $product = Product::factory()->create([
-            'link' => 'https://www.outrank.so/',
+            'link' => 'https://outrank.so?via=sotw',
         ]);
 
         $this->getJson('/check-product-url?url='.urlencode('https://www.outrank.so/'))
@@ -30,7 +30,7 @@ class ProductDuplicateUrlTest extends TestCase
     {
         $user = User::factory()->create();
         Product::factory()->create([
-            'link' => 'https://www.example.com/product/',
+            'link' => 'https://www.example.com/product/?ref=existing',
         ]);
 
         $this->actingAs($user)
@@ -53,7 +53,7 @@ class ProductDuplicateUrlTest extends TestCase
     {
         $user = User::factory()->create();
         Product::factory()->create([
-            'link' => 'https://www.outrank.so/',
+            'link' => 'https://www.outrank.so/?via=sotw',
         ]);
 
         $request = Request::create('/stripe/paid-submission/checkout', 'POST', [

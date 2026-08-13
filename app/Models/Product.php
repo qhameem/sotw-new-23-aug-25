@@ -197,6 +197,8 @@ class Product extends Model implements Sitemapable
             return [];
         }
 
+        $normalized = preg_split('/[?#]/', $normalized, 2)[0];
+
         $parts = parse_url($normalized);
         if ($parts === false || ! isset($parts['host'])) {
             return [$normalized];
@@ -219,6 +221,20 @@ class Product extends Model implements Sitemapable
         }
 
         return array_values(array_unique($candidates));
+    }
+
+    public function scopeMatchingLink(Builder $query, ?string $url): Builder
+    {
+        $candidates = self::equivalentLinkCandidates($url);
+
+        return $query->where(function (Builder $query) use ($candidates) {
+            $query->whereIn('link', $candidates);
+
+            foreach ($candidates as $candidate) {
+                $query->orWhere('link', 'like', $candidate.'?%')
+                    ->orWhere('link', 'like', $candidate.'#%');
+            }
+        });
     }
 
     public function badgeVerificationAttempts(): HasMany
