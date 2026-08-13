@@ -44,8 +44,8 @@
                 <a href="{{ route('pseo.alternatives', $product->slug) }}" wire:navigate.hover
                     class="flex items-center gap-3 py-3 first:pt-0 last:pb-0 text-gray-400 transition-colors hover:text-gray-500">
                     <div class="flex min-w-0 items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-lg font-semibold text-gray-500" aria-hidden="true">
-                            <span>⌥</span>
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white p-2 shadow-sm" aria-hidden="true">
+                            <img src="{{ asset('images/icons/alternatives-list.svg') }}" alt="" class="h-full w-full object-contain">
                         </div>
 
                         <div class="min-w-0 flex items-center gap-2">
