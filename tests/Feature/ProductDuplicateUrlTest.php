@@ -14,7 +14,7 @@ class ProductDuplicateUrlTest extends TestCase
     public function test_url_check_identifies_an_existing_normalized_product_url(): void
     {
         $product = Product::factory()->create([
-            'link' => 'https://example.com/product',
+            'link' => 'https://www.example.com/product/',
         ]);
 
         $this->getJson('/check-product-url?url='.urlencode('https://www.example.com/product/?utm_source=test'))
@@ -27,7 +27,7 @@ class ProductDuplicateUrlTest extends TestCase
     {
         $user = User::factory()->create();
         Product::factory()->create([
-            'link' => 'https://example.com/product',
+            'link' => 'https://www.example.com/product/',
         ]);
 
         $this->actingAs($user)

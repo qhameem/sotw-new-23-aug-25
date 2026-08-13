@@ -373,7 +373,7 @@ class ProductController extends Controller
         }
 
         // Check if a product with this URL already exists
-        $existingProduct = Product::where('link', $validated['link'])->first();
+        $existingProduct = Product::whereIn('link', Product::equivalentLinkCandidates($validated['link']))->first();
         if ($existingProduct) {
             $message = 'A product with this URL already exists. You cannot add the same product twice.';
 
@@ -1348,7 +1348,7 @@ class ProductController extends Controller
             return response()->json(['exists' => false]);
         }
 
-        $query = Product::where('link', $url);
+        $query = Product::whereIn('link', Product::equivalentLinkCandidates($url));
         if ($excludeId) {
             $query->where('id', '!=', $excludeId);
         }

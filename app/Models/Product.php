@@ -190,6 +190,37 @@ class Product extends Model implements Sitemapable
         return $normalized;
     }
 
+    public static function equivalentLinkCandidates(?string $url): array
+    {
+        $normalized = self::normalizeLink($url);
+        if (! is_string($normalized) || $normalized === '') {
+            return [];
+        }
+
+        $parts = parse_url($normalized);
+        if ($parts === false || ! isset($parts['host'])) {
+            return [$normalized];
+        }
+
+        $scheme = $parts['scheme'] ?? 'https';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $path = $parts['path'] ?? '';
+        $pathVariants = $path === '' ? ['', '/'] : [$path, rtrim($path, '/').'/'];
+        $suffix = ! empty($parts['query']) ? '?'.$parts['query'] : '';
+        $suffix .= ! empty($parts['fragment']) ? '#'.$parts['fragment'] : '';
+
+        $hosts = [$parts['host'], 'www.'.$parts['host']];
+        $candidates = [];
+
+        foreach ($hosts as $host) {
+            foreach ($pathVariants as $pathVariant) {
+                $candidates[] = $scheme.'://'.$host.$port.$pathVariant.$suffix;
+            }
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
     public function badgeVerificationAttempts(): HasMany
     {
         return $this->hasMany(BadgeVerificationAttempt::class);
