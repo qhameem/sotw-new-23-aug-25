@@ -56,7 +56,7 @@ class PaidSubmissionService
             : trim((string) $validated['tagline']);
         $validated['x_account'] = Product::normalizeXAccount($validated['x_account'] ?? null);
 
-        if (Product::where('link', $validated['link'])->exists()) {
+        if (Product::whereIn('link', Product::equivalentLinkCandidates($validated['link']))->exists()) {
             throw ValidationException::withMessages([
                 'link' => 'A product with this URL already exists. You cannot add the same product twice.',
             ]);
@@ -346,7 +346,7 @@ class PaidSubmissionService
     protected function createProductFromPayload(array $payload, PaidSubmissionCheckout $checkout): Product
     {
         $link = Product::normalizeLink($payload['link'] ?? null);
-        if (Product::where('link', $link)->exists()) {
+        if (Product::whereIn('link', Product::equivalentLinkCandidates($link))->exists()) {
             throw new \RuntimeException('A product with this URL already exists.');
         }
 
