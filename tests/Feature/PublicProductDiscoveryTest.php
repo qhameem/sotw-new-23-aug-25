@@ -321,4 +321,65 @@ class PublicProductDiscoveryTest extends TestCase
             false
         );
     }
+
+    /** @test */
+    public function product_pages_use_a_visible_semantic_h1_and_do_not_fabricate_ratings_or_free_offers()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Trustworthy Product',
+            'slug' => 'trustworthy-product',
+            'price' => 0,
+            'votes_count' => 0,
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('<h1 class="site-heading-text', false);
+        $response->assertSee('Trustworthy Product');
+        $response->assertDontSee('AggregateRating', false);
+        $response->assertDontSee('ratingCount', false);
+        $response->assertDontSee('"offers"', false);
+    }
+
+    /** @test */
+    public function product_pages_emit_an_offer_only_when_a_positive_price_is_available()
+    {
+        $product = Product::factory()->create([
+            'name' => 'Paid Product',
+            'slug' => 'paid-product',
+            'price' => 19.99,
+            'currency' => 'usd',
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('"@type": "Offer"', false);
+        $response->assertSee('"price": "19.99"', false);
+        $response->assertSee('"priceCurrency": "USD"', false);
+    }
+
+    /** @test */
+    public function product_page_faq_uses_an_accordion_and_matches_the_faq_schema()
+    {
+        $answer = implode(' ', array_fill(0, 110, 'verified'));
+        $product = Product::factory()->create([
+            'name' => 'FAQ Product',
+            'slug' => 'faq-product',
+            'description' => '<h2>Frequently Asked Questions</h2><dl>'
+                .'<dt>Who is FAQ Product for?</dt><dd>'.$answer.'</dd>'
+                .'</dl>',
+        ]);
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertSee('FAQ about FAQ Product');
+        $response->assertSee('<details class="group', false);
+        $response->assertSee('Who is FAQ Product for?');
+        $response->assertSee('"@type": "FAQPage"', false);
+        $response->assertSee('"name": "Who is FAQ Product for?"', false);
+        $response->assertSee('…', false);
+    }
 }

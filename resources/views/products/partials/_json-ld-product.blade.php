@@ -1,52 +1,15 @@
 @php
-    $faqEntities = [];
-
-    $descriptionHtml = trim((string) ($product->description ?? ''));
-    if ($descriptionHtml !== '' && str_contains($descriptionHtml, '<dl')) {
-        $previousLibxmlSetting = libxml_use_internal_errors(true);
-        $faqDocument = new DOMDocument('1.0', 'UTF-8');
-
-        $loaded = $faqDocument->loadHTML(
-            '<?xml encoding="utf-8" ?><div>' . $descriptionHtml . '</div>',
-            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-        );
-
-        if ($loaded) {
-            $faqXPath = new DOMXPath($faqDocument);
-            $questionNodes = $faqXPath->query('//dt');
-
-            foreach ($questionNodes as $questionNode) {
-                $answerNode = $questionNode->nextSibling;
-
-                while ($answerNode && $answerNode->nodeType !== XML_ELEMENT_NODE) {
-                    $answerNode = $answerNode->nextSibling;
-                }
-
-                if (!$answerNode || strtolower($answerNode->nodeName) !== 'dd') {
-                    continue;
-                }
-
-                $questionText = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($questionNode->textContent ?? ''))));
-                $answerText = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($answerNode->textContent ?? ''))));
-
-                if ($questionText === '' || $answerText === '') {
-                    continue;
-                }
-
-                $faqEntities[] = [
-                    '@type' => 'Question',
-                    'name' => $questionText,
-                    'acceptedAnswer' => [
-                        '@type' => 'Answer',
-                        'text' => $answerText,
-                    ],
-                ];
-            }
-        }
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($previousLibxmlSetting);
-    }
+    $faqEntities = collect($productFaqItems ?? [])
+        ->map(fn ($item) => [
+            '@type' => 'Question',
+            'name' => $item['question'],
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $item['answer'],
+            ],
+        ])
+        ->values()
+        ->all();
 
     $organizationSchema = [
         "@type" => "Organization",
@@ -61,11 +24,14 @@
         "@id" => route('products.show', $product->slug) . "#webpage",
         "url" => route('products.show', $product->slug),
         "name" => $product->name . " on Software on the Web",
-        "publisher" => ["@id" => url('/') . "/#organization"]
+        "description" => strip_tags((string) ($product->product_page_tagline ?: $product->tagline ?: $product->description)),
+        "publisher" => ["@id" => url('/') . "/#organization"],
+        "mainEntity" => ["@id" => route('products.show', $product->slug) . "#software-application"],
     ];
 
     $softwareApplicationSchema = [
         "@type" => "SoftwareApplication",
+        "@id" => route('products.show', $product->slug) . "#software-application",
         "name" => $product->name,
         "description" => $product->usesProductFacts()
             ? implode(' ', $product->product_facts)
@@ -73,20 +39,28 @@
         "applicationCategory" => $product->application_category ?? 'BusinessApplication',
         "operatingSystem" => $product->operating_system ?? 'Web',
         "image" => $product->seoImageUrls(),
-        "offers" => [
-            "@type" => "AggregateOffer",
-            "lowPrice" => (string) ($product->price ?? 0),
-            "priceCurrency" => $product->currency ?? 'USD'
-        ],
-        "aggregateRating" => [
-            "@type" => "AggregateRating",
-            "ratingValue" => (string) ($product->average_rating ?? 5), // Default to 5 if no rating
-            "ratingCount" => (string) ($product->votes_count > 0 ? $product->votes_count : 1) // Default to 1 to valid schema
-        ]
+        "url" => route('products.show', $product->slug),
     ];
+
+    if (filled($product->link)) {
+        $softwareApplicationSchema['sameAs'] = [$product->link];
+    }
+
+    if (is_numeric($product->price) && (float) $product->price > 0 && filled($product->currency)) {
+        $softwareApplicationSchema['offers'] = array_filter([
+            '@type' => 'Offer',
+            'price' => number_format((float) $product->price, 2, '.', ''),
+            'priceCurrency' => strtoupper((string) $product->currency),
+            'url' => $product->pricing_page_url ?: $product->link,
+        ], fn ($value) => filled($value));
+    }
 
     if ($product->published_at) {
         $softwareApplicationSchema['datePublished'] = $product->published_at->toAtomString();
+    }
+
+    if ($product->updated_at) {
+        $webPageSchema['dateModified'] = $product->updated_at->toAtomString();
     }
 
     // Breadcrumbs

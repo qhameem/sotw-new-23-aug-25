@@ -44,7 +44,7 @@
     <div class="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <div class="site-heading-text text-xl font-bold text-gray-900 md:text-2xl">
+                <h1 class="site-heading-text text-xl font-bold text-gray-900 md:text-2xl">
                     @if(isset($isAdminView) && $isAdminView)
                         <span x-show="!editingName" @click="editingName = true" x-text="name"></span>
                         <input x-show="editingName" x-model="name" @keydown.enter="updateProduct(); editingName = false"
@@ -52,7 +52,7 @@
                     @else
                         {{ $product->name }}
                     @endif
-                </div>
+                </h1>
 
                 @if(Auth::check() && Auth::user()->hasRole('admin') && !(isset($isAdminView) && $isAdminView))
                     <a href="{{ route('admin.products.edit', $product) }}"

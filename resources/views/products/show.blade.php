@@ -17,9 +17,6 @@
 @endpush
 
 @section('content')
-    @if(empty($isUnpublishedProduct))
-        @include('products.partials._json-ld-product')
-    @endif
     @php
         $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
         $hasMediaSection = $mediaAssetCount > 0;
@@ -98,13 +95,35 @@
         })
             ? $quickFacts->values()
             : collect();
+        $productFaqItems = collect($productEditorial['faq'] ?? [])
+            ->map(function ($item) {
+                $question = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['question'] ?? ''))));
+                $answer = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['answer'] ?? ''))));
+
+                if ($question === '' || $answer === '') {
+                    return null;
+                }
+
+                return [
+                    'question' => $question,
+                    'answer' => \Illuminate\Support\Str::words($answer, 100, '…'),
+                ];
+            })
+            ->filter()
+            ->unique('question')
+            ->take(6)
+            ->values();
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
             (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml))) ? ['id' => 'details', 'label' => 'Details'] : null,
+            $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
             $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
-            !empty($productEditorial['faq']) ? ['id' => 'faq', 'label' => 'FAQ'] : null,
+            $productFaqItems->isNotEmpty() ? ['id' => 'faq', 'label' => 'FAQ'] : null,
         ]));
     @endphp
+    @if(empty($isUnpublishedProduct))
+        @include('products.partials._json-ld-product', ['productFaqItems' => $productFaqItems])
+    @endif
     <div id="product-detail-metrics" data-product-id="{{ $product->id }}" hidden></div>
     <div class="pt-2 pb-4">
         <x-breadcrumbs :items="$breadcrumbs" />
@@ -154,7 +173,6 @@
         }">
         <div class="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm">
             <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
-                <h1 class="sr-only">{{ $product->name }}</h1>
                 @include('products.partials._hero')
 
                 @if($quickFacts->isNotEmpty())
@@ -216,6 +234,18 @@
                             @endforeach
                         </dl>
                     </div>
+                @endif
+
+                @if(!empty($productEditorial['summary']) || !empty($productEditorial['headline']))
+                    <section aria-labelledby="decision-summary-heading" class="mt-6 rounded-xl border border-primary-100 bg-primary-50/60 p-5">
+                        <p id="decision-summary-heading" class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Decision summary</p>
+                        @if(!empty($productEditorial['headline']))
+                            <h2 class="mt-2 text-lg font-semibold text-gray-900">{{ $productEditorial['headline'] }}</h2>
+                        @endif
+                        @if(!empty($productEditorial['summary']))
+                            <p class="mt-2 text-sm leading-6 text-gray-700">{{ $productEditorial['summary'] }}</p>
+                        @endif
+                    </section>
                 @endif
 
                 <div class="mt-8">
@@ -442,14 +472,20 @@
                 @endunless
 
                 @if($alternativeProducts->isNotEmpty())
-                    <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8 md:hidden">
-                        <div class="flex items-end justify-between gap-4">
+                    <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h2 class="text-xl font-semibold text-gray-900">Alternatives</h2>
-                                <p class="mt-1 text-sm text-gray-500">A shortlist of related products to compare before you leave the page.</p>
+                                <h2 class="text-xl font-semibold text-gray-900">Keep researching {{ $product->name }}</h2>
+                                <p class="mt-1 text-sm text-gray-500">Explore relevant products with a similar category, audience, or use case.</p>
                             </div>
-                            <a href="{{ route('pseo.alternatives', $product->slug) }}" class="text-sm font-medium text-primary-600 hover:underline">
-                                View all alternatives
+                            <a href="{{ route('pseo.alternatives', $product->slug) }}"
+                                class="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-gray-700 transition hover:text-primary-700">
+                                <span>{{ $product->name }} alternatives</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M5 12h14" />
+                                    <path d="m12 5 7 7-7 7" />
+                                </svg>
                             </a>
                         </div>
 
@@ -471,19 +507,27 @@
                     </section>
                 @endif
 
-                @if(!empty($productEditorial['faq']))
+                @if($productFaqItems->isNotEmpty())
                     <section id="faq" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
                         <div>
-                            <h2 class="text-xl font-semibold text-gray-900">FAQ</h2>
-                            <p class="mt-1 text-sm text-gray-500">Common questions extracted from the editorial product description.</p>
+                            <h2 class="text-xl font-semibold text-gray-900">FAQ about {{ $product->name }}</h2>
+                            <p class="mt-1 text-sm text-gray-500">Concise answers based on the product's editorial information.</p>
                         </div>
 
-                        <div class="mt-6 divide-y divide-gray-100">
-                            @foreach($productEditorial['faq'] as $faqItem)
-                                <article class="py-5 first:pt-0 last:pb-0">
-                                    <h3 class="text-base font-semibold text-gray-900">{{ $faqItem['question'] }}</h3>
-                                    <p class="mt-2 text-sm leading-6 text-gray-600">{{ $faqItem['answer'] }}</p>
-                                </article>
+                        <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                            @foreach($productFaqItems as $faqItem)
+                                <details class="group border-b border-gray-200 last:border-b-0">
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-left text-base font-semibold text-gray-900 transition hover:bg-gray-50 sm:px-6 [&::-webkit-details-marker]:hidden">
+                                        <span>{{ $faqItem['question'] }}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </summary>
+                                    <div class="border-t border-gray-100 bg-gray-50/50 px-5 py-5 sm:px-6">
+                                        <p class="max-w-4xl text-sm leading-6 text-gray-600">{{ $faqItem['answer'] }}</p>
+                                    </div>
+                                </details>
                             @endforeach
                         </div>
                     </section>

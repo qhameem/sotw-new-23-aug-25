@@ -30,13 +30,13 @@
                         </span>
                     </div>
 
-                    <span class="flex shrink-0 items-center gap-1 text-xs font-medium text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-300" viewBox="0 0 24 24"
-                            fill="currentColor" aria-hidden="true">
-                            <path
-                                d="M6 13H2c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1zm16-4h-4c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V10c0-.6-.4-1-1-1zm-8-8h-4c-.6 0-1 .4-1 1v20c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1z" />
+                    <span class="flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400">
+                        <span class="hidden max-w-24 truncate lg:inline">{{ $alternative->primary_category_label ?: 'View' }}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
                         </svg>
-                        <span>{{ number_format((int) ($alternative->impressions ?? 0)) }}</span>
                     </span>
                 </a>
             @endforeach
