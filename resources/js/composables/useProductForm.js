@@ -1331,7 +1331,7 @@ export function useProductForm() {
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
       validateField('link');
-      return { exists: false };
+      return { exists: false, checkFailed: true };
     }
   };
 

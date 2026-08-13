@@ -43,10 +43,12 @@
       <button
         type="button"
         @click="performValidationAndFetch"
-        :disabled="isLoading"
+        :disabled="isAutoFillDisabled"
         :class="[
           'w-[168px] min-h-8 -translate-y-0.5 px-6 py-1.5 rounded-md border-2 border-[color:color-mix(in_srgb,var(--color-primary-700)_82%,black)] bg-primary-500 text-white font-bold text-sm flex items-center justify-center gap-2 shrink-0 whitespace-nowrap shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-700)_82%,black),0_8px_14px_rgba(15,23,42,0.14)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-150',
-          isLoading ? 'cursor-wait' : 'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none'
+          isAutoFillDisabled
+            ? 'cursor-not-allowed border-gray-300 bg-gray-300 text-gray-500 shadow-none opacity-80'
+            : 'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none'
         ]"
       >
         <span v-if="isLoading" class="flex items-center gap-2">
@@ -175,7 +177,7 @@ Internal note: focus on the API and automation features."
             <a :href="existingProduct?.view_url || `/product/${existingProduct.slug}`" target="_blank" class="font-bold hover:underline underline-offset-2">"{{ existingProduct.name }}"</a>.
           </p>
           <div v-if="existingProduct?.can_edit && existingProduct?.edit_url" class="mt-2">
-            <a :href="existingProduct.edit_url" class="inline-flex items-center rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200">
+            <a :href="existingProduct.edit_url" class="inline-flex items-center text-xs font-semibold text-gray-700 underline underline-offset-2 hover:text-gray-950">
               Edit existing product
             </a>
           </div>
@@ -189,7 +191,7 @@ Internal note: focus on the API and automation features."
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
@@ -199,6 +201,7 @@ const props = defineProps({
     default: '',
   },
   isLoading: Boolean,
+  isUrlChecking: Boolean,
   loadingProgress: Number,
   loadingMessage: String,
   isUrlInvalid: Boolean,
@@ -225,6 +228,14 @@ const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
 const showAdditionalResources = ref(Boolean(props.additionalResources?.trim()));
+const isAutoFillDisabled = computed(() => props.isLoading || (
+  !props.isSandboxMode && (
+    props.isUrlChecking
+    || props.urlExistsError
+    || props.isUrlInvalid
+    || !String(props.modelValue || '').trim()
+  )
+));
 
 const handleInput = (event) => {
   const value = event.target.value;
@@ -276,7 +287,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
   
   // Step 1: Check if anything is loading
   console.log('[ProductURLInput] Step 1: Checking if anything is loading...');
-  if (props.isLoading) {
+  if (isAutoFillDisabled.value) {
     console.log('[ProductURLInput] Validation failed: Something is loading');
     return;
   }
