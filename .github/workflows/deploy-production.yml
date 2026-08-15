@@ -1,0 +1,42 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy through FTP
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the complete Git history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install git-ftp
+        run: sudo apt-get update && sudo apt-get install --yes git-ftp
+
+      - name: Deploy changed files
+        env:
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+        run: |
+          git config git-ftp.url ftp://178.18.246.203
+          git config git-ftp.user "$FTP_USERNAME"
+          git config git-ftp.password "$FTP_PASSWORD"
+          git config git-ftp.options "--ftp-pasv"
+          git config git-ftp.curl-options "--ftp-pasv --max-time 300"
+          git config git-ftp.insecure 1
+          git ftp push
