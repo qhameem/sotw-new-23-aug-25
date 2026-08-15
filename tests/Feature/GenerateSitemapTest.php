@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Services\RelatedProductService;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -12,7 +13,7 @@ beforeEach(function () {
     $this->originalChildSitemaps = [];
 
     if (File::isDirectory($this->sitemapDirectory)) {
-        foreach (File::glob($this->sitemapDirectory . DIRECTORY_SEPARATOR . '*.xml') as $path) {
+        foreach (File::glob($this->sitemapDirectory.DIRECTORY_SEPARATOR.'*.xml') as $path) {
             $this->originalChildSitemaps[$path] = File::get($path);
         }
     }
@@ -24,7 +25,7 @@ afterEach(function () {
     }
 
     if (File::isDirectory($this->sitemapDirectory)) {
-        foreach (File::glob($this->sitemapDirectory . DIRECTORY_SEPARATOR . '*.xml') as $path) {
+        foreach (File::glob($this->sitemapDirectory.DIRECTORY_SEPARATOR.'*.xml') as $path) {
             File::delete($path);
         }
     }
@@ -33,7 +34,7 @@ afterEach(function () {
         File::put($this->sitemapIndexPath, $this->originalSitemapIndex);
     }
 
-    if (!empty($this->originalChildSitemaps)) {
+    if (! empty($this->originalChildSitemaps)) {
         File::ensureDirectoryExists($this->sitemapDirectory);
 
         foreach ($this->originalChildSitemaps as $path => $contents) {
@@ -78,7 +79,7 @@ it('generates a recent launches sitemap and excludes unpublished products from p
     expect(File::exists($productsSitemapPath))->toBeTrue();
     expect(File::exists($recentLaunchesSitemapPath))->toBeTrue();
 
-    expect($sitemapIndex)->toContain('https://softwareontheweb.com/sitemaps/recent-launches.xml');
+    expect($sitemapIndex)->toContain(url('sitemaps/recent-launches.xml'));
 
     expect($productsSitemap)
         ->toContain(route('products.show', $recentProduct->slug))
@@ -122,4 +123,60 @@ it('excludes the current week archive URL from the archives sitemap because it r
             'year' => $olderWeekStart->year,
             'week' => $olderWeekStart->weekOfYear,
         ]));
+});
+
+it('generates alternatives separately without building comparisons', function () {
+    $includedProduct = Product::factory()->create([
+        'name' => 'Included Product',
+        'slug' => 'included-product',
+        'approved' => true,
+        'is_published' => true,
+    ]);
+
+    $excludedProduct = Product::factory()->create([
+        'name' => 'Excluded Product',
+        'slug' => 'excluded-product',
+        'approved' => true,
+        'is_published' => true,
+    ]);
+
+    Product::factory()->create([
+        'name' => 'Unpublished Product',
+        'slug' => 'unpublished-product',
+        'approved' => true,
+        'is_published' => false,
+    ]);
+
+    $relatedProducts = Mockery::mock(RelatedProductService::class);
+    $relatedProducts->shouldNotReceive('getComparisons');
+    $relatedProducts->shouldReceive('getAlternatives')->twice()->andReturn(collect());
+    $relatedProducts->shouldReceive('shouldNoindexAlternatives')
+        ->twice()
+        ->andReturnUsing(fn (Product $product) => $product->is($excludedProduct));
+    $this->app->instance(RelatedProductService::class, $relatedProducts);
+
+    $this->artisan('sitemap:generate-alternatives')->assertExitCode(0);
+
+    $alternativesSitemap = File::get(public_path('sitemaps/alternatives.xml'));
+    $sitemapIndex = File::get(public_path('sitemap.xml'));
+
+    expect($alternativesSitemap)
+        ->toContain(route('pseo.alternatives', $includedProduct->slug))
+        ->not->toContain(route('pseo.alternatives', $excludedProduct->slug))
+        ->not->toContain('unpublished-product');
+
+    expect($sitemapIndex)
+        ->toContain(url('sitemaps/alternatives.xml'))
+        ->not->toContain('compare.xml');
+});
+
+it('preserves independently generated alternatives when rebuilding core sitemaps', function () {
+    File::ensureDirectoryExists(public_path('sitemaps'));
+    File::put(public_path('sitemaps/alternatives.xml'), '<urlset>alternatives</urlset>');
+
+    $this->artisan('sitemap:generate')->assertExitCode(0);
+
+    expect(File::get(public_path('sitemaps/alternatives.xml')))->toBe('<urlset>alternatives</urlset>');
+    expect(File::get(public_path('sitemap.xml')))
+        ->toContain(url('sitemaps/alternatives.xml'));
 });

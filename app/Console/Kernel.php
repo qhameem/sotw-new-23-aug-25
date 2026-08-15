@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\BackfillProductEditorialContent;
+use App\Console\Commands\GenerateAlternativesSitemap;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\NotifyUrlIndexing;
 use App\Console\Commands\OptimizeProductLogos;
@@ -23,6 +24,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         BackfillProductEditorialContent::class,
         GenerateSitemap::class,
+        GenerateAlternativesSitemap::class,
         NotifyUrlIndexing::class,
         OptimizeProductLogos::class,
         PublishScheduledProducts::class,
@@ -37,8 +39,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('sitemap:generate')->daily();
         $schedule->command('products:publish-scheduled')->dailyAt(ProductPublishSchedule::getPublishTime());
+        $schedule->command('sitemap:generate')->daily();
+        $schedule->command('sitemap:generate-alternatives')
+            ->dailyAt(ProductPublishSchedule::getPublishTime())
+            ->withoutOverlapping();
         $schedule->command('reminders:send-deadline')->everyMinute();
         $schedule->command('badge:verify')->dailyAt('03:00');
         $schedule->command('auth:prune-magic-links')->daily();

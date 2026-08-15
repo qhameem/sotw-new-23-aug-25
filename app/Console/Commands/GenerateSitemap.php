@@ -2,20 +2,18 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use Spatie\Sitemap\Sitemap; // Changed from SitemapGenerator
-use Spatie\Sitemap\Tags\Url;
 use App\Models\Article;
 use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
-use App\Models\Product; // Added
-use App\Models\Category; // Added
+use App\Models\Category;
+use App\Models\Product;
 use App\Services\RelatedProductService;
-use Illuminate\Support\Facades\File;
+use App\Services\SitemapIndexWriter;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-// It's good practice to also include your main app URL and other important static pages
-// use Carbon\Carbon; // Already imported in models, but good to be explicit if used directly here
+use Illuminate\Support\Facades\File;
+use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\Tags\Url;
 
 class GenerateSitemap extends Command
 {
@@ -26,7 +24,7 @@ class GenerateSitemap extends Command
      *
      * @var string
      */
-    protected $signature = 'sitemap:generate {--with-pseo : Include pSEO and compare sitemap files}';
+    protected $signature = 'sitemap:generate {--with-pseo : Include non-alternatives pSEO and compare sitemap files}';
 
     /**
      * The console command description.
@@ -44,12 +42,11 @@ class GenerateSitemap extends Command
         $sitemapPath = public_path('sitemap.xml');
         $sitemapDirectory = public_path('sitemaps');
         $generatedAt = now();
-        $sitemapEntries = [];
         $includePseo = (bool) $this->option('with-pseo');
 
         File::ensureDirectoryExists($sitemapDirectory);
-        foreach (File::glob($sitemapDirectory . DIRECTORY_SEPARATOR . '*.xml') as $existingSitemap) {
-            File::delete($existingSitemap);
+        foreach (['static.xml', 'content.xml', 'products.xml', 'recent-launches.xml', 'taxonomy.xml', 'archives.xml'] as $filename) {
+            File::delete($sitemapDirectory.DIRECTORY_SEPARATOR.$filename);
         }
 
         $staticPagesSitemap = Sitemap::create();
@@ -64,7 +61,7 @@ class GenerateSitemap extends Command
         $staticPagesSitemap->add(Url::create(route('software-review'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
         $staticPagesSitemap->add(Url::create(route('subscribe'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
         $staticPagesSitemap->add(Url::create(route('topics.index'))->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
-        $this->writeChildSitemap($staticPagesSitemap, $sitemapDirectory . '/static.xml', $sitemapEntries, $generatedAt);
+        $this->writeChildSitemap($staticPagesSitemap, $sitemapDirectory.'/static.xml');
 
         $contentSitemap = Sitemap::create();
         $contentSitemap->add(Article::where('status', 'published')->where('published_at', '<=', now())->get());
@@ -74,13 +71,13 @@ class GenerateSitemap extends Command
         $contentSitemap->add(ArticleTag::all()->filter(function ($tag) {
             return $tag->articles()->where('status', 'published')->where('published_at', '<=', now())->exists();
         }));
-        $this->writeChildSitemap($contentSitemap, $sitemapDirectory . '/content.xml', $sitemapEntries, $generatedAt);
+        $this->writeChildSitemap($contentSitemap, $sitemapDirectory.'/content.xml');
 
         $productsQuery = Product::approvedAndPublished()->with('media');
 
         $productsSitemap = Sitemap::create();
         $productsSitemap->add((clone $productsQuery)->get());
-        $this->writeChildSitemap($productsSitemap, $sitemapDirectory . '/products.xml', $sitemapEntries, $generatedAt);
+        $this->writeChildSitemap($productsSitemap, $sitemapDirectory.'/products.xml');
 
         $recentLaunchesSitemap = Sitemap::create();
         $recentLaunchesSitemap->add(
@@ -88,13 +85,13 @@ class GenerateSitemap extends Command
                 ->whereRaw('COALESCE(published_at, created_at) >= ?', [$generatedAt->copy()->subDays(self::RECENT_LAUNCH_WINDOW_DAYS)])
                 ->get()
         );
-        $this->writeChildSitemap($recentLaunchesSitemap, $sitemapDirectory . '/recent-launches.xml', $sitemapEntries, $generatedAt);
+        $this->writeChildSitemap($recentLaunchesSitemap, $sitemapDirectory.'/recent-launches.xml');
 
         $taxonomySitemap = Sitemap::create();
         $taxonomySitemap->add(Category::all()->filter(function ($category) {
             return $category->products()->where('approved', true)->exists();
         }));
-        $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory . '/taxonomy.xml', $sitemapEntries, $generatedAt);
+        $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory.'/taxonomy.xml');
 
         $archiveSitemap = Sitemap::create();
         $currentWeekYear = now()->year;
@@ -104,7 +101,7 @@ class GenerateSitemap extends Command
         $dateExpressions = $this->productDateExpressions();
 
         $activeWeeks = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['week'] . ' as week')
+            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week')
             ->groupBy('year', 'week')
             ->get();
 
@@ -120,7 +117,7 @@ class GenerateSitemap extends Command
 
         // Add Archive URLs (Months)
         $activeMonths = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'] . ' as year, ' . $dateExpressions['month'] . ' as month')
+            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['month'].' as month')
             ->groupBy('year', 'month')
             ->get();
 
@@ -132,7 +129,7 @@ class GenerateSitemap extends Command
 
         // Add Archive URLs (Years)
         $activeYears = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'] . ' as year')
+            ->selectRaw($dateExpressions['year'].' as year')
             ->groupBy('year')
             ->get();
 
@@ -141,8 +138,7 @@ class GenerateSitemap extends Command
                 ->setPriority(0.3)
                 ->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY));
         }
-        $this->writeChildSitemap($archiveSitemap, $sitemapDirectory . '/archives.xml', $sitemapEntries, $generatedAt);
-
+        $this->writeChildSitemap($archiveSitemap, $sitemapDirectory.'/archives.xml');
 
         if ($includePseo) {
             $relatedProductService = app(RelatedProductService::class);
@@ -151,49 +147,46 @@ class GenerateSitemap extends Command
             $this->info('Adding pSEO routes...');
             $pseoSitemap = Sitemap::create();
 
-            // 1. Alternatives Pages
-            foreach (Product::where('approved', true)->where('is_published', true)->with(['categories.types', 'techStacks'])->get() as $product) {
-                $alternatives = $relatedProductService->getAlternatives($product, 15);
+            // 1. Best-Of Category Pages
+            $softwareCats = Category::whereHas('products', function ($q) {
+                $q->where('approved', true);
+            })
+                ->whereHas('types', function ($q) {
+                    $q->whereIn('name', ['Software', 'Software Categories']);
+                })->get();
 
-                if ($relatedProductService->shouldNoindexAlternatives($product, $alternatives)) {
-                    continue;
-                }
-
-                $pseoSitemap->add(Url::create(route('pseo.alternatives', $product->slug))
-                    ->setPriority(0.8)
-                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-            }
-
-            // 2. Best-Of Category Pages
-            $softwareCats = Category::whereHas('products', function($q) { $q->where('approved', true); })
-                ->whereHas('types', function($q) { $q->whereIn('name', ['Software', 'Software Categories']); })->get();
-                
             foreach ($softwareCats as $category) {
                 $pseoSitemap->add(Url::create(route('pseo.best', $category->slug))
                     ->setPriority(0.8)
                     ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
             }
 
-            // 3. Built-With (Tech Stack) Pages
+            // 2. Built-With (Tech Stack) Pages
             if (class_exists(\App\Models\TechStack::class)) {
-                foreach (\App\Models\TechStack::whereHas('products', function($q) { $q->where('approved', true); })->get() as $stack) {
+                foreach (\App\Models\TechStack::whereHas('products', function ($q) {
+                    $q->where('approved', true);
+                })->get() as $stack) {
                     $pseoSitemap->add(Url::create(route('pseo.builtWith', $stack->slug))
                         ->setPriority(0.7)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
                 }
             }
 
-            // 4. Pricing Pages
-            $pricingCategories = Category::whereHas('types', function($q) { $q->where('name', 'Pricing'); })
-                ->whereHas('products', function($q) { $q->where('approved', true); })->get();
+            // 3. Pricing Pages
+            $pricingCategories = Category::whereHas('types', function ($q) {
+                $q->where('name', 'Pricing');
+            })
+                ->whereHas('products', function ($q) {
+                    $q->where('approved', true);
+                })->get();
             foreach ($pricingCategories as $pricing) {
                 $pseoSitemap->add(Url::create(route('pseo.pricing', $pricing->slug))
                     ->setPriority(0.7)
                     ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
             }
-            $this->writeChildSitemap($pseoSitemap, $sitemapDirectory . '/pseo.xml', $sitemapEntries, $generatedAt);
+            $this->writeChildSitemap($pseoSitemap, $sitemapDirectory.'/pseo.xml');
 
-            // 5. Compare Pages (Top Comparisons to prevent millions of URLs)
+            // 4. Compare Pages (Top Comparisons to prevent millions of URLs)
             $this->info('Generating comparison URLs...');
             $compareSitemap = Sitemap::create();
             $products = Product::where('approved', true)
@@ -201,17 +194,17 @@ class GenerateSitemap extends Command
                 ->with(['categories.types', 'techStacks'])
                 ->get();
             $addedComparisons = [];
-            
+
             foreach ($products as $product) {
                 $similarProducts = $relatedProductService->getComparisons($product, 3);
-                
+
                 foreach ($similarProducts as $similar) {
                     // Ensure alphabetical order so A-vs-B is the same as B-vs-A
                     $slugs = [$product->slug, $similar->slug];
                     sort($slugs);
-                    $compareKey = $slugs[0] . '-vs-' . $slugs[1];
-                    
-                    if (!isset($addedComparisons[$compareKey])) {
+                    $compareKey = $slugs[0].'-vs-'.$slugs[1];
+
+                    if (! isset($addedComparisons[$compareKey])) {
                         $compareSitemap->add(Url::create(route('pseo.compare', ['params' => $compareKey]))
                             ->setPriority(0.6)
                             ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
@@ -220,49 +213,21 @@ class GenerateSitemap extends Command
                 }
             }
 
-            $this->writeChildSitemap($compareSitemap, $sitemapDirectory . '/compare.xml', $sitemapEntries, $generatedAt);
+            $this->writeChildSitemap($compareSitemap, $sitemapDirectory.'/compare.xml');
         } else {
             $this->info('Skipping pSEO and compare sitemap generation for the default cron-safe run.');
         }
 
-        $this->writeSitemapIndex($sitemapPath, $sitemapEntries);
+        app(SitemapIndexWriter::class)->write($sitemapPath, $sitemapDirectory);
 
         $this->info("Sitemap generated successfully at {$sitemapPath}");
+
         return Command::SUCCESS;
     }
 
-    protected function writeChildSitemap(Sitemap $sitemap, string $path, array &$indexEntries, $generatedAt): void
+    protected function writeChildSitemap(Sitemap $sitemap, string $path): void
     {
         $sitemap->writeToFile($path);
-
-        $relativePath = Str::of($path)
-            ->after(public_path() . DIRECTORY_SEPARATOR)
-            ->replace(DIRECTORY_SEPARATOR, '/')
-            ->toString();
-
-        $indexEntries[] = [
-            'loc' => url($relativePath),
-            'lastmod' => $generatedAt->toAtomString(),
-        ];
-    }
-
-    protected function writeSitemapIndex(string $path, array $entries): void
-    {
-        $lines = [
-            '<?xml version="1.0" encoding="UTF-8"?>',
-            '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-        ];
-
-        foreach ($entries as $entry) {
-            $lines[] = '  <sitemap>';
-            $lines[] = '    <loc>' . htmlspecialchars($entry['loc'], ENT_XML1) . '</loc>';
-            $lines[] = '    <lastmod>' . htmlspecialchars($entry['lastmod'], ENT_XML1) . '</lastmod>';
-            $lines[] = '  </sitemap>';
-        }
-
-        $lines[] = '</sitemapindex>';
-
-        File::put($path, implode(PHP_EOL, $lines) . PHP_EOL);
     }
 
     protected function productDateExpressions(): array
