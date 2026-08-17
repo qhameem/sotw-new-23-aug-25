@@ -39,13 +39,15 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('products:publish-scheduled')->dailyAt(ProductPublishSchedule::getPublishTime());
+        $schedule->command('products:publish-scheduled')
+            ->dailyAt(ProductPublishSchedule::getPublishTime())
+            ->withoutOverlapping();
         $schedule->command('sitemap:generate')->daily();
         $schedule->command('sitemap:generate-alternatives')
             ->dailyAt(ProductPublishSchedule::getPublishTime())
             ->withoutOverlapping();
         $schedule->command('reminders:send-deadline')->everyMinute();
-        $schedule->command('badge:verify')->dailyAt('03:00');
+        $schedule->command('badge:verify')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('auth:prune-magic-links')->daily();
     }
 

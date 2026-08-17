@@ -1,15 +1,8 @@
 <?php
 
-use App\Support\ProductPublishSchedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
-
-Schedule::command('badge:verify')->dailyAt('03:00')->withoutOverlapping();
-Schedule::command('products:publish-scheduled')
-    ->dailyAt(ProductPublishSchedule::getPublishTime())
-    ->withoutOverlapping();

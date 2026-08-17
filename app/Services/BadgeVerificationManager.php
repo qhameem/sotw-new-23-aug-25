@@ -53,7 +53,7 @@ class BadgeVerificationManager
 
         $product->update([
             'badge_verified' => false,
-            'badge_consecutive_failures' => ((int) $product->badge_consecutive_failures) + 1,
+            'badge_consecutive_failures' => min(((int) $product->badge_consecutive_failures) + 1, 4294967295),
             'is_published' => false,
         ]);
 

@@ -89,4 +89,21 @@ class BadgePublicationProtectionTest extends TestCase
         $this->assertSame(hash('sha256', $html), $attempt->response_hash);
         $this->assertNotNull($attempt->matched_element);
     }
+
+    public function test_failure_counter_can_exceed_tiny_integer_limit(): void
+    {
+        Mail::fake();
+        Http::fake(['*' => Http::response('<html>No badge</html>')]);
+
+        $product = Product::factory()->create([
+            'link' => 'https://93.184.216.34/product',
+            'badge_placement_url' => 'https://93.184.216.34/product',
+            'submission_type' => 'badge',
+            'badge_consecutive_failures' => 255,
+        ]);
+
+        app(BadgeVerificationManager::class)->verify($product, 'test');
+
+        $this->assertSame(256, $product->refresh()->badge_consecutive_failures);
+    }
 }
