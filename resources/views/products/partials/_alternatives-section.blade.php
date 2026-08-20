@@ -2,47 +2,7 @@
     use App\Support\ProductLogo;
 @endphp
 
-@once
-    @push('styles')
-        <style>
-            .product-alternatives-panel,
-            .product-alternative-card {
-                transition:
-                    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    border-color 160ms ease,
-                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    background-color 160ms ease;
-            }
-
-            @media (hover: hover) and (pointer: fine) {
-                .product-alternatives-panel:has(.product-alternative-card:hover) {
-                    transform: translate(-2px, -2px);
-                    border-color: #111827;
-                    box-shadow: 7px 7px 0 var(--color-primary-500, #0091ff);
-                }
-
-                .product-alternative-card:hover {
-                    transform: translate(-2px, -2px);
-                    border-color: #111827;
-                    background-color: #fff;
-                    box-shadow: 6px 6px 0 var(--color-primary-500, #0091ff);
-                }
-            }
-
-            .product-alternative-card:focus-visible {
-                outline: 2px solid var(--color-primary-500, #0091ff);
-                outline-offset: 3px;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                .product-alternatives-panel,
-                .product-alternative-card {
-                    transition: none;
-                }
-            }
-        </style>
-    @endpush
-@endonce
+@include('products.partials._card-3d-hover-styles')
 
 @if($alternativeProducts->isNotEmpty())
     <div class="product-alternatives-panel rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -54,7 +14,7 @@
                 @endphp
 
                 <a href="{{ route('products.show', ['product' => $alternative->slug]) }}" wire:navigate.hover
-                    class="product-alternative-card group flex min-w-0 items-center gap-4 rounded-xl border border-gray-200 bg-white p-4">
+                    class="product-alternative-card product-3d-hover-card group flex min-w-0 items-center gap-4 rounded-xl border border-gray-200 bg-white p-4">
                     @if($alternativeLogo)
                         <img src="{{ $alternativeLogo }}" alt="{{ $alternative->name }} logo"
                             class="h-14 w-14 shrink-0 rounded-xl border border-gray-200 bg-white object-contain p-1.5">

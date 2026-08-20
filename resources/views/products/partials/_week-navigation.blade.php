@@ -5,6 +5,8 @@
     $nextProduct = $weekNavigation['next'] ?? null;
 @endphp
 
+@include('products.partials._card-3d-hover-styles')
+
 @if($previousProduct || $nextProduct)
     <nav aria-label="Products from week {{ $weekNavigation['week'] }}" class="mt-10 border-t border-gray-100 pt-8 print:hidden">
         <div class="mb-4 flex items-center justify-between gap-4">
@@ -25,7 +27,7 @@
                 <a href="{{ route('products.show', ['product' => $previousProduct->slug]) }}"
                     wire:navigate.hover rel="prev"
                     aria-label="Previous product: {{ $previousProduct->name }}"
-                    class="group flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                    class="product-3d-hover-card group flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 bg-white p-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50 text-sm font-bold text-gray-600">
                         @if($previousLogo)
                             <img src="{{ $previousLogo }}" alt="" width="44" height="44" loading="lazy" decoding="async" class="h-full w-full object-contain">
@@ -47,7 +49,7 @@
                 <a href="{{ route('products.show', ['product' => $nextProduct->slug]) }}"
                     wire:navigate.hover rel="next"
                     aria-label="Next product: {{ $nextProduct->name }}"
-                    class="group flex min-w-0 items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white p-3 text-right transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:col-start-2">
+                    class="product-3d-hover-card group flex min-w-0 items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white p-3 text-right sm:col-start-2">
                     <span class="min-w-0">
                         <span class="block text-xs text-gray-400">Next product →</span>
                         <span class="mt-0.5 block truncate text-sm font-semibold text-gray-800 group-hover:text-primary-700">{{ $nextProduct->name }}</span>
