@@ -25,6 +25,13 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    'emailoctopus' => [
+        'api_key' => env('EMAILOCTOPUS_API_KEY'),
+        'list_id' => env('EMAILOCTOPUS_LIST_ID'),
+        'base_url' => env('EMAILOCTOPUS_API_BASE_URL', 'https://emailoctopus.com/api/1.6'),
+        'timeout' => (int) env('EMAILOCTOPUS_API_TIMEOUT', 10),
+    ],
+
     'google' => [
         'api_key' => env('GOOGLE_API_KEY'),
         'client_id' => env('GOOGLE_CLIENT_ID'),

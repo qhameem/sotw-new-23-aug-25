@@ -84,6 +84,8 @@
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-tag class="mr-2 h-4 w-4 text-gray-400" />Categories</a>
                     <a href="{{ route('admin.products.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-package class="mr-2 h-4 w-4 text-gray-400" />Products</a>
+                    <a href="{{ route('admin.product-discovery.index') }}"
+                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-binoculars class="mr-2 h-4 w-4 text-gray-400" />Product Discovery</a>
                     <a href="{{ route('admin.tech-stacks.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-stack class="mr-2 h-4 w-4 text-gray-400" />Tech Stacks</a>
                     <a href="{{ route('admin.premium-products.index') }}"

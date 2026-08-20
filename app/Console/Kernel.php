@@ -49,6 +49,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('reminders:send-deadline')->everyMinute();
         $schedule->command('badge:verify')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('auth:prune-magic-links')->daily();
+        $schedule->command('products:discover')
+            ->dailyAt('04:30')
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**

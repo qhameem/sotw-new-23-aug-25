@@ -21,6 +21,7 @@
     <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
         <a href="{{ route('about') }}" class="hover:underline">About</a> •
         <a href="{{ route('faq') }}" class="hover:underline">FAQ</a> •
+        <a href="{{ route('newsletter.index') }}" class="hover:underline">Newsletter</a> •
         <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •
         <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
         <a href="{{ route('badges.index') }}" class="hover:underline">Badge</a> •

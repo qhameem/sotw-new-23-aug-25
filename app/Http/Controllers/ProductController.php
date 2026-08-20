@@ -185,9 +185,9 @@ class ProductController extends Controller
         $activeDraft = $this->resolveRequestedSubmissionDraft($request);
         $draftDisplayData = $activeDraft ? $this->mapSubmissionDraftToDisplayData($activeDraft) : [];
         $displayData = [
-            'name' => $oldInput['name'] ?? ($draftDisplayData['name'] ?? ''),
+            'name' => $oldInput['name'] ?? ($draftDisplayData['name'] ?? $request->query('name', '')),
             'slug' => $oldInput['slug'] ?? ($draftDisplayData['slug'] ?? ''),
-            'link' => $oldInput['link'] ?? ($draftDisplayData['link'] ?? ''),
+            'link' => $oldInput['link'] ?? ($draftDisplayData['link'] ?? $request->query('link', '')),
             'additional_resources' => $oldInput['additional_resources'] ?? ($draftDisplayData['additional_resources'] ?? ''),
             'tagline' => $oldInput['tagline'] ?? ($draftDisplayData['tagline'] ?? ''),
             'product_page_tagline' => $oldInput['product_page_tagline'] ?? ($draftDisplayData['product_page_tagline'] ?? ''),

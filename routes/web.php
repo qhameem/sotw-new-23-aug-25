@@ -20,6 +20,7 @@ use App\Http\Controllers\BadgeController; // Added for public articles
 use App\Http\Controllers\IndexNowKeyController;
 use App\Http\Controllers\LaunchReadinessController; // Added for topics page
 use App\Http\Controllers\LaunchReadinessWorkspaceController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\ProductClaimController;
 use App\Http\Controllers\ProductCollectionController;
 use App\Http\Controllers\ProductCollectionItemController;
@@ -65,6 +66,10 @@ Route::get('/{key}.txt', IndexNowKeyController::class)
 Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key.legacy');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
+Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
+Route::post('/newsletter', [NewsletterController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('newsletter.store');
 
 Route::get('/thank-you', function () {
     return view('subscription.thankyou');
@@ -243,6 +248,14 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::patch('product-reviews/{product_review}', [ProductReviewController::class, 'update'])->name('product-reviews.update');
     Route::delete('premium-products/{premium_product}', [\App\Http\Controllers\Admin\PremiumProductController::class, 'destroy'])->name('premium-products.destroy');
     Route::resource('badges', AdminBadgeController::class)->except(['show', 'edit', 'update']);
+    Route::get('product-discovery', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'index'])->name('product-discovery.index');
+    Route::post('product-discovery/inspect', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'inspect'])->name('product-discovery.inspect');
+    Route::post('product-discovery/sources', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'store'])->name('product-discovery.sources.store');
+    Route::put('product-discovery/sources/{source}', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'update'])->name('product-discovery.sources.update');
+    Route::delete('product-discovery/sources/{source}', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'destroy'])->name('product-discovery.sources.destroy');
+    Route::patch('product-discovery/sources/{source}/toggle', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'toggle'])->name('product-discovery.sources.toggle');
+    Route::post('product-discovery/sources/{source}/scan', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'scan'])->name('product-discovery.sources.scan');
+    Route::patch('product-discovery/recommendations/{recommendation}', [\App\Http\Controllers\Admin\ProductDiscoveryController::class, 'updateRecommendation'])->name('product-discovery.recommendations.update');
 }); // End of admin prefix group
 
 Route::get('/get-the-badge', [BadgeController::class, 'index'])->name('badges.index');
