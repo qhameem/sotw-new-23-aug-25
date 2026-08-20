@@ -134,6 +134,13 @@
         No results found.
     </div>
 </div>
+
 </template>
 </div>
 </div>
+
+@unless(request()->routeIs('admin.*', 'newsletter.*', 'profile.*', 'dashboard', 'stripe.*', 'todolists.*', 'tools.*'))
+    <div class="mt-6 hidden md:block">
+        @include('partials._newsletter-signup-form', ['placement' => 'sidebar'])
+    </div>
+@endunless

@@ -16,6 +16,7 @@
         @else
             <form method="POST" action="{{ route('newsletter.store') }}" class="mt-8 space-y-5">
                 @csrf
+                <input type="hidden" name="source" value="newsletter_page">
 
                 <div class="hidden" aria-hidden="true">
                     <label for="company">Company</label>

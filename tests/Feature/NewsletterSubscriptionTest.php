@@ -17,6 +17,13 @@ it('shows the public newsletter page', function () {
         ->assertSee('The best software, delivered.');
 });
 
+it('shows compact signup forms in the sidebar and mobile footer', function () {
+    $this->get(route('about'))
+        ->assertOk()
+        ->assertSee('name="source" value="sidebar"', false)
+        ->assertSee('name="source" value="mobile_footer"', false);
+});
+
 it('records consent and queues an EmailOctopus sync', function () {
     Queue::fake();
 
@@ -25,6 +32,7 @@ it('records consent and queues an EmailOctopus sync', function () {
         'first_name' => ' Reader ',
         'consent' => '1',
         'company' => '',
+        'source' => 'sidebar',
     ])->assertRedirect()->assertSessionHas('newsletter_success');
 
     $subscriber = NewsletterSubscriber::firstOrFail();
@@ -32,6 +40,7 @@ it('records consent and queues an EmailOctopus sync', function () {
     expect($subscriber->email)->toBe('reader@example.com')
         ->and($subscriber->first_name)->toBe('Reader')
         ->and($subscriber->status)->toBe('pending')
+        ->and($subscriber->source)->toBe('sidebar')
         ->and($subscriber->consented_at)->not->toBeNull();
 
     Queue::assertPushed(SyncNewsletterSubscriberToEmailOctopus::class, fn ($job) => $job->newsletterSubscriberId === $subscriber->id);

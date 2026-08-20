@@ -29,6 +29,7 @@ class NewsletterController extends Controller
             'first_name' => ['nullable', 'string', 'max:100'],
             'company' => ['nullable', 'max:0'],
             'consent' => ['accepted'],
+            'source' => ['nullable', 'in:newsletter_page,sidebar,mobile_footer'],
         ]);
 
         $subscriber = NewsletterSubscriber::updateOrCreate(
@@ -36,7 +37,7 @@ class NewsletterController extends Controller
             [
                 'first_name' => filled($validated['first_name'] ?? null) ? trim($validated['first_name']) : null,
                 'status' => 'pending',
-                'source' => 'newsletter_page',
+                'source' => $validated['source'] ?? 'newsletter_page',
                 'consented_at' => now(),
                 'synced_at' => null,
                 'last_error' => null,
