@@ -104,10 +104,10 @@ class PublicProductDiscoveryTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(
-            '<link rel="canonical" href="' . route('products.byWeek', [
+            '<link rel="canonical" href="'.route('products.byWeek', [
                 'year' => $weekStart->year,
                 'week' => $weekStart->weekOfYear,
-            ]) . '" />',
+            ]).'" />',
             false
         );
     }
@@ -130,7 +130,7 @@ class PublicProductDiscoveryTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(
-            'Explore the best software from Week ' . $weekStart->weekOfYear . ' of ' . $weekStart->year,
+            'Explore the best software from Week '.$weekStart->weekOfYear.' of '.$weekStart->year,
             false
         );
     }
@@ -248,6 +248,40 @@ class PublicProductDiscoveryTest extends TestCase
         $response->assertSee('Launched');
         $response->assertSee('May 11, 2026');
         $response->assertSee('"datePublished": "2026-05-11T04:00:00+00:00"', false);
+    }
+
+    /** @test */
+    public function product_pages_render_crawlable_previous_and_next_links_for_the_same_week()
+    {
+        $weekStart = Carbon::parse('2026-05-11 00:00:00', 'UTC');
+        $previous = Product::factory()->create([
+            'name' => 'Previous Weekly Product',
+            'slug' => 'previous-weekly-product',
+            'published_at' => $weekStart->copy()->addDays(3),
+        ]);
+        $current = Product::factory()->create([
+            'name' => 'Current Weekly Product',
+            'slug' => 'current-weekly-product',
+            'published_at' => $weekStart->copy()->addDays(2),
+        ]);
+        $next = Product::factory()->create([
+            'name' => 'Next Weekly Product',
+            'slug' => 'next-weekly-product',
+            'published_at' => $weekStart->copy()->addDay(),
+        ]);
+        Product::factory()->create([
+            'slug' => 'different-week-product',
+            'published_at' => $weekStart->copy()->subDay(),
+        ]);
+
+        $response = $this->get(route('products.show', $current->slug));
+
+        $response->assertOk();
+        $response->assertSee('href="'.route('products.show', $previous->slug).'"', false);
+        $response->assertSee('href="'.route('products.show', $next->slug).'"', false);
+        $response->assertSee('aria-label="Previous product: Previous Weekly Product"', false);
+        $response->assertSee('aria-label="Next product: Next Weekly Product"', false);
+        $response->assertDontSee('different-week-product');
     }
 
     /** @test */

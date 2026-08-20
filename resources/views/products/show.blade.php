@@ -533,6 +533,10 @@
                     </section>
                 @endif
 
+                @if(!empty($weekNavigation))
+                    @include('products.partials._week-navigation', ['weekNavigation' => $weekNavigation])
+                @endif
+
                 <div class="md:hidden mt-8 border-t border-gray-100 pt-8">
                     @include('products.partials._sidebar-info')
                 </div>

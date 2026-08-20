@@ -1950,6 +1950,9 @@ class ProductController extends Controller
         $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $metaDescription = $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $breadcrumbs = $this->buildProductBreadcrumbs($product, $primaryBreadcrumbCategory, request(), $isUnpublishedProduct);
+        $weekNavigation = $isUnpublishedProduct
+            ? null
+            : $this->buildProductWeekNavigation($product);
 
         $allCategories = request()->routeIs('admin.*')
             ? Category::orderBy('name')->get()
@@ -2032,7 +2035,8 @@ class ProductController extends Controller
             'alternativeProducts',
             'hasEditorialSections',
             'usesProductFacts',
-            'isUnpublishedProduct'
+            'isUnpublishedProduct',
+            'weekNavigation'
         ));
 
         if ($isUnpublishedProduct) {
@@ -2040,6 +2044,47 @@ class ProductController extends Controller
         }
 
         return $response;
+    }
+
+    protected function buildProductWeekNavigation(Product $product): ?array
+    {
+        $publishedOn = ($product->published_at ?? $product->created_at)?->copy();
+
+        if (! $publishedOn) {
+            return null;
+        }
+
+        $weekStart = $publishedOn->copy()->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+        $products = Product::query()
+            ->select(['id', 'name', 'slug', 'logo', 'link', 'published_at', 'created_at'])
+            ->approvedAndPublished()
+            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
+                $weekStart->toDateString(),
+                $weekEnd->toDateString(),
+            ])
+            ->orderByRaw('COALESCE(published_at, created_at) DESC')
+            ->orderByDesc('id')
+            ->get();
+
+        $currentIndex = $products->search(fn (Product $weekProduct) => $weekProduct->id === $product->id);
+
+        if ($currentIndex === false || $products->count() < 2) {
+            return null;
+        }
+
+        return [
+            'previous' => $currentIndex > 0 ? $products[$currentIndex - 1] : null,
+            'next' => $currentIndex < $products->count() - 1 ? $products[$currentIndex + 1] : null,
+            'position' => $currentIndex + 1,
+            'total' => $products->count(),
+            'week' => $weekStart->isoWeek(),
+            'year' => $weekStart->isoWeekYear(),
+            'url' => route('products.byWeek', [
+                'year' => $weekStart->isoWeekYear(),
+                'week' => $weekStart->isoWeek(),
+            ]),
+        ];
     }
 
     protected function buildProductBreadcrumbs(Product $product, ?Category $primaryBreadcrumbCategory, Request $request, bool $isUnpublishedProduct): array
