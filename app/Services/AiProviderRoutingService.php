@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\Storage;
 class AiProviderRoutingService
 {
     private const CACHE_PREFIX = 'ai_provider_runtime_status_v1:';
+
     private const SUCCESS_TTL_MINUTES = 60;
+
     private const FAILURE_TTL_HOURS = 12;
 
     public function orderedConfiguredProviders(array $providers): array
@@ -20,7 +22,16 @@ class AiProviderRoutingService
         foreach ($providers as $provider) {
             $key = $this->apiKeyFor($provider);
 
-            if (!filled($key)) {
+            if (! filled($key)) {
+                continue;
+            }
+
+            $status = $this->effectiveStatus($provider);
+            $retryAt = isset($status['retry_at']) && is_string($status['retry_at'])
+                ? Carbon::parse($status['retry_at'])
+                : null;
+
+            if ($retryAt?->isFuture()) {
                 continue;
             }
 
@@ -64,7 +75,8 @@ class AiProviderRoutingService
     {
         $status = $this->currentStatus($provider);
         $checkedAt = now();
-        $retryAt = $this->extractRetryAt($provider, $response, $checkedAt);
+        $retryAt = $this->extractRetryAt($provider, $response, $checkedAt)
+            ?? $this->fallbackRetryAt($response->status(), $checkedAt);
         $httpStatus = $response->status();
         $state = in_array($httpStatus, [402, 429], true) ? 'limited' : 'error';
 
@@ -96,7 +108,7 @@ class AiProviderRoutingService
 
     public function apiKeyFor(string $provider): ?string
     {
-        if (!$this->providerEnabled($provider)) {
+        if (! $this->providerEnabled($provider)) {
             return null;
         }
 
@@ -111,9 +123,20 @@ class AiProviderRoutingService
     public function modelFor(string $provider): ?string
     {
         return match ($provider) {
-            'groq' => 'llama-3.3-70b-versatile',
-            'gemini' => 'gemini-2.5-flash',
-            'openrouter' => (string) config('services.openrouter.model', 'openrouter/auto'),
+            'groq' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
+            'gemini' => (string) config('services.google.gemini_model', 'gemini-2.5-flash'),
+            'openrouter' => (string) config('services.openrouter.model', 'openrouter/free'),
+            default => null,
+        };
+    }
+
+    private function fallbackRetryAt(int $status, Carbon $checkedAt): ?Carbon
+    {
+        return match (true) {
+            in_array($status, [401, 403], true) => $checkedAt->copy()->addMinutes(15),
+            $status === 404 => $checkedAt->copy()->addMinutes(30),
+            $status === 429 => $checkedAt->copy()->addMinutes(5),
+            $status >= 500 => $checkedAt->copy()->addMinutes(2),
             default => null,
         };
     }
@@ -271,7 +294,7 @@ class AiProviderRoutingService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -286,7 +309,7 @@ class AiProviderRoutingService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -309,7 +332,7 @@ class AiProviderRoutingService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -349,7 +372,7 @@ class AiProviderRoutingService
 
     private function cacheKey(string $provider): string
     {
-        return self::CACHE_PREFIX . $provider;
+        return self::CACHE_PREFIX.$provider;
     }
 
     private function dashboardSnapshot(string $provider): ?array
@@ -409,7 +432,7 @@ class AiProviderRoutingService
             return true;
         }
 
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return true;
         }
 

@@ -8,15 +8,16 @@ use Illuminate\Support\Str;
 
 class TaglineRewriterService
 {
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 60;
+
     private const TAGLINE_SOFT_MAX = 88;
+
     private const PRODUCT_PAGE_TAGLINE_SOFT_MAX = 120;
+
     private const TAGLINE_HARD_MAX = 140;
+
     private const PRODUCT_PAGE_TAGLINE_HARD_MAX = 160;
+
     private array $failures = [];
 
     public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?array
@@ -27,6 +28,7 @@ class TaglineRewriterService
         if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
+
             return null;
         }
 
@@ -86,13 +88,13 @@ PROMPT;
                     default => $this->generateWithGemini($candidate['key'], $prompt),
                 };
 
-                if (!is_string($content) || trim($content) === '') {
+                if (! is_string($content) || trim($content) === '') {
                     continue;
                 }
 
                 $decoded = $this->decodeJsonResponse($content);
 
-                if (!is_array($decoded) || !isset($decoded['tagline']) || !isset($decoded['product_page_tagline'])) {
+                if (! is_array($decoded) || ! isset($decoded['tagline']) || ! isset($decoded['product_page_tagline'])) {
                     continue;
                 }
 
@@ -104,6 +106,7 @@ PROMPT;
             }
         } catch (\Exception $e) {
             Log::warning('TaglineRewriterService: Exception', ['message' => $e->getMessage()]);
+
             return null;
         }
 
@@ -117,10 +120,13 @@ PROMPT;
 
     private function generateWithGemini(string $apiKey, string $prompt): ?string
     {
+        $model = (string) config('services.google.gemini_model', 'gemini-2.5-flash');
+        $baseUrl = rtrim((string) config('services.google.gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+
         $response = Http::withHeaders([
             'X-goog-api-key' => $apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout(self::TIMEOUT)->post(self::GEMINI_API_URL, [
+        ])->timeout(self::TIMEOUT)->post($baseUrl.'/models/'.$model.':generateContent', [
             'contents' => [
                 [
                     'parts' => [
@@ -149,10 +155,12 @@ PROMPT;
 
     private function generateWithGroq(string $apiKey, string $prompt): ?string
     {
+        $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
+
         $response = Http::timeout(self::TIMEOUT)
             ->withToken($apiKey)
-            ->post(self::GROQ_API_URL, [
-                'model' => self::MODEL,
+            ->post($baseUrl.'/chat/completions', [
+                'model' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
                 'messages' => [
                     [
                         'role' => 'user',
@@ -182,14 +190,16 @@ PROMPT;
 
     private function generateWithOpenRouter(string $apiKey, string $prompt): ?string
     {
+        $baseUrl = rtrim((string) config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
+
         $response = Http::timeout(self::TIMEOUT)
             ->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
                 'HTTP-Referer' => config('app.url'),
                 'X-OpenRouter-Title' => config('app.name'),
             ])
-            ->post(self::OPENROUTER_API_URL, [
-                'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+            ->post($baseUrl.'/chat/completions', [
+                'model' => (string) config('services.openrouter.model', 'openrouter/free'),
                 'messages' => [
                     [
                         'role' => 'user',
@@ -292,14 +302,14 @@ PROMPT;
             $text = Str::limit($text, $hardMax, '...');
         }
 
-        return trim(rtrim($text, " .!?,;:-"));
+        return trim(rtrim($text, ' .!?,;:-'));
     }
 
     private function dropPromotionalLeadIn(string $text): string
     {
         $sentences = preg_split('/(?<=[.!?])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
 
-        if (!is_array($sentences) || count($sentences) < 2) {
+        if (! is_array($sentences) || count($sentences) < 2) {
             return $text;
         }
 
