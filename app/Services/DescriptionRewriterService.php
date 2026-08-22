@@ -247,7 +247,8 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.55,
-                'max_tokens' => 1800,
+                'max_completion_tokens' => 4000,
+                'reasoning_format' => 'hidden',
             ]);
 
         if ($response->successful()) {
@@ -286,7 +287,10 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.55,
-                'max_tokens' => 1800,
+                'max_tokens' => 4000,
+                'reasoning' => [
+                    'exclude' => true,
+                ],
             ]);
 
         if ($response->successful()) {
@@ -319,6 +323,12 @@ PROMPT;
     {
         $content = trim($this->stripMarkdownFence($content));
 
+        $firstHtmlPosition = $this->firstHtmlPosition($content);
+
+        if ($firstHtmlPosition !== null && $firstHtmlPosition > 0) {
+            $content = substr($content, $firstHtmlPosition);
+        }
+
         if ($content === '') {
             return null;
         }
@@ -332,6 +342,16 @@ PROMPT;
         }
 
         return $this->normalizeLimitationsSection($content);
+    }
+
+    private function firstHtmlPosition(string $content): ?int
+    {
+        $positions = array_filter([
+            strpos($content, '<p>'),
+            strpos($content, '<h2>'),
+        ], static fn (int|false $position): bool => $position !== false);
+
+        return $positions === [] ? null : min($positions);
     }
 
     private function hasRequiredLongFormSections(string $content): bool
