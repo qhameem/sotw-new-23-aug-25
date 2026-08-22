@@ -4,7 +4,7 @@ use App\Services\AiProviderRoutingService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-test('gemini is the primary configured ai provider', function () {
+test('openrouter is followed by groq and gemini', function () {
     config([
         'services.google.api_key' => 'test-gemini-key',
         'services.groq.key' => 'test-groq-key',
@@ -17,9 +17,9 @@ test('gemini is the primary configured ai provider', function () {
         ->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']);
 
     expect(array_column($providers, 'provider'))->toBe([
-        'gemini',
-        'groq',
         'openrouter',
+        'groq',
+        'gemini',
     ]);
 });
 

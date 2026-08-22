@@ -145,9 +145,9 @@ class AiProviderRoutingService
     {
         $status = $this->effectiveStatus($provider);
         $score = match ($provider) {
-            'gemini' => 300,
-            'groq' => 250,
-            'openrouter' => 220,
+            'openrouter' => 3000,
+            'groq' => 2000,
+            'gemini' => 1000,
             default => 0,
         };
 
@@ -173,10 +173,6 @@ class AiProviderRoutingService
 
         if (isset($status['credit_remaining']) && is_numeric($status['credit_remaining'])) {
             $score += (float) $status['credit_remaining'] > 0 ? 35 : -200;
-        }
-
-        if ($provider === 'gemini' && ($status['state'] ?? null) !== 'limited') {
-            $score += 10;
         }
 
         return (int) round($score);

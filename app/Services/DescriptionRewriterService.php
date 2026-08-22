@@ -13,12 +13,10 @@ class DescriptionRewriterService
 {
     public const UNKNOWN_LIMITATION = 'Not clearly stated in the available source material.';
 
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-    private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const MODEL = 'llama-3.3-70b-versatile';
     private const TIMEOUT = 60;
+
     private array $failures = [];
+
     private bool $usedFallback = false;
 
     /**
@@ -42,6 +40,7 @@ class DescriptionRewriterService
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             $this->usedFallback = true;
+
             return $this->buildFallbackHtml($productName, $rawDescription, $context);
         }
 
@@ -53,7 +52,7 @@ class DescriptionRewriterService
                     default => $this->generateWithGemini($candidate['key'], $prompt),
                 };
 
-                if (!is_string($response) || trim($response) === '') {
+                if (! is_string($response) || trim($response) === '') {
                     continue;
                 }
 
@@ -67,10 +66,12 @@ class DescriptionRewriterService
             Log::warning('DescriptionRewriterService: Exception', ['message' => $e->getMessage()]);
             $this->recordFailure('system', null, $e->getMessage());
             $this->usedFallback = true;
+
             return $this->buildFallbackHtml($productName, $rawDescription, $context);
         }
 
         $this->usedFallback = true;
+
         return $this->buildFallbackHtml($productName, $rawDescription, $context);
     }
 
@@ -198,10 +199,13 @@ PROMPT;
 
     private function generateWithGemini(string $apiKey, string $prompt): ?string
     {
+        $model = (string) config('services.google.gemini_model', 'gemini-2.5-flash');
+        $baseUrl = rtrim((string) config('services.google.gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+
         $response = Http::withHeaders([
             'X-goog-api-key' => $apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout(self::TIMEOUT)->post(self::GEMINI_API_URL, [
+        ])->timeout(self::TIMEOUT)->post($baseUrl.'/models/'.$model.':generateContent', [
             'contents' => [
                 [
                     'parts' => [
@@ -230,10 +234,12 @@ PROMPT;
 
     private function generateWithGroq(string $apiKey, string $prompt): ?string
     {
+        $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
+
         $response = Http::timeout(self::TIMEOUT)
             ->withToken($apiKey)
-            ->post(self::GROQ_API_URL, [
-                'model' => self::MODEL,
+            ->post($baseUrl.'/chat/completions', [
+                'model' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
                 'messages' => [
                     [
                         'role' => 'user',
@@ -263,14 +269,16 @@ PROMPT;
 
     private function generateWithOpenRouter(string $apiKey, string $prompt): ?string
     {
+        $baseUrl = rtrim((string) config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
+
         $response = Http::timeout(self::TIMEOUT)
             ->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
                 'HTTP-Referer' => config('app.url'),
                 'X-OpenRouter-Title' => config('app.name'),
             ])
-            ->post(self::OPENROUTER_API_URL, [
-                'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
+            ->post($baseUrl.'/chat/completions', [
+                'model' => (string) config('services.openrouter.model', 'openrouter/free'),
                 'messages' => [
                     [
                         'role' => 'user',
@@ -315,11 +323,11 @@ PROMPT;
             return null;
         }
 
-        if (!str_contains($content, '<p>') && !str_contains($content, '<h2>')) {
+        if (! str_contains($content, '<p>') && ! str_contains($content, '<h2>')) {
             return null;
         }
 
-        if (!$this->hasRequiredLongFormSections($content)) {
+        if (! $this->hasRequiredLongFormSections($content)) {
             return null;
         }
 
@@ -340,7 +348,7 @@ PROMPT;
         ];
 
         foreach ($requiredFragments as $fragment) {
-            if (!str_contains($content, $fragment)) {
+            if (! str_contains($content, $fragment)) {
                 return false;
             }
         }
@@ -348,7 +356,7 @@ PROMPT;
         $hasProsSection = str_contains($content, '<h2><strong>What are the pros and limitations of ')
             || str_contains($content, '<h2><strong>What are the pros of ');
 
-        if (!$hasProsSection) {
+        if (! $hasProsSection) {
             return false;
         }
 
@@ -378,49 +386,49 @@ PROMPT;
     private function normalizeLimitationsSection(string $content): string
     {
         $document = new DOMDocument('1.0', 'UTF-8');
-        $wrappedHtml = '<!DOCTYPE html><html><body><div id="editorial-root">' . $content . '</div></body></html>';
+        $wrappedHtml = '<!DOCTYPE html><html><body><div id="editorial-root">'.$content.'</div></body></html>';
 
         libxml_use_internal_errors(true);
-        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?>' . $wrappedHtml, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?>'.$wrappedHtml, LIBXML_NOERROR | LIBXML_NOWARNING);
         libxml_clear_errors();
 
-        if (!$loaded) {
+        if (! $loaded) {
             return $content;
         }
 
         $xpath = new DOMXPath($document);
         $root = $xpath->query("//*[@id='editorial-root']")->item(0);
 
-        if (!$root instanceof DOMElement) {
+        if (! $root instanceof DOMElement) {
             return $content;
         }
 
         foreach ($root->childNodes as $node) {
-            if (!$node instanceof DOMElement || strtolower($node->tagName) !== 'h2') {
+            if (! $node instanceof DOMElement || strtolower($node->tagName) !== 'h2') {
                 continue;
             }
 
-            if (!str_contains(Str::lower($this->cleanPlainText($node->textContent)), 'pros and limitations')) {
+            if (! str_contains(Str::lower($this->cleanPlainText($node->textContent)), 'pros and limitations')) {
                 continue;
             }
 
             $listNode = $this->nextElementSibling($node);
 
-            if (!$listNode instanceof DOMElement || !in_array(strtolower($listNode->tagName), ['ul', 'ol'], true)) {
+            if (! $listNode instanceof DOMElement || ! in_array(strtolower($listNode->tagName), ['ul', 'ol'], true)) {
                 continue;
             }
 
             $hasSupportedLimitation = false;
 
             foreach (iterator_to_array($listNode->childNodes) as $childNode) {
-                if (!$childNode instanceof DOMElement || strtolower($childNode->tagName) !== 'li') {
+                if (! $childNode instanceof DOMElement || strtolower($childNode->tagName) !== 'li') {
                     continue;
                 }
 
                 $itemText = $this->cleanPlainText($childNode->textContent);
                 $normalizedText = Str::lower($itemText);
 
-                if (!str_starts_with($normalizedText, 'limitations:')) {
+                if (! str_starts_with($normalizedText, 'limitations:')) {
                     continue;
                 }
 
@@ -428,13 +436,14 @@ PROMPT;
 
                 if (self::isUnknownLimitationText($itemText) || self::isUnknownLimitationText($limitationText)) {
                     $listNode->removeChild($childNode);
+
                     continue;
                 }
 
                 $hasSupportedLimitation = true;
             }
 
-            if (!$hasSupportedLimitation) {
+            if (! $hasSupportedLimitation) {
                 $this->rewriteProsHeadingWithoutLimitations($node);
             }
         }
@@ -452,32 +461,21 @@ PROMPT;
         $features = $this->buildFallbackFeatures($headingCandidates, $bodySentences);
         $idealFor = $this->buildFallbackIdealFor($context);
         $useCases = $this->buildFallbackUseCases($headingCandidates, $bodySentences);
-        $alternatives = [
-            'The available source material focuses on this product\'s own workflow rather than direct competitor comparisons.',
-            'Use the product\'s planning, building, and execution flow as the main point of comparison.',
-        ];
-        $integrations = [$this->buildFallbackIntegrationLine($context)];
+        $integrations = $this->buildFallbackIntegrations($context);
         $prosLine = implode('; ', array_slice($features, 0, 3));
         $faq = $this->buildFallbackFaq($productName, $summary, $idealFor);
 
         return implode("\n", [
-            '<p><strong>' . e($summary) . '</strong></p>',
-            '<p>' . e($supporting) . '</p>',
-            '<h2><strong>What is ' . e($productName) . '?</strong></h2>',
-            '<p>' . e($whatIs) . '</p>',
-            '<h2><strong>What are the key features of ' . e($productName) . '?</strong></h2>',
-            $this->renderList($features),
-            '<h2><strong>Who is ' . e($productName) . ' best for?</strong></h2>',
-            $this->renderList($idealFor),
-            '<h2><strong>What can you use ' . e($productName) . ' for?</strong></h2>',
-            $this->renderList($useCases),
-            '<h2><strong>How does ' . e($productName) . ' compare to alternatives?</strong></h2>',
-            $this->renderList($alternatives),
-            '<h2><strong>What integrations and ecosystem support does ' . e($productName) . ' offer?</strong></h2>',
-            $this->renderList($integrations),
-            '<h2><strong>What are the pros of ' . e($productName) . '?</strong></h2>',
-            '<ul><li><strong>Pros:</strong> ' . e($prosLine) . '</li></ul>',
-            '<h2><strong>Frequently asked questions about ' . e($productName) . '</strong></h2>',
+            '<p><strong>'.e($summary).'</strong></p>',
+            ...($supporting !== '' ? ['<p>'.e($supporting).'</p>'] : []),
+            '<h2><strong>What is '.e($productName).'?</strong></h2>',
+            '<p>'.e($whatIs).'</p>',
+            ...($features !== [] ? ['<h2><strong>What are the key features of '.e($productName).'?</strong></h2>', $this->renderList($features)] : []),
+            ...($idealFor !== [] ? ['<h2><strong>Who is '.e($productName).' best for?</strong></h2>', $this->renderList($idealFor)] : []),
+            ...($useCases !== [] ? ['<h2><strong>What can you use '.e($productName).' for?</strong></h2>', $this->renderList($useCases)] : []),
+            ...($integrations !== [] ? ['<h2><strong>What integrations and ecosystem support does '.e($productName).' offer?</strong></h2>', $this->renderList($integrations)] : []),
+            ...($prosLine !== '' ? ['<h2><strong>What are the pros of '.e($productName).'?</strong></h2>', '<ul><li>'.e($prosLine).'</li></ul>'] : []),
+            '<h2><strong>Frequently asked questions about '.e($productName).'</strong></h2>',
             $this->renderFaq($faq),
         ]);
     }
@@ -486,21 +484,26 @@ PROMPT;
     {
         $lead = $summary;
 
-        if ($productName !== 'this product' && !Str::contains(Str::lower($lead), Str::lower($productName))) {
-            $lead = $productName . ' helps users ' . Str::lcfirst(rtrim($lead, '.')) . '.';
+        if ($productName !== 'this product' && ! Str::contains(Str::lower($lead), Str::lower($productName))) {
+            $lead = $productName.' helps users '.Str::lcfirst(rtrim($lead, '.')).'.';
         }
 
-        $lead = rtrim($lead, '. ') . '.';
+        $lead = rtrim($lead, '. ').'.';
 
         $second = $bodySentences[0] ?? $supporting;
         $second = $this->ensureSentenceLength($second, 180);
-        $second = rtrim($second, '. ') . '.';
+
+        if ($second === '') {
+            return $lead;
+        }
+
+        $second = rtrim($second, '. ').'.';
 
         if (Str::lower($second) === Str::lower($lead)) {
             $second = 'It is positioned around a practical workflow, with the available source material emphasizing how the product is used in day-to-day work.';
         }
 
-        return $lead . ' ' . $second;
+        return $lead.' '.$second;
     }
 
     private function buildFallbackSummary(string $productName, string $rawDescription): string
@@ -508,11 +511,13 @@ PROMPT;
         $summary = $this->cleanPlainText($rawDescription);
 
         if ($summary === '') {
-            return $productName . ' helps people plan, build, and manage work more clearly.';
+            return $productName.' helps people plan, build, and manage work more clearly.';
         }
 
-        if ($productName !== 'this product' && !Str::contains(Str::lower($summary), Str::lower($productName))) {
-            $summary = $productName . ' helps users ' . Str::lcfirst(rtrim($summary, '.')) . '.';
+        if ($productName !== 'this product' && ! Str::contains(Str::lower($summary), Str::lower($productName))) {
+            $summary = preg_match('/^(?:a|an|the)\s+/i', $summary)
+                ? $productName.' is '.Str::lcfirst(rtrim($summary, '.')).'.'
+                : $productName.' helps you '.Str::lcfirst(rtrim($summary, '.')).'.';
         }
 
         return $this->ensureSentenceLength($summary, 260);
@@ -523,27 +528,17 @@ PROMPT;
         $sentences = $this->extractBodySentences($context);
 
         foreach ($sentences as $sentence) {
-            if ($sentence !== '' && !str_contains(Str::lower($sentence), Str::lower($this->cleanPlainText($rawDescription)))) {
+            if ($sentence !== '' && ! str_contains(Str::lower($sentence), Str::lower($this->cleanPlainText($rawDescription)))) {
                 return $this->ensureSentenceLength($sentence, 220);
             }
         }
 
-        return 'The available source material highlights the core workflow and positioning, even when deeper editorial details are limited.';
+        return '';
     }
 
     private function buildFallbackFeatures(array $headingCandidates, array $bodySentences): array
     {
         $features = array_slice(array_values(array_unique(array_merge($headingCandidates, $bodySentences))), 0, 5);
-
-        while (count($features) < 5) {
-            $features[] = match (count($features)) {
-                0 => 'Supports a structured workflow instead of leaving each step to ad hoc prompting.',
-                1 => 'Keeps core project information in one place so planning and execution stay connected.',
-                2 => 'Helps teams move from ideas to delivery with clearer context and less repetition.',
-                3 => 'Surfaces practical planning or execution steps instead of abstract product messaging.',
-                default => 'Turns the available source material into a more actionable overview of how the product works.',
-            };
-        }
 
         return array_slice($features, 0, 5);
     }
@@ -569,14 +564,6 @@ PROMPT;
             }
         }
 
-        if ($candidates === []) {
-            $candidates = [
-                'Builders who want more structure around AI-assisted product work.',
-                'Teams planning and executing software projects with shared context.',
-                'Operators who need planning, execution, and tracking to stay connected.',
-            ];
-        }
-
         return array_slice(array_values(array_unique($candidates)), 0, 3);
     }
 
@@ -590,18 +577,10 @@ PROMPT;
             }
         }
 
-        if ($candidates === []) {
-            $candidates = [
-                'Planning software work with clearer tasks, scope, and delivery context.',
-                'Executing multi-step project work without losing track of earlier decisions.',
-                'Tracking delivery progress while keeping planning and implementation aligned.',
-            ];
-        }
-
         return array_slice(array_values(array_unique($candidates)), 0, 3);
     }
 
-    private function buildFallbackIntegrationLine(string $context): string
+    private function buildFallbackIntegrations(string $context): array
     {
         $matches = [];
 
@@ -612,24 +591,29 @@ PROMPT;
         }
 
         if ($matches === []) {
-            return 'The available source material does not clearly specify integrations or ecosystem details.';
+            return [];
         }
 
-        return 'The source material references ecosystem or integration signals including ' . implode(', ', array_slice($matches, 0, 6)) . '.';
+        return ['Integrations mentioned by the product include '.implode(', ', array_slice($matches, 0, 6)).'.'];
     }
 
     private function buildFallbackFaq(string $productName, string $summary, array $idealFor): array
     {
-        return [
+        $items = [
             [
-                'question' => 'What does ' . $productName . ' help you do?',
+                'question' => 'What does '.$productName.' help you do?',
                 'answer' => $summary,
             ],
-            [
-                'question' => 'Who is ' . $productName . ' best for?',
-                'answer' => implode(' ', array_slice($idealFor, 0, 2)),
-            ],
         ];
+
+        if ($idealFor !== []) {
+            $items[] = [
+                'question' => 'Who is '.$productName.' best for?',
+                'answer' => implode(' ', array_slice($idealFor, 0, 2)),
+            ];
+        }
+
+        return $items;
     }
 
     private function extractHeadingCandidates(string $context): array
@@ -693,6 +677,10 @@ PROMPT;
             return true;
         }
 
+        if (preg_match('/\bnewmanage\b|claudeautomate|chatgpt and claudeautomate/u', $normalized)) {
+            return true;
+        }
+
         return in_array($normalized, [
             'platform',
             'agile',
@@ -739,10 +727,10 @@ PROMPT;
         $html = '<ul>';
 
         foreach ($items as $item) {
-            $html .= '<li>' . e($item) . '</li>';
+            $html .= '<li>'.e($item).'</li>';
         }
 
-        return $html . '</ul>';
+        return $html.'</ul>';
     }
 
     private function renderFaq(array $items): string
@@ -750,11 +738,11 @@ PROMPT;
         $html = '<dl>';
 
         foreach ($items as $item) {
-            $html .= '<dt><strong>' . e($item['question']) . '</strong></dt>';
-            $html .= '<dd>' . e($item['answer']) . '</dd>';
+            $html .= '<dt><strong>'.e($item['question']).'</strong></dt>';
+            $html .= '<dd>'.e($item['answer']).'</dd>';
         }
 
-        return $html . '</dl>';
+        return $html.'</dl>';
     }
 
     private function stripMarkdownFence(string $content): string
@@ -792,13 +780,14 @@ PROMPT;
             $this->cleanPlainText($headingNode->textContent)
         );
 
-        if (!is_string($updatedHeading) || $updatedHeading === '') {
+        if (! is_string($updatedHeading) || $updatedHeading === '') {
             return;
         }
 
         foreach ($headingNode->childNodes as $childNode) {
             if ($childNode instanceof DOMElement && strtolower($childNode->tagName) === 'strong') {
                 $childNode->nodeValue = $updatedHeading;
+
                 return;
             }
         }
