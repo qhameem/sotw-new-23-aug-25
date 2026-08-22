@@ -11,15 +11,10 @@ use Illuminate\Support\Str;
 class AiProviderStatusService
 {
     private const CACHE_KEY = 'admin_ai_provider_status_v1';
+
     private const CACHE_TTL_MINUTES = 10;
 
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-    private const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
-    private const GEMINI_MODEL = 'gemini-2.5-flash';
     private const OPENROUTER_KEY_API_URL = 'https://openrouter.ai/api/v1/key';
-    private const OPENROUTER_MODEL = 'openrouter/auto';
 
     public function latestSnapshots(): array
     {
@@ -53,7 +48,7 @@ class AiProviderStatusService
                 provider: 'groq',
                 label: 'Groq',
                 configured: filled((string) config('services.groq.key')),
-                model: self::GROQ_MODEL,
+                model: (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
                 docsUrl: 'https://console.groq.com/docs/rate-limits',
                 dashboardUrl: 'https://console.groq.com/settings/limits'
             ),
@@ -61,7 +56,7 @@ class AiProviderStatusService
                 provider: 'gemini',
                 label: 'Gemini',
                 configured: filled((string) config('services.google.api_key')),
-                model: self::GEMINI_MODEL,
+                model: (string) config('services.google.gemini_model', 'gemini-2.5-flash'),
                 docsUrl: 'https://ai.google.dev/gemini-api/docs/rate-limits',
                 dashboardUrl: 'https://aistudio.google.com/'
             ),
@@ -69,7 +64,7 @@ class AiProviderStatusService
                 provider: 'openrouter',
                 label: 'OpenRouter',
                 configured: filled((string) config('services.openrouter.key')),
-                model: (string) config('services.openrouter.model', self::OPENROUTER_MODEL),
+                model: (string) config('services.openrouter.model', 'openrouter/free'),
                 docsUrl: 'https://openrouter.ai/docs/api-reference/limits/',
                 dashboardUrl: 'https://openrouter.ai/settings/keys'
             ),
@@ -131,16 +126,18 @@ class AiProviderStatusService
     private function probeGroq(): array
     {
         $apiKey = (string) config('services.groq.key');
+        $model = (string) config('services.groq.model', 'llama-3.3-70b-versatile');
+        $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
         $snapshot = $this->baseSnapshot(
             provider: 'groq',
             label: 'Groq',
             configured: filled($apiKey),
-            model: self::GROQ_MODEL,
+            model: $model,
             docsUrl: 'https://console.groq.com/docs/rate-limits',
             dashboardUrl: 'https://console.groq.com/settings/limits'
         );
 
-        if (!$snapshot['configured']) {
+        if (! $snapshot['configured']) {
             return $snapshot;
         }
 
@@ -149,8 +146,8 @@ class AiProviderStatusService
         try {
             $response = Http::timeout(20)
                 ->withToken($apiKey)
-                ->post(self::GROQ_API_URL, [
-                    'model' => self::GROQ_MODEL,
+                ->post($baseUrl.'/chat/completions', [
+                    'model' => $model,
                     'messages' => [
                         [
                             'role' => 'user',
@@ -179,6 +176,7 @@ class AiProviderStatusService
                 $snapshot['state'] = 'ok';
                 $snapshot['status_label'] = 'Available now';
                 $snapshot['message'] = 'Live headers were fetched successfully.';
+
                 return $snapshot;
             }
 
@@ -187,12 +185,14 @@ class AiProviderStatusService
                 $snapshot['status_label'] = 'Rate limited or quota exhausted';
                 $snapshot['message'] = $this->extractMessageFromBody($response->body())
                     ?: 'Groq is currently rate limited for this key.';
+
                 return $snapshot;
             }
 
             $snapshot['state'] = 'error';
             $snapshot['status_label'] = 'Request failed';
-            $snapshot['message'] = 'Groq returned HTTP ' . $response->status() . '.';
+            $snapshot['message'] = 'Groq returned HTTP '.$response->status().'.';
+
             return $snapshot;
         } catch (\Throwable $e) {
             $snapshot['checked_at'] = $checkedAt->toIso8601String();
@@ -207,16 +207,18 @@ class AiProviderStatusService
     private function probeGemini(): array
     {
         $apiKey = (string) config('services.google.api_key');
+        $model = (string) config('services.google.gemini_model', 'gemini-2.5-flash');
+        $baseUrl = rtrim((string) config('services.google.gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/');
         $snapshot = $this->baseSnapshot(
             provider: 'gemini',
             label: 'Gemini',
             configured: filled($apiKey),
-            model: self::GEMINI_MODEL,
+            model: $model,
             docsUrl: 'https://ai.google.dev/gemini-api/docs/rate-limits',
             dashboardUrl: 'https://aistudio.google.com/'
         );
 
-        if (!$snapshot['configured']) {
+        if (! $snapshot['configured']) {
             return $snapshot;
         }
 
@@ -227,7 +229,7 @@ class AiProviderStatusService
             $response = Http::withHeaders([
                 'X-goog-api-key' => $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(20)->post(self::GEMINI_API_URL, [
+            ])->timeout(20)->post($baseUrl.'/models/'.$model.':generateContent', [
                 'contents' => [
                     [
                         'parts' => [
@@ -250,6 +252,7 @@ class AiProviderStatusService
                 $snapshot['state'] = 'ok';
                 $snapshot['status_label'] = 'Available now';
                 $snapshot['message'] = 'Probe succeeded. Gemini does not expose exact live remaining quota here, so use AI Studio for exact counters.';
+
                 return $snapshot;
             }
 
@@ -258,12 +261,14 @@ class AiProviderStatusService
                 $snapshot['status_label'] = 'Rate limited or quota exhausted';
                 $snapshot['message'] = $this->extractMessageFromBody($response->body())
                     ?: 'Gemini is currently rate limited for this project.';
+
                 return $snapshot;
             }
 
             $snapshot['state'] = 'error';
             $snapshot['status_label'] = 'Request failed';
-            $snapshot['message'] = 'Gemini returned HTTP ' . $response->status() . '.';
+            $snapshot['message'] = 'Gemini returned HTTP '.$response->status().'.';
+
             return $snapshot;
         } catch (\Throwable $e) {
             $snapshot['checked_at'] = $checkedAt->toIso8601String();
@@ -283,12 +288,12 @@ class AiProviderStatusService
             provider: 'openrouter',
             label: 'OpenRouter',
             configured: filled($apiKey),
-            model: (string) config('services.openrouter.model', self::OPENROUTER_MODEL),
+            model: (string) config('services.openrouter.model', 'openrouter/free'),
             docsUrl: 'https://openrouter.ai/docs/api-reference/limits/',
             dashboardUrl: 'https://openrouter.ai/settings/keys'
         );
 
-        if (!$snapshot['configured']) {
+        if (! $snapshot['configured']) {
             return $snapshot;
         }
 
@@ -296,7 +301,7 @@ class AiProviderStatusService
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
                 'HTTP-Referer' => config('app.url'),
                 'X-OpenRouter-Title' => config('app.name'),
             ])->timeout(20)->get(self::OPENROUTER_KEY_API_URL);
@@ -332,7 +337,7 @@ class AiProviderStatusService
 
             $snapshot['state'] = 'error';
             $snapshot['status_label'] = 'Request failed';
-            $snapshot['message'] = 'OpenRouter returned HTTP ' . $response->status() . '.';
+            $snapshot['message'] = 'OpenRouter returned HTTP '.$response->status().'.';
 
             return $snapshot;
         } catch (\Throwable $e) {
@@ -351,7 +356,7 @@ class AiProviderStatusService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -366,7 +371,7 @@ class AiProviderStatusService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -381,7 +386,7 @@ class AiProviderStatusService
             $value = $value[0] ?? null;
         }
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -456,7 +461,7 @@ class AiProviderStatusService
 
     private function openRouterLimitResetAt(?string $resetType): ?Carbon
     {
-        if (!is_string($resetType) || trim($resetType) === '') {
+        if (! is_string($resetType) || trim($resetType) === '') {
             return null;
         }
 
@@ -475,7 +480,7 @@ class AiProviderStatusService
             $enabled = $this->providerEnabled($provider);
             $snapshot['enabled'] = $enabled;
 
-            if (!$enabled) {
+            if (! $enabled) {
                 $snapshot['notes'] = array_values(array_unique(array_merge(
                     ['This provider is disabled in admin settings and will not be used for new AI requests.'],
                     is_array($snapshot['notes'] ?? null) ? $snapshot['notes'] : []
@@ -492,7 +497,7 @@ class AiProviderStatusService
             return true;
         }
 
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return true;
         }
 
