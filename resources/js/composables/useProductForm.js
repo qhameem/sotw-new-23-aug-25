@@ -1965,25 +1965,69 @@ export function useProductForm() {
   const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, additionalResources = '', onProgress = null }) => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-    const response = await fetch('/api/process-url-stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, application/x-ndjson',
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
-      },
-      body: JSON.stringify({
-        url,
-        name,
-        tagline,
-        fetch_content: fetchContent,
-        additional_resources: additionalResources,
-      })
-    });
+    const requestPayload = {
+      url,
+      name,
+      tagline,
+      fetch_content: fetchContent,
+      additional_resources: additionalResources,
+    };
+
+    const requestWithoutStreaming = async () => {
+      const fallbackResponse = await fetch('/api/process-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (!fallbackResponse.ok) {
+        throw new Error(`Fallback HTTP error! status: ${fallbackResponse.status}`);
+      }
+
+      const fallbackData = await fallbackResponse.json();
+      if (fallbackData?.error) {
+        throw new Error(fallbackData.error);
+      }
+
+      onProgress?.({
+        message: 'Detailed analysis complete.',
+        progress: 100,
+        data: fallbackData,
+      });
+
+      return fallbackData;
+    };
+
+    let response;
+    try {
+      response = await fetch('/api/process-url-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, application/x-ndjson',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+        },
+        body: JSON.stringify(requestPayload)
+      });
+    } catch (streamError) {
+      console.warn('Streaming autofill request failed; retrying without streaming.', streamError);
+      return requestWithoutStreaming();
+    }
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.warn(`Streaming autofill returned HTTP ${response.status}; retrying without streaming.`);
+      return requestWithoutStreaming();
+    }
+
+    if (!response.body || typeof response.body.getReader !== 'function') {
+      console.warn('Streaming response is unsupported; retrying without streaming.');
+      return requestWithoutStreaming();
     }
 
     const reader = response.body.getReader();
@@ -1991,33 +2035,38 @@ export function useProductForm() {
     let buffer = '';
     let finalData = {};
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
 
-      for (const line of lines) {
-        if (!line.trim()) {
-          continue;
-        }
-
-        try {
-          const streamData = JSON.parse(line);
-
-          if (streamData.data) {
-            finalData = { ...finalData, ...streamData.data };
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
           }
 
-          if (onProgress) {
-            onProgress(streamData);
+          try {
+            const streamData = JSON.parse(line);
+
+            if (streamData.data) {
+              finalData = { ...finalData, ...streamData.data };
+            }
+
+            if (onProgress) {
+              onProgress(streamData);
+            }
+          } catch (error) {
+            console.error('Error parsing stream chunk', error, line);
           }
-        } catch (error) {
-          console.error('Error parsing stream chunk', error, line);
         }
       }
+    } catch (streamError) {
+      console.warn('Autofill stream was interrupted; retrying without streaming.', streamError);
+      return requestWithoutStreaming();
     }
 
     if (buffer.trim()) {
