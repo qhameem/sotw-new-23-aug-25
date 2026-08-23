@@ -89,6 +89,10 @@ class DescriptionRewriterService
 
     private function buildPrompt(string $productName, string $rawDescription, string $context, ?string $adminInstruction = null): string
     {
+        if (filled($adminInstruction)) {
+            return $this->buildCustomPrompt($productName, $rawDescription, $context, $adminInstruction);
+        }
+
         $prompt = <<<PROMPT
 You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
 
@@ -198,13 +202,28 @@ STYLE CHECK BEFORE YOU RESPOND:
 - Do the FAQ items sound like real questions and not filler?
 PROMPT;
 
-        if (filled($adminInstruction)) {
-            $prompt .= "\n\nADMIN DESCRIPTION INSTRUCTION (highest priority):\n{$adminInstruction}\n"
-                ."Follow this instruction even when it changes the length, style, sections, or structure requested above. "
-                ."Still return only safe HTML and keep every factual claim grounded in the supplied source material.";
-        }
-
         return $prompt;
+    }
+
+    private function buildCustomPrompt(string $productName, string $rawDescription, string $context, string $adminInstruction): string
+    {
+        return <<<PROMPT
+Write or rewrite the product description for "{$productName}".
+
+ADMIN INSTRUCTION:
+{$adminInstruction}
+
+SOURCE MATERIAL:
+Raw information: "{$rawDescription}"
+Additional context: "{$context}"
+
+REQUIREMENTS:
+- Follow the admin instruction exactly, including its requested length, style, sections, and structure.
+- Use only facts supported by the source material. Do not invent claims, limitations, integrations, audiences, or comparisons.
+- Write naturally in plain English without hype or unsupported superlatives.
+- Return only clean HTML suitable for a rich-text product description. Use simple elements such as <p>, <h2>, <ul>, <ol>, <li>, <strong>, and <em> only when the admin instruction needs them.
+- Do not return Markdown, code fences, labels, commentary, or sections not requested by the admin instruction.
+PROMPT;
     }
 
     private function generateWithGemini(string $apiKey, string $prompt): ?string

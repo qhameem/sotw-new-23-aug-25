@@ -64,6 +64,23 @@ class AdminProductDescriptionTemplateTest extends TestCase
         $this->assertNull($method->invoke(new DescriptionRewriterService(), $html, false));
     }
 
+    public function test_custom_prompt_does_not_include_the_default_mandatory_sections(): void
+    {
+        $method = new \ReflectionMethod(DescriptionRewriterService::class, 'buildPrompt');
+        $prompt = $method->invoke(
+            new DescriptionRewriterService(),
+            'Crowdreply',
+            'AI search visibility platform.',
+            'Tracks brand citations.',
+            'Write only a concise overview in one or two paragraphs.'
+        );
+
+        $this->assertStringContainsString('Write only a concise overview in one or two paragraphs.', $prompt);
+        $this->assertStringContainsString('Do not return', $prompt);
+        $this->assertStringNotContainsString('What are the key features of', $prompt);
+        $this->assertStringNotContainsString('Frequently asked questions about', $prompt);
+    }
+
     private function createAdmin(): User
     {
         Role::firstOrCreate(['name' => 'admin']);

@@ -17,10 +17,20 @@ class ProductDescriptionTemplates
             return null;
         }
 
-        return ProductDescriptionTemplate::query()
+        $template = ProductDescriptionTemplate::query()
             ->where('is_active', true)
             ->latest('updated_at')
-            ->value('instruction');
+            ->first(['name', 'instruction']);
+
+        if (! $template) {
+            return null;
+        }
+
+        if ($template->name === self::DEFAULT_NAME && $template->instruction === self::DEFAULT_INSTRUCTION) {
+            return null;
+        }
+
+        return $template->instruction;
     }
 
     public function ensureDefaultExists(): void
