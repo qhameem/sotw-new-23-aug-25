@@ -8,6 +8,7 @@ use DOMXPath;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Support\ProductDescriptionTemplates;
 
 class DescriptionRewriterService
 {
@@ -34,7 +35,8 @@ class DescriptionRewriterService
         }
 
         $context = mb_substr(strip_tags($pageTextContext), 0, 8000);
-        $prompt = $this->buildPrompt($productName, $rawDescription, $context);
+        $adminInstruction = app(ProductDescriptionTemplates::class)->activeInstruction();
+        $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction);
 
         if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
@@ -56,7 +58,7 @@ class DescriptionRewriterService
                     continue;
                 }
 
-                $cleaned = $this->cleanHtmlResponse($response);
+                $cleaned = $this->cleanHtmlResponse($response, filled($adminInstruction));
 
                 if ($cleaned !== null) {
                     return $cleaned;
@@ -85,9 +87,9 @@ class DescriptionRewriterService
         return $this->usedFallback;
     }
 
-    private function buildPrompt(string $productName, string $rawDescription, string $context): string
+    private function buildPrompt(string $productName, string $rawDescription, string $context, ?string $adminInstruction = null): string
     {
-        return <<<PROMPT
+        $prompt = <<<PROMPT
 You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
 
 Raw information: "{$rawDescription}"
@@ -195,6 +197,14 @@ STYLE CHECK BEFORE YOU RESPOND:
 - Does it feel fuller and more informative than a short summary?
 - Do the FAQ items sound like real questions and not filler?
 PROMPT;
+
+        if (filled($adminInstruction)) {
+            $prompt .= "\n\nADMIN DESCRIPTION INSTRUCTION (highest priority):\n{$adminInstruction}\n"
+                ."Follow this instruction even when it changes the length, style, sections, or structure requested above. "
+                ."Still return only safe HTML and keep every factual claim grounded in the supplied source material.";
+        }
+
+        return $prompt;
     }
 
     private function generateWithGemini(string $apiKey, string $prompt): ?string
@@ -319,7 +329,7 @@ PROMPT;
         ];
     }
 
-    private function cleanHtmlResponse(string $content): ?string
+    private function cleanHtmlResponse(string $content, bool $allowsCustomStructure = false): ?string
     {
         $content = trim($this->stripMarkdownFence($content));
 
@@ -337,7 +347,7 @@ PROMPT;
             return null;
         }
 
-        if (! $this->hasRequiredLongFormSections($content)) {
+        if (! $allowsCustomStructure && ! $this->hasRequiredLongFormSections($content)) {
             return null;
         }
 

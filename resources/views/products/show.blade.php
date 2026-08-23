@@ -236,18 +236,6 @@
                     </div>
                 @endif
 
-                @if(!empty($productEditorial['summary']) || !empty($productEditorial['headline']))
-                    <section aria-labelledby="decision-summary-heading" class="mt-6 rounded-xl border border-primary-100 bg-primary-50/60 p-5">
-                        <p id="decision-summary-heading" class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Decision summary</p>
-                        @if(!empty($productEditorial['headline']))
-                            <h2 class="mt-2 text-lg font-semibold text-gray-900">{{ $productEditorial['headline'] }}</h2>
-                        @endif
-                        @if(!empty($productEditorial['summary']))
-                            <p class="mt-2 text-sm leading-6 text-gray-700">{{ $productEditorial['summary'] }}</p>
-                        @endif
-                    </section>
-                @endif
-
                 <div class="mt-8">
                     @include('products.partials._section-nav', ['sectionNavItems' => $sectionNavItems])
                 </div>

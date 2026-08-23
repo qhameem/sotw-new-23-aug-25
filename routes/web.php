@@ -214,6 +214,8 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
 
     // Admin Settings Routes (should be direct children of admin group)
     Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+    Route::get('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'index'])->name('settings.product-description-templates.index');
+    Route::post('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'store'])->name('settings.product-description-templates.store');
     Route::post('settings/export-database', [\App\Http\Controllers\Admin\SettingsController::class, 'exportDatabase'])->name('settings.exportDatabase');
     Route::post('settings/store-analytics', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAnalyticsCode'])->name('settings.storeAnalyticsCode');
     Route::post('settings/send-test-email', [\App\Http\Controllers\Admin\SettingsController::class, 'sendTestEmail'])->name('settings.sendTestEmail');
