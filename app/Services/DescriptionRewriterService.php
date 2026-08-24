@@ -21,7 +21,7 @@ class DescriptionRewriterService
     private bool $usedFallback = false;
 
     /**
-     * Rewrite a raw product description into a long-form editorial HTML block.
+     * Rewrite raw product information into a concise overview-only HTML block.
      */
     public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?string
     {
@@ -58,7 +58,7 @@ class DescriptionRewriterService
                     continue;
                 }
 
-                $cleaned = $this->cleanHtmlResponse($response, filled($adminInstruction));
+                $cleaned = $this->cleanHtmlResponse($response);
 
                 if ($cleaned !== null) {
                     return $cleaned;
@@ -94,112 +94,18 @@ class DescriptionRewriterService
         }
 
         $prompt = <<<PROMPT
-You are an experienced human writer with 20+ years of experience. Write naturally, clearly, and convincingly. Your job is to write or rewrite the product description for "{$productName}" so it feels genuinely human-written, useful, easy to trust, and easy for AI search engines to extract accurately.
+Write a concise overview for "{$productName}" using only the source material.
 
 Raw information: "{$rawDescription}"
-
 Additional context: "{$context}"
 
-OBJECTIVE:
-- Make the description feel complete, useful, and editorial rather than compressed.
-- Explain what the product does, why it matters, who it helps, and how it fits into a workflow.
-- Write enough detail to produce a rich long-form description with multiple clear sections.
-- Make the page easy for AI systems to cite when a user asks a narrow, real-world question.
-- Lead with the concrete task, problem, or outcome the product solves instead of broad category language.
-- Keep claims grounded in the source material. If some details are unclear, stay conservative instead of inventing facts.
-
-HUMAN WRITING RULES:
-- Write like a real person explaining a product to another person.
-- Use plain English, natural phrasing, and varied sentence lengths.
-- Avoid robotic filler, generic hype, and repeated claims.
-- Avoid clichés like "game-changing", "revolutionary", "cutting-edge", or "seamless".
-- Avoid unsupported superlatives like "best", "#1", "leading", "most popular", or "world-class" unless the source explicitly supports them and they are central to understanding the product.
-- Prefer specific, checkable details such as supported platforms, file types, integrations, workflows, pricing hooks, or audience fit when the source provides them.
-- If the source is vague, rewrite it into plain, concrete language or leave it out.
-- Do not make future-looking claims, roadmap statements, or expansion guesses unless the source clearly says them.
-- Do not pad audience or use-case lists with vague filler such as "business users", "professionals", or "individuals" unless the source actually supports those labels.
-- Every section should include product-specific information that would sound wrong if pasted onto another tool.
-- If a section has limited source support, keep it brief but still useful.
-
-AEO / STRUCTURE RULES:
-- Preserve the exact HTML structure, section order, headings, and list types shown below.
-- Do not add, remove, rename, merge, or reorder sections.
-- Return ONLY HTML. No markdown fences, no labels, no explanations.
-- Keep the first two lines as exactly two separate <p> paragraphs.
-- Mention "{$productName}" naturally in the opening paragraph.
-- Make the opening read like a direct answer to a likely user query.
-- Front-load the most concrete nouns and verbs. If the source supports them, mention the object, platform, file type, workflow, or audience in the first two paragraphs.
-- Keep each bullet concise, concrete, and focused on user value.
-- Write bullets so each one can stand on its own as a quotable fact.
-- Do not pad sections to hit an arbitrary bullet count. If the source only strongly supports 2 items, return 2 strong items instead of 3 weak ones.
-- Use question-based headings so the description reads more like direct answers than a generic editorial page.
-- Favor narrow, user-phrased questions in the FAQ, especially about platform support, setup, pricing, workflows, limitations, inputs/outputs, and who the product is best for.
-- Write grounded FAQ questions and answers instead of generic filler.
-- If limitations are unclear even after reviewing the full context, do not mention them.
-- Never write placeholder copy about missing, unavailable, or unclear limitations.
-- In the alternatives section, mention named competitors only if the source or context clearly supports them. Otherwise compare the product to the real baseline implied by the source, such as manual work, local tools, cloud-based tools, or native platform features.
-
-HTML STRUCTURE TO FOLLOW EXACTLY:
-<p><strong>[Write a 40-70 word opening paragraph that clearly explains what {$productName} is, who it helps, and why someone would choose it.]</strong></p>
-<p>[Write a second paragraph that expands on the main workflow, differentiator, or practical use without hype.]</p>
-
-<h2><strong>What is {$productName}?</strong></h2>
-<p>[Write 2 short plain-English sentences that explain what the product does and how it fits into a user's workflow.]</p>
-
-<h2><strong>What are the key features of {$productName}?</strong></h2>
-<ul>
-  <li>[Feature 1 focused on user value]</li>
-  <li>[Feature 2 focused on workflow or product capability]</li>
-  <li>[Feature 3 focused on a distinct benefit]</li>
-  <li>[Feature 4 if supported by the source]</li>
-  <li>[Feature 5 if supported by the source]</li>
-</ul>
-
-<h2><strong>Who is {$productName} best for?</strong></h2>
-<ul>
-  <li>[Specific audience 1]</li>
-  <li>[Specific audience 2]</li>
-  <li>[Specific audience 3 if supported]</li>
-</ul>
-
-<h2><strong>What can you use {$productName} for?</strong></h2>
-<ul>
-  <li>[Concrete use case 1]</li>
-  <li>[Concrete use case 2]</li>
-  <li>[Concrete use case 3]</li>
-</ul>
-
-<h2><strong>How does {$productName} compare to alternatives?</strong></h2>
-<ul>
-  <li>[Alternative 1 with a grounded comparison]</li>
-  <li>[Alternative 2 with a grounded comparison]</li>
-</ul>
-
-<h2><strong>What integrations and ecosystem support does {$productName} offer?</strong></h2>
-<ul>
-  <li>[Specific integrations, APIs, platforms, or ecosystem details from the source. If unclear, say that the available source material does not clearly specify integrations.]</li>
-</ul>
-
-<h2><strong>What are the pros and limitations of {$productName}?</strong></h2>
-<ul>
-  <li><strong>Pros:</strong> [List 2-3 grounded strengths separated by semicolons]</li>
-  <li><strong>Limitations:</strong> [List 1-2 honest limitations based only on supported facts. Leave this blank if no clear limitation is supported.]</li>
-</ul>
-
-<h2><strong>Frequently asked questions about {$productName}</strong></h2>
-<dl>
-  <dt><strong>[Question 1 written like a real user search]</strong></dt>
-  <dd>[Direct answer based only on supported facts.]</dd>
-  <dt><strong>[Question 2 written like a real user search]</strong></dt>
-  <dd>[Direct answer based only on supported facts.]</dd>
-</dl>
-
-STYLE CHECK BEFORE YOU RESPOND:
-- Does it sound human, plainspoken, and useful?
-- Is the structure exactly preserved?
-- Are the claims grounded in the provided information?
-- Does it feel fuller and more informative than a short summary?
-- Do the FAQ items sound like real questions and not filler?
+REQUIREMENTS:
+- Return only one or two <p> paragraphs of clean HTML.
+- Explain what the product is, what it does, and its main practical value.
+- Mention "{$productName}" naturally in the first paragraph.
+- Use plain, neutral English. Keep claims specific and source-supported.
+- Do not add headings, lists, key features, best-for audiences, use cases, comparisons, integrations, pros, limitations, FAQs, or editorial notes.
+- Do not return Markdown, labels, commentary, or code fences.
 PROMPT;
 
         return $prompt;
@@ -218,11 +124,13 @@ Raw information: "{$rawDescription}"
 Additional context: "{$context}"
 
 REQUIREMENTS:
-- Follow the admin instruction exactly, including its requested length, style, sections, and structure.
+- Use the admin instruction only for tone and overview length when it is compatible with the rules below.
+- Return only one or two <p> overview paragraphs.
 - Use only facts supported by the source material. Do not invent claims, limitations, integrations, audiences, or comparisons.
 - Write naturally in plain English without hype or unsupported superlatives.
-- Return only clean HTML suitable for a rich-text product description. Use simple elements such as <p>, <h2>, <ul>, <ol>, <li>, <strong>, and <em> only when the admin instruction needs them.
-- Do not return Markdown, code fences, labels, commentary, or sections not requested by the admin instruction.
+- Do not add headings, lists, key features, best-for audiences, use cases, comparisons, integrations, pros, limitations, FAQs, or editorial notes.
+- Return only clean HTML using <p> and optional <strong> or <em> elements.
+- Do not return Markdown, code fences, labels, or commentary.
 PROMPT;
     }
 
@@ -348,7 +256,7 @@ PROMPT;
         ];
     }
 
-    private function cleanHtmlResponse(string $content, bool $allowsCustomStructure = false): ?string
+    private function cleanHtmlResponse(string $content): ?string
     {
         $content = trim($this->stripMarkdownFence($content));
 
@@ -362,15 +270,55 @@ PROMPT;
             return null;
         }
 
-        if (! str_contains($content, '<p>') && ! str_contains($content, '<h2>')) {
+        if (! str_contains($content, '<p>')) {
             return null;
         }
 
-        if (! $allowsCustomStructure && ! $this->hasRequiredLongFormSections($content)) {
+        return $this->extractOverviewParagraphs($content);
+    }
+
+    private function extractOverviewParagraphs(string $content): ?string
+    {
+        $document = new DOMDocument('1.0', 'UTF-8');
+        libxml_use_internal_errors(true);
+        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?><div id="overview-root">'.$content.'</div>', LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+
+        if (! $loaded) {
             return null;
         }
 
-        return $this->normalizeLimitationsSection($content);
+        $root = (new DOMXPath($document))->query("//*[@id='overview-root']")->item(0);
+
+        if (! $root instanceof DOMElement) {
+            return null;
+        }
+
+        $paragraphs = [];
+
+        foreach ($root->childNodes as $node) {
+            if (! $node instanceof DOMElement) {
+                continue;
+            }
+
+            if (strtolower($node->tagName) !== 'p') {
+                if ($paragraphs !== []) {
+                    break;
+                }
+
+                continue;
+            }
+
+            if ($this->cleanPlainText($node->textContent) !== '') {
+                $paragraphs[] = $document->saveHTML($node);
+            }
+
+            if (count($paragraphs) === 2) {
+                break;
+            }
+        }
+
+        return $paragraphs === [] ? null : implode("\n", $paragraphs);
     }
 
     private function firstHtmlPosition(string $content): ?int
@@ -504,28 +452,10 @@ PROMPT;
     {
         $summary = $this->buildFallbackSummary($productName, $rawDescription);
         $supporting = $this->buildFallbackSupportingSentence($rawDescription, $context);
-        $headingCandidates = $this->extractHeadingCandidates($context);
-        $bodySentences = $this->extractBodySentences($context);
-        $whatIs = $this->buildFallbackWhatIs($productName, $summary, $supporting, $bodySentences);
-        $features = $this->buildFallbackFeatures($headingCandidates, $bodySentences);
-        $idealFor = $this->buildFallbackIdealFor($context);
-        $useCases = $this->buildFallbackUseCases($headingCandidates, $bodySentences);
-        $integrations = $this->buildFallbackIntegrations($context);
-        $prosLine = implode('; ', array_slice($features, 0, 3));
-        $faq = $this->buildFallbackFaq($productName, $summary, $idealFor);
 
         return implode("\n", [
             '<p><strong>'.e($summary).'</strong></p>',
             ...($supporting !== '' ? ['<p>'.e($supporting).'</p>'] : []),
-            '<h2><strong>What is '.e($productName).'?</strong></h2>',
-            '<p>'.e($whatIs).'</p>',
-            ...($features !== [] ? ['<h2><strong>What are the key features of '.e($productName).'?</strong></h2>', $this->renderList($features)] : []),
-            ...($idealFor !== [] ? ['<h2><strong>Who is '.e($productName).' best for?</strong></h2>', $this->renderList($idealFor)] : []),
-            ...($useCases !== [] ? ['<h2><strong>What can you use '.e($productName).' for?</strong></h2>', $this->renderList($useCases)] : []),
-            ...($integrations !== [] ? ['<h2><strong>What integrations and ecosystem support does '.e($productName).' offer?</strong></h2>', $this->renderList($integrations)] : []),
-            ...($prosLine !== '' ? ['<h2><strong>What are the pros of '.e($productName).'?</strong></h2>', '<ul><li>'.e($prosLine).'</li></ul>'] : []),
-            '<h2><strong>Frequently asked questions about '.e($productName).'</strong></h2>',
-            $this->renderFaq($faq),
         ]);
     }
 

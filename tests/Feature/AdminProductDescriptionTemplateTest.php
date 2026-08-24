@@ -55,13 +55,15 @@ class AdminProductDescriptionTemplateTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_custom_instruction_allows_a_short_html_description(): void
+    public function test_description_cleaner_allows_only_overview_paragraphs(): void
     {
         $method = new \ReflectionMethod(DescriptionRewriterService::class, 'cleanHtmlResponse');
         $html = '<p>A concise product overview.</p>';
 
-        $this->assertSame($html, $method->invoke(new DescriptionRewriterService(), $html, true));
-        $this->assertNull($method->invoke(new DescriptionRewriterService(), $html, false));
+        $this->assertSame($html, $method->invoke(new DescriptionRewriterService(), $html));
+
+        $longHtml = $html.'<h2>Key features</h2><ul><li>Automation</li></ul>';
+        $this->assertSame($html, $method->invoke(new DescriptionRewriterService(), $longHtml));
     }
 
     public function test_custom_prompt_does_not_include_the_default_mandatory_sections(): void
@@ -79,6 +81,7 @@ class AdminProductDescriptionTemplateTest extends TestCase
         $this->assertStringContainsString('Do not return', $prompt);
         $this->assertStringNotContainsString('What are the key features of', $prompt);
         $this->assertStringNotContainsString('Frequently asked questions about', $prompt);
+        $this->assertStringContainsString('Do not add headings, lists, key features', $prompt);
     }
 
     private function createAdmin(): User
