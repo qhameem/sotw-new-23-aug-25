@@ -294,6 +294,7 @@
                             $mediaSlides[] = [
                                 'type' => 'image',
                                 'src' => asset('storage/' . ($media->path_medium ?? $media->path)),
+                                'src_full' => asset('storage/' . $media->path),
                                 'srcset' => trim(implode(' ', array_filter([
                                     $media->path_thumb ? asset('storage/' . $media->path_thumb) . ' 300w,' : null,
                                     $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : null,
@@ -307,12 +308,11 @@
                         $productClickUrl = filled($product->link)
                             ? route('products.click', ['product' => $product->slug, 'surface' => 'product_details'])
                             : null;
-                        $productLinkRel = $productClickUrl
-                            ? \App\Support\OutboundLink::rel($product->link, 'product_link')
-                            : null;
                     @endphp
 
-                    <section class="mt-8">
+                    <section class="mt-8"
+                        x-data="{ enlargedImage: null }"
+                        @keydown.escape.window="enlargedImage = null">
                         @if($hasMultipleMediaSlides)
                             <div x-data="{
                                     canScrollLeft: false,
@@ -348,7 +348,7 @@
                                 <div x-ref="mediaContainer" @scroll.debounce.100ms="updateScroll()"
                                     class="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 no-scrollbar">
                                     @foreach($mediaSlides as $slide)
-                                        <article class="w-full min-w-full snap-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                                        <article class="group/image relative w-full min-w-full snap-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                                             @if($slide['type'] === 'video')
                                                 <div class="aspect-video w-full">
                                                     <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
@@ -357,23 +357,27 @@
                                                         allowfullscreen></iframe>
                                                 </div>
                                             @else
-                                                @if($productClickUrl)
-                                                    <a href="{{ $productClickUrl }}" target="_blank"
-                                                        rel="{{ $productLinkRel }}"
-                                                        aria-label="Visit {{ $product->name }} website">
-                                                        <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                            sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                            class="block h-auto w-full object-contain"
-                                                            itemprop="image"
-                                                            loading="{{ $loop->first ? 'eager' : 'lazy' }}">
-                                                    </a>
-                                                @else
-                                                    <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                        sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                        class="block h-auto w-full object-contain"
-                                                        itemprop="image"
-                                                        loading="{{ $loop->first ? 'eager' : 'lazy' }}">
-                                                @endif
+                                                <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                                    sizes="100vw" alt="{{ $slide['alt'] }}"
+                                                    class="block h-auto w-full object-contain"
+                                                    itemprop="image"
+                                                    loading="{{ $loop->first ? 'eager' : 'lazy' }}">
+                                                <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-gray-950/35 opacity-100 transition-opacity md:opacity-0 md:group-hover/image:opacity-100 md:group-focus-within/image:opacity-100">
+                                                    <button type="button"
+                                                        @click="enlargedImage = {{ Js::from(['src' => $slide['src_full'], 'alt' => $slide['alt']]) }}"
+                                                        class="pointer-events-auto inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
+                                                        Enlarge Image
+                                                    </button>
+                                                    @if($productClickUrl)
+                                                        <a href="{{ $productClickUrl }}" target="_blank" rel="nofollow noopener noreferrer"
+                                                            class="pointer-events-auto inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                                                            <span>Visit Website</span>
+                                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                                                <path d="M14 5h5v5M19 5l-9 9M19 14v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg>
+                                                        </a>
+                                                    @endif
+                                                </div>
                                             @endif
                                         </article>
                                     @endforeach
@@ -381,7 +385,7 @@
                             </div>
                         @else
                             @foreach($mediaSlides as $slide)
-                                <article class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                                <article class="group/image relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                                     @if($slide['type'] === 'video')
                                         <div class="aspect-video w-full">
                                             <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
@@ -390,27 +394,46 @@
                                                 allowfullscreen></iframe>
                                         </div>
                                     @else
-                                        @if($productClickUrl)
-                                            <a href="{{ $productClickUrl }}" target="_blank"
-                                                rel="{{ $productLinkRel }}"
-                                                aria-label="Visit {{ $product->name }} website">
-                                                <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                    sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                    class="block h-auto w-full object-contain"
-                                                    itemprop="image"
-                                                    loading="eager">
-                                            </a>
-                                        @else
-                                            <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                class="block h-auto w-full object-contain"
-                                                itemprop="image"
-                                                loading="eager">
-                                        @endif
+                                        <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
+                                            sizes="100vw" alt="{{ $slide['alt'] }}"
+                                            class="block h-auto w-full object-contain"
+                                            itemprop="image"
+                                            loading="eager">
+                                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-gray-950/35 opacity-100 transition-opacity md:opacity-0 md:group-hover/image:opacity-100 md:group-focus-within/image:opacity-100">
+                                            <button type="button"
+                                                @click="enlargedImage = {{ Js::from(['src' => $slide['src_full'], 'alt' => $slide['alt']]) }}"
+                                                class="pointer-events-auto inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
+                                                Enlarge Image
+                                            </button>
+                                            @if($productClickUrl)
+                                                <a href="{{ $productClickUrl }}" target="_blank" rel="nofollow noopener noreferrer"
+                                                    class="pointer-events-auto inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                                                    <span>Visit Website</span>
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                                        <path d="M14 5h5v5M19 5l-9 9M19 14v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                </a>
+                                            @endif
+                                        </div>
                                     @endif
                                 </article>
                             @endforeach
                         @endif
+
+                        <template x-teleport="body">
+                            <div x-show="enlargedImage" x-cloak
+                                class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950/90 p-4 sm:p-8"
+                                role="dialog" aria-modal="true" aria-label="Enlarged product image"
+                                @click.self="enlargedImage = null">
+                                <img :src="enlargedImage?.src" :alt="enlargedImage?.alt || ''"
+                                    class="max-h-full max-w-full rounded-lg object-contain shadow-2xl">
+                                <button type="button" @click="enlargedImage = null"
+                                    class="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white"
+                                    aria-label="Close enlarged image">
+                                    &times;
+                                </button>
+                            </div>
+                        </template>
                     </section>
                 @endif
 
