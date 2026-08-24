@@ -20,8 +20,8 @@
         </p>
     </div>
 
-    <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-        <div class="space-y-8">
+    <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <div class="min-w-0 space-y-8">
             <section class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm sm:p-8">
                 <div class="flex items-start justify-between gap-6">
                     <div>
@@ -175,18 +175,18 @@
                     Change the width value in the image tag. Keep the height automatic so the badge does not stretch.
                 </p>
 
-                <div class="mt-6 grid gap-4 lg:grid-cols-3">
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div class="mt-6 grid min-w-0 gap-4 lg:grid-cols-3">
+                    <div class="min-w-0 rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Small</p>
                         <p class="mt-2 text-xs text-gray-600">Use this if your footer has limited space.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $smallSnippet }}</pre>
                     </div>
-                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                    <div class="min-w-0 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Default</p>
                         <p class="mt-2 text-xs text-gray-600">Recommended for most homepages.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $defaultSnippet }}</pre>
                     </div>
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="min-w-0 rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <p class="text-sm font-semibold text-gray-900">Large</p>
                         <p class="mt-2 text-xs text-gray-600">Use this for hero or "Featured On" sections.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl bg-white px-3 py-3 text-[11px] leading-6 text-gray-800">{{ $largeSnippet }}</pre>
@@ -199,7 +199,7 @@
             </section>
         </div>
 
-        <aside class="space-y-6">
+        <aside class="min-w-0 space-y-6">
             <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Checklist</p>
                 <ul class="mt-4 space-y-3 text-sm text-gray-700">
