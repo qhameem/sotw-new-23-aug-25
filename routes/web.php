@@ -176,6 +176,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::resource('ad-zones', AdZoneController::class);
     Route::resource('code-snippets', \App\Http\Controllers\Admin\CodeSnippetController::class);
     Route::get('product-approvals', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'index'])->name('product-approvals.index');
+    Route::get('product-approvals/{product}/preview', [ProductController::class, 'showProductPage'])->name('product-approvals.preview');
     Route::post('product-approvals/{product}/approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approve'])->name('product-approvals.approve');
     Route::post('product-approvals/{product}/approve-custom-category/{submission}', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'approveCustomCategory'])->name('product-approvals.approve-custom-category');
     Route::post('product-approvals/generate-category-seo', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'generateCategorySeo'])->name('product-approvals.generate-category-seo');

@@ -1867,11 +1867,13 @@ class ProductController extends Controller
 
     public function showProductPage(Product $product)
     {
-        if (! $product->approved) {
+        $isAdminPreview = request()->routeIs('admin.product-approvals.preview');
+
+        if (! $product->approved && ! $isAdminPreview) {
             abort(404);
         }
 
-        $isUnpublishedProduct = ! $product->is_published;
+        $isUnpublishedProduct = $isAdminPreview || ! $product->is_published;
 
         $product->load([
             'categories.types',
