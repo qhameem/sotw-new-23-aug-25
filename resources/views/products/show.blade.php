@@ -45,7 +45,7 @@
         });
         $overviewBlocks = $descriptionContent['overview_blocks'] ?? [];
         $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
-        $idealForItems = $bestForCategories->pluck('name')->take(2)->values();
+        $idealForItems = $bestForCategories->take(2)->values();
         $quickFactUseCases = $useCaseCategories
             ->take(2)
             ->map(fn ($category) => [
@@ -115,7 +115,11 @@
             ->values();
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
-            (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml))) ? ['id' => 'details', 'label' => 'Details'] : null,
+            (
+                (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml)))
+                || ($idealForItems ?? collect())->isNotEmpty()
+                || $product->techStacks->isNotEmpty()
+            ) ? ['id' => 'details', 'label' => 'Details'] : null,
             $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
             $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
             $productFaqItems->isNotEmpty() ? ['id' => 'faq', 'label' => 'FAQ'] : null,
@@ -410,54 +414,94 @@
                     </section>
                 @endif
 
-                @unless($usesProductFacts)
+                @if(!$usesProductFacts || ($idealForItems ?? collect())->isNotEmpty() || $product->techStacks->isNotEmpty())
                 <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Details</h2>
                     </div>
 
-                    @if($hasEditorialSections)
-                        <div class="mt-1">
-                            @include('products.partials._editorial-highlights', ['productEditorial' => $productEditorial])
-                        </div>
-
-                        @if(filled($detailDescriptionHtml))
-                            <details class="px-5 py-1">
-                                <summary class="cursor-pointer text-sm font-semibold text-gray-900">Read full editorial notes</summary>
-                                <div class="prose mt-2 max-w-none text-sm ql-editor-content product-detail-description">
-                                    @if(isset($isAdminView) && $isAdminView)
-                                        <div x-show="!editingDescription" @click="editingDescription = true">
-                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                        </div>
-                                        <textarea x-show="editingDescription" x-model="description"
-                                            @keydown.enter="updateProduct(); editingDescription = false"
-                                            @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
-                                    @else
-                                        {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                    @endif
-                                </div>
-                            </details>
-                        @endif
-                    @else
-                        @if(filled($detailDescriptionHtml))
-                            <div class="px-5 py-1">
-                                <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
-                                    @if(isset($isAdminView) && $isAdminView)
-                                        <div x-show="!editingDescription" @click="editingDescription = true">
-                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                        </div>
-                                        <textarea x-show="editingDescription" x-model="description"
-                                            @keydown.enter="updateProduct(); editingDescription = false"
-                                            @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
-                                    @else
-                                        {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                    @endif
-                                </div>
+                    @unless($usesProductFacts)
+                        @if($hasEditorialSections)
+                            <div class="mt-1">
+                                @include('products.partials._editorial-highlights', ['productEditorial' => $productEditorial])
                             </div>
+
+                            @if(filled($detailDescriptionHtml))
+                                <details class="px-5 py-1">
+                                    <summary class="cursor-pointer text-sm font-semibold text-gray-900">Read full editorial notes</summary>
+                                    <div class="prose mt-2 max-w-none text-sm ql-editor-content product-detail-description">
+                                        @if(isset($isAdminView) && $isAdminView)
+                                            <div x-show="!editingDescription" @click="editingDescription = true">
+                                                {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
+                                            </div>
+                                            <textarea x-show="editingDescription" x-model="description"
+                                                @keydown.enter="updateProduct(); editingDescription = false"
+                                                @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
+                                        @else
+                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
+                                        @endif
+                                    </div>
+                                </details>
+                            @endif
+                        @else
+                            @if(filled($detailDescriptionHtml))
+                                <div class="px-5 py-1">
+                                    <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
+                                        @if(isset($isAdminView) && $isAdminView)
+                                            <div x-show="!editingDescription" @click="editingDescription = true">
+                                                {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
+                                            </div>
+                                            <textarea x-show="editingDescription" x-model="description"
+                                                @keydown.enter="updateProduct(); editingDescription = false"
+                                                @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
+                                        @else
+                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
                         @endif
+                    @endunless
+
+                    @if(($idealForItems ?? collect())->isNotEmpty() || $product->techStacks->isNotEmpty())
+                        <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                            @if(($idealForItems ?? collect())->isNotEmpty())
+                                <div>
+                                    <h3 class="mb-2 text-xs text-gray-500">Ideal for</h3>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($idealForItems as $idealForItem)
+                                            <a href="{{ route('categories.show', ['category' => $idealForItem->slug]) }}" wire:navigate.hover
+                                                class="inline-flex items-center gap-1 rounded border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-100 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                                                <span>{{ $idealForItem->name }}</span>
+                                                <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                    <path d="m7 5 5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($product->techStacks->isNotEmpty())
+                                <div>
+                                    <h3 class="mb-2 text-xs text-gray-500">Built with</h3>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($product->techStacks as $techStack)
+                                            <a href="{{ route('pseo.builtWith', $techStack->slug) }}" wire:navigate.hover
+                                                class="inline-flex items-center gap-1 rounded border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-100 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                                                <span>{{ $techStack->name }}</span>
+                                                <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                    <path d="m7 5 5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     @endif
                 </section>
-                @endunless
+                @endif
 
                 @if($alternativeProducts->isNotEmpty())
                     <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">

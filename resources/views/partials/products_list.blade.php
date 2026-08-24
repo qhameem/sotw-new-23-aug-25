@@ -40,7 +40,7 @@
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
-            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page');
+            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page', 'pseo.builtWith');
             $showMomentumMeta = $isHomePage || $isWeeklyPage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
@@ -61,6 +61,7 @@
                 request()->routeIs('products.byMonth') => 'month_list',
                 request()->routeIs('products.byYear') => 'year_list',
                 request()->routeIs('categories.show', 'categories.show.page') => 'category_list',
+                request()->routeIs('pseo.builtWith') => 'built_with_list',
                 default => 'product_list',
             };
         @endphp

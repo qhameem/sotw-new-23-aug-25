@@ -46,7 +46,7 @@
                 </div>
             @endif
             <div class="flex min-w-0 items-center gap-3">
-                <a href="{{ route('home') }}" wire:navigate.hover aria-label="{{ config('app.name', 'Software on the Web') }} home">
+                <a href="{{ route('home') }}" wire:navigate.hover aria-label="{{ config('app.name', 'Software on the Web') }} home" class="md:hidden">
                     <img src="{{ $mobileFaviconUrl }}" alt="{{ $mobileFaviconAltText }}"
                         class="mobile-favicon h-10 w-10 shrink-0 object-contain md:hidden">
                     <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>

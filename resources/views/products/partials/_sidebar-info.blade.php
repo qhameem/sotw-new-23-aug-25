@@ -34,19 +34,6 @@
         </div>
     @endif
 
-    @if(($idealForItems ?? collect())->isNotEmpty())
-        <div>
-            <h3 class="text-xs text-gray-500 mb-2">Ideal for</h3>
-            <div class="flex flex-wrap gap-2">
-                @foreach($idealForItems as $idealForItem)
-                    <span class="inline-flex items-center text-xs text-gray-700 font-medium bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                        {{ $idealForItem }}
-                    </span>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
     @if($showAdminClaimPrompt)
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <h3 class="text-xs text-gray-500 mb-2">Ownership</h3>
@@ -82,20 +69,6 @@
                     Verify your email first to submit a product claim.
                 </p>
             @endif
-        </div>
-    @endif
-
-    @if($product->techStacks->isNotEmpty())
-        <div>
-            <h3 class="text-xs text-gray-500 mb-2">Built with</h3>
-            <div class="flex flex-wrap gap-2">
-                @foreach($product->techStacks as $techStack)
-                    <a href="{{ route('pseo.builtWith', $techStack->slug) }}"
-                       class="inline-flex items-center text-xs text-gray-700 font-medium bg-gray-50 px-2 py-0.5 rounded border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-colors">
-                        {{ $techStack->name }}
-                    </a>
-                @endforeach
-            </div>
         </div>
     @endif
 

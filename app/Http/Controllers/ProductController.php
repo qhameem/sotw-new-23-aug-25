@@ -1470,10 +1470,16 @@ class ProductController extends Controller
             },
         ])->orderBy('name')->get();
 
+        $category->loadMissing('types');
         $currentYear = Carbon::now()->year;
         $lastPage = max(1, $regularProducts->lastPage());
-        $title = 'The Best '.strip_tags($category->name).' Apps of '.$currentYear;
-        $meta_title = "{$category->name} Software, Page {$currentPage} of {$lastPage} | Software on the Web.";
+        $isBestForCategory = $category->types->contains('name', 'Best for');
+        $title = $isBestForCategory
+            ? 'Best Tools for '.strip_tags($category->name).' in '.$currentYear
+            : 'The Best '.strip_tags($category->name).' Apps of '.$currentYear;
+        $meta_title = $isBestForCategory
+            ? "{$title}, Page {$currentPage} of {$lastPage} | Software on the Web"
+            : "{$category->name} Software, Page {$currentPage} of {$lastPage} | Software on the Web.";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
