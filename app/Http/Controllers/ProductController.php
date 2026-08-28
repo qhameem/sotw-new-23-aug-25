@@ -218,7 +218,8 @@ class ProductController extends Controller
         $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
         $submissionDrafts = $request->user()
             ? ProductSubmissionDraft::query()
-                ->forUser($request->user())
+                ->with('user:id,name,email')
+                ->when(! $request->user()->is_admin(), fn ($query) => $query->forUser($request->user()))
                 ->latest('updated_at')
                 ->get()
                 ->map(fn (ProductSubmissionDraft $draft) => $draft->toSummaryArray())
@@ -676,7 +677,7 @@ class ProductController extends Controller
         }
 
         return ProductSubmissionDraft::query()
-            ->forUser($request->user())
+            ->when(! $request->user()->is_admin(), fn ($query) => $query->forUser($request->user()))
             ->where('uuid', $draftUuid)
             ->firstOrFail();
     }

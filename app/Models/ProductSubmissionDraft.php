@@ -69,6 +69,8 @@ class ProductSubmissionDraft extends Model
             'uuid' => $this->uuid,
             'title' => $this->title(),
             'link' => $this->link,
+            'owner_name' => $this->relationLoaded('user') ? $this->user?->name : null,
+            'owner_email' => $this->relationLoaded('user') ? $this->user?->email : null,
             'resume_url' => route('products.create', ['draft' => $this->uuid]),
             'updated_at' => $savedAt?->toIso8601String(),
             'updated_at_label' => $savedAt?->format('M j, Y g:i A'),

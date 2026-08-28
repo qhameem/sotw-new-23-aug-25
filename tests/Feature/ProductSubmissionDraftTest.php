@@ -74,6 +74,67 @@ class ProductSubmissionDraftTest extends TestCase
         $response->assertSee('resume.example.com');
     }
 
+    public function test_admin_can_view_and_open_unfinished_submissions_from_all_users(): void
+    {
+        Role::firstOrCreate(['name' => 'admin']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $owner = User::factory()->create([
+            'name' => 'Draft Owner',
+            'email' => 'draft-owner@example.com',
+        ]);
+
+        $draft = ProductSubmissionDraft::create([
+            'user_id' => $owner->id,
+            'name' => 'Other User Draft',
+            'link' => 'https://other-user.example.com',
+            'payload' => [
+                'name' => 'Other User Draft',
+                'link' => 'https://other-user.example.com',
+            ],
+            'last_autosaved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('products.create'));
+
+        $response->assertOk();
+        $response->assertSee('Other User Draft');
+        $response->assertSee('Draft Owner');
+        $response->assertSee('draft-owner@example.com');
+        $this->assertContains(
+            route('products.create', ['draft' => $draft->uuid]),
+            collect($response->viewData('submissionDrafts'))->pluck('resume_url')->all()
+        );
+
+        $this->actingAs($admin)
+            ->get(route('products.create', ['draft' => $draft->uuid]))
+            ->assertOk()
+            ->assertSee('data-active-draft-id="' . $draft->uuid . '"', false);
+    }
+
+    public function test_non_admin_cannot_view_or_open_another_users_unfinished_submission(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $draft = ProductSubmissionDraft::create([
+            'user_id' => $owner->id,
+            'name' => 'Private Draft',
+            'payload' => ['name' => 'Private Draft'],
+            'last_autosaved_at' => now(),
+        ]);
+
+        $this->actingAs($otherUser)
+            ->get(route('products.create'))
+            ->assertOk()
+            ->assertDontSee('Private Draft');
+
+        $this->actingAs($otherUser)
+            ->get(route('products.create', ['draft' => $draft->uuid]))
+            ->assertNotFound();
+    }
+
     public function test_submitting_a_product_clears_the_matching_unfinished_submission(): void
     {
         Notification::fake();

@@ -84,6 +84,10 @@
                   class="rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-sky-300 hover:bg-sky-50/40"
                 >
                   <p class="text-sm font-semibold text-slate-900">{{ draft.title }}</p>
+                  <p v-if="draft.owner_name || draft.owner_email" class="mt-1 text-xs font-medium text-slate-600">
+                    {{ draft.owner_name || draft.owner_email }}
+                    <span v-if="draft.owner_name && draft.owner_email">({{ draft.owner_email }})</span>
+                  </p>
                   <p v-if="draft.link" class="mt-1 line-clamp-2 text-xs text-slate-500">{{ draft.link }}</p>
                   <p class="mt-3 text-xs text-slate-400">Saved {{ draft.updated_at_label || 'recently' }}</p>
                 </a>
