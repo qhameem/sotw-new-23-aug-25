@@ -140,6 +140,7 @@ class ProductController extends Controller
             'asking_price' => $oldInput['asking_price'] ?? null,
             'pricing_page_url' => $oldInput['pricing_page_url'] ?? null,
             'hosting_provider' => $oldInput['hosting_provider'] ?? null,
+            'hosting_details' => $oldInput['hosting_details'] ?? null,
             'domain_registrar' => $oldInput['domain_registrar'] ?? null,
             'x_account' => $oldInput['x_account'] ?? null,
             'logo' => null,
@@ -204,6 +205,7 @@ class ProductController extends Controller
             'asking_price' => $oldInput['asking_price'] ?? ($draftDisplayData['asking_price'] ?? null),
             'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($draftDisplayData['pricing_page_url'] ?? ''),
             'hosting_provider' => $oldInput['hosting_provider'] ?? ($draftDisplayData['hosting_provider'] ?? ''),
+            'hosting_details' => $oldInput['hosting_details'] ?? ($draftDisplayData['hosting_details'] ?? null),
             'domain_registrar' => $oldInput['domain_registrar'] ?? ($draftDisplayData['domain_registrar'] ?? ''),
             'x_account' => $oldInput['x_account'] ?? ($draftDisplayData['x_account'] ?? ''),
             'logos' => $draftDisplayData['logos'] ?? [],
@@ -336,6 +338,7 @@ class ProductController extends Controller
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
             'hosting_provider' => 'nullable|string|max:255',
+            ...\App\Support\HostingAttribution::rules(),
             'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
             'submission_type' => ['nullable', Rule::in($allowedSubmissionTypes)],
@@ -719,6 +722,7 @@ class ProductController extends Controller
             'asking_price' => $payload['asking_price'] ?? null,
             'pricing_page_url' => $payload['pricing_page_url'] ?? '',
             'hosting_provider' => $payload['hosting_provider'] ?? '',
+            'hosting_details' => $payload['hosting_details'] ?? null,
             'domain_registrar' => $payload['domain_registrar'] ?? '',
             'x_account' => $payload['x_account'] ?? '',
             'logos' => array_values((array) ($payload['logos'] ?? [])),
@@ -877,6 +881,7 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? (! is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price),
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($product->proposed_pricing_page_url ?? $product->pricing_page_url),
                 'hosting_provider' => $oldInput['hosting_provider'] ?? ($product->proposed_hosting_provider ?? $product->hosting_provider),
+                'hosting_details' => $oldInput['hosting_details'] ?? ($product->proposed_hosting_details ?? $product->hosting_details),
                 'domain_registrar' => $oldInput['domain_registrar'] ?? ($product->proposed_domain_registrar ?? $product->domain_registrar),
                 'x_account' => $oldInput['x_account'] ?? ($product->proposed_x_account ?? $product->x_account),
                 'id' => $product->id,
@@ -907,6 +912,7 @@ class ProductController extends Controller
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? $product->pricing_page_url,
                 'hosting_provider' => $oldInput['hosting_provider'] ?? $product->hosting_provider,
+                'hosting_details' => $oldInput['hosting_details'] ?? $product->hosting_details,
                 'domain_registrar' => $oldInput['domain_registrar'] ?? $product->domain_registrar,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
@@ -1020,6 +1026,7 @@ class ProductController extends Controller
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
             'hosting_provider' => 'nullable|string|max:255',
+            ...\App\Support\HostingAttribution::rules(),
             'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
         ]);
@@ -1168,7 +1175,7 @@ class ProductController extends Controller
             $updateData['pricing_page_url'] = $validated['pricing_page_url'] ?? null;
         }
 
-        foreach (['hosting_provider', 'domain_registrar'] as $field) {
+        foreach (['hosting_provider', 'domain_registrar', 'hosting_details'] as $field) {
             $current = $product->approved && $product->{'proposed_'.$field} !== null
                 ? ($product->{'proposed_'.$field} ?: null)
                 : $product->{$field};
@@ -1254,9 +1261,9 @@ class ProductController extends Controller
             if (array_key_exists('pricing_page_url', $updateData)) {
                 $product->proposed_pricing_page_url = $updateData['pricing_page_url'];
             }
-            foreach (['hosting_provider', 'domain_registrar'] as $field) {
+            foreach (['hosting_provider', 'domain_registrar', 'hosting_details'] as $field) {
                 if (array_key_exists($field, $updateData)) {
-                    $product->{'proposed_'.$field} = $updateData[$field] ?? '';
+                    $product->{'proposed_'.$field} = $updateData[$field] ?? ($field === 'hosting_details' ? [] : '');
                 }
             }
             if ($categoriesChanged) {
@@ -1318,6 +1325,7 @@ class ProductController extends Controller
             $product->proposed_product_page_tagline = null;
             $product->proposed_pricing_page_url = null;
             $product->proposed_hosting_provider = null;
+            $product->proposed_hosting_details = null;
             $product->proposed_domain_registrar = null;
             $product->proposedCategories()->detach();
             $product->proposedTechStacks()->detach();

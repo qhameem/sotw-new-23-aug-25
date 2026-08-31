@@ -385,7 +385,7 @@ class ProductApprovalController extends Controller
         $product->asking_price = ! is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price;
         $product->maker_links = $product->proposed_maker_links ?? $product->maker_links;
         $product->pricing_page_url = $product->proposed_pricing_page_url ?? $product->pricing_page_url;
-        foreach (['hosting_provider', 'domain_registrar'] as $field) {
+        foreach (['hosting_provider', 'domain_registrar', 'hosting_details'] as $field) {
             if ($product->{'proposed_'.$field} !== null) {
                 $product->{$field} = $product->{'proposed_'.$field} ?: null;
             }
@@ -428,6 +428,7 @@ class ProductApprovalController extends Controller
         $product->proposed_product_page_tagline = null;
         $product->proposed_pricing_page_url = null;
         $product->proposed_hosting_provider = null;
+        $product->proposed_hosting_details = null;
         $product->proposed_domain_registrar = null;
 
         $product->proposedCategories()->detach();
@@ -468,6 +469,7 @@ class ProductApprovalController extends Controller
         $product->proposed_product_page_tagline = null;
         $product->proposed_pricing_page_url = null;
         $product->proposed_hosting_provider = null;
+        $product->proposed_hosting_details = null;
         $product->proposed_domain_registrar = null;
 
         $product->proposedCategories()->detach();

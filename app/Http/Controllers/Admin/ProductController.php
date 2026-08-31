@@ -263,6 +263,7 @@ class ProductController extends Controller
             'asking_price' => old('asking_price'),
             'pricing_page_url' => old('pricing_page_url'),
             'hosting_provider' => old('hosting_provider'),
+            'hosting_details' => old('hosting_details'),
             'domain_registrar' => old('domain_registrar'),
             'x_account' => old('x_account'),
             'current_categories' => old('categories', []),
@@ -315,6 +316,7 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'video_url' => 'nullable|string',
             'hosting_provider' => 'nullable|string|max:255',
+            ...\App\Support\HostingAttribution::rules(),
             'domain_registrar' => 'nullable|string|max:255',
         ]);
 
@@ -393,6 +395,7 @@ class ProductController extends Controller
             'asking_price' => old('asking_price', $product->asking_price),
             'pricing_page_url' => old('pricing_page_url', $product->pricing_page_url),
             'hosting_provider' => old('hosting_provider', $product->proposed_hosting_provider ?? $product->hosting_provider),
+            'hosting_details' => old('hosting_details', $product->proposed_hosting_details ?? $product->hosting_details),
             'domain_registrar' => old('domain_registrar', $product->proposed_domain_registrar ?? $product->domain_registrar),
             'x_account' => old('x_account', $product->x_account),
             'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
@@ -471,6 +474,7 @@ class ProductController extends Controller
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
             'hosting_provider' => 'nullable|string|max:255',
+            ...\App\Support\HostingAttribution::rules(),
             'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
             'tech_stacks' => 'nullable|array',
@@ -584,6 +588,7 @@ class ProductController extends Controller
             'sell_product' => (bool) ($validated['sell_product'] ?? false) !== (bool) $product->sell_product,
             'asking_price' => ($validated['asking_price'] ?? null) != $product->asking_price,
             'pricing_page_url' => ($validated['pricing_page_url'] ?? null) !== $product->pricing_page_url,
+            'hosting_details' => array_key_exists('hosting_details', $validated) && $validated['hosting_details'] != ($product->proposed_hosting_details ?? $product->hosting_details),
             'hosting_provider' => array_key_exists('hosting_provider', $validated) && $validated['hosting_provider'] !== (($product->proposed_hosting_provider ?? $product->hosting_provider) ?: null),
             'domain_registrar' => array_key_exists('domain_registrar', $validated) && $validated['domain_registrar'] !== (($product->proposed_domain_registrar ?? $product->domain_registrar) ?: null),
             'x_account' => ($validated['x_account'] ?? null) !== Product::normalizeXAccount($product->x_account),
@@ -634,9 +639,9 @@ class ProductController extends Controller
             if ($fieldChanges['asking_price']) {
                 $product->proposed_asking_price = $validated['asking_price'] ?? null;
             }
-            foreach (['hosting_provider', 'domain_registrar'] as $field) {
+            foreach (['hosting_provider', 'domain_registrar', 'hosting_details'] as $field) {
                 if ($fieldChanges[$field]) {
-                    $product->{'proposed_'.$field} = $validated[$field] ?? '';
+                    $product->{'proposed_'.$field} = $validated[$field] ?? ($field === 'hosting_details' ? [] : '');
                 }
             }
             if ($fieldChanges['pricing_page_url']) {
@@ -704,6 +709,7 @@ class ProductController extends Controller
                 'sell_product',
                 'asking_price',
                 'hosting_provider',
+                'hosting_details',
                 'domain_registrar',
                 'pricing_page_url',
                 'x_account',
@@ -988,7 +994,7 @@ class ProductController extends Controller
 
     private function productHasRemainingPendingEdits(Product $product): bool
     {
-        if ($product->proposed_hosting_provider !== null || $product->proposed_domain_registrar !== null) {
+        if ($product->proposed_hosting_details !== null || $product->proposed_hosting_provider !== null || $product->proposed_domain_registrar !== null) {
             return true;
         }
 

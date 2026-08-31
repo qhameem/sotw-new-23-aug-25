@@ -52,6 +52,8 @@ class ApprovedProductPendingEditsTest extends TestCase
 
         $this->assertNull($product->hosting_provider);
         $this->assertSame('Vercel', $product->proposed_hosting_provider);
+        $this->assertNull($product->hosting_details);
+        $this->assertSame('user_provided', $product->proposed_hosting_details['status']);
         $this->assertSame('Example Registrar', $product->proposed_domain_registrar);
         $this->assertTrue($product->has_pending_edits);
         $this->assertNotNull($product->proposed_screenshot_path);
@@ -123,6 +125,8 @@ class ApprovedProductPendingEditsTest extends TestCase
         $this->assertNull($product->hosting_provider);
         $this->assertSame('Example Registrar', $product->domain_registrar);
         $this->assertNull($product->proposed_hosting_provider);
+        $this->assertSame('unknown', $product->hosting_details['status']);
+        $this->assertNull($product->proposed_hosting_details);
         $this->assertFalse($product->has_pending_edits);
         $this->assertNull($product->proposed_screenshot_path);
 

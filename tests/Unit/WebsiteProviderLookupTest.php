@@ -70,6 +70,45 @@ class WebsiteProviderLookupTest extends TestCase
         $this->assertNull(app(WebsiteProviderLookup::class)->lookup('https://sample.com')['hosting_provider']);
     }
 
+    public function test_lookup_combines_contabo_rdap_asn_and_ptr_with_safe_header_request(): void
+    {
+        Http::fake([
+            'https://data.iana.org/rdap/dns.json' => Http::response(['services' => []]),
+            'https://dns.google/resolve*' => function ($request) {
+                return Http::response(['Answer' => $request['type'] === 'PTR'
+                    ? [['type' => 12, 'data' => 'vmi123.contaboserver.net.']]
+                    : [['type' => 1, 'data' => '8.8.8.8']]]);
+            },
+            'https://data.iana.org/rdap/ipv4.json' => Http::response(['services' => [[['8.0.0.0/8'], ['https://registry.example/']]]]),
+            'https://registry.example/ip/8.8.8.8' => Http::response([
+                'entities' => [['roles' => ['registrant'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'MNT-CONTABO']]]]],
+            ]),
+            'https://stat.ripe.net/data/network-info/data.json*' => Http::response(['data' => ['asns' => [51167]]]),
+            'https://stat.ripe.net/data/as-overview/data.json*' => Http::response(['data' => ['holder' => 'CONTABO Contabo GmbH']]),
+            'https://sample.com/' => Http::response('', 200),
+        ]);
+        $result = app(WebsiteProviderLookup::class)->lookup('https://sample.com/private/path?token=not-shared');
+        $this->assertSame('Contabo', $result['hosting_provider']);
+        $this->assertSame('inferred', $result['hosting_details']['status']);
+        $this->assertCount(3, $result['hosting_details']['evidence']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://sample.com/' && $request->method() === 'HEAD');
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'not-shared'));
+    }
+
+    public function test_mixed_public_and_private_dns_never_contacts_the_origin(): void
+    {
+        Http::fake([
+            'https://data.iana.org/rdap/dns.json' => Http::response(['services' => []]),
+            'https://data.iana.org/rdap/ipv4.json' => Http::response(['services' => []]),
+            'https://dns.google/resolve*' => Http::response(['Answer' => [
+                ['type' => 1, 'data' => '8.8.8.8'], ['type' => 1, 'data' => '127.0.0.1'],
+            ]]),
+            'https://stat.ripe.net/*' => Http::response(['data' => []]),
+        ]);
+        app(WebsiteProviderLookup::class)->lookup('https://sample.com');
+        Http::assertNotSent(fn ($request) => str_starts_with($request->url(), 'https://sample.com'));
+    }
+
     public function test_lookup_endpoint_rejects_private_and_non_http_urls_without_network_requests(): void
     {
         Http::fake();

@@ -80,6 +80,8 @@ class Product extends Model implements Sitemapable
         'badge_placement_url',
         'badge_warning_sent_at',
         'hosting_provider',
+        'hosting_details',
+        'proposed_hosting_details',
         'domain_registrar',
         'proposed_hosting_provider',
         'proposed_domain_registrar',
@@ -90,6 +92,8 @@ class Product extends Model implements Sitemapable
     ];
 
     protected $casts = [
+        'hosting_details' => 'array',
+        'proposed_hosting_details' => 'array',
         'approved' => 'boolean',
         'is_promoted' => 'boolean',
         'is_published' => 'boolean',
@@ -120,6 +124,19 @@ class Product extends Model implements Sitemapable
         parent::boot();
 
         static::saving(function ($product) {
+            if ($product->isDirty('hosting_provider') || $product->isDirty('hosting_details') || ($product->isDirty('link') && $product->hosting_details !== null)) {
+                $product->hosting_details = \App\Support\HostingAttribution::normalize(
+                    $product->hosting_provider, $product->hosting_details, $product->link
+                );
+            }
+            if ($product->proposed_hosting_provider !== null || $product->proposed_hosting_details !== null) {
+                $product->proposed_hosting_details = \App\Support\HostingAttribution::normalize(
+                    $product->proposed_hosting_provider ?? $product->hosting_provider,
+                    $product->proposed_hosting_details ?? $product->hosting_details,
+                    $product->proposed_link ?? $product->link
+                );
+            }
+
             if ($product->description) {
                 $product->description = HtmlHelper::addNofollowToLinks($product->description);
             }

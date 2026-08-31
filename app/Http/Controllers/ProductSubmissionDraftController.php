@@ -36,6 +36,7 @@ class ProductSubmissionDraftController extends Controller
             'pricing' => 'nullable|array',
             'pricing.*' => 'nullable',
             'hosting_provider' => 'nullable|string|max:255',
+            ...\App\Support\HostingAttribution::rules(),
             'domain_registrar' => 'nullable|string|max:255',
             'pricing_page_url' => 'nullable|string|max:2048',
             'tech_stack' => 'nullable|array',
@@ -69,6 +70,11 @@ class ProductSubmissionDraftController extends Controller
         ]);
 
         $payload = Arr::except($validated, ['draft_uuid']);
+        if (array_key_exists('hosting_provider', $payload) || array_key_exists('hosting_details', $payload)) {
+            $payload['hosting_details'] = \App\Support\HostingAttribution::normalize(
+                $payload['hosting_provider'] ?? null, $payload['hosting_details'] ?? null, $payload['link'] ?? null
+            );
+        }
 
         if (! $this->hasMeaningfulContent($payload)) {
             return response()->json([

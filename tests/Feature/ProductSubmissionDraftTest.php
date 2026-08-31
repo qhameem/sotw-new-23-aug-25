@@ -72,6 +72,7 @@ class ProductSubmissionDraftTest extends TestCase
         $this->assertSame('Example Draft', $draft->name);
         $this->assertSame('Draft tagline', $draft->payload['tagline']);
         $this->assertSame('Vercel', $draft->payload['hosting_provider']);
+        $this->assertSame('user_provided', $draft->payload['hosting_details']['status']);
         $this->assertSame('Example Registrar', $draft->payload['domain_registrar']);
     }
 
@@ -87,6 +88,7 @@ class ProductSubmissionDraftTest extends TestCase
                 'name' => 'Resume Draft',
                 'link' => 'https://resume.example.com',
                 'hosting_provider' => 'Netlify',
+                'hosting_details' => ['status' => 'inferred', 'provider' => 'Netlify', 'host' => 'resume.example.com', 'cdn_providers' => [], 'evidence' => []],
                 'domain_registrar' => 'Example Registrar',
                 'tagline' => 'Resume tagline',
                 'tagline_detailed' => 'Resume detailed tagline',
@@ -106,6 +108,7 @@ class ProductSubmissionDraftTest extends TestCase
         $response->assertSee('data-active-draft-id="'.$draft->uuid.'"', false);
         $response->assertSee('Resume Draft');
         $response->assertSee('Netlify');
+        $this->assertSame('inferred', $response->viewData('displayData')['hosting_details']['status']);
         $response->assertSee('Example Registrar');
         $response->assertSee('resume.example.com');
     }
@@ -244,6 +247,11 @@ class ProductSubmissionDraftTest extends TestCase
             'name' => 'Launch Draft',
             'tagline' => 'Launch tagline',
             'hosting_provider' => 'Vercel',
+            'hosting_details' => [
+                'status' => 'inferred', 'provider' => 'Vercel', 'host' => 'launch.example.com',
+                'cdn_providers' => [],
+                'evidence' => [['type' => 'cname', 'value' => 'cname.vercel-dns.com', 'provider' => 'Vercel', 'role' => 'platform']],
+            ],
             'domain_registrar' => 'Example Registrar',
             'description' => '<p>Launch description.</p>',
             'link' => 'https://launch.example.com',
@@ -267,6 +275,7 @@ class ProductSubmissionDraftTest extends TestCase
             'name' => 'Launch Draft',
             'link' => 'https://launch.example.com',
         ]);
+        $this->assertSame('inferred', \App\Models\Product::where('name', 'Launch Draft')->firstOrFail()->hosting_details['status']);
         $this->assertDatabaseMissing('product_submission_drafts', [
             'id' => $draft->id,
         ]);

@@ -694,6 +694,7 @@ export function useProductForm() {
     pricing: Array.isArray(form.pricing) ? [...form.pricing] : [],
     pricing_page_url: form.pricing_page_url || '',
     hosting_provider: form.hosting_provider || '',
+    hosting_details: form.hosting_details || null,
     domain_registrar: form.domain_registrar || '',
     tech_stack: Array.isArray(form.tech_stack) ? [...form.tech_stack] : [],
     tech_stack_custom: Array.isArray(form.tech_stack_custom) ? [...form.tech_stack_custom] : [],
@@ -1516,6 +1517,15 @@ export function useProductForm() {
       }
       formData.append('link', form.link);
       formData.append('hosting_provider', form.hosting_provider || '');
+      const appendHostingDetails = (key, value) => {
+        if (value && typeof value === 'object') {
+          Object.entries(value).forEach(([child, item]) => appendHostingDetails(`${key}[${child}]`, item));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, String(value));
+        }
+      };
+      appendHostingDetails('hosting_details', form.hosting_details);
+
       formData.append('domain_registrar', form.domain_registrar || '');
       // User ID is automatically set by the backend based on the authenticated user
 
@@ -2732,6 +2742,7 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               pricing_page_url: initialData.pricing_page_url || '',
               hosting_provider: initialData.hosting_provider || '',
+              hosting_details: initialData.hosting_details || null,
               domain_registrar: initialData.domain_registrar || '',
               x_account: initialData.x_account,
               fromSource: fromParam || null,
@@ -2843,6 +2854,7 @@ export function useProductForm() {
               asking_price: initialData.asking_price,
               pricing_page_url: initialData.pricing_page_url || '',
               hosting_provider: initialData.hosting_provider || '',
+              hosting_details: initialData.hosting_details || null,
               domain_registrar: initialData.domain_registrar || '',
               x_account: initialData.x_account,
               fromSource: fromParam || null,
@@ -2989,6 +3001,7 @@ export function useProductForm() {
                     asking_price: initialData.asking_price,
                     pricing_page_url: initialData.pricing_page_url || '',
                     hosting_provider: initialData.hosting_provider || '',
+                    hosting_details: initialData.hosting_details || null,
                     domain_registrar: initialData.domain_registrar || '',
                     x_account: initialData.x_account,
                     fromSource: fromParam || null,

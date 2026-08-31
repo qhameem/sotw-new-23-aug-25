@@ -32,6 +32,11 @@
 
         <div class="mb-6 overflow-hidden rounded-lg bg-white p-6 shadow">
             <h2 class="mb-3 text-sm font-semibold">Website providers</h2>
+            <p class="mb-3 text-xs text-gray-600">
+                Current hosting source: {{ str_replace('_', '-', $product->hosting_details['status'] ?? 'unknown') }}.
+                Proposed hosting source: {{ str_replace('_', '-', $product->proposed_hosting_details['status'] ?? 'unchanged') }}.
+                CDN / proxy: {{ implode(', ', ($product->proposed_hosting_details ?? $product->hosting_details)['cdn_providers'] ?? []) ?: 'Not detected' }}.
+            </p>
             <table class="w-full text-left text-sm">
                 <thead><tr><th>Field</th><th>Current</th><th>Proposed</th></tr></thead>
                 <tbody>
