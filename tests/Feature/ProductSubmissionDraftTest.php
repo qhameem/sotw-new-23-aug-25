@@ -250,7 +250,11 @@ class ProductSubmissionDraftTest extends TestCase
             'hosting_details' => [
                 'status' => 'inferred', 'provider' => 'Vercel', 'host' => 'launch.example.com',
                 'cdn_providers' => [],
-                'evidence' => [['type' => 'cname', 'value' => 'cname.vercel-dns.com', 'provider' => 'Vercel', 'role' => 'platform']],
+                'evidence' => [
+                    ['type' => 'cname', 'value' => 'cname.vercel-dns.com', 'provider' => 'Vercel', 'role' => 'platform'],
+                    // Multipart form submissions omit nullable provider keys.
+                    ['type' => 'rdap', 'value' => 'Unrecognized network', 'role' => 'infrastructure'],
+                ],
             ],
             'domain_registrar' => 'Example Registrar',
             'description' => '<p>Launch description.</p>',

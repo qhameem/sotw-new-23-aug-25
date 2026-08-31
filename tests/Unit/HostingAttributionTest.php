@@ -12,6 +12,20 @@ class HostingAttributionTest extends TestCase
         return compact('type', 'provider', 'role') + ['value' => $provider];
     }
 
+    public function test_missing_optional_provider_is_equivalent_to_null(): void
+    {
+        foreach (['infrastructure', 'cdn'] as $role) {
+            $evidence = ['type' => 'rdap', 'value' => 'Unrecognized network', 'role' => $role];
+            $withNull = HostingAttribution::resolve('example.com', [$evidence + ['provider' => null]]);
+            $withoutKey = HostingAttribution::resolve('example.com', [$evidence]);
+
+            $this->assertSame($withNull['hosting_provider'], $withoutKey['hosting_provider']);
+            $this->assertNull($withoutKey['hosting_provider']);
+            $this->assertNull($withoutKey['hosting_details']['confidence']);
+            $this->assertSame([], $withoutKey['hosting_details']['cdn_providers']);
+        }
+    }
+
     public function test_matching_rdap_and_asn_score_higher_than_either_alone(): void
     {
         $rdap = $this->signal('rdap', 'Contabo');

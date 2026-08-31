@@ -6,12 +6,12 @@ class HostingAttribution
 {
     public static function resolve(string $host, array $evidence): array
     {
-        $cdns = array_values(array_unique(array_column(array_filter($evidence, fn ($item) => $item['role'] === 'cdn'), 'provider')));
+        $cdns = array_values(array_unique(array_column(array_filter($evidence, fn ($item) => $item['role'] === 'cdn' && filled($item['provider'] ?? null)), 'provider')));
         // Heuristic evidence strength, not a calibrated probability of correctness.
         $weights = ['cname' => 90, 'rdap' => 45, 'asn' => 30, 'ptr' => 10, 'http' => 20];
         $signals = [];
         foreach ($evidence as $item) {
-            if (! $item['provider'] || $item['role'] === 'cdn') {
+            if (! filled($item['provider'] ?? null) || $item['role'] === 'cdn') {
                 continue;
             }
             // Repeated IPs/records of the same type must not inflate confidence.
