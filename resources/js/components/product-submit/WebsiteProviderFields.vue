@@ -6,11 +6,14 @@
         {{ loading ? 'Looking up…' : 'Look up from URL' }}
       </button>
     </div>
-    <p class="text-[11px] text-gray-500">Best-effort DNS, IP registration, ASN, reverse DNS and HTTP-header lookup. Verify detected values or enter them manually. CDNs can hide the host. Lookup shares the domain/IP with Google DNS, registration services and RIPEstat, and requests public website headers.</p>
+    <p class="text-[11px] text-gray-500">Auto-detected from public records. Review or edit.</p>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div v-for="field in fields" :key="field.key">
         <label :for="field.key" class="mb-1 block text-xs font-bold text-gray-900">{{ field.label }}
           <span v-if="field.key === 'hosting_provider'" class="ml-2 rounded bg-slate-100 px-2 py-1 font-normal text-slate-600">{{ hostingStatus }}</span>
+          <span v-if="field.key === 'hosting_provider' && hostingConfidence !== null" class="ml-2 font-normal text-gray-500" title="Heuristic evidence score, not a probability of correctness.">
+            Confidence: {{ hostingConfidence }}/100
+          </span>
         </label>
         <input :id="field.key" :value="modelValue[field.key] || ''" @input="edit(field.key, $event.target.value)" type="text" maxlength="255"
           class="block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500"
@@ -46,6 +49,11 @@ const hostingStatus = computed(() => {
   if (!props.modelValue.hosting_provider) return 'Unknown';
   return { inferred: 'Inferred', user_provided: 'User-provided' }[props.modelValue.hosting_details?.status] || 'Unknown';
 });
+const hostingConfidence = computed(() => {
+  const details = props.modelValue.hosting_details;
+  return props.modelValue.hosting_provider && details?.status === 'inferred' && details.provider === props.modelValue.hosting_provider
+    && Number.isFinite(details.confidence) ? details.confidence : null;
+});
 const currentHost = () => {
   try { return new URL(props.modelValue.link).hostname.toLowerCase().replace(/\.$/, ''); } catch { return ''; }
 };
@@ -59,7 +67,7 @@ function edit(key, value) {
   const patch = { [key]: value };
   if (key === 'hosting_provider') {
     message.value = '';
-    patch.hosting_details = { ...props.modelValue.hosting_details, host: currentHost(), provider: value || null, status: value.trim() ? 'user_provided' : 'unknown' };
+    patch.hosting_details = { ...props.modelValue.hosting_details, host: currentHost(), provider: value || null, confidence: null, confidence_label: null, status: value.trim() ? 'user_provided' : 'unknown' };
   }
   emit('update:modelValue', { ...props.modelValue, ...patch });
 }
@@ -82,7 +90,8 @@ async function lookup() {
     if (current !== generation || props.modelValue.link !== url) return;
     const patch = {};
     fields.forEach(({ key }) => {
-      if (!edited.has(key) && !props.modelValue[key] && data[key]) {
+      const replaceInference = key === 'hosting_provider' && props.modelValue.hosting_details?.status === 'inferred';
+      if (!edited.has(key) && (!props.modelValue[key] || replaceInference) && data[key]) {
         patch[key] = data[key];
         detected[key] = data[key];
       }
@@ -95,6 +104,10 @@ async function lookup() {
       status: !selectedHost ? 'unknown' : manual ? 'user_provided'
         : data.hosting_provider === selectedHost ? 'inferred' : 'unknown',
     };
+    if (patch.hosting_details.status !== 'inferred') {
+      patch.hosting_details.confidence = null;
+      patch.hosting_details.confidence_label = null;
+    }
     emit('update:modelValue', { ...props.modelValue, ...patch });
     message.value = [data.hosting_note, data.domain_registrar ? '' : 'Registrar unavailable.', !selectedHost ? 'Enter the host manually if known.' : manual ? 'Manual hosting entry retained.' : 'Detected values can be edited.'].filter(Boolean).join(' ');
   } catch (error) {

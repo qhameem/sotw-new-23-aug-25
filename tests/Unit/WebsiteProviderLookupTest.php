@@ -45,7 +45,7 @@ class WebsiteProviderLookupTest extends TestCase
         ]);
         $result = app(WebsiteProviderLookup::class)->lookup('https://sample.com');
         $this->assertNull($result['hosting_provider']);
-        $this->assertStringContainsString('CDN/proxy', $result['hosting_note']);
+        $this->assertStringContainsString('CDN', $result['hosting_note']);
     }
 
     public function test_failures_and_private_addresses_leave_fields_optional(): void

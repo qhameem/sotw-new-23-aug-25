@@ -276,6 +276,7 @@ class ProductSubmissionDraftTest extends TestCase
             'link' => 'https://launch.example.com',
         ]);
         $this->assertSame('inferred', \App\Models\Product::where('name', 'Launch Draft')->firstOrFail()->hosting_details['status']);
+        $this->assertSame(90, \App\Models\Product::where('name', 'Launch Draft')->firstOrFail()->hosting_details['confidence']);
         $this->assertDatabaseMissing('product_submission_drafts', [
             'id' => $draft->id,
         ]);

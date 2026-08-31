@@ -21,7 +21,7 @@ class WebsiteProviderLookup
             throw new InvalidArgumentException('Enter a public website URL with a domain name.');
         }
 
-        $key = 'website-providers:v2:'.hash('sha256', $host);
+        $key = 'website-providers:v3:'.hash('sha256', $host);
         $cached = Cache::get($key);
         if (is_array($cached)) {
             return $cached;
