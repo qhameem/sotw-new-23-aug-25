@@ -21,7 +21,7 @@ class WebsiteProviderLookup
             throw new InvalidArgumentException('Enter a public website URL with a domain name.');
         }
 
-        $key = 'website-providers:v3:'.hash('sha256', $host);
+        $key = 'website-providers:v4:'.hash('sha256', $host);
         $cached = Cache::get($key);
         if (is_array($cached)) {
             return $cached;
@@ -42,7 +42,7 @@ class WebsiteProviderLookup
 
             return $result;
         })();
-        Cache::put($key, $result, $result['hosting_provider'] ? now()->addHours(6) : now()->addMinutes(10));
+        Cache::put($key, $result, $result['hosting_provider'] && $result['domain_registrar'] ? now()->addHours(6) : now()->addMinutes(10));
 
         return $result;
     }
@@ -52,11 +52,15 @@ class WebsiteProviderLookup
         $labels = explode('.', $host);
         $tld = end($labels);
         $base = null;
-        foreach ($this->bootstrap('dns') as [$suffixes, $urls]) {
+        foreach ($this->attempt(fn () => $this->bootstrap('dns')) ?? [] as [$suffixes, $urls]) {
             if (in_array($tld, $suffixes, true)) {
                 $base = $this->httpsEndpoint($urls);
                 break;
             }
+        }
+        if (! $base) {
+            $fallback = config('website_providers.rdap_fallbacks.'.$tld);
+            $base = is_string($fallback) ? $this->httpsEndpoint([$fallback]) : null;
         }
         if (! $base) {
             return null;
@@ -285,7 +289,7 @@ class WebsiteProviderLookup
 
     private function request(string $url, array $query = []): \Illuminate\Http\Client\Response
     {
-        // Only fixed DNS/IANA services and IANA-listed registries are contacted.
+        // Only fixed services, IANA-listed registries, and configured registry fallbacks are contacted.
         // Disable redirects so a registry cannot redirect requests to private services.
         return Http::acceptJson()->connectTimeout(2)->timeout(4)->withoutRedirecting()->get($url, $query);
     }

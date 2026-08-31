@@ -1,6 +1,10 @@
 <?php
 
 return [
+    // Verified registry endpoints for TLDs absent from IANA's RDAP bootstrap.
+    'rdap_fallbacks' => [
+        'io' => 'https://rdap.identitydigital.services/rdap/',
+    ],
     'platform_domains' => [
         'vercel-dns.com' => 'Vercel', 'vercel.app' => 'Vercel',
         'netlify.app' => 'Netlify', 'netlify.com' => 'Netlify',

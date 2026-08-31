@@ -35,6 +35,75 @@ class WebsiteProviderLookupTest extends TestCase
         Http::assertSentCount(5);
     }
 
+    public function test_io_fallback_resolves_subdomains_and_ignores_old_cached_misses(): void
+    {
+        Cache::put('website-providers:v3:'.hash('sha256', 'www.typebase.io'), ['domain_registrar' => null], 3600);
+        Http::fake([
+            'https://data.iana.org/rdap/dns.json' => Http::response(['services' => []]),
+            'https://rdap.identitydigital.services/rdap/domain/www.typebase.io' => Http::response([], 404),
+            'https://rdap.identitydigital.services/rdap/domain/typebase.io' => Http::response([
+                'ldhName' => 'typebase.io',
+                'entities' => [['roles' => ['registrar'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'NameCheap, Inc.']]]]],
+            ]),
+            'https://dns.google/resolve*' => Http::response(['Answer' => []]),
+        ]);
+        $this->assertSame('NameCheap, Inc.', app(WebsiteProviderLookup::class)->lookup('https://www.typebase.io')['domain_registrar']);
+        Http::assertSentCount(5);
+    }
+
+    public function test_iana_endpoint_takes_precedence_over_configured_fallback(): void
+    {
+        Http::fake([
+            'https://data.iana.org/rdap/dns.json' => Http::response(['services' => [[['io'], ['https://registry.example/']]]]),
+            'https://registry.example/domain/typebase.io' => Http::response([
+                'ldhName' => 'typebase.io',
+                'entities' => [['roles' => ['registrar'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'Registry Registrar']]]]],
+            ]),
+            'https://dns.google/resolve*' => Http::response(['Answer' => []]),
+        ]);
+        $this->assertSame('Registry Registrar', app(WebsiteProviderLookup::class)->lookup('https://typebase.io')['domain_registrar']);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'identitydigital'));
+    }
+
+    public function test_fallback_works_when_iana_is_unavailable(): void
+    {
+        Http::fake([
+            'https://data.iana.org/rdap/dns.json' => Http::response([], 503),
+            'https://rdap.identitydigital.services/rdap/domain/typebase.io' => Http::response([
+                'ldhName' => 'typebase.io',
+                'entities' => [['roles' => ['registrar'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'NameCheap, Inc.']]]]],
+            ]),
+            'https://dns.google/resolve*' => Http::response(['Answer' => []]),
+        ]);
+        $this->assertSame('NameCheap, Inc.', app(WebsiteProviderLookup::class)->lookup('https://typebase.io')['domain_registrar']);
+    }
+
+    public function test_failed_or_mismatched_fallbacks_remain_optional_and_retry_after_ten_minutes(): void
+    {
+        foreach ([503, 302, 200] as $status) {
+            Cache::flush();
+            Http::fake([
+                'https://data.iana.org/rdap/dns.json' => Http::response(['services' => []]),
+                'https://rdap.identitydigital.services/rdap/domain/typebase.io' => Http::response([
+                    'ldhName' => 'another.io',
+                    'entities' => [['roles' => ['registrar'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'Wrong Registrar']]]]],
+                ], $status, ['Location' => 'http://127.0.0.1/private']),
+                'https://dns.google/resolve*' => Http::response(['Answer' => [['type' => 5, 'data' => 'sample.vercel-dns.com.']]]),
+            ]);
+            $service = app(WebsiteProviderLookup::class);
+            $result = $service->lookup('https://typebase.io');
+            $this->assertNull($result['domain_registrar']);
+            $this->assertSame('Vercel', $result['hosting_provider']);
+            $this->assertSame($result, $service->lookup('https://typebase.io'));
+            Http::assertSentCount(4);
+            $this->travel(11)->minutes();
+            $service->lookup('https://typebase.io');
+            Http::assertSentCount(7);
+            Http::assertNotSent(fn ($request) => str_contains($request->url(), '127.0.0.1'));
+            $this->travelBack();
+        }
+    }
+
     public function test_cloudflare_is_not_reported_as_origin_hosting(): void
     {
         Http::fake([
