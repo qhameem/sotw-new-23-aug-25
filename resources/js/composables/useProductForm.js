@@ -1,6 +1,7 @@
 import { reactive, computed, ref, toRefs } from 'vue';
 import { productFormService, createProductFormState, getDefaultFreeScheduleDate, getDefaultPaidScheduleDate } from '../services/productFormService';
 import axios from 'axios';
+import { useExtractionTimer } from './useExtractionTimer';
 
 // Create a global state for the product form
 const globalFormState = createProductFormState();
@@ -1929,6 +1930,7 @@ export function useProductForm() {
       });
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       const data = response.data;
+      if (isAdmin.value) useExtractionTimer().record('initial', data.phase_timings);
 
       console.log('fetchInitialData response:', data);
 
@@ -1949,10 +1951,7 @@ export function useProductForm() {
         form.link = linkValue;
       }
 
-      // Trigger fetching of remaining data (description, categories, etc.)
-      // We don't await this to keep the UI responsive, or we could await it if we want the button to spin until everything is done.
-      // Based on user feedback "stuck in loop", they likely want to see progress.
-      // Let's await it so the button state reflects total activity.
+      // Keep the full auto-fill session active until all results have been applied.
       await fetchRemainingData(false, linkValue);
 
     } catch (error) {
@@ -2008,6 +2007,7 @@ export function useProductForm() {
       }
 
       onProgress?.({
+        timing_scope: 'fallback',
         message: 'Detailed analysis complete.',
         progress: 100,
         data: fallbackData,
@@ -2199,6 +2199,7 @@ export function useProductForm() {
         fetchContent: shouldFetchContent,
         additionalResources: form.additional_resources || '',
         onProgress: (streamData) => {
+          if (isAdmin.value) useExtractionTimer().record(streamData.timing_scope || 'details', streamData.phase_timings || streamData.data?.phase_timings);
           if (streamData.data) {
             applyAutofillPatch(streamData.data, { forceDescriptionOverwrite });
 

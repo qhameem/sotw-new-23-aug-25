@@ -19,19 +19,23 @@ use Tests\TestCase;
 
 class ProductAdditionalResourcesAutofillTest extends TestCase
 {
-    public function test_process_url_includes_additional_resources_in_ai_prompts_and_classification(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('timingViewers')]
+    public function test_process_url_includes_additional_resources_in_ai_prompts_and_classification(?bool $admin): void
     {
         $capturedPrompts = [];
         $this->fakeAutofillRequests($capturedPrompts);
         $controller = $this->makeControllerWithClassifierExpectation();
 
-        $response = $controller->processUrl(Request::create('/api/process-url', 'POST', [
+        $request = Request::create('/api/process-url', 'POST', [
             'url' => 'https://1.1.1.1',
             'name' => 'Acme',
             'fetch_content' => true,
             'additional_resources' => "https://8.8.8.8/pricing\nFocus on SOC 2 workflows and the audit trail.",
-        ]));
+        ]);
+        $this->setTimingViewer($request, $admin);
 
+        $response = $controller->processUrl($request);
+        $this->assertTimingVisibility(json_decode($response->getContent(), true), $admin === true);
         $this->assertSame(200, $response->getStatusCode(), $response->getContent());
         $this->assertCount(2, $capturedPrompts);
 
@@ -49,22 +53,32 @@ class ProductAdditionalResourcesAutofillTest extends TestCase
         }));
     }
 
-    public function test_process_url_stream_includes_additional_resources_in_ai_prompts_and_classification(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('timingViewers')]
+    public function test_process_url_stream_includes_additional_resources_in_ai_prompts_and_classification(?bool $admin): void
     {
         $capturedPrompts = [];
         $this->fakeAutofillRequests($capturedPrompts);
         $controller = $this->makeControllerWithClassifierExpectation();
 
-        $response = $controller->processUrlStream(Request::create('/api/process-url-stream', 'POST', [
+        $request = Request::create('/api/process-url-stream', 'POST', [
             'url' => 'https://1.1.1.1',
             'name' => 'Acme',
             'fetch_content' => true,
             'additional_resources' => "https://8.8.8.8/pricing\nFocus on SOC 2 workflows and the audit trail.",
-        ]));
+        ]);
+        $this->setTimingViewer($request, $admin);
 
+        $response = $controller->processUrlStream($request);
+        ob_start();
         ob_start();
         $response->sendContent();
-        ob_end_clean();
+        ob_end_flush();
+        $events = explode("\n", trim(ob_get_clean()));
+        foreach ($events as $event) {
+            $payload = json_decode($event, true);
+            $this->assertSame($admin === true, array_key_exists('phase_timings', $payload));
+        }
+        $this->assertTimingVisibility(json_decode(end($events), true), $admin === true);
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertCount(2, $capturedPrompts);
@@ -81,6 +95,35 @@ class ProductAdditionalResourcesAutofillTest extends TestCase
                 && str_contains($prompt, 'steep learning curve')
                 && str_contains($prompt, 'limited native integrations');
         }));
+    }
+
+    public static function timingViewers(): array
+    {
+        return ['admin' => [true], 'member' => [false], 'guest' => [null]];
+    }
+
+    private function setTimingViewer(Request $request, ?bool $admin): void
+    {
+        $request->setUserResolver(fn () => $admin === null ? null : new class($admin)
+        {
+            public function __construct(private bool $admin) {}
+
+            public function hasRole(string $role): bool
+            {
+                return $role === 'admin' && $this->admin;
+            }
+        });
+    }
+
+    private function assertTimingVisibility(array $payload, bool $admin): void
+    {
+        $this->assertSame($admin, array_key_exists('phase_timings', $payload));
+        if ($admin) {
+            foreach (['metadata', 'context', 'research', 'tagline', 'description', 'logo', 'categories', 'tech_stack', 'screenshot'] as $phase) {
+                $this->assertArrayHasKey($phase, $payload['phase_timings']);
+                $this->assertGreaterThanOrEqual(0, $payload['phase_timings'][$phase]);
+            }
+        }
     }
 
     private function fakeAutofillRequests(array &$capturedPrompts): void

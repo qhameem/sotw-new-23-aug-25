@@ -45,6 +45,7 @@
               :showExtraContext="showAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
+              :showPhaseTimings="isAdmin"
               :loadingMessage="loadingMessage"
               :isUrlInvalid="isUrlInvalid"
               :urlTrimSuggestion="urlTrimSuggestion"
@@ -197,6 +198,7 @@
                     :showExtraContext="showAiContext"
                     :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
                     :loadingProgress="loadingProgress"
+                    :showPhaseTimings="isAdmin"
                     :loadingMessage="loadingMessage"
                     :isUrlInvalid="isUrlInvalid"
                     :urlTrimSuggestion="urlTrimSuggestion"
@@ -324,7 +326,7 @@
  </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
@@ -333,7 +335,11 @@ import ProductPreviewCard from './ProductPreviewCard.vue';
 import FormProgress from './FormProgress.vue';
 import LogoPickerModal from './LogoPickerModal.vue';
 import ScreenshotPickerModal from './ScreenshotPickerModal.vue';
+import { useExtractionTimer } from '../../composables/useExtractionTimer';
 import { useProductForm } from '../../composables/useProductForm';
+
+const extractionTimer = useExtractionTimer();
+onUnmounted(extractionTimer.stop);
 
 const props = defineProps({
   initialProduct: {
@@ -535,43 +541,51 @@ onUnmounted(() => {
 
 // Handle URL Fetch Action (formerly "Get Started")
 const handleUrlFetch = async (url) => {
-  if (isLoading.value) {
+  if (isLoading.value || extractionTimer.timing.running) {
     return;
   }
 
-  resetManualMediaChoices();
+  extractionTimer.start();
+  try {
+    resetManualMediaChoices();
 
-  if (showAdminSandboxControls.value && form.sandbox_mode) {
-    await simulateSandboxAutofill();
-    showForm.value = true;
-    return;
-  }
+    if (showAdminSandboxControls.value && form.sandbox_mode) {
+      await simulateSandboxAutofill();
+      showForm.value = true;
+      return;
+    }
 
-  form.link = url;
-  isLoading.value = true;
-  loadingProgress.value = 3;
-  loadingMessage.value = 'Checking website URL...';
+    form.link = url;
+    isLoading.value = true;
+    loadingProgress.value = 3;
+    loadingMessage.value = 'Checking website URL...';
 
-  const duplicateCheck = await checkUrlExists(url);
-  if (duplicateCheck?.checkFailed) {
+    const checkStarted = performance.now();
+    const duplicateCheck = await checkUrlExists(url);
+    if (isAdmin.value) extractionTimer.record('client', { url_check: (performance.now() - checkStarted) / 1000 });
+    if (duplicateCheck?.checkFailed) {
+      urlCheckPending.value = false;
+      urlCheckFailed.value = true;
+      isLoading.value = false;
+      loadingProgress.value = 0;
+      loadingMessage.value = '';
+      return;
+    }
     urlCheckPending.value = false;
-    urlCheckFailed.value = true;
-    isLoading.value = false;
-    loadingProgress.value = 0;
-    loadingMessage.value = '';
-    return;
-  }
-  urlCheckPending.value = false;
-  urlCheckFailed.value = false;
-  if (urlExistsError.value) {
-    isLoading.value = false;
-    loadingProgress.value = 0;
-    loadingMessage.value = '';
-    return;
-  }
+    urlCheckFailed.value = false;
+    if (urlExistsError.value) {
+      isLoading.value = false;
+      loadingProgress.value = 0;
+      loadingMessage.value = '';
+      return;
+    }
 
-  await fetchInitialData(url);
-  showForm.value = true;
+    await fetchInitialData(url);
+    showForm.value = true;
+  } finally {
+    await nextTick();
+    extractionTimer.stop();
+  }
 };
 
 const handleUrlInputUpdate = (val) => {

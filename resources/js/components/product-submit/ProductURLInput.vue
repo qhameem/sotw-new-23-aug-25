@@ -1,12 +1,15 @@
 <template>
   <div id="field-link" class="bg-yellow-50 p-6 rounded-xl border border-dashed border-gray-300 mb-8">
-    <div class="mb-3 flex items-start justify-between gap-4">
+    <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
         <span class="text-sm text-gray-700 flex items-center">
           Enter your URL <span class="mx-1">👇</span> and we'll auto-fill the rest
         </span>
       </div>
+      <span v-if="extractionTiming.started" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
+        {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
+      </span>
       <p v-if="fieldError && !urlExistsError" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ fieldError }}</p>
     </div>
     
@@ -71,6 +74,15 @@
         </div>
       </div>
     </div>
+    <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
+      <summary class="cursor-pointer">Extraction phase timings</summary>
+      <dl class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+        <div v-for="(seconds, phase) in extractionTiming.phases" :key="phase" class="flex justify-between gap-4">
+          <dt>{{ phaseLabel(phase) }}</dt><dd class="tabular-nums">{{ seconds.toFixed(2) }}s</dd>
+        </div>
+      </dl>
+      <p class="mt-2">Total includes network and form updates.</p>
+    </details>
     <div v-if="showExtraContext" class="mt-4">
       <div class="flex items-center gap-2">
         <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
@@ -198,6 +210,14 @@ Internal note: focus on the API and automation features."
 </template>
 
 <script setup>
+import { useExtractionTimer } from '../../composables/useExtractionTimer';
+const { timing: extractionTiming } = useExtractionTimer();
+const phaseLabel = (key) => {
+  const [scope, phase] = key.split(':');
+  const labels = { url_check: 'URL check', metadata: 'Website metadata', logo: 'Logo fetching', screenshot: 'Screenshot', tagline: 'Tagline generation', description: 'Description writing', categories: 'Category classification', tech_stack: 'Tech stack detection', context: 'Additional context', research: 'Description research', name: 'Product name' };
+  const prefix = { initial: 'Initial', details: 'Detailed', fallback: 'Retry', client: '' }[scope] || '';
+  return [prefix, labels[phase] || phase].filter(Boolean).join(' · ');
+};
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
@@ -208,6 +228,7 @@ const props = defineProps({
     default: '',
   },
   isLoading: Boolean,
+  showPhaseTimings: Boolean,
   isUrlChecking: Boolean,
   urlCheckFailed: Boolean,
   loadingProgress: Number,

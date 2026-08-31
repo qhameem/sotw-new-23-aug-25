@@ -3309,6 +3309,7 @@ class ProductController extends Controller
 
     public function fetchMetadata(Request $request)
     {
+        $timings = \App\Support\ExtractionTimings::forRequest($request);
         $url = $request->input('url');
 
         if (! $url) {
@@ -3322,9 +3323,9 @@ class ProductController extends Controller
         }
 
         try {
-            $response = Http::timeout(5)->withHeaders([
+            $response = $timings->measure('metadata', fn () => Http::timeout(5)->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            ])->get($url);
+            ])->get($url));
             $html = $response->body();
 
             $doc = new DOMDocument;
@@ -3343,13 +3344,14 @@ class ProductController extends Controller
 
             }
 
-            $faviconUrl = $this->productLogoResolver->discoverReplacementLogoUrl($url);
+            $faviconUrl = $timings->measure('logo', fn () => $this->productLogoResolver->discoverReplacementLogoUrl($url));
 
             return response()->json([
-                'name' => $this->nameExtractor->extract(trim($title), $url),
+                'name' => $timings->measure('name', fn () => $this->nameExtractor->extract(trim($title), $url)),
                 'tagline' => trim($description),
                 'description' => '',
                 'favicon' => $faviconUrl,
+                ...$timings->payload($request),
             ]);
         } catch (\Exception $e) {
             Log::warning('Basic metadata fetch timed out or blocked: '.$e->getMessage(), ['url' => $url]);
@@ -3359,6 +3361,7 @@ class ProductController extends Controller
                 'tagline' => '',
                 'description' => '',
                 'favicon' => null,
+                ...$timings->payload($request),
             ], 200);
         }
     }
@@ -3696,6 +3699,7 @@ class ProductController extends Controller
 
     public function fetchInitialMetadata(Request $request)
     {
+        $timings = \App\Support\ExtractionTimings::forRequest($request);
         // Increase maximum execution time for scraping
         set_time_limit(120);
 
@@ -3724,9 +3728,9 @@ class ProductController extends Controller
             'maker_links' => [],
         ];
         try {
-            $response = Http::timeout(5)->withHeaders([
+            $response = $timings->measure('metadata', fn () => Http::timeout(5)->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            ])->get($url);
+            ])->get($url));
             $html = $response->body();
 
             $doc = new DOMDocument;
@@ -3757,7 +3761,7 @@ class ProductController extends Controller
         $responseData = [
             'name' => $metadata['name'],
             'favicon' => $metadata['favicon'],
-            'screenshot_url' => $this->screenshotService->capture($url),
+            'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
             'pricing_page_url' => $autofillLinks['pricing_page_url'],
             'x_account' => $autofillLinks['x_account'],
             'maker_links' => $autofillLinks['maker_links'],
@@ -3790,7 +3794,7 @@ class ProductController extends Controller
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
 
-        return response()->json($responseData);
+        return response()->json(array_merge($responseData, $timings->payload($request)));
     }
 
     protected function extractAutofillLinksFromDocument(DOMDocument $doc, string $pageUrl): array
@@ -4103,12 +4107,13 @@ class ProductController extends Controller
 
     public function processUrlStream(Request $request)
     {
+        $timings = \App\Support\ExtractionTimings::forRequest($request);
         set_time_limit(120);
         $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
-        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request, $isAdmin) {
-            $sendUpdate = function ($message, $progress, $data = null) {
-                echo json_encode(['message' => $message, 'progress' => $progress, 'data' => $data])."\n";
+        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request, $isAdmin, $timings) {
+            $sendUpdate = function ($message, $progress, $data = null) use ($request, $timings) {
+                echo json_encode(array_merge(['message' => $message, 'progress' => $progress, 'data' => $data], $timings->payload($request)))."\n";
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
@@ -4133,7 +4138,7 @@ class ProductController extends Controller
             $name = $request->input('name');
             $tagline = $request->input('tagline');
             $fetchContent = $request->input('fetch_content', true);
-            $additionalResourcesContext = $this->buildAdditionalResourcesContext($request->input('additional_resources'));
+            $additionalResourcesContext = $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources')));
 
             $description = '';
             $extractedTagline = '';
@@ -4143,9 +4148,9 @@ class ProductController extends Controller
 
             try {
                 $sendUpdate('Connecting to website...', 5);
-                $htmlResponse = \Illuminate\Support\Facades\Http::withHeaders([
+                $htmlResponse = $timings->measure('metadata', fn () => \Illuminate\Support\Facades\Http::withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                ])->timeout(15)->get($url);
+                ])->timeout(15)->get($url));
 
                 if (! $htmlResponse->successful()) {
                     $sendUpdate('Failed to fetch website.', 100, [
@@ -4222,14 +4227,14 @@ class ProductController extends Controller
 
                     $productNameForAI = trim((string) $name) !== ''
                         ? $name
-                        : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
-                    $descriptionContext = $this->appendLimitationResearchContext($textContent, $productNameForAI, $url);
+                        : ($timings->measure('name', fn () => $this->nameExtractor->extract($title ?: '', $url)) ?: 'this product');
+                    $descriptionContext = $timings->measure('research', fn () => $this->appendLimitationResearchContext($textContent, $productNameForAI, $url));
 
                     $sendUpdate('Generating AI taglines...', 40);
                     try {
                         $taglineRewriter = new \App\Services\TaglineRewriterService;
                         $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
-                        $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
+                        $aiTaglines = $timings->measure('tagline', fn () => $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent));
 
                         if ($aiTaglines) {
                             $extractedTagline = $aiTaglines['tagline'];
@@ -4240,7 +4245,7 @@ class ProductController extends Controller
                     }
 
                     if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
-                        $heuristicTaglines = $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name);
+                        $heuristicTaglines = $timings->measure('tagline', fn () => $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name));
 
                         if (empty($extractedTagline)) {
                             $extractedTagline = $heuristicTaglines['tagline'] ?? '';
@@ -4272,7 +4277,7 @@ class ProductController extends Controller
 
                     if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
                         $descRewriter = new \App\Services\DescriptionRewriterService;
-                        $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
+                        $rewritten = $timings->measure('description', fn () => $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext));
                         if ($rewritten) {
                             $description = $rewritten;
                         }
@@ -4290,7 +4295,7 @@ class ProductController extends Controller
 
                 $sendUpdate('Extracting pricing page, socials, and logos...', 85);
 
-                $logos = $this->logoExtractor->extract($url, $htmlContent);
+                $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
 
                 $sendUpdate('Logos and links ready. Classifying features and categories...', 88, [
                     'logos' => $logos,
@@ -4304,7 +4309,7 @@ class ProductController extends Controller
                 if ($additionalResourcesContext !== '') {
                     $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                 }
-                $classificationResult = $this->categoryClassifier->classify($classificationSource);
+                $classificationResult = $timings->measure('categories', fn () => $this->categoryClassifier->classify($classificationSource));
                 $categories = $classificationResult['categories'] ?? [];
                 $useCases = $classificationResult['use_cases'] ?? [];
                 $bestFor = $classificationResult['best_for'] ?? [];
@@ -4319,7 +4324,7 @@ class ProductController extends Controller
                 $techStackIds = [];
 
                 try {
-                    $techStackNames = $this->techStackDetector->detect($url);
+                    $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
                     $techStackIds = ! empty($techStackNames)
                         ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                         : [];
@@ -4362,7 +4367,7 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
-                    'screenshot_url' => $this->screenshotService->capture($url),
+                    'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
                     'x_account' => $autofillLinks['x_account'],
                     'maker_links' => $autofillLinks['maker_links'],
@@ -4399,6 +4404,7 @@ class ProductController extends Controller
 
     public function processUrl(Request $request)
     {
+        $timings = \App\Support\ExtractionTimings::forRequest($request);
         set_time_limit(120);
         $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
@@ -4417,7 +4423,7 @@ class ProductController extends Controller
         $tagline = $request->input('tagline');
 
         $fetchContent = $request->input('fetch_content', true);
-        $additionalResourcesContext = $this->buildAdditionalResourcesContext($request->input('additional_resources'));
+        $additionalResourcesContext = $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources')));
 
         $description = '';
         $extractedTagline = '';
@@ -4427,9 +4433,9 @@ class ProductController extends Controller
 
         try {
             // 3. Fetch HTML for content extraction with timeout
-            $htmlResponse = Http::withHeaders([
+            $htmlResponse = $timings->measure('metadata', fn () => Http::withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            ])->timeout(15)->get($url);
+            ])->timeout(15)->get($url));
             if (! $htmlResponse->successful()) {
                 return response()->json([
                     'description' => $description,
@@ -4445,6 +4451,7 @@ class ProductController extends Controller
                     'pricing_page_url' => null,
                     'x_account' => null,
                     'maker_links' => [],
+                    ...$timings->payload($request),
                 ]);
             }
             $htmlContent = $htmlResponse->body();
@@ -4498,14 +4505,14 @@ class ProductController extends Controller
 
                 $productNameForAI = trim((string) $name) !== ''
                     ? $name
-                    : ($this->nameExtractor->extract($title ?: '', $url) ?: 'this product');
-                $descriptionContext = $this->appendLimitationResearchContext($textContent, $productNameForAI, $url);
+                    : ($timings->measure('name', fn () => $this->nameExtractor->extract($title ?: '', $url)) ?: 'this product');
+                $descriptionContext = $timings->measure('research', fn () => $this->appendLimitationResearchContext($textContent, $productNameForAI, $url));
 
                 // --- AI Tagline Generation (primary source) ---
                 try {
                     $taglineRewriter = new \App\Services\TaglineRewriterService;
                     $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
-                    $aiTaglines = $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent);
+                    $aiTaglines = $timings->measure('tagline', fn () => $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent));
 
                     if ($aiTaglines) {
                         $extractedTagline = $aiTaglines['tagline'];
@@ -4524,7 +4531,7 @@ class ProductController extends Controller
                 // --- Heuristic fallback if AI didn't produce taglines ---
                 if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
                     // Collect all candidate strings: meta description, title, headings
-                    $heuristicTaglines = $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name);
+                    $heuristicTaglines = $timings->measure('tagline', fn () => $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name));
 
                     if (empty($extractedTagline)) {
                         $extractedTagline = $heuristicTaglines['tagline'] ?? '';
@@ -4553,7 +4560,7 @@ class ProductController extends Controller
 
                 if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
                     $descRewriter = new DescriptionRewriterService;
-                    $rewritten = $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext);
+                    $rewritten = $timings->measure('description', fn () => $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext));
                     if ($rewritten) {
                         $description = $rewritten;
                     }
@@ -4565,14 +4572,14 @@ class ProductController extends Controller
             }
 
             // Extract Logos
-            $logos = $this->logoExtractor->extract($url, $htmlContent);
+            $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
 
             // Classify categories and bestFor from the HTML content
             $classificationSource = $htmlContent;
             if ($additionalResourcesContext !== '') {
                 $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
             }
-            $classificationResult = $this->categoryClassifier->classify($classificationSource);
+            $classificationResult = $timings->measure('categories', fn () => $this->categoryClassifier->classify($classificationSource));
             $categories = $classificationResult['categories'] ?? [];
             $useCases = $classificationResult['use_cases'] ?? [];
             $bestFor = $classificationResult['best_for'] ?? [];
@@ -4613,7 +4620,7 @@ class ProductController extends Controller
 
             $techStackIds = [];
             try {
-                $techStackNames = $this->techStackDetector->detect($url);
+                $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
                 $techStackIds = ! empty($techStackNames)
                     ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                     : [];
@@ -4639,7 +4646,7 @@ class ProductController extends Controller
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'suggestedUseCases' => $unmatchedUseCases,
-                'screenshot_url' => $this->screenshotService->capture($url),
+                'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
                 'maker_links' => $autofillLinks['maker_links'],
@@ -4647,7 +4654,7 @@ class ProductController extends Controller
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
 
-            return response()->json($responseData);
+            return response()->json(array_merge($responseData, $timings->payload($request)));
         } catch (\Exception $e) {
             Log::error('Error in processUrl: '.$e->getMessage(), [
                 'url' => $url,
@@ -4670,6 +4677,7 @@ class ProductController extends Controller
                 'pricing_page_url' => null,
                 'x_account' => null,
                 'maker_links' => [],
+                ...$timings->payload($request),
             ]);
         }
     }
