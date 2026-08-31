@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +45,14 @@ class ProductSubmissionDraft extends Model
         $userId = $user instanceof User ? $user->getKey() : $user;
 
         return $query->where('user_id', $userId);
+    }
+
+    public function scopeSummaryOnly(Builder $query): Builder
+    {
+        // Keep large JSON/image payloads out of list queries and MySQL sort buffers.
+        return $query->select([
+            'id', 'user_id', 'uuid', 'name', 'link', 'last_autosaved_at', 'updated_at',
+        ]);
     }
 
     public function title(): string

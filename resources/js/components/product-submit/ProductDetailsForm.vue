@@ -539,6 +539,8 @@
       >
     </div>
 
+    <WebsiteProviderFields :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" />
+
     <!-- Social Links -->
     <div class="pt-4 border-t border-gray-100" :class="autofillLockClass('links')">
         <label class="block text-xs font-bold text-gray-900 mb-4">Social Links</label>
@@ -591,6 +593,7 @@
 </template>
 
 <script setup>
+import WebsiteProviderFields from './WebsiteProviderFields.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
 import { getTabProgress } from '../../services/productFormService';

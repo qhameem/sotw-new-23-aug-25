@@ -262,6 +262,8 @@ class ProductController extends Controller
             'sell_product' => old('sell_product', false),
             'asking_price' => old('asking_price'),
             'pricing_page_url' => old('pricing_page_url'),
+            'hosting_provider' => old('hosting_provider'),
+            'domain_registrar' => old('domain_registrar'),
             'x_account' => old('x_account'),
             'current_categories' => old('categories', []),
             'current_tech_stacks' => old('tech_stacks', []),
@@ -312,6 +314,8 @@ class ProductController extends Controller
             'categories.*' => 'exists:categories,id',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'video_url' => 'nullable|string',
+            'hosting_provider' => 'nullable|string|max:255',
+            'domain_registrar' => 'nullable|string|max:255',
         ]);
 
         $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
@@ -388,6 +392,8 @@ class ProductController extends Controller
             'sell_product' => old('sell_product', $product->sell_product),
             'asking_price' => old('asking_price', $product->asking_price),
             'pricing_page_url' => old('pricing_page_url', $product->pricing_page_url),
+            'hosting_provider' => old('hosting_provider', $product->proposed_hosting_provider ?? $product->hosting_provider),
+            'domain_registrar' => old('domain_registrar', $product->proposed_domain_registrar ?? $product->domain_registrar),
             'x_account' => old('x_account', $product->x_account),
             'comparison_overrides_input' => old('comparison_overrides_input', implode(', ', $product->comparison_product_ids ?? [])),
             'alternative_overrides_input' => old('alternative_overrides_input', implode(', ', $product->alternative_product_ids ?? [])),
@@ -464,6 +470,8 @@ class ProductController extends Controller
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
+            'hosting_provider' => 'nullable|string|max:255',
+            'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
@@ -576,6 +584,8 @@ class ProductController extends Controller
             'sell_product' => (bool) ($validated['sell_product'] ?? false) !== (bool) $product->sell_product,
             'asking_price' => ($validated['asking_price'] ?? null) != $product->asking_price,
             'pricing_page_url' => ($validated['pricing_page_url'] ?? null) !== $product->pricing_page_url,
+            'hosting_provider' => array_key_exists('hosting_provider', $validated) && $validated['hosting_provider'] !== (($product->proposed_hosting_provider ?? $product->hosting_provider) ?: null),
+            'domain_registrar' => array_key_exists('domain_registrar', $validated) && $validated['domain_registrar'] !== (($product->proposed_domain_registrar ?? $product->domain_registrar) ?: null),
             'x_account' => ($validated['x_account'] ?? null) !== Product::normalizeXAccount($product->x_account),
             'comparison_product_ids' => ($validated['comparison_product_ids'] ?? []) != ($product->comparison_product_ids ?? []),
             'alternative_product_ids' => ($validated['alternative_product_ids'] ?? []) != ($product->alternative_product_ids ?? []),
@@ -623,6 +633,11 @@ class ProductController extends Controller
             }
             if ($fieldChanges['asking_price']) {
                 $product->proposed_asking_price = $validated['asking_price'] ?? null;
+            }
+            foreach (['hosting_provider', 'domain_registrar'] as $field) {
+                if ($fieldChanges[$field]) {
+                    $product->{'proposed_'.$field} = $validated[$field] ?? '';
+                }
             }
             if ($fieldChanges['pricing_page_url']) {
                 $product->proposed_pricing_page_url = $validated['pricing_page_url'] ?? null;
@@ -688,6 +703,8 @@ class ProductController extends Controller
                 'maker_links',
                 'sell_product',
                 'asking_price',
+                'hosting_provider',
+                'domain_registrar',
                 'pricing_page_url',
                 'x_account',
                 'comparison_product_ids',
@@ -971,6 +988,10 @@ class ProductController extends Controller
 
     private function productHasRemainingPendingEdits(Product $product): bool
     {
+        if ($product->proposed_hosting_provider !== null || $product->proposed_domain_registrar !== null) {
+            return true;
+        }
+
         $pendingFields = [
             $product->proposed_logo_path,
             $product->proposed_screenshot_path,

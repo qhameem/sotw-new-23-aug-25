@@ -32,6 +32,8 @@ class ApprovedProductPendingEditsTest extends TestCase
         $product->categories()->sync([$softwareCategory->id, $pricingCategory->id]);
 
         $response = $this->actingAs($owner)->put(route('products.update', $product), [
+            'hosting_provider' => 'Vercel',
+            'domain_registrar' => 'Example Registrar',
             'tagline' => 'Updated tagline',
             'product_page_tagline' => 'Updated product page tagline',
             'description' => 'Updated description',
@@ -48,6 +50,9 @@ class ApprovedProductPendingEditsTest extends TestCase
 
         $product->refresh();
 
+        $this->assertNull($product->hosting_provider);
+        $this->assertSame('Vercel', $product->proposed_hosting_provider);
+        $this->assertSame('Example Registrar', $product->proposed_domain_registrar);
         $this->assertTrue($product->has_pending_edits);
         $this->assertNotNull($product->proposed_screenshot_path);
         Storage::disk('public')->assertExists($product->proposed_screenshot_path);
@@ -81,6 +86,9 @@ class ApprovedProductPendingEditsTest extends TestCase
         $product->categories()->sync([$softwareCategory->id, $pricingCategory->id]);
         $product->proposedCategories()->sync([$softwareCategory->id, $pricingCategory->id]);
         $product->update([
+            'hosting_provider' => 'Old host',
+            'proposed_hosting_provider' => '',
+            'proposed_domain_registrar' => 'Example Registrar',
             'has_pending_edits' => true,
             'proposed_tagline' => 'Updated tagline',
             'proposed_product_page_tagline' => 'Updated page tagline',
@@ -102,16 +110,19 @@ class ApprovedProductPendingEditsTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->post(route('admin.products.approve-edits', $product), [
-            'custom_category_' . $submission->id => 'approve',
-            'custom_category_' . $submission->id . '_slug' => 'domain-management',
-            'custom_category_' . $submission->id . '_description' => 'Domain management software helps teams handle domains and DNS from one place.',
-            'custom_category_' . $submission->id . '_meta_description' => 'Browse domain management software for handling domains, DNS, and registrar workflows.',
+            'custom_category_'.$submission->id => 'approve',
+            'custom_category_'.$submission->id.'_slug' => 'domain-management',
+            'custom_category_'.$submission->id.'_description' => 'Domain management software helps teams handle domains and DNS from one place.',
+            'custom_category_'.$submission->id.'_meta_description' => 'Browse domain management software for handling domains, DNS, and registrar workflows.',
         ]);
 
         $response->assertRedirect(route('admin.products.pending-edits.index'));
 
         $product->refresh();
 
+        $this->assertNull($product->hosting_provider);
+        $this->assertSame('Example Registrar', $product->domain_registrar);
+        $this->assertNull($product->proposed_hosting_provider);
         $this->assertFalse($product->has_pending_edits);
         $this->assertNull($product->proposed_screenshot_path);
 
@@ -157,6 +168,8 @@ class ApprovedProductPendingEditsTest extends TestCase
             'name' => $product->name,
             'slug' => $product->slug,
             'link' => $product->link,
+            'hosting_provider' => 'Netlify',
+            'domain_registrar' => 'Example Registrar',
             'tagline' => 'Pending admin tagline',
             'product_page_tagline' => 'Pending admin page tagline',
             'description' => 'Pending admin description',
@@ -175,6 +188,9 @@ class ApprovedProductPendingEditsTest extends TestCase
 
         $this->assertSame('Live tagline', $product->tagline);
         $this->assertSame('Pending admin tagline', $product->proposed_tagline);
+        $this->assertNull($product->hosting_provider);
+        $this->assertSame('Netlify', $product->proposed_hosting_provider);
+        $this->assertSame('Example Registrar', $product->proposed_domain_registrar);
         $this->assertTrue($product->has_pending_edits);
         $this->assertNotNull($product->proposed_screenshot_path);
 

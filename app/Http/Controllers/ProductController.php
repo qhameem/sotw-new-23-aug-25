@@ -139,6 +139,8 @@ class ProductController extends Controller
             'sell_product' => $oldInput['sell_product'] ?? false,
             'asking_price' => $oldInput['asking_price'] ?? null,
             'pricing_page_url' => $oldInput['pricing_page_url'] ?? null,
+            'hosting_provider' => $oldInput['hosting_provider'] ?? null,
+            'domain_registrar' => $oldInput['domain_registrar'] ?? null,
             'x_account' => $oldInput['x_account'] ?? null,
             'logo' => null,
             'video_url' => null,
@@ -201,6 +203,8 @@ class ProductController extends Controller
             'sell_product' => $oldInput['sell_product'] ?? ($draftDisplayData['sell_product'] ?? false),
             'asking_price' => $oldInput['asking_price'] ?? ($draftDisplayData['asking_price'] ?? null),
             'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($draftDisplayData['pricing_page_url'] ?? ''),
+            'hosting_provider' => $oldInput['hosting_provider'] ?? ($draftDisplayData['hosting_provider'] ?? ''),
+            'domain_registrar' => $oldInput['domain_registrar'] ?? ($draftDisplayData['domain_registrar'] ?? ''),
             'x_account' => $oldInput['x_account'] ?? ($draftDisplayData['x_account'] ?? ''),
             'logos' => $draftDisplayData['logos'] ?? [],
             'gallery' => $draftDisplayData['gallery'] ?? [],
@@ -218,6 +222,7 @@ class ProductController extends Controller
         $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
         $submissionDrafts = $request->user()
             ? ProductSubmissionDraft::query()
+                ->summaryOnly()
                 ->with('user:id,name,email')
                 ->when(! $request->user()->is_admin(), fn ($query) => $query->forUser($request->user()))
                 ->latest('updated_at')
@@ -330,6 +335,8 @@ class ProductController extends Controller
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
+            'hosting_provider' => 'nullable|string|max:255',
+            'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
             'submission_type' => ['nullable', Rule::in($allowedSubmissionTypes)],
             'badge_placement_url' => 'nullable|url|max:2048',
@@ -711,6 +718,8 @@ class ProductController extends Controller
             'sell_product' => (bool) ($payload['sell_product'] ?? false),
             'asking_price' => $payload['asking_price'] ?? null,
             'pricing_page_url' => $payload['pricing_page_url'] ?? '',
+            'hosting_provider' => $payload['hosting_provider'] ?? '',
+            'domain_registrar' => $payload['domain_registrar'] ?? '',
             'x_account' => $payload['x_account'] ?? '',
             'logos' => array_values((array) ($payload['logos'] ?? [])),
             'gallery' => $gallery,
@@ -867,6 +876,8 @@ class ProductController extends Controller
                 'sell_product' => $oldInput['sell_product'] ?? (! is_null($product->proposed_sell_product) ? $product->proposed_sell_product : $product->sell_product),
                 'asking_price' => $oldInput['asking_price'] ?? (! is_null($product->proposed_asking_price) ? $product->proposed_asking_price : $product->asking_price),
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? ($product->proposed_pricing_page_url ?? $product->pricing_page_url),
+                'hosting_provider' => $oldInput['hosting_provider'] ?? ($product->proposed_hosting_provider ?? $product->hosting_provider),
+                'domain_registrar' => $oldInput['domain_registrar'] ?? ($product->proposed_domain_registrar ?? $product->domain_registrar),
                 'x_account' => $oldInput['x_account'] ?? ($product->proposed_x_account ?? $product->x_account),
                 'id' => $product->id,
                 'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
@@ -895,6 +906,8 @@ class ProductController extends Controller
                 'sell_product' => $oldInput['sell_product'] ?? $product->sell_product,
                 'asking_price' => $oldInput['asking_price'] ?? $product->asking_price,
                 'pricing_page_url' => $oldInput['pricing_page_url'] ?? $product->pricing_page_url,
+                'hosting_provider' => $oldInput['hosting_provider'] ?? $product->hosting_provider,
+                'domain_registrar' => $oldInput['domain_registrar'] ?? $product->domain_registrar,
                 'x_account' => $oldInput['x_account'] ?? $product->x_account,
                 'id' => $product->id,
                 'logos' => $product->media->whereIn('type', ['image', 'screenshot'])->pluck('path')->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))->toArray(),
@@ -1006,6 +1019,8 @@ class ProductController extends Controller
             'sell_product' => 'nullable|boolean',
             'asking_price' => 'nullable|numeric|min:0|max:99999.99',
             'pricing_page_url' => 'nullable|url|max:2048',
+            'hosting_provider' => 'nullable|string|max:255',
+            'domain_registrar' => 'nullable|string|max:255',
             'x_account' => 'nullable|string|max:255',
         ]);
 
@@ -1153,6 +1168,15 @@ class ProductController extends Controller
             $updateData['pricing_page_url'] = $validated['pricing_page_url'] ?? null;
         }
 
+        foreach (['hosting_provider', 'domain_registrar'] as $field) {
+            $current = $product->approved && $product->{'proposed_'.$field} !== null
+                ? ($product->{'proposed_'.$field} ?: null)
+                : $product->{$field};
+            if (array_key_exists($field, $validated) && $validated[$field] !== $current) {
+                $updateData[$field] = $validated[$field];
+            }
+        }
+
         $updateData['x_account'] = Product::normalizeXAccount($validated['x_account'] ?? null);
         $fieldChanges['x_account'] = $updateData['x_account'] !== Product::normalizeXAccount($product->x_account);
         if (! $fieldChanges['x_account']) {
@@ -1230,6 +1254,11 @@ class ProductController extends Controller
             if (array_key_exists('pricing_page_url', $updateData)) {
                 $product->proposed_pricing_page_url = $updateData['pricing_page_url'];
             }
+            foreach (['hosting_provider', 'domain_registrar'] as $field) {
+                if (array_key_exists($field, $updateData)) {
+                    $product->{'proposed_'.$field} = $updateData[$field] ?? '';
+                }
+            }
             if ($categoriesChanged) {
                 $product->proposedCategories()->sync($newCategories);
             }
@@ -1288,6 +1317,8 @@ class ProductController extends Controller
             $product->proposed_maker_links = null;
             $product->proposed_product_page_tagline = null;
             $product->proposed_pricing_page_url = null;
+            $product->proposed_hosting_provider = null;
+            $product->proposed_domain_registrar = null;
             $product->proposedCategories()->detach();
             $product->proposedTechStacks()->detach();
             $this->deleteProposedScreenshotFiles($product);

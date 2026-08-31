@@ -30,6 +30,22 @@
             </div>
         </div>
 
+        <div class="mb-6 overflow-hidden rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-3 text-sm font-semibold">Website providers</h2>
+            <table class="w-full text-left text-sm">
+                <thead><tr><th>Field</th><th>Current</th><th>Proposed</th></tr></thead>
+                <tbody>
+                    @foreach(['hosting_provider' => 'Hosting provider', 'domain_registrar' => 'Domain registrar'] as $field => $label)
+                        <tr>
+                            <th class="py-2 font-medium">{{ $label }}</th>
+                            <td>{{ $product->{$field} ?: 'Not specified' }}</td>
+                            <td>{{ $product->{'proposed_'.$field} === null ? 'Unchanged' : ($product->{'proposed_'.$field} ?: 'Remove value') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 divide-x divide-gray-200">
                 {{-- Current Live Version --}}

@@ -35,6 +35,8 @@ class ProductSubmissionDraftController extends Controller
             'bestFor_custom' => 'nullable|array',
             'pricing' => 'nullable|array',
             'pricing.*' => 'nullable',
+            'hosting_provider' => 'nullable|string|max:255',
+            'domain_registrar' => 'nullable|string|max:255',
             'pricing_page_url' => 'nullable|string|max:2048',
             'tech_stack' => 'nullable|array',
             'tech_stack.*' => 'nullable',

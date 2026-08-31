@@ -693,6 +693,8 @@ export function useProductForm() {
     bestFor_custom: Array.isArray(form.bestFor_custom) ? [...form.bestFor_custom] : [],
     pricing: Array.isArray(form.pricing) ? [...form.pricing] : [],
     pricing_page_url: form.pricing_page_url || '',
+    hosting_provider: form.hosting_provider || '',
+    domain_registrar: form.domain_registrar || '',
     tech_stack: Array.isArray(form.tech_stack) ? [...form.tech_stack] : [],
     tech_stack_custom: Array.isArray(form.tech_stack_custom) ? [...form.tech_stack_custom] : [],
     favicon: form.favicon || '',
@@ -1230,8 +1232,8 @@ export function useProductForm() {
       extractionErrors.tagline = data.tagline_notice.trim();
     }
 
-    if (typeof data.favicon === 'string' && data.favicon.trim() !== '') {
-      form.favicon = data.favicon;
+    if (typeof data.favicon === 'string' && data.favicon.trim() !== '' && !form.favicon) {
+      form.favicon = data.favicon.trim();
     }
 
     applyAutofillLinks(data);
@@ -1254,15 +1256,14 @@ export function useProductForm() {
 
     if (Array.isArray(data.logos) && data.logos.length > 0) {
       form.logos = data.logos;
-      if (
-        !globalFormState.manualLogoChosen.value &&
-        (!globalFormState.logoPreview.value || globalFormState.logoPreview.value === form.favicon)
-      ) {
-        globalFormState.logoPreview.value = data.logos[0];
-      }
       unlockAutofillGroups('media');
-    } else if (typeof data.favicon === 'string' && data.favicon.trim() !== '' && !globalFormState.manualLogoChosen.value) {
-      globalFormState.logoPreview.value = data.favicon;
+    }
+
+    // Select once: later extraction stages may add choices, but never replace the logo.
+    if (!globalFormState.manualLogoChosen.value && !form.logo && !globalFormState.logoPreview.value) {
+      globalFormState.logoPreview.value = form.favicon
+        || form.logos?.find((logo) => typeof logo === 'string' && logo.trim() !== '')
+        || null;
     }
 
     if (typeof data.screenshot_url === 'string' && data.screenshot_url.trim() !== '' && !globalFormState.manualScreenshotChosen.value) {
@@ -1514,6 +1515,8 @@ export function useProductForm() {
         });
       }
       formData.append('link', form.link);
+      formData.append('hosting_provider', form.hosting_provider || '');
+      formData.append('domain_registrar', form.domain_registrar || '');
       // User ID is automatically set by the backend based on the authenticated user
 
       // Add categories - combine all taxonomy selections into one array as expected by backend
@@ -2728,6 +2731,8 @@ export function useProductForm() {
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
               pricing_page_url: initialData.pricing_page_url || '',
+              hosting_provider: initialData.hosting_provider || '',
+              domain_registrar: initialData.domain_registrar || '',
               x_account: initialData.x_account,
               fromSource: fromParam || null,
               comparison_overrides_input: initialData.comparison_overrides_input || '',
@@ -2837,6 +2842,8 @@ export function useProductForm() {
               sell_product: !!initialData.sell_product,
               asking_price: initialData.asking_price,
               pricing_page_url: initialData.pricing_page_url || '',
+              hosting_provider: initialData.hosting_provider || '',
+              domain_registrar: initialData.domain_registrar || '',
               x_account: initialData.x_account,
               fromSource: fromParam || null,
               comparison_overrides_input: initialData.comparison_overrides_input || '',
@@ -2981,6 +2988,8 @@ export function useProductForm() {
                     sell_product: !!initialData.sell_product,
                     asking_price: initialData.asking_price,
                     pricing_page_url: initialData.pricing_page_url || '',
+                    hosting_provider: initialData.hosting_provider || '',
+                    domain_registrar: initialData.domain_registrar || '',
                     x_account: initialData.x_account,
                     fromSource: fromParam || null,
                     comparison_overrides_input: initialData.comparison_overrides_input || '',

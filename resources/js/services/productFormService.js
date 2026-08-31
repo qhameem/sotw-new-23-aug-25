@@ -86,6 +86,8 @@ const createInitialFormValues = () => ({
   bestFor: [],
   bestFor_custom: [],
   pricing: [],
+  hosting_provider: '',
+  domain_registrar: '',
   pricing_page_url: '',
   tech_stack: [],
   tech_stack_custom: [],

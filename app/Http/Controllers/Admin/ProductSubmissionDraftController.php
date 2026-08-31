@@ -11,6 +11,7 @@ class ProductSubmissionDraftController extends Controller
     public function index(): View
     {
         $drafts = ProductSubmissionDraft::query()
+            ->summaryOnly()
             ->with('user:id,name,email')
             ->latest('last_autosaved_at')
             ->latest('updated_at')

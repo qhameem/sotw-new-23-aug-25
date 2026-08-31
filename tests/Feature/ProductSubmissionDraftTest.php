@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use App\Models\Product;
 use App\Models\ProductSubmissionDraft;
 use App\Models\Type;
 use App\Models\User;
@@ -18,6 +17,35 @@ class ProductSubmissionDraftTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_draft_lists_do_not_load_large_payloads(): void
+    {
+        Role::firstOrCreate(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        ProductSubmissionDraft::create([
+            'user_id' => $admin->id,
+            'name' => 'Large image draft',
+            'payload' => ['logoPreview' => 'data:image/png;base64,'.str_repeat('A', 1024 * 1024)],
+        ]);
+
+        $retrievedDrafts = [];
+        ProductSubmissionDraft::retrieved(function (ProductSubmissionDraft $draft) use (&$retrievedDrafts) {
+            $retrievedDrafts[] = $draft;
+        });
+
+        foreach (['products.create', 'admin.product-submission-drafts.index'] as $route) {
+            $retrievedDrafts = [];
+            $this->actingAs($admin)->get(route($route))
+                ->assertOk()
+                ->assertSee('Large image draft');
+
+            $this->assertNotEmpty($retrievedDrafts);
+            foreach ($retrievedDrafts as $draft) {
+                $this->assertArrayNotHasKey('payload', $draft->getAttributes());
+            }
+        }
+    }
+
     public function test_user_can_autosave_an_unfinished_product_submission(): void
     {
         $user = User::factory()->create();
@@ -26,6 +54,8 @@ class ProductSubmissionDraftTest extends TestCase
             'link' => 'https://example.com/product?utm_source=test',
             'name' => 'Example Draft',
             'tagline' => 'Draft tagline',
+            'hosting_provider' => 'Vercel',
+            'domain_registrar' => 'Example Registrar',
             'description' => '<p>Draft description.</p>',
             'categories' => [1, 2],
             'useCases' => [3],
@@ -41,6 +71,8 @@ class ProductSubmissionDraftTest extends TestCase
         $this->assertSame('https://example.com/product', $draft->link);
         $this->assertSame('Example Draft', $draft->name);
         $this->assertSame('Draft tagline', $draft->payload['tagline']);
+        $this->assertSame('Vercel', $draft->payload['hosting_provider']);
+        $this->assertSame('Example Registrar', $draft->payload['domain_registrar']);
     }
 
     public function test_add_product_page_preloads_selected_unfinished_submission(): void
@@ -54,6 +86,8 @@ class ProductSubmissionDraftTest extends TestCase
             'payload' => [
                 'name' => 'Resume Draft',
                 'link' => 'https://resume.example.com',
+                'hosting_provider' => 'Netlify',
+                'domain_registrar' => 'Example Registrar',
                 'tagline' => 'Resume tagline',
                 'tagline_detailed' => 'Resume detailed tagline',
                 'description' => '<p>Resume description.</p>',
@@ -69,8 +103,10 @@ class ProductSubmissionDraftTest extends TestCase
         $response = $this->actingAs($user)->get(route('products.create', ['draft' => $draft->uuid]));
 
         $response->assertOk();
-        $response->assertSee('data-active-draft-id="' . $draft->uuid . '"', false);
+        $response->assertSee('data-active-draft-id="'.$draft->uuid.'"', false);
         $response->assertSee('Resume Draft');
+        $response->assertSee('Netlify');
+        $response->assertSee('Example Registrar');
         $response->assertSee('resume.example.com');
     }
 
@@ -110,7 +146,7 @@ class ProductSubmissionDraftTest extends TestCase
         $this->actingAs($admin)
             ->get(route('products.create', ['draft' => $draft->uuid]))
             ->assertOk()
-            ->assertSee('data-active-draft-id="' . $draft->uuid . '"', false);
+            ->assertSee('data-active-draft-id="'.$draft->uuid.'"', false);
     }
 
     public function test_non_admin_cannot_view_or_open_another_users_unfinished_submission(): void
@@ -175,6 +211,59 @@ class ProductSubmissionDraftTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('products', [
+            'name' => 'Launch Draft',
+            'link' => 'https://launch.example.com',
+        ]);
+        $this->assertDatabaseMissing('product_submission_drafts', [
+            'id' => $draft->id,
+        ]);
+    }
+
+    public function test_admin_submission_persists_optional_providers(): void
+    {
+        Notification::fake();
+        Queue::fake();
+        Role::firstOrCreate(['name' => 'admin']);
+
+        $user = User::factory()->create();
+        $user->assignRole('admin');
+        [$softwareCategory, $pricingCategory, $useCaseCategory] = $this->createSubmissionCategories();
+
+        $draft = ProductSubmissionDraft::create([
+            'user_id' => $user->id,
+            'name' => 'Launch Draft',
+            'link' => 'https://launch.example.com',
+            'payload' => [
+                'name' => 'Launch Draft',
+                'link' => 'https://launch.example.com',
+            ],
+            'last_autosaved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('products.store'), [
+            'name' => 'Launch Draft',
+            'tagline' => 'Launch tagline',
+            'hosting_provider' => 'Vercel',
+            'domain_registrar' => 'Example Registrar',
+            'description' => '<p>Launch description.</p>',
+            'link' => 'https://launch.example.com',
+            'categories' => [
+                $softwareCategory->id,
+                $pricingCategory->id,
+                $useCaseCategory->id,
+            ],
+            'submission_type' => 'free',
+            'draft_uuid' => $draft->uuid,
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('products', [
+            'hosting_provider' => 'Vercel',
+            'domain_registrar' => 'Example Registrar',
             'name' => 'Launch Draft',
             'link' => 'https://launch.example.com',
         ]);

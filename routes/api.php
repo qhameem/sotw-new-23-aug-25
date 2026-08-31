@@ -1,16 +1,16 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\UpvoteController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\DeferredAssetController;
 use App\Http\Controllers\Api\NavigationController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeoApiController;
 use App\Http\Controllers\Api\TechStackController;
+use App\Http\Controllers\Api\UpvoteController;
 use App\Http\Controllers\ProductController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     \Illuminate\Support\Facades\Log::info('Accessing /api/user route.');
     $user = $request->user();
     \Illuminate\Support\Facades\Log::info('User from /api/user:', ['user' => $user ? $user->toArray() : null]);
+
     return $user;
 });
 
@@ -100,3 +101,5 @@ Route::get('/badge-snippet/{product}', function (\App\Models\Product $product) {
         'badge_image_webp_url' => $embedData['badge_image_webp_url'] ?? null,
     ]);
 });
+
+Route::post('/website-providers', \App\Http\Controllers\Api\WebsiteProviderController::class)->middleware('throttle:10,1');
