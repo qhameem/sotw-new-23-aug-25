@@ -151,26 +151,9 @@
                         content="{{ $product->application_category ?? 'BusinessApplication' }}" />
                     <meta itemprop="operatingSystem" content="{{ $product->operating_system ?? 'Web' }}" />
 
-                    <div @class([
-                        'flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2',
-                        'hidden md:flex' => $isHomePage,
-                        'flex' => !$isHomePage,
-                        ])>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M6 13H2c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1zm16-4h-4c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V10c0-.6-.4-1-1-1zm-8-8h-4c-.6 0-1 .4-1 1v20c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1z" />
-                        </svg>
-                        <span class="font-medium">{{ number_format($impressionsCount) }}</span>
-                    </div>
                     @if($showMomentumMeta && !$isPromoted && $outboundClicksCount > 0)
-                        <div class="flex flex-shrink-0 items-center gap-1 text-gray-400 text-[10px] mr-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-300" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M5 12h14M13 5l7 7-7 7" />
-                            </svg>
-                            <span class="font-medium">{{ number_format($outboundClicksCount) }}</span>
+                        <div class="flex flex-shrink-0 items-center text-gray-400 text-[10px] mr-2">
+                            <span class="font-medium">{{ number_format($outboundClicksCount) }} clicks</span>
                         </div>
                     @endif
 
