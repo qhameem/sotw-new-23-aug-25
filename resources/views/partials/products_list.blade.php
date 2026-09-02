@@ -138,7 +138,7 @@
                             <span class="px-2 py-1 font-semibold">Promoted</span>
                         </span>
                     @endif
-                    @if($showMomentumMeta && !$isPromoted)
+                    @if($showMomentumMeta && !$isHomePage && !$isPromoted)
                         <span @class([
                             'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]',
                             'bg-slate-100 text-slate-500' => $momentumLabel === 'Rising',
