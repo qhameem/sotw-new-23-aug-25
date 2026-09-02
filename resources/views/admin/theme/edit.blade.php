@@ -898,8 +898,8 @@
                             </div>
                         </div>
 
-                        <div class="fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6">
-                            <x-primary-button class="min-h-11 px-5 shadow-lg">
+                        <div style="position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 70;">
+                            <x-primary-button style="min-height: 2.5rem; padding: 0.5rem 1rem; background: var(--color-primary-500); color: var(--color-primary-button-text); border: 2px solid var(--color-primary-700); box-shadow: 0 4px 0 var(--color-primary-700), 0 8px 14px rgba(15, 23, 42, 0.14);">
                                 {{ __('Save Settings') }}
                             </x-primary-button>
                         </div>
