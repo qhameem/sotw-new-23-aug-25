@@ -42,7 +42,7 @@
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
             $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page', 'pseo.builtWith');
-            $showMomentumMeta = $isHomePage || $isWeeklyPage || $isCategoryPage;
+            $showMomentumMeta = $isHomePage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
             $outboundClicksCount = max(0, (int) ($product->outbound_clicks_count ?? 0));
@@ -210,7 +210,7 @@
                 </div>
             </div>
 
-            @if(!$isHomePage)
+            @if(!$isHomePage && !$isWeeklyPage)
                 <div class="flex items-center gap-2">
                     @include('partials.product-upvote-button', [
                         'product' => $product,
