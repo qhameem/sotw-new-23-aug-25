@@ -46,6 +46,7 @@
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
             $outboundClicksCount = max(0, (int) ($product->outbound_clicks_count ?? 0));
             $impressionsCount = max(0, (int) ($product->impressions ?? 0));
+            $clicksCount = $outboundClicksCount + $impressionsCount;
             $momentumLabel = $votesCount >= 4
                 ? 'Popular'
                 : (($outboundClicksCount >= 3 || $impressionsCount >= 25) ? 'Rising' : 'New');
@@ -151,9 +152,9 @@
                         content="{{ $product->application_category ?? 'BusinessApplication' }}" />
                     <meta itemprop="operatingSystem" content="{{ $product->operating_system ?? 'Web' }}" />
 
-                    @if($showMomentumMeta && !$isPromoted && $outboundClicksCount > 0)
+                    @if($showMomentumMeta && !$isPromoted && $clicksCount > 0)
                         <div class="flex flex-shrink-0 items-center text-gray-400 text-[10px] mr-2">
-                            <span class="font-medium">{{ number_format($outboundClicksCount) }} clicks</span>
+                            <span class="font-medium">{{ number_format($clicksCount) }} clicks</span>
                         </div>
                     @endif
 
