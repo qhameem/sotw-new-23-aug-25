@@ -48,18 +48,33 @@
                 <p class="mt-1 text-sm text-slate-600">Review pending submissions, manage scheduled launches, and publish approved products faster.</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <a href="{{ route('admin.product-approvals.index', ['status' => 'pending']) }}#pending-approval"
+                    @class([
+                        'rounded-xl border px-4 py-3 transition hover:border-slate-400 hover:bg-slate-100',
+                        'border-slate-500 bg-slate-100 ring-2 ring-slate-200' => $status === 'pending',
+                        'border-slate-200 bg-slate-50' => $status !== 'pending',
+                    ])>
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Pending</div>
                     <div class="mt-1 text-2xl font-semibold text-slate-900">{{ $pendingProducts->count() }}</div>
-                </div>
-                <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+                </a>
+                <a href="{{ route('admin.product-approvals.index', ['status' => 'scheduled', 'sort_by' => 'published_at', 'sort_direction' => 'asc']) }}#approved-products"
+                    @class([
+                        'rounded-xl border px-4 py-3 transition hover:border-sky-400 hover:bg-sky-100',
+                        'border-sky-500 bg-sky-100 ring-2 ring-sky-200' => $status === 'scheduled',
+                        'border-sky-200 bg-sky-50' => $status !== 'scheduled',
+                    ])>
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Scheduled</div>
                     <div class="mt-1 text-2xl font-semibold text-sky-900">{{ $scheduledProductsCount }}</div>
-                </div>
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                </a>
+                <a href="{{ route('admin.product-approvals.index', ['status' => 'shown', 'sort_by' => 'published_at', 'sort_direction' => 'desc']) }}#approved-products"
+                    @class([
+                        'rounded-xl border px-4 py-3 transition hover:border-emerald-400 hover:bg-emerald-100',
+                        'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-200' => $status === 'shown',
+                        'border-emerald-200 bg-emerald-50' => $status !== 'shown',
+                    ])>
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Shown</div>
-                    <div class="mt-1 text-2xl font-semibold text-emerald-900">{{ $approvedProducts->count() }}</div>
-                </div>
+                    <div class="mt-1 text-2xl font-semibold text-emerald-900">{{ $shownProductsCount }}</div>
+                </a>
             </div>
         </div>
     </div>
@@ -98,7 +113,8 @@
         </div>
     @endif
 
-    <div class="mb-10">
+    @if($status === null || $status === 'pending')
+    <div id="pending-approval" class="mb-10 scroll-mt-6">
         <div class="mb-4 flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900">Pending Approval</h2>
@@ -136,19 +152,23 @@
             </div>
         @endif
     </div>
+    @endif
 
     @php
         $scheduledOnPageCount = $approvedProducts->getCollection()
             ->filter(fn ($product) => !$product->is_published && !is_null($product->published_at))
             ->count();
-        $linkParams = ['per_page' => $perPage];
+        $linkParams = array_filter(['per_page' => $perPage, 'status' => $status]);
         $sortArrow = fn($column) => ($sortBy === $column ? ($sortDirection === 'asc' ? '&uarr;' : '&darr;') : '');
     @endphp
 
-    <div>
+    @if($status !== 'pending')
+    <div id="approved-products" class="scroll-mt-6">
         <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">Approved Products</h2>
+                <h2 class="text-lg font-semibold text-slate-900">
+                    {{ $status === 'scheduled' ? 'Scheduled Products' : ($status === 'shown' ? 'Shown Products' : 'Approved Products') }}
+                </h2>
                 <p class="text-sm text-slate-500">Scheduled products can be published immediately in bulk from here.</p>
             </div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -169,6 +189,9 @@
                         </select>
                         <input type="hidden" name="sort_by" value="{{ $sortBy }}">
                         <input type="hidden" name="sort_direction" value="{{ $sortDirection }}">
+                        @if($status)
+                            <input type="hidden" name="status" value="{{ $status }}">
+                        @endif
                     </form>
 
                     <form action="{{ route('admin.product-approvals.publish-scheduled-now') }}" method="POST" id="bulk-publish-now-form" class="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -294,6 +317,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 

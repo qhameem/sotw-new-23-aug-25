@@ -59,4 +59,51 @@ class AdminProductPreviewTest extends TestCase
             ->assertSee(route('admin.product-approvals.preview', $product), false)
             ->assertSee('Preview page');
     }
+
+    public function test_summary_cards_filter_products_by_approval_status(): void
+    {
+        Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $pending = Product::factory()->create([
+            'name' => 'Pending Filter Product',
+            'approved' => false,
+            'is_published' => false,
+            'published_at' => null,
+        ]);
+        $scheduled = Product::factory()->create([
+            'name' => 'Scheduled Filter Product',
+            'approved' => true,
+            'is_published' => false,
+            'published_at' => now()->addDay(),
+        ]);
+        $shown = Product::factory()->create([
+            'name' => 'Shown Filter Product',
+            'approved' => true,
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.product-approvals.index', ['status' => 'pending']))
+            ->assertOk()
+            ->assertSee($pending->name)
+            ->assertDontSee($scheduled->name)
+            ->assertDontSee($shown->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.product-approvals.index', ['status' => 'scheduled']))
+            ->assertOk()
+            ->assertSee($scheduled->name)
+            ->assertDontSee($pending->name)
+            ->assertDontSee($shown->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.product-approvals.index', ['status' => 'shown']))
+            ->assertOk()
+            ->assertSee($shown->name)
+            ->assertDontSee($pending->name)
+            ->assertDontSee($scheduled->name);
+    }
 }

@@ -19,6 +19,11 @@ class ProductApprovalController extends Controller
 {
     public function index(Request $request)
     {
+        $status = $request->string('status')->toString();
+        if (! in_array($status, ['pending', 'scheduled', 'shown'], true)) {
+            $status = null;
+        }
+
         $pendingProducts = Product::with(['user', 'categories'])
             ->withCount([
                 'customCategorySubmissions as pending_custom_category_submissions_count' => fn ($query) => $query->where('status', 'pending'),
@@ -29,6 +34,9 @@ class ProductApprovalController extends Controller
         $scheduledProductsCount = Product::where('approved', true)
             ->where('is_published', false)
             ->whereNotNull('published_at')
+            ->count();
+        $shownProductsCount = Product::where('approved', true)
+            ->where('is_published', true)
             ->count();
 
         // Approved Products Logic
@@ -54,12 +62,19 @@ class ProductApprovalController extends Controller
                     });
             });
 
+        if ($status === 'scheduled') {
+            $approvedProductsQuery
+                ->where('is_published', false)
+                ->whereNotNull('published_at');
+        } elseif ($status === 'shown') {
+            $approvedProductsQuery->where('is_published', true);
+        }
+
         // Handle cases where published_at might be null for sorting
         if ($sortBy === 'published_at') {
-            // For MySQL: Order by whether published_at is null, then by the date itself
-            // For PostgreSQL: NULLS LAST / NULLS FIRST can be used directly
-            // Assuming MySQL for broader compatibility with a common setup:
-            $approvedProductsQuery->orderByRaw("ISNULL(published_at) {$sortDirection}, published_at {$sortDirection}");
+            $approvedProductsQuery->orderByRaw(
+                "CASE WHEN published_at IS NULL THEN 1 ELSE 0 END {$sortDirection}, published_at {$sortDirection}"
+            );
         } else {
             $approvedProductsQuery->orderBy($sortBy, $sortDirection);
         }
@@ -79,7 +94,17 @@ class ProductApprovalController extends Controller
             Log::info('ProductApprovalController: settings.json not found. Using default settings.');
         }
 
-        return view('admin.product_approvals.index', compact('pendingProducts', 'approvedProducts', 'perPage', 'sortBy', 'sortDirection', 'settings', 'scheduledProductsCount'));
+        return view('admin.product_approvals.index', compact(
+            'pendingProducts',
+            'approvedProducts',
+            'perPage',
+            'sortBy',
+            'sortDirection',
+            'settings',
+            'scheduledProductsCount',
+            'shownProductsCount',
+            'status'
+        ));
     }
 
     public function approve(Request $request, Product $product)
