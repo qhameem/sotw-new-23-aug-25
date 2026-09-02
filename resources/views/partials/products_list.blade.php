@@ -192,16 +192,14 @@
                 </div>
             </div>
 
-            <div @class([
-                'items-center gap-2',
-                'hidden md:flex' => $isHomePage,
-                'flex' => !$isHomePage,
-            ])>
-                @include('partials.product-upvote-button', [
-                    'product' => $product,
-                    'preferMomentumLabels' => $showMomentumMeta,
-                ])
-            </div>
+            @if(!$isHomePage)
+                <div class="flex items-center gap-2">
+                    @include('partials.product-upvote-button', [
+                        'product' => $product,
+                        'preferMomentumLabels' => $showMomentumMeta,
+                    ])
+                </div>
+            @endif
         </article>
 
         @if($shouldDisplayAd && !$adDisplayed && $belowProductListingAdPosition == $loopIndex)
