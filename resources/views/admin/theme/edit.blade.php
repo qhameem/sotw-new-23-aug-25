@@ -898,8 +898,8 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end mt-8">
-                            <x-primary-button>
+                        <div class="fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6">
+                            <x-primary-button class="min-h-11 px-5 shadow-lg">
                                 {{ __('Save Settings') }}
                             </x-primary-button>
                         </div>
