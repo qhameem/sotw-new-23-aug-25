@@ -11,8 +11,8 @@
         <div
             @class([
                 'flex flex-col md:flex-row flex-1 w-full mx-auto',
-                'md:overflow-visible' => request()->routeIs('products.show'),
-                'md:overflow-hidden' => !request()->routeIs('products.show'),
+                'md:overflow-visible' => !$lockHeight || request()->routeIs('products.show'),
+                'md:overflow-hidden' => $lockHeight && !request()->routeIs('products.show'),
                 $containerMaxWidth,
                 'mx-0' => $hideSidebar,
             ])
@@ -20,6 +20,17 @@
                 style="max-width: none; width: 100%;"
             @endif
         >
+            @if (isset($left_sidebar_content) && trim($left_sidebar_content))
+                <aside class="hidden xl:block xl:w-64 flex-shrink-0 order-1 min-h-0 pt-[3.7rem] border-r border-gray-100"
+                    aria-label="Product filters">
+                    <div @class([
+                        'p-5 min-h-0 sticky top-[3.7rem]',
+                    ])>
+                        {!! $left_sidebar_content !!}
+                    </div>
+                </aside>
+            @endif
+
             <!-- Main Content -->
             <main
                 @class([
@@ -28,7 +39,7 @@
                     $mainPadding,
                     $mainContentMaxWidth,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
-                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')
+                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search')
                 ])
                 @if($hideSidebar)
                     style="max-width: none; width: 100%; flex-basis: 100%;"
@@ -62,10 +73,18 @@
                 <div @class([
                     'min-w-0',
                     'md:flex-1 md:flex md:flex-col min-h-0' => $lockHeight,
-                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search'),
-                    'md:overflow-y-auto pb-32' => $lockHeight && request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'products.search')
+                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search'),
+                    'md:overflow-y-auto overscroll-contain scrollbar-hide' => $lockHeight && request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search')
                 ])>
                     {{ $slot }}
+
+                    @if($lockHeight && !$distractionFree)
+                        @persist('site-footer')
+                            <div class="mt-auto flex-shrink-0 border-t border-gray-100" style="background-color: var(--color-body-bg, #ffffff);">
+                                <x-footer />
+                            </div>
+                        @endpersist
+                    @endif
                 </div>
             </main>
 
@@ -73,15 +92,14 @@
             @unless($hideSidebar)
                 <div @class([
                     'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0 md:pt-[3.7rem]',
-                    'md:sticky top-[3.7rem]' => $sidebarSticky && !$lockHeight,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
                 ])>
                     <div @class([
                         'p-6 min-h-0',
-                        'md:flex-1 md:overflow-y-auto' => $lockHeight
+                        'md:flex-1 md:overflow-hidden' => $lockHeight,
+                        'md:sticky md:top-[3.7rem]' => $sidebarSticky && !$lockHeight,
                     ])>
                         <div @class([
-                            'pb-40' => $lockHeight,
                         ])>
                             @if (isset($right_sidebar_content) && trim($right_sidebar_content))
                                 {!! $right_sidebar_content !!}
@@ -96,11 +114,11 @@
     </div>
 
     <!-- Footer Container (Outside Body) -->
-    @unless($distractionFree)
+    @if(!$distractionFree && !$lockHeight)
         @persist('site-footer')
             <div class="flex-shrink-0 relative w-full z-20" style="background-color: var(--color-body-bg, #ffffff);">
                 <x-footer />
             </div>
         @endpersist
-    @endunless
+    @endif
 </div>

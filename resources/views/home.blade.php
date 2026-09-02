@@ -1,4 +1,10 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'headerPadding' => 'px-4 md:pt-4'])
+@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'containerMaxWidth' => 'max-w-[96rem]', 'headerPadding' => 'px-4 md:pt-4'])
+
+@if(request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'))
+    @section('left_sidebar_content')
+        @include('products.partials._browse')
+    @endsection
+@endif
 
 @if (!request()->routeIs('home'))
     @section('title', $meta_title ?? $pageTitle ?? 'Software on the Web')
@@ -75,6 +81,28 @@
 @endif
 
 @section('content')
+    @if(request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'))
+    <div class="xl:hidden border-b border-gray-100 px-4 py-3" x-data="{ filtersOpen: false }">
+        <button type="button" @click="filtersOpen = true"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h18M6 12h12M10 19h4" />
+            </svg>
+            Browse
+        </button>
+
+        <div x-show="filtersOpen" x-cloak class="fixed inset-0 z-[100] bg-slate-950/40" @click.self="filtersOpen = false" @keydown.escape.window="filtersOpen = false">
+            <div class="absolute inset-y-0 left-0 w-[min(22rem,90vw)] overflow-y-auto bg-white p-5 shadow-2xl">
+                <div class="mb-5 flex items-center justify-between">
+                    <span class="text-base font-semibold text-gray-900">Browse software</span>
+                    <button type="button" @click="filtersOpen = false" class="rounded-md p-2 text-gray-500 hover:bg-gray-100" aria-label="Close filters">&#10005;</button>
+                </div>
+                @include('products.partials._browse')
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="flex-shrink-0 z-10 relative" style="background-color: var(--color-body-bg, #ffffff);">
     @guest
         @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
@@ -142,6 +170,15 @@
                     'belowProductListingAdPosition' => $belowProductListingAdPosition ?? null
                 ])
             </div>
+
+            @if(!empty($isCategoryPage) && !empty($hasMoreProducts))
+                <div class="border-t border-gray-100 px-4 py-8 text-center">
+                    <a href="{{ route('categories.show', ['category' => $category->slug, 'limit' => $displayLimit + 50]) }}"
+                        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
+                        Load more products
+                    </a>
+                </div>
+            @endif
 
             @include('partials.week_pagination', [
                 'weekPagination' => $weekPagination ?? ['previous' => null, 'weeks' => []],

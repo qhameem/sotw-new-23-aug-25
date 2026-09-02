@@ -8,6 +8,7 @@
         $regularProductsList = $regularProducts ?? collect();
         $isPaginator = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator;
         $organicRank = $isPaginator ? (($regularProductsList->currentPage() - 1) * $regularProductsList->perPage()) : 0;
+        $lastPublishedGroup = null;
     @endphp
 
     @if($productCountForAd > 0)
@@ -65,7 +66,23 @@
                 request()->routeIs('pseo.builtWith') => 'built_with_list',
                 default => 'product_list',
             };
+            $publishedGroup = null;
+            if (request()->routeIs('categories.show', 'categories.show.page')) {
+                $publishedDate = ($product->published_at ?? $product->created_at)->copy();
+                $publishedGroup = match (true) {
+                    $publishedDate->gte(now()->startOfWeek()) => 'Published this week',
+                    $publishedDate->gte(now()->startOfMonth()) => 'Published this month',
+                    $publishedDate->gte(now()->startOfYear()) => 'Published this year',
+                    default => 'Published earlier',
+                };
+            }
         @endphp
+        @if($publishedGroup && $publishedGroup !== $lastPublishedGroup)
+            <div class="border-y border-gray-100 bg-gray-50 px-4 py-2.5">
+                <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $publishedGroup }}</h2>
+            </div>
+            @php $lastPublishedGroup = $publishedGroup; @endphp
+        @endif
         <article
             class="product-card p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer"
             data-product-id="{{ $product->id }}"
@@ -210,7 +227,7 @@
     @empty
         {{-- This case is handled by the check before the loop if products are empty --}}
         @if(!$adDisplayed && $productCountForAd === 0) {{-- Check if ad was displayed when list was empty --}}
-            <div class="text-gray-40 text-center py-12">No products found.</div>
+            <div class="text-gray-400 text-center py-12">No products found.</div>
         @endif
     @endforelse
 

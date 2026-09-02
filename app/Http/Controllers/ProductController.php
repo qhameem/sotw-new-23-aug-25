@@ -1425,34 +1425,11 @@ class ProductController extends Controller
 
     public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
-        $currentPage = max(1, (int) ($request->route('page') ?? $request->query('page', 1)));
-        $perPage = 50;
+        $requestedLimit = max(50, min(5000, (int) $request->query('limit', 50)));
+        $displayLimit = (int) (ceil($requestedLimit / 50) * 50);
 
-        // 1. Fetch Promoted Products (always shown, regardless of category filter for regular products)
-        // Note: For category pages, you might decide if promoted products should *also* belong to the current category.
-        // The current requirement is "immunity to filters", so we fetch all promoted products.
-        // If they should be filtered by category, add ->whereHas('categories', fn($q) => $q->where('category_id', $category->id))
-        $promotedProductsQuery = Product::with([
-            'categories.types',
-            'user',
-            'userUpvotes' => function ($query) {
-                if (Auth::check()) {
-                    $query->where('user_id', Auth::id());
-                }
-            },
-        ])
+        $regularProducts = $category->products()
             ->approvedAndPublished()
-            ->promoted()
-            ->orderBy('promoted_position', 'asc');
-
-        $promotedProducts = $currentPage === 1
-            ? $promotedProductsQuery->get()
-            : collect();
-
-        // 2. Fetch Regular (non-promoted) Products for the current category
-        $regularProductsQuery = $category->products()
-            ->approvedAndPublished()
-            ->nonPromoted()
             ->with([
                 'categories.types',
                 'user',
@@ -1461,22 +1438,21 @@ class ProductController extends Controller
                         $query->where('user_id', Auth::id());
                     }
                 },
-            ]);
+            ])
+            ->orderByRaw('COALESCE(published_at, created_at) DESC')
+            ->orderByDesc('id')
+            ->limit($displayLimit + 1)
+            ->get();
 
-        $regularProducts = $regularProductsQuery
-            ->orderByRaw('(votes_count + impressions) DESC')
-            ->orderBy('name', 'asc')
-            ->paginate($perPage, ['*'], 'page', $currentPage);
+        $hasMoreProducts = $regularProducts->count() > $displayLimit;
+        $regularProducts = $regularProducts->take($displayLimit)->values();
+        $promotedProducts = collect();
 
         // Alpine products mapping - based on all products for the modal.
         $allProducts = $promotedProducts->merge($regularProducts);
 
         // Fetch all types with their categories and product counts
-        $allTypesCollection = Type::with([
-            'categories' => function ($query) {
-                $query->withCount('products')->orderByDesc('products_count')->orderBy('name');
-            },
-        ])->orderBy('name')->get();
+        $allTypesCollection = $this->productFilterTypes();
 
         // Separate types into Software, Pricing, and Others
         $softwareTypes = $allTypesCollection->filter(function ($type) {
@@ -1512,35 +1488,21 @@ class ProductController extends Controller
 
         $category->loadMissing('types');
         $currentYear = Carbon::now()->year;
-        $lastPage = max(1, $regularProducts->lastPage());
         $isBestForCategory = $category->types->contains('name', 'Best for');
         $title = $isBestForCategory
             ? 'Best Tools for '.strip_tags($category->name).' in '.$currentYear
             : 'The Best '.strip_tags($category->name).' Apps of '.$currentYear;
         $meta_title = $isBestForCategory
-            ? "{$title}, Page {$currentPage} of {$lastPage} | Software on the Web"
-            : "{$category->name} Software, Page {$currentPage} of {$lastPage} | Software on the Web.";
+            ? "{$title} | Software on the Web"
+            : "{$category->name} Software | Software on the Web.";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
             $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
         }
-        $meta_description = trim($metaDescriptionBase." Page {$currentPage} of {$lastPage}.");
-        $categoryCanonicalUrl = $currentPage > 1
-            ? route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage])
-            : route('categories.show', ['category' => $category->slug]);
-        $categoryPagination = [
-            'current_page' => $currentPage,
-            'last_page' => $lastPage,
-            'previous_url' => $currentPage > 1
-                ? ($currentPage === 2
-                    ? route('categories.show', ['category' => $category->slug])
-                    : route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage - 1]))
-                : null,
-            'next_url' => $currentPage < $lastPage
-                ? route('categories.show.page', ['category' => $category->slug, 'page' => $currentPage + 1])
-                : null,
-        ];
+        $meta_description = $metaDescriptionBase;
+        $categoryCanonicalUrl = route('categories.show', ['category' => $category->slug]);
+        $categoryPagination = [];
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -1567,6 +1529,8 @@ class ProductController extends Controller
             'meta_title',
             'categoryCanonicalUrl',
             'categoryPagination',
+            'displayLimit',
+            'hasMoreProducts',
             'nextLaunchTime'
         ));
     }
@@ -1748,7 +1712,7 @@ class ProductController extends Controller
         $regularProducts = $combinedProducts;
 
         $categories = Category::all();
-        $types = Type::with('categories')->get();
+        $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
         $title = 'Top Products of the Week'; // For potential in-page display
@@ -2938,6 +2902,21 @@ class ProductController extends Controller
         );
 
         return [$regularProducts, $combinedProducts];
+    }
+
+    protected function productFilterTypes(): \Illuminate\Support\Collection
+    {
+        return Type::query()
+            ->with(['categories' => function ($query) {
+                $query->withCount(['products' => fn ($productQuery) => $productQuery
+                    ->where('approved', true)
+                    ->where('is_published', true)])
+                    ->orderByDesc('products_count')
+                    ->orderBy('name');
+            }])
+            ->orderByRaw("CASE name WHEN 'Software Categories' THEN 1 WHEN 'Use Case' THEN 2 WHEN 'Use Cases' THEN 2 WHEN 'Best for' THEN 3 WHEN 'Platform' THEN 4 WHEN 'Pricing' THEN 5 ELSE 6 END")
+            ->orderBy('name')
+            ->get();
     }
 
     // Ensure content has proper paragraph structure

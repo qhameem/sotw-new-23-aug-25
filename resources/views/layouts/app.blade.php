@@ -494,7 +494,7 @@
 
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-3xl')"
         :sidebar-sticky="!$isArticleEditorRoute"
-        :lock-height="false"
+        :lock-height="$lockHeight ?? false"
         :container-max-width="$containerMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-7xl')"
         :hide-sidebar="$hideSidebar ?? $isArticleEditorRoute"
         :distraction-free="$isArticleEditorRoute"
@@ -539,6 +539,12 @@
                 </div>
             @endif
         </x-slot:right_sidebar_content>
+
+        @hasSection('left_sidebar_content')
+            <x-slot:left_sidebar_content>
+                @yield('left_sidebar_content')
+            </x-slot:left_sidebar_content>
+        @endif
 
         @if (isset($slot))
             {{ $slot }}
