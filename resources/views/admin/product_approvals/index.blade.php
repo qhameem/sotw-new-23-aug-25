@@ -125,7 +125,7 @@
                 </div>
             </form>
 
-            <div class="space-y-6">
+            <div class="space-y-3">
                 @foreach($pendingProducts as $product)
                     @include('admin.product_approvals._product_approval_card', ['product' => $product])
                 @endforeach
@@ -315,6 +315,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     bindSelectAll('select-all', '.product-checkbox');
     bindSelectAll('select-all-scheduled', '.scheduled-product-checkbox');
+
+    document.querySelectorAll('.js-publish-approval-form').forEach(form => {
+        form.addEventListener('submit', function() {
+            if (this.querySelector('[name="publish_option"]')?.value === 'specific_date') {
+                const productId = this.dataset.productId;
+                const dateInput = document.querySelector(`[name="published_at[${productId}]"]`);
+                this.querySelector('[name="published_at"]').value = dateInput?.value || '';
+            }
+
+            this.querySelectorAll('button').forEach(button => button.disabled = true);
+            this.querySelector('.js-publish-spinner')?.classList.remove('hidden');
+            const label = this.querySelector('.js-publish-label');
+            if (label) label.textContent = 'Publishing...';
+        });
+    });
 });
 </script>
 @endpush

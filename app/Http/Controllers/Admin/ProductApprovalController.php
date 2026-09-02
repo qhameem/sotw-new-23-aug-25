@@ -19,7 +19,13 @@ class ProductApprovalController extends Controller
 {
     public function index(Request $request)
     {
-        $pendingProducts = Product::with(['user', 'categories'])->where('approved', false)->orderByDesc('id')->get();
+        $pendingProducts = Product::with(['user', 'categories'])
+            ->withCount([
+                'customCategorySubmissions as pending_custom_category_submissions_count' => fn ($query) => $query->where('status', 'pending'),
+            ])
+            ->where('approved', false)
+            ->orderByDesc('id')
+            ->get();
         $scheduledProductsCount = Product::where('approved', true)
             ->where('is_published', false)
             ->whereNotNull('published_at')
