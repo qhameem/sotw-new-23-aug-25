@@ -427,6 +427,7 @@
             --color-primary-button-text: {{ $primaryButtonTextColor }};
             --color-navbar-bg: {{ config('theme.navbar_bg_color', '#ffffff') }};
             --color-body-bg: {{ config('theme.body_bg_color', '#ffffff') }};
+            --color-product-hover: {{ config('theme.product_hover_color', '#f9fafb') }};
         }
 
         html,
@@ -438,6 +439,10 @@
 
         [x-cloak] {
             display: none !important;
+        }
+
+        .product-card:hover {
+            background-color: var(--color-product-hover);
         }
 
         [v-cloak] {

@@ -30,4 +30,5 @@ return [
 
     'navbar_bg_color' => env('THEME_NAVBAR_BG_COLOR', '#ffffff'),
     'body_bg_color'   => env('THEME_BODY_BG_COLOR', '#ffffff'),
+    'product_hover_color' => env('THEME_PRODUCT_HOVER_COLOR', '#f9fafb'),
 ];

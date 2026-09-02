@@ -66,7 +66,7 @@
             };
         @endphp
         <article
-            class="p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 "
+            class="product-card p-4 md:p-4 flex items-start gap-3 md:gap-3 transition relative group cursor-pointer"
             data-product-id="{{ $product->id }}"
             data-track-impression="true"
             data-impression-surface="{{ $impressionSurface }}"

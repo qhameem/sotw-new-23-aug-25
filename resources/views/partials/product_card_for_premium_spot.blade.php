@@ -3,7 +3,7 @@
     $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
     $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
 @endphp
-<article class="p-4 flex items-center gap-3 md:gap-3 transition relative group cursor-pointer hover:bg-gray-50 border-b"
+<article class="product-card p-4 flex items-center gap-3 md:gap-3 transition relative group cursor-pointer border-b"
     @click="if (!$event.target.closest('input, a')) { $dispatch('open-product-modal', {{ json_encode($alpineProducts->firstWhere('id', $product->id)) }}) }">
     <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
         class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy" />

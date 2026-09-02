@@ -89,6 +89,7 @@ class ThemeController extends Controller
         $currentSubmissionBgUrl = isset($settings['submission_bg_url']) && $settings['submission_bg_url'] ? Storage::url($settings['submission_bg_url']) : null;
         $currentNavbarBgColor = $settings['navbar_bg_color'] ?? '#ffffff';
         $currentBodyBgColor   = $settings['body_bg_color']   ?? '#ffffff';
+        $currentProductHoverColor = $settings['product_hover_color'] ?? Config::get('theme.product_hover_color', '#f9fafb');
         $currentFaviconAssets = $this->buildCurrentFaviconAssets($settings);
 
         // Define default/placeholder URLs if needed, e.g., for the view's x-data
@@ -113,6 +114,7 @@ class ThemeController extends Controller
             'defaultSubmissionBgUrl',
             'currentNavbarBgColor',
             'currentBodyBgColor',
+            'currentProductHoverColor',
             'currentFaviconAssets'
         ));
     }
@@ -168,6 +170,7 @@ class ThemeController extends Controller
             'remove_submission_bg' => 'sometimes|boolean',
             'navbar_bg_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
             'body_bg_color'   => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'product_hover_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
         ]);
 
         if ($validator->fails()) {
@@ -226,6 +229,10 @@ class ThemeController extends Controller
         $settings['primary_button_text_color'] = $request->input('primary_button_text_color');
         $settings['navbar_bg_color'] = $request->input('navbar_bg_color', '#ffffff');
         $settings['body_bg_color']   = $request->input('body_bg_color',   '#ffffff');
+        $settings['product_hover_color'] = $request->input(
+            'product_hover_color',
+            $settings['product_hover_color'] ?? Config::get('theme.product_hover_color', '#f9fafb')
+        );
 
         // Logo Management
         if ($request->input('remove_logo')) {
@@ -320,6 +327,7 @@ class ThemeController extends Controller
                 'submission_bg_url' => null,
                 'navbar_bg_color' => Config::get('theme.navbar_bg_color', '#ffffff'),
                 'body_bg_color'   => Config::get('theme.body_bg_color',   '#ffffff'),
+                'product_hover_color' => Config::get('theme.product_hover_color', '#f9fafb'),
             ];
         }
 

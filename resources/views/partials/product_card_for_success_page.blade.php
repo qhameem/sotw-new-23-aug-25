@@ -3,7 +3,7 @@
     $logo = $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/' . $product->logo)) : null;
     $favicon = 'https://www.google.com/s2/favicons?sz=256&domain_url=' . urlencode($product->link);
 @endphp
-<article class="p-4 flex items-center gap-3 md:gap-3 transition relative group border rounded hover:bg-gray-50">
+<article class="product-card p-4 flex items-center gap-3 md:gap-3 transition relative group border rounded">
     <img src="{{ $logo ?? $favicon }}" alt="{{ $product->name }} logo"
         class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy" />
     <div class="flex-1">

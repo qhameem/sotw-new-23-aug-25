@@ -151,6 +151,30 @@ class AdminThemeFaviconBundleTest extends TestCase
         $response->assertSessionHasErrors('favicon_bundle');
     }
 
+    public function test_admin_can_configure_product_card_hover_color(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $response = $this->actingAs($admin)->put(route('admin.theme.update'), [
+            'font_family' => 'Inter',
+            'primary_color' => '#3b82f6',
+            'product_hover_color' => '#fff4e6',
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('#fff4e6', $settings['product_hover_color']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.theme.edit'))
+            ->assertOk()
+            ->assertSee('Product Card Hover Background')
+            ->assertSee('#fff4e6');
+    }
+
     private function fakeIcoUpload(): UploadedFile
     {
         return UploadedFile::fake()->createWithContent(

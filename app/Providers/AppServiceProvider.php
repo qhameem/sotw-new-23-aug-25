@@ -164,6 +164,9 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['body_bg_color'])) {
                     Config::set('theme.body_bg_color', $settings['body_bg_color']);
                 }
+                if (isset($settings['product_hover_color'])) {
+                    Config::set('theme.product_hover_color', $settings['product_hover_color']);
+                }
             }
         }
 
