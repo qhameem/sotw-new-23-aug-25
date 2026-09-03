@@ -90,6 +90,16 @@ class ThemeController extends Controller
         $currentNavbarBgColor = $settings['navbar_bg_color'] ?? '#ffffff';
         $currentBodyBgColor   = $settings['body_bg_color']   ?? '#ffffff';
         $currentProductHoverColor = $settings['product_hover_color'] ?? Config::get('theme.product_hover_color', '#f9fafb');
+        $currentDarkThemeColors = collect([
+            'dark_navbar_bg_color',
+            'dark_body_bg_color',
+            'dark_surface_color',
+            'dark_muted_surface_color',
+            'dark_border_color',
+            'dark_font_color',
+            'dark_body_text_color',
+            'dark_product_hover_color',
+        ])->mapWithKeys(fn (string $key) => [$key => $settings[$key] ?? Config::get("theme.{$key}")])->all();
         $currentFaviconAssets = $this->buildCurrentFaviconAssets($settings);
 
         // Define default/placeholder URLs if needed, e.g., for the view's x-data
@@ -115,7 +125,8 @@ class ThemeController extends Controller
             'currentNavbarBgColor',
             'currentBodyBgColor',
             'currentProductHoverColor',
-            'currentFaviconAssets'
+            'currentFaviconAssets',
+            'currentDarkThemeColors'
         ));
     }
 
@@ -171,6 +182,14 @@ class ThemeController extends Controller
             'navbar_bg_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
             'body_bg_color'   => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
             'product_hover_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_navbar_bg_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_body_bg_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_surface_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_muted_surface_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_border_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_font_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_body_text_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
+            'dark_product_hover_color' => ['nullable', 'string', 'regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/'],
         ]);
 
         if ($validator->fails()) {
@@ -233,6 +252,18 @@ class ThemeController extends Controller
             'product_hover_color',
             $settings['product_hover_color'] ?? Config::get('theme.product_hover_color', '#f9fafb')
         );
+        foreach ([
+            'dark_navbar_bg_color',
+            'dark_body_bg_color',
+            'dark_surface_color',
+            'dark_muted_surface_color',
+            'dark_border_color',
+            'dark_font_color',
+            'dark_body_text_color',
+            'dark_product_hover_color',
+        ] as $darkThemeKey) {
+            $settings[$darkThemeKey] = $request->input($darkThemeKey, Config::get("theme.{$darkThemeKey}"));
+        }
 
         // Logo Management
         if ($request->input('remove_logo')) {
@@ -328,6 +359,14 @@ class ThemeController extends Controller
                 'navbar_bg_color' => Config::get('theme.navbar_bg_color', '#ffffff'),
                 'body_bg_color'   => Config::get('theme.body_bg_color',   '#ffffff'),
                 'product_hover_color' => Config::get('theme.product_hover_color', '#f9fafb'),
+                'dark_navbar_bg_color' => Config::get('theme.dark_navbar_bg_color', '#111827'),
+                'dark_body_bg_color' => Config::get('theme.dark_body_bg_color', '#0b1120'),
+                'dark_surface_color' => Config::get('theme.dark_surface_color', '#111827'),
+                'dark_muted_surface_color' => Config::get('theme.dark_muted_surface_color', '#1e293b'),
+                'dark_border_color' => Config::get('theme.dark_border_color', '#334155'),
+                'dark_font_color' => Config::get('theme.dark_font_color', '#f8fafc'),
+                'dark_body_text_color' => Config::get('theme.dark_body_text_color', '#cbd5e1'),
+                'dark_product_hover_color' => Config::get('theme.dark_product_hover_color', '#1e293b'),
             ];
         }
 

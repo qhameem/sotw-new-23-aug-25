@@ -63,7 +63,7 @@
 @section('content')
     <script type="application/ld+json">{!! json_encode($articleSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
-    <div class="min-h-screen bg-[#fafaf8] pb-24 pt-28 text-stone-950 md:pt-12">
+    <div class="min-h-screen bg-[#fafaf8] pb-24 pt-28 text-stone-950 dark:bg-slate-950 dark:text-slate-50 md:pt-12">
         @if($isPreview ?? false)
             <div class="mx-auto mb-8 max-w-5xl px-5 sm:px-8">
                 <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

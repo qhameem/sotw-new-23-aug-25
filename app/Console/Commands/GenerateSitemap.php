@@ -8,6 +8,7 @@ use App\Models\ArticleTag;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\RelatedProductService;
+use App\Services\CategoryNavigationService;
 use App\Services\SitemapIndexWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,9 @@ class GenerateSitemap extends Command
         $staticPagesSitemap->add(Url::create(route('software-review'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
         $staticPagesSitemap->add(Url::create(route('newsletter.index'))->setPriority(0.6)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
         $staticPagesSitemap->add(Url::create(route('topics.index'))->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        foreach (app(CategoryNavigationService::class)->getBroadGroups() as $group) {
+            $staticPagesSitemap->add(Url::create($group['url'])->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+        }
         $this->writeChildSitemap($staticPagesSitemap, $sitemapDirectory.'/static.xml');
 
         $contentSitemap = Sitemap::create();

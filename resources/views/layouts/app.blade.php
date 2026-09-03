@@ -223,6 +223,7 @@
     ">
 
 <head>
+    @include('partials.theme.boot')
     <script>
         function handlePopState(event) {
             // This is a placeholder function to prevent the "handlePopState is not defined" error.
@@ -638,6 +639,7 @@
         window.csrfToken = document.body.dataset.csrfToken;
         window.primaryColorCssVar = 'var(--color-primary-500)';
     </script>
+    @include('partials.theme.switcher', ['class' => 'md:hidden'])
 </body>
 
 </html>

@@ -6,6 +6,7 @@
         $adDisplayed = false;
         $productCountForAd = count($finalProductList); // Count of products to display for ad logic
         $regularProductsList = $regularProducts ?? collect();
+        $showProductEngagement = $showProductEngagement ?? true;
         $isPaginator = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator;
         $organicRank = $isPaginator ? (($regularProductsList->currentPage() - 1) * $regularProductsList->perPage()) : 0;
         $lastPublishedGroup = null;
@@ -41,7 +42,7 @@
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
-            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page', 'pseo.builtWith');
+            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page', 'pseo.builtWith');
             $showMomentumMeta = $isHomePage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
@@ -62,12 +63,12 @@
                 request()->routeIs('products.byDate') => 'date_list',
                 request()->routeIs('products.byMonth') => 'month_list',
                 request()->routeIs('products.byYear') => 'year_list',
-                request()->routeIs('categories.show', 'categories.show.page') => 'category_list',
+                request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page') => 'category_list',
                 request()->routeIs('pseo.builtWith') => 'built_with_list',
                 default => 'product_list',
             };
             $publishedGroup = null;
-            if (request()->routeIs('categories.show', 'categories.show.page')) {
+            if (request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page')) {
                 $publishedDate = ($product->published_at ?? $product->created_at)->copy();
                 $publishedGroup = match (true) {
                     $publishedDate->gte(now()->startOfWeek()) => 'Published this week',
@@ -156,7 +157,7 @@
                             <span class="px-2 py-1 font-semibold">Promoted</span>
                         </span>
                     @endif
-                    @if($showMomentumMeta && !$isHomePage && !$isPromoted)
+                    @if($showProductEngagement && $showMomentumMeta && !$isHomePage && !$isPromoted)
                         <span @class([
                             'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]',
                             'bg-slate-100 text-slate-500' => $momentumLabel === 'Rising',
@@ -210,7 +211,7 @@
                 </div>
             </div>
 
-            @if(!$isHomePage && !$isWeeklyPage)
+            @if($showProductEngagement && !$isHomePage && !$isWeeklyPage)
                 <div class="flex items-center gap-2">
                     @include('partials.product-upvote-button', [
                         'product' => $product,

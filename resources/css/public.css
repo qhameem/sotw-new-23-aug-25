@@ -1,3 +1,4 @@
+@import "dark-mode.css";
 @config "../../tailwind.public.config.js";
 
 @tailwind base;

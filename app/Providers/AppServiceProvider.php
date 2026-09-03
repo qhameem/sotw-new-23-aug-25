@@ -23,6 +23,7 @@ use App\Observers\ProductObserver;
 use App\Observers\ProductMediaObserver;
 use App\Services\OutboundLinkPolicyService;
 use App\Services\GlobalSearchService;
+use App\Services\HeaderStatsService;
 use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
@@ -83,7 +84,8 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('categoryNavigationSummaries', $categoryNavigation->getMenuGroupSummaries())
-                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
+                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey())
+                ->with('headerStats', app(HeaderStatsService::class)->get());
         });
 
         View::composer(['partials._mobile-footer-menu', 'components.mobile-categories-menu'], function ($view) {
@@ -166,6 +168,20 @@ class AppServiceProvider extends ServiceProvider
                 }
                 if (isset($settings['product_hover_color'])) {
                     Config::set('theme.product_hover_color', $settings['product_hover_color']);
+                }
+                foreach ([
+                    'dark_navbar_bg_color',
+                    'dark_body_bg_color',
+                    'dark_surface_color',
+                    'dark_muted_surface_color',
+                    'dark_border_color',
+                    'dark_font_color',
+                    'dark_body_text_color',
+                    'dark_product_hover_color',
+                ] as $darkThemeKey) {
+                    if (isset($settings[$darkThemeKey])) {
+                        Config::set("theme.{$darkThemeKey}", $settings[$darkThemeKey]);
+                    }
                 }
             }
         }

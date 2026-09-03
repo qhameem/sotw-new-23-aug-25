@@ -5,8 +5,8 @@
     @click.self="closeSearchModal()" @keydown.escape.window="closeSearchModal()" x-cloak
     x-init="$watch('searchModalOpen', open => { const searchInput = document.getElementById('globalSearchInput'); if (open) { $nextTick(() => { if (searchInput) { searchInput.focus(); } }); } else if (searchInput) { searchInput.blur(); } })">
     <div class="mx-auto w-full max-w-5xl">
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-            <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 sm:px-8">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:bg-slate-900">
+            <div class="border-b border-gray-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 sm:px-8">
                 <div class="flex items-start justify-between gap-6">
                     <div>
                         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400">Discover Faster</p>
@@ -40,7 +40,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)]">
-                <div class="border-b border-gray-100 bg-slate-50/70 p-4 lg:border-b-0 lg:border-r lg:p-5">
+                <div class="border-b border-gray-100 bg-slate-50/70 p-4 dark:bg-slate-800/80 lg:border-b-0 lg:border-r lg:p-5">
                     <div class="mb-4">
                         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="showDefaultSearchContent() ? 'Popular Categories' : 'Matching Categories'"></p>
                         <h3 class="mt-1 text-sm font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Browse leading spaces' : 'Category results'"></h3>

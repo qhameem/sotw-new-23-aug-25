@@ -21,10 +21,10 @@
             @endif
         >
             @if (isset($left_sidebar_content) && trim($left_sidebar_content))
-                <aside class="hidden xl:block xl:w-64 flex-shrink-0 order-1 min-h-0 pt-[3.7rem] border-r border-gray-100"
+                <aside class="hidden xl:block xl:w-64 flex-shrink-0 order-1 min-h-0 pt-[7rem] border-r border-gray-100"
                     aria-label="Product filters">
                     <div @class([
-                        'p-5 min-h-0 sticky top-[3.7rem]',
+                        'p-5 min-h-0 sticky top-[7rem]',
                     ])>
                         {!! $left_sidebar_content !!}
                     </div>
@@ -35,7 +35,7 @@
             <main
                 @class([
                     'flex-1 w-full min-w-0 order-1 md:order-2 min-h-0',
-                    'md:pt-[3.7rem]' => !$distractionFree,
+                    'md:pt-[7rem]' => !$distractionFree,
                     $mainPadding,
                     $mainContentMaxWidth,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
@@ -91,13 +91,13 @@
             <!-- Right Sidebar -->
             @unless($hideSidebar)
                 <div @class([
-                    'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0 md:pt-[3.7rem]',
+                    'w-full md:w-96 flex-shrink-0 order-2 md:order-3 h-auto min-h-0 md:pt-[7rem]',
                     'md:flex md:flex-col md:h-full' => $lockHeight,
                 ])>
                     <div @class([
                         'p-6 min-h-0',
                         'md:flex-1 md:overflow-hidden' => $lockHeight,
-                        'md:sticky md:top-[3.7rem]' => $sidebarSticky && !$lockHeight,
+                        'md:sticky md:top-[7rem]' => $sidebarSticky && !$lockHeight,
                     ])>
                         <div @class([
                         ])>

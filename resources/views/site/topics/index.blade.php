@@ -43,7 +43,7 @@
     </script>
 
     <div class="space-y-12 p-4">
-        <section class="overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+        <section class="overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
             <div class="px-6 py-8 sm:px-8">
                 <p class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gray-400">Category Directory</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-gray-900">Browse categories by user goal</h1>

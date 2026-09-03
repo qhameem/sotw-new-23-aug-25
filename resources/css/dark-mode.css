@@ -1,0 +1,200 @@
+/* Project-wide dark theme compatibility layer.
+ * New UI should prefer semantic CSS variables or explicit dark: utilities.
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+    --theme-canvas: #f8fafc;
+    --theme-surface: #ffffff;
+    --theme-surface-muted: #f1f5f9;
+    --theme-surface-strong: #e2e8f0;
+    --theme-border: #e2e8f0;
+    --theme-border-strong: #cbd5e1;
+    --theme-text: #0f172a;
+    --theme-text-muted: #475569;
+    --theme-text-subtle: #64748b;
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --theme-canvas: var(--theme-dark-canvas, #0b1120);
+    --theme-surface: var(--theme-dark-surface, #111827);
+    --theme-surface-muted: var(--theme-dark-surface-muted, #1e293b);
+    --theme-surface-strong: color-mix(in srgb, var(--theme-dark-surface-muted, #1e293b) 72%, white 28%);
+    --theme-border: var(--theme-dark-border, #334155);
+    --theme-border-strong: color-mix(in srgb, var(--theme-dark-border, #334155) 72%, white 28%);
+    --theme-text: var(--theme-dark-text, #f8fafc);
+    --theme-text-muted: var(--theme-dark-text-muted, #cbd5e1);
+    --theme-text-subtle: #94a3b8;
+    --color-site-text: var(--theme-text);
+    --color-site-body-text: var(--theme-text-muted);
+    --color-body-bg: var(--theme-canvas);
+    --lr-bg: var(--theme-canvas);
+    --lr-brand-bg: var(--theme-canvas);
+    --lr-panel: var(--theme-surface);
+    --lr-panel-soft: var(--theme-surface-muted);
+    --lr-panel-strong: var(--theme-surface-strong);
+    --lr-text: var(--theme-text);
+    --lr-brand-text: var(--theme-text);
+    --lr-muted: var(--theme-text-muted);
+    --lr-subtle: #94a3b8;
+    --lr-border: rgba(148, 163, 184, 0.25);
+    --lr-sidebar-border: rgba(148, 163, 184, 0.28);
+    --color-navbar-bg: var(--theme-dark-navbar, #111827);
+  }
+
+  html.dark body {
+    background-color: var(--theme-canvas);
+    color: var(--theme-text-muted);
+  }
+
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, fill 150ms ease !important;
+  }
+
+  html.dark :is(input, textarea, select):not([type='checkbox']):not([type='radio']) {
+    background-color: var(--theme-surface);
+    border-color: var(--theme-border-strong);
+    color: var(--theme-text);
+  }
+
+  html.dark :is(input, textarea)::placeholder {
+    color: var(--theme-text-subtle);
+  }
+
+  html.dark select option {
+    background: var(--theme-surface);
+    color: var(--theme-text);
+  }
+}
+
+@layer utilities {
+  html.dark :is(.bg-white, .bg-gray-50, .bg-slate-50, .bg-stone-50) {
+    background-color: var(--theme-surface) !important;
+  }
+
+  html.dark :is(.bg-gray-100, .bg-slate-100, .bg-stone-100) {
+    background-color: var(--theme-surface-muted) !important;
+  }
+
+  html.dark :is(.bg-gray-200, .bg-slate-200, .bg-stone-200) {
+    background-color: var(--theme-surface-strong) !important;
+  }
+
+  html.dark :is(.text-black, .text-gray-950, .text-gray-900, .text-gray-800, .text-slate-950, .text-slate-900, .text-slate-800, .text-stone-950, .text-stone-900, .text-stone-800) {
+    color: var(--theme-text) !important;
+  }
+
+  html.dark :is(.text-gray-700, .text-gray-600, .text-slate-700, .text-slate-600, .text-stone-700, .text-stone-600) {
+    color: var(--theme-text-muted) !important;
+  }
+
+  html.dark :is(.text-gray-500, .text-gray-400, .text-gray-300, .text-slate-500, .text-slate-400, .text-slate-300, .text-stone-500, .text-stone-400, .text-stone-300) {
+    color: var(--theme-text-subtle) !important;
+  }
+
+  html.dark :is(.border-gray-50, .border-gray-100, .border-gray-200, .border-gray-300, .border-slate-50, .border-slate-100, .border-slate-200, .border-slate-300, .border-stone-50, .border-stone-100, .border-stone-200, .border-stone-300) {
+    border-color: var(--theme-border) !important;
+  }
+
+  html.dark :is(.divide-gray-100, .divide-gray-200, .divide-slate-100, .divide-slate-200) > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--theme-border) !important;
+  }
+
+  html.dark :is(.ring-gray-100, .ring-gray-200, .ring-gray-300, .ring-slate-100, .ring-slate-200, .ring-slate-300) {
+    --tw-ring-color: var(--theme-border) !important;
+  }
+
+  html.dark :is(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+    --tw-shadow-color: rgb(0 0 0 / 0.45);
+  }
+
+  html.dark :is(.hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-slate-50, .hover\:bg-slate-100):hover {
+    background-color: var(--theme-surface-muted) !important;
+  }
+
+  html.dark :is(.hover\:text-gray-900, .hover\:text-gray-800, .hover\:text-slate-900, .hover\:text-slate-800):hover {
+    color: var(--theme-text) !important;
+  }
+
+  html.dark .product-card:hover {
+    background-color: var(--theme-dark-product-hover, var(--theme-surface-muted)) !important;
+  }
+
+  html.dark .ql-toolbar,
+  html.dark .ql-container,
+  html.dark .ProseMirror,
+  html.dark .multiselect__tags,
+  html.dark .multiselect__content-wrapper,
+  html.dark .flatpickr-calendar {
+    background: var(--theme-surface) !important;
+    border-color: var(--theme-border) !important;
+    color: var(--theme-text) !important;
+  }
+}
+
+.theme-switcher {
+  position: fixed;
+  inset-inline-end: 1rem;
+  bottom: 1rem;
+  z-index: 90;
+}
+
+.theme-switcher--inline {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  opacity: 1;
+}
+
+.theme-switcher--inline .theme-switcher__button {
+  width: 2.25rem;
+  height: 2.25rem;
+  box-shadow: none;
+}
+
+.admin-theme-save { right: 1.5rem; }
+
+.theme-switcher__button {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--theme-border);
+  border-radius: 9999px;
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.18);
+}
+
+.theme-switcher__button:hover { background: var(--theme-surface-muted); }
+.theme-switcher__button:focus-visible { outline: 2px solid var(--color-primary-500, #3b82f6); outline-offset: 2px; }
+.theme-switcher__icon { width: 1.25rem; height: 1.25rem; }
+.theme-switcher__icon--light,
+.theme-switcher__icon--dark { display: none; }
+html[data-theme-preference='light'] .theme-switcher__icon--light,
+html[data-theme-preference='dark'] .theme-switcher__icon--dark { display: block; }
+
+html.dark .theme-logo-contrast {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background-color: #ffffff !important;
+}
+
+@media print {
+  .theme-switcher { display: none !important; }
+}
+
+@media (max-width: 639px) {
+  .theme-switcher { inset-inline-end: 0.75rem; bottom: 0.75rem; opacity: 0.72; }
+  .theme-switcher:focus-within,
+  .theme-switcher:hover { opacity: 1; }
+  .theme-switcher__button { width: 2.5rem; height: 2.5rem; }
+  .theme-switcher--inline { opacity: 1; }
+  .theme-switcher--inline .theme-switcher__button { width: 2.5rem; height: 2.5rem; }
+  .admin-theme-save { right: 4.75rem; }
+}

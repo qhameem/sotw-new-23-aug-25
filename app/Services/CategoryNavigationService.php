@@ -51,6 +51,12 @@ class CategoryNavigationService
             'description' => 'Help desks, feedback loops, live chat, and customer communication.',
             'icon' => 'lifebuoy',
         ],
+        'other' => [
+            'label' => 'Other',
+            'eyebrow' => 'Discover More',
+            'description' => 'Specialized software, emerging categories, and tools that cross traditional workflows.',
+            'icon' => 'puzzle-piece',
+        ],
         'view-all' => [
             'label' => 'All Categories',
             'eyebrow' => 'Browse Everything',
@@ -241,6 +247,32 @@ class CategoryNavigationService
         return 'ai-automation';
     }
 
+    public function getBroadGroups(): array
+    {
+        return collect(self::GROUPS)
+            ->reject(fn (array $group, string $key) => $key === 'view-all')
+            ->map(fn (array $group, string $key) => [
+                'key' => $key,
+                ...$group,
+                'url' => route('software-groups.show', ['group' => $key]),
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function getBroadGroup(string $key): ?array
+    {
+        if ($key === 'view-all' || ! isset(self::GROUPS[$key])) {
+            return null;
+        }
+
+        $menuGroup = collect($this->getMenuGroups())->firstWhere('key', $key);
+
+        return $menuGroup
+            ? [...$menuGroup, 'url' => route('software-groups.show', ['group' => $key])]
+            : null;
+    }
+
     private function categories(): Collection
     {
         if ($this->categories !== null) {
@@ -324,6 +356,6 @@ class CategoryNavigationService
             }
         }
 
-        return 'productivity-hr';
+        return 'other';
     }
 }

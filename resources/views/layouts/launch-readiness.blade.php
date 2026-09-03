@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+    @include('partials.theme.boot')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -89,7 +90,7 @@
             intendedUrl: @js(url()->current()),
         })"
     >
-        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur">
+        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur dark:bg-slate-900/95">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
                 <div class="flex items-center gap-6">
                     <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-3 text-sm font-semibold text-slate-900">
@@ -185,5 +186,6 @@
             </div>
         @endunless
     </div>
+    @include('partials.theme.switcher')
 </body>
 </html>

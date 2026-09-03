@@ -31,4 +31,13 @@ return [
     'navbar_bg_color' => env('THEME_NAVBAR_BG_COLOR', '#ffffff'),
     'body_bg_color'   => env('THEME_BODY_BG_COLOR', '#ffffff'),
     'product_hover_color' => env('THEME_PRODUCT_HOVER_COLOR', '#f9fafb'),
+
+    'dark_navbar_bg_color' => env('THEME_DARK_NAVBAR_BG_COLOR', '#111827'),
+    'dark_body_bg_color' => env('THEME_DARK_BODY_BG_COLOR', '#0b1120'),
+    'dark_surface_color' => env('THEME_DARK_SURFACE_COLOR', '#111827'),
+    'dark_muted_surface_color' => env('THEME_DARK_MUTED_SURFACE_COLOR', '#1e293b'),
+    'dark_border_color' => env('THEME_DARK_BORDER_COLOR', '#334155'),
+    'dark_font_color' => env('THEME_DARK_FONT_COLOR', '#f8fafc'),
+    'dark_body_text_color' => env('THEME_DARK_BODY_TEXT_COLOR', '#cbd5e1'),
+    'dark_product_hover_color' => env('THEME_DARK_PRODUCT_HOVER_COLOR', '#1e293b'),
 ];

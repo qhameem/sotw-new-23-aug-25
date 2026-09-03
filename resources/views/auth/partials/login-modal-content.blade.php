@@ -12,7 +12,7 @@
     class="px-8 py-5 sm:px-10 sm:py-6"
 >
     <div class="flex justify-center mb-5">
-        <x-application-logo class="h-9 w-auto" />
+        <x-application-logo class="theme-logo-contrast h-9 w-auto" />
     </div>
 
     <x-auth-session-status class="mb-4" :status="session('status') === 'otp-sent' ? null : session('status')" />

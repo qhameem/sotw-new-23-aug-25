@@ -8,7 +8,7 @@
 @section('hide_desktop_page_header', 'true')
 
 @section('content')
-    <div class="min-h-screen bg-[#fafaf8] pb-24 pt-28 text-stone-950 md:pt-12">
+    <div class="min-h-screen bg-[#fafaf8] pb-24 pt-28 text-stone-950 dark:bg-slate-950 dark:text-slate-50 md:pt-12">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
             <header class="border-b border-stone-200 pb-10 sm:pb-12">
                 <div class="flex items-center justify-between gap-5">

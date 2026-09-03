@@ -1,7 +1,7 @@
 <template>
   <div
     class="rounded-xl border p-4 shadow-sm transition-colors"
-    :class="modelValue.sandbox_mode ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50/80'"
+    :class="modelValue.sandbox_mode ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40' : 'border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900'"
   >
     <div class="flex items-start gap-3">
       <input
@@ -28,7 +28,7 @@
         </p>
         <div
           v-if="modelValue.sandbox_mode"
-          class="mt-3 rounded-xl border border-amber-300 bg-white px-4 py-3 text-sm text-amber-900"
+          class="mt-3 rounded-xl border border-amber-300 bg-white px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:!text-amber-100"
         >
           <p class="font-semibold">Sandbox is active.</p>
           <p class="mt-1">Validation is skipped, and no product will be inserted or updated while this mode is on.</p>

@@ -1,25 +1,20 @@
-<div data-modal-scroll-lock-fixed class="fixed top-0 w-full z-50 h-[3.7rem] border-b border-gray-200 flex-shrink-0 hidden md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
+<div data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden h-[7rem] w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
     @php
         $isCategoriesRoute = request()->routeIs('categories.*');
-        $launchReadinessBranding = app(\App\Support\LaunchReadinessBranding::class);
-        $launchReadinessToolSettings = app(\App\Support\ToolSettings::class);
-        $launchReadinessToolName = $launchReadinessBranding->siteName();
-        $launchReadinessToolLogoUrl = $launchReadinessBranding->publicLogoUrl();
-        $launchReadinessToolUrl = $launchReadinessToolSettings->path(\App\Support\ToolSettings::LAUNCH_READINESS_KEY);
-        $launchReadinessTopBarLabel = 'Free SEO Scan';
     @endphp
 
     <div @class([
         'mx-auto',
-        'max-w-[96rem] px-5' => request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'),
-        'max-w-7xl px-4 sm:px-6 lg:px-10 xl:px-12' => !request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'),
+        'max-w-[96rem] px-5' => request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page'),
+        'max-w-7xl px-4 sm:px-6 lg:px-10 xl:px-12' => !request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page'),
     ])>
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
-                <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
+                <a href="{{ route('home') }}" wire:navigate.hover class="theme-logo-contrast shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                     <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
+                <x-header-stats :stats="$headerStats" />
                 @if(!request()->routeIs('todolists.*'))
                     <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
                         <button type="button" @click="$dispatch('open-search-modal')"
@@ -33,19 +28,6 @@
                             <span class="truncate text-sm text-gray-500" x-text="isMac ? 'Search (⌘ + K)' : 'Search (Ctrl + K)'"></span>
                         </button>
                     </div>
-                    <a
-                        href="{{ $launchReadinessToolUrl }}"
-                        class="group flex min-w-0 shrink items-center gap-1 px-1 py-1 transition hover:opacity-80"
-                        title="{{ $launchReadinessToolName }}"
-                    >
-                        <img
-                            src="{{ $launchReadinessToolLogoUrl }}"
-                            alt="{{ $launchReadinessToolName }} logo"
-                            class="h-5 w-5 shrink-0 object-contain"
-                            loading="lazy"
-                        >
-                        <span class="max-w-[140px] truncate text-sm font-semibold text-gray-800 group-hover:underline">{{ $launchReadinessTopBarLabel }}</span>
-                    </a>
                 @endif
             </div>
             <div class="flex min-w-0 flex-1 justify-center px-2 lg:px-6">
@@ -143,6 +125,7 @@
                         class="relative"
                         @click.outside="closeMenu()"
                         @keydown.escape.window="closeMenu()"
+                        @open-category-navigation.window="activeGroup = $event.detail.key; openMenu()"
                     >
                         <button
                             x-ref="trigger"
@@ -168,7 +151,7 @@
                             x-transition:leave="transition ease-in duration-100"
                             x-transition:leave-start="opacity-100 translate-y-0"
                             x-transition:leave-end="opacity-0 -translate-y-2"
-                            class="fixed left-1/2 top-[3.5rem] z-50 w-[58rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 pt-3"
+                            class="fixed left-1/2 top-[6.8rem] z-50 w-[58rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 pt-3"
                             style="display: none;"
                         >
                             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
@@ -267,6 +250,9 @@
                                                                 @break
                                                             @case('lifebuoy')
                                                                 <x-phosphor-lifebuoy class="h-4 w-4" />
+                                                                @break
+                                                            @case('puzzle-piece')
+                                                                <x-phosphor-puzzle-piece class="h-4 w-4" />
                                                                 @break
                                                             @default
                                                                 <x-phosphor-grid-nine class="h-4 w-4" />
@@ -395,6 +381,7 @@
                 @guest
                     <div class="flex items-center gap-2">
                         <x-add-product-button />
+                        @include('partials.theme.switcher', ['floating' => false])
                         <a href="{{ route('login') }}" class="inline-flex min-h-8 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-gray-300 bg-white px-4 py-1 text-sm font-semibold text-gray-700 transition duration-300 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M17 4.25A2.25 2.25 0 0 0 14.75 2h-5.5A2.25 2.25 0 0 0 7 4.25v2a.75.75 0 0 0 1.5 0v-2a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 .75.75v11.5a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1-.75-.75v-2a.75.75 0 0 0-1.5 0v2A2.25 2.25 0 0 0 9.25 18h5.5A2.25 2.25 0 0 0 17 15.75V4.25Z" clip-rule="evenodd" />
@@ -429,10 +416,13 @@
                             </a>
                         @endif
                     @endauth
+                    @include('partials.theme.switcher', ['floating' => false])
                     <x-user-dropdown />
                 </div>
                 @endguest
             </div>
         </div>
     </div>
+
+    <x-category-navigation-row :category-navigation-summaries="$categoryNavigationSummaries ?? []" />
 </div>

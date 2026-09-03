@@ -274,6 +274,11 @@ Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
 Route::get('/topics/{category:slug}', [TopicController::class, 'show'])->name('topics.category');
 // Categories page (alias for topics)
 Route::get('/categories', [TopicController::class, 'index'])->name('categories.index');
+Route::get('/software/{group}/page/{page}', [\App\Http\Controllers\BroadCategoryController::class, 'show'])
+    ->whereNumber('page')
+    ->name('software-groups.page');
+Route::get('/software/{group}', [\App\Http\Controllers\BroadCategoryController::class, 'show'])
+    ->name('software-groups.show');
 Route::get('/category/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
     ->whereNumber('page')
     ->name('categories.show.page');

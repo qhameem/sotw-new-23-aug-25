@@ -175,6 +175,43 @@ class AdminThemeFaviconBundleTest extends TestCase
             ->assertSee('#fff4e6');
     }
 
+    public function test_admin_can_configure_dark_mode_colors(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $darkColors = [
+            'dark_navbar_bg_color' => '#101827',
+            'dark_body_bg_color' => '#07101f',
+            'dark_surface_color' => '#121c2d',
+            'dark_muted_surface_color' => '#20304a',
+            'dark_border_color' => '#40516d',
+            'dark_font_color' => '#f1f5f9',
+            'dark_body_text_color' => '#c0ccdc',
+            'dark_product_hover_color' => '#26344d',
+        ];
+
+        $response = $this->actingAs($admin)->put(route('admin.theme.update'), [
+            'font_family' => 'Inter',
+            'primary_color' => '#3b82f6',
+            ...$darkColors,
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($darkColors as $key => $value) {
+            $this->assertSame($value, $settings[$key]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.theme.edit'))
+            ->assertOk()
+            ->assertSee('Dark Mode Colors')
+            ->assertSee('#07101f');
+    }
+
     private function fakeIcoUpload(): UploadedFile
     {
         return UploadedFile::fake()->createWithContent(

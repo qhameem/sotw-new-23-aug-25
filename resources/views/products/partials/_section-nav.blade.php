@@ -72,7 +72,7 @@
         ">
         <div x-ref="wrapper" :style="isPinned ? `height: ${navHeight}px` : ''">
             <nav x-ref="nav"
-                class="overflow-x-auto border-b border-gray-200 bg-white/95 backdrop-blur"
+                class="overflow-x-auto border-b border-gray-200 bg-white/95 backdrop-blur dark:bg-slate-900/95"
                 :class="isPinned ? 'fixed z-30 shadow-sm' : 'relative'"
                 :style="isPinned ? `top: ${topOffset}px; left: ${navLeft}px; width: ${navWidth}px;` : ''">
                 <div class="flex min-w-full items-stretch">
