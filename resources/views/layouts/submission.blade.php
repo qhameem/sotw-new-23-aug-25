@@ -515,7 +515,7 @@
         </div>
 
         <!-- Main Content Wrapper -->
-        <div class="flex-1 w-full flex flex-col relative pt-[75px] md:pt-0">
+        <div class="flex-1 w-full flex flex-col relative pt-[75px] md:pt-[7rem]">
             <main class="w-full flex-1 flex flex-col">
                 @yield('content')
             </main>

@@ -3,11 +3,7 @@
         $isCategoriesRoute = request()->routeIs('categories.*');
     @endphp
 
-    <div @class([
-        'mx-auto',
-        'max-w-[96rem] px-5' => request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page'),
-        'max-w-7xl px-4 sm:px-6 lg:px-10 xl:px-12' => !request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page'),
-    ])>
+    <div class="mx-auto max-w-[96rem] px-5">
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
                 <a href="{{ route('home') }}" wire:navigate.hover class="theme-logo-contrast shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
