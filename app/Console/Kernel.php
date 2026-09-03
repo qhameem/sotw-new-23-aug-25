@@ -10,8 +10,6 @@ use App\Console\Commands\OptimizeProductLogos;
 use App\Console\Commands\PruneMagicLoginLinks;
 use App\Console\Commands\PublishScheduledProducts;
 use App\Console\Commands\RepairBlockedProductLogos;
-use App\Support\ProductPublishSchedule;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -32,28 +30,6 @@ class Kernel extends ConsoleKernel
         RepairBlockedProductLogos::class,
         \App\Console\Commands\AddNofollowToProductDescriptions::class,
     ];
-
-    /**
-     * Define the application's command schedule.
-     */
-    protected function schedule(Schedule $schedule): void
-    {
-        // $schedule->command('inspire')->hourly();
-        $schedule->command('products:publish-scheduled')
-            ->dailyAt(ProductPublishSchedule::getPublishTime())
-            ->withoutOverlapping();
-        $schedule->command('sitemap:generate')->daily();
-        $schedule->command('sitemap:generate-alternatives')
-            ->dailyAt(ProductPublishSchedule::getPublishTime())
-            ->withoutOverlapping();
-        $schedule->command('reminders:send-deadline')->everyMinute();
-        $schedule->command('badge:verify')->dailyAt('03:00')->withoutOverlapping();
-        $schedule->command('auth:prune-magic-links')->daily();
-        $schedule->command('products:discover')
-            ->dailyAt('04:30')
-            ->withoutOverlapping()
-            ->onOneServer();
-    }
 
     /**
      * Register the commands for the application.
