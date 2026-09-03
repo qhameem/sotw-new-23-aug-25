@@ -9,7 +9,7 @@ class AiCrawlerLogParser
     public function parse(string $line): ?array
     {
         $matched = preg_match(
-            '/^(?<ip>\S+)\s+\S+\s+\S+\s+\[(?<time>[^\]]+)]\s+"(?<method>\S+)\s+(?<target>\S+)(?:\s+[^\"]+)?"\s+(?<status>\d{3})\s+\S+(?:\s+"[^"]*"\s+"(?<agent>[^"]*)")?/',
+            '/^(?:\'\-\s+)?(?<ip>\S+)\s+\S+\s+\S+\s+\[(?<time>[^\]]+)]\s+"(?<method>\S+)\s+(?<target>\S+)(?:\s+[^\"]+)?"\s+(?<status>\d{3})\s+\S+(?:\s+"[^"]*"\s+"(?<agent>[^"]*)")?/',
             trim($line),
             $matches
         );

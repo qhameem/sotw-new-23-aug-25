@@ -33,4 +33,21 @@ class ImportAiCrawlerLogsTest extends TestCase
             File::delete($path);
         }
     }
+
+    public function test_it_can_rebuild_totals_after_a_parser_or_log_format_change(): void
+    {
+        $path = storage_path('framework/testing-ai-crawlers-rebuild.log');
+        File::put($path, '\'- 57.141.0.43 - - [02/Sep/2026:08:47:28 +0200] "GET /compare/a-vs-b HTTP/2" 200 21646 "-" "meta-externalagent/1.1"'."\n");
+
+        try {
+            $this->artisan('ai-crawlers:import', ['--path' => $path])->assertSuccessful();
+            $this->assertSame(1, AiCrawlerDailyStat::query()->sum('requests'));
+
+            $this->artisan('ai-crawlers:import', ['--path' => $path, '--rebuild' => true])->assertSuccessful();
+
+            $this->assertSame(1, AiCrawlerDailyStat::query()->sum('requests'));
+        } finally {
+            File::delete($path);
+        }
+    }
 }

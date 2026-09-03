@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class ImportAiCrawlerLogs extends Command
 {
-    protected $signature = 'ai-crawlers:import {--path= : Import one access log instead of configured paths}';
+    protected $signature = 'ai-crawlers:import
+        {--path= : Import one access log instead of configured paths}
+        {--rebuild : Clear crawler totals and offsets before importing}';
 
     protected $description = 'Incrementally import AI crawler requests from OpenLiteSpeed combined access logs';
 
@@ -25,6 +27,14 @@ class ImportAiCrawlerLogs extends Command
             $this->error('No access-log paths are configured.');
 
             return self::FAILURE;
+        }
+
+        if ($this->option('rebuild')) {
+            DB::transaction(function () {
+                AiCrawlerDailyStat::query()->delete();
+                AiCrawlerLogState::query()->delete();
+            });
+            $headerStats->forget();
         }
 
         $imported = 0;

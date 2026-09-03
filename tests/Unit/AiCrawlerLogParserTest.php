@@ -25,4 +25,15 @@ class AiCrawlerLogParserTest extends TestCase
 
         $this->assertNull(app(AiCrawlerLogParser::class)->parse($line));
     }
+
+    public function test_it_parses_openlitespeed_logs_with_the_vhost_prefix(): void
+    {
+        $line = '\'- 57.141.0.43 - - [02/Sep/2026:08:47:28 +0200] "GET /compare/a-vs-b HTTP/2" 200 21646 "-" "Mozilla/5.0; compatible; meta-externalagent/1.1"';
+
+        $record = app(AiCrawlerLogParser::class)->parse($line);
+
+        $this->assertSame('Meta External Agent', $record['bot']);
+        $this->assertSame('/compare/a-vs-b', $record['path']);
+        $this->assertSame(200, $record['status_code']);
+    }
 }
