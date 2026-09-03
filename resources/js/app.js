@@ -1,6 +1,35 @@
 // Components will be dynamically imported
 import axios from 'axios';
 
+function syncSiteHeaderOffset() {
+    const header = document.querySelector('[data-site-top-bar]');
+
+    if (!header || window.matchMedia('(max-width: 767px)').matches) {
+        document.documentElement.style.removeProperty('--site-header-offset');
+        return;
+    }
+
+    const headerBottom = Math.max(0, Math.ceil(header.getBoundingClientRect().bottom));
+    document.documentElement.style.setProperty('--site-header-offset', `${headerBottom}px`);
+}
+
+function initializeSiteHeaderOffset() {
+    const header = document.querySelector('[data-site-top-bar]');
+
+    syncSiteHeaderOffset();
+
+    if (!header || header.dataset.offsetObserverInitialized === 'true') {
+        return;
+    }
+
+    header.dataset.offsetObserverInitialized = 'true';
+    new ResizeObserver(syncSiteHeaderOffset).observe(header);
+    new MutationObserver(syncSiteHeaderOffset).observe(header, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+    });
+}
+
 // Add this line to set the CSRF token for all Axios requests
 axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -1068,6 +1097,7 @@ if (document.querySelector('[data-article-editor-root]')) {
 // Make Datepicker available globally for inline scripts
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializeSiteHeaderOffset();
     const authSyncEvent = document.body?.dataset?.authSyncEvent;
 
     if (authSyncEvent) {
@@ -1161,5 +1191,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('livewire:navigated', () => {
+    initializeSiteHeaderOffset();
     bootstrapNavigatedPage();
 });
+
+window.addEventListener('load', syncSiteHeaderOffset);
+window.addEventListener('resize', syncSiteHeaderOffset);

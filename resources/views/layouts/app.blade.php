@@ -453,6 +453,20 @@
         [data-modal-scroll-lock-fixed] {
             padding-right: var(--modal-scrollbar-compensation, 0px);
         }
+
+        :root {
+            --site-header-offset: 7rem;
+        }
+
+        @media (min-width: 768px) {
+            .site-header-padding {
+                padding-top: var(--site-header-offset);
+            }
+
+            .site-header-sticky {
+                top: var(--site-header-offset);
+            }
+        }
     </style>
 
     @include('partials.theme.favicon-links')

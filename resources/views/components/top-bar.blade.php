@@ -1,4 +1,4 @@
-<div data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden h-[7rem] w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
+<div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden h-[7rem] w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
     @php
         $isCategoriesRoute = request()->routeIs('categories.*');
     @endphp
