@@ -147,17 +147,27 @@
               </div>
 
               <div
-                v-if="autofillReveal.active"
-                class="mb-4 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs text-sky-700"
+                class="pointer-events-none fixed bottom-4 right-4 z-40 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2"
+                aria-live="polite"
+                aria-atomic="false"
               >
-                We’re filling this out step by step. Fields unlock as each piece of product info is ready.
-              </div>
+                <transition name="fade">
+                  <div
+                    v-if="autofillReveal.active"
+                    class="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-700 shadow-lg"
+                  >
+                    We’re filling this out step by step. Fields unlock as each piece of product info is ready.
+                  </div>
+                </transition>
 
-              <div
-                v-if="draftStatusMessage"
-                class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600"
-              >
-                {{ draftStatusMessage }}
+                <transition name="fade">
+                  <div
+                    v-if="draftStatusMessage"
+                    class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 shadow-lg"
+                  >
+                    {{ draftStatusMessage }}
+                  </div>
+                </transition>
               </div>
 
               <!-- Submission Error Message -->
