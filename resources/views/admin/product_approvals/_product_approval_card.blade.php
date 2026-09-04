@@ -128,8 +128,8 @@
             </div>
 
             <div class="custom-category-modal-footer flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-3">
-                <button type="button" data-custom-category-close class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                <button type="button" class="js-save-all-custom-categories rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700" data-product-id="{{ $product->id }}">Save categories</button>
+                <button type="button" data-custom-category-close class="custom-category-cancel-button">Cancel</button>
+                <button type="button" class="js-save-all-custom-categories custom-category-save-button" data-product-id="{{ $product->id }}">Save categories</button>
             </div>
         </div>
     </div>

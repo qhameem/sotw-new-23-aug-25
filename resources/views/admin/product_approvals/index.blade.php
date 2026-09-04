@@ -37,8 +37,42 @@
         max-height: 760px !important;
         overflow: hidden !important;
     }
-    .custom-category-modal-header,
-    .custom-category-modal-footer { flex: 0 0 auto !important; }
+    .custom-category-modal-header { flex: 0 0 auto !important; }
+    .custom-category-modal-footer {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+        min-height: 64px !important;
+    }
+    .custom-category-modal-footer button {
+        position: static !important;
+        display: inline-flex !important;
+        visibility: visible !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 118px !important;
+        min-height: 40px !important;
+        padding: 8px 16px !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        opacity: 1 !important;
+    }
+    .custom-category-cancel-button {
+        border: 1px solid rgb(203 213 225) !important;
+        background: white !important;
+        color: rgb(51 65 85) !important;
+    }
+    .custom-category-save-button {
+        border: 1px solid rgb(2 132 199) !important;
+        background: rgb(2 132 199) !important;
+        color: white !important;
+    }
+    .custom-category-save-button:hover { background: rgb(3 105 161) !important; }
+    .custom-category-save-button:disabled { cursor: wait !important; opacity: .65 !important; }
     .custom-category-modal-body {
         flex: 1 1 auto !important;
         min-height: 0 !important;
