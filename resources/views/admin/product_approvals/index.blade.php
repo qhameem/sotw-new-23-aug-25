@@ -324,6 +324,10 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[id^="custom-category-modal-"]').forEach(modal => {
+        document.body.appendChild(modal);
+    });
+
     const bindSelectAll = (masterId, checkboxSelector) => {
         const master = document.getElementById(masterId);
         const checkboxes = document.querySelectorAll(checkboxSelector);
@@ -344,6 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById(`custom-category-modal-${productId}`);
         modal?.classList.remove('hidden');
         modal?.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
     };
 
     document.querySelectorAll('[data-custom-category-open]').forEach(button => {
@@ -355,6 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = button.closest('[role="dialog"]');
             modal?.classList.add('hidden');
             modal?.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
         });
     });
 
@@ -406,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const modal = document.getElementById(`custom-category-modal-${productId}`);
                     modal?.classList.add('hidden');
                     modal?.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
                 }
                 return true;
             } catch (exception) {
