@@ -379,20 +379,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelectorAll('.js-custom-category-form').forEach(form => {
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const button = this.querySelector('button[type="submit"]');
-            const error = this.querySelector('.js-custom-category-error');
-            button.disabled = true;
-            button.textContent = 'Saving...';
+    const saveCustomCategory = async form => {
+            const error = form.querySelector('.js-custom-category-error');
             error.classList.add('hidden');
 
             try {
-                const response = await fetch(this.action, {
+                const response = await fetch(form.action, {
                     method: 'POST',
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.querySelector('[name="_token"]').value },
-                    body: new FormData(this),
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value },
+                    body: new FormData(form),
                 });
                 const data = await response.json();
 
@@ -401,9 +396,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(validationMessage || data.message || 'Unable to save category.');
                 }
 
-                this.remove();
+                const productId = form.dataset.productId;
+                form.remove();
                 if (data.remaining_count === 0) {
-                    const productId = this.dataset.productId;
                     document.querySelectorAll(`.js-publish-approval-form[data-product-id="${productId}"]`).forEach(publishForm => {
                         publishForm.dataset.hasPendingCategories = '0';
                     });
@@ -412,12 +407,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     modal?.classList.add('hidden');
                     modal?.classList.remove('flex');
                 }
+                return true;
             } catch (exception) {
                 error.textContent = exception.message;
                 error.classList.remove('hidden');
-                button.disabled = false;
-                button.textContent = 'Save category';
+                error.scrollIntoView({ block: 'center' });
+                return false;
             }
+    };
+
+    document.querySelectorAll('.js-save-all-custom-categories').forEach(button => {
+        button.addEventListener('click', async function() {
+            const modal = this.closest('[role="dialog"]');
+            const forms = Array.from(modal.querySelectorAll('.js-custom-category-form'));
+
+            if (!forms.every(form => form.reportValidity())) {
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = 'Saving...';
+
+            for (const form of forms) {
+                if (!await saveCustomCategory(form)) {
+                    this.disabled = false;
+                    this.textContent = 'Save categories';
+                    return;
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('.js-custom-category-form').forEach(form => {
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            form.closest('[role="dialog"]')?.querySelector('.js-save-all-custom-categories')?.click();
         });
     });
 });
