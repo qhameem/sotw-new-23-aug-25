@@ -12,6 +12,46 @@
 @endsection
 
 @section('content')
+<style>
+    .custom-category-modal {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
+        padding: 16px !important;
+        background: rgb(15 23 42 / 0.65) !important;
+    }
+    .custom-category-modal.is-open { display: flex !important; }
+    .custom-category-modal-panel {
+        display: flex !important;
+        flex-direction: column !important;
+        width: min(672px, 100%) !important;
+        height: calc(100vh - 32px) !important;
+        height: calc(100dvh - 32px) !important;
+        max-height: 760px !important;
+        overflow: hidden !important;
+    }
+    .custom-category-modal-header,
+    .custom-category-modal-footer { flex: 0 0 auto !important; }
+    .custom-category-modal-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .custom-category-modal { font-size: 13px !important; }
+    .custom-category-modal h2 { font-size: 16px !important; line-height: 1.35 !important; }
+    .custom-category-modal .custom-category-name { font-size: 14px !important; }
+    .custom-category-modal textarea { font-size: 13px !important; line-height: 1.4 !important; }
+</style>
 <div class="mx-auto w-full max-w-none px-4 py-10 sm:px-6 lg:px-8">
     @if(session('success'))
         <div class="mb-6 flex items-center gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
@@ -346,8 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const openCategoryModal = productId => {
         const modal = document.getElementById(`custom-category-modal-${productId}`);
-        modal?.classList.remove('hidden');
-        modal?.classList.add('flex');
+        modal?.classList.add('is-open');
         document.body.classList.add('overflow-hidden');
     };
 
@@ -358,8 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-custom-category-close]').forEach(button => {
         button.addEventListener('click', () => {
             const modal = button.closest('[role="dialog"]');
-            modal?.classList.add('hidden');
-            modal?.classList.remove('flex');
+            modal?.classList.remove('is-open');
             document.body.classList.remove('overflow-hidden');
         });
     });
@@ -410,8 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     document.querySelector(`[data-custom-category-open="${productId}"]`)?.remove();
                     const modal = document.getElementById(`custom-category-modal-${productId}`);
-                    modal?.classList.add('hidden');
-                    modal?.classList.remove('flex');
+                    modal?.classList.remove('is-open');
                     document.body.classList.remove('overflow-hidden');
                 }
                 return true;
