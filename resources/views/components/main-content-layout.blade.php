@@ -101,6 +101,9 @@
                     ])>
                         <div @class([
                         ])>
+                            <div class="mb-6">
+                                <x-header-stats :stats="$headerStats" />
+                            </div>
                             @if (isset($right_sidebar_content) && trim($right_sidebar_content))
                                 {!! $right_sidebar_content !!}
                             @else

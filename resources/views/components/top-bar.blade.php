@@ -10,7 +10,6 @@
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                     <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
-                <x-header-stats :stats="$headerStats" />
                 @if(!request()->routeIs('todolists.*'))
                     <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
                         <button type="button" @click="$dispatch('open-search-modal')"

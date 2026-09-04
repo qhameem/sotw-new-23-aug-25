@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class HeaderStatsService
 {
-    public const CACHE_KEY = 'site.header_stats.v1';
+    public const CACHE_KEY = 'site.header_stats.v2';
 
     public function get(): array
     {
@@ -18,12 +18,18 @@ class HeaderStatsService
                 ->selectRaw('COUNT(*) as submitted_products, COALESCE(SUM(outbound_clicks_count), 0) as product_clicks')
                 ->first();
 
+            $aiStats = Schema::hasTable('ai_crawler_daily_stats')
+                ? AiCrawlerDailyStat::query()
+                    ->whereDate('visited_on', '>=', today()->subDays(29))
+                    ->selectRaw('COALESCE(SUM(requests), 0) as requests, COUNT(DISTINCT bot) as systems')
+                    ->first()
+                : null;
+
             return [
                 'submitted_products' => (int) ($productStats->submitted_products ?? 0),
                 'product_clicks' => (int) ($productStats->product_clicks ?? 0),
-                'ai_bot_requests' => Schema::hasTable('ai_crawler_daily_stats')
-                    ? (int) AiCrawlerDailyStat::query()->sum('requests')
-                    : 0,
+                'ai_bot_requests' => (int) ($aiStats->requests ?? 0),
+                'ai_systems' => (int) ($aiStats->systems ?? 0),
             ];
         });
     }

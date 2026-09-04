@@ -84,8 +84,11 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('categoryNavigationSummaries', $categoryNavigation->getMenuGroupSummaries())
-                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey())
-                ->with('headerStats', app(HeaderStatsService::class)->get());
+                ->with('defaultCategoryNavigationGroupKey', $categoryNavigation->getDefaultGroupKey());
+        });
+
+        View::composer('components.main-content-layout', function ($view) {
+            $view->with('headerStats', app(HeaderStatsService::class)->get());
         });
 
         View::composer(['partials._mobile-footer-menu', 'components.mobile-categories-menu'], function ($view) {
