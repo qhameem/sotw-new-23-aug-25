@@ -24,7 +24,11 @@ class ProductApprovalController extends Controller
             $status = null;
         }
 
-        $pendingProducts = Product::with(['user', 'categories'])
+        $pendingProducts = Product::with([
+            'user',
+            'categories',
+            'customCategorySubmissions' => fn ($query) => $query->where('status', 'pending')->orderBy('id'),
+        ])
             ->withCount([
                 'customCategorySubmissions as pending_custom_category_submissions_count' => fn ($query) => $query->where('status', 'pending'),
             ])
@@ -109,6 +113,10 @@ class ProductApprovalController extends Controller
 
     public function approve(Request $request, Product $product)
     {
+        if ($product->customCategorySubmissions()->where('status', 'pending')->exists()) {
+            return back()->with('error', 'Resolve all custom categories before publishing or scheduling this product.');
+        }
+
         $product->approved = true;
         $publishOption = $request->input('publish_option', 'specific_date'); // Default to specific_date
 
@@ -221,6 +229,10 @@ class ProductApprovalController extends Controller
             foreach ($productIds as $id) {
                 $product = Product::find($id);
                 if ($product) {
+                    if ($product->customCategorySubmissions()->where('status', 'pending')->exists()) {
+                        continue;
+                    }
+
                     $product->approved = true;
 
                     if (! empty($bulkPublishDate)) {
@@ -515,10 +527,12 @@ class ProductApprovalController extends Controller
 
     public function approveCustomCategory(Request $request, Product $product, \App\Models\CustomCategorySubmission $submission)
     {
+        abort_unless($submission->product_id === $product->id, 404);
+
         $request->validate([
             'slug' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'meta_description' => 'nullable|string',
+            'description' => 'required|string',
+            'meta_description' => 'required|string|max:255',
         ]);
 
         try {
@@ -537,6 +551,7 @@ class ProductApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Custom category approved successfully.',
+                'remaining_count' => $product->customCategorySubmissions()->where('status', 'pending')->count(),
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();

@@ -20,10 +20,8 @@ class AdminProductApprovalCustomCategoryTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole($adminRole);
 
-        Type::insert([
-            ['id' => 1, 'name' => 'Category', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => 3, 'name' => 'Best for', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        Type::updateOrCreate(['id' => 1], ['name' => 'Category']);
+        Type::updateOrCreate(['id' => 3], ['name' => 'Best for']);
 
         $product = Product::factory()->create();
         $submission = CustomCategorySubmission::create([
@@ -59,5 +57,51 @@ class AdminProductApprovalCustomCategoryTest extends TestCase
             'id' => $submission->id,
             'status' => 'approved',
         ]);
+    }
+
+    public function test_product_cannot_be_published_while_a_custom_category_is_pending()
+    {
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+        $product = Product::factory()->create(['approved' => false, 'is_published' => false]);
+
+        CustomCategorySubmission::create([
+            'product_id' => $product->id,
+            'type' => 'category',
+            'name' => 'Privacy',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.product-approvals.approve', $product), [
+            'publish_option' => 'now',
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertFalse($product->fresh()->approved);
+        $this->assertFalse($product->fresh()->is_published);
+    }
+
+    public function test_approval_page_renders_custom_category_modal_fields()
+    {
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+        $product = Product::factory()->create(['approved' => false]);
+        $submission = CustomCategorySubmission::create([
+            'product_id' => $product->id,
+            'type' => 'category',
+            'name' => 'Privacy',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.product-approvals.index', ['status' => 'pending']))
+            ->assertOk()
+            ->assertSee('data-custom-category-open="'.$product->id.'"', false)
+            ->assertSee('custom-category-modal-'.$product->id, false)
+            ->assertSee('name="description"', false)
+            ->assertSee('name="meta_description"', false)
+            ->assertSee(route('admin.product-approvals.approve-custom-category', [$product, $submission]), false);
     }
 }

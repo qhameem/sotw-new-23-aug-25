@@ -340,8 +340,32 @@ document.addEventListener('DOMContentLoaded', function() {
     bindSelectAll('select-all', '.product-checkbox');
     bindSelectAll('select-all-scheduled', '.scheduled-product-checkbox');
 
+    const openCategoryModal = productId => {
+        const modal = document.getElementById(`custom-category-modal-${productId}`);
+        modal?.classList.remove('hidden');
+        modal?.classList.add('flex');
+    };
+
+    document.querySelectorAll('[data-custom-category-open]').forEach(button => {
+        button.addEventListener('click', () => openCategoryModal(button.dataset.customCategoryOpen));
+    });
+
+    document.querySelectorAll('[data-custom-category-close]').forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = button.closest('[role="dialog"]');
+            modal?.classList.add('hidden');
+            modal?.classList.remove('flex');
+        });
+    });
+
     document.querySelectorAll('.js-publish-approval-form').forEach(form => {
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(event) {
+            if (this.dataset.hasPendingCategories === '1') {
+                event.preventDefault();
+                openCategoryModal(this.dataset.productId);
+                return;
+            }
+
             if (this.querySelector('[name="publish_option"]')?.value === 'specific_date') {
                 const productId = this.dataset.productId;
                 const dateInput = document.querySelector(`[name="published_at[${productId}]"]`);
@@ -352,6 +376,48 @@ document.addEventListener('DOMContentLoaded', function() {
             this.querySelector('.js-publish-spinner')?.classList.remove('hidden');
             const label = this.querySelector('.js-publish-label');
             if (label) label.textContent = 'Publishing...';
+        });
+    });
+
+    document.querySelectorAll('.js-custom-category-form').forEach(form => {
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const button = this.querySelector('button[type="submit"]');
+            const error = this.querySelector('.js-custom-category-error');
+            button.disabled = true;
+            button.textContent = 'Saving...';
+            error.classList.add('hidden');
+
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.querySelector('[name="_token"]').value },
+                    body: new FormData(this),
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
+                    throw new Error(validationMessage || data.message || 'Unable to save category.');
+                }
+
+                this.remove();
+                if (data.remaining_count === 0) {
+                    const productId = this.dataset.productId;
+                    document.querySelectorAll(`.js-publish-approval-form[data-product-id="${productId}"]`).forEach(publishForm => {
+                        publishForm.dataset.hasPendingCategories = '0';
+                    });
+                    document.querySelector(`[data-custom-category-open="${productId}"]`)?.remove();
+                    const modal = document.getElementById(`custom-category-modal-${productId}`);
+                    modal?.classList.add('hidden');
+                    modal?.classList.remove('flex');
+                }
+            } catch (exception) {
+                error.textContent = exception.message;
+                error.classList.remove('hidden');
+                button.disabled = false;
+                button.textContent = 'Save category';
+            }
         });
     });
 });
