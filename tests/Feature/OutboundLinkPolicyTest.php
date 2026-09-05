@@ -57,3 +57,12 @@ it('sanitizes article html with the active policy', function () {
         ->toContain('href="https://example.com/docs" rel="noopener noreferrer"')
         ->toContain('href="https://other-site.test/page" rel="nofollow noopener noreferrer"');
 });
+
+it('removes the rel attribute when an embed is forced to dofollow', function () {
+    $service = app(OutboundLinkPolicyService::class);
+    $html = '<a href="https://example.com" rel="nofollow sponsored noopener noreferrer">Badge</a>';
+
+    expect($service->sanitizeHtml($html, 'footer_embed', true))
+        ->toContain('<a href="https://example.com">Badge</a>')
+        ->not->toContain('rel=');
+});

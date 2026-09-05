@@ -11,8 +11,8 @@ class OutboundLink
         return app(OutboundLinkPolicyService::class)->relStringForUrl($url, $sourceType);
     }
 
-    public static function sanitizeHtml(?string $html, string $sourceType = 'article'): string
+    public static function sanitizeHtml(?string $html, string $sourceType = 'article', bool $forceDofollow = false): string
     {
-        return app(OutboundLinkPolicyService::class)->sanitizeHtml($html, $sourceType);
+        return app(OutboundLinkPolicyService::class)->sanitizeHtml($html, $sourceType, $forceDofollow);
     }
 }

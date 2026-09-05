@@ -53,6 +53,10 @@ class SettingsController extends Controller
         $badgeImageWebpUrl = $embedData['badge_image_webp_url'] ?? null;
         $badgeEmbedCode = $embedData['snippet'];
         $footerBadgeEmbedCodes = $this->normalizeFooterBadgeEmbedCodes($settings['footer_badge_embed_codes'] ?? []);
+        $footerBadgeEmbedDofollow = $this->normalizeFooterBadgeEmbedDofollow(
+            $settings['footer_badge_embed_dofollow'] ?? [],
+            count($footerBadgeEmbedCodes)
+        );
         $aiProviderStatusSnapshots = $aiProviderStatusService->latestSnapshots();
 
         return view('admin.settings.index', compact(
@@ -71,6 +75,7 @@ class SettingsController extends Controller
             'badgeImageWebpUrl',
             'badgeEmbedCode',
             'footerBadgeEmbedCodes',
+            'footerBadgeEmbedDofollow',
             'aiProviderStatusSnapshots'
         ));
     }
@@ -437,6 +442,8 @@ class SettingsController extends Controller
         $request->validate([
             'footer_badge_embed_codes' => 'nullable|array',
             'footer_badge_embed_codes.*' => 'nullable|string|max:20000',
+            'footer_badge_embed_dofollow' => 'nullable|array',
+            'footer_badge_embed_dofollow.*' => 'nullable|boolean',
         ]);
 
         $settings = [];
@@ -444,11 +451,18 @@ class SettingsController extends Controller
             $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
         }
 
-        $settings['footer_badge_embed_codes'] = collect($request->input('footer_badge_embed_codes', []))
-            ->map(fn ($code) => trim((string) $code))
-            ->filter()
-            ->values()
-            ->all();
+        $submittedCodes = $request->input('footer_badge_embed_codes', []);
+        $submittedDofollow = $request->input('footer_badge_embed_dofollow', []);
+        $footerBadges = collect($submittedCodes)
+            ->map(fn ($code, $index) => [
+                'code' => trim((string) $code),
+                'dofollow' => filter_var($submittedDofollow[$index] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ])
+            ->filter(fn (array $badge) => $badge['code'] !== '')
+            ->values();
+
+        $settings['footer_badge_embed_codes'] = $footerBadges->pluck('code')->all();
+        $settings['footer_badge_embed_dofollow'] = $footerBadges->pluck('dofollow')->all();
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
@@ -729,6 +743,18 @@ class SettingsController extends Controller
             ->map(fn ($code) => trim((string) $code))
             ->filter()
             ->values()
+            ->all();
+    }
+
+    private function normalizeFooterBadgeEmbedDofollow(mixed $dofollowFlags, int $badgeCount): array
+    {
+        if (!is_array($dofollowFlags)) {
+            $dofollowFlags = [];
+        }
+
+        return collect(range(0, max(0, $badgeCount - 1)))
+            ->map(fn ($index) => filter_var($dofollowFlags[$index] ?? false, FILTER_VALIDATE_BOOLEAN))
+            ->take($badgeCount)
             ->all();
     }
 

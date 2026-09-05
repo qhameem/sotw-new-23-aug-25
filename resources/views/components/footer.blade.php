@@ -4,6 +4,7 @@
     if (!request()->routeIs('admin.*') && Illuminate\Support\Facades\Storage::disk('local')->exists('settings.json')) {
         $settings = json_decode(Illuminate\Support\Facades\Storage::disk('local')->get('settings.json'), true);
         $footerBadgeEmbedCodes = $settings['footer_badge_embed_codes'] ?? [];
+        $footerBadgeEmbedDofollow = $settings['footer_badge_embed_dofollow'] ?? [];
     }
 
     if (is_string($footerBadgeEmbedCodes)) {
@@ -15,6 +16,7 @@
         ->filter()
         ->values()
         ->all();
+    $footerBadgeEmbedDofollow = is_array($footerBadgeEmbedDofollow ?? null) ? $footerBadgeEmbedDofollow : [];
 @endphp
 
 <footer class="w-full p-4 border-t md:flex md:items-center md:justify-center md:p-6">
@@ -35,9 +37,9 @@
         <div class="h-2"></div>
         @if (!empty($footerBadgeEmbedCodes))
             <div class="mb-3 flex flex-wrap items-center justify-center gap-3">
-                @foreach ($footerBadgeEmbedCodes as $footerBadgeEmbedCode)
+                @foreach ($footerBadgeEmbedCodes as $index => $footerBadgeEmbedCode)
                     <div class="flex items-center justify-center">
-                        {!! \App\Support\OutboundLink::sanitizeHtml($footerBadgeEmbedCode, 'footer_embed') !!}
+                        {!! \App\Support\OutboundLink::sanitizeHtml($footerBadgeEmbedCode, 'footer_embed', (bool) ($footerBadgeEmbedDofollow[$index] ?? false)) !!}
                     </div>
                 @endforeach
             </div>

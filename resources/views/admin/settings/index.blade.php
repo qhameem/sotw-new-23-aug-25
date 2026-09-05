@@ -422,6 +422,7 @@
 
         @php
             $footerBadgeEmbedCodesInput = old('footer_badge_embed_codes', $footerBadgeEmbedCodes ?? []);
+            $footerBadgeEmbedDofollowInput = old('footer_badge_embed_dofollow', $footerBadgeEmbedDofollow ?? []);
 
             if (!is_array($footerBadgeEmbedCodesInput)) {
                 $footerBadgeEmbedCodesInput = [$footerBadgeEmbedCodesInput];
@@ -464,6 +465,14 @@
                                         class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
                                         placeholder="<a href=&quot;...&quot;><img src=&quot;...&quot; alt=&quot;Badge&quot;></a>">{{ $footerBadgeEmbedCode }}</textarea>
                                 </div>
+                                <label class="mt-3 inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="hidden" name="footer_badge_embed_dofollow[{{ $index }}]" value="0">
+                                    <input type="checkbox" name="footer_badge_embed_dofollow[{{ $index }}]" value="1"
+                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        data-footer-embed-dofollow
+                                        @checked((bool) ($footerBadgeEmbedDofollowInput[$index] ?? false))>
+                                    <span>Do-follow link (remove the link's <code>rel</code> attribute)</span>
+                                </label>
                                 @error("footer_badge_embed_codes.$index")
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -492,6 +501,13 @@
                                     class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
                                     placeholder="<a href=&quot;...&quot;><img src=&quot;...&quot; alt=&quot;Badge&quot;></a>"></textarea>
                             </div>
+                            <label class="mt-3 inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input type="hidden" name="footer_badge_embed_dofollow[0]" value="0" data-footer-embed-dofollow-hidden>
+                                <input type="checkbox" name="footer_badge_embed_dofollow[0]" value="1"
+                                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                    data-footer-embed-dofollow>
+                                <span>Do-follow link (remove the link's <code>rel</code> attribute)</span>
+                            </label>
                         </div>
                     </template>
 
@@ -785,6 +801,8 @@
                 items.forEach(function (item, index) {
                     var label = item.querySelector('label');
                     var textarea = item.querySelector('textarea');
+                    var dofollow = item.querySelector('[data-footer-embed-dofollow]');
+                    var dofollowHidden = item.querySelector('input[type="hidden"][name^="footer_badge_embed_dofollow"]');
 
                     if (label) {
                         label.textContent = 'Embed Code ' + (index + 1);
@@ -793,6 +811,14 @@
 
                     if (textarea) {
                         textarea.id = 'footer_badge_embed_codes_' + index;
+                    }
+
+                    if (dofollow) {
+                        dofollow.name = 'footer_badge_embed_dofollow[' + index + ']';
+                    }
+
+                    if (dofollowHidden) {
+                        dofollowHidden.name = 'footer_badge_embed_dofollow[' + index + ']';
                     }
                 });
             }
@@ -821,6 +847,10 @@
                         var textarea = item.querySelector('textarea');
                         if (textarea) {
                             textarea.value = '';
+                        }
+                        var dofollow = item.querySelector('[data-footer-embed-dofollow]');
+                        if (dofollow) {
+                            dofollow.checked = false;
                         }
                         return;
                     }

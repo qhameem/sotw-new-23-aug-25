@@ -57,6 +57,31 @@ class AdminBadgeEmbedCodeTest extends TestCase
         );
     }
 
+    public function test_admin_can_save_per_footer_badge_dofollow_settings(): void
+    {
+        $admin = $this->createAdmin();
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.storeFooterEmbedCodes'), [
+            'footer_badge_embed_codes' => [
+                '<a href="https://first.example">First</a>',
+                '   ',
+                '<a href="https://second.example">Second</a>',
+            ],
+            'footer_badge_embed_dofollow' => [1, 0, 0],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Footer embed codes saved successfully.');
+
+        $savedSettings = json_decode(Storage::disk('local')->get('settings.json'), true);
+
+        $this->assertSame([
+            '<a href="https://first.example">First</a>',
+            '<a href="https://second.example">Second</a>',
+        ], $savedSettings['footer_badge_embed_codes']);
+        $this->assertSame([true, false], $savedSettings['footer_badge_embed_dofollow']);
+    }
+
     public function test_badge_snippet_preview_uses_saved_badge_share_code(): void
     {
         $customBadgeEmbedCode = '<a href="https://custom.example.com" rel="dofollow"><img src="https://cdn.example.com/badge.png" alt="Custom badge" width="220"></a>';

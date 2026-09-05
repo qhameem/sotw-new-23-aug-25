@@ -95,7 +95,7 @@ class OutboundLinkPolicyService
         return null;
     }
 
-    public function sanitizeHtml(?string $html, string $sourceType = 'article'): string
+    public function sanitizeHtml(?string $html, string $sourceType = 'article', bool $forceDofollow = false): string
     {
         if (! is_string($html) || trim($html) === '') {
             return (string) $html;
@@ -108,6 +108,12 @@ class OutboundLinkPolicyService
 
         foreach ($dom->getElementsByTagName('a') as $link) {
             if (! $link instanceof DOMElement || ! $link->hasAttribute('href')) {
+                continue;
+            }
+
+            if ($forceDofollow) {
+                $link->removeAttribute('rel');
+
                 continue;
             }
 
