@@ -36,6 +36,7 @@ return [
         'api_key' => env('GOOGLE_API_KEY'),
         'gemini_model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
         'gemini_base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'gemini_timeout' => (int) env('GEMINI_TIMEOUT', 30),
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
@@ -73,6 +74,7 @@ return [
         'key' => env('OPENROUTER_API_KEY'),
         'model' => env('OPENROUTER_MODEL', 'openrouter/free'),
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+        'timeout' => (int) env('OPENROUTER_TIMEOUT', 45),
     ],
 
     'indexnow' => [

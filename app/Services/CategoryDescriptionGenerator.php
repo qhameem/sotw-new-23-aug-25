@@ -7,6 +7,7 @@ use App\Support\CategoryTypeRegistry;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Client\ConnectionException;
 
 class CategoryDescriptionGenerator
 {
@@ -14,7 +15,6 @@ class CategoryDescriptionGenerator
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
-    private const TIMEOUT = 30;
     private const TEMPERATURE = 0.75;
     private const MAX_ATTEMPTS = 3;
 
@@ -49,6 +49,7 @@ class CategoryDescriptionGenerator
         try {
             $lastFailureReason = 'unknown';
             $bestResult = null;
+            $transportFailures = [];
             $context = $this->buildCategoryContext($categoryName, $runtimeContext);
             $this->addTrace('info', 'Prepared category context and SEO constraints.');
 
@@ -57,8 +58,37 @@ class CategoryDescriptionGenerator
                 $this->addTrace('info', "Generation attempt {$attempt} of ".self::MAX_ATTEMPTS.'.');
 
                 foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']) as $candidate) {
+                    if (isset($transportFailures[$candidate['provider']])) {
+                        continue;
+                    }
+
                     $this->addTrace('info', 'Requesting copy from '.$this->providerLabel($candidate['provider']).'.');
-                    $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
+                    try {
+                        $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
+                    } catch (ConnectionException $e) {
+                        $providerLabel = $this->providerLabel($candidate['provider']);
+                        $timeout = $this->timeoutFor($candidate['provider']);
+                        $transportFailures[$candidate['provider']] = true;
+                        $this->addTrace('error', "{$providerLabel} timed out or could not connect after {$timeout} seconds.");
+                        $this->addTrace('warning', 'Falling back to the next available provider.');
+                        Log::warning('CategoryDescriptionGenerator: Provider connection failure', [
+                            'provider' => $candidate['provider'],
+                            'message' => $e->getMessage(),
+                            'attempt' => $attempt,
+                        ]);
+                        continue;
+                    } catch (\Throwable $e) {
+                        $providerLabel = $this->providerLabel($candidate['provider']);
+                        $transportFailures[$candidate['provider']] = true;
+                        $this->addTrace('error', "{$providerLabel} request failed before a valid response was received.");
+                        $this->addTrace('warning', 'Falling back to the next available provider.');
+                        Log::warning('CategoryDescriptionGenerator: Unexpected provider failure', [
+                            'provider' => $candidate['provider'],
+                            'message' => $e->getMessage(),
+                            'attempt' => $attempt,
+                        ]);
+                        continue;
+                    }
 
                     if ($result !== null) {
                         $this->addTrace('success', $this->providerLabel($candidate['provider']).' returned a valid JSON response.');
@@ -145,7 +175,7 @@ class CategoryDescriptionGenerator
             'gemini' => Http::withHeaders([
                 'X-goog-api-key' => $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(self::TIMEOUT)->post(self::GEMINI_API_URL, [
+            ])->timeout($this->timeoutFor('gemini'))->post(self::GEMINI_API_URL, [
                 'contents' => [
                     [
                         'parts' => [
@@ -154,7 +184,7 @@ class CategoryDescriptionGenerator
                     ],
                 ],
             ]),
-            'openrouter' => Http::timeout(self::TIMEOUT)->withHeaders([
+            'openrouter' => Http::timeout($this->timeoutFor('openrouter'))->withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'HTTP-Referer' => config('app.url'),
                 'X-OpenRouter-Title' => config('app.name'),
@@ -168,7 +198,7 @@ class CategoryDescriptionGenerator
                 ],
                 'temperature' => self::TEMPERATURE,
             ]),
-            default => Http::timeout(self::TIMEOUT)->withToken($apiKey)->post(self::GROQ_API_URL, [
+            default => Http::timeout(30)->withToken($apiKey)->post(self::GROQ_API_URL, [
                 'model' => self::MODEL,
                 'messages' => [
                     [
@@ -219,7 +249,20 @@ class CategoryDescriptionGenerator
 
     private function addTrace(string $level, string $message): void
     {
-        $this->trace[] = ['level' => $level, 'message' => $message];
+        $this->trace[] = [
+            'timestamp' => now()->format('H:i:s'),
+            'level' => $level,
+            'message' => $message,
+        ];
+    }
+
+    private function timeoutFor(string $provider): int
+    {
+        return max(5, match ($provider) {
+            'openrouter' => (int) config('services.openrouter.timeout', 45),
+            'gemini' => (int) config('services.google.gemini_timeout', 30),
+            default => 30,
+        });
     }
 
     private function providerLabel(string $provider): string

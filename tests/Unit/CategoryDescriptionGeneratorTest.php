@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 
 uses(RefreshDatabase::class);
 
@@ -39,10 +40,11 @@ test('category description generator sends a humanized prompt for category seo c
         'description' => 'Email marketing software helps teams send campaigns, automate follow-ups, and keep customer conversations moving without extra manual work. It is a strong fit for growing businesses that need better consistency, reporting, and segmentation across every send.',
         'meta_description' => 'Find email marketing software that helps teams automate campaigns, segment audiences, and turn routine sends into measurable customer growth.',
     ]);
-    expect($service->trace())->toContain(
-        ['level' => 'info', 'message' => 'Requesting copy from OpenRouter.'],
-        ['level' => 'success', 'message' => 'Generation completed and passed quality checks.'],
+    expect(array_column($service->trace(), 'message'))->toContain(
+        'Requesting copy from OpenRouter.',
+        'Generation completed and passed quality checks.',
     );
+    expect($service->trace()[0])->toHaveKeys(['timestamp', 'level', 'message']);
 
     Http::assertSent(function ($request) {
         $prompt = $request['messages'][0]['content'] ?? '';
@@ -54,6 +56,43 @@ test('category description generator sends a humanized prompt for category seo c
             && str_contains($prompt, 'The description and meta description must not sound like rewrites of each other.')
             && str_contains($prompt, 'The meta description should feel like a distinct search snippet written to earn the click.');
     });
+});
+
+test('category description generator falls back to gemini after an openrouter timeout', function () {
+    config([
+        'services.openrouter.key' => 'test-openrouter-key',
+        'services.openrouter.timeout' => 5,
+        'services.google.api_key' => 'test-gemini-key',
+    ]);
+
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'openrouter.ai')) {
+            throw new ConnectionException('cURL error 28: Operation timed out');
+        }
+
+        return Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [[
+                    'text' => json_encode([
+                        'description' => 'Automation software connects repetitive workflows, moves information between tools, and reduces manual follow-up. Teams can compare options for triggers, integrations, monitoring, and day-to-day control.',
+                        'meta_description' => 'Explore automation software for connecting workflows, reducing manual tasks, and comparing integrations, controls, pricing, and practical team fit.',
+                    ], JSON_THROW_ON_ERROR),
+                ]]],
+            ]],
+        ], 200);
+    });
+
+    $service = new CategoryDescriptionGenerator();
+    $result = $service->generate('Automation');
+    $messages = array_column($service->trace(), 'message');
+
+    expect($result)->not->toBeNull()
+        ->and($messages)->toContain(
+            'OpenRouter timed out or could not connect after 5 seconds.',
+            'Falling back to the next available provider.',
+            'Requesting copy from Gemini.',
+            'Generation completed and passed quality checks.',
+        );
 });
 
 test('category description generator retries when description and meta description are too similar', function () {

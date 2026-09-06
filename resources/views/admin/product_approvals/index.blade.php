@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const terminal = form.querySelector('.js-ai-terminal');
             const terminalOutput = terminal.querySelector('.js-ai-terminal-output');
             const terminalState = terminal.querySelector('.js-ai-terminal-state');
-            const appendTerminalLine = (level, message) => {
+            const appendTerminalLine = (level, message, timestamp = null) => {
                 const line = document.createElement('div');
                 const colors = {
                     success: 'text-emerald-400',
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     info: 'text-sky-300',
                 };
                 line.className = colors[level] || 'text-slate-300';
-                line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                line.textContent = `[${timestamp || new Date().toLocaleTimeString()}] ${message}`;
                 terminalOutput.appendChild(line);
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
             };
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }),
                 });
                 const data = await response.json();
-                (data.trace || []).forEach(entry => appendTerminalLine(entry.level, entry.message));
+                (data.trace || []).forEach(entry => appendTerminalLine(entry.level, entry.message, entry.timestamp));
                 if (!response.ok || !data.success) throw new Error(data.message || 'Unable to generate category copy.');
 
                 description.value = data.data.description || '';
