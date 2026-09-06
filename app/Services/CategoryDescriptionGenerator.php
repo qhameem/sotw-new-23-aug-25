@@ -17,6 +17,13 @@ class CategoryDescriptionGenerator
     private const TEMPERATURE = 0.75;
     private const MAX_ATTEMPTS = 3;
 
+    private array $trace = [];
+
+    public function trace(): array
+    {
+        return $this->trace;
+    }
+
     /**
      * Generate SEO description and meta description for a category.
      *
@@ -24,10 +31,12 @@ class CategoryDescriptionGenerator
      */
     public function generate(string $categoryName, array $runtimeContext = []): ?array
     {
+        $this->trace = [];
         $providerRouter = app(AiProviderRoutingService::class);
         $candidates = $providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']);
 
         if ($candidates === []) {
+            $this->addTrace('error', 'No enabled OpenRouter or Gemini API key is available.');
             Log::warning('CategoryDescriptionGenerator: No AI provider key is set.');
             return null;
         }
@@ -40,31 +49,38 @@ class CategoryDescriptionGenerator
             $lastFailureReason = 'unknown';
             $bestResult = null;
             $context = $this->buildCategoryContext($categoryName, $runtimeContext);
+            $this->addTrace('info', 'Prepared category context and SEO constraints.');
 
             for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
                 $result = null;
+                $this->addTrace('info', "Generation attempt {$attempt} of ".self::MAX_ATTEMPTS.'.');
 
                 foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']) as $candidate) {
+                    $this->addTrace('info', 'Requesting copy from '.$this->providerLabel($candidate['provider']).'.');
                     $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
 
                     if ($result !== null) {
+                        $this->addTrace('success', $this->providerLabel($candidate['provider']).' returned a valid JSON response.');
                         break;
                     }
                 }
 
                 if ($result === null) {
                     $lastFailureReason = 'request_failed';
+                    $this->addTrace('warning', 'All available providers failed for this attempt.');
                     continue;
                 }
 
                 $result = $this->normalizeResult($result);
 
                 if (!$this->hasValidMetaLength($result['meta_description'])) {
+                    $this->addTrace('warning', 'Meta description length was outside 140–155 characters; applying a safe repair.');
                     $result['meta_description'] = $this->repairMetaLength($categoryName, $result['meta_description'], $context);
                     $lastFailureReason = 'invalid_meta_length';
                 }
 
                 if ($this->contentSoundsOverTemplated($categoryName, $result['description'], $result['meta_description'])) {
+                    $this->addTrace('warning', 'Copy sounded generic or templated; retrying.');
                     $lastFailureReason = 'content_too_templated';
                     Log::info('CategoryDescriptionGenerator: Retrying because generated copy sounds too templated.', [
                         'category' => $categoryName,
@@ -78,6 +94,7 @@ class CategoryDescriptionGenerator
                 }
 
                 if ($this->contentSoundsTooSimilar($categoryName, $result['description'], $result['meta_description'])) {
+                    $this->addTrace('warning', 'Description and meta description were too similar; retrying.');
                     $lastFailureReason = 'content_too_similar';
                     Log::info('CategoryDescriptionGenerator: Retrying because description and meta description are too similar.', [
                         'category' => $categoryName,
@@ -86,6 +103,7 @@ class CategoryDescriptionGenerator
                     continue;
                 }
 
+                $this->addTrace('success', 'Generation completed and passed quality checks.');
                 return $result;
             }
 
@@ -100,6 +118,7 @@ class CategoryDescriptionGenerator
                     'reason' => $lastFailureReason,
                 ]);
 
+                $this->addTrace('success', 'Generation completed using repaired fallback copy.');
                 return $bestResult;
             }
 
@@ -108,8 +127,11 @@ class CategoryDescriptionGenerator
                 'reason' => $lastFailureReason,
             ]);
 
+            $this->addTrace('error', 'Generation stopped because no result passed the quality checks.');
+
             return null;
         } catch (\Exception $e) {
+            $this->addTrace('error', 'Internal generation error: '.$e->getMessage());
             Log::warning('CategoryDescriptionGenerator: Exception', ['message' => $e->getMessage()]);
             return null;
         }
@@ -159,6 +181,7 @@ class CategoryDescriptionGenerator
         };
 
         if (!$response->successful()) {
+            $this->addTrace('error', $this->providerLabel($provider)." request failed with HTTP {$response->status()}.");
             Log::warning('CategoryDescriptionGenerator: Provider API error', [
                 'provider' => $provider,
                 'status' => $response->status(),
@@ -176,12 +199,14 @@ class CategoryDescriptionGenerator
             : $response->json('choices.0.message.content');
 
         if (!is_string($content)) {
+            $this->addTrace('error', $this->providerLabel($provider).' returned no usable text content.');
             return null;
         }
 
         $data = $this->decodeJsonText($content);
 
         if (!isset($data['description'], $data['meta_description'])) {
+            $this->addTrace('error', $this->providerLabel($provider).' returned malformed JSON or missing fields.');
             return null;
         }
 
@@ -189,6 +214,16 @@ class CategoryDescriptionGenerator
             'description' => trim((string) $data['description']),
             'meta_description' => trim((string) $data['meta_description']),
         ];
+    }
+
+    private function addTrace(string $level, string $message): void
+    {
+        $this->trace[] = ['level' => $level, 'message' => $message];
+    }
+
+    private function providerLabel(string $provider): string
+    {
+        return $provider === 'openrouter' ? 'OpenRouter' : ucfirst($provider);
     }
 
     private function decodeJsonText(string $content): ?array

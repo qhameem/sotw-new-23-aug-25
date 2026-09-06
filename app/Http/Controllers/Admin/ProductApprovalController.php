@@ -580,12 +580,14 @@ class ProductApprovalController extends Controller
                 return response()->json([
                     'success' => true,
                     'data' => $result,
+                    'trace' => $generator->trace(),
                 ]);
             }
 
             return response()->json([
                 'success' => false,
                 'message' => 'AI could not generate distinct category SEO copy right now. Please try again.',
+                'trace' => $generator->trace(),
             ], 422);
 
         } catch (\Exception $e) {
@@ -594,6 +596,7 @@ class ProductApprovalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while generating content.',
+                'trace' => $generator->trace(),
             ], 500);
         }
     }

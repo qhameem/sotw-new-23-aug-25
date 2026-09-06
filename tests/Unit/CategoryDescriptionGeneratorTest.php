@@ -39,6 +39,10 @@ test('category description generator sends a humanized prompt for category seo c
         'description' => 'Email marketing software helps teams send campaigns, automate follow-ups, and keep customer conversations moving without extra manual work. It is a strong fit for growing businesses that need better consistency, reporting, and segmentation across every send.',
         'meta_description' => 'Find email marketing software that helps teams automate campaigns, segment audiences, and turn routine sends into measurable customer growth.',
     ]);
+    expect($service->trace())->toContain(
+        ['level' => 'info', 'message' => 'Requesting copy from OpenRouter.'],
+        ['level' => 'success', 'message' => 'Generation completed and passed quality checks.'],
+    );
 
     Http::assertSent(function ($request) {
         $prompt = $request['messages'][0]['content'] ?? '';

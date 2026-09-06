@@ -558,6 +558,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const metaDescription = form.querySelector('[name="meta_description"]');
             const error = form.querySelector('.js-custom-category-error');
             const label = this.querySelector('.js-ai-label');
+            const terminal = form.querySelector('.js-ai-terminal');
+            const terminalOutput = terminal.querySelector('.js-ai-terminal-output');
+            const terminalState = terminal.querySelector('.js-ai-terminal-state');
+            const appendTerminalLine = (level, message) => {
+                const line = document.createElement('div');
+                const colors = {
+                    success: 'text-emerald-400',
+                    warning: 'text-amber-300',
+                    error: 'text-red-400',
+                    info: 'text-sky-300',
+                };
+                line.className = colors[level] || 'text-slate-300';
+                line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                terminalOutput.appendChild(line);
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            };
 
             form.dataset.aiRequested = '1';
             this.disabled = true;
@@ -565,6 +581,12 @@ document.addEventListener('DOMContentLoaded', function() {
             this.querySelector('.js-ai-spinner')?.classList.remove('hidden');
             label.textContent = 'Generating...';
             error.classList.add('hidden');
+            terminal.classList.remove('hidden');
+            terminalOutput.replaceChildren();
+            terminalState.textContent = 'Running';
+            terminalState.className = 'js-ai-terminal-state text-sky-300';
+            appendTerminalLine('info', 'Generation requested by admin.');
+            appendTerminalLine('info', 'Sending category context to the server...');
 
             try {
                 const response = await fetch(@json(route('admin.product-approvals.generate-category-seo')), {
@@ -580,15 +602,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }),
                 });
                 const data = await response.json();
+                (data.trace || []).forEach(entry => appendTerminalLine(entry.level, entry.message));
                 if (!response.ok || !data.success) throw new Error(data.message || 'Unable to generate category copy.');
 
                 description.value = data.data.description || '';
                 metaDescription.value = data.data.meta_description || '';
                 description.dispatchEvent(new Event('input', { bubbles: true }));
                 metaDescription.dispatchEvent(new Event('input', { bubbles: true }));
+                terminalState.textContent = 'Completed';
+                terminalState.className = 'js-ai-terminal-state text-emerald-400';
             } catch (exception) {
                 error.textContent = exception.message;
                 error.classList.remove('hidden');
+                appendTerminalLine('error', exception.message);
+                terminalState.textContent = 'Failed';
+                terminalState.className = 'js-ai-terminal-state text-red-400';
             } finally {
                 this.disabled = false;
                 this.querySelector('.js-ai-icon')?.classList.remove('hidden');
