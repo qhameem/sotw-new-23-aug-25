@@ -106,6 +106,7 @@ class AdminProductApprovalCustomCategoryTest extends TestCase
             ->assertSee('js-ai-terminal', false)
             ->assertSee('AI generation process')
             ->assertSee('js-save-custom-category', false)
+            ->assertSee('Save this category')
             ->assertSee('data-min-length="160" data-max-length="300"', false)
             ->assertSee('data-min-length="140" data-max-length="155"', false)
             ->assertSee(route('admin.product-approvals.approve-custom-category', [$product, $submission]), false);

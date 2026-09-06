@@ -73,6 +73,25 @@
     }
     .custom-category-save-button:hover { background: rgb(3 105 161) !important; }
     .custom-category-save-button:disabled { cursor: wait !important; opacity: .65 !important; }
+    .custom-category-individual-save {
+        position: static !important;
+        display: inline-flex !important;
+        visibility: visible !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 38px !important;
+        padding: 8px 16px !important;
+        border: 1px solid rgb(2 132 199) !important;
+        border-radius: 8px !important;
+        background: rgb(2 132 199) !important;
+        color: white !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        opacity: 1 !important;
+    }
+    .custom-category-individual-save:hover { background: rgb(3 105 161) !important; }
+    .custom-category-individual-save:disabled { cursor: wait !important; opacity: .65 !important; }
     .custom-category-modal-body {
         flex: 1 1 auto !important;
         min-height: 0 !important;
@@ -527,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!await saveCustomCategory(form)) {
                 button.disabled = false;
-                button.textContent = 'Save category';
+                button.textContent = 'Save this category';
             }
         });
     });

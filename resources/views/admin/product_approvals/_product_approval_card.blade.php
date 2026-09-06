@@ -132,15 +132,15 @@
                             <p class="js-character-status mt-1 text-right text-xs text-amber-600" aria-live="polite">0 characters · Too low (recommended 140–155)</p>
                         </div>
                         <div class="js-custom-category-error mt-3 hidden text-sm text-red-600"></div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="submit" class="js-save-custom-category custom-category-individual-save">Save this category</button>
+                        </div>
                         <div class="js-ai-terminal mt-4 hidden overflow-hidden rounded-lg border border-slate-700 bg-slate-950 font-mono text-xs text-slate-200" aria-live="polite">
                             <div class="flex items-center justify-between border-b border-slate-700 px-3 py-2 text-slate-400">
                                 <span>AI generation process</span>
                                 <span class="js-ai-terminal-state">Running</span>
                             </div>
                             <div class="js-ai-terminal-output max-h-44 space-y-1 overflow-y-auto p-3"></div>
-                        </div>
-                        <div class="mt-4 flex justify-end">
-                            <button type="submit" class="js-save-custom-category rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-50">Save category</button>
                         </div>
                     </form>
                 @endforeach
