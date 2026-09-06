@@ -422,6 +422,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById(`custom-category-modal-${productId}`);
         modal?.classList.add('is-open');
         document.body.classList.add('overflow-hidden');
+        modal?.querySelectorAll('.js-custom-category-form').forEach(form => {
+            const description = form.querySelector('[name="description"]');
+            const metaDescription = form.querySelector('[name="meta_description"]');
+            if (!form.dataset.aiRequested && !description?.value.trim() && !metaDescription?.value.trim()) {
+                form.querySelector('.js-generate-category-copy')?.click();
+            }
+        });
     };
 
     document.querySelectorAll('[data-custom-category-open]').forEach(button => {
@@ -520,6 +527,72 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', event => {
             event.preventDefault();
             form.closest('[role="dialog"]')?.querySelector('.js-save-all-custom-categories')?.click();
+        });
+    });
+
+    const updateCharacterStatus = textarea => {
+        const count = Array.from(textarea.value).length;
+        const min = Number(textarea.dataset.minLength);
+        const max = Number(textarea.dataset.maxLength);
+        const status = textarea.parentElement.querySelector('.js-character-status');
+        if (!status) return;
+
+        const state = count < min ? 'Too low' : (count > max ? 'Exceeded' : 'Recommended');
+        const color = count < min ? 'text-amber-600' : (count > max ? 'text-red-600' : 'text-emerald-600');
+        status.classList.remove('text-amber-600', 'text-red-600', 'text-emerald-600');
+        status.classList.add(color);
+        status.textContent = `${count} characters · ${state} (recommended ${min}–${max})`;
+    };
+
+    document.querySelectorAll('[data-character-count]').forEach(textarea => {
+        textarea.addEventListener('input', () => updateCharacterStatus(textarea));
+        updateCharacterStatus(textarea);
+    });
+
+    document.querySelectorAll('.js-generate-category-copy').forEach(button => {
+        button.addEventListener('click', async function() {
+            const form = this.closest('.js-custom-category-form');
+            const description = form.querySelector('[name="description"]');
+            const metaDescription = form.querySelector('[name="meta_description"]');
+            const error = form.querySelector('.js-custom-category-error');
+            const label = this.querySelector('.js-ai-label');
+
+            form.dataset.aiRequested = '1';
+            this.disabled = true;
+            this.querySelector('.js-ai-icon')?.classList.add('hidden');
+            this.querySelector('.js-ai-spinner')?.classList.remove('hidden');
+            label.textContent = 'Generating...';
+            error.classList.add('hidden');
+
+            try {
+                const response = await fetch(@json(route('admin.product-approvals.generate-category-seo')), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value,
+                    },
+                    body: JSON.stringify({
+                        category_name: form.querySelector('.custom-category-name').textContent.trim(),
+                        category_type: form.querySelector('.custom-category-name').nextElementSibling?.textContent.trim().replaceAll(' ', '_'),
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || 'Unable to generate category copy.');
+
+                description.value = data.data.description || '';
+                metaDescription.value = data.data.meta_description || '';
+                description.dispatchEvent(new Event('input', { bubbles: true }));
+                metaDescription.dispatchEvent(new Event('input', { bubbles: true }));
+            } catch (exception) {
+                error.textContent = exception.message;
+                error.classList.remove('hidden');
+            } finally {
+                this.disabled = false;
+                this.querySelector('.js-ai-icon')?.classList.remove('hidden');
+                this.querySelector('.js-ai-spinner')?.classList.add('hidden');
+                label.textContent = 'Regenerate with AI';
+            }
         });
     });
 });

@@ -114,14 +114,23 @@
                         <div class="custom-category-name font-semibold text-slate-900">{{ $submission->name }}</div>
                         <div class="mt-1 text-xs uppercase tracking-wide text-slate-500">{{ str_replace('_', ' ', $submission->type) }}</div>
                         <input type="hidden" name="slug" value="{{ Str::slug($submission->name) }}">
-                        <label class="mt-3 block font-medium text-slate-700">
-                            Hub page description
-                            <textarea name="description" rows="3" required class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></textarea>
-                        </label>
-                        <label class="mt-3 block font-medium text-slate-700">
-                            Meta description
-                            <textarea name="meta_description" rows="2" maxlength="255" required class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></textarea>
-                        </label>
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="custom-category-description-{{ $submission->id }}" class="font-medium text-slate-700">Hub page description</label>
+                                <button type="button" class="js-generate-category-copy inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 disabled:cursor-wait disabled:opacity-50">
+                                    <svg class="js-ai-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    <svg class="js-ai-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                                    <span class="js-ai-label">Generate with AI</span>
+                                </button>
+                            </div>
+                            <textarea id="custom-category-description-{{ $submission->id }}" name="description" rows="3" required data-character-count data-min-length="160" data-max-length="300" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></textarea>
+                            <p class="js-character-status mt-1 text-right text-xs text-amber-600" aria-live="polite">0 characters · Too low (recommended 160–300)</p>
+                        </div>
+                        <div class="mt-3">
+                            <label for="custom-category-meta-{{ $submission->id }}" class="font-medium text-slate-700">Meta description</label>
+                            <textarea id="custom-category-meta-{{ $submission->id }}" name="meta_description" rows="2" maxlength="255" required data-character-count data-min-length="140" data-max-length="155" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></textarea>
+                            <p class="js-character-status mt-1 text-right text-xs text-amber-600" aria-live="polite">0 characters · Too low (recommended 140–155)</p>
+                        </div>
                         <div class="js-custom-category-error mt-3 hidden text-sm text-red-600"></div>
                     </form>
                 @endforeach

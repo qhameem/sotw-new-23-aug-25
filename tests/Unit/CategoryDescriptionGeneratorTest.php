@@ -1,10 +1,20 @@
 <?php
 
 use App\Services\CategoryDescriptionGenerator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake('local');
+    Cache::clear();
+});
 
 test('category description generator sends a humanized prompt for category seo copy', function () {
-    config(['services.groq.key' => 'test-groq-key']);
+    config(['services.openrouter.key' => 'test-openrouter-key']);
 
     Http::fake([
         '*' => Http::response([
@@ -33,9 +43,9 @@ test('category description generator sends a humanized prompt for category seo c
     Http::assertSent(function ($request) {
         $prompt = $request['messages'][0]['content'] ?? '';
 
-        return $request->url() === 'https://api.groq.com/openai/v1/chat/completions'
-            && $request['temperature'] === 0.55
-            && str_contains($prompt, 'You are an experienced human writer with 20+ years of experience.')
+        return $request->url() === 'https://openrouter.ai/api/v1/chat/completions'
+            && $request['temperature'] === 0.75
+            && str_contains($prompt, 'You are an experienced human editor writing taxonomy copy')
             && str_contains($prompt, 'HUMAN WRITING RULES:')
             && str_contains($prompt, 'The description and meta description must not sound like rewrites of each other.')
             && str_contains($prompt, 'The meta description should feel like a distinct search snippet written to earn the click.');
@@ -43,7 +53,7 @@ test('category description generator sends a humanized prompt for category seo c
 });
 
 test('category description generator retries when description and meta description are too similar', function () {
-    config(['services.groq.key' => 'test-groq-key']);
+    config(['services.openrouter.key' => 'test-openrouter-key']);
 
     Http::fake([
         '*' => Http::sequence()
@@ -93,7 +103,7 @@ test('category description generator retries when description and meta descripti
 });
 
 test('category description generator repairs short meta descriptions instead of failing', function () {
-    config(['services.groq.key' => 'test-groq-key']);
+    config(['services.openrouter.key' => 'test-openrouter-key']);
 
     Http::fake([
         '*' => Http::response([

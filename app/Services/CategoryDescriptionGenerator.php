@@ -25,7 +25,7 @@ class CategoryDescriptionGenerator
     public function generate(string $categoryName, array $runtimeContext = []): ?array
     {
         $providerRouter = app(AiProviderRoutingService::class);
-        $candidates = $providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']);
+        $candidates = $providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']);
 
         if ($candidates === []) {
             Log::warning('CategoryDescriptionGenerator: No AI provider key is set.');
@@ -44,7 +44,7 @@ class CategoryDescriptionGenerator
             for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
                 $result = null;
 
-                foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+                foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']) as $candidate) {
                     $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
 
                     if ($result !== null) {
@@ -390,6 +390,10 @@ PROMPT;
 
         if ($text === '') {
             return $text;
+        }
+
+        if (mb_strlen($text) < 140) {
+            $text = rtrim($text, " .") . '. Compare practical features, pricing, workflows, and audience fit.';
         }
 
         if (mb_strlen($text) > 155) {
