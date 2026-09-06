@@ -15,6 +15,35 @@ class SeoApiController extends Controller
 {
     private const GLOBAL_DEFAULTS_PAGE_ID = 'global_defaults';
 
+    public function getGenerationPrompts()
+    {
+        $settings = $this->loadSettings();
+
+        return response()->json([
+            'hub_description' => (string) data_get($settings, 'seo_generation_prompts.hub_description', ''),
+            'meta_description' => (string) data_get($settings, 'seo_generation_prompts.meta_description', ''),
+        ]);
+    }
+
+    public function saveGenerationPrompts(Request $request)
+    {
+        $validated = $request->validate([
+            'hub_description' => 'nullable|string|max:10000',
+            'meta_description' => 'nullable|string|max:10000',
+        ]);
+        $settings = $this->loadSettings();
+        $settings['seo_generation_prompts'] = [
+            'hub_description' => trim((string) ($validated['hub_description'] ?? '')),
+            'meta_description' => trim((string) ($validated['meta_description'] ?? '')),
+        ];
+        Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
+
+        return response()->json([
+            'message' => 'AI generation prompts saved successfully.',
+            'data' => $settings['seo_generation_prompts'],
+        ]);
+    }
+
     public function getPages()
     {
         try {
@@ -238,5 +267,14 @@ class SeoApiController extends Controller
         }
 
         return url($value);
+    }
+
+    private function loadSettings(): array
+    {
+        if (! Storage::disk('local')->exists('settings.json')) {
+            return [];
+        }
+
+        return json_decode(Storage::disk('local')->get('settings.json'), true) ?: [];
     }
 }

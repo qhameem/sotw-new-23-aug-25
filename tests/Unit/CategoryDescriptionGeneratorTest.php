@@ -135,6 +135,12 @@ test('category description generator repairs short meta descriptions instead of 
 });
 
 test('category description generator rejects repetitive when openings', function () {
+    Storage::disk('local')->put('settings.json', json_encode([
+        'seo_generation_prompts' => [
+            'hub_description' => 'Use an analytical editorial tone.',
+            'meta_description' => 'Lead with practical buyer intent.',
+        ],
+    ]));
     $service = new CategoryDescriptionGenerator();
     $validator = new ReflectionMethod($service, 'contentSoundsOverTemplated');
     $promptBuilder = new ReflectionMethod($service, 'buildPrompt');
@@ -155,6 +161,8 @@ test('category description generator rejects repetitive when openings', function
 
     expect($isOverTemplated)->toBeTrue();
     expect($prompt)->toContain('Never begin the description or meta description with "When".');
+    expect($prompt)->toContain('Hub page description: Use an analytical editorial tone.');
+    expect($prompt)->toContain('Meta description: Lead with practical buyer intent.');
     expect($prompt)->toContain('category hub page containing several products');
     expect($prompt)->toContain('Visitors will usually reach this page by clicking the category name');
     expect($prompt)->toContain('Do not describe one product');

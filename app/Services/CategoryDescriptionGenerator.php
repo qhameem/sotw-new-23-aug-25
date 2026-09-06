@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Support\CategoryTypeRegistry;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryDescriptionGenerator
 {
@@ -279,6 +280,9 @@ class CategoryDescriptionGenerator
 
         $typeLabel = $context['type_label'] ?? 'General category';
         $typeSpecificInstruction = $context['type_specific_instruction'] ?? 'Focus on concrete workflows, evaluation criteria, and buyer intent.';
+        $customPrompts = $this->customPrompts();
+        $hubPrompt = $customPrompts['hub_description'] !== '' ? $customPrompts['hub_description'] : 'Use the built-in hub description instructions.';
+        $metaPrompt = $customPrompts['meta_description'] !== '' ? $customPrompts['meta_description'] : 'Use the built-in meta description instructions.';
 
         return <<<PROMPT
 You are an experienced human editor writing taxonomy copy for a software discovery site. Write naturally, clearly, and convincingly. Your job is to write the category description and meta description for "{$categoryName}" so both feel genuinely human-written, useful, and easy to trust.
@@ -336,11 +340,28 @@ CATEGORY SEO RULES:
 - If the taxonomy type is "Best for", describe the audience fit and the team profile it serves well.
 - If the taxonomy type is "Platform", describe where the software runs and what platform-specific buyers care about.
 - If the taxonomy type is "Software Category", describe what teams compare, what the tools do, and the problems they solve.
+
+ADMIN-PROVIDED FIELD INSTRUCTIONS:
+- Hub page description: {$hubPrompt}
+- Meta description: {$metaPrompt}
+- Apply these instructions when they do not conflict with the output schema, factuality requirements, or length constraints above.
 {$retryInstructions}
 
 Return the response STRICTLY as a JSON object with exactly two keys: "description" and "meta_description".
 Do not include any markdown formatting, code blocks, or explanations. Just the raw JSON object.
 PROMPT;
+    }
+
+    private function customPrompts(): array
+    {
+        $settings = Storage::disk('local')->exists('settings.json')
+            ? json_decode(Storage::disk('local')->get('settings.json'), true) ?: []
+            : [];
+
+        return [
+            'hub_description' => trim((string) data_get($settings, 'seo_generation_prompts.hub_description', '')),
+            'meta_description' => trim((string) data_get($settings, 'seo_generation_prompts.meta_description', '')),
+        ];
     }
 
     private function hasValidMetaLength(string $metaDescription): bool

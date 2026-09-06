@@ -24,6 +24,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
 
+            <form id="ai-prompt-form" class="mb-6 rounded-lg border border-violet-200 bg-violet-50 p-6">
+                <h3 class="text-lg font-semibold text-violet-950">Category AI Generation Prompts</h3>
+                <p class="mt-1 text-sm text-violet-800">Optional instructions applied to category hub-page and meta-description generation. Leave blank to use built-in defaults.</p>
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label for="hub-description-prompt" class="block text-sm font-medium text-gray-700">Hub page description prompt</label>
+                        <textarea id="hub-description-prompt" name="hub_description" rows="5" maxlength="10000" class="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm" placeholder="Example: Explain the category in a practical editorial tone and mention common workflows."></textarea>
+                    </div>
+                    <div>
+                        <label for="meta-description-prompt" class="block text-sm font-medium text-gray-700">Meta description prompt</label>
+                        <textarea id="meta-description-prompt" name="meta_description" rows="5" maxlength="10000" class="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm" placeholder="Example: Lead with buyer intent and use an action-oriented search snippet."></textarea>
+                    </div>
+                    <div class="flex items-center justify-end gap-3">
+                        <span id="ai-prompt-response" class="text-sm"></span>
+                        <button type="submit" class="rounded-md bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50">Save AI Prompts</button>
+                    </div>
+                </div>
+            </form>
+
             <form id="seo-form" class="space-y-6">
                 <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                     <p class="text-sm font-medium text-gray-700">Currently editing</p>
@@ -86,6 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPageLabel = document.getElementById('current-page-label');
     const seoForm = document.getElementById('seo-form');
     const responseMessage = document.getElementById('response-message');
+    const aiPromptForm = document.getElementById('ai-prompt-form');
+    const hubDescriptionPrompt = document.getElementById('hub-description-prompt');
+    const metaDescriptionPrompt = document.getElementById('meta-description-prompt');
+    const aiPromptResponse = document.getElementById('ai-prompt-response');
     const ogImageInput = document.getElementById('og-image');
     const ogImagePreview = document.getElementById('og-image-preview');
     const ogImageHelp = document.getElementById('og-image-help');
@@ -172,6 +195,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const metaTag = document.querySelector('meta[name="csrf-token"]');
         return metaTag ? metaTag.getAttribute('content') : '';
     };
+
+    const loadGenerationPrompts = async () => {
+        try {
+            const response = await fetch('/api/seo/generation-prompts');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            hubDescriptionPrompt.value = data.hub_description || '';
+            metaDescriptionPrompt.value = data.meta_description || '';
+        } catch (error) {
+            aiPromptResponse.textContent = 'Error loading AI prompts.';
+            aiPromptResponse.className = 'text-sm text-red-600';
+        }
+    };
+
+    aiPromptForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = aiPromptForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        aiPromptResponse.textContent = 'Saving...';
+        aiPromptResponse.className = 'text-sm text-gray-600';
+
+        try {
+            const response = await fetch('/api/seo/generation-prompts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                },
+                body: JSON.stringify({
+                    hub_description: hubDescriptionPrompt.value,
+                    meta_description: metaDescriptionPrompt.value,
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Unable to save AI prompts.');
+            aiPromptResponse.textContent = data.message;
+            aiPromptResponse.className = 'text-sm text-green-600';
+        } catch (error) {
+            aiPromptResponse.textContent = error.message;
+            aiPromptResponse.className = 'text-sm text-red-600';
+        } finally {
+            button.disabled = false;
+        }
+    });
 
     // Fetch Pages
     const fetchPages = async () => {
@@ -309,4 +377,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial fetch
     fetchPages();
+    loadGenerationPrompts();
 });

@@ -53,6 +53,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/seo/pages', [SeoApiController::class, 'getPages'])->name('api.seo.pages');
     Route::get('/seo/meta/{page_id}', [SeoApiController::class, 'getMeta'])->name('api.seo.meta');
     Route::post('/seo/meta', [SeoApiController::class, 'saveMeta'])->name('api.seo.saveMeta');
+    Route::get('/seo/generation-prompts', [SeoApiController::class, 'getGenerationPrompts'])->name('api.seo.generationPrompts');
+    Route::post('/seo/generation-prompts', [SeoApiController::class, 'saveGenerationPrompts'])->name('api.seo.saveGenerationPrompts');
 });
 Route::get('/get-cached-logos', [\App\Http\Controllers\Api\ProductMetaController::class, 'getCachedLogos']);
 Route::get('/tech-stack/detect', [TechStackController::class, 'detect'])->middleware('throttle:20,1');
