@@ -132,6 +132,9 @@
                             <p class="js-character-status mt-1 text-right text-xs text-amber-600" aria-live="polite">0 characters · Too low (recommended 140–155)</p>
                         </div>
                         <div class="js-custom-category-error mt-3 hidden text-sm text-red-600"></div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="submit" class="js-save-custom-category rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-50">Save category</button>
+                        </div>
                     </form>
                 @endforeach
             </div>

@@ -103,6 +103,7 @@ class AdminProductApprovalCustomCategoryTest extends TestCase
             ->assertSee('name="description"', false)
             ->assertSee('name="meta_description"', false)
             ->assertSee('js-generate-category-copy', false)
+            ->assertSee('js-save-custom-category', false)
             ->assertSee('data-min-length="160" data-max-length="300"', false)
             ->assertSee('data-min-length="140" data-max-length="155"', false)
             ->assertSee(route('admin.product-approvals.approve-custom-category', [$product, $submission]), false);

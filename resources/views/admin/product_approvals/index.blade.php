@@ -422,13 +422,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById(`custom-category-modal-${productId}`);
         modal?.classList.add('is-open');
         document.body.classList.add('overflow-hidden');
-        modal?.querySelectorAll('.js-custom-category-form').forEach(form => {
-            const description = form.querySelector('[name="description"]');
-            const metaDescription = form.querySelector('[name="meta_description"]');
-            if (!form.dataset.aiRequested && !description?.value.trim() && !metaDescription?.value.trim()) {
-                form.querySelector('.js-generate-category-copy')?.click();
-            }
-        });
     };
 
     document.querySelectorAll('[data-custom-category-open]').forEach(button => {
@@ -524,9 +517,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.querySelectorAll('.js-custom-category-form').forEach(form => {
-        form.addEventListener('submit', event => {
+        form.addEventListener('submit', async event => {
             event.preventDefault();
-            form.closest('[role="dialog"]')?.querySelector('.js-save-all-custom-categories')?.click();
+            if (!form.reportValidity()) return;
+
+            const button = form.querySelector('.js-save-custom-category');
+            button.disabled = true;
+            button.textContent = 'Saving...';
+
+            if (!await saveCustomCategory(form)) {
+                button.disabled = false;
+                button.textContent = 'Save category';
+            }
         });
     });
 
