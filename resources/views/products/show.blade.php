@@ -507,22 +507,17 @@
 
                     @if($product->techStacks->isNotEmpty())
                         <div class="mt-6 grid gap-6 sm:grid-cols-2">
-                            @if($product->techStacks->isNotEmpty())
-                                <div>
-                                    <h3 class="mb-2 text-xs text-gray-500">Built with</h3>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($product->techStacks as $techStack)
-                                            <a href="{{ route('pseo.builtWith', $techStack->slug) }}" wire:navigate.hover
-                                                class="inline-flex items-center gap-1 rounded border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-100 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                                                <span>{{ $techStack->name }}</span>
-                                                <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                    <path d="m7 5 5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                            </a>
-                                        @endforeach
-                                    </div>
+                            <div>
+                                <h3 class="mb-2 text-xs text-gray-500">Built with</h3>
+                                <div class="flex flex-wrap gap-x-3 gap-y-2">
+                                    @foreach($product->techStacks as $techStack)
+                                        <a href="{{ route('pseo.builtWith', $techStack->slug) }}" wire:navigate.hover
+                                            class="text-xs font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                                            {{ $techStack->name }}
+                                        </a>
+                                    @endforeach
                                 </div>
-                            @endif
+                            </div>
                         </div>
                     @endif
                 </section>
