@@ -18,7 +18,7 @@
     aria-label="{{ $resolvedLabel }}"
     data-cta="visit-website"
     {{ $attributes->class([
-        'group inline-flex items-center justify-center rounded-md bg-gray-800 px-4 py-1.5 text-sm font-semibold text-gray-50 hover:bg-gray-700 transition-colors focus:outline-none',
+        'group inline-flex min-h-8 items-center justify-center rounded-md border-2 border-gray-950 bg-white px-4 py-1 text-sm font-semibold text-gray-900 shadow-[0_4px_0_#030712,0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 hover:-translate-y-0.5 hover:bg-gray-700 hover:text-white active:translate-y-0.5 active:shadow-none focus:outline-none',
         'w-full' => $fullWidth,
     ]) }}
 >

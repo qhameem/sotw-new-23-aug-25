@@ -76,7 +76,7 @@
                 </p>
             </div>
 
-            <div class="mt-2 flex min-w-0 flex-wrap items-center">
+            <div class="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                 @php
                     $generalCategories = $product->categories->filter(function ($cat) {
                         return !$cat->types->contains('name', 'Pricing')
@@ -87,17 +87,16 @@
                     });
                 @endphp
                 @if($generalCategories->isNotEmpty())
-                    <svg class="mr-2 h-3.5 w-3.5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                        <path d="M7.25 4.75h-2.5A1.5 1.5 0 0 0 3.25 6.25v2.5a1.5 1.5 0 0 0 .44 1.06l6.5 6.5a1.5 1.5 0 0 0 2.12 0l4-4a1.5 1.5 0 0 0 0-2.12l-6.5-6.5a1.5 1.5 0 0 0-1.06-.44Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M6.5 7.25a.375.375 0 1 0 0-.75.375.375 0 0 0 0 .75Z" fill="currentColor" stroke="currentColor" />
+                    <svg class="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path d="M17 10H19C21 10 22 9 22 7V5C22 3 21 2 19 2H17C15 2 14 3 14 5V7C14 9 15 10 17 10Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5 22H7C9 22 10 21 10 19V17C10 15 9 14 7 14H5C3 14 2 15 2 17V19C2 21 3 22 5 22Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6 10C8.20914 10 10 8.20914 10 6C10 3.79086 8.20914 2 6 2C3.79086 2 2 3.79086 2 6C2 8.20914 3.79086 10 6 10Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M18 22C20.2091 22 22 20.2091 22 18C22 15.7909 20.2091 14 18 14C15.7909 14 14 15.7909 14 18C14 20.2091 15.7909 22 18 22Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 @endif
                 @foreach($generalCategories as $category)
                     <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
-                        class="text-[0.65rem] text-gray-500 transition-colors hover:text-primary-600 hover:underline md:text-xs">{{ $category->name }}</a>
-                    @if(!$loop->last)
-                        <span class="mx-2 text-gray-300">&middot;</span>
-                    @endif
+                        class="text-[0.65rem] font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 md:text-xs">{{ $category->name }}</a>
                 @endforeach
             </div>
         </div>
@@ -111,8 +110,8 @@
                 <button
                     type="button"
                     @click="{{ Auth::check() ? "\$dispatch('open-modal', { name: 'product-save-modal' })" : "\$dispatch('open-modal', { name: 'login-required-modal' })" }}"
-                    class="inline-flex h-[48px] w-[48px] items-center justify-center rounded-md border transition-colors"
-                    :class="saved ? 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md border-2 border-gray-950 bg-white text-gray-900 shadow-[0_4px_0_#030712,0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none"
+                    :class="saved ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'hover:bg-gray-700 hover:text-white'"
                     aria-label="Save product"
                 >
                     <svg x-show="!saved" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -134,7 +133,7 @@
                 </span>
             </div>
 
-            <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-h-[48px] min-w-0 flex-1 md:w-auto md:flex-none md:min-w-[140px]" />
+            <x-products.visit-website-button :product="$product" surface="product_details" full-width class="min-w-0 flex-1 md:w-auto md:flex-none md:min-w-[140px]" />
         </div>
     </div>
 </div>

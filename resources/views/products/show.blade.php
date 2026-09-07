@@ -60,6 +60,12 @@
                 'link' => route('categories.show', ['category' => $category->slug]),
             ])
             ->values();
+        $quickFactIdealFor = $idealForItems
+            ->map(fn ($category) => [
+                'label' => $category->name,
+                'link' => route('categories.show', ['category' => $category->slug]),
+            ])
+            ->values();
         $pricingValue = $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null);
         $quickFacts = collect([
             [
@@ -87,6 +93,15 @@
                     'link' => null,
                 ]],
                 'icon' => 'platform',
+                'link' => null,
+            ],
+            [
+                'label' => 'Ideal For',
+                'items' => $quickFactIdealFor->isNotEmpty() ? $quickFactIdealFor->all() : [[
+                    'label' => 'Not listed yet',
+                    'link' => null,
+                ]],
+                'icon' => 'ideal-for',
                 'link' => null,
             ],
         ]);
@@ -117,7 +132,6 @@
             ['id' => 'overview', 'label' => 'Overview'],
             (
                 (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml)))
-                || ($idealForItems ?? collect())->isNotEmpty()
                 || $product->techStacks->isNotEmpty()
             ) ? ['id' => 'details', 'label' => 'Details'] : null,
             $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
@@ -181,31 +195,36 @@
 
                 @if($quickFacts->isNotEmpty())
                     <div class="mt-8 py-2">
-                        <dl class="grid gap-4 lg:grid-cols-3">
+                        <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                             @foreach($quickFacts as $fact)
-                                <div class="min-w-0 rounded-lg px-4 py-3 sm:px-5">
+                                <div class="min-w-0 rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-4 shadow-sm transition hover:border-gray-300 hover:bg-white">
                                     <dt class="flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
                                         @if($fact['icon'] === 'spark')
-                                            <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                 <path d="M10 2.75v4.5M10 12.75v4.5M2.75 10h4.5M12.75 10h4.5M4.9 4.9l3.18 3.18M11.92 11.92l3.18 3.18M15.1 4.9l-3.18 3.18M8.08 11.92L4.9 15.1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                             </svg>
                                         @elseif($fact['icon'] === 'pricing')
-                                            <svg class="h-5 w-5 text-emerald-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                 <path d="M10 2.75v14.5M13.75 5.5H8.875a2.375 2.375 0 1 0 0 4.75h2.25a2.375 2.375 0 1 1 0 4.75H5.75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                             </svg>
-                                        @else
+                                        @elseif($fact['icon'] === 'platform')
                                             @php
                                                 $platformName = Str::lower((string) (($fact['items'][0]['label'] ?? null) ?: ''));
                                             @endphp
                                             @if(in_array($platformName, ['macos', 'mac', 'mac app'], true))
-                                                <svg class="h-5 w-5 text-sky-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <svg class="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                     <path d="M16.37 12.47c.02 2.44 2.14 3.25 2.16 3.26-.02.06-.34 1.17-1.12 2.32-.68.99-1.38 1.98-2.49 2-.99.02-1.31-.58-2.44-.58-1.13 0-1.48.56-2.42.6-1 .04-1.77-1-2.45-1.98-1.39-2.01-2.46-5.69-1.03-8.18.71-1.23 1.97-2.02 3.34-2.04.98-.02 1.9.66 2.44.66.54 0 1.72-.82 2.9-.7.49.02 1.86.2 2.74 1.49-.07.04-1.64.96-1.63 2.85Zm-2.05-8.07c.57-.69.95-1.64.84-2.59-.82.03-1.82.54-2.41 1.23-.53.61-.99 1.58-.86 2.51.91.07 1.85-.47 2.43-1.15Z" />
                                                 </svg>
                                             @else
-                                                <svg class="h-5 w-5 text-sky-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                                                     <path d="M3.75 4.75A1.75 1.75 0 0 1 5.5 3h9A1.75 1.75 0 0 1 16.25 4.75v5.5A1.75 1.75 0 0 1 14.5 12h-9a1.75 1.75 0 0 1-1.75-1.75v-5.5ZM7.5 15.5h5M8.5 12v3.5M11.5 12v3.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                                                 </svg>
                                             @endif
+                                        @else
+                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <path d="M6.5 8.25a3.5 3.5 0 1 1 7 0c0 2.75-3.5 4.75-3.5 4.75s-3.5-2-3.5-4.75Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                                                <path d="M4.25 16.5c1.5-1.25 3.42-1.88 5.75-1.88s4.25.63 5.75 1.88" stroke-width="1.6" stroke-linecap="round" />
+                                            </svg>
                                         @endif
                                         <span>{{ $fact['label'] }}</span>
                                         @if(!empty($fact['link']))
@@ -220,15 +239,15 @@
                                         @endif
                                     </dt>
 
-                                    <dd class="mt-3 flex flex-wrap items-center gap-2">
+                                    <dd class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                                         @foreach($fact['items'] as $item)
                                             @if(!empty($item['link']))
                                                 <a href="{{ $item['link'] }}" wire:navigate.hover
-                                                    class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-900 transition hover:bg-gray-100 hover:underline">
+                                                    class="text-xs font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                                                     {{ $item['label'] }}
                                                 </a>
                                             @else
-                                                <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-0.5 text-xs font-medium leading-none text-gray-900">
+                                                <span class="text-xs font-medium leading-5 text-gray-400">
                                                     {{ $item['label'] }}
                                                 </span>
                                             @endif
@@ -437,7 +456,7 @@
                     </section>
                 @endif
 
-                @if(!$usesProductFacts || ($idealForItems ?? collect())->isNotEmpty() || $product->techStacks->isNotEmpty())
+                @if(!$usesProductFacts || $product->techStacks->isNotEmpty())
                 <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Details</h2>
@@ -486,25 +505,8 @@
                         @endif
                     @endunless
 
-                    @if(($idealForItems ?? collect())->isNotEmpty() || $product->techStacks->isNotEmpty())
+                    @if($product->techStacks->isNotEmpty())
                         <div class="mt-6 grid gap-6 sm:grid-cols-2">
-                            @if(($idealForItems ?? collect())->isNotEmpty())
-                                <div>
-                                    <h3 class="mb-2 text-xs text-gray-500">Ideal for</h3>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($idealForItems as $idealForItem)
-                                            <a href="{{ route('categories.show', ['category' => $idealForItem->slug]) }}" wire:navigate.hover
-                                                class="inline-flex items-center gap-1 rounded border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-100 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                                                <span>{{ $idealForItem->name }}</span>
-                                                <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                    <path d="m7 5 5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-
                             @if($product->techStacks->isNotEmpty())
                                 <div>
                                     <h3 class="mb-2 text-xs text-gray-500">Built with</h3>

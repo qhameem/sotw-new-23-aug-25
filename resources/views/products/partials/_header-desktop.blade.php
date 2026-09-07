@@ -81,7 +81,7 @@
                 </div>
 
                 {{-- Tags --}}
-                <div class="mt-1 flex min-w-0 flex-wrap items-center">
+                <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
                     @php
                         $generalCategories = $product->categories->filter(function ($cat) {
                             return !$cat->types->contains('name', 'Pricing')
@@ -99,10 +99,7 @@
                     @endif
                     @foreach($generalCategories as $category)
                         <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
-                            class="text-xs text-gray-500 transition-colors hover:text-primary-600 hover:underline">{{ $category->name }}</a>
-                        @if(!$loop->last)
-                            <span class="mx-2 text-gray-300">&middot;</span>
-                        @endif
+                            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-xs font-medium leading-none text-gray-600 shadow-[0_2px_0_#d1d5db] transition duration-150 hover:-translate-y-px hover:border-gray-400 hover:text-gray-900 active:translate-y-px active:shadow-none">{{ $category->name }}</a>
                     @endforeach
                 </div>
             </div>
@@ -116,8 +113,8 @@
                     <button
                         type="button"
                         @click="{{ Auth::check() ? "\$dispatch('open-modal', { name: 'product-save-modal' })" : "\$dispatch('open-modal', { name: 'login-required-modal' })" }}"
-                        class="group inline-flex w-[42px] items-center justify-center rounded-md border px-3 py-1.5 text-sm leading-5 transition-colors"
-                        :class="saved ? 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+                        class="group inline-flex h-8 w-8 items-center justify-center rounded-md border-2 border-gray-950 bg-white text-sm leading-5 text-gray-900 shadow-[0_4px_0_#030712,0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none"
+                        :class="saved ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'hover:bg-gray-700 hover:text-white'"
                         aria-label="Save product"
                     >
                         <svg x-show="!saved" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
