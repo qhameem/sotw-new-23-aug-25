@@ -67,10 +67,64 @@ test('taglines use one groq request with compact context and limited output', fu
 
         return str_contains($request->url(), 'api.groq.com')
             && $payload['max_tokens'] === 120
-            && str_contains($prompt, 'Write one clear, factual tagline')
+            && str_contains($prompt, 'Write three distinct, clear, factual tagline candidates')
             && ! str_contains($prompt, 'product_page_tagline')
             && mb_strlen($prompt) < 3000;
     });
+});
+
+test('selects an original candidate instead of copying a source heading', function () {
+    Http::fake([
+        'api.groq.com/*' => Http::response([
+            'choices' => [[
+                'message' => [
+                    'content' => json_encode([
+                        'candidates' => [
+                            'A Teleprompter app that helps you shoot faster',
+                            'Voice-following teleprompter for smoother video recording',
+                            'Private teleprompter with local script storage',
+                        ],
+                    ]),
+                ],
+            ]],
+        ]),
+    ]);
+
+    $result = app(TaglineRewriterService::class)->rewrite(
+        'Scriptly',
+        'A voice-following teleprompter with local storage',
+        "Title: Scriptly\nH1: A Teleprompter app that helps you shoot faster"
+    );
+
+    expect($result['tagline'])->toBe('Voice-following teleprompter for smoother video recording');
+    Http::assertSentCount(1);
+});
+
+test('retries once when every candidate copies a source heading', function () {
+    Http::fakeSequence()
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["A Teleprompter app that helps you shoot faster"]}'],
+            ]],
+        ])
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["Voice-following teleprompter for smoother video recording"]}'],
+            ]],
+        ]);
+
+    $result = app(TaglineRewriterService::class)->rewrite(
+        'Scriptly',
+        'A voice-following teleprompter with local storage',
+        "H1: A Teleprompter app that helps you shoot faster"
+    );
+
+    expect($result['tagline'])->toBe('Voice-following teleprompter for smoother video recording');
+    Http::assertSentCount(2);
+    Http::assertSent(fn (Request $request): bool => str_contains(
+        $request->data()['messages'][0]['content'],
+        'Previous candidates were too similar'
+    ));
 });
 
 test('tagline generation does not retry another ai provider after failure', function () {

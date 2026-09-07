@@ -45,26 +45,29 @@ class TaglineRewriterService
         );
 
         $prompt = <<<PROMPT
-Write one clear, factual tagline for "{$productName}".
+Write three distinct, clear, factual tagline candidates for "{$productName}".
 
 Source description: {$rawDescription}
 Website context: {$context}
 
 Rules:
 - Explain the product's primary function using specific, searchable language.
+- Create original directory copy, not a quotation from the website.
+- Do not reproduce or lightly paraphrase a title or heading from the source.
+- Combine the product category with its strongest verified differentiator.
 - Preserve useful product terminology. Do not invent claims.
 - Avoid hype, vague wording, promotional introductions, and exclamation marks.
 - Aim for 35-85 characters. Hard maximum: 140 characters.
 - Return JSON only.
 
 {
-    "tagline": "..."
+    "candidates": ["...", "...", "..."]
 }
 PROMPT;
 
         try {
             $candidate = $providers[0];
-            $cacheKey = 'ai_tagline:v3:'.hash('sha256', implode('|', [
+            $cacheKey = 'ai_tagline:v4:'.hash('sha256', implode('|', [
                 $candidate['provider'],
                 $productName,
                 $rawDescription,
@@ -76,25 +79,33 @@ PROMPT;
                 return $cached;
             }
 
-            $content = match ($candidate['provider']) {
-                'groq' => $this->generateWithGroq($candidate['key'], $prompt),
-                'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
-                default => $this->generateWithGemini($candidate['key'], $prompt),
-            };
+            $sourceHeadings = $this->extractSourceHeadings($context);
 
-            if (is_string($content) && trim($content) !== '') {
+            for ($attempt = 0; $attempt < 2; $attempt++) {
+                $attemptPrompt = $attempt === 0
+                    ? $prompt
+                    : $prompt."\n\nPrevious candidates were too similar to the source headings. Rewrite them with different wording and emphasize a verified differentiating feature.";
+                $content = match ($candidate['provider']) {
+                    'groq' => $this->generateWithGroq($candidate['key'], $attemptPrompt),
+                    'openrouter' => $this->generateWithOpenRouter($candidate['key'], $attemptPrompt),
+                    default => $this->generateWithGemini($candidate['key'], $attemptPrompt),
+                };
+
+                if (! is_string($content) || trim($content) === '') {
+                    break;
+                }
+
                 $decoded = $this->decodeJsonResponse($content);
+                $normalized = is_array($decoded)
+                    ? $this->normalizeGeneratedTagline($decoded, $sourceHeadings)
+                    : null;
 
-                if (is_array($decoded) && isset($decoded['tagline'])) {
-                    $normalized = $this->normalizeGeneratedTagline($decoded);
-
-                    if ($normalized !== null) {
-                        Cache::put(
-                            $cacheKey,
-                            $normalized,
-                            now()->addMinutes(max(1, (int) config('services.ai_tagline.cache_minutes', 1440)))
-                        );
-                    }
+                if ($normalized !== null) {
+                    Cache::put(
+                        $cacheKey,
+                        $normalized,
+                        now()->addMinutes(max(1, (int) config('services.ai_tagline.cache_minutes', 1440)))
+                    );
 
                     return $normalized;
                 }
@@ -289,21 +300,65 @@ PROMPT;
         return is_array($decoded) ? $decoded : null;
     }
 
-    private function normalizeGeneratedTagline(array $decoded): ?array
+    private function normalizeGeneratedTagline(array $decoded, array $sourceHeadings = []): ?array
     {
-        $tagline = $this->normalizeGeneratedLine(
-            (string) ($decoded['tagline'] ?? ''),
-            self::TAGLINE_SOFT_MAX,
-            self::TAGLINE_HARD_MAX
-        );
+        $candidates = isset($decoded['candidates']) && is_array($decoded['candidates'])
+            ? $decoded['candidates']
+            : [$decoded['tagline'] ?? ''];
 
-        if ($tagline === '') {
-            return null;
+        foreach ($candidates as $candidate) {
+            $tagline = $this->normalizeGeneratedLine(
+                is_scalar($candidate) ? (string) $candidate : '',
+                self::TAGLINE_SOFT_MAX,
+                self::TAGLINE_HARD_MAX
+            );
+
+            if ($tagline !== '' && ! $this->isTooSimilarToSource($tagline, $sourceHeadings)) {
+                return ['tagline' => $tagline];
+            }
         }
 
-        return [
-            'tagline' => $tagline,
-        ];
+        return null;
+    }
+
+    private function extractSourceHeadings(string $context): array
+    {
+        preg_match_all('/^(?:Title|H[1-3]):\s*(.+)$/imu', $context, $matches);
+
+        return array_values(array_filter(array_map('trim', $matches[1] ?? [])));
+    }
+
+    private function isTooSimilarToSource(string $tagline, array $sourceHeadings): bool
+    {
+        $candidateTokens = $this->meaningfulTokens($tagline);
+
+        foreach ($sourceHeadings as $heading) {
+            $headingTokens = $this->meaningfulTokens((string) $heading);
+
+            if ($candidateTokens === [] || $headingTokens === []) {
+                continue;
+            }
+
+            $intersection = count(array_intersect($candidateTokens, $headingTokens));
+            $coverage = $intersection / min(count($candidateTokens), count($headingTokens));
+            $union = count(array_unique(array_merge($candidateTokens, $headingTokens)));
+            $jaccard = $union > 0 ? $intersection / $union : 0;
+
+            if ($coverage >= 0.9 || $jaccard >= 0.8) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function meaningfulTokens(string $text): array
+    {
+        $text = mb_strtolower(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $tokens = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $ignored = ['a', 'an', 'and', 'for', 'of', 'the', 'that', 'to', 'with', 'your'];
+
+        return array_values(array_unique(array_diff($tokens, $ignored)));
     }
 
     private function normalizeGeneratedLine(string $text, int $softMax, int $hardMax): string
