@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TaglineRewriterService
 {
-    private const TIMEOUT = 60;
-
     private const TAGLINE_SOFT_MAX = 88;
 
     private const PRODUCT_PAGE_TAGLINE_SOFT_MAX = 120;
@@ -25,7 +24,11 @@ class TaglineRewriterService
         $this->failures = [];
         $providerRouter = app(AiProviderRoutingService::class);
 
-        if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
+        $providers = $this->orderedProvidersForTaglines(
+            $providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter'])
+        );
+
+        if ($providers === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
 
@@ -36,44 +39,29 @@ class TaglineRewriterService
             return null;
         }
 
-        $context = mb_substr(strip_tags($pageTextContext), 0, 8000);
+        $rawDescription = $this->compactSourceText(
+            $rawDescription,
+            max(250, (int) config('services.ai_tagline.max_description_characters', 1000))
+        );
+        $context = $this->compactSourceText(
+            $pageTextContext,
+            max(500, (int) config('services.ai_tagline.max_context_characters', 2000))
+        );
 
         $prompt = <<<PROMPT
-You are an experienced human product copywriter and editor. Write like a sharp person with taste, not like an AI assistant, brand strategist, or landing-page generator.
+Write two clear, factual taglines for "{$productName}".
 
-Your goal is to write two distinct taglines for "{$productName}" based on its raw description and website context.
-The detailed tagline is often reused in the public page title, so it must stay front-loaded, searchable, and specific.
+Source description: {$rawDescription}
+Website context: {$context}
 
-Raw information: "{$rawDescription}"
+Rules:
+- Explain the product's primary function using specific, searchable language.
+- Preserve useful product terminology. Do not invent claims.
+- Avoid hype, vague wording, promotional introductions, and exclamation marks.
+- Short tagline: 35-85 characters. Hard maximum: 140.
+- Detailed tagline: 45-95 characters. Hard maximum: 160.
+- Return JSON only.
 
-Additional context: "{$context}"
-
-CRITICAL RULES:
-- You MUST rewrite the taglines in your own words. Do not copy whole lines from the website. But if the source contains a short, distinctive positioning phrase that is clearly the best explanation of the product, you may keep that phrase.
-- Focus first on clearly explaining what the product does.
-- Prefer exact problem, task, or outcome language over broad category language.
-- Put the most searchable words early, especially in the detailed tagline.
-- If the source clearly supports it, mention the concrete object, platform, file type, workflow, or audience: for example Zoom calls, PDFs on Mac, TikTok reposts, browser extension, or developers.
-- If it fits naturally and is supported by the source, prefer direct patterns like "Turn X into Y", "Remove X from Y", "Translate X in Y", "Free X for Y", or "X without Y".
-- Both lines must feel punchy, useful, and easy to scan in one glance.
-- The second line can be slightly fuller, but it is NOT a mini-description or paragraph.
-- Write like a calm human editor. Use plain language and concrete verbs.
-- Avoid hype, filler, buzzwords, slogans, dramatic setups, rhetorical questions, and clever-but-vague copy.
-- Avoid lead-ins like "Meet...", "Say hello to...", "Your X shouldn't...", "Finally...", or similar ad-style openings.
-- Avoid vague phrases like "redefine productivity", "supercharge your workflow", "next-generation", "all-in-one solution", or "built for modern teams".
-- Avoid empty wrappers like "platform", "solution", or "tool" when a more exact noun is available from the source.
-- Preserve strong category or positioning hooks from the source when they are specific and useful, such as "one-person company", instead of flattening them into generic words like "company", "business", "platform", or "tool".
-- Prefer the product's clearest native terminology when it improves clarity. For example, do not replace "AI agents" with broader substitutes like "AI team" unless the source itself clearly uses that wording.
-- Mention pricing, "no subscription", "free", or "one-time purchase" only when the source clearly presents that as a meaningful differentiator or buyer reason to choose the product, especially in categories where recurring subscriptions are the norm.
-- Do not use unsupported superlatives like "best", "#1", "leading", or "most popular" unless the source clearly states them and they materially help explain the product.
-- Do not use exclamation marks.
-- Prefer one clean sentence or phrase per field.
-
-Constraints:
-1. "tagline": Aim for 35-85 characters. Hard max 140 characters. It should read like a Product Hunt-style one-liner: short, natural, specific, and instantly clear.
-2. "product_page_tagline": Aim for 45-95 characters. Hard max 160 characters. It should still be a one-line explanation, just slightly fuller or more specific than the short tagline. It must explain the product, not wander into broad brand messaging. The first 55-65 characters should already communicate the core task or outcome.
-
-Respond ONLY with valid JSON in the exact structure below. Do NOT wrap it in markdown blockquotes or add any other text.
 {
     "tagline": "...",
     "product_page_tagline": "..."
@@ -81,26 +69,39 @@ Respond ONLY with valid JSON in the exact structure below. Do NOT wrap it in mar
 PROMPT;
 
         try {
-            foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
-                $content = match ($candidate['provider']) {
-                    'groq' => $this->generateWithGroq($candidate['key'], $prompt),
-                    'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
-                    default => $this->generateWithGemini($candidate['key'], $prompt),
-                };
+            $candidate = $providers[0];
+            $cacheKey = 'ai_tagline:v2:'.hash('sha256', implode('|', [
+                $candidate['provider'],
+                $productName,
+                $rawDescription,
+                $context,
+            ]));
+            $cached = Cache::get($cacheKey);
 
-                if (! is_string($content) || trim($content) === '') {
-                    continue;
-                }
+            if (is_array($cached) && isset($cached['tagline'], $cached['product_page_tagline'])) {
+                return $cached;
+            }
 
+            $content = match ($candidate['provider']) {
+                'groq' => $this->generateWithGroq($candidate['key'], $prompt),
+                'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
+                default => $this->generateWithGemini($candidate['key'], $prompt),
+            };
+
+            if (is_string($content) && trim($content) !== '') {
                 $decoded = $this->decodeJsonResponse($content);
 
-                if (! is_array($decoded) || ! isset($decoded['tagline']) || ! isset($decoded['product_page_tagline'])) {
-                    continue;
-                }
+                if (is_array($decoded) && isset($decoded['tagline'], $decoded['product_page_tagline'])) {
+                    $normalized = $this->normalizeGeneratedTaglines($decoded);
 
-                $normalized = $this->normalizeGeneratedTaglines($decoded);
+                    if ($normalized !== null) {
+                        Cache::put(
+                            $cacheKey,
+                            $normalized,
+                            now()->addMinutes(max(1, (int) config('services.ai_tagline.cache_minutes', 1440)))
+                        );
+                    }
 
-                if ($normalized !== null) {
                     return $normalized;
                 }
             }
@@ -126,13 +127,18 @@ PROMPT;
         $response = Http::withHeaders([
             'X-goog-api-key' => $apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout(self::TIMEOUT)->post($baseUrl.'/models/'.$model.':generateContent', [
+        ])->timeout($this->timeout())->post($baseUrl.'/models/'.$model.':generateContent', [
             'contents' => [
                 [
                     'parts' => [
                         ['text' => $prompt],
                     ],
                 ],
+            ],
+            'generationConfig' => [
+                'temperature' => 0.3,
+                'maxOutputTokens' => $this->maxOutputTokens(),
+                'responseMimeType' => 'application/json',
             ],
         ]);
 
@@ -157,7 +163,7 @@ PROMPT;
     {
         $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
 
-        $response = Http::timeout(self::TIMEOUT)
+        $response = Http::timeout($this->timeout())
             ->withToken($apiKey)
             ->post($baseUrl.'/chat/completions', [
                 'model' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
@@ -168,6 +174,7 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.4,
+                'max_tokens' => $this->maxOutputTokens(),
                 'response_format' => ['type' => 'json_object'],
             ]);
 
@@ -192,7 +199,7 @@ PROMPT;
     {
         $baseUrl = rtrim((string) config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
 
-        $response = Http::timeout(self::TIMEOUT)
+        $response = Http::timeout($this->timeout())
             ->withHeaders([
                 'Authorization' => 'Bearer '.$apiKey,
                 'HTTP-Referer' => config('app.url'),
@@ -207,6 +214,7 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.4,
+                'max_tokens' => $this->maxOutputTokens(),
             ]);
 
         if ($response->successful()) {
@@ -233,6 +241,34 @@ PROMPT;
             'status' => $status,
             'body' => $body,
         ];
+    }
+
+    private function orderedProvidersForTaglines(array $providers): array
+    {
+        $priority = array_flip(['groq', 'gemini', 'openrouter']);
+
+        usort($providers, static fn (array $left, array $right): int => ($priority[$left['provider']] ?? PHP_INT_MAX) <=> ($priority[$right['provider']] ?? PHP_INT_MAX)
+        );
+
+        return $providers;
+    }
+
+    private function compactSourceText(string $text, int $maxCharacters): string
+    {
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
+
+        return mb_substr($text, 0, $maxCharacters);
+    }
+
+    private function timeout(): int
+    {
+        return max(1, (int) config('services.ai_tagline.timeout', 15));
+    }
+
+    private function maxOutputTokens(): int
+    {
+        return max(64, (int) config('services.ai_tagline.max_output_tokens', 120));
     }
 
     private function decodeJsonResponse(string $content): ?array

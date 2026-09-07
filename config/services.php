@@ -77,6 +77,14 @@ return [
         'timeout' => (int) env('OPENROUTER_TIMEOUT', 45),
     ],
 
+    'ai_tagline' => [
+        'timeout' => (int) env('AI_TAGLINE_TIMEOUT', 15),
+        'max_description_characters' => (int) env('AI_TAGLINE_MAX_DESCRIPTION_CHARACTERS', 1000),
+        'max_context_characters' => (int) env('AI_TAGLINE_MAX_CONTEXT_CHARACTERS', 2000),
+        'max_output_tokens' => (int) env('AI_TAGLINE_MAX_OUTPUT_TOKENS', 120),
+        'cache_minutes' => (int) env('AI_TAGLINE_CACHE_MINUTES', 1440),
+    ],
+
     'indexnow' => [
         'enabled' => env('INDEXNOW_ENABLED', false),
         'key' => env('INDEXNOW_KEY'),
