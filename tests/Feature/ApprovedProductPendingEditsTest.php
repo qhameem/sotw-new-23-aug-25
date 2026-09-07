@@ -149,7 +149,7 @@ class ApprovedProductPendingEditsTest extends TestCase
         ]);
     }
 
-    public function test_admin_editing_an_approved_product_creates_pending_edits_instead_of_updating_live(): void
+    public function test_admin_editing_an_approved_product_updates_it_immediately(): void
     {
         Storage::fake('public');
 
@@ -186,17 +186,19 @@ class ApprovedProductPendingEditsTest extends TestCase
             ],
         ]);
 
-        $response->assertRedirect(route('admin.products.pending-edits.index'));
+        $response->assertRedirect(route('admin.products.index'));
 
         $product->refresh();
 
-        $this->assertSame('Live tagline', $product->tagline);
-        $this->assertSame('Pending admin tagline', $product->proposed_tagline);
-        $this->assertNull($product->hosting_provider);
-        $this->assertSame('Netlify', $product->proposed_hosting_provider);
-        $this->assertSame('Example Registrar', $product->proposed_domain_registrar);
-        $this->assertTrue($product->has_pending_edits);
-        $this->assertNotNull($product->proposed_screenshot_path);
+        $this->assertSame('Pending admin tagline', $product->tagline);
+        $this->assertNull($product->proposed_tagline);
+        $this->assertSame('Netlify', $product->hosting_provider);
+        $this->assertNull($product->proposed_hosting_provider);
+        $this->assertSame('Example Registrar', $product->domain_registrar);
+        $this->assertNull($product->proposed_domain_registrar);
+        $this->assertFalse($product->has_pending_edits);
+        $this->assertNull($product->proposed_screenshot_path);
+        $this->assertDatabaseCount('product_media', 1);
 
         $this->assertDatabaseHas('custom_category_submissions', [
             'product_id' => $product->id,
@@ -206,7 +208,7 @@ class ApprovedProductPendingEditsTest extends TestCase
         ]);
     }
 
-    public function test_admin_editing_with_local_storage_logo_and_screenshot_previews_persists_pending_media(): void
+    public function test_admin_editing_with_local_storage_logo_and_screenshot_previews_persists_live_media(): void
     {
         Storage::fake('public');
 
@@ -241,14 +243,62 @@ class ApprovedProductPendingEditsTest extends TestCase
             'media_urls' => ['/storage/tmp/screenshot-source.png'],
         ]);
 
-        $response->assertRedirect(route('admin.products.pending-edits.index'));
+        $response->assertRedirect(route('admin.products.index'));
 
         $product->refresh();
 
-        $this->assertNotNull($product->proposed_logo_path);
-        $this->assertNotNull($product->proposed_screenshot_path);
-        Storage::disk('public')->assertExists($product->proposed_logo_path);
-        Storage::disk('public')->assertExists($product->proposed_screenshot_path);
+        $this->assertNotNull($product->logo);
+        $this->assertNull($product->proposed_logo_path);
+        $this->assertNull($product->proposed_screenshot_path);
+        Storage::disk('public')->assertExists($product->logo);
+        $this->assertDatabaseCount('product_media', 1);
+    }
+
+    public function test_admin_inline_edit_of_an_approved_product_updates_it_immediately(): void
+    {
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $product = Product::factory()->create([
+            'approved' => true,
+            'tagline' => 'Original tagline',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('products.inline-update', $product), [
+            'field' => 'tagline',
+            'value' => 'Live admin tagline',
+        ]);
+
+        $response->assertOk()->assertJsonPath('message', 'Product updated successfully.');
+
+        $product->refresh();
+        $this->assertSame('Live admin tagline', $product->tagline);
+        $this->assertNull($product->proposed_tagline);
+        $this->assertFalse($product->has_pending_edits);
+    }
+
+    public function test_admin_inline_logo_edit_of_an_approved_product_updates_it_immediately(): void
+    {
+        Storage::fake('public');
+
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $product = Product::factory()->create(['approved' => true]);
+
+        $response = $this->actingAs($admin)->post(route('products.inline-update-logo', $product), [
+            'logo' => UploadedFile::fake()->image('admin-logo.png', 100, 100),
+        ]);
+
+        $response->assertOk()->assertJsonPath('message', 'Logo updated successfully.');
+
+        $product->refresh();
+        $this->assertNotNull($product->logo);
+        $this->assertNull($product->proposed_logo_path);
+        $this->assertFalse($product->has_pending_edits);
+        Storage::disk('public')->assertExists($product->logo);
     }
 
     private function createRequiredCategories(): array

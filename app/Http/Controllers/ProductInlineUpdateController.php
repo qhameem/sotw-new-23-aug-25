@@ -116,7 +116,7 @@ class ProductInlineUpdateController extends Controller
             $updateData['pricing_page_url'] = $value;
         }
 
-        if ($product->approved) {
+        if ($product->approved && ! $user->hasRole('admin')) {
             // Approved products store changes as "proposed"
             switch ($field) {
                 case 'video_url':
@@ -216,7 +216,7 @@ class ProductInlineUpdateController extends Controller
         $finalPath = app(ProductLogoStorageService::class)
             ->storeUploadedFile($request->file('logo'));
 
-        if ($product->approved) {
+        if ($product->approved && ! $user->hasRole('admin')) {
             if ($product->proposed_logo_path && !Str::startsWith($product->proposed_logo_path, 'http')) {
                 Storage::disk('public')->delete($product->proposed_logo_path);
             }

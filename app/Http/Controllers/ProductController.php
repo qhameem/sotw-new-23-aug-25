@@ -1204,7 +1204,7 @@ class ProductController extends Controller
 
         $product->last_edited_by_id = Auth::id();
 
-        if ($product->approved) {
+        if ($product->approved && ! $user->hasRole('admin')) {
             // Product is approved, store edits as proposed changes
             if ($request->boolean('remove_logo')) {
                 // If there was a proposed logo, delete it. The live logo remains.

@@ -599,7 +599,7 @@ class ProductController extends Controller
         // Check if the user came from the product approvals page
         $fromApprovals = $request->input('from') === 'approvals';
 
-        if ($product->approved) {
+        if ($product->approved && ! $request->user()->hasRole('admin')) {
             if ($request->boolean('remove_logo')) {
                 if ($product->proposed_logo_path && ! Str::startsWith($product->proposed_logo_path, 'http')) {
                     Storage::disk('public')->delete($product->proposed_logo_path);
