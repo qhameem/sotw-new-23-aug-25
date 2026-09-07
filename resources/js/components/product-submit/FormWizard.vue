@@ -153,19 +153,41 @@
               >
                 <transition name="fade">
                   <div
-                    v-if="autofillReveal.active"
-                    class="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-700 shadow-lg"
+                    v-if="autofillReveal.active && !autofillNoticeDismissed"
+                    class="pointer-events-auto flex items-start gap-3 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-700 shadow-lg"
                   >
-                    We’re filling this out step by step. Fields unlock as each piece of product info is ready.
+                    <span class="min-w-0 flex-1">
+                      We’re filling this out step by step. Fields unlock as each piece of product info is ready.
+                    </span>
+                    <button
+                      type="button"
+                      class="-mr-1 -mt-1 rounded-md p-1 text-sky-500 transition hover:bg-sky-100 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      aria-label="Dismiss autofill notification"
+                      @click="autofillNoticeDismissed = true"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                    </button>
                   </div>
                 </transition>
 
                 <transition name="fade">
                   <div
-                    v-if="draftStatusMessage"
-                    class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 shadow-lg"
+                    v-if="draftStatusMessage && !draftNoticeDismissed"
+                    class="pointer-events-auto flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 shadow-lg"
                   >
-                    {{ draftStatusMessage }}
+                    <span class="min-w-0 flex-1">{{ draftStatusMessage }}</span>
+                    <button
+                      type="button"
+                      class="-mr-1 -mt-1 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                      aria-label="Dismiss autosave notification"
+                      @click="draftNoticeDismissed = true"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                    </button>
                   </div>
                 </transition>
               </div>
@@ -440,6 +462,8 @@ const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 const showAiContext = computed(() => !form.id);
 const showDraftList = computed(() => !isEditMode.value && submissionDrafts.value.length > 0);
+const autofillNoticeDismissed = ref(false);
+const draftNoticeDismissed = ref(false);
 const draftStatusMessage = computed(() => {
   if (!canSaveDrafts.value || isEditMode.value) {
     return '';

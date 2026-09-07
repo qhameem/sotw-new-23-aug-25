@@ -25,7 +25,7 @@ test('successful tagline generation is cached', function () {
         'api.groq.com/*' => Http::response([
             'choices' => [[
                 'message' => [
-                    'content' => '{"tagline":"Automate finance reports","product_page_tagline":"Automate finance reports from connected business data"}',
+                    'content' => '{"tagline":"Automate finance reports"}',
                 ],
             ]],
         ]),
@@ -46,7 +46,6 @@ test('taglines use one groq request with compact context and limited output', fu
                 'message' => [
                     'content' => json_encode([
                         'tagline' => 'Automate recurring finance reports',
-                        'product_page_tagline' => 'Automate recurring finance reports from connected business data',
                     ]),
                 ],
             ]],
@@ -68,6 +67,8 @@ test('taglines use one groq request with compact context and limited output', fu
 
         return str_contains($request->url(), 'api.groq.com')
             && $payload['max_tokens'] === 120
+            && str_contains($prompt, 'Write one clear, factual tagline')
+            && ! str_contains($prompt, 'product_page_tagline')
             && mb_strlen($prompt) < 3000;
     });
 });

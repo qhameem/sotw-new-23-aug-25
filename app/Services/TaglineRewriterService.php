@@ -11,11 +11,7 @@ class TaglineRewriterService
 {
     private const TAGLINE_SOFT_MAX = 88;
 
-    private const PRODUCT_PAGE_TAGLINE_SOFT_MAX = 120;
-
     private const TAGLINE_HARD_MAX = 140;
-
-    private const PRODUCT_PAGE_TAGLINE_HARD_MAX = 160;
 
     private array $failures = [];
 
@@ -49,7 +45,7 @@ class TaglineRewriterService
         );
 
         $prompt = <<<PROMPT
-Write two clear, factual taglines for "{$productName}".
+Write one clear, factual tagline for "{$productName}".
 
 Source description: {$rawDescription}
 Website context: {$context}
@@ -58,19 +54,17 @@ Rules:
 - Explain the product's primary function using specific, searchable language.
 - Preserve useful product terminology. Do not invent claims.
 - Avoid hype, vague wording, promotional introductions, and exclamation marks.
-- Short tagline: 35-85 characters. Hard maximum: 140.
-- Detailed tagline: 45-95 characters. Hard maximum: 160.
+- Aim for 35-85 characters. Hard maximum: 140 characters.
 - Return JSON only.
 
 {
-    "tagline": "...",
-    "product_page_tagline": "..."
+    "tagline": "..."
 }
 PROMPT;
 
         try {
             $candidate = $providers[0];
-            $cacheKey = 'ai_tagline:v2:'.hash('sha256', implode('|', [
+            $cacheKey = 'ai_tagline:v3:'.hash('sha256', implode('|', [
                 $candidate['provider'],
                 $productName,
                 $rawDescription,
@@ -78,7 +72,7 @@ PROMPT;
             ]));
             $cached = Cache::get($cacheKey);
 
-            if (is_array($cached) && isset($cached['tagline'], $cached['product_page_tagline'])) {
+            if (is_array($cached) && isset($cached['tagline'])) {
                 return $cached;
             }
 
@@ -91,8 +85,8 @@ PROMPT;
             if (is_string($content) && trim($content) !== '') {
                 $decoded = $this->decodeJsonResponse($content);
 
-                if (is_array($decoded) && isset($decoded['tagline'], $decoded['product_page_tagline'])) {
-                    $normalized = $this->normalizeGeneratedTaglines($decoded);
+                if (is_array($decoded) && isset($decoded['tagline'])) {
+                    $normalized = $this->normalizeGeneratedTagline($decoded);
 
                     if ($normalized !== null) {
                         Cache::put(
@@ -295,7 +289,7 @@ PROMPT;
         return is_array($decoded) ? $decoded : null;
     }
 
-    private function normalizeGeneratedTaglines(array $decoded): ?array
+    private function normalizeGeneratedTagline(array $decoded): ?array
     {
         $tagline = $this->normalizeGeneratedLine(
             (string) ($decoded['tagline'] ?? ''),
@@ -303,19 +297,12 @@ PROMPT;
             self::TAGLINE_HARD_MAX
         );
 
-        $productPageTagline = $this->normalizeGeneratedLine(
-            (string) ($decoded['product_page_tagline'] ?? ''),
-            self::PRODUCT_PAGE_TAGLINE_SOFT_MAX,
-            self::PRODUCT_PAGE_TAGLINE_HARD_MAX
-        );
-
-        if ($tagline === '' || $productPageTagline === '') {
+        if ($tagline === '') {
             return null;
         }
 
         return [
             'tagline' => $tagline,
-            'product_page_tagline' => $productPageTagline,
         ];
     }
 

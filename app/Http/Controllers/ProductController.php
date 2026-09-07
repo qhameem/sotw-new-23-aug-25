@@ -4207,7 +4207,6 @@ class ProductController extends Controller
 
                         if ($aiTaglines) {
                             $extractedTagline = $aiTaglines['tagline'];
-                            $extractedTaglineDetailed = $aiTaglines['product_page_tagline'];
                         }
                     } catch (\Exception $e) {
                         // fallback
@@ -4485,10 +4484,8 @@ class ProductController extends Controller
 
                     if ($aiTaglines) {
                         $extractedTagline = $aiTaglines['tagline'];
-                        $extractedTaglineDetailed = $aiTaglines['product_page_tagline'];
                         Log::info('TaglineRewriterService: AI-generated taglines', [
                             'tagline' => $extractedTagline,
-                            'product_page_tagline' => $extractedTaglineDetailed,
                         ]);
                     }
                 } catch (\Exception $e) {
