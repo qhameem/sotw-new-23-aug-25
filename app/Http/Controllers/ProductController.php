@@ -3574,6 +3574,8 @@ class ProductController extends Controller
                 'groq' => 'Groq',
                 'gemini' => 'Gemini',
                 'openrouter' => 'OpenRouter',
+                'cerebras' => 'Cerebras',
+                'cloudflare' => 'Cloudflare Workers AI',
                 default => 'AI provider',
             };
 

@@ -77,6 +77,21 @@ return [
         'timeout' => (int) env('OPENROUTER_TIMEOUT', 45),
     ],
 
+    'cerebras' => [
+        'key' => env('CEREBRAS_API_KEY'),
+        'model' => env('CEREBRAS_MODEL', 'gpt-oss-120b'),
+        'base_url' => env('CEREBRAS_BASE_URL', 'https://api.cerebras.ai/v1'),
+        'timeout' => (int) env('CEREBRAS_TIMEOUT', 30),
+    ],
+
+    'cloudflare_ai' => [
+        'api_token' => env('CLOUDFLARE_AI_API_TOKEN'),
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'model' => env('CLOUDFLARE_AI_MODEL', '@cf/qwen/qwen3-30b-a3b-fp8'),
+        'base_url' => env('CLOUDFLARE_AI_BASE_URL', 'https://api.cloudflare.com/client/v4/accounts'),
+        'timeout' => (int) env('CLOUDFLARE_AI_TIMEOUT', 45),
+    ],
+
     'ai_tagline' => [
         'timeout' => (int) env('AI_TAGLINE_TIMEOUT', 15),
         'max_description_characters' => (int) env('AI_TAGLINE_MAX_DESCRIPTION_CHARACTERS', 1000),

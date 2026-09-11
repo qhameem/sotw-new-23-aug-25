@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Support\ProductDescriptionTemplates;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Support\ProductDescriptionTemplates;
 
 class DescriptionRewriterService
 {
@@ -38,7 +38,7 @@ class DescriptionRewriterService
         $adminInstruction = app(ProductDescriptionTemplates::class)->activeInstruction();
         $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction);
 
-        if ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) === []) {
+        if ($providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']) === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             $this->usedFallback = true;
@@ -47,10 +47,15 @@ class DescriptionRewriterService
         }
 
         try {
-            foreach ($providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter']) as $candidate) {
+            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']) as $candidate) {
                 $response = match ($candidate['provider']) {
                     'groq' => $this->generateWithGroq($candidate['key'], $prompt),
                     'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
+                    'cerebras', 'cloudflare' => $this->generateWithCompatibleProvider(
+                        $candidate['provider'],
+                        $candidate['key'],
+                        $prompt
+                    ),
                     default => $this->generateWithGemini($candidate['key'], $prompt),
                 };
 
@@ -243,6 +248,35 @@ PROMPT;
         ]);
         app(AiProviderRoutingService::class)->recordHttpFailure('openrouter', $response);
         $this->recordFailure('openrouter', $response->status(), $response->body());
+
+        return null;
+    }
+
+    private function generateWithCompatibleProvider(string $provider, string $apiKey, string $prompt): ?string
+    {
+        $response = app(OpenAiCompatibleProviderService::class)->request(
+            $provider,
+            $apiKey,
+            $prompt,
+            0.55,
+            4000,
+            self::TIMEOUT
+        );
+
+        if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess($provider, $response);
+            $content = $response->json('choices.0.message.content');
+
+            return is_string($content) ? $content : null;
+        }
+
+        Log::warning('DescriptionRewriterService: Compatible provider API error', [
+            'provider' => $provider,
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure($provider, $response);
+        $this->recordFailure($provider, $response->status(), $response->body());
 
         return null;
     }

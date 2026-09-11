@@ -116,6 +116,10 @@ class AiProviderRoutingService
             'groq' => $this->filledOrNull(config('services.groq.key')),
             'gemini' => $this->filledOrNull(config('services.google.api_key')),
             'openrouter' => $this->filledOrNull(config('services.openrouter.key')),
+            'cerebras' => $this->filledOrNull(config('services.cerebras.key')),
+            'cloudflare' => filled(config('services.cloudflare_ai.account_id'))
+                ? $this->filledOrNull(config('services.cloudflare_ai.api_token'))
+                : null,
             default => null,
         };
     }
@@ -126,6 +130,8 @@ class AiProviderRoutingService
             'groq' => (string) config('services.groq.model', 'openai/gpt-oss-120b'),
             'gemini' => (string) config('services.google.gemini_model', 'gemini-2.5-flash'),
             'openrouter' => (string) config('services.openrouter.model', 'openrouter/free'),
+            'cerebras' => (string) config('services.cerebras.model', 'gpt-oss-120b'),
+            'cloudflare' => (string) config('services.cloudflare_ai.model', '@cf/qwen/qwen3-30b-a3b-fp8'),
             default => null,
         };
     }
@@ -145,7 +151,9 @@ class AiProviderRoutingService
     {
         $status = $this->effectiveStatus($provider);
         $score = match ($provider) {
-            'openrouter' => 3000,
+            'openrouter' => 5000,
+            'cerebras' => 4000,
+            'cloudflare' => 3000,
             'groq' => 2000,
             'gemini' => 1000,
             default => 0,
@@ -274,7 +282,7 @@ class AiProviderRoutingService
     {
         $decoded = json_decode($body, true);
 
-        foreach (['error.message', 'message', 'data.message'] as $path) {
+        foreach (['error.message', 'errors.0.message', 'message', 'data.message'] as $path) {
             $message = data_get($decoded, $path);
             if (is_string($message) && trim($message) !== '') {
                 return trim($message);

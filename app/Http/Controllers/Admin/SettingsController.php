@@ -4,28 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AiProviderStatusService;
-use App\Support\ToolSettings;
-use App\Support\FreeLaunchQueueSettings;
-use App\Support\PremiumLaunchPricing;
 use App\Services\BadgeService;
 use App\Services\ScreenshotService;
+use App\Support\FreeLaunchQueueSettings;
+use App\Support\PremiumLaunchPricing;
+use App\Support\ToolSettings;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
-use Illuminate\Support\Str;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
-
-use App\Models\EmailTemplate;
+use Symfony\Component\Process\Process;
 
 class SettingsController extends Controller
 {
@@ -82,7 +79,7 @@ class SettingsController extends Controller
 
     public function aiProviderStatus(Request $request, AiProviderStatusService $aiProviderStatusService)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -97,12 +94,12 @@ class SettingsController extends Controller
 
     public function storeAiProviderEnabled(Request $request, AiProviderStatusService $aiProviderStatusService)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
         $validated = $request->validate([
-            'provider' => 'required|string|in:groq,gemini,openrouter',
+            'provider' => 'required|string|in:groq,gemini,openrouter,cerebras,cloudflare',
             'enabled' => 'required',
         ]);
 
@@ -124,17 +121,17 @@ class SettingsController extends Controller
             $this->saveSettings($settings);
             $aiProviderStatusService->clearCache();
 
-            Log::info('AI provider enabled flag updated by user: ' . Auth::id(), [
+            Log::info('AI provider enabled flag updated by user: '.Auth::id(), [
                 'provider' => $provider,
                 'enabled' => $enabled,
             ]);
 
             return response()->json([
-                'message' => ucfirst($provider) . ' was ' . ($enabled ? 'enabled' : 'disabled') . ' successfully.',
+                'message' => ucfirst($provider).' was '.($enabled ? 'enabled' : 'disabled').' successfully.',
                 'providers' => $aiProviderStatusService->latestSnapshots(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to save AI provider enabled flag: ' . $e->getMessage(), [
+            Log::error('Failed to save AI provider enabled flag: '.$e->getMessage(), [
                 'provider' => $provider,
                 'enabled' => $enabled,
             ]);
@@ -146,6 +143,7 @@ class SettingsController extends Controller
     public function emailTemplates()
     {
         $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
+
         return view('admin.settings.email_templates', compact('template'));
     }
 
@@ -179,6 +177,7 @@ class SettingsController extends Controller
 
         if ($validator->fails()) {
             Log::error('storeEmailTemplates: Validation failed.', ['errors' => $validator->errors()]);
+
             return back()->withErrors($validator)->withInput();
         }
 
@@ -188,7 +187,7 @@ class SettingsController extends Controller
         $template = \App\Models\EmailTemplate::where('name', 'product_approved')->first();
 
         if ($template) {
-            Log::info('Database connection name: ' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName());
+            Log::info('Database connection name: '.\Illuminate\Support\Facades\DB::connection()->getDatabaseName());
 
             Log::info('Email template attributes before update: ', $template->getAttributes());
 
@@ -215,7 +214,7 @@ class SettingsController extends Controller
 
     public function storeAnalyticsCode(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -228,10 +227,10 @@ class SettingsController extends Controller
                         return;
                     }
 
-                    if (!preg_match('/<\s*(script|meta|link|noscript)\b/i', $value)) {
-                        $fail('The ' . $attribute . ' must contain valid head HTML such as a <script>, <meta>, <link>, or <noscript> tag.');
+                    if (! preg_match('/<\s*(script|meta|link|noscript)\b/i', $value)) {
+                        $fail('The '.$attribute.' must contain valid head HTML such as a <script>, <meta>, <link>, or <noscript> tag.');
                     }
-                }
+                },
             ],
         ]);
 
@@ -244,7 +243,7 @@ class SettingsController extends Controller
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Header code injection updated by user: ' . Auth::id(), [
+            Log::info('Header code injection updated by user: '.Auth::id(), [
                 'active' => filled(trim((string) $settings['google_analytics_code'])),
             ]);
 
@@ -254,14 +253,15 @@ class SettingsController extends Controller
 
             return back()->with('success', $successMessage);
         } catch (\Exception $e) {
-            Log::error('Failed to save header code injection: ' . $e->getMessage());
+            Log::error('Failed to save header code injection: '.$e->getMessage());
+
             return back()->with('error', 'Failed to save header code injection. Please check logs.');
         }
     }
 
     public function storePremiumProductSpots(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -280,17 +280,19 @@ class SettingsController extends Controller
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Premium product spots updated by user: ' . Auth::id());
+            Log::info('Premium product spots updated by user: '.Auth::id());
+
             return back()->with('success', 'Premium launch settings saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save premium product spots: ' . $e->getMessage());
+            Log::error('Failed to save premium product spots: '.$e->getMessage());
+
             return back()->with('error', 'Failed to save premium launch settings. Please check logs.');
         }
     }
 
     public function storePublishTime(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -318,17 +320,19 @@ class SettingsController extends Controller
 
         try {
             Storage::disk('local')->put($settingsPath, json_encode($settingsToSave, JSON_PRETTY_PRINT));
-            Log::info('Product publish time updated by user: ' . Auth::id());
+            Log::info('Product publish time updated by user: '.Auth::id());
+
             return back()->with('success', 'Product publish time saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save product publish time: ' . $e->getMessage());
+            Log::error('Failed to save product publish time: '.$e->getMessage());
+
             return back()->with('error', 'Failed to save product publish time. Please check logs.');
         }
     }
 
     public function storeAdminSandboxMode(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -337,13 +341,13 @@ class SettingsController extends Controller
 
         try {
             $this->saveSettings($settings);
-            Log::info('Admin add-product sandbox mode updated by user: ' . Auth::id(), [
+            Log::info('Admin add-product sandbox mode updated by user: '.Auth::id(), [
                 'enabled' => $settings['admin_add_product_sandbox_enabled'],
             ]);
 
             return back()->with('success', 'Admin sandbox mode saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save admin sandbox mode: ' . $e->getMessage());
+            Log::error('Failed to save admin sandbox mode: '.$e->getMessage());
 
             return back()->with('error', 'Failed to save admin sandbox mode. Please check logs.');
         }
@@ -351,7 +355,7 @@ class SettingsController extends Controller
 
     public function storeFreeLaunchQueue(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -364,13 +368,13 @@ class SettingsController extends Controller
 
         try {
             $this->saveSettings($settings);
-            Log::info('Free launch queue months updated by user: ' . Auth::id(), [
+            Log::info('Free launch queue months updated by user: '.Auth::id(), [
                 'months' => $settings['free_launch_queue_months'],
             ]);
 
             return back()->with('success', 'Free launch queue setting saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save free launch queue setting: ' . $e->getMessage());
+            Log::error('Failed to save free launch queue setting: '.$e->getMessage());
 
             return back()->with('error', 'Failed to save free launch queue setting. Please check logs.');
         }
@@ -378,7 +382,7 @@ class SettingsController extends Controller
 
     public function storeToolSettings(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -419,15 +423,15 @@ class SettingsController extends Controller
 
         try {
             $this->saveSettings($settings);
-            Log::info('Tool slug updated by user: ' . Auth::id(), [
+            Log::info('Tool slug updated by user: '.Auth::id(), [
                 'tool_key' => ToolSettings::TODO_LIST_KEY,
                 'previous_slug' => $currentSlug,
                 'new_slug' => $newSlug,
             ]);
 
-            return back()->with('success', 'Tool slug saved successfully. The todo tool now lives at /tools/' . $newSlug . '.');
+            return back()->with('success', 'Tool slug saved successfully. The todo tool now lives at /tools/'.$newSlug.'.');
         } catch (\Exception $e) {
-            Log::error('Failed to save tool settings: ' . $e->getMessage());
+            Log::error('Failed to save tool settings: '.$e->getMessage());
 
             return back()->with('error', 'Failed to save tool settings. Please check logs.');
         }
@@ -435,7 +439,7 @@ class SettingsController extends Controller
 
     public function storeFooterEmbedCodes(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -466,11 +470,11 @@ class SettingsController extends Controller
 
         try {
             Storage::disk('local')->put('settings.json', json_encode($settings, JSON_PRETTY_PRINT));
-            Log::info('Footer embed codes updated by user: ' . Auth::id());
+            Log::info('Footer embed codes updated by user: '.Auth::id());
 
             return back()->with('success', 'Footer embed codes saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save footer embed codes: ' . $e->getMessage());
+            Log::error('Failed to save footer embed codes: '.$e->getMessage());
 
             return back()->with('error', 'Failed to save footer embed codes. Please check logs.');
         }
@@ -478,7 +482,7 @@ class SettingsController extends Controller
 
     public function storeBadgeEmbedCode(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -497,11 +501,11 @@ class SettingsController extends Controller
 
         try {
             $this->saveSettings($settings);
-            Log::info('Badge embed code updated by user: ' . Auth::id());
+            Log::info('Badge embed code updated by user: '.Auth::id());
 
             return back()->with('success', 'Badge share code saved successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to save badge embed code: ' . $e->getMessage());
+            Log::error('Failed to save badge embed code: '.$e->getMessage());
 
             return back()->with('error', 'Failed to save badge share code. Please check logs.');
         }
@@ -513,7 +517,7 @@ class SettingsController extends Controller
     public function exportDatabase()
     {
         // Ensure only admins can access this. Middleware should also protect the route.
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -529,11 +533,10 @@ class SettingsController extends Controller
             $filename = "backup-{$dbName}-{$timestamp}.sql";
             // Path relative to the storage disk's root (e.g., storage/app/ if disk is 'local')
             $storageDiskRelativePath = 'temp_backups';
-            $fullStorageDiskPathWithFile = $storageDiskRelativePath . '/' . $filename;
-
+            $fullStorageDiskPathWithFile = $storageDiskRelativePath.'/'.$filename;
 
             // Ensure temp directory exists on the 'local' disk (storage/app/temp_backups)
-            if (!Storage::disk('local')->exists($storageDiskRelativePath)) {
+            if (! Storage::disk('local')->exists($storageDiskRelativePath)) {
                 Storage::disk('local')->makeDirectory($storageDiskRelativePath);
             }
 
@@ -566,6 +569,7 @@ class SettingsController extends Controller
                 $command = [$sqlite3Path, $dbName, '.dump'];
             } else {
                 Log::error("Database export failed: Unsupported database driver '{$dbDriver}'.");
+
                 return back()->with('error', 'Database export failed: Unsupported database driver.');
             }
 
@@ -620,8 +624,8 @@ class SettingsController extends Controller
             $process = new Process($processCommand, null, $envVars);
             $process->run();
 
-            if (!$process->isSuccessful()) {
-                Log::error("Database export failed (mysqldump/pg_dump/sqlite3): " . $process->getErrorOutput());
+            if (! $process->isSuccessful()) {
+                Log::error('Database export failed (mysqldump/pg_dump/sqlite3): '.$process->getErrorOutput());
                 throw new ProcessFailedException($process);
             }
 
@@ -629,7 +633,7 @@ class SettingsController extends Controller
             Storage::disk('local')->put($fullStorageDiskPathWithFile, $process->getOutput());
 
             // Log success *after* file is written
-            Log::info("Database export process successful for user: " . Auth::id() . ". File: {$filename} stored at {$fullStorageDiskPathWithFile}");
+            Log::info('Database export process successful for user: '.Auth::id().". File: {$filename} stored at {$fullStorageDiskPathWithFile}");
 
             $headers = [
                 'Content-Type' => 'application/sql',
@@ -643,12 +647,14 @@ class SettingsController extends Controller
                 return response()->download($absolutePathToFile, $filename, $headers)->deleteFileAfterSend(true);
             } else {
                 Log::error("Database export failed: File not found for download at disk path {$fullStorageDiskPathWithFile} (absolute: {$absolutePathToFile})");
+
                 return back()->with('error', 'Database export failed: Backup file could not be created or found for download.');
             }
 
         } catch (\Exception $e) {
-            Log::error("Database export failed for user: " . Auth::id() . ". Error: " . $e->getMessage());
-            return back()->with('error', 'Database export failed. Please check the logs. Error: ' . $e->getMessage());
+            Log::error('Database export failed for user: '.Auth::id().'. Error: '.$e->getMessage());
+
+            return back()->with('error', 'Database export failed. Please check the logs. Error: '.$e->getMessage());
         }
     }
 
@@ -666,16 +672,17 @@ class SettingsController extends Controller
                     ->subject('Test Email');
             });
 
-            return response()->json(['message' => 'Test email sent successfully to ' . $recipientEmail]);
+            return response()->json(['message' => 'Test email sent successfully to '.$recipientEmail]);
         } catch (\Exception $e) {
-            Log::error('Test email failed: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to send test email. Please check your mail configuration and logs. Error: ' . $e->getMessage()], 500);
+            Log::error('Test email failed: '.$e->getMessage());
+
+            return response()->json(['message' => 'Failed to send test email. Please check your mail configuration and logs. Error: '.$e->getMessage()], 500);
         }
     }
 
     public function storeBadgeImage(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+        if (! Auth::check() || ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -684,7 +691,7 @@ class SettingsController extends Controller
             'badge_image_png' => 'nullable|file|mimes:png|max:2048',
         ]);
 
-        if (!$request->hasFile('badge_image_svg') && !$request->hasFile('badge_image_png')) {
+        if (! $request->hasFile('badge_image_svg') && ! $request->hasFile('badge_image_png')) {
             return back()
                 ->withErrors(['badge_image_svg' => 'Upload an SVG, a PNG, or both.'])
                 ->withInput();
@@ -716,15 +723,16 @@ class SettingsController extends Controller
 
             $this->saveSettings($settings);
 
-            Log::info('Badge image updated by user: ' . Auth::id(), [
+            Log::info('Badge image updated by user: '.Auth::id(), [
                 'badge_image_svg_url' => $settings['badge_image_svg_url'] ?? null,
                 'badge_image_png_url' => $settings['badge_image_png_url'] ?? null,
                 'badge_image_webp_url' => $settings['badge_image_webp_url'] ?? null,
             ]);
 
-            return back()->with('success', 'Badge asset upload saved for: ' . implode(' and ', $uploadedFormats) . '.');
+            return back()->with('success', 'Badge asset upload saved for: '.implode(' and ', $uploadedFormats).'.');
         } catch (\Exception $e) {
-            Log::error('Failed to upload badge image: ' . $e->getMessage());
+            Log::error('Failed to upload badge image: '.$e->getMessage());
+
             return back()->with('error', 'Failed to upload badge image. Please check logs.');
         }
     }
@@ -735,7 +743,7 @@ class SettingsController extends Controller
             $embedCodes = [$embedCodes];
         }
 
-        if (!is_array($embedCodes)) {
+        if (! is_array($embedCodes)) {
             return [];
         }
 
@@ -748,7 +756,7 @@ class SettingsController extends Controller
 
     private function normalizeFooterBadgeEmbedDofollow(mixed $dofollowFlags, int $badgeCount): array
     {
-        if (!is_array($dofollowFlags)) {
+        if (! is_array($dofollowFlags)) {
             $dofollowFlags = [];
         }
 
@@ -760,7 +768,7 @@ class SettingsController extends Controller
 
     private function loadSettings(): array
     {
-        if (!Storage::disk('local')->exists('settings.json')) {
+        if (! Storage::disk('local')->exists('settings.json')) {
             return [];
         }
 
@@ -774,7 +782,7 @@ class SettingsController extends Controller
 
     private function generateBadgeWebpFromPng(string $pngPath): string
     {
-        $imageManager = new ImageManager(new GdDriver());
+        $imageManager = new ImageManager(new GdDriver);
         $webpPath = public_path('images/badge.webp');
 
         $image = $imageManager->read($pngPath);

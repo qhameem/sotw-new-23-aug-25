@@ -26,9 +26,11 @@ class AiProviderStatusService
     public function refreshSnapshots(): array
     {
         $snapshots = [
+            $this->probeOpenRouter(),
+            $this->probeCompatibleProvider('cerebras', 'Cerebras'),
+            $this->probeCompatibleProvider('cloudflare', 'Cloudflare Workers AI'),
             $this->probeGroq(),
             $this->probeGemini(),
-            $this->probeOpenRouter(),
         ];
 
         Cache::put(self::CACHE_KEY, $snapshots, now()->addMinutes(self::CACHE_TTL_MINUTES));
@@ -44,6 +46,23 @@ class AiProviderStatusService
     private function defaultSnapshots(): array
     {
         return [
+            $this->baseSnapshot(
+                provider: 'cerebras',
+                label: 'Cerebras',
+                configured: filled((string) config('services.cerebras.key')),
+                model: (string) config('services.cerebras.model', 'gpt-oss-120b'),
+                docsUrl: 'https://inference-docs.cerebras.ai/support/rate-limits',
+                dashboardUrl: 'https://cloud.cerebras.ai/'
+            ),
+            $this->baseSnapshot(
+                provider: 'cloudflare',
+                label: 'Cloudflare Workers AI',
+                configured: filled((string) config('services.cloudflare_ai.api_token'))
+                    && filled((string) config('services.cloudflare_ai.account_id')),
+                model: (string) config('services.cloudflare_ai.model', '@cf/qwen/qwen3-30b-a3b-fp8'),
+                docsUrl: 'https://developers.cloudflare.com/workers-ai/platform/pricing/',
+                dashboardUrl: 'https://dash.cloudflare.com/'
+            ),
             $this->baseSnapshot(
                 provider: 'groq',
                 label: 'Groq',
@@ -109,7 +128,7 @@ class AiProviderStatusService
             'usage_weekly' => null,
             'usage_monthly' => null,
             'daily_reset_at' => $provider === 'gemini' ? $this->nextGeminiDailyResetAt()?->toIso8601String() : null,
-            'exact_usage_available' => in_array($provider, ['groq', 'openrouter'], true),
+            'exact_usage_available' => in_array($provider, ['groq', 'openrouter', 'cerebras'], true),
             'notes' => match ($provider) {
                 'groq' => ['Groq exposes live rate-limit headers on API responses.'],
                 'openrouter' => [
@@ -118,6 +137,8 @@ class AiProviderStatusService
                     'Free-model daily cap: 50 requests/day before you have purchased $10 in credits, then 1000 requests/day after that threshold.',
                     'OpenRouter does not expose a single token quota remaining value on /api/v1/key; the card shows credit and usage data instead.',
                 ],
+                'cerebras' => ['Cerebras exposes request and token rate-limit headers on inference responses.'],
+                'cloudflare' => ['Cloudflare Workers AI includes 10,000 neurons per day; exact usage is available in the Cloudflare dashboard.'],
                 default => ['Gemini does not expose exact live remaining quota in this API response; use AI Studio for exact counters.'],
             },
         ];
@@ -350,6 +371,72 @@ class AiProviderStatusService
         }
     }
 
+    private function probeCompatibleProvider(string $provider, string $label): array
+    {
+        $apiKey = app(AiProviderRoutingService::class)->apiKeyFor($provider);
+        $configured = filled($apiKey);
+        $snapshot = $this->baseSnapshot(
+            provider: $provider,
+            label: $label,
+            configured: $configured,
+            model: (string) app(AiProviderRoutingService::class)->modelFor($provider),
+            docsUrl: $provider === 'cerebras'
+                ? 'https://inference-docs.cerebras.ai/support/rate-limits'
+                : 'https://developers.cloudflare.com/workers-ai/platform/pricing/',
+            dashboardUrl: $provider === 'cerebras' ? 'https://cloud.cerebras.ai/' : 'https://dash.cloudflare.com/'
+        );
+
+        if (! $configured) {
+            return $snapshot;
+        }
+
+        $checkedAt = now();
+
+        try {
+            $response = app(OpenAiCompatibleProviderService::class)->request(
+                $provider,
+                (string) $apiKey,
+                'Reply with OK.',
+                0,
+                8,
+                20
+            );
+            $snapshot['checked_at'] = $checkedAt->toIso8601String();
+            $snapshot['request_limit'] = $this->normalizeNumericHeader(
+                $response->header('x-ratelimit-limit-requests-day')
+                    ?: $response->header('x-ratelimit-limit-requests')
+            );
+            $snapshot['request_remaining'] = $this->normalizeNumericHeader(
+                $response->header('x-ratelimit-remaining-requests-day')
+                    ?: $response->header('x-ratelimit-remaining-requests')
+            );
+            $snapshot['token_limit'] = $this->normalizeNumericHeader($response->header('x-ratelimit-limit-tokens-minute'));
+            $snapshot['token_remaining'] = $this->normalizeNumericHeader($response->header('x-ratelimit-remaining-tokens-minute'));
+
+            if ($response->successful()) {
+                $snapshot['state'] = 'ok';
+                $snapshot['status_label'] = 'Available now';
+                $snapshot['message'] = 'Live inference probe succeeded.';
+
+                return $snapshot;
+            }
+
+            $snapshot['state'] = in_array($response->status(), [402, 429], true) ? 'limited' : 'error';
+            $snapshot['status_label'] = $snapshot['state'] === 'limited' ? 'Rate limited or quota exhausted' : 'Request failed';
+            $snapshot['message'] = $this->extractMessageFromBody($response->body())
+                ?: $label.' returned HTTP '.$response->status().'.';
+
+            return $snapshot;
+        } catch (\Throwable $e) {
+            $snapshot['checked_at'] = $checkedAt->toIso8601String();
+            $snapshot['state'] = 'error';
+            $snapshot['status_label'] = 'Request failed';
+            $snapshot['message'] = Str::limit($e->getMessage(), 180, '...');
+
+            return $snapshot;
+        }
+    }
+
     private function normalizeNumericHeader(string|array|null $value): ?int
     {
         if (is_array($value)) {
@@ -441,10 +528,13 @@ class AiProviderStatusService
     private function extractMessageFromBody(string $body): ?string
     {
         $decoded = json_decode($body, true);
-        $message = data_get($decoded, 'error.message');
 
-        if (is_string($message) && trim($message) !== '') {
-            return trim($message);
+        foreach (['error.message', 'errors.0.message', 'message'] as $path) {
+            $message = data_get($decoded, $path);
+
+            if (is_string($message) && trim($message) !== '') {
+                return trim($message);
+            }
         }
 
         return null;

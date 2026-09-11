@@ -20,7 +20,7 @@ class TaglineRewriterService
         $this->failures = [];
         $providerRouter = app(AiProviderRoutingService::class);
 
-        $providers = $providerRouter->orderedConfiguredProviders(['openrouter', 'groq', 'gemini']);
+        $providers = $providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']);
 
         if ($providers === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');
@@ -104,6 +104,11 @@ PROMPT;
                     $content = match ($candidate['provider']) {
                         'groq' => $this->generateWithGroq($candidate['key'], $attemptPrompt),
                         'openrouter' => $this->generateWithOpenRouter($candidate['key'], $attemptPrompt),
+                        'cerebras', 'cloudflare' => $this->generateWithCompatibleProvider(
+                            $candidate['provider'],
+                            $candidate['key'],
+                            $attemptPrompt
+                        ),
                         default => $this->generateWithGemini($candidate['key'], $attemptPrompt),
                     };
 
@@ -266,6 +271,34 @@ PROMPT;
         ]);
         app(AiProviderRoutingService::class)->recordHttpFailure('openrouter', $response);
         $this->recordFailure('openrouter', $response->status(), $response->body());
+
+        return null;
+    }
+
+    private function generateWithCompatibleProvider(string $provider, string $apiKey, string $prompt): ?string
+    {
+        $response = app(OpenAiCompatibleProviderService::class)->request(
+            $provider,
+            $apiKey,
+            $prompt,
+            0.4,
+            $this->maxOutputTokens()
+        );
+
+        if ($response->successful()) {
+            app(AiProviderRoutingService::class)->recordHttpSuccess($provider, $response);
+            $content = $response->json('choices.0.message.content');
+
+            return is_string($content) ? $content : null;
+        }
+
+        Log::warning('TaglineRewriterService: Compatible provider API error', [
+            'provider' => $provider,
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+        app(AiProviderRoutingService::class)->recordHttpFailure($provider, $response);
+        $this->recordFailure($provider, $response->status(), $response->body());
 
         return null;
     }
