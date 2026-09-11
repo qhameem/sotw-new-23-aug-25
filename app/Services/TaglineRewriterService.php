@@ -81,6 +81,8 @@ PROMPT;
             $sourceHeadings = $this->extractSourceHeadings($context);
 
             try {
+                $providerProducedContent = false;
+
                 for ($attempt = 0; $attempt < 2; $attempt++) {
                     $attemptPrompt = $attempt === 0
                         ? $prompt
@@ -94,6 +96,8 @@ PROMPT;
                     if (! is_string($content) || trim($content) === '') {
                         break;
                     }
+
+                    $providerProducedContent = true;
 
                     $decoded = $this->decodeJsonResponse($content);
                     $normalized = is_array($decoded)
@@ -109,6 +113,14 @@ PROMPT;
 
                         return $normalized;
                     }
+                }
+
+                if ($providerProducedContent) {
+                    $this->recordFailure(
+                        $candidate['provider'],
+                        null,
+                        'The provider returned no usable original tagline candidates.'
+                    );
                 }
             } catch (\Throwable $e) {
                 Log::warning('TaglineRewriterService: Provider exception', [
@@ -263,7 +275,8 @@ PROMPT;
     private function compactSourceText(string $text, int $maxCharacters): string
     {
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
+        $text = preg_replace('/[^\S\r\n]+/u', ' ', trim($text)) ?? '';
+        $text = preg_replace('/\R+/u', "\n", $text) ?? $text;
 
         return mb_substr($text, 0, $maxCharacters);
     }

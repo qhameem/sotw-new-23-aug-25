@@ -130,6 +130,37 @@ test('retries once when every candidate copies a source heading', function () {
     ));
 });
 
+test('records unusable ai candidates before falling back', function () {
+    config([
+        'services.google.api_key' => null,
+        'services.openrouter.key' => null,
+    ]);
+    Http::fakeSequence()
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["A launch day you can actually watch."]}'],
+            ]],
+        ])
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["A launch day you can actually watch."]}'],
+            ]],
+        ]);
+
+    $service = app(TaglineRewriterService::class);
+    $result = $service->rewrite(
+        'Piqo Analytics',
+        'Privacy-first website analytics',
+        "Title: Piqo Analytics\nH3: A launch day you can actually watch."
+    );
+
+    expect($result)->toBeNull()
+        ->and($service->getFailures())->toHaveCount(1)
+        ->and($service->getFailures()[0]['provider'])->toBe('groq')
+        ->and($service->getFailures()[0]['body'])->toContain('no usable original tagline');
+    Http::assertSentCount(2);
+});
+
 test('tagline generation fails over to the next provider', function () {
     Http::fake([
         'api.groq.com/*' => Http::response(['error' => ['message' => 'Bad request']], 400),

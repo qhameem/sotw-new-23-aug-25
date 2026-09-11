@@ -3474,6 +3474,12 @@ class ProductController extends Controller
             $score += 30;
         }
 
+        if (preg_match('/\b(analytics|software|platform|tool|app|service|dashboard|automation|assistant|editor|builder|tracker|management|marketplace|database|api|crm|cms)\b/i', $candidate)) {
+            $score += 45;
+        } else {
+            $score -= 40;
+        }
+
         if (preg_match('/[.!?]$/', $candidate)) {
             $score += 5;
         }
