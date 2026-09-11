@@ -10,9 +10,9 @@ beforeEach(function () {
     config([
         'services.groq.key' => 'groq-key',
         'services.groq.model' => 'groq-test',
-        'services.google.api_key' => 'gemini-key',
+        'services.google.api_key' => null,
         'services.google.gemini_timeout' => 30,
-        'services.openrouter.key' => 'openrouter-key',
+        'services.openrouter.key' => null,
         'services.openrouter.timeout' => 45,
         'services.ai_tagline.timeout' => 15,
         'services.ai_tagline.max_description_characters' => 1000,
@@ -188,6 +188,7 @@ test('records unusable ai candidates before falling back', function () {
 });
 
 test('tagline generation fails over to the next provider', function () {
+    config(['services.google.api_key' => 'gemini-key']);
     Http::fake([
         'api.groq.com/*' => Http::response(['error' => ['message' => 'Bad request']], 400),
         'generativelanguage.googleapis.com/*' => Http::response([
@@ -213,6 +214,7 @@ test('tagline generation fails over to the next provider', function () {
 test('gemini disables thinking so the output budget is available for tagline json', function () {
     config([
         'services.groq.key' => null,
+        'services.google.api_key' => 'gemini-key',
         'services.openrouter.key' => null,
     ]);
     Http::fake([
@@ -241,6 +243,10 @@ test('gemini disables thinking so the output budget is available for tagline jso
 });
 
 test('tagline generation tries every configured provider before fallback', function () {
+    config([
+        'services.google.api_key' => 'gemini-key',
+        'services.openrouter.key' => 'openrouter-key',
+    ]);
     Http::fake(['*' => Http::response(['error' => ['message' => 'Unavailable']], 503)]);
 
     $result = app(TaglineRewriterService::class)->rewrite('Ledgerly', 'Finance reporting', 'Context');
@@ -253,6 +259,7 @@ test('openrouter uses its provider timeout for tagline generation', function () 
     config([
         'services.groq.key' => null,
         'services.google.api_key' => null,
+        'services.openrouter.key' => 'openrouter-key',
         'services.ai_tagline.timeout' => 15,
         'services.openrouter.timeout' => 45,
     ]);
@@ -272,4 +279,24 @@ test('openrouter uses its provider timeout for tagline generation', function () 
         ->and($timeout->invoke($service, 'openrouter'))->toBe(45);
     Http::assertSent(fn (Request $request): bool => $request->toPsrRequest()->getUri()->getHost() === 'openrouter.ai'
         && $request['model'] === 'openrouter/free');
+});
+
+test('openrouter is preferred when every provider is available', function () {
+    config([
+        'services.google.api_key' => 'gemini-key',
+        'services.openrouter.key' => 'openrouter-key',
+    ]);
+    Http::fake([
+        'openrouter.ai/*' => Http::response([
+            'choices' => [[
+                'message' => ['content' => '{"tagline":"Automate recurring finance reports"}'],
+            ]],
+        ]),
+    ]);
+
+    $result = app(TaglineRewriterService::class)->rewrite('Ledgerly', 'Finance reporting', 'Context');
+
+    expect($result['tagline'])->toBe('Automate recurring finance reports');
+    Http::assertSentCount(1);
+    Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'openrouter.ai'));
 });

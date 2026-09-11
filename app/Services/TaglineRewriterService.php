@@ -20,9 +20,7 @@ class TaglineRewriterService
         $this->failures = [];
         $providerRouter = app(AiProviderRoutingService::class);
 
-        $providers = $this->orderedProvidersForTaglines(
-            $providerRouter->orderedConfiguredProviders(['groq', 'gemini', 'openrouter'])
-        );
+        $providers = $providerRouter->orderedConfiguredProviders(['openrouter', 'groq', 'gemini']);
 
         if ($providers === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');
@@ -279,16 +277,6 @@ PROMPT;
             'status' => $status,
             'body' => $body,
         ];
-    }
-
-    private function orderedProvidersForTaglines(array $providers): array
-    {
-        $priority = array_flip(['groq', 'gemini', 'openrouter']);
-
-        usort($providers, static fn (array $left, array $right): int => ($priority[$left['provider']] ?? PHP_INT_MAX) <=> ($priority[$right['provider']] ?? PHP_INT_MAX)
-        );
-
-        return $providers;
     }
 
     private function compactSourceText(string $text, int $maxCharacters): string
