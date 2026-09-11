@@ -67,6 +67,7 @@ test('taglines use one groq request with compact context and limited output', fu
 
         return str_contains($request->url(), 'api.groq.com')
             && $payload['max_tokens'] === 120
+            && ! isset($payload['response_format'])
             && str_contains($prompt, 'Write three distinct, clear, factual tagline candidates')
             && ! str_contains($prompt, 'product_page_tagline')
             && mb_strlen($prompt) < 3000;

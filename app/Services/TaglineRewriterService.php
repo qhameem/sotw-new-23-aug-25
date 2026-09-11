@@ -183,7 +183,6 @@ PROMPT;
                 ],
                 'temperature' => 0.4,
                 'max_tokens' => $this->maxOutputTokens(),
-                'response_format' => ['type' => 'json_object'],
             ]);
 
         if ($response->successful()) {
