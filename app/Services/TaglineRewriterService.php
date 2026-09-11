@@ -135,7 +135,7 @@ PROMPT;
         $response = Http::withHeaders([
             'X-goog-api-key' => $apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout($this->timeout())->post($baseUrl.'/models/'.$model.':generateContent', [
+        ])->timeout($this->timeout('gemini'))->post($baseUrl.'/models/'.$model.':generateContent', [
             'contents' => [
                 [
                     'parts' => [
@@ -171,7 +171,7 @@ PROMPT;
     {
         $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
 
-        $response = Http::timeout($this->timeout())
+        $response = Http::timeout($this->timeout('groq'))
             ->withToken($apiKey)
             ->post($baseUrl.'/chat/completions', [
                 'model' => (string) config('services.groq.model', 'openai/gpt-oss-120b'),
@@ -206,7 +206,7 @@ PROMPT;
     {
         $baseUrl = rtrim((string) config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
 
-        $response = Http::timeout($this->timeout())
+        $response = Http::timeout($this->timeout('openrouter'))
             ->withHeaders([
                 'Authorization' => 'Bearer '.$apiKey,
                 'HTTP-Referer' => config('app.url'),
@@ -268,9 +268,15 @@ PROMPT;
         return mb_substr($text, 0, $maxCharacters);
     }
 
-    private function timeout(): int
+    private function timeout(string $provider): int
     {
-        return max(1, (int) config('services.ai_tagline.timeout', 15));
+        $fallback = max(1, (int) config('services.ai_tagline.timeout', 15));
+
+        return match ($provider) {
+            'openrouter' => max($fallback, (int) config('services.openrouter.timeout', 45)),
+            'gemini' => max($fallback, (int) config('services.google.gemini_timeout', 30)),
+            default => $fallback,
+        };
     }
 
     private function maxOutputTokens(): int
