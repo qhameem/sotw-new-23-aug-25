@@ -39,7 +39,7 @@ class CategoryClassifier
             $providerRouter = app(AiProviderRoutingService::class);
             $responseText = null;
 
-            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']) as $candidate) {
+            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) as $candidate) {
                 $responseText = match ($candidate['provider']) {
                     'groq' => $this->classifyWithGroq($candidate['key'], $prompt),
                     'openrouter' => $this->classifyWithOpenRouter($candidate['key'], $prompt),

@@ -38,7 +38,7 @@ class DescriptionRewriterService
         $adminInstruction = app(ProductDescriptionTemplates::class)->activeInstruction();
         $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction);
 
-        if ($providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']) === []) {
+        if ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             $this->usedFallback = true;
@@ -47,7 +47,7 @@ class DescriptionRewriterService
         }
 
         try {
-            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']) as $candidate) {
+            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) as $candidate) {
                 $response = match ($candidate['provider']) {
                     'groq' => $this->generateWithGroq($candidate['key'], $prompt),
                     'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),

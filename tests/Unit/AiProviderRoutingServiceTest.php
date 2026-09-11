@@ -4,12 +4,11 @@ use App\Services\AiProviderRoutingService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-test('providers follow the configured reliability order', function () {
+test('production providers follow the configured reliability order', function () {
     config([
         'services.google.api_key' => 'test-gemini-key',
         'services.groq.key' => 'test-groq-key',
         'services.openrouter.key' => 'test-openrouter-key',
-        'services.cerebras.key' => 'test-cerebras-key',
         'services.cloudflare_ai.api_token' => 'test-cloudflare-token',
         'services.cloudflare_ai.account_id' => 'test-account-id',
     ]);
@@ -17,11 +16,10 @@ test('providers follow the configured reliability order', function () {
     Cache::clear();
 
     $providers = app(AiProviderRoutingService::class)
-        ->orderedConfiguredProviders(['groq', 'gemini', 'cloudflare', 'cerebras', 'openrouter']);
+        ->orderedConfiguredProviders(['groq', 'gemini', 'cloudflare', 'openrouter']);
 
     expect(array_column($providers, 'provider'))->toBe([
         'openrouter',
-        'cerebras',
         'cloudflare',
         'groq',
         'gemini',
