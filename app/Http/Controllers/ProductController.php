@@ -3512,6 +3512,10 @@ class ProductController extends Controller
             return true;
         }
 
+        if (preg_match('/\b(?:list|submit|add) your (?:product|startup|tool)\b|\band earn\b/i', $candidate)) {
+            return true;
+        }
+
         return in_array($normalized, [
             'platform',
             'agile',
