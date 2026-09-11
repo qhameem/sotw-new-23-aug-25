@@ -79,6 +79,22 @@ PROMPT;
             }
 
             $sourceHeadings = $this->extractSourceHeadings($context);
+            $forbiddenHeadings = implode("\n- ", array_slice($sourceHeadings, 0, 12));
+            $originalityRetryPrompt = <<<PROMPT
+Write three original, factual tagline candidates for "{$productName}" using the source description below.
+
+Source description: {$rawDescription}
+
+Do not copy or lightly paraphrase any of these website headings:
+- {$forbiddenHeadings}
+
+Rules:
+- State the product category and primary function.
+- Preserve verified product terminology, but use a new sentence structure.
+- Do not invent claims or use hype.
+- Aim for 35-85 characters. Hard maximum: 140 characters.
+- Return JSON only: {"candidates":["...","...","..."]}
+PROMPT;
 
             try {
                 $providerProducedContent = false;
@@ -86,7 +102,7 @@ PROMPT;
                 for ($attempt = 0; $attempt < 2; $attempt++) {
                     $attemptPrompt = $attempt === 0
                         ? $prompt
-                        : $prompt."\n\nPrevious candidates were too similar to the source headings. Rewrite them with different wording and emphasize a verified differentiating feature.";
+                        : $originalityRetryPrompt;
                     $content = match ($candidate['provider']) {
                         'groq' => $this->generateWithGroq($candidate['key'], $attemptPrompt),
                         'openrouter' => $this->generateWithOpenRouter($candidate['key'], $attemptPrompt),

@@ -124,10 +124,36 @@ test('retries once when every candidate copies a source heading', function () {
 
     expect($result['tagline'])->toBe('Voice-following teleprompter for smoother video recording');
     Http::assertSentCount(2);
-    Http::assertSent(fn (Request $request): bool => str_contains(
-        $request->data()['messages'][0]['content'],
-        'Previous candidates were too similar'
-    ));
+    Http::assertSent(fn (Request $request): bool => str_contains($request->data()['messages'][0]['content'], 'Do not copy or lightly paraphrase')
+        && str_contains($request->data()['messages'][0]['content'], 'A Teleprompter app that helps you shoot faster')
+        && ! str_contains($request->data()['messages'][0]['content'], 'Website context:'));
+});
+
+test('originality retry generates a product-level tagline after copied feature headings', function () {
+    config([
+        'services.google.api_key' => null,
+        'services.openrouter.key' => null,
+    ]);
+    Http::fakeSequence()
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["A launch day you can actually watch."]}'],
+            ]],
+        ])
+        ->push([
+            'choices' => [[
+                'message' => ['content' => '{"candidates":["Privacy-first analytics connecting traffic, signups, and revenue"]}'],
+            ]],
+        ]);
+
+    $result = app(TaglineRewriterService::class)->rewrite(
+        'Piqo Analytics',
+        'Privacy-first analytics that connects visits to signups and revenue',
+        "Title: Piqo Analytics — Grow your traffic, search, and revenue\nH3: A launch day you can actually watch."
+    );
+
+    expect($result['tagline'])->toBe('Privacy-first analytics connecting traffic, signups, and revenue');
+    Http::assertSentCount(2);
 });
 
 test('records unusable ai candidates before falling back', function () {
