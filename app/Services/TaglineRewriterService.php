@@ -175,6 +175,9 @@ PROMPT;
                 'temperature' => 0.3,
                 'maxOutputTokens' => $this->maxOutputTokens(),
                 'responseMimeType' => 'application/json',
+                'thinkingConfig' => [
+                    'thinkingBudget' => 0,
+                ],
             ],
         ]);
 

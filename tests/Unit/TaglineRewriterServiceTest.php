@@ -210,6 +210,36 @@ test('tagline generation fails over to the next provider', function () {
     Http::assertSentCount(2);
 });
 
+test('gemini disables thinking so the output budget is available for tagline json', function () {
+    config([
+        'services.groq.key' => null,
+        'services.openrouter.key' => null,
+    ]);
+    Http::fake([
+        'generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [[
+                'content' => [
+                    'parts' => [[
+                        'text' => '{"tagline":"Automated image and video generation API"}',
+                    ]],
+                ],
+            ]],
+        ]),
+    ]);
+
+    $result = app(TaglineRewriterService::class)->rewrite(
+        'Bannerbear',
+        'API for automated image and video generation',
+        'Title: Bannerbear'
+    );
+
+    expect($result['tagline'])->toBe('Automated image and video generation API');
+    Http::assertSent(fn (Request $request): bool => data_get(
+        $request->data(),
+        'generationConfig.thinkingConfig.thinkingBudget'
+    ) === 0);
+});
+
 test('tagline generation tries every configured provider before fallback', function () {
     Http::fake(['*' => Http::response(['error' => ['message' => 'Unavailable']], 503)]);
 
