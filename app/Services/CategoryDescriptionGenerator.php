@@ -14,7 +14,7 @@ class CategoryDescriptionGenerator
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const MODEL = 'llama-3.3-70b-versatile';
+    private const MODEL = 'openai/gpt-oss-120b';
     private const TEMPERATURE = 0.75;
     private const MAX_ATTEMPTS = 3;
 

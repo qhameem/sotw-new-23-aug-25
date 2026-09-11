@@ -176,7 +176,7 @@ PROMPT;
         $response = Http::timeout(self::TIMEOUT)
             ->withToken($apiKey)
             ->post($baseUrl.'/chat/completions', [
-                'model' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
+                'model' => (string) config('services.groq.model', 'openai/gpt-oss-120b'),
                 'messages' => [
                     [
                         'role' => 'user',

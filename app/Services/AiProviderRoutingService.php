@@ -123,7 +123,7 @@ class AiProviderRoutingService
     public function modelFor(string $provider): ?string
     {
         return match ($provider) {
-            'groq' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
+            'groq' => (string) config('services.groq.model', 'openai/gpt-oss-120b'),
             'gemini' => (string) config('services.google.gemini_model', 'gemini-2.5-flash'),
             'openrouter' => (string) config('services.openrouter.model', 'openrouter/free'),
             default => null,

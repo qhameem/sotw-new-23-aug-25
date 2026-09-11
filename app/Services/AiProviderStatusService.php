@@ -48,7 +48,7 @@ class AiProviderStatusService
                 provider: 'groq',
                 label: 'Groq',
                 configured: filled((string) config('services.groq.key')),
-                model: (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
+                model: (string) config('services.groq.model', 'openai/gpt-oss-120b'),
                 docsUrl: 'https://console.groq.com/docs/rate-limits',
                 dashboardUrl: 'https://console.groq.com/settings/limits'
             ),
@@ -126,7 +126,7 @@ class AiProviderStatusService
     private function probeGroq(): array
     {
         $apiKey = (string) config('services.groq.key');
-        $model = (string) config('services.groq.model', 'llama-3.3-70b-versatile');
+        $model = (string) config('services.groq.model', 'openai/gpt-oss-120b');
         $baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
         $snapshot = $this->baseSnapshot(
             provider: 'groq',

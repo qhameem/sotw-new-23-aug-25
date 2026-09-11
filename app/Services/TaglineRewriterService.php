@@ -65,8 +65,7 @@ Rules:
 }
 PROMPT;
 
-        try {
-            $candidate = $providers[0];
+        foreach ($providers as $candidate) {
             $cacheKey = 'ai_tagline:v4:'.hash('sha256', implode('|', [
                 $candidate['provider'],
                 $productName,
@@ -81,39 +80,43 @@ PROMPT;
 
             $sourceHeadings = $this->extractSourceHeadings($context);
 
-            for ($attempt = 0; $attempt < 2; $attempt++) {
-                $attemptPrompt = $attempt === 0
-                    ? $prompt
-                    : $prompt."\n\nPrevious candidates were too similar to the source headings. Rewrite them with different wording and emphasize a verified differentiating feature.";
-                $content = match ($candidate['provider']) {
-                    'groq' => $this->generateWithGroq($candidate['key'], $attemptPrompt),
-                    'openrouter' => $this->generateWithOpenRouter($candidate['key'], $attemptPrompt),
-                    default => $this->generateWithGemini($candidate['key'], $attemptPrompt),
-                };
+            try {
+                for ($attempt = 0; $attempt < 2; $attempt++) {
+                    $attemptPrompt = $attempt === 0
+                        ? $prompt
+                        : $prompt."\n\nPrevious candidates were too similar to the source headings. Rewrite them with different wording and emphasize a verified differentiating feature.";
+                    $content = match ($candidate['provider']) {
+                        'groq' => $this->generateWithGroq($candidate['key'], $attemptPrompt),
+                        'openrouter' => $this->generateWithOpenRouter($candidate['key'], $attemptPrompt),
+                        default => $this->generateWithGemini($candidate['key'], $attemptPrompt),
+                    };
 
-                if (! is_string($content) || trim($content) === '') {
-                    break;
+                    if (! is_string($content) || trim($content) === '') {
+                        break;
+                    }
+
+                    $decoded = $this->decodeJsonResponse($content);
+                    $normalized = is_array($decoded)
+                        ? $this->normalizeGeneratedTagline($decoded, $sourceHeadings)
+                        : null;
+
+                    if ($normalized !== null) {
+                        Cache::put(
+                            $cacheKey,
+                            $normalized,
+                            now()->addMinutes(max(1, (int) config('services.ai_tagline.cache_minutes', 1440)))
+                        );
+
+                        return $normalized;
+                    }
                 }
-
-                $decoded = $this->decodeJsonResponse($content);
-                $normalized = is_array($decoded)
-                    ? $this->normalizeGeneratedTagline($decoded, $sourceHeadings)
-                    : null;
-
-                if ($normalized !== null) {
-                    Cache::put(
-                        $cacheKey,
-                        $normalized,
-                        now()->addMinutes(max(1, (int) config('services.ai_tagline.cache_minutes', 1440)))
-                    );
-
-                    return $normalized;
-                }
+            } catch (\Throwable $e) {
+                Log::warning('TaglineRewriterService: Provider exception', [
+                    'provider' => $candidate['provider'],
+                    'message' => $e->getMessage(),
+                ]);
+                $this->recordFailure($candidate['provider'], null, $e->getMessage());
             }
-        } catch (\Exception $e) {
-            Log::warning('TaglineRewriterService: Exception', ['message' => $e->getMessage()]);
-
-            return null;
         }
 
         return null;
@@ -171,7 +174,7 @@ PROMPT;
         $response = Http::timeout($this->timeout())
             ->withToken($apiKey)
             ->post($baseUrl.'/chat/completions', [
-                'model' => (string) config('services.groq.model', 'llama-3.3-70b-versatile'),
+                'model' => (string) config('services.groq.model', 'openai/gpt-oss-120b'),
                 'messages' => [
                     [
                         'role' => 'user',

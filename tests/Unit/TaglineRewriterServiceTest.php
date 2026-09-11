@@ -116,7 +116,7 @@ test('retries once when every candidate copies a source heading', function () {
     $result = app(TaglineRewriterService::class)->rewrite(
         'Scriptly',
         'A voice-following teleprompter with local storage',
-        "H1: A Teleprompter app that helps you shoot faster"
+        'H1: A Teleprompter app that helps you shoot faster'
     );
 
     expect($result['tagline'])->toBe('Voice-following teleprompter for smoother video recording');
@@ -127,11 +127,34 @@ test('retries once when every candidate copies a source heading', function () {
     ));
 });
 
-test('tagline generation does not retry another ai provider after failure', function () {
+test('tagline generation fails over to the next provider', function () {
+    Http::fake([
+        'api.groq.com/*' => Http::response(['error' => ['message' => 'Bad request']], 400),
+        'generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [[
+                'content' => [
+                    'parts' => [[
+                        'text' => '{"tagline":"Automate recurring finance reports"}',
+                    ]],
+                ],
+            ]],
+        ]),
+    ]);
+
+    $service = app(TaglineRewriterService::class);
+    $result = $service->rewrite('Ledgerly', 'Finance reporting', 'Context');
+
+    expect($result['tagline'])->toBe('Automate recurring finance reports')
+        ->and($service->getFailures())->toHaveCount(1)
+        ->and($service->getFailures()[0]['provider'])->toBe('groq');
+    Http::assertSentCount(2);
+});
+
+test('tagline generation tries every configured provider before fallback', function () {
     Http::fake(['*' => Http::response(['error' => ['message' => 'Unavailable']], 503)]);
 
     $result = app(TaglineRewriterService::class)->rewrite('Ledgerly', 'Finance reporting', 'Context');
 
     expect($result)->toBeNull();
-    Http::assertSentCount(1);
+    Http::assertSentCount(3);
 });
