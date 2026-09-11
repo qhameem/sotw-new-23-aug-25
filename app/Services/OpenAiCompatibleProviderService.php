@@ -39,7 +39,7 @@ class OpenAiCompatibleProviderService
 
             return [
                 'url' => $baseUrl.'/'.$accountId.'/ai/v1',
-                'model' => (string) config('services.cloudflare_ai.model', '@cf/qwen/qwen3-30b-a3b-fp8'),
+                'model' => (string) config('services.cloudflare_ai.model', '@cf/meta/llama-3.1-8b-instruct-fp8-fast'),
                 'timeout' => max(1, (int) config('services.cloudflare_ai.timeout', 45)),
             ];
         }

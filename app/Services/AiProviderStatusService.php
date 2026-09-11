@@ -59,7 +59,7 @@ class AiProviderStatusService
                 label: 'Cloudflare Workers AI',
                 configured: filled((string) config('services.cloudflare_ai.api_token'))
                     && filled((string) config('services.cloudflare_ai.account_id')),
-                model: (string) config('services.cloudflare_ai.model', '@cf/qwen/qwen3-30b-a3b-fp8'),
+                model: (string) config('services.cloudflare_ai.model', '@cf/meta/llama-3.1-8b-instruct-fp8-fast'),
                 docsUrl: 'https://developers.cloudflare.com/workers-ai/platform/pricing/',
                 dashboardUrl: 'https://dash.cloudflare.com/'
             ),

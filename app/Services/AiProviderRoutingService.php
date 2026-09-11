@@ -131,7 +131,7 @@ class AiProviderRoutingService
             'gemini' => (string) config('services.google.gemini_model', 'gemini-2.5-flash'),
             'openrouter' => (string) config('services.openrouter.model', 'openrouter/free'),
             'cerebras' => (string) config('services.cerebras.model', 'gpt-oss-120b'),
-            'cloudflare' => (string) config('services.cloudflare_ai.model', '@cf/qwen/qwen3-30b-a3b-fp8'),
+            'cloudflare' => (string) config('services.cloudflare_ai.model', '@cf/meta/llama-3.1-8b-instruct-fp8-fast'),
             default => null,
         };
     }

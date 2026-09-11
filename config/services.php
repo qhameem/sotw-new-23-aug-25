@@ -87,7 +87,7 @@ return [
     'cloudflare_ai' => [
         'api_token' => env('CLOUDFLARE_AI_API_TOKEN'),
         'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
-        'model' => env('CLOUDFLARE_AI_MODEL', '@cf/qwen/qwen3-30b-a3b-fp8'),
+        'model' => env('CLOUDFLARE_AI_MODEL', '@cf/meta/llama-3.1-8b-instruct-fp8-fast'),
         'base_url' => env('CLOUDFLARE_AI_BASE_URL', 'https://api.cloudflare.com/client/v4/accounts'),
         'timeout' => (int) env('CLOUDFLARE_AI_TIMEOUT', 45),
     ],
