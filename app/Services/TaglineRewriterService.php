@@ -20,7 +20,7 @@ class TaglineRewriterService
         $this->failures = [];
         $providerRouter = app(AiProviderRoutingService::class);
 
-        $providers = $providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']);
+        $providers = $providerRouter->orderedConfiguredProviders(['cloudflare', 'openrouter', 'groq', 'gemini'], preserveOrder: true);
 
         if ($providers === []) {
             Log::warning('TaglineRewriterService: No AI provider key is set.');

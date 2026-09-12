@@ -15,7 +15,7 @@ class AiProviderRoutingService
 
     private const FAILURE_TTL_HOURS = 12;
 
-    public function orderedConfiguredProviders(array $providers): array
+    public function orderedConfiguredProviders(array $providers, bool $preserveOrder = false): array
     {
         $candidates = [];
 
@@ -42,9 +42,11 @@ class AiProviderRoutingService
             ];
         }
 
-        usort($candidates, static function (array $left, array $right): int {
-            return $right['score'] <=> $left['score'];
-        });
+        if (! $preserveOrder) {
+            usort($candidates, static function (array $left, array $right): int {
+                return $right['score'] <=> $left['score'];
+            });
+        }
 
         return array_map(static function (array $candidate): array {
             unset($candidate['score']);

@@ -13,6 +13,8 @@ beforeEach(function () {
         'services.google.api_key' => null,
         'services.google.gemini_timeout' => 30,
         'services.openrouter.key' => null,
+        'services.cloudflare_ai.api_token' => null,
+        'services.cloudflare_ai.account_id' => null,
         'services.openrouter.timeout' => 45,
         'services.ai_tagline.timeout' => 15,
         'services.ai_tagline.max_description_characters' => 1000,
@@ -281,13 +283,15 @@ test('openrouter uses its provider timeout for tagline generation', function () 
         && $request['model'] === 'openrouter/free');
 });
 
-test('openrouter is preferred when every provider is available', function () {
+test('cloudflare is preferred when every provider is available', function () {
     config([
         'services.google.api_key' => 'gemini-key',
         'services.openrouter.key' => 'openrouter-key',
+        'services.cloudflare_ai.api_token' => 'cloudflare-token',
+        'services.cloudflare_ai.account_id' => 'test-account',
     ]);
     Http::fake([
-        'openrouter.ai/*' => Http::response([
+        'api.cloudflare.com/*' => Http::response([
             'choices' => [[
                 'message' => ['content' => '{"tagline":"Automate recurring finance reports"}'],
             ]],
@@ -298,5 +302,5 @@ test('openrouter is preferred when every provider is available', function () {
 
     expect($result['tagline'])->toBe('Automate recurring finance reports');
     Http::assertSentCount(1);
-    Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'openrouter.ai'));
+    Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'api.cloudflare.com'));
 });
