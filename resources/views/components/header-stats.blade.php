@@ -31,7 +31,7 @@
             <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/chatgpt.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">ChatGPT,</span>
             <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/claude.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Claude,</span>
             <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/perplexity.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Perplexity,</span>
-            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/gemini.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Gemini</span>
+            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/gemini.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">and Gemini</span>
         </div>
     </div>
 </div>
