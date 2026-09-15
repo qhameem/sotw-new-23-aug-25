@@ -27,6 +27,7 @@ use App\Http\Controllers\ProductCollectionItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductInlineUpdateController;
 use App\Http\Controllers\ProductInteractionController;
+use App\Http\Controllers\ProductOgImageController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\ProductSubmissionDraftController;
 use App\Http\Controllers\ProfileController;
@@ -59,6 +60,7 @@ Route::post('/fetch-videos', [VideoController::class, 'fetch'])->middleware('thr
 Route::get('/ads/{ad}/click', [AdInteractionController::class, 'click'])->name('ads.click');
 Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'])->name('ads.impression');
 Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
+Route::get('/product/{product:slug}/og-image.jpg', ProductOgImageController::class)->name('products.og-image');
 Route::get('/site.webmanifest', SiteManifestController::class)->name('site.manifest');
 Route::get('/{key}.txt', IndexNowKeyController::class)
     ->where('key', '[A-Za-z0-9\-]{8,128}')

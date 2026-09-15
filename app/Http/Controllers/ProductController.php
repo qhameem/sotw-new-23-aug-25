@@ -1961,6 +1961,11 @@ class ProductController extends Controller
         $title = $product->name;
         $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $metaDescription = $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $meta_og_image = $isUnpublishedProduct ? null : app(\App\Services\ProductOgImageService::class)->url($product);
+        $meta_og_image_type = 'image/jpeg';
+        $meta_og_image_width = \App\Services\ProductOgImageService::WIDTH;
+        $meta_og_image_height = \App\Services\ProductOgImageService::HEIGHT;
+        $meta_og_image_alt = $product->name.' product preview';
         $breadcrumbs = $this->buildProductBreadcrumbs($product, $primaryBreadcrumbCategory, request(), $isUnpublishedProduct);
         $weekNavigation = $isUnpublishedProduct
             ? null
@@ -2034,6 +2039,11 @@ class ProductController extends Controller
             'breadcrumbs',
             'primaryBreadcrumbCategory',
             'metaDescription',
+            'meta_og_image',
+            'meta_og_image_type',
+            'meta_og_image_width',
+            'meta_og_image_height',
+            'meta_og_image_alt',
             'bestForCategories',
             'useCaseCategories',
             'platformCategories',
