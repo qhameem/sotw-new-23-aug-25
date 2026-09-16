@@ -619,7 +619,7 @@
 @endsection
 
 @section('right_sidebar_content')
-    <div class="hidden md:block space-y-6 md:pt-16">
+    <div class="hidden md:block space-y-6 md:pt-6">
         @include('partials._sidebar-ads')
         @include('products.partials._featured-alternatives-sidebar', ['alternativeProducts' => $alternativeProducts])
         @include('products.partials._sidebar-info')
