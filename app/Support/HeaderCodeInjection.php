@@ -11,7 +11,8 @@ class HeaderCodeInjection
 
     public function forRequest(Request $request): string
     {
-        if ($request->routeIs('admin.*') || ! Storage::disk('local')->exists(self::SETTINGS_FILE)) {
+        if (! app(HeaderCodeVisibility::class)->shouldRender($request)
+            || ! Storage::disk('local')->exists(self::SETTINGS_FILE)) {
             return '';
         }
 

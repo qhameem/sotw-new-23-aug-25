@@ -4,7 +4,10 @@ namespace App\Observers;
 
 use App\Jobs\SubmitUrlNotifications;
 use App\Models\Product;
+use App\Services\CategoryNavigationService;
+use App\Services\ProductFilterNavigationService;
 use App\Services\UrlNotificationService;
+use Illuminate\Support\Facades\Cache;
 
 class ProductObserver
 {
@@ -32,6 +35,8 @@ class ProductObserver
 
     public function created(Product $product): void
     {
+        $this->clearListingCaches();
+
         if (! $this->notificationsEnabled()) {
             return;
         }
@@ -73,6 +78,8 @@ class ProductObserver
 
     public function updated(Product $product): void
     {
+        $this->clearListingCaches();
+
         if (! $this->notificationsEnabled()) {
             return;
         }
@@ -87,6 +94,8 @@ class ProductObserver
 
     public function deleted(Product $product): void
     {
+        $this->clearListingCaches();
+
         if (! $this->notificationsEnabled()) {
             return;
         }
@@ -131,6 +140,16 @@ class ProductObserver
     protected function notificationsEnabled(): bool
     {
         return app(UrlNotificationService::class)->isEnabled();
+    }
+
+    protected function clearListingCaches(): void
+    {
+        Cache::forget(ProductFilterNavigationService::CACHE_KEY);
+        Cache::forget(CategoryNavigationService::CACHE_KEY);
+        Cache::forget('homepage.categories:v1');
+
+        // Versioning avoids cache-store-specific wildcard deletion.
+        Cache::forever('homepage.latest_week_version', (string) hrtime(true));
     }
 
     protected function hasRelevantDirtyChanges(array $dirtyAttributes): bool

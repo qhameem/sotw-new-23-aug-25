@@ -40,6 +40,7 @@ use DOMXPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1620,7 +1621,7 @@ class ProductController extends Controller
             ->where('is_promoted', true)
             ->whereNotNull('promoted_position')
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->effectivePublishedBetween($startOfWeek, $endOfWeek)
             ->orderBy('promoted_position', 'asc')
             ->get()
             ->keyBy('promoted_position');
@@ -1636,10 +1637,7 @@ class ProductController extends Controller
             // Only redirect if there are no products at all (regular or promoted)
             $hasAnyProductsThisWeek = Product::where('approved', true)
                 ->where('is_published', true)
-                ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
-                    $startOfWeek->toDateString(),
-                    $endOfWeek->toDateString(),
-                ])
+                ->effectivePublishedBetween($startOfWeek, $endOfWeek)
                 ->exists();
 
             if (! $hasAnyProductsThisWeek) {
@@ -1711,7 +1709,11 @@ class ProductController extends Controller
 
         $regularProducts = $combinedProducts;
 
-        $categories = Category::all();
+        $categories = Cache::remember(
+            'homepage.categories:v1',
+            now()->addMinutes(10),
+            fn () => Category::query()->orderBy('name')->get()
+        );
         $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
@@ -2081,10 +2083,7 @@ class ProductController extends Controller
         $products = Product::query()
             ->select(['id', 'name', 'slug', 'logo', 'link', 'published_at', 'created_at'])
             ->approvedAndPublished()
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
-                $weekStart->toDateString(),
-                $weekEnd->toDateString(),
-            ])
+            ->effectivePublishedBetween($weekStart, $weekEnd)
             ->orderByRaw('COALESCE(published_at, created_at) DESC')
             ->orderByDesc('id')
             ->get();
@@ -2848,10 +2847,7 @@ class ProductController extends Controller
             ->where('is_promoted', true)
             ->whereNotNull('promoted_position')
             ->where('is_published', true)
-            ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
-                $start->toDateString(),
-                $end->toDateString(),
-            ])
+            ->effectivePublishedBetween($start, $end)
             ->orderBy('promoted_position', 'asc')
             ->get()
             ->keyBy('promoted_position');
@@ -2973,43 +2969,23 @@ class ProductController extends Controller
      */
     private function findLastAvailableWeekWithProducts(Carbon $startDate)
     {
-        $searchDate = $startDate->copy();
-        $initialWeek = $searchDate->weekOfYear;
-        $initialYear = $searchDate->year;
-        \Log::info("findLastAvailableWeekWithProducts: Starting search from week {$initialWeek} of year {$initialYear} (Date: {$searchDate->toDateString()})");
+        $upperBound = $startDate->copy()->endOfWeek(Carbon::SUNDAY);
+        $lowerBound = $startDate->copy()->subWeeks(51)->startOfWeek(Carbon::MONDAY);
+        $version = Cache::get('homepage.latest_week_version', '1');
+        $cacheKey = sprintf('homepage.latest_week:%s:%s', $upperBound->toDateString(), $version);
 
-        // Search backwards up to 52 weeks (1 year) to find a week with products
-        for ($i = 0; $i < 52; $i++) {
-            $startOfWeek = $searchDate->copy()->startOfWeek(Carbon::MONDAY);
-            $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
-            $currentWeek = $startOfWeek->weekOfYear;
-            $currentYear = $startOfWeek->year;
+        $latestTimestamp = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($lowerBound, $upperBound) {
+            return Product::query()
+                ->approvedAndPublished()
+                ->effectivePublishedBetween($lowerBound, $upperBound)
+                ->selectRaw('COALESCE(published_at, created_at) AS effective_published_at')
+                ->orderByDesc('effective_published_at')
+                ->value('effective_published_at');
+        });
 
-            \Log::info("findLastAvailableWeekWithProducts: Checking week {$currentWeek} of year {$currentYear} (Date range: {$startOfWeek->toDateString()} to {$endOfWeek->toDateString()})");
-
-            // Check if there are any products in this week (promoted or non-promoted)
-            $hasProducts = Product::where('approved', true)
-                ->where('is_published', true)
-                ->whereBetween(DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
-                    $startOfWeek->toDateString(),
-                    $endOfWeek->toDateString(),
-                ])
-                ->exists();
-
-            if ($hasProducts) {
-                \Log::info("findLastAvailableWeekWithProducts: Found products in week {$currentWeek} of year {$currentYear}");
-
-                return $startOfWeek;
-            }
-
-            // Move to the previous week
-            $searchDate = $searchDate->subWeek();
-        }
-
-        \Log::info('findLastAvailableWeekWithProducts: No weeks with products found after searching 52 weeks');
-
-        // If no week with products was found, return null
-        return null;
+        return $latestTimestamp
+            ? Carbon::parse($latestTimestamp)->startOfWeek(Carbon::MONDAY)
+            : null;
     }
 
     private function ensureWeekArchiveRequestIsInRange(Request $request, int $year, int $week): void

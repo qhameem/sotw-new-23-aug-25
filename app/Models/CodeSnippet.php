@@ -22,6 +22,10 @@ class CodeSnippet extends Model
 
     public function shouldRenderFor(Request $request): bool
     {
+        if ($this->location === 'head' && ! app(\App\Support\HeaderCodeVisibility::class)->shouldRender($request)) {
+            return false;
+        }
+
         if (! $this->matchesRequestRoute($request)) {
             return false;
         }

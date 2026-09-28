@@ -786,10 +786,21 @@ class Product extends Model implements Sitemapable
      */
     public function scopeByWeek(Builder $query, Carbon $startOfWeek, Carbon $endOfWeek): Builder
     {
-        return $query->whereBetween(DB::raw('COALESCE(published_at, created_at)'), [
-            $startOfWeek->toDateString(),
-            $endOfWeek->toDateString(),
-        ]);
+        return $query->effectivePublishedBetween($startOfWeek, $endOfWeek);
+    }
+
+    /**
+     * Filter by the public launch timestamp without wrapping indexed columns in SQL functions.
+     */
+    public function scopeEffectivePublishedBetween(Builder $query, Carbon $start, Carbon $end): Builder
+    {
+        return $query->where(function (Builder $dateQuery) use ($start, $end) {
+            $dateQuery->whereBetween('published_at', [$start, $end])
+                ->orWhere(function (Builder $fallbackQuery) use ($start, $end) {
+                    $fallbackQuery->whereNull('published_at')
+                        ->whereBetween('created_at', [$start, $end]);
+                });
+        });
     }
 
     /**

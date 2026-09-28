@@ -28,8 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
             'configured.tool' => \App\Http\Middleware\EnsureConfiguredToolSlug::class,
+            'measure.performance' => \App\Http\Middleware\MeasureResponsePerformance::class,
         ]);
-
 
         // Apply EnsureFrontendRequestsAreStateful specifically to the api group
         $middleware->api(append: [

@@ -5,9 +5,12 @@ namespace App\Services;
 use App\Models\Category;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryNavigationService
 {
+    public const CACHE_KEY = 'navigation.categories:v1';
+
     private const GROUPS = [
         'ai-automation' => [
             'label' => 'AI & Automation',
@@ -281,19 +284,21 @@ class CategoryNavigationService
 
         $today = Carbon::today();
 
-        return $this->categories = Category::query()
-            ->with('types')
-            ->withCount([
-                'products' => function ($query) use ($today) {
-                    $query->where('approved', true)
-                        ->where(function ($subQuery) use ($today) {
-                            $subQuery->whereNull('published_at')
-                                ->orWhereDate('published_at', '<=', $today);
-                        });
-                },
-            ])
-            ->orderBy('name')
-            ->get();
+        return $this->categories = Cache::remember(self::CACHE_KEY, now()->addMinutes(10), function () use ($today) {
+            return Category::query()
+                ->with('types')
+                ->withCount([
+                    'products' => function ($query) use ($today) {
+                        $query->where('approved', true)
+                            ->where(function ($subQuery) use ($today) {
+                                $subQuery->whereNull('published_at')
+                                    ->orWhereDate('published_at', '<=', $today);
+                            });
+                    },
+                ])
+                ->orderBy('name')
+                ->get();
+        });
     }
 
     private function buildSoftwareGroups(): Collection

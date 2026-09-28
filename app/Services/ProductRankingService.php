@@ -80,10 +80,7 @@ class ProductRankingService
             ->where('approved', true)
             ->where('is_promoted', false)
             ->where('is_published', true)
-            ->whereBetween(\DB::raw('COALESCE(DATE(published_at), DATE(created_at))'), [
-                $start->toDateString(),
-                $end->toDateString(),
-            ])
+            ->effectivePublishedBetween($start, $end)
             ->get();
 
         $launchProducts = $products
@@ -162,7 +159,7 @@ class ProductRankingService
 
     protected function cacheKey(Carbon $start, string $periodType): string
     {
-        return 'ranking:' . $periodType . ':' . $start->toDateString() . ':organic';
+        return 'ranking:'.$periodType.':'.$start->toDateString().':organic';
     }
 
     protected function weekStartsForPeriod(Carbon $start, Carbon $end): array

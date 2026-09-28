@@ -67,7 +67,7 @@ Route::get('/{key}.txt', IndexNowKeyController::class)
     ->name('indexnow.key');
 Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key.legacy');
 
-Route::get('/', [ProductController::class, 'home'])->name('home');
+Route::get('/', [ProductController::class, 'home'])->middleware('measure.performance')->name('home');
 Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
 Route::post('/newsletter', [NewsletterController::class, 'store'])
     ->middleware('throttle:5,1')
