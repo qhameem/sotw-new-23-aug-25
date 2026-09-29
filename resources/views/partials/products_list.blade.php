@@ -42,7 +42,7 @@
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
-            $isCategoryPage = request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page', 'pseo.builtWith');
+            $isCategoryPage = request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page', 'pseo.builtWith');
             $showMomentumMeta = $isHomePage || $isCategoryPage;
             $logoSize = $isHomePage ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
@@ -63,12 +63,12 @@
                 request()->routeIs('products.byDate') => 'date_list',
                 request()->routeIs('products.byMonth') => 'month_list',
                 request()->routeIs('products.byYear') => 'year_list',
-                request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page') => 'category_list',
+                request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page') => 'category_list',
                 request()->routeIs('pseo.builtWith') => 'built_with_list',
                 default => 'product_list',
             };
             $publishedGroup = null;
-            if (request()->routeIs('categories.show', 'categories.show.page', 'software-groups.show', 'software-groups.page')) {
+            if (request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page')) {
                 $publishedDate = ($product->published_at ?? $product->created_at)->copy();
                 $publishedGroup = match (true) {
                     $publishedDate->gte(now()->startOfWeek()) => 'Published this week',

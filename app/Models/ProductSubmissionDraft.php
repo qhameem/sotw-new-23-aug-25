@@ -18,11 +18,13 @@ class ProductSubmissionDraft extends Model
         'name',
         'link',
         'payload',
+        'regeneration_counts',
         'last_autosaved_at',
     ];
 
     protected $casts = [
         'payload' => 'array',
+        'regeneration_counts' => 'array',
         'last_autosaved_at' => 'datetime',
     ];
 
@@ -51,7 +53,7 @@ class ProductSubmissionDraft extends Model
     {
         // Keep large JSON/image payloads out of list queries and MySQL sort buffers.
         return $query->select([
-            'id', 'user_id', 'uuid', 'name', 'link', 'last_autosaved_at', 'updated_at',
+            'id', 'user_id', 'uuid', 'name', 'link', 'regeneration_counts', 'last_autosaved_at', 'updated_at',
         ]);
     }
 
@@ -78,6 +80,7 @@ class ProductSubmissionDraft extends Model
             'uuid' => $this->uuid,
             'title' => $this->title(),
             'link' => $this->link,
+            'regeneration_counts' => $this->regeneration_counts ?? [],
             'owner_name' => $this->relationLoaded('user') ? $this->user?->name : null,
             'owner_email' => $this->relationLoaded('user') ? $this->user?->email : null,
             'resume_url' => route('products.create', ['draft' => $this->uuid]),

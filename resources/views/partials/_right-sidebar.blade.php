@@ -2,14 +2,14 @@
     @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->routeIs('todolists.*'))
         <div x-show="!searchFocused">
-            @if(in_array(Route::currentRouteName(), ['home', 'products.byDate', 'products.byWeek', 'categories.show', 'categories.show.page', 'products.search']))
+            @if(request()->routeIs('home', 'products.byDate', 'products.byWeek', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search'))
                 @include('partials._sidebar-ads')
 
                 <x-top-categories />
 
                 @guest
                     <div class="p-4">
-                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show', 'categories.show.page')])
+                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*')])
                     </div>
                 @endguest
             @elseif(request()->is('articles*'))
@@ -123,7 +123,7 @@
         <ul class="space-y-2">
             <template x-for="category in results.categories" :key="category.id">
                 <li>
-                    <a :href="`/category/${category.slug}`" class="flex items-center p-2 rounded-lg hover:bg-gray-100">
+                    <a :href="category.url" class="flex items-center p-2 rounded-lg hover:bg-gray-100">
                         <span class="font-semibold text-gray-900" x-text="category.name"></span>
                     </a>
                 </li>

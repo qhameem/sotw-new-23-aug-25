@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Category;
 use App\Models\Product;
+use App\Models\Type;
 use App\Services\RelatedProductService;
 use Illuminate\Support\Facades\File;
 
@@ -179,4 +181,46 @@ it('preserves independently generated alternatives when rebuilding core sitemaps
     expect(File::get(public_path('sitemaps/alternatives.xml')))->toBe('<urlset>alternatives</urlset>');
     expect(File::get(public_path('sitemap.xml')))
         ->toContain(url('sitemaps/alternatives.xml'));
+});
+
+it('generates separate taxonomy sitemaps and excludes thin pages', function () {
+    $softwareType = Type::firstOrCreate(['name' => 'Software']);
+    $useCaseType = Type::firstOrCreate(['name' => 'Use Case']);
+    $bestForType = Type::firstOrCreate(['name' => 'Best for']);
+    $platformType = Type::firstOrCreate(['name' => 'Platform']);
+
+    $category = Category::factory()->create(['slug' => 'reporting']);
+    $useCase = Category::factory()->create(['slug' => 'report-generation']);
+    $thinBestFor = Category::factory()->create(['slug' => 'small-teams']);
+    $platform = Category::factory()->create(['slug' => 'linux']);
+
+    $category->types()->attach($softwareType);
+    $useCase->types()->attach($useCaseType);
+    $thinBestFor->types()->attach($bestForType);
+    $platform->types()->attach($platformType);
+
+    foreach ([[$category, 3], [$useCase, 3], [$thinBestFor, 2], [$platform, 3]] as [$taxonomy, $count]) {
+        Product::factory()->count($count)->create([
+            'approved' => true,
+            'is_published' => true,
+        ])->each(fn (Product $product) => $product->categories()->attach($taxonomy));
+    }
+
+    $this->artisan('sitemap:generate')->assertExitCode(0);
+
+    $index = File::get(public_path('sitemap.xml'));
+    expect($index)
+        ->toContain(url('sitemaps/categories.xml'))
+        ->toContain(url('sitemaps/use-cases.xml'))
+        ->toContain(url('sitemaps/best-for.xml'))
+        ->toContain(url('sitemaps/platforms.xml'));
+
+    expect(File::get(public_path('sitemaps/categories.xml')))
+        ->toContain(route('categories.show', $category->slug));
+    expect(File::get(public_path('sitemaps/use-cases.xml')))
+        ->toContain(route('use-cases.show', $useCase->slug));
+    expect(File::get(public_path('sitemaps/best-for.xml')))
+        ->not->toContain($thinBestFor->slug);
+    expect(File::get(public_path('sitemaps/platforms.xml')))
+        ->toContain(route('platforms.show', $platform->slug));
 });

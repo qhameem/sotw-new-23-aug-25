@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use App\Support\CategoryPageType;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
-use Carbon\Carbon;
 
 class Category extends Model implements Sitemapable
 {
     use HasFactory;
+
     protected $fillable = [
-        'name', 'slug', 'description', 'meta_description'
+        'name', 'slug', 'description', 'meta_description',
     ];
 
     public function products()
@@ -25,19 +27,29 @@ class Category extends Model implements Sitemapable
         return $this->belongsToMany(Type::class, 'category_types');
     }
 
-    public function toSitemapTag(): Url | string | array
+    public function toSitemapTag(): Url|string|array
     {
         // Ensure the category has a slug
-        if (!$this->slug) {
+        if (! $this->slug) {
             return []; // Return empty array if not sitemapable
         }
 
         // Using the 'categories.show' route as it's used for displaying products for a category.
-        $url = route('categories.show', $this->slug);
+        $url = $this->publicUrl();
 
         return Url::create($url)
             ->setLastModificationDate(Carbon::parse($this->updated_at))
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
             ->setPriority(0.7);
+    }
+
+    public function pageType(): string
+    {
+        return CategoryPageType::resolve($this);
+    }
+
+    public function publicUrl(array $parameters = []): string
+    {
+        return CategoryPageType::url($this, $parameters);
     }
 }

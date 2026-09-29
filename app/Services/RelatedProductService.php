@@ -43,7 +43,18 @@ class RelatedProductService
         $hasManualAlternatives = ! empty($product->alternative_product_ids ?? []);
         $topScore = (int) ($alternatives->max('match_score') ?? 0);
 
-        return $alternatives->count() < 3 || (! $hasManualAlternatives && $topScore < 55);
+        return $alternatives->count() < 2 || (! $hasManualAlternatives && $topScore < 55);
+    }
+
+    public function shouldNoindexComparison(Product $productA, Product $productB, ?array $match = null): bool
+    {
+        if ($this->isCuratedComparisonPair($productA, $productB)) {
+            return false;
+        }
+
+        $match ??= $this->scorePair($productA, $productB);
+
+        return ! $match['qualifiesComparison'] && ! $match['qualifiesAlternative'];
     }
 
     public function scorePair(Product $productA, Product $productB): array

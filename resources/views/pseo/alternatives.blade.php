@@ -280,7 +280,7 @@
                             $metaLinks = collect([
                                 $primaryCategory ? [
                                     'label' => $alt->primary_category_label,
-                                    'href' => route('categories.show', ['category' => $primaryCategory->slug]),
+                                    'href' => $primaryCategory->publicUrl(),
                                     'navigate' => true,
                                     'class' => 'text-xs hover:text-gray-800 hover:underline',
                                 ] : null,

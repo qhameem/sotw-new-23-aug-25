@@ -1,30 +1,54 @@
 <template>
   <div class="space-y-8 mt-4">
+    <aside v-if="reviewMode && (sourceScreenshot || sourceSnippet)" class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2" aria-label="Source used by AI">
+      <img v-if="sourceScreenshot" :src="sourceScreenshot" alt="Fetched homepage screenshot" class="w-full rounded-lg border border-slate-200 bg-white object-cover">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Source from your homepage</p>
+        <p class="mt-2 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
+      </div>
+    </aside>
     
     <!-- Project Name -->
-    <div id="field-name" :class="autofillLockClass('name')">
+    <div id="field-name" :class="[autofillLockClass('name'), reviewTint('name')]">
       <div class="mb-1 flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
           <label for="name" class="block text-xs font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
           <span class="text-xs text-gray-400">{{ (modelValue.name || '').length }}/40</span>
         </div>
-        <p v-if="validationErrors.name" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.name }}</p>
+        <div class="ml-auto flex items-center justify-end gap-3">
+          <p v-if="validationErrors.name" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.name }}</p>
+          <button v-if="reviewMode && modelValue.name" type="button" class="review-badge" @click="confirmField('name')">From your homepage</button>
+        </div>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">What is your product called? This name will be used across the site and in the product URL.</div>
-      <input 
-        ref="nameInput" 
-        type="text" 
-        id="name" 
-        :value="modelValue.name" 
-        @input="updateProductName($event.target.value)" 
-        maxlength="40" 
-        placeholder="e.g. Smooth Capture"
-        class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-        :class="{
-          'opacity-50 pointer-events-none': loadingStates.name,
-          '!border-red-400 !ring-red-100': validationErrors.name
-        }"
-      >
+      <div class="flex items-center gap-3">
+        <button
+          id="field-logo"
+          type="button"
+          class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-medium text-slate-500 transition hover:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          :class="{ '!border-red-400': showLogoError }"
+          :aria-label="logoPreview ? 'Change logo' : 'Upload logo'"
+          @click="$emit('open-logo-picker')"
+        >
+          <img v-if="logoPreview" :src="logoPreview" alt="" class="h-full w-full object-contain">
+          <span v-else>Upload logo</span>
+        </button>
+        <input
+          ref="nameInput"
+          type="text"
+          id="name"
+          :value="modelValue.name"
+          @input="updateProductName($event.target.value)"
+          maxlength="40"
+          placeholder="e.g. Smooth Capture"
+          class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+          :class="{
+            'opacity-50 pointer-events-none': loadingStates.name,
+            '!border-red-400 !ring-red-100': validationErrors.name
+          }"
+        >
+      </div>
+      <p v-if="showLogoError" class="mt-1 text-xs text-red-600">{{ validationErrors.logo }}</p>
       <!-- Slug preview -->
       <div v-if="generatedSlug" class="mt-2 text-xs text-gray-500 flex items-center gap-1">
         <span class="text-gray-400">softwareontheweb.com/product/</span>
@@ -34,13 +58,28 @@
     </div>
 
     <!-- Tagline -->
-     <div id="field-tagline" :class="autofillLockClass('tagline')">
+     <div id="field-tagline" :class="[autofillLockClass('tagline'), reviewTint('tagline')]">
         <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
             <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
             <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
           </div>
-          <p v-if="validationErrors.tagline" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.tagline }}</p>
+          <div class="ml-auto flex items-center justify-end gap-3">
+            <p v-if="validationErrors.tagline" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.tagline }}</p>
+            <button v-if="reviewMode && modelValue.tagline" type="button" class="review-badge" @click="confirmField('tagline')">AI-generated. Check wording.</button>
+            <button
+              v-if="reviewMode"
+              type="button"
+              class="review-refresh inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
+              :disabled="loadingStates.tagline || (!isAdmin && regenerationRemaining.tagline <= 0)"
+              :aria-label="loadingStates.tagline ? 'Regenerating tagline' : 'Regenerate tagline'"
+              @click.stop.prevent="$emit('regenerate-tagline')"
+            >
+              <span :class="{ 'animate-spin': loadingStates.tagline }" aria-hidden="true">↻</span>
+              <span v-if="loadingStates.tagline" class="text-[11px] font-medium">Regenerating…</span>
+            </button>
+            <span v-if="!isAdmin" class="text-[10px] text-slate-500">{{ regenerationRemaining.tagline }} left</span>
+          </div>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">Use one clear 140-character tagline. It will appear on both the list page and the product page.</div>
         <input
@@ -57,11 +96,17 @@
      </div>
 
     <!-- Description -->
-    <div id="field-description" class="relative" :class="[autofillLockClass('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
+    <div id="field-description" class="relative" :class="[autofillLockClass('description'), reviewTint('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
         <div class="mb-1 flex items-start justify-between gap-4">
-          <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
           <div class="flex items-center gap-3">
+            <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
+            <span class="text-xs text-gray-400">{{ descriptionCharacterCount }} characters</span>
+          </div>
+          <div class="ml-auto flex items-center justify-end gap-3">
             <p v-if="validationErrors.description" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.description }}</p>
+            <button v-if="reviewMode && modelValue.description" type="button" class="review-badge" @click="confirmField('description')">AI-generated. Check wording.</button>
+            <button v-if="reviewMode" type="button" class="review-refresh disabled:cursor-not-allowed disabled:opacity-40" :disabled="loadingStates.description || (!isAdmin && regenerationRemaining.description <= 0)" aria-label="Regenerate description" @click.stop.prevent="$emit('regenerate-description')">↻</button>
+            <span v-if="reviewMode && !isAdmin" class="text-[10px] text-slate-500">{{ regenerationRemaining.description }} left</span>
             <button
               v-if="showRewriteDescriptionButton"
               type="button"
@@ -86,7 +131,7 @@
           class="prose-editor-wrapper border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all"
           :class="{ '!border-red-400 !ring-red-100': validationErrors.description }"
         >
-           <WysiwygEditor :modelValue="modelValue.description" @update:modelValue="updateField('description', $event)" />
+           <WysiwygEditor :modelValue="modelValue.description" :showCharacterCount="false" @update:modelValue="updateField('description', $event)" />
         </div>
         <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
     </div>
@@ -127,6 +172,9 @@
        <div v-if="modelValue.categories.length === 0 && (!modelValue.categories_custom || modelValue.categories_custom.length === 0)" class="mb-2 text-xs text-gray-500">What categories best describe your product? If you can't find a good match, add a custom category.</div>
 
        <!-- Category Search -->
+       <div v-if="selectedCategories.length" class="mb-2 flex flex-wrap gap-2">
+         <button v-for="item in selectedCategories" :key="item.id" type="button" class="review-chip" @click="toggleCategory(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button>
+       </div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,6 +184,8 @@
          <input 
            type="text" 
            v-model="categorySearch" 
+           @focus="taxonomyOpen.categories = true"
+           @blur="closeTaxonomy('categories')"
            placeholder="Search categories..." 
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddCategoryButton, 'pr-8': !showAddCategoryButton && categorySearch.length >= 2}"
@@ -158,7 +208,7 @@
          </button>
        </div>
        
-       <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+       <div v-show="taxonomyOpen.categories || categorySearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
           <button 
             v-for="category in filteredCategories" 
             :key="category.id"
@@ -206,6 +256,7 @@
        </div>
        <div v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
 
+       <div v-if="selectedUseCases.length" class="mb-2 flex flex-wrap gap-2"><button v-for="item in selectedUseCases" :key="item.id" type="button" class="review-chip" @click="toggleUseCase(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button></div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -215,6 +266,8 @@
          <input
            type="text"
            v-model="useCaseSearch"
+           @focus="taxonomyOpen.useCases = true"
+           @blur="closeTaxonomy('useCases')"
            placeholder="Search use cases..."
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddUseCaseButton, 'pr-8': !showAddUseCaseButton && useCaseSearch.length >= 2}"
@@ -237,7 +290,7 @@
          </button>
        </div>
 
-       <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+       <div v-show="taxonomyOpen.useCases || useCaseSearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
           <button
             v-for="item in filteredUseCases"
             :key="item.id"
@@ -282,6 +335,7 @@
        </div>
        <div class="mb-2 text-xs text-gray-500">Where does your product run? Choose the platform your product is built for, or add a custom one if needed.</div>
 
+       <div v-if="selectedPlatforms.length" class="mb-2 flex flex-wrap gap-2"><button v-for="item in selectedPlatforms" :key="item.id" type="button" class="review-chip" @click="togglePlatform(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button></div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -291,6 +345,8 @@
          <input
            type="text"
            v-model="platformSearch"
+           @focus="taxonomyOpen.platforms = true"
+           @blur="closeTaxonomy('platforms')"
            placeholder="Search platforms..."
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddPlatformButton, 'pr-8': !showAddPlatformButton && platformSearch.length >= 2}"
@@ -313,7 +369,7 @@
          </button>
        </div>
 
-       <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+       <div v-show="taxonomyOpen.platforms || platformSearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
           <button
             v-for="platform in filteredPlatforms"
             :key="platform.id"
@@ -419,6 +475,7 @@
        <div class="mb-2 text-xs text-gray-500">Who is your product best for? Add tags that describe the audience, role, or situation it fits best.</div>
 
        <!-- Tag Search -->
+       <div v-if="selectedTags.length" class="mb-2 flex flex-wrap gap-2"><button v-for="item in selectedTags" :key="item.id" type="button" class="review-chip" @click="toggleBestFor(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button></div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -428,6 +485,8 @@
          <input
            type="text"
            v-model="tagSearch"
+           @focus="taxonomyOpen.tags = true"
+           @blur="closeTaxonomy('tags')"
            placeholder="Search tags..."
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddTagButton, 'pr-8': !showAddTagButton && tagSearch.length >= 2}"
@@ -450,7 +509,7 @@
          </button>
        </div>
        
-       <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+       <div v-show="taxonomyOpen.tags || tagSearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
           <button
             v-for="item in filteredBestFor"
             :key="item.id"
@@ -491,7 +550,7 @@
     <!-- Pricing (Cards) -->
     <div :class="autofillLockClass('taxonomy')">
        <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span></label>
+         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
          <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
        </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
@@ -524,7 +583,7 @@
     <!-- Pricing Page URL -->
     <div id="field-pricing-page-url" :class="autofillLockClass('links')">
       <div class="mb-1 flex items-start justify-between gap-4">
-        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing Page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span> <span v-if="reviewMode" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
         <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
@@ -539,7 +598,13 @@
       >
     </div>
 
-    <WebsiteProviderFields :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" />
+    <details class="rounded-lg border border-slate-200 p-4">
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Add more details</summary>
+      <div class="mt-4">
+        <label for="video-url" class="block text-xs font-bold text-gray-900">Video URL</label>
+        <input id="video-url" type="url" :value="modelValue.video_url || ''" placeholder="https://youtube.com/watch?v=..." class="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500" @input="updateField('video_url', $event.target.value)">
+      </div>
+      <WebsiteProviderFields :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" />
 
     <!-- Social Links -->
     <div class="pt-4 border-t border-gray-100" :class="autofillLockClass('links')">
@@ -588,6 +653,7 @@
              </div>
          </div>
     </div>
+    </details>
 
   </div>
 </template>
@@ -646,10 +712,16 @@ const props = defineProps({
       }
     })
   },
-  isAdmin: { type: Boolean, default: false }
+  isAdmin: { type: Boolean, default: false },
+  reviewMode: { type: Boolean, default: false },
+  sourceScreenshot: { type: String, default: '' },
+  sourceSnippet: { type: String, default: '' },
+  logoPreview: { type: String, default: '' },
+  showLogoError: { type: Boolean, default: false },
+  regenerationRemaining: { type: Object, default: () => ({ tagline: 3, description: 3 }) }
 });
 
-const emit = defineEmits(['update:modelValue', 'rewrite-description']);
+const emit = defineEmits(['update:modelValue', 'rewrite-description', 'regenerate-tagline', 'regenerate-description', 'open-logo-picker']);
 
 onMounted(() => {
   console.log('[ProductDetailsForm] Mounted. Initial modelValue:', props.modelValue);
@@ -673,6 +745,27 @@ const useCaseSearch = ref('');
 const platformSearch = ref('');
 const tagSearch = ref('');
 const techStackSearch = ref(''); // For tech stack search
+const taxonomyOpen = ref({ categories: false, useCases: false, platforms: false, tags: false });
+const closeTaxonomy = (key) => window.setTimeout(() => { taxonomyOpen.value[key] = false; }, 150);
+const selectedFrom = (items, selected) => (items || []).filter((item) => (selected || []).some((id) => String(id) === String(item.id)));
+const selectedCategories = computed(() => selectedFrom(props.allCategories, props.modelValue.categories));
+const selectedUseCases = computed(() => selectedFrom(props.allUseCases, props.modelValue.useCases));
+const selectedPlatforms = computed(() => selectedFrom(props.allPlatforms, props.modelValue.platforms));
+const selectedTags = computed(() => selectedFrom(props.allBestFor, props.modelValue.bestFor));
+const descriptionCharacterCount = computed(() => {
+  const container = document.createElement('div');
+  container.innerHTML = props.modelValue.description || '';
+  return (container.textContent || '').length;
+});
+const reviewedFields = ref(new Set());
+const confirmField = (field) => {
+  reviewedFields.value = new Set([...reviewedFields.value, field]);
+};
+const reviewTint = (field) => (
+  props.reviewMode && props.modelValue[field] && !reviewedFields.value.has(field)
+    ? 'rounded-xl border border-sky-100 bg-sky-50/60 p-4'
+    : ''
+);
 
 const isAutofillLocked = (group) => (
   props.autofillReveal?.active === true
@@ -838,6 +931,7 @@ function generateSlug(text) {
 }
 
 function updateProductName(value) {
+  confirmField('name');
   emit('update:modelValue', {
     ...props.modelValue,
     name: value,
@@ -846,6 +940,7 @@ function updateProductName(value) {
 }
 
 function updateField(field, value) {
+  confirmField(field);
   emit('update:modelValue', { ...props.modelValue, [field]: value });
 }
 
@@ -1075,5 +1170,26 @@ function removeCustomTechStack(customTechStackId) {
   opacity: 0.58;
   pointer-events: none;
   user-select: none;
+}
+.review-badge {
+  border-radius: 9999px;
+  background: rgb(224 242 254);
+  color: rgb(3 105 161);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+.review-chip {
+  border: 1px solid rgb(125 211 252);
+  border-radius: 9999px;
+  background: rgb(240 249 255);
+  color: rgb(3 105 161);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+.review-refresh {
+  color: rgb(3 105 161);
+  font-size: 16px;
+  line-height: 1;
 }
 </style>

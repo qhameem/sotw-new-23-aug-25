@@ -28,6 +28,7 @@ use App\Services\RelatedProductService;
 use App\Services\ScreenshotService;
 use App\Services\SlugService;
 use App\Services\TechStackDetectorService;
+use App\Support\CategoryPageType;
 use App\Support\CategoryTypeRegistry;
 use App\Support\FreeLaunchQueueSettings;
 use App\Support\PremiumLaunchPricing;
@@ -1424,8 +1425,29 @@ class ProductController extends Controller
         return response()->json(['exists' => false]);
     }
 
+    public function legacyCategoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
+    {
+        $pageType = $category->pageType();
+
+        if ($pageType !== CategoryPageType::CATEGORY) {
+            $parameters = $request->query();
+            if ($request->route('page')) {
+                $parameters['page'] = $request->route('page');
+            }
+
+            return redirect()->to(CategoryPageType::url($category, $parameters), 301);
+        }
+
+        return $this->categoryProducts($request, $category, $adDeliveryService);
+    }
+
     public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
+        $pageType = $category->pageType();
+        $expectedRoute = CategoryPageType::routeName($pageType, (bool) $request->route('page'));
+
+        abort_unless($request->routeIs($expectedRoute), 404);
+
         $requestedLimit = max(50, min(5000, (int) $request->query('limit', 50)));
         $displayLimit = (int) (ceil($requestedLimit / 50) * 50);
 
@@ -1487,22 +1509,19 @@ class ProductController extends Controller
             },
         ])->orderBy('name')->get();
 
-        $category->loadMissing('types');
-        $currentYear = Carbon::now()->year;
-        $isBestForCategory = $category->types->contains('name', 'Best for');
-        $title = $isBestForCategory
-            ? 'Best Tools for '.strip_tags($category->name).' in '.$currentYear
-            : 'The Best '.strip_tags($category->name).' Apps of '.$currentYear;
-        $meta_title = $isBestForCategory
-            ? "{$title} | Software on the Web"
-            : "{$category->name} Software | Software on the Web.";
+        $title = CategoryPageType::heading($pageType, strip_tags($category->name));
+        $meta_title = "{$title} | Software on the Web";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
             $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
         }
-        $meta_description = $metaDescriptionBase;
-        $categoryCanonicalUrl = route('categories.show', ['category' => $category->slug]);
+        $pageIntro = CategoryPageType::intro($pageType, $category);
+        $meta_description = $metaDescriptionBase !== '' ? $metaDescriptionBase : $pageIntro;
+        $categoryCanonicalUrl = $category->publicUrl();
+        $taxonomyLabel = CategoryPageType::label($pageType);
+        $publishedProductCount = $category->products()->approvedAndPublished()->count();
+        $shouldNoindexTaxonomy = $publishedProductCount < 3;
         $categoryPagination = [];
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
@@ -1528,6 +1547,11 @@ class ProductController extends Controller
             'isCategoryPage',
             'meta_description',
             'meta_title',
+            'pageType',
+            'pageIntro',
+            'taxonomyLabel',
+            'publishedProductCount',
+            'shouldNoindexTaxonomy',
             'categoryCanonicalUrl',
             'categoryPagination',
             'displayLimit',
@@ -2126,7 +2150,7 @@ class ProductController extends Controller
         if ($primaryBreadcrumbCategory) {
             $breadcrumbs[] = [
                 'label' => $primaryBreadcrumbCategory->name,
-                'link' => route('categories.show', $primaryBreadcrumbCategory->slug),
+                'link' => $primaryBreadcrumbCategory->publicUrl(),
             ];
         }
 

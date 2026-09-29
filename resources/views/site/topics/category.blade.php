@@ -39,7 +39,7 @@
                     '@type' => 'ListItem',
                     'position' => 3,
                     'name' => $category->name,
-                    'item' => route('categories.show', $category->slug),
+                    'item' => $category->publicUrl(),
                 ],
             ],
         ];

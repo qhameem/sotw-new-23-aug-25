@@ -10,7 +10,7 @@
 @section('content')
     <div class="py-4">
         <x-breadcrumbs :items="[
-            ['label' => $category->name, 'link' => route('categories.show', $category->slug)],
+            ['label' => $category->name, 'link' => $category->publicUrl()],
             ['label' => 'Best for ' . $bestfor->name],
         ]" />
     </div>
@@ -21,7 +21,7 @@
         "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
-            {"@type": "ListItem", "position": 2, "name": "{{ $category->name }}", "item": "{{ route('categories.show', $category->slug) }}"},
+            {"@type": "ListItem", "position": 2, "name": "{{ $category->name }}", "item": "{{ $category->publicUrl() }}"},
             {"@type": "ListItem", "position": 3, "name": "Best for {{ $bestfor->name }}"}
         ]
     }
@@ -30,7 +30,7 @@
     <div class="bg-white rounded-lg py-6 md:py-8">
         <div class="mb-6">
             <div class="flex flex-wrap gap-2 mb-2 text-sm text-gray-500">
-                <a href="{{ route('categories.show', $category->slug) }}" class="hover:text-primary-600">{{ $category->name }}</a>
+                <a href="{{ $category->publicUrl() }}" class="hover:text-primary-600">{{ $category->name }}</a>
                 <span>·</span>
                 <span class="font-medium text-gray-700">Best for {{ $bestfor->name }}</span>
             </div>
@@ -89,7 +89,7 @@
             <a href="{{ route('pseo.best', $category->slug) }}" class="text-xs text-primary-600 hover:underline block mb-1">
                 Best {{ $category->name }} Software →
             </a>
-            <a href="{{ route('categories.show', $category->slug) }}" class="text-xs text-primary-600 hover:underline block">
+            <a href="{{ $category->publicUrl() }}" class="text-xs text-primary-600 hover:underline block">
                 All {{ $category->name }} products →
             </a>
         </div>

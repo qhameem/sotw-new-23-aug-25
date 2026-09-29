@@ -50,20 +50,20 @@
             ->take(2)
             ->map(fn ($category) => [
                 'label' => $category->name,
-                'link' => route('categories.show', ['category' => $category->slug]),
+                'link' => $category->publicUrl(),
             ])
             ->values();
         $quickFactPlatforms = $platformCategories
             ->take(2)
             ->map(fn ($category) => [
                 'label' => $category->name,
-                'link' => route('categories.show', ['category' => $category->slug]),
+                'link' => $category->publicUrl(),
             ])
             ->values();
         $quickFactIdealFor = $idealForItems
             ->map(fn ($category) => [
                 'label' => $category->name,
-                'link' => route('categories.show', ['category' => $category->slug]),
+                'link' => $category->publicUrl(),
             ])
             ->values();
         $pricingValue = $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null);
@@ -81,7 +81,7 @@
                 'label' => 'Pricing',
                 'items' => [[
                     'label' => $pricingValue ?: 'Not listed yet',
-                    'link' => $pricingCategory ? route('categories.show', ['category' => $pricingCategory->slug]) : null,
+                    'link' => $pricingCategory?->publicUrl(),
                 ]],
                 'icon' => 'pricing',
                 'link' => $product->pricing_page_url ?: null,

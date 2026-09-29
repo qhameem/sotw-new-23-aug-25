@@ -39,7 +39,7 @@
                     $mainPadding,
                     $mainContentMaxWidth,
                     'md:flex md:flex-col md:h-full' => $lockHeight,
-                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search')
+                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search')
                 ])
                 @if($hideSidebar)
                     style="max-width: none; width: 100%; flex-basis: 100%;"
@@ -73,8 +73,8 @@
                 <div @class([
                     'min-w-0',
                     'md:flex-1 md:flex md:flex-col min-h-0' => $lockHeight,
-                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search'),
-                    'md:overflow-y-auto overscroll-contain scrollbar-hide' => $lockHeight && request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show', 'categories.show.page', 'products.search')
+                    'md:overflow-hidden' => $lockHeight && !request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search'),
+                    'md:overflow-y-auto overscroll-contain scrollbar-hide' => $lockHeight && request()->routeIs('home', 'products.byWeek', 'products.byDate', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search')
                 ])>
                     {{ $slot }}
 

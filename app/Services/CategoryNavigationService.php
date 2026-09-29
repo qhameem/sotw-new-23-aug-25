@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class CategoryNavigationService
 {
-    public const CACHE_KEY = 'navigation.categories:v1';
+    public const CACHE_KEY = 'navigation.categories:v2';
 
     private const GROUPS = [
         'ai-automation' => [
@@ -343,7 +343,7 @@ class CategoryNavigationService
         return [
             'name' => $category->name,
             'slug' => $category->slug,
-            'url' => route('categories.show', ['category' => $category->slug]),
+            'url' => $category->publicUrl(),
             'count' => (int) $category->products_count,
             'type_label' => $includeTypeLabel ? $typeLabel : null,
         ];

@@ -12,7 +12,7 @@
     <div class="py-4">
         <x-breadcrumbs :items="[
             ['label' => 'Topics', 'link' => route('topics.index')],
-            ['label' => $category->name, 'link' => route('categories.show', $category->slug)],
+            ['label' => $category->name, 'link' => $category->publicUrl()],
             ['label' => 'Best of'],
         ]" />
     </div>
@@ -24,7 +24,7 @@
         "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url('/') }}"},
-            {"@type": "ListItem", "position": 2, "name": "{{ $category->name }}", "item": "{{ route('categories.show', $category->slug) }}"},
+            {"@type": "ListItem", "position": 2, "name": "{{ $category->name }}", "item": "{{ $category->publicUrl() }}"},
             {"@type": "ListItem", "position": 3, "name": "Best {{ $category->name }} Software"}
         ]
     }
@@ -98,7 +98,7 @@
             @if($category->meta_description)
                 <p class="text-xs text-gray-500">{{ $category->meta_description }}</p>
             @endif
-            <a href="{{ route('categories.show', $category->slug) }}" class="mt-3 block text-xs text-primary-600 hover:underline">
+            <a href="{{ $category->publicUrl() }}" class="mt-3 block text-xs text-primary-600 hover:underline">
                 Browse all {{ $category->name }} products →
             </a>
         </div>

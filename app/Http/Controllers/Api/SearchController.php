@@ -81,9 +81,9 @@ class SearchController extends Controller
     private function searchProducts(string $query)
     {
         $loweredQuery = Str::lower($query);
-        $startsWithQuery = $loweredQuery . '%';
-        $containsQuery = '%' . $loweredQuery . '%';
-        $likeQuery = '%' . $query . '%';
+        $startsWithQuery = $loweredQuery.'%';
+        $containsQuery = '%'.$loweredQuery.'%';
+        $likeQuery = '%'.$query.'%';
         $fullTextQuery = $this->toBooleanFullTextQuery($query);
         $driver = DB::connection()->getDriverName();
 
@@ -138,12 +138,13 @@ class SearchController extends Controller
     private function searchCategories(string $query)
     {
         $loweredQuery = Str::lower($query);
-        $startsWithQuery = $loweredQuery . '%';
-        $containsQuery = '%' . $loweredQuery . '%';
-        $likeQuery = '%' . $query . '%';
+        $startsWithQuery = $loweredQuery.'%';
+        $containsQuery = '%'.$loweredQuery.'%';
+        $likeQuery = '%'.$query.'%';
 
         return Category::query()
             ->select(['id', 'name', 'slug'])
+            ->with('types:id,name')
             ->selectRaw(
                 'CASE
                     WHEN LOWER(name) = ? THEN 220
@@ -164,7 +165,7 @@ class SearchController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
                 'slug' => $category->slug,
-                'url' => route('categories.show', ['category' => $category->slug]),
+                'url' => $category->publicUrl(),
             ])
             ->values();
     }
@@ -175,7 +176,7 @@ class SearchController extends Controller
             ->map(fn (string $term) => trim($term))
             ->filter(fn (string $term) => Str::length($term) >= 2)
             ->take(5)
-            ->map(fn (string $term) => '+' . $term . '*')
+            ->map(fn (string $term) => '+'.$term.'*')
             ->values();
 
         return $terms->isEmpty() ? null : $terms->implode(' ');

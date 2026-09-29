@@ -5,7 +5,13 @@
 
 @section('title', $title)
 @section('meta_description', $metaDescription)
-@section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow')
+@section('robots', !empty($shouldNoindex) ? 'noindex, follow' : 'index, follow, max-image-preview:large')
+@section('hide_desktop_page_header', '1')
+@section('header-title', '')
+
+@section('canonical')
+    <link rel="canonical" href="{{ route('pseo.compare', ['params' => $productA->slug . '-vs-' . $productB->slug]) }}" />
+@endsection
 
 @section('content')
     @php
@@ -122,7 +128,7 @@
                                 <span class="text-gray-500 text-xs flex-shrink-0">Category</span>
                                 <div class="flex flex-wrap gap-1 justify-end">
                                     @foreach($softCats as $cat)
-                                        <a href="{{ route('categories.show', $cat->slug) }}" class="text-xs text-gray-600 hover:underline">
+                                        <a href="{{ $cat->publicUrl() }}" class="text-xs text-gray-600 hover:underline">
                                             {{ $cat->name }}
                                         </a>
                                     @endforeach

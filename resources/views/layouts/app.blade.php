@@ -348,6 +348,8 @@
         <link rel="canonical" href="{{ route('products.show', ['product' => $canonicalProductSlug]) }}" />
     @elseif(request()->routeIs('categories.show') && filled($canonicalCategorySlug))
         <link rel="canonical" href="{{ route('categories.show', ['category' => $canonicalCategorySlug]) }}" />
+    @elseif(request()->routeIs('use-cases.show', 'best-for.show', 'platforms.show') && isset($category))
+        <link rel="canonical" href="{{ $category->publicUrl() }}" />
     @endif
 
     @yield('preloads')
@@ -364,6 +366,7 @@
     <meta name="twitter:card" content="{{ $resolvedSocialImage ? 'summary_large_image' : 'summary' }}">
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     <meta name="twitter:description" content="@yield('meta_description', $meta_description ?? '')">
+    @stack('structured-data')
     @include('partials.social-image-meta')
     @php
         $customLogoUrl = config('theme.logo_url');

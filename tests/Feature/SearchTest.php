@@ -41,7 +41,7 @@ it('returns only published product matches and category links from the shared ap
         ->not->toContain($hiddenProduct->slug);
 
     expect($response->json('categories.0.url'))
-        ->toBe(route('categories.show', ['category' => $category->slug]));
+        ->toBe($category->publicUrl());
 });
 
 it('accepts the legacy q parameter for shared api search', function () {

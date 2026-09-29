@@ -69,3 +69,36 @@ it('does not qualify a product as an alternative from tech-stack overlap alone',
 
     expect($match['qualifiesAlternative'])->toBeFalse();
 });
+
+it('indexes an alternatives page with two strong relevant products', function () {
+    $product = new Product(['alternative_product_ids' => []]);
+    $alternatives = collect([
+        tap(new Product, fn (Product $alternative) => $alternative->setAttribute('match_score', 70)),
+        tap(new Product, fn (Product $alternative) => $alternative->setAttribute('match_score', 60)),
+    ]);
+
+    expect(app(RelatedProductService::class)->shouldNoindexAlternatives($product, $alternatives))->toBeFalse();
+});
+
+it('keeps a thin alternatives page out of the index', function () {
+    $product = new Product(['alternative_product_ids' => []]);
+    $alternatives = collect([
+        tap(new Product, fn (Product $alternative) => $alternative->setAttribute('match_score', 80)),
+    ]);
+
+    expect(app(RelatedProductService::class)->shouldNoindexAlternatives($product, $alternatives))->toBeTrue();
+});
+
+it('indexes a comparison when the pair qualifies as an alternative', function () {
+    $productA = new Product(['comparison_product_ids' => []]);
+    $productA->id = 1;
+    $productB = new Product(['comparison_product_ids' => []]);
+    $productB->id = 2;
+
+    $match = [
+        'qualifiesComparison' => false,
+        'qualifiesAlternative' => true,
+    ];
+
+    expect(app(RelatedProductService::class)->shouldNoindexComparison($productA, $productB, $match))->toBeFalse();
+});

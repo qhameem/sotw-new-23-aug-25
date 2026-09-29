@@ -80,7 +80,7 @@
             "@type" => "ListItem",
             "position" => 2,
             "name" => $primaryBreadcrumbCategory->name,
-            "item" => route('categories.show', $primaryBreadcrumbCategory->slug)
+            "item" => $primaryBreadcrumbCategory->publicUrl()
         ];
         $productPosition = 3;
     } else {

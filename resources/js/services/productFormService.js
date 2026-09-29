@@ -196,6 +196,7 @@ export const createProductFormState = () => {
     submissionDrafts: ref([]),
     draftAutosaveState: ref('idle'),
     draftAutosavedAtLabel: ref(''),
+    regenerationRemaining: reactive({ tagline: 3, description: 3 }),
     autofillReveal: reactive(createInitialAutofillRevealState()),
     form: createInitialFormValues(),
     sidebarSteps: [...sidebarSteps],

@@ -60,7 +60,7 @@
                             @if($softCats->isNotEmpty())
                                 <div class="flex gap-1 mt-1.5">
                                     @foreach($softCats as $cat)
-                                        <a href="{{ route('categories.show', $cat->slug) }}" class="text-xs text-gray-500 hover:text-primary-600 hover:underline">{{ $cat->name }}</a>
+                                        <a href="{{ $cat->publicUrl() }}" class="text-xs text-gray-500 hover:text-primary-600 hover:underline">{{ $cat->name }}</a>
                                     @endforeach
                                 </div>
                             @endif

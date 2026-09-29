@@ -7,9 +7,10 @@ use App\Models\ArticleCategory;
 use App\Models\ArticleTag;
 use App\Models\Category;
 use App\Models\Product;
-use App\Services\RelatedProductService;
 use App\Services\CategoryNavigationService;
+use App\Services\RelatedProductService;
 use App\Services\SitemapIndexWriter;
+use App\Support\CategoryPageType;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -46,7 +47,7 @@ class GenerateSitemap extends Command
         $includePseo = (bool) $this->option('with-pseo');
 
         File::ensureDirectoryExists($sitemapDirectory);
-        foreach (['static.xml', 'content.xml', 'products.xml', 'recent-launches.xml', 'taxonomy.xml', 'archives.xml'] as $filename) {
+        foreach (['static.xml', 'content.xml', 'products.xml', 'recent-launches.xml', 'taxonomy.xml', 'categories.xml', 'use-cases.xml', 'best-for.xml', 'platforms.xml', 'archives.xml'] as $filename) {
             File::delete($sitemapDirectory.DIRECTORY_SEPARATOR.$filename);
         }
 
@@ -91,11 +92,27 @@ class GenerateSitemap extends Command
         );
         $this->writeChildSitemap($recentLaunchesSitemap, $sitemapDirectory.'/recent-launches.xml');
 
-        $taxonomySitemap = Sitemap::create();
-        $taxonomySitemap->add(Category::all()->filter(function ($category) {
-            return $category->products()->where('approved', true)->exists();
-        }));
-        $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory.'/taxonomy.xml');
+        $taxonomyCategories = Category::query()
+            ->with('types:id,name')
+            ->withCount([
+                'products as published_products_count' => fn ($query) => $query
+                    ->where('approved', true)
+                    ->where('is_published', true),
+            ])
+            ->get()
+            ->filter(fn (Category $category) => $category->published_products_count >= 3)
+            ->groupBy(fn (Category $category) => $category->pageType());
+
+        foreach ([
+            CategoryPageType::CATEGORY => 'categories.xml',
+            CategoryPageType::USE_CASE => 'use-cases.xml',
+            CategoryPageType::BEST_FOR => 'best-for.xml',
+            CategoryPageType::PLATFORM => 'platforms.xml',
+        ] as $pageType => $filename) {
+            $taxonomySitemap = Sitemap::create();
+            $taxonomySitemap->add($taxonomyCategories->get($pageType, collect()));
+            $this->writeChildSitemap($taxonomySitemap, $sitemapDirectory.'/'.$filename);
+        }
 
         $archiveSitemap = Sitemap::create();
         $currentWeekYear = now()->year;

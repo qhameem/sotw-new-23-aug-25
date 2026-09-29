@@ -95,7 +95,7 @@
                     </svg>
                 @endif
                 @foreach($generalCategories as $category)
-                    <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
+                    <a href="{{ $category->publicUrl() }}" wire:navigate.hover
                         class="text-[0.65rem] font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 md:text-xs">{{ $category->name }}</a>
                 @endforeach
             </div>

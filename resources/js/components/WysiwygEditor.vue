@@ -29,7 +29,7 @@
     <div v-if="editor" class="h-64 overflow-y-auto">
       <editor-content :editor="editor" />
     </div>
-    <div v-if="editor" class="flex justify-end p-2 text-sm text-gray-500">
+    <div v-if="editor && showCharacterCount" class="flex justify-end p-2 text-sm text-gray-500">
       <span v-if="maxLength !== null && maxLength !== undefined">{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }}/{{ maxLength }}</span>
       <span v-else>{{ editor.storage.characterCount ? editor.storage.characterCount.characters() : editor.getText().length }} characters</span>
     </div>
@@ -50,6 +50,10 @@ const props = defineProps({
   maxLength: {
     type: Number,
     default: null, // Set to null to indicate no limit
+  },
+  showCharacterCount: {
+    type: Boolean,
+    default: true,
   },
 });
 

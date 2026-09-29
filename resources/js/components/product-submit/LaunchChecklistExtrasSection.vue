@@ -3,7 +3,7 @@
     <div class="space-y-6">
       <div>
         <div class="mb-1 flex items-center justify-between">
-          <h4 class="text-xs font-bold text-gray-900">Tech Stack <span class="ml-1 text-xs font-normal text-gray-400">(Max 5)</span></h4>
+          <h4 class="text-xs font-bold text-gray-900">Tech stack <span class="ml-1 text-xs font-normal text-gray-400">(Max 5)</span> <span v-if="modelValue.tech_stack?.length" class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-[10px] font-semibold text-sky-700">From your homepage</span></h4>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">Which technologies were used to build your product?</div>
 
@@ -70,7 +70,7 @@
       </div>
 
       <div>
-        <h4 class="mb-3 text-md font-medium text-gray-700">Product Sale</h4>
+        <h4 class="mb-3 text-md font-medium text-gray-700">Product sale <span class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">Needs your input</span></h4>
         <div class="flex items-center">
           <input
             id="sell-product"

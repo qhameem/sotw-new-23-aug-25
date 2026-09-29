@@ -281,10 +281,22 @@ Route::get('/software/{group}/page/{page}', [\App\Http\Controllers\BroadCategory
     ->name('software-groups.page');
 Route::get('/software/{group}', [\App\Http\Controllers\BroadCategoryController::class, 'show'])
     ->name('software-groups.show');
-Route::get('/category/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
+Route::get('/use-case/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
+    ->whereNumber('page')
+    ->name('use-cases.show.page');
+Route::get('/use-case/{category:slug}', [ProductController::class, 'categoryProducts'])->name('use-cases.show');
+Route::get('/best-for/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
+    ->whereNumber('page')
+    ->name('best-for.show.page');
+Route::get('/best-for/{category:slug}', [ProductController::class, 'categoryProducts'])->name('best-for.show');
+Route::get('/platform/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
+    ->whereNumber('page')
+    ->name('platforms.show.page');
+Route::get('/platform/{category:slug}', [ProductController::class, 'categoryProducts'])->name('platforms.show');
+Route::get('/category/{category:slug}/page/{page}', [ProductController::class, 'legacyCategoryProducts'])
     ->whereNumber('page')
     ->name('categories.show.page');
-Route::get('/category/{category:slug}', [ProductController::class, 'categoryProducts'])->name('categories.show');
+Route::get('/category/{category:slug}', [ProductController::class, 'legacyCategoryProducts'])->name('categories.show');
 Route::get('/products/dates', [ProductController::class, 'getProductDates']);
 Route::get('/date/{date}', [ProductController::class, 'productsByDate'])->where('date', '\d{4}-\d{2}-\d{2}')->name('products.byDate');
 

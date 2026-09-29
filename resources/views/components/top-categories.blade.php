@@ -1,8 +1,9 @@
 @php
-    $topCategories = cache()->remember('top_categories_sidebar', config('performance.top_categories_cache_ttl', 3600), function () {
+    $topCategories = cache()->remember('top_categories_sidebar:v2', config('performance.top_categories_cache_ttl', 3600), function () {
         return \App\Models\Category::whereDoesntHave('types', function ($query) {
             $query->where('types.id', 2);
         })
+            ->with('types:id,name')
             ->withCount([
                 'products' => function ($query) {
                     $query->where('approved', true)
@@ -26,7 +27,7 @@
     <ul class="space-y-2">
         @forelse($topCategories as $category)
             <li>
-                <a href="{{ route('categories.show', ['category' => $category->slug]) }}" wire:navigate.hover
+                <a href="{{ $category->publicUrl() }}" wire:navigate.hover
                     class="flex justify-between items-center text-xs text-gray-700 hover:underline">
                     <span>{{ $category->name }}</span>
                     <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">

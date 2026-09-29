@@ -69,7 +69,7 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Popular categories</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             @foreach($topCategories as $category)
-                                <a href="{{ route('categories.show', ['category' => $category->slug]) }}"
+                                <a href="{{ $category->publicUrl() }}"
                                     class="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-sky-200 hover:bg-sky-50">
                                     <span>{{ $category->name }}</span>
                                     <span class="rounded-full bg-sky-50 px-2 py-0.5 text-xs text-sky-700">

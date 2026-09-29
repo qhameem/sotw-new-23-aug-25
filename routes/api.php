@@ -68,7 +68,8 @@ Route::post('/fetch-initial-metadata', [\App\Http\Controllers\ProductController:
 Route::post('/process-url', [\App\Http\Controllers\ProductController::class, 'processUrl'])->middleware('throttle:10,1');
 Route::post('/process-url-stream', [\App\Http\Controllers\ProductController::class, 'processUrlStream'])->middleware('throttle:10,1');
 Route::post('/check-product-url', [ProductController::class, 'checkUrl']);
-Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate'])->middleware('throttle:20,1');
+Route::post('/generate-tagline', [\App\Http\Controllers\Api\TaglineController::class, 'generate'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::post('/generate-description', [\App\Http\Controllers\Api\DescriptionController::class, 'generate'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::get('/categories', [ProductController::class, 'getCategories']);
 Route::get('/tech-stacks', [ProductController::class, 'getTechStacks']);
 Route::post('/generate-ai-content', [ProductController::class, 'generateAiContent']);

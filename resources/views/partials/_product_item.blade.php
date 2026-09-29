@@ -9,7 +9,7 @@
         request()->routeIs('products.byDate') => 'date_list',
         request()->routeIs('products.byMonth') => 'month_list',
         request()->routeIs('products.byYear') => 'year_list',
-        request()->routeIs('categories.show', 'categories.show.page') => 'category_list',
+        request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*') => 'category_list',
         default => 'product_list',
     };
 @endphp

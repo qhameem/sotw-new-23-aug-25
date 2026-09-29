@@ -37,9 +37,10 @@ class GlobalSearchService
 
     public function getPopularCategories(): array
     {
-        return Cache::remember('global_search.popular_categories', now()->addMinutes(30), function () {
+        return Cache::remember('global_search.popular_categories.v2', now()->addMinutes(30), function () {
             return Category::query()
                 ->select(['id', 'name', 'slug'])
+                ->with('types:id,name')
                 ->withCount([
                     'products' => fn ($query) => $query
                         ->where('approved', true)
@@ -53,7 +54,7 @@ class GlobalSearchService
                     'id' => $category->id,
                     'name' => $category->name,
                     'products_count' => (int) $category->products_count,
-                    'url' => route('categories.show', ['category' => $category->slug]),
+                    'url' => $category->publicUrl(),
                 ])
                 ->values()
                 ->all();

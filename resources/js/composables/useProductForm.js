@@ -223,6 +223,7 @@ const normalizeDraftSummary = (draft = {}) => ({
   resume_url: draft.resume_url || '#',
   updated_at: draft.updated_at || null,
   updated_at_label: draft.updated_at_label || '',
+  regeneration_counts: draft.regeneration_counts || {},
 });
 
 export function useProductForm() {
@@ -234,6 +235,7 @@ export function useProductForm() {
   const submissionDrafts = globalFormState.submissionDrafts;
   const draftAutosaveState = globalFormState.draftAutosaveState;
   const draftAutosavedAtLabel = globalFormState.draftAutosavedAtLabel;
+  const regenerationRemaining = globalFormState.regenerationRemaining;
   const submissionBgUrl = globalFormState.submissionBgUrl;
   const freeLaunchQueueMonths = globalFormState.freeLaunchQueueMonths;
   const productPublishTime = globalFormState.productPublishTime;
@@ -656,6 +658,13 @@ export function useProductForm() {
     ]);
   };
 
+  const syncRegenerationCounts = (draftSummary) => {
+    const counts = draftSummary?.regeneration_counts || {};
+    ['tagline', 'description'].forEach((field) => {
+      regenerationRemaining[field] = Math.max(0, 3 - Number(counts[field] || 0));
+    });
+  };
+
   const loadDraftContextFromElement = (element) => {
     if (!element) {
       return;
@@ -669,6 +678,7 @@ export function useProductForm() {
       submissionDrafts.value = sortDraftSummaries(
         JSON.parse(element.getAttribute('data-submission-drafts') || '[]').map(normalizeDraftSummary)
       );
+      syncRegenerationCounts(submissionDrafts.value.find((draft) => draft.uuid === activeDraftId.value));
     } catch (error) {
       console.error('Failed to parse unfinished submissions.', error);
       submissionDrafts.value = [];
@@ -815,6 +825,7 @@ export function useProductForm() {
         activeDraftId.value = savedDraft.uuid;
         replaceDraftQueryParam(savedDraft.uuid);
         upsertSubmissionDraftSummary(savedDraft);
+        syncRegenerationCounts(savedDraft);
       }
 
       draftAutosaveState.value = 'saved';
@@ -834,6 +845,27 @@ export function useProductForm() {
       return false;
     } finally {
       draftAutosaveInFlight = false;
+    }
+  };
+
+  const ensureRegenerationDraft = async () => {
+    if (!activeDraftId.value) {
+      await persistSubmissionDraft();
+    }
+
+    return activeDraftId.value;
+  };
+
+  const applyRegenerationUsage = (field, data) => {
+    if (Number.isFinite(Number(data?.regeneration?.remaining))) {
+      regenerationRemaining[field] = Number(data.regeneration.remaining);
+    }
+  };
+
+  const applyRegenerationLimitError = (field, error) => {
+    const message = error?.response?.data?.errors?.[field]?.[0] || '';
+    if (error?.response?.status === 422 && message.includes('used all')) {
+      regenerationRemaining[field] = 0;
     }
   };
 
@@ -2454,27 +2486,79 @@ export function useProductForm() {
     showErrorMessage.value = false;
     extractionErrors.description = '';
     loadingStates.description = true;
-    globalFormState.isLoading.value = true;
-    beginAutofillProgress('Preparing description rewrite...', 35, 'fullAutofill');
-
     try {
-      await fetchRemainingData(false, linkValue, {
-        forceContentFetch: true,
-        forceDescriptionOverwrite: true,
-        contentOnly: true,
+      const draftUuid = await ensureRegenerationDraft();
+      if (!draftUuid) {
+        throw new Error('The draft must be saved before regenerating.');
+      }
+      const { data } = await axios.post('/api/generate-description', {
+        url: linkValue,
+        name: form.name || '',
+        additional_resources: form.additional_resources || '',
+        draft_uuid: draftUuid,
       });
+
+      if (typeof data?.description !== 'string' || data.description.trim() === '') {
+        throw new Error('The description response was empty.');
+      }
+
+      form.description = data.description;
+      applyRegenerationUsage('description', data);
+      extractionErrors.description = typeof data.description_notice === 'string'
+        ? data.description_notice.trim()
+        : '';
     } catch (error) {
+      applyRegenerationLimitError('description', error);
       console.error('Error rewriting product description:', error);
       extractionErrors.description = 'Failed to rewrite description.';
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to rewrite the product description. Please try again.';
     } finally {
       loadingStates.description = false;
-      const anyLoadingActive = Object.values(loadingStates).some((loading) => loading === true);
-      if (!anyLoadingActive) {
-        completeAutofillProgress();
-        globalFormState.isLoading.value = false;
+    }
+  };
+
+  const regenerateProductTagline = async (urlOverride = null) => {
+    const linkValue = urlOverride || form.link;
+
+    if (!linkValue || linkValue.trim() === '') {
+      extractionErrors.tagline = 'Product URL is required to regenerate the tagline.';
+      return;
+    }
+
+    showErrorMessage.value = false;
+    extractionErrors.tagline = '';
+    loadingStates.tagline = true;
+
+    try {
+      const draftUuid = await ensureRegenerationDraft();
+      if (!draftUuid) {
+        throw new Error('The draft must be saved before regenerating.');
       }
+      const descriptionContainer = document.createElement('div');
+      descriptionContainer.innerHTML = String(form.description || '');
+      const descriptionText = (descriptionContainer.textContent || '').trim();
+
+      const { data } = await axios.post('/api/generate-tagline', {
+        url: linkValue,
+        description: (descriptionText || form.tagline || form.name || 'Product website').slice(0, 5000),
+        draft_uuid: draftUuid,
+      });
+
+      if (typeof data?.tagline !== 'string' || data.tagline.trim() === '') {
+        throw new Error('The tagline response was empty.');
+      }
+
+      form.tagline = data.tagline.slice(0, 140);
+      applyRegenerationUsage('tagline', data);
+    } catch (error) {
+      applyRegenerationLimitError('tagline', error);
+      console.error('Error regenerating product tagline:', error);
+      extractionErrors.tagline = 'Failed to regenerate tagline.';
+      showErrorMessage.value = true;
+      errorMessage.value = 'Failed to regenerate the tagline. Please try again.';
+    } finally {
+      loadingStates.tagline = false;
     }
   };
 
@@ -3097,6 +3181,7 @@ export function useProductForm() {
     submissionDrafts,
     draftAutosaveState,
     draftAutosavedAtLabel,
+    regenerationRemaining,
     extractionErrors: globalFormState.extractionErrors,
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,
@@ -3134,6 +3219,7 @@ export function useProductForm() {
     simulateSandboxAutofill,
     extractLogos,
     rewriteProductDescription,
+    regenerateProductTagline,
     updateForm,
     updateFormMultiple,
     resetForm,

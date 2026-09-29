@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\PublicUrlGuard;
+use App\Services\ProductRegenerationLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,12 +17,14 @@ class TaglineController extends Controller
     private const TAGLINE_DETAILED_SOFT_MAX = 120;
     private const TAGLINE_DETAILED_HARD_MAX = 160;
 
-    public function generate(Request $request)
+    public function generate(Request $request, ProductRegenerationLimiter $limiter)
     {
-        $request->validate([
+        $validated = $request->validate([
             'description' => 'required|string|max:5000',
             'url' => 'required|url',
+            'draft_uuid' => 'required|string|size:36',
         ]);
+        $regeneration = $limiter->consume($request->user(), $validated['draft_uuid'], 'tagline');
 
         try {
             $url = PublicUrlGuard::sanitizePublicHttpUrl((string) $request->input('url'));
@@ -31,7 +34,7 @@ class TaglineController extends Controller
 
         $apiKey = config('services.google.api_key');
         if (!$apiKey) {
-            return $this->fallbackToMetadata($url);
+            return $this->fallbackToMetadata($url, $regeneration);
         }
 
         try {
@@ -69,15 +72,16 @@ class TaglineController extends Controller
             return response()->json([
                 'tagline' => $this->normalizeGeneratedLine((string) $taglines['short'], self::TAGLINE_SOFT_MAX, self::TAGLINE_HARD_MAX),
                 'tagline_detailed' => $this->normalizeGeneratedLine((string) $taglines['detailed'], self::TAGLINE_DETAILED_SOFT_MAX, self::TAGLINE_DETAILED_HARD_MAX),
+                'regeneration' => $regeneration,
             ]);
 
         } catch (\Exception $e) {
             Log::error('AI tagline generation failed, falling back to metadata.', ['error' => $e->getMessage()]);
-            return $this->fallbackToMetadata($url);
+            return $this->fallbackToMetadata($url, $regeneration);
         }
     }
 
-    private function fallbackToMetadata(string $url)
+    private function fallbackToMetadata(string $url, array $regeneration)
     {
         try {
             $response = Http::get($url);
@@ -101,6 +105,7 @@ class TaglineController extends Controller
             return response()->json([
                 'tagline' => $this->normalizeGeneratedLine(trim($title), self::TAGLINE_SOFT_MAX, self::TAGLINE_HARD_MAX),
                 'tagline_detailed' => $this->normalizeGeneratedLine(trim($description), self::TAGLINE_DETAILED_SOFT_MAX, self::TAGLINE_DETAILED_HARD_MAX),
+                'regeneration' => $regeneration,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch metadata for tagline fallback.', ['url' => $url, 'error' => $e->getMessage()]);

@@ -1,11 +1,9 @@
 <template>
-  <div id="field-link" class="bg-yellow-50 p-6 rounded-xl border border-dashed border-gray-300 mb-8 dark:border-amber-800 dark:bg-amber-950/30">
+  <div id="field-link" :class="reviewMode ? 'sticky top-0 z-30 border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur' : 'border-sky-100 bg-sky-50/50 p-5'" class="rounded-xl border mb-4">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
-        <span class="text-sm text-gray-700 flex items-center">
-          Enter your URL <span class="mx-1">👇</span> and we'll auto-fill the rest
-        </span>
+        <span v-if="!reviewMode" class="text-sm text-gray-600">Enter your URL and we fill in the rest.</span>
       </div>
       <span v-if="extractionTiming.started" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
         {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
@@ -58,11 +56,11 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ loadingProgress > 0 && loadingProgress < 10 ? 'Starting...' : 'Extracting...' }}
+          {{ loadingProgress > 0 && loadingProgress < 10 ? 'Starting...' : 'Working...' }}
         </span>
         <span v-else class="flex items-center gap-2">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M7 7L5.5 5.5M15 7L16.5 5.5M5.5 16.5L7 15M11 5L11 3M5 11L3 11M17.1603 16.9887L21.0519 15.4659C21.4758 15.3001 21.4756 14.7003 21.0517 14.5346L11.6992 10.8799C11.2933 10.7213 10.8929 11.1217 11.0515 11.5276L14.7062 20.8801C14.8719 21.304 15.4717 21.3042 15.6375 20.8803L17.1603 16.9887Z" stroke="currentColor"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
-          AI Auto-fill
+          {{ reviewMode ? 'Refetch' : 'Auto-fill' }}
         </span>
         </button>
         <div
@@ -74,6 +72,14 @@
         </div>
       </div>
     </div>
+    <button
+      v-if="!reviewMode && !isLoading"
+      type="button"
+      class="mt-2 text-xs font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+      @click="$emit('manual')"
+    >
+      Fill in manually
+    </button>
     <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
       <summary class="cursor-pointer">Extraction phase timings</summary>
       <dl class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
@@ -144,19 +150,13 @@ Internal note: focus on the API and automation features."
 
 
     <!-- Loading State Message -->
-    <div v-if="isLoading" class="mt-4">
-      <div class="flex items-center justify-between text-xs text-sky-600 font-medium mb-1.5">
-        <span class="animate-pulse">{{ loadingMessage || 'Analyzing...' }}</span>
-        <span>{{ Math.round(loadingProgress || 0) }}%</span>
-      </div>
-      <div class="w-full bg-sky-100 rounded-full h-1.5 mb-2 overflow-hidden">
-        <div
-          class="relative h-1.5 rounded-full bg-sky-500 will-change-[width] overflow-hidden transition-[width] duration-300 ease-out"
-          :style="{ width: `${loadingProgress || 0}%` }"
-        >
-          <div class="progress-bar-shimmer absolute inset-0 opacity-70"></div>
-        </div>
-      </div>
+    <div v-if="isLoading" class="mt-4" aria-live="polite">
+      <ol class="grid gap-2 text-sm sm:grid-cols-3">
+        <li v-for="step in fetchSteps" :key="step.label" class="flex items-center gap-2" :class="step.done ? 'text-emerald-700' : 'text-slate-500'">
+          <span class="flex h-5 w-5 items-center justify-center rounded-full border text-xs" :class="step.done ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'">{{ step.done ? '✓' : step.number }}</span>
+          <span>{{ step.label }}</span>
+        </li>
+      </ol>
     </div>
 
     <transition name="fade">
@@ -250,14 +250,23 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  reviewMode: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear', 'validate-field']);
+const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear', 'validate-field', 'manual']);
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
 const showAdditionalResources = ref(Boolean(props.additionalResources?.trim()));
 const showDisabledTooltip = ref(false);
+const fetchSteps = computed(() => [
+  { number: 1, label: 'Reading your site', done: props.loadingProgress >= 30 },
+  { number: 2, label: 'Taking a screenshot', done: props.loadingProgress >= 65 },
+  { number: 3, label: 'Writing the description', done: props.loadingProgress >= 95 },
+]);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
   !props.isSandboxMode && (

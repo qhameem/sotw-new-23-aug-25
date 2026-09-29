@@ -160,7 +160,7 @@ class PseoController extends Controller
         $pairMatchSummary = $isCuratedPair
             ? 'This comparison is manually curated by the editorial team.'
             : $pairMatch['summary'];
-        $shouldNoindex = ! $isCuratedPair && ! $pairMatch['qualifiesComparison'];
+        $shouldNoindex = $this->relatedProductService->shouldNoindexComparison($productA, $productB, $pairMatch);
 
         $title = "{$productA->name} vs {$productB->name}: Which is Better?";
         $metaDescription = "Compare {$productA->name} and {$productB->name} side-by-side — features, pricing, tech stack, and community votes.";

@@ -40,7 +40,7 @@
 
                 <div class="space-y-0.5">
                     @foreach($options->take(5) as $item)
-                        <a href="{{ route('categories.show', ['category' => $item->slug]) }}" wire:navigate.hover
+                        <a href="{{ $item->publicUrl() }}" wire:navigate.hover
                             @class([
                                 'block rounded-xl px-4 py-1.5 text-xs transition',
                                 'bg-purple-50 font-semibold text-purple-600' => $activeCategoryId === (int) $item->id,

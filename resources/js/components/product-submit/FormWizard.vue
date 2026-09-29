@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen bg-white text-gray-900 font-sans pb-20">
     <!-- Main Content Area -->
-    <div class="max-w-7xl mx-auto w-full px-4 pt-4 mt-4 md:mt-12 md:px-8 md:pt-12">
+    <div class="mx-auto mt-4 w-full max-w-[720px] px-4 pt-4 md:mt-12 md:pt-12">
       
       <transition name="fade-slide" mode="out-in">
         <!-- Landing View -->
-        <div v-if="!showForm" key="landing" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div v-if="!showForm" key="landing">
           <!-- Left Column: Entry Options -->
-          <div class="lg:col-span-8 space-y-6">
+          <div class="space-y-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <h1 class="text-2xl font-bold text-gray-800">
                 <span v-if="isEditMode" class="inline-flex items-center gap-3">
@@ -54,17 +54,8 @@
               :fieldError="validationErrors.link"
               @getStarted="handleUrlFetch"
               @clear="clearForm"
+              @manual="openManualMode"
             />
-
-            <!-- Manual Fill Trigger -->
-            <div
-              @click="showForm = true"
-              class="group relative border-2 border-dashed border-gray-200 rounded-xl h-1/2 flex items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition-all duration-300"
-            >
-              <div class="text-center group-hover:scale-105 transition-transform duration-300">
-                <p class="text-gray-400 font-medium text-sm">Or click here to fill manually</p>
-              </div>
-            </div>
 
             <div v-if="showDraftList" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div class="flex items-center justify-between gap-3">
@@ -96,29 +87,12 @@
             </div>
           </div>
 
-          <!-- Right Column: Sidebar Previews -->
-          <div class="hidden lg:block lg:col-span-4 space-y-8">
-            <ProductPreviewCard 
-              :form="form" 
-              :logoPreview="logoPreview" 
-              :galleryPreviews="galleryPreviews" 
-              :allCategories="allCategories"
-              @open-logo-picker="openLogoPicker"
-              @open-screenshot-picker="openScreenshotPicker"
-              @remove-logo="removeSelectedLogo"
-            />
-            <FormProgress 
-              :form="form" 
-              :logoPreview="logoPreview" 
-              :galleryPreviews="galleryPreviews"
-            />
-          </div>
         </div>
 
         <!-- Full Form View -->
-        <div v-else key="form" class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div v-else key="form">
           <!-- Left Main Column (Form Fields) -->
-          <div class="lg:col-span-8 space-y-10">
+          <div class="space-y-10">
             <div>
               <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <h1 class="text-3xl font-bold text-gray-900">
@@ -218,7 +192,29 @@
                 </div>
               </transition>
               
-              <form @submit.prevent="submitProduct" class="space-y-8">
+              <form @submit.prevent="handleSubmit" class="space-y-8">
+                <div v-if="manualMode" class="rounded-xl border border-slate-200 bg-white p-4" aria-label="Manual form progress">
+                  <div class="mb-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full bg-sky-500 transition-all" :style="{ width: `${manualProgress}%` }"></div></div>
+                  <ol class="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+                    <li v-for="(step, index) in manualSteps" :key="step" :class="index === manualStep ? 'font-semibold text-sky-700' : 'text-slate-500'">{{ index + 1 }}. {{ step }}</li>
+                  </ol>
+                </div>
+
+                <div v-else class="rounded-xl border border-slate-200 bg-white p-4">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-slate-900">AI filled {{ aiFilledCount }} fields. {{ reviewRemaining }} need your input.</p>
+                    <div class="flex items-center gap-3">
+                      <span v-if="draftAutosaveState === 'saved'" class="text-xs text-emerald-700">Saved just now</span>
+                      <button type="button" class="text-xs font-semibold text-sky-700 hover:text-sky-900" @click="handleUrlFetch(form.link)">Regenerate</button>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-valuenow="reviewProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all" :style="{ width: `${reviewProgress}%` }"></div></div>
+                  <div v-if="reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p class="text-xs font-semibold text-amber-900">Needs your input</p>
+                    <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
+                  </div>
+                </div>
+
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
@@ -237,16 +233,19 @@
                     :urlExistsError="urlExistsError"
                     :existingProduct="existingProduct"
                     :fieldError="validationErrors.link"
+                    :reviewMode="!manualMode"
                     @getStarted="handleUrlFetch"
                     @clear="clearForm"
                   />
                 </div>
 
-                <div id="details-section" class="scroll-mt-6">
+                <div v-show="!manualMode || manualStep <= 2" id="details-section" class="scroll-mt-6">
                   <ProductDetailsForm
                     :modelValue="form"
                     @update:modelValue="handleFormDetailUpdate"
                     @rewrite-description="handleDescriptionRewrite"
+                    @regenerate-tagline="handleTaglineRegeneration"
+                    @regenerate-description="handleDescriptionRewrite"
                     :allCategories="allCategories"
                     :allUseCases="allUseCases"
                     :allPlatforms="allPlatforms"
@@ -257,25 +256,18 @@
                     :validationErrors="validationErrors"
                     :autofillReveal="autofillReveal"
                     :isAdmin="isAdmin"
-                  />
-                </div>
-
-                <div class="lg:hidden">
-                  <ProductPreviewCard
-                    :form="form"
-                    :logoPreview="logoPreview"
-                    :galleryPreviews="galleryPreviews"
-                    :allCategories="allCategories"
-                    :validationErrors="validationErrors"
-                    @update:modelValue="handleFormDetailUpdate"
+                    :reviewMode="!manualMode"
+                    :sourceScreenshot="galleryPreviews[0] || ''"
+                    :sourceSnippet="sourceSnippet"
+                    :logoPreview="logoPreview || form.favicon || ''"
+                    :showLogoError="submitAttempted && Boolean(validationErrors.logo)"
+                    :regenerationRemaining="regenerationRemaining"
                     @open-logo-picker="openLogoPicker"
-                    @open-screenshot-picker="openScreenshotPicker"
-                    @remove-logo="removeSelectedLogo"
                   />
                 </div>
 
-                <div id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
-                  <h2 class="text-xl font-bold text-gray-800 mb-4">Additional Info</h2>
+                <div v-show="!manualMode || manualStep >= 3" id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
+                  <h2 class="text-xl font-bold text-gray-800 mb-4">{{ manualMode ? manualSteps[manualStep] : 'Submission' }}</h2>
                   <div
                     class="transition-all duration-300"
                     :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.launch }"
@@ -296,9 +288,13 @@
                       :validationSummary="validationSummary"
                       :generalErrorMessage="showErrorMessage ? errorMessage : ''"
                       @focus-field="handleFocusField"
-                      @submit="submitProduct"
+                      @submit="handleSubmit"
                     />
                   </div>
+                </div>
+                <div v-if="manualMode" class="flex items-center justify-between border-t border-slate-200 pt-5">
+                  <button v-if="manualStep > 0" type="button" class="text-sm font-semibold text-slate-600" @click="manualStep--">Back</button><span v-else></span>
+                  <button v-if="manualStep < manualSteps.length - 1" type="button" class="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white" @click="manualStep++">Continue</button>
                 </div>
               </form>
             </div>
@@ -309,27 +305,6 @@
             </div>
           </div>
 
-            <!-- Right Sidebar (Preview & Progress) -->
-           <div class="hidden lg:block lg:col-span-4 space-y-8">
-             <div class="sticky top-8 space-y-6">
-               <ProductPreviewCard 
-                 :form="form" 
-                 :logoPreview="logoPreview" 
-                 :galleryPreviews="galleryPreviews" 
-                 :allCategories="allCategories"
-                 :validationErrors="validationErrors"
-                 @update:modelValue="handleFormDetailUpdate"
-                 @open-logo-picker="openLogoPicker"
-                 @open-screenshot-picker="openScreenshotPicker"
-                 @remove-logo="removeSelectedLogo"
-               />
-               <FormProgress 
-                 :form="form" 
-                 :logoPreview="logoPreview" 
-                 :galleryPreviews="galleryPreviews"
-               />
-             </div>
-           </div>
          </div>
        </transition>
 
@@ -346,13 +321,6 @@
         @refresh-logos="extractLogos"
         @restore-favicon="restoreFaviconLogo"
       />
-      <ScreenshotPickerModal
-        :show="isScreenshotPickerOpen"
-        :currentScreenshot="galleryPreviews[0] || ''"
-        @close="closeScreenshotPicker"
-        @upload-screenshot="uploadScreenshotFile"
-        @remove-screenshot="removeSelectedScreenshot"
-      />
     </div>
    </div>
  </template>
@@ -363,10 +331,7 @@ import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
-import ProductPreviewCard from './ProductPreviewCard.vue';
-import FormProgress from './FormProgress.vue';
 import LogoPickerModal from './LogoPickerModal.vue';
-import ScreenshotPickerModal from './ScreenshotPickerModal.vue';
 import { useExtractionTimer } from '../../composables/useExtractionTimer';
 import { useProductForm } from '../../composables/useProductForm';
 
@@ -382,8 +347,11 @@ const props = defineProps({
 });
 
 const showForm = ref(props.initialProduct ? true : false);
+const manualMode = ref(false);
+const manualStep = ref(0);
+const submitAttempted = ref(false);
+const manualSteps = ['Basics', 'Description', 'Categorization', 'Pricing and links', 'Extras'];
 const isLogoPickerOpen = ref(false);
-const isScreenshotPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 const urlCheckPending = ref(false);
 const urlCheckFailed = ref(false);
@@ -402,6 +370,7 @@ const {
   checkUrlExists,
   extractLogos,
   rewriteProductDescription,
+  regenerateProductTagline,
   allCategories,
   allUseCases,
   allPlatforms,
@@ -418,6 +387,7 @@ const {
   submissionDrafts,
   draftAutosaveState,
   draftAutosavedAtLabel,
+  regenerationRemaining,
   isUrlInvalid,
   urlTrimSuggestion,
   initializeFormData,
@@ -441,7 +411,6 @@ const {
   resetValidationState,
   focusField,
   markManualLogoChosen,
-  markManualScreenshotChosen,
   resetManualMediaChoices
 } = useProductForm(props.initialProduct);
 
@@ -462,6 +431,27 @@ const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 const showAiContext = computed(() => !form.id);
 const showDraftList = computed(() => !isEditMode.value && submissionDrafts.value.length > 0);
+const reviewFields = computed(() => ({
+  pricing: Array.isArray(form.pricing) && form.pricing.length > 0,
+  pricing_page_url: Boolean(String(form.pricing_page_url || '').trim()),
+  hosting_provider: Boolean(String(form.hosting_provider || '').trim()),
+  domain_registrar: Boolean(String(form.domain_registrar || '').trim()),
+  sell_product: form.sell_product === true,
+}));
+const reviewRemaining = computed(() => Object.values(reviewFields.value).filter((complete) => !complete).length);
+const reviewProgress = computed(() => Math.round(((5 - reviewRemaining.value) / 5) * 100));
+const aiFilledCount = computed(() => [form.name, form.tagline, form.description, logoPreview.value, galleryPreviews.value[0], form.tech_stack?.length, form.categories?.length, form.useCases?.length, form.platforms?.length].filter(Boolean).length);
+const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
+const sourceSnippet = computed(() => '');
+const openManualMode = () => {
+  manualMode.value = true;
+  manualStep.value = 0;
+  showForm.value = true;
+};
+const handleSubmit = async () => {
+  submitAttempted.value = true;
+  await submitProduct();
+};
 const autofillNoticeDismissed = ref(false);
 const draftNoticeDismissed = ref(false);
 const draftStatusMessage = computed(() => {
@@ -615,6 +605,9 @@ const handleUrlFetch = async (url) => {
     }
 
     await fetchInitialData(url);
+    if (showErrorMessage.value) {
+      manualMode.value = true;
+    }
     showForm.value = true;
   } finally {
     await nextTick();
@@ -717,6 +710,14 @@ const handleDescriptionRewrite = async () => {
   await rewriteProductDescription();
 };
 
+const handleTaglineRegeneration = async () => {
+  if (loadingStates.tagline || isLoading.value) {
+    return;
+  }
+
+  await regenerateProductTagline();
+};
+
 const openLogoPicker = async () => {
   isLogoPickerOpen.value = true;
 
@@ -727,14 +728,6 @@ const openLogoPicker = async () => {
 
 const closeLogoPicker = () => {
   isLogoPickerOpen.value = false;
-};
-
-const openScreenshotPicker = () => {
-  isScreenshotPickerOpen.value = true;
-};
-
-const closeScreenshotPicker = () => {
-  isScreenshotPickerOpen.value = false;
 };
 
 const applySelectedLogo = (logoUrl) => {
@@ -760,25 +753,6 @@ const uploadLogoFile = (file) => {
   reader.readAsDataURL(file);
 };
 
-const uploadScreenshotFile = (file) => {
-  markManualScreenshotChosen();
-  form.gallery = [file];
-
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    galleryPreviews.value = [event.target.result];
-    isScreenshotPickerOpen.value = false;
-  };
-  reader.readAsDataURL(file);
-};
-
-const removeSelectedScreenshot = () => {
-  markManualScreenshotChosen();
-  form.gallery = [null];
-  galleryPreviews.value = [null];
-  isScreenshotPickerOpen.value = false;
-};
-
 const restoreFaviconLogo = () => {
   markManualLogoChosen(false);
   const restoredLogo = form.favicon || originalFavicon.value;
@@ -792,15 +766,6 @@ const restoreFaviconLogo = () => {
   touchField('logo');
   validateField('logo');
   isLogoPickerOpen.value = false;
-};
-
-const removeSelectedLogo = () => {
-  markManualLogoChosen();
-  form.logo = null;
-  form.favicon = null;
-  logoPreview.value = null;
-  touchField('logo');
-  validateField('logo');
 };
 
 // Calculate Overall Progress (Simplified for demo)

@@ -1,6 +1,15 @@
 @extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'containerMaxWidth' => 'max-w-[96rem]', 'headerPadding' => 'px-4 md:pt-4'])
 
-@if(request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'))
+@php
+    $taxonomyRoutes = [
+        'categories.show', 'categories.show.page',
+        'use-cases.show', 'use-cases.show.page',
+        'best-for.show', 'best-for.show.page',
+        'platforms.show', 'platforms.show.page',
+    ];
+@endphp
+
+@if(request()->routeIs('home', 'products.byWeek', ...$taxonomyRoutes))
     @section('left_sidebar_content')
         @include('products.partials._browse')
     @endsection
@@ -43,7 +52,7 @@
         <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byMonth', ['year' => request()->route('year'), 'month' => request()->route('month')]) }}" />
     @elseif (Route::currentRouteName() == 'products.byYear')
         <link rel="canonical" href="{{ $paginatedCanonicalUrl ?: route('products.byYear', ['year' => request()->route('year')]) }}" />
-    @elseif (in_array(Route::currentRouteName(), ['categories.show', 'categories.show.page'], true))
+    @elseif (in_array(Route::currentRouteName(), $taxonomyRoutes, true))
         <link rel="canonical" href="{{ $categoryCanonicalUrl ?? url()->current() }}" />
     @endif
 
@@ -76,12 +85,12 @@
 @endsection
 
 
-@if((isset($isFuture) && $isFuture) || !empty($shouldNoindexArchive))
+@if((isset($isFuture) && $isFuture) || !empty($shouldNoindexArchive) || !empty($shouldNoindexTaxonomy))
     @section('robots', 'noindex, follow')
 @endif
 
 @section('content')
-    @if(request()->routeIs('home', 'products.byWeek', 'categories.show', 'categories.show.page'))
+    @if(request()->routeIs('home', 'products.byWeek', ...$taxonomyRoutes))
     <div class="xl:hidden border-b border-gray-100 px-4 py-3" x-data="{ filtersOpen: false }">
         <button type="button" @click="filtersOpen = true"
             class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm">
@@ -142,10 +151,27 @@
         <x-week-header :week="$weekOfYear" :year="$year" :start-date="$startOfWeek" :end-date="$endOfWeek" />
     @endif
 
-    @if(isset($isCategoryPage) && $isCategoryPage && isset($category) && $category->description)
+    @if(isset($isCategoryPage) && $isCategoryPage && isset($category))
         <div class="px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
-            <p class="text-sm text-gray-800">{{ $category->description }}</p>
+            <x-breadcrumbs :items="[
+                ['label' => 'Home', 'link' => route('home')],
+                ['label' => $taxonomyLabel],
+                ['label' => $category->name],
+            ]" />
+            <p class="mt-3 text-sm text-gray-800">{{ $pageIntro }}</p>
         </div>
+
+        @push('structured-data')
+            <script type="application/ld+json">{!! json_encode([
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => $taxonomyLabel],
+                    ['@type' => 'ListItem', 'position' => 3, 'name' => $category->name, 'item' => $categoryCanonicalUrl],
+                ],
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        @endpush
     @endif
     </div>
 
@@ -173,7 +199,7 @@
 
             @if(!empty($isCategoryPage) && !empty($hasMoreProducts))
                 <div class="border-t border-gray-100 px-4 py-8 text-center">
-                    <a href="{{ route('categories.show', ['category' => $category->slug, 'limit' => $displayLimit + 50]) }}"
+                    <a href="{{ $category->publicUrl(['limit' => $displayLimit + 50]) }}"
                         class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
                         Load more products
                     </a>

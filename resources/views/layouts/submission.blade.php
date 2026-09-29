@@ -332,7 +332,7 @@
     @elseif(request()->routeIs('products.show'))
         <link rel="canonical" href="{{ route('products.show', ['product' => $product->slug]) }}" />
     @elseif(request()->routeIs('categories.show'))
-        <link rel="canonical" href="{{ route('categories.show', ['category' => $category->slug]) }}" />
+        <link rel="canonical" href="{{ $category->publicUrl() }}" />
     @endif
 
     <meta name="application-name" content="{{ config('app.name', 'Software on the Web') }}">
