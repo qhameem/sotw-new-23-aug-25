@@ -39,6 +39,7 @@ use App\Support\SocialLinkValidator;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -56,6 +57,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductController extends Controller
 {
+    private const CATEGORY_PRODUCTS_PER_PAGE = 50;
+
     protected FaviconExtractorService $faviconExtractor;
 
     protected SlugService $slugService;
@@ -1444,14 +1447,28 @@ class ProductController extends Controller
     public function categoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)
     {
         $pageType = $category->pageType();
-        $expectedRoute = CategoryPageType::routeName($pageType, (bool) $request->route('page'));
+        $routePage = (int) ($request->route('page') ?? 0);
+        $queryPage = max(1, (int) $request->query('page', 1));
+        $legacyLimitPage = (int) ceil(max(1, (int) $request->query('limit', self::CATEGORY_PRODUCTS_PER_PAGE)) / self::CATEGORY_PRODUCTS_PER_PAGE);
+
+        if ($routePage === 0 && ($queryPage > 1 || $legacyLimitPage > 1)) {
+            $targetPage = max($queryPage, $legacyLimitPage);
+            $parameters = $request->except(['page', 'limit']);
+            $parameters['page'] = $targetPage;
+
+            return redirect()->to(CategoryPageType::url($category, $parameters), 301);
+        }
+
+        if ($routePage === 1) {
+            return redirect()->to(CategoryPageType::url($category, $request->except(['page', 'limit'])), 301);
+        }
+
+        $currentPage = max(1, $routePage ?: 1);
+        $expectedRoute = CategoryPageType::routeName($pageType, $currentPage > 1);
 
         abort_unless($request->routeIs($expectedRoute), 404);
 
-        $requestedLimit = max(50, min(5000, (int) $request->query('limit', 50)));
-        $displayLimit = (int) (ceil($requestedLimit / 50) * 50);
-
-        $regularProducts = $category->products()
+        $productQuery = $category->products()
             ->approvedAndPublished()
             ->with([
                 'categories.types',
@@ -1463,12 +1480,23 @@ class ProductController extends Controller
                 },
             ])
             ->orderByRaw('COALESCE(published_at, created_at) DESC')
-            ->orderByDesc('id')
-            ->limit($displayLimit + 1)
+            ->orderByDesc('id');
+
+        $publishedProductCount = (clone $productQuery)->count();
+        $lastPage = max(1, (int) ceil($publishedProductCount / self::CATEGORY_PRODUCTS_PER_PAGE));
+        abort_if($currentPage > $lastPage, 404);
+
+        $products = $productQuery
+            ->forPage($currentPage, self::CATEGORY_PRODUCTS_PER_PAGE)
             ->get();
 
-        $hasMoreProducts = $regularProducts->count() > $displayLimit;
-        $regularProducts = $regularProducts->take($displayLimit)->values();
+        $regularProducts = new LengthAwarePaginator(
+            $products,
+            $publishedProductCount,
+            self::CATEGORY_PRODUCTS_PER_PAGE,
+            $currentPage,
+            ['path' => $category->publicUrl()]
+        );
         $promotedProducts = collect();
 
         // Alpine products mapping - based on all products for the modal.
@@ -1510,19 +1538,31 @@ class ProductController extends Controller
         ])->orderBy('name')->get();
 
         $title = CategoryPageType::heading($pageType, strip_tags($category->name));
-        $meta_title = "{$title} | Software on the Web";
+        $pageSuffix = $currentPage > 1 ? ", Page {$currentPage}" : '';
+        $meta_title = "{$title}{$pageSuffix} | Software on the Web";
         $isCategoryPage = true;
         $metaDescriptionBase = trim((string) ($category->meta_description ?: $category->description));
         if ($metaDescriptionBase === '') {
             $metaDescriptionBase = "Browse curated {$category->name} tools, ranked by the community on Software on the Web.";
         }
         $pageIntro = CategoryPageType::intro($pageType, $category);
-        $meta_description = $metaDescriptionBase !== '' ? $metaDescriptionBase : $pageIntro;
-        $categoryCanonicalUrl = $category->publicUrl();
+        $meta_description = ($metaDescriptionBase !== '' ? $metaDescriptionBase : $pageIntro)
+            .($currentPage > 1 ? " Page {$currentPage}." : '');
+        $categoryCanonicalUrl = $currentPage > 1
+            ? $category->publicUrl(['page' => $currentPage])
+            : $category->publicUrl();
         $taxonomyLabel = CategoryPageType::label($pageType);
-        $publishedProductCount = $category->products()->approvedAndPublished()->count();
         $shouldNoindexTaxonomy = $publishedProductCount < 3;
-        $categoryPagination = [];
+        $categoryPagination = [
+            'current_page' => $currentPage,
+            'last_page' => $lastPage,
+            'previous_url' => $currentPage > 1
+                ? ($currentPage === 2 ? $category->publicUrl() : $category->publicUrl(['page' => $currentPage - 1]))
+                : null,
+            'next_url' => $currentPage < $lastPage
+                ? $category->publicUrl(['page' => $currentPage + 1])
+                : null,
+        ];
 
         $premiumProducts = PremiumProduct::with('product.categories.types', 'product.user', 'product.userUpvotes')
             ->where('expires_at', '>', now())
@@ -1554,8 +1594,8 @@ class ProductController extends Controller
             'shouldNoindexTaxonomy',
             'categoryCanonicalUrl',
             'categoryPagination',
-            'displayLimit',
-            'hasMoreProducts',
+            'currentPage',
+            'lastPage',
             'nextLaunchTime'
         ));
     }

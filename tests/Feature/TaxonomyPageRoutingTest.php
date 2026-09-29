@@ -85,3 +85,48 @@ it('removes noindex when a taxonomy page reaches three published products', func
         ->assertOk()
         ->assertSee('<meta name="robots" content="index, follow, max-image-preview:large">', false);
 });
+
+it('renders crawlable taxonomy pagination with page-specific metadata and products', function () {
+    $category = taxonomyCategory('Productivity', 'productivity', ['Software'], 51);
+    $orderedProducts = $category->products()
+        ->orderByRaw('COALESCE(published_at, created_at) DESC')
+        ->orderByDesc('products.id')
+        ->get();
+    $firstPageProduct = $orderedProducts->first();
+    $secondPageProduct = $orderedProducts->last();
+    $pageTwoUrl = route('categories.show.page', ['category' => $category->slug, 'page' => 2]);
+
+    $this->get(route('categories.show', $category->slug))
+        ->assertOk()
+        ->assertSee($firstPageProduct->name)
+        ->assertDontSee($secondPageProduct->name)
+        ->assertSee('href="'.$pageTwoUrl.'"', false)
+        ->assertSee('rel="next" href="'.$pageTwoUrl.'"', false);
+
+    $this->get($pageTwoUrl)
+        ->assertOk()
+        ->assertSee($secondPageProduct->name)
+        ->assertDontSee($firstPageProduct->name)
+        ->assertSee('Productivity Software, Page 2 | Software on the Web')
+        ->assertSee('<meta name="robots" content="index, follow, max-image-preview:large">', false)
+        ->assertSee('<link rel="canonical" href="'.$pageTwoUrl.'"', false)
+        ->assertSee('rel="prev" href="'.route('categories.show', $category->slug).'"', false)
+        ->assertSee('"position": 51', false)
+        ->assertSee('Page 2 of 2');
+});
+
+it('redirects legacy query pagination and rejects invalid taxonomy pages', function () {
+    $category = taxonomyCategory('Productivity', 'productivity', ['Software'], 51);
+    $pageTwoUrl = route('categories.show.page', ['category' => $category->slug, 'page' => 2]);
+
+    $this->get(route('categories.show', ['category' => $category->slug, 'page' => 2]))
+        ->assertRedirect($pageTwoUrl)
+        ->assertStatus(301);
+
+    $this->get(route('categories.show.page', ['category' => $category->slug, 'page' => 1]))
+        ->assertRedirect(route('categories.show', $category->slug))
+        ->assertStatus(301);
+
+    $this->get(route('categories.show.page', ['category' => $category->slug, 'page' => 3]))
+        ->assertNotFound();
+});

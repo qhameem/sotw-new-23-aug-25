@@ -9,6 +9,7 @@
         $showProductEngagement = $showProductEngagement ?? true;
         $isPaginator = $regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator;
         $organicRank = $isPaginator ? (($regularProductsList->currentPage() - 1) * $regularProductsList->perPage()) : 0;
+        $schemaPositionOffset = $organicRank;
         $lastPublishedGroup = null;
     @endphp
 
@@ -17,10 +18,10 @@
 {!! json_encode([
     '@context' => 'https://schema.org',
     '@type' => 'ItemList',
-    'itemListElement' => collect($finalProductList)->values()->map(function ($product, $index) {
+    'itemListElement' => collect($finalProductList)->values()->map(function ($product, $index) use ($schemaPositionOffset) {
         return [
             '@type' => 'ListItem',
-            'position' => $index + 1,
+            'position' => $schemaPositionOffset + $index + 1,
             'url' => route('products.show', $product->slug),
         ];
     }),

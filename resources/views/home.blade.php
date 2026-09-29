@@ -197,13 +197,22 @@
                 ])
             </div>
 
-            @if(!empty($isCategoryPage) && !empty($hasMoreProducts))
-                <div class="border-t border-gray-100 px-4 py-8 text-center">
-                    <a href="{{ $category->publicUrl(['limit' => $displayLimit + 50]) }}"
-                        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
-                        Load more products
-                    </a>
-                </div>
+            @if(!empty($isCategoryPage) && ($lastPage ?? 1) > 1)
+                <nav class="flex items-center justify-between border-t border-gray-100 px-4 py-6 text-sm" aria-label="Product pages">
+                    @if(!empty($categoryPagination['previous_url']))
+                        <a href="{{ $categoryPagination['previous_url'] }}" wire:navigate.hover class="font-semibold text-primary-600 hover:text-primary-700">&larr; Previous</a>
+                    @else
+                        <span></span>
+                    @endif
+
+                    <span class="text-xs text-gray-500">Page {{ $currentPage }} of {{ $lastPage }}</span>
+
+                    @if(!empty($categoryPagination['next_url']))
+                        <a href="{{ $categoryPagination['next_url'] }}" wire:navigate.hover class="font-semibold text-primary-600 hover:text-primary-700">Load more products &rarr;</a>
+                    @else
+                        <span></span>
+                    @endif
+                </nav>
             @endif
 
             @include('partials.week_pagination', [
