@@ -9,6 +9,7 @@ class CodeSnippet extends Model
 {
     protected $fillable = [
         'page',
+        'pages',
         'location',
         'code',
         'excluded_ips',
@@ -18,6 +19,7 @@ class CodeSnippet extends Model
     protected $casts = [
         'excluded_ips' => 'array',
         'excluded_countries' => 'array',
+        'pages' => 'array',
     ];
 
     public function shouldRenderFor(Request $request): bool
@@ -35,10 +37,23 @@ class CodeSnippet extends Model
 
     public function matchesRequestRoute(Request $request): bool
     {
-        if ($this->page === 'all') {
+        $pages = $this->targetPages();
+
+        if (in_array('all', $pages, true)) {
             return true;
         }
 
-        return $request->routeIs(str_replace('.index', '.*', $this->page));
+        foreach ($pages as $page) {
+            if ($request->routeIs(str_replace('.index', '.*', $page))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function targetPages(): array
+    {
+        return $this->pages ?: array_filter([$this->page]);
     }
 }

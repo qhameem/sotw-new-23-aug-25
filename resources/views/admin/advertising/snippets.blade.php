@@ -34,13 +34,17 @@
                 <div class="space-y-6">
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label for="page" class="block text-sm font-medium text-slate-700">Page</label>
-                            <select name="page" id="page"
+                            <label for="pages" class="block text-sm font-medium text-slate-700">Pages</label>
+                            <select name="pages[]" id="pages" multiple size="4"
                                 class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                 @foreach ($pageOptions as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('page') === $value)>{{ $label }}</option>
+                                    <option value="{{ $value }}" @selected(in_array($value, old('pages', ['all']), true))>{{ $label }}</option>
                                 @endforeach
                             </select>
+                            <p class="mt-2 text-xs text-slate-500">Hold Command on Mac or Control on Windows/Linux to select multiple pages. All Pages overrides other selections.</p>
+                            @error('pages')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label for="location" class="block text-sm font-medium text-slate-700">Location</label>
@@ -167,7 +171,7 @@
                                     {{ $locationOptions[$snippet->location] ?? $snippet->location }}
                                 </span>
                                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                                    {{ $pageOptions[$snippet->page] ?? $snippet->page }}
+                                    {{ collect($snippet->targetPages())->map(fn ($page) => $pageOptions[$page] ?? $page)->join(', ') }}
                                 </span>
                                 <span class="text-xs text-slate-500">Updated {{ $snippet->updated_at?->diffForHumans() }}</span>
                             </div>
@@ -237,13 +241,14 @@
 
                                 <div class="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <label for="page-{{ $snippet->id }}" class="block text-sm font-medium text-slate-700">Page</label>
-                                        <select name="page" id="page-{{ $snippet->id }}"
+                                        <label for="pages-{{ $snippet->id }}" class="block text-sm font-medium text-slate-700">Pages</label>
+                                        <select name="pages[]" id="pages-{{ $snippet->id }}" multiple size="4"
                                             class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                             @foreach ($pageOptions as $value => $label)
-                                                <option value="{{ $value }}" @selected($snippet->page === $value)>{{ $label }}</option>
+                                                <option value="{{ $value }}" @selected(in_array($value, $snippet->targetPages(), true))>{{ $label }}</option>
                                             @endforeach
                                         </select>
+                                        <p class="mt-2 text-xs text-slate-500">Hold Command on Mac or Control on Windows/Linux to select multiple pages.</p>
                                     </div>
                                     <div>
                                         <label for="location-{{ $snippet->id }}" class="block text-sm font-medium text-slate-700">Location</label>

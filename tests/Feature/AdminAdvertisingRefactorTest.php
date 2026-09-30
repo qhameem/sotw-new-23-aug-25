@@ -3,6 +3,7 @@
 use App\Models\Ad;
 use App\Models\AdZone;
 use App\Models\Category;
+use App\Models\CodeSnippet;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\AdDeliveryService;
@@ -18,6 +19,33 @@ function makeAdminUser(): User
 
     return $user;
 }
+
+test('admin can target a code snippet to multiple pages', function () {
+    $admin = makeAdminUser();
+
+    $this->actingAs($admin)->post(route('admin.code-snippets.store'), [
+        'pages' => ['home', 'products.*'],
+        'location' => 'body',
+        'code' => '<script>window.multiPageSnippet = true;</script>',
+    ])->assertRedirect(route('admin.advertising.index'));
+
+    $snippet = CodeSnippet::firstOrFail();
+
+    expect($snippet->pages)->toBe(['home', 'products.*'])
+        ->and($snippet->page)->toBe('home');
+});
+
+test('all pages overrides other code snippet page selections', function () {
+    $admin = makeAdminUser();
+
+    $this->actingAs($admin)->post(route('admin.code-snippets.store'), [
+        'pages' => ['products.*', 'all'],
+        'location' => 'body',
+        'code' => '<script>window.globalSnippet = true;</script>',
+    ])->assertRedirect(route('admin.advertising.index'));
+
+    expect(CodeSnippet::firstOrFail()->pages)->toBe(['all']);
+});
 
 test('admin can create a standard image ad and save its tagline', function () {
     Storage::fake('public');

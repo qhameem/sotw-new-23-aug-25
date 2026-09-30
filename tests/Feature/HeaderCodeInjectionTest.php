@@ -73,6 +73,24 @@ it('keeps non-head advertising snippets eligible on excluded pages', function ()
     expect($snippet->shouldRenderFor($request))->toBeTrue();
 });
 
+it('matches any selected snippet page and preserves legacy page targeting', function () {
+    $snippet = new CodeSnippet([
+        'page' => 'home',
+        'pages' => ['home', 'articles.*'],
+    ]);
+    $articleRequest = Request::create('/articles/example', 'GET');
+    $articleRequest->setRouteResolver(fn () => (new Route('GET', '/articles/example', []))->name('articles.show'));
+    $productRequest = Request::create('/products/example', 'GET');
+    $productRequest->setRouteResolver(fn () => (new Route('GET', '/products/example', []))->name('products.show'));
+
+    expect($snippet->matchesRequestRoute($articleRequest))->toBeTrue()
+        ->and($snippet->matchesRequestRoute($productRequest))->toBeFalse();
+
+    $legacySnippet = new CodeSnippet(['page' => 'products.*']);
+
+    expect($legacySnippet->matchesRequestRoute($productRequest))->toBeTrue();
+});
+
 it('does not deliver advertising head snippets to excluded pages', function (string $routeName, string $path) {
     CodeSnippet::create([
         'page' => 'all',

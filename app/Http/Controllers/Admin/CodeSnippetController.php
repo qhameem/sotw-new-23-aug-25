@@ -31,7 +31,8 @@ class CodeSnippetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'page' => 'required|string',
+            'pages' => 'required|array|min:1',
+            'pages.*' => 'string|distinct|in:all,home,products.*,articles.*',
             'location' => 'required|string|in:head,body,sidebar',
             'code' => 'required|string',
             'excluded_ips' => 'nullable|string',
@@ -67,7 +68,8 @@ class CodeSnippetController extends Controller
     public function update(Request $request, string $id)
     {
         $validated = $request->validate([
-            'page' => 'required|string',
+            'pages' => 'required|array|min:1',
+            'pages.*' => 'string|distinct|in:all,home,products.*,articles.*',
             'location' => 'required|string|in:head,body,sidebar',
             'code' => 'required|string',
             'excluded_ips' => 'nullable|string',
@@ -95,10 +97,17 @@ class CodeSnippetController extends Controller
 
     protected function preparePayload(array $validated): array
     {
+        $validated['pages'] = $this->normalizePages($validated['pages']);
+        $validated['page'] = $validated['pages'][0];
         $validated['excluded_ips'] = $this->normalizeExcludedIps($validated['excluded_ips'] ?? null);
         $validated['excluded_countries'] = $this->normalizeExcludedCountries($validated['excluded_countries'] ?? []);
 
         return $validated;
+    }
+
+    protected function normalizePages(array $pages): array
+    {
+        return in_array('all', $pages, true) ? ['all'] : array_values(array_unique($pages));
     }
 
     protected function normalizeExcludedIps(?string $rawIps): array
