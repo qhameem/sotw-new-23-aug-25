@@ -209,6 +209,9 @@
                     </div>
                   </div>
                   <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-valuenow="reviewProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all" :style="{ width: `${reviewProgress}%` }"></div></div>
+                  <p v-if="isLoading" class="mt-2 text-xs text-slate-600" aria-live="polite">
+                    <span class="font-semibold text-slate-700">Filling:</span> {{ activeAutofillFieldLabel }}
+                  </p>
                   <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <p class="text-xs font-semibold text-amber-900">Needs your input</p>
                     <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
@@ -447,6 +450,18 @@ const aiFields = computed(() => [
 ]);
 const aiFieldCount = computed(() => aiFields.value.length);
 const aiFilledCount = computed(() => aiFields.value.filter(Boolean).length);
+const activeAutofillFieldLabel = computed(() => {
+  const fields = [];
+
+  if (loadingStates.name) fields.push('product name', 'tagline');
+  if (loadingStates.description) fields.push('description');
+  if (loadingStates.categories || loadingStates.bestFor) {
+    fields.push('categories', 'use cases', 'best for', 'pricing', 'platforms', 'tech stack');
+  }
+  if (loadingStates.logos) fields.push('logo', 'screenshot');
+
+  return [...new Set(fields)].join(', ') || 'website details';
+});
 const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
 const sourceSnippet = computed(() => '');
 const openManualMode = () => {

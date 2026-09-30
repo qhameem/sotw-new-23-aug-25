@@ -112,17 +112,6 @@
       </p>
     </transition>
 
-
-    <!-- Loading State Message -->
-    <div v-if="isLoading" class="mt-4" aria-live="polite">
-      <ol class="grid gap-2 text-sm sm:grid-cols-3">
-        <li v-for="step in fetchSteps" :key="step.label" class="flex items-center gap-2" :class="step.done ? 'text-emerald-700' : 'text-slate-500'">
-          <span class="flex h-5 w-5 items-center justify-center rounded-full border text-xs" :class="step.done ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'">{{ step.done ? '✓' : step.number }}</span>
-          <span>{{ step.label }}</span>
-        </li>
-      </ol>
-    </div>
-
     <transition name="fade">
       <div
         v-if="urlTrimSuggestion && !isLoading"
@@ -217,11 +206,6 @@ const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
 const showDisabledTooltip = ref(false);
-const fetchSteps = computed(() => [
-  { number: 1, label: 'Reading your site', done: props.loadingProgress >= 30 },
-  { number: 2, label: 'Taking a screenshot', done: props.loadingProgress >= 65 },
-  { number: 3, label: 'Writing the description', done: props.loadingProgress >= 95 },
-]);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
   !props.isSandboxMode && (
