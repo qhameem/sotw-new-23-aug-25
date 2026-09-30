@@ -120,6 +120,8 @@
                     <x-phosphor-caret-right x-show="adminSection !== 'system'" class="h-4 w-4 text-gray-400" />
                 </button>
                 <div x-show="adminSection === 'system'" x-transition.opacity.duration.150ms class="pb-1">
+                    <a href="{{ route('admin.errors.index') }}"
+                        class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-warning-circle class="mr-2 h-4 w-4 text-red-500" />Errors</a>
                     <a href="{{ route('admin.users.index') }}"
                         class="flex items-center rounded-md px-8 py-1.5 text-sm text-gray-700 hover:bg-gray-100"><x-phosphor-users class="mr-2 h-4 w-4 text-gray-400" />Manage Users</a>
                     <a href="{{ route('admin.search-history.index') }}"

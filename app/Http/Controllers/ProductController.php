@@ -27,6 +27,7 @@ use App\Services\ProductLogoStorageService; // Added for logging
 use App\Services\RelatedProductService;
 use App\Services\ScreenshotService;
 use App\Services\SlugService;
+use App\Services\SystemErrorReporter;
 use App\Services\TechStackDetectorService;
 use App\Support\CategoryPageType;
 use App\Support\CategoryTypeRegistry;
@@ -3613,10 +3614,6 @@ class ProductController extends Controller
             return null;
         }
 
-        if (! $isAdmin) {
-            return 'AI autofill is unavailable right now, so we used a structured fallback. You can continue editing manually.';
-        }
-
         $parts = [];
 
         foreach ($failures as $failure) {
@@ -3663,11 +3660,30 @@ class ProductController extends Controller
 
         $parts = array_values(array_unique($parts));
 
-        if ($parts === []) {
-            return 'AI '.$fieldLabel.' generation failed, so fallback content was used.';
+        $adminNotice = $parts === []
+            ? 'AI '.$fieldLabel.' generation failed, so fallback content was used.'
+            : 'AI '.$fieldLabel.' generation failed. '.implode(' ', $parts).' Using fallback content for now.';
+
+        app(SystemErrorReporter::class)->report(
+            source: 'product-autofill.'.$fieldLabel,
+            summary: 'AI '.Str::headline($fieldLabel).' generation failed',
+            details: $adminNotice,
+            context: [
+                'request_path' => request()->path(),
+                'target_url' => request()->input('url'),
+                'providers' => array_map(fn (array $failure) => [
+                    'provider' => $failure['provider'] ?? null,
+                    'status' => $failure['status'] ?? null,
+                    'body' => $failure['body'] ?? null,
+                ], $failures),
+            ],
+        );
+
+        if (! $isAdmin) {
+            return 'AI autofill is temporarily unavailable. Fallback content was added; you can continue editing.';
         }
 
-        return 'AI '.$fieldLabel.' generation failed. '.implode(' ', $parts).' Using fallback content for now.';
+        return $adminNotice;
     }
 
     protected function extractAiRetryAt(string $body): ?Carbon
