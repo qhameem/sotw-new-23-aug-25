@@ -200,7 +200,7 @@
                 <div v-else class="rounded-xl border border-slate-200 bg-white p-4">
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="text-sm font-semibold text-slate-900">
-                      <template v-if="isLoading">AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields.</template>
+                      <template v-if="isLoading">AI fill: {{ autofillProgress }}% complete.</template>
                       <template v-else>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input.</template>
                     </p>
                     <div class="flex items-center gap-3">
@@ -208,10 +208,18 @@
                       <button type="button" class="text-xs font-semibold text-sky-700 hover:text-sky-900" @click="handleUrlFetch(form.link)">Regenerate</button>
                     </div>
                   </div>
-                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-valuenow="reviewProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all" :style="{ width: `${reviewProgress}%` }"></div></div>
-                  <p v-if="isLoading" class="mt-2 text-xs text-slate-600" aria-live="polite">
-                    <span class="font-semibold text-slate-700">Filling:</span> {{ activeAutofillFieldLabel }}
-                  </p>
+                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'" :aria-valuenow="displayProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: `${displayProgress}%` }"></div></div>
+                  <div v-if="isLoading" class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600" aria-live="polite">
+                    <span class="inline-flex items-center gap-2">
+                      <span class="font-semibold text-slate-700">Now:</span> {{ currentAutofillFields }}
+                      <span class="inline-flex items-end gap-0.5" aria-hidden="true">
+                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]"></span>
+                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]"></span>
+                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500"></span>
+                      </span>
+                    </span>
+                    <span v-if="nextAutofillFields"><span class="font-semibold text-slate-700">Next:</span> {{ nextAutofillFields }}</span>
+                  </div>
                   <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <p class="text-xs font-semibold text-amber-900">Needs your input</p>
                     <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
@@ -450,17 +458,36 @@ const aiFields = computed(() => [
 ]);
 const aiFieldCount = computed(() => aiFields.value.length);
 const aiFilledCount = computed(() => aiFields.value.filter(Boolean).length);
-const activeAutofillFieldLabel = computed(() => {
-  const fields = [];
+const autofillProgress = computed(() => Math.max(0, Math.min(100, Math.round(loadingProgress.value || 0))));
+const displayProgress = computed(() => isLoading.value ? autofillProgress.value : reviewProgress.value);
+const activeAutofillStages = computed(() => {
+  const stages = [];
 
-  if (loadingStates.name) fields.push('product name', 'tagline');
-  if (loadingStates.description) fields.push('description');
+  if (loadingStates.name) stages.push('product name and tagline');
+  if (loadingStates.description) stages.push('description');
   if (loadingStates.categories || loadingStates.bestFor) {
-    fields.push('categories', 'use cases', 'best for', 'pricing', 'platforms', 'tech stack');
+    stages.push('categories, use cases, best for, pricing, platforms, and tech stack');
   }
-  if (loadingStates.logos) fields.push('logo', 'screenshot');
+  if (loadingStates.logos) stages.push('logo and screenshot');
 
-  return [...new Set(fields)].join(', ') || 'website details';
+  return stages;
+});
+const currentAutofillFields = computed(() => activeAutofillStages.value[0] || 'website details');
+const nextAutofillFields = computed(() => {
+  if (activeAutofillStages.value[1]) return activeAutofillStages.value[1];
+  if (activeAutofillStages.value.length === 0) {
+    return autofillProgress.value < 35 ? 'product name and tagline' : '';
+  }
+
+  const orderedStages = [
+    'product name and tagline',
+    'description',
+    'categories, use cases, best for, pricing, platforms, and tech stack',
+    'logo and screenshot',
+  ];
+  const currentIndex = orderedStages.indexOf(currentAutofillFields.value);
+
+  return currentIndex >= 0 ? (orderedStages[currentIndex + 1] || '') : '';
 });
 const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
 const sourceSnippet = computed(() => '');
