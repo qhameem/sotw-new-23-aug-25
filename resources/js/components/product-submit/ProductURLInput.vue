@@ -72,14 +72,16 @@
         </div>
       </div>
     </div>
-    <button
-      v-if="!reviewMode && !isLoading"
-      type="button"
-      class="mt-2 text-xs font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      @click="$emit('manual')"
-    >
-      Fill in manually
-    </button>
+    <div v-if="!reviewMode && !isLoading" class="mt-5">
+      <p class="mb-1 text-xs text-gray-500">Or</p>
+      <button
+        type="button"
+        class="text-xs font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        @click="$emit('manual')"
+      >
+        Fill in the details manually
+      </button>
+    </div>
     <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
       <summary class="cursor-pointer">Extraction phase timings</summary>
       <dl class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
@@ -89,44 +91,6 @@
       </dl>
       <p class="mt-2">Total includes network and form updates.</p>
     </details>
-    <div v-if="showExtraContext" class="mt-4">
-      <div class="flex items-center gap-2">
-        <label for="additional-resources" class="block text-sm font-semibold text-gray-900">
-          AI extra context
-          <span class="ml-1 text-xs font-normal text-gray-500">(Optional)</span>
-        </label>
-        <button
-          type="button"
-          @click="toggleAdditionalResources"
-          class="inline-flex items-center justify-center text-lg font-semibold leading-none text-sky-700 transition-colors hover:text-sky-900"
-          :aria-expanded="showAdditionalResources ? 'true' : 'false'"
-          aria-controls="additional-resources-panel"
-          :aria-label="showAdditionalResources ? 'Hide AI extra context' : 'Show AI extra context'"
-        >
-          {{ showAdditionalResources ? '−' : '+' }}
-        </button>
-      </div>
-
-      <transition name="fade">
-        <div v-if="showAdditionalResources" id="additional-resources-panel">
-          <p class="mt-1 text-xs text-gray-500">
-            Add notes or extra URLs related to the main site. This gives the AI more source material for better autofill.
-          </p>
-          <textarea
-            id="additional-resources"
-            :value="additionalResources"
-            @input="handleAdditionalResourcesInput"
-            rows="4"
-            class="mt-2 block w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm shadow-sm placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            placeholder="One item per line. Example:
-https://example.com/pricing
-https://docs.example.com
-Internal note: focus on the API and automation features."
-          ></textarea>
-        </div>
-      </transition>
-    </div>
-
     <transition name="fade">
       <p
         v-if="clipboardFeedback"
@@ -218,15 +182,11 @@ const phaseLabel = (key) => {
   const prefix = { initial: 'Initial', details: 'Detailed', fallback: 'Retry', client: '' }[scope] || '';
   return [prefix, labels[phase] || phase].filter(Boolean).join(' · ');
 };
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
   modelValue: String,
-  additionalResources: {
-    type: String,
-    default: '',
-  },
   isLoading: Boolean,
   showPhaseTimings: Boolean,
   isUrlChecking: Boolean,
@@ -242,10 +202,6 @@ const props = defineProps({
     default: '',
   },
   submissionBgUrl: String,
-  showExtraContext: {
-    type: Boolean,
-    default: false,
-  },
   isSandboxMode: {
     type: Boolean,
     default: false,
@@ -256,11 +212,10 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:additionalResources', 'getStarted', 'clear', 'validate-field', 'manual']);
+const emit = defineEmits(['update:modelValue', 'getStarted', 'clear', 'validate-field', 'manual']);
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
-const showAdditionalResources = ref(Boolean(props.additionalResources?.trim()));
 const showDisabledTooltip = ref(false);
 const fetchSteps = computed(() => [
   { number: 1, label: 'Reading your site', done: props.loadingProgress >= 30 },
@@ -306,23 +261,6 @@ const handleInput = (event) => {
   console.log('[ProductURLInput] Input event:', value);
   emit('update:modelValue', value);
 };
-
-const handleAdditionalResourcesInput = (event) => {
-  emit('update:additionalResources', event.target.value);
-};
-
-const toggleAdditionalResources = () => {
-  showAdditionalResources.value = !showAdditionalResources.value;
-};
-
-watch(
-  () => props.additionalResources,
-  (value) => {
-    if (value?.trim()) {
-      showAdditionalResources.value = true;
-    }
-  }
-);
 
 const logButtonConditions = () => {
   console.log('[ProductURLInput] Button conditions:', {

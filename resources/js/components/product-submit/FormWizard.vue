@@ -35,14 +35,11 @@
             <!-- URL Input Block -->
             <ProductURLInput
               :modelValue="form.link"
-              :additionalResources="form.additional_resources"
               @update:modelValue="handleUrlInputUpdate"
-              @update:additionalResources="handleAdditionalResourcesUpdate"
               @validate-field="handleFieldValidationRequest"
               :isLoading="isLoading"
               :isUrlChecking="urlCheckPending"
               :urlCheckFailed="urlCheckFailed"
-              :showExtraContext="showAiContext"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
               :showPhaseTimings="isAdmin"
@@ -218,12 +215,9 @@
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
-                    :additionalResources="form.additional_resources"
                     @update:modelValue="handleUrlInputUpdate"
-                    @update:additionalResources="handleAdditionalResourcesUpdate"
                     @validate-field="handleFieldValidationRequest"
                     :isLoading="isLoading"
-                    :showExtraContext="showAiContext"
                     :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
                     :loadingProgress="loadingProgress"
                     :showPhaseTimings="isAdmin"
@@ -429,7 +423,6 @@ const editProductName = computed(() => String(form.name || props.initialProduct?
 const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props.initialProduct?.logo_url || null);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
-const showAiContext = computed(() => !form.id);
 const showDraftList = computed(() => !isEditMode.value && submissionDrafts.value.length > 0);
 const reviewFields = computed(() => ({
   pricing: Array.isArray(form.pricing) && form.pricing.length > 0,
@@ -641,10 +634,6 @@ const handleUrlInputUpdate = (val) => {
       urlCheckFailed.value = Boolean(result?.checkFailed);
     }
   }, 300);
-};
-
-const handleAdditionalResourcesUpdate = (val) => {
-  form.additional_resources = val;
 };
 
 const clearForm = () => {
