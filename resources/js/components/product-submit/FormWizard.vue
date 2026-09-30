@@ -199,14 +199,17 @@
 
                 <div v-else class="rounded-xl border border-slate-200 bg-white p-4">
                   <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm font-semibold text-slate-900">AI filled {{ aiFilledCount }} fields. {{ reviewRemaining }} need your input.</p>
+                    <p class="text-sm font-semibold text-slate-900">
+                      <template v-if="isLoading">AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields.</template>
+                      <template v-else>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input.</template>
+                    </p>
                     <div class="flex items-center gap-3">
                       <span v-if="draftAutosaveState === 'saved'" class="text-xs text-emerald-700">Saved just now</span>
                       <button type="button" class="text-xs font-semibold text-sky-700 hover:text-sky-900" @click="handleUrlFetch(form.link)">Regenerate</button>
                     </div>
                   </div>
                   <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-valuenow="reviewProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all" :style="{ width: `${reviewProgress}%` }"></div></div>
-                  <div v-if="reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <p class="text-xs font-semibold text-amber-900">Needs your input</p>
                     <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
                   </div>
@@ -433,7 +436,17 @@ const reviewFields = computed(() => ({
 }));
 const reviewRemaining = computed(() => Object.values(reviewFields.value).filter((complete) => !complete).length);
 const reviewProgress = computed(() => Math.round(((5 - reviewRemaining.value) / 5) * 100));
-const aiFilledCount = computed(() => [form.name, form.tagline, form.description, logoPreview.value, galleryPreviews.value[0], form.tech_stack?.length, form.categories?.length, form.useCases?.length, form.platforms?.length].filter(Boolean).length);
+const aiFields = computed(() => [
+  form.name,
+  form.tagline,
+  form.description,
+  logoPreview.value,
+  galleryPreviews.value[0],
+  form.tech_stack?.length,
+  form.categories?.length,
+]);
+const aiFieldCount = computed(() => aiFields.value.length);
+const aiFilledCount = computed(() => aiFields.value.filter(Boolean).length);
 const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
 const sourceSnippet = computed(() => '');
 const openManualMode = () => {
