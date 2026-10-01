@@ -1,5 +1,5 @@
 <template>
-  <div id="field-link" :class="reviewMode ? 'sticky top-0 z-30 border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur' : 'border-sky-100 bg-sky-50/50 p-5'" class="rounded-xl border mb-4">
+  <div id="field-link" :class="reviewMode ? 'sticky top-0 z-30 border-yellow-200 border-dashed bg-white/95 p-4 shadow-sm backdrop-blur' : 'border-yellow-500 bg-yellow-50 p-5'" class="rounded-xl border border-dashed mb-4">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
