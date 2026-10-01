@@ -1,2 +1,8 @@
 @import "base.css";
 @import "dashboard.css";
+
+/* Product approvals: fixed density without adding controls to row height. */
+.approval-panel [hidden] { display: none !important; }
+.approval-row > td { height: 70px; padding-top: 8px; padding-bottom: 8px; }
+.approval-panel[data-density="comfortable"] .approval-row > td { height: 90px; padding-top: 18px; padding-bottom: 18px; }
+.approval-panel [data-date-form] .relative:focus-within [data-date-label] { visibility: hidden; }

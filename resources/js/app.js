@@ -1197,3 +1197,5 @@ document.addEventListener('livewire:navigated', () => {
 
 window.addEventListener('load', syncSiteHeaderOffset);
 window.addEventListener('resize', syncSiteHeaderOffset);
+
+import "./admin-product-approvals";

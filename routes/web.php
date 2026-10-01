@@ -189,6 +189,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('product-approvals/{product}/disapprove', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'disapprove'])->name('product-approvals.disapprove');
     Route::post('product-approvals/bulk-approve', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'bulkApprove'])->name('product-approvals.bulk-approve');
     Route::post('product-approvals/publish-scheduled-now', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'publishScheduledNow'])->name('product-approvals.publish-scheduled-now');
+    Route::post('product-approvals/bulk-manage', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'bulkManage'])->name('product-approvals.bulk-manage');
     Route::patch('product-approvals/{product}/publish-date', [\App\Http\Controllers\Admin\ProductApprovalController::class, 'updatePublishDate'])->name('product-approvals.publish-date.update');
     // Route::post('products/bulk-delete', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDelete'])->name('products.bulk-delete'); // Commented out original
     // Custom category submissions routes

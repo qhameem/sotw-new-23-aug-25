@@ -20,7 +20,7 @@ class ProductApprovalController extends Controller
     public function index(Request $request)
     {
         $status = $request->string('status')->toString();
-        if (! in_array($status, ['pending', 'scheduled', 'shown'], true)) {
+        if (! in_array($status, ['pending', 'scheduled', 'shown', 'failed_badge'], true)) {
             $status = null;
         }
 
@@ -44,7 +44,11 @@ class ProductApprovalController extends Controller
             ->count();
 
         // Approved Products Logic
-        $perPage = $request->input('per_page', 20);
+        $perPage = (int) $request->input('per_page', 20);
+        if (! in_array($perPage, [20, 50, 100], true)) {
+            $perPage = 20;
+        }
+        $search = trim((string) $request->input('search', ''));
         $sortBy = $request->input('sort_by', 'published_at'); // Default sort by published_at
         $sortDirection = $request->input('sort_direction', 'desc'); // Default sort direction
 
@@ -56,7 +60,8 @@ class ProductApprovalController extends Controller
             $sortDirection = 'desc';
         }
 
-        $approvedProductsQuery = Product::with(['user', 'categories'])
+        $approvedProductsQuery = Product::with(['user.roles', 'categories'])
+            ->withMax('badgeVerificationAttempts', 'checked_at')
             ->where('approved', true)
             ->where(function ($query) {
                 $query->where('is_published', true)
@@ -72,6 +77,19 @@ class ProductApprovalController extends Controller
                 ->whereNotNull('published_at');
         } elseif ($status === 'shown') {
             $approvedProductsQuery->where('is_published', true);
+        }
+
+        if ($status === 'failed_badge') {
+            $approvedProductsQuery->where('submission_type', 'badge')->where('badge_verified', false)
+                ->where('badge_consecutive_failures', '>', 0);
+        }
+
+        if ($search !== '') {
+            $approvedProductsQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('tagline', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+            });
         }
 
         // Handle cases where published_at might be null for sorting
@@ -107,7 +125,8 @@ class ProductApprovalController extends Controller
             'settings',
             'scheduledProductsCount',
             'shownProductsCount',
-            'status'
+            'status',
+            'search'
         ));
     }
 
@@ -213,6 +232,8 @@ class ProductApprovalController extends Controller
     {
         $product->approved = false;
         $product->save();
+
+        $this->clearPublishedProductCaches([$product]);
 
         return back()->with('success', 'Product disapproved.');
     }
@@ -367,27 +388,61 @@ class ProductApprovalController extends Controller
             return back()->with('error', 'Resolve all custom categories before publishing or scheduling this product.');
         }
 
-        $publishDate = ProductPublishSchedule::forDate($validated['published_at']);
+        if (! $this->applyPublishDate($request, $product, $validated['published_at'], $badgeVerification)) {
+            return back()->with('error', 'Product publication blocked after failed badge verification.');
+        }
+
+        return back()->with('success', $product->is_published ? 'Publish date updated. Product is published.' : 'Publish date updated. Product is scheduled.');
+    }
+
+    public function bulkManage(Request $request, BadgeVerificationManager $badgeVerification)
+    {
+        $validated = $request->validate([
+            'products' => ['required', 'array', 'min:1', 'max:100'],
+            'products.*' => ['required', 'integer', 'distinct', 'exists:products,id'],
+            'action' => ['required', 'in:reschedule,disapprove'],
+            'published_at' => ['required_if:action,reschedule', 'nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $products = Product::where('approved', true)->whereIn('id', $validated['products'])->get();
+        $changed = 0;
+        foreach ($products as $product) {
+            if ($validated['action'] === 'disapprove') {
+                $product->update(['approved' => false]);
+                $this->clearPublishedProductCaches([$product]);
+                $changed++;
+            } elseif (! $product->customCategorySubmissions()->where('status', 'pending')->exists()
+                && $this->applyPublishDate($request, $product, $validated['published_at'], $badgeVerification)) {
+                $changed++;
+            }
+        }
+
+        $skipped = count($validated['products']) - $changed;
+
+        return back()->with($changed ? 'success' : 'error', "{$changed} product(s) updated. {$skipped} skipped.");
+    }
+
+    private function applyPublishDate(Request $request, Product $product, string $date, BadgeVerificationManager $badgeVerification): bool
+    {
+        $publishDate = ProductPublishSchedule::forDate($date);
         $publishNow = $publishDate->lte(now()->utc());
 
         if ($publishNow && ! $product->is_published && $product->submission_type === 'badge') {
             $verification = $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
             if (! $verification['verified']) {
-                return back()->with('error', 'Product publication blocked after failed badge verification.');
+                return false;
             }
         }
 
         $oldWeekKeys = $product->published_at
             ? [$product->published_at->year.'_'.$product->published_at->weekOfYear]
             : [];
-
         $product->published_at = $publishDate;
         $product->is_published = $publishNow;
         $product->save();
-
         $this->clearPublishedProductCaches([$product], $oldWeekKeys);
 
-        return back()->with('success', $publishNow ? 'Publish date updated. Product is published.' : 'Publish date updated. Product is scheduled.');
+        return true;
     }
 
     public function pendingEditsIndex()
