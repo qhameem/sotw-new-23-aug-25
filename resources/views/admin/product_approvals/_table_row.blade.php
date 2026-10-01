@@ -1,24 +1,36 @@
 @php
     $scheduled = !$product->is_published;
     $badge = $product->submission_type === 'badge';
+    $adminSubmitter = $product->user?->hasRole('admin') ?? false;
     $failed = $badge && !$product->badge_verified && $product->badge_consecutive_failures > 0;
     $badgeStatus = $product->badge_verified ? 'Verified' : ($failed ? 'Failed' : 'Pending');
     $checkedAt = $product->badge_verification_attempts_max_checked_at;
     $badgeTooltip = ($product->badge_placement_url ?: $product->link)."\nLast checked: ".($checkedAt ? \Carbon\Carbon::parse($checkedAt)->timezone('UTC')->format('M j, Y H:i').' UTC' : 'Never');
     $source = ['free' => 'Free/admin approval', 'badge' => 'Badge', 'paid' => 'Paid'][$product->submission_type] ?? ucfirst((string) $product->submission_type);
 @endphp
-<tr data-product-row data-scheduled="{{ $scheduled ? '1' : '0' }}" class="approval-row border-b border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50">
+<tr data-product-row data-scheduled="{{ $scheduled ? '1' : '0' }}" class="approval-row border-b border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
     <td @class(['px-4', 'border-l-[3px] border-l-red-500' => $failed])>
         <div class="flex items-center gap-3">
             <input type="checkbox" data-row-select value="{{ $product->id }}" aria-label="Select {{ $product->name }}" class="h-4 w-4 shrink-0 rounded border-slate-400 text-indigo-600">
             <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/'.$product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url='.urlencode($product->link) }}" alt="" width="32" height="32" loading="lazy" class="h-8 w-8 shrink-0 rounded-lg bg-slate-100 object-cover">
-            <div class="min-w-0">
-                <div class="flex items-center gap-2"><a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="truncate font-semibold hover:underline" title="{{ $product->name }}">{{ $product->name }}</a><span class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $source }}</span></div>
-                <p class="truncate text-slate-600 dark:text-slate-300" title="{{ $product->tagline }}">{{ $product->tagline }}</p>
+            <div class="min-w-0 flex-1">
+                <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="block break-words font-semibold leading-5 hover:underline">{{ $product->name }}</a>
+                <div class="mt-1 flex min-w-0 items-center gap-2">
+                    @unless($adminSubmitter)
+                    <span class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $source }}</span>
+                    @endunless
+                    <p class="min-w-0 truncate text-xs text-slate-600 dark:text-slate-300" title="{{ $product->tagline }}">{{ $product->tagline }}</p>
+                </div>
             </div>
         </div>
     </td>
-    <td class="px-3"><div class="flex items-center gap-1"><button type="button" data-tooltip="{{ $product->user->email ?? 'No email' }}" class="truncate text-left">{{ $product->user->name ?? 'N/A' }}</button>@if($product->user?->hasRole('admin'))<span class="rounded bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">Admin</span>@endif</div></td>
+    <td class="px-3 text-xs">
+        @if($adminSubmitter)
+            <button type="button" data-tooltip="{{ $product->user->email ?? 'No email' }}" class="rounded bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">Admin</button>
+        @else
+            <button type="button" data-tooltip="{{ $product->user->email ?? 'No email' }}" class="block max-w-full truncate text-left">{{ $product->user->name ?? 'N/A' }}</button>
+        @endif
+    </td>
     <td class="px-3"><button type="button" data-tooltip="{{ $product->categories->pluck('name')->join("\n") ?: 'No categories' }}" aria-label="All categories for {{ $product->name }}" class="flex w-full items-center gap-1 overflow-hidden text-left">
         @foreach($product->categories->take(3) as $category)<span class="max-w-[70px] truncate rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ $category->name }}</span>@endforeach
         @if($product->categories->count() > 3)<span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">+{{ $product->categories->count() - 3 }}</span>@endif

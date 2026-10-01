@@ -6,3 +6,5 @@
 .approval-row > td { height: 70px; padding-top: 8px; padding-bottom: 8px; }
 .approval-panel[data-density="comfortable"] .approval-row > td { height: 90px; padding-top: 18px; padding-bottom: 18px; }
 .approval-panel [data-date-form] .relative:focus-within [data-date-label] { visibility: hidden; }
+
+.approval-panel [data-approval-tooltip] { background-color: #0f172a; color: #fff; opacity: 1; }
