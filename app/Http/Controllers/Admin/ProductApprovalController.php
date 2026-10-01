@@ -355,6 +355,41 @@ class ProductApprovalController extends Controller
         return back()->with($publishedProducts->isNotEmpty() ? 'success' : 'error', $message);
     }
 
+    public function updatePublishDate(Request $request, Product $product, BadgeVerificationManager $badgeVerification)
+    {
+        abort_unless($product->approved, 404);
+
+        $validated = $request->validate([
+            'published_at' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        if ($product->customCategorySubmissions()->where('status', 'pending')->exists()) {
+            return back()->with('error', 'Resolve all custom categories before publishing or scheduling this product.');
+        }
+
+        $publishDate = ProductPublishSchedule::forDate($validated['published_at']);
+        $publishNow = $publishDate->lte(now()->utc());
+
+        if ($publishNow && ! $product->is_published && $product->submission_type === 'badge') {
+            $verification = $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
+            if (! $verification['verified']) {
+                return back()->with('error', 'Product publication blocked after failed badge verification.');
+            }
+        }
+
+        $oldWeekKeys = $product->published_at
+            ? [$product->published_at->year.'_'.$product->published_at->weekOfYear]
+            : [];
+
+        $product->published_at = $publishDate;
+        $product->is_published = $publishNow;
+        $product->save();
+
+        $this->clearPublishedProductCaches([$product], $oldWeekKeys);
+
+        return back()->with('success', $publishNow ? 'Publish date updated. Product is published.' : 'Publish date updated. Product is scheduled.');
+    }
+
     public function pendingEditsIndex()
     {
         $productsWithPendingEdits = Product::with(['user', 'categories', 'proposedCategories'])

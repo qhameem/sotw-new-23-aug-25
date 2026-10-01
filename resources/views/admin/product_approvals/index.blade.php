@@ -304,15 +304,15 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full table-fixed divide-y divide-slate-200">
+                <table class="w-full min-w-[1100px] table-fixed divide-y divide-slate-200">
                     <colgroup>
                         <col class="w-[5%]">
-                        <col class="w-[25%]">
-                        <col class="w-[14%]">
                         <col class="w-[22%]">
+                        <col class="w-[14%]">
+                        <col class="w-[18%]">
                         <col class="w-[13%]">
                         <col class="w-[10%]">
-                        <col class="w-[11%]">
+                        <col class="w-[18%]">
                     </colgroup>
                     <thead class="bg-slate-50">
                         <tr>
@@ -389,6 +389,21 @@
                                 <td class="px-3 py-4">
                                     <div class="flex flex-col items-start gap-2 text-sm">
                                         <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals" class="font-medium text-indigo-600 hover:underline">Edit</a>
+                                        <form action="{{ route('admin.product-approvals.publish-date.update', $product) }}" method="POST" class="flex w-full flex-col gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <label for="publish-date-{{ $product->id }}" class="text-xs text-slate-600">Publish date (UTC)</label>
+                                            <input id="publish-date-{{ $product->id }}" type="date" name="published_at" value="{{ $product->published_at?->copy()->timezone('UTC')->format('Y-m-d') }}" required class="w-full rounded-md border-slate-300 text-sm">
+                                            <button type="submit" class="text-left font-medium text-indigo-600 hover:underline">Save publish date</button>
+                                        </form>
+                                        @if($isScheduled)
+                                            <form action="{{ route('admin.product-approvals.publish-scheduled-now') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="publish_scope" value="selected">
+                                                <input type="hidden" name="products[]" value="{{ $product->id }}">
+                                                <button type="submit" class="font-medium text-emerald-600 hover:underline">Publish now</button>
+                                            </form>
+                                        @endif
                                         <form action="{{ route('admin.product-approvals.disapprove', $product) }}" method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="font-medium text-red-600 hover:underline" onclick="return confirm('Are you sure you want to disapprove this product?')">Disapprove</button>
