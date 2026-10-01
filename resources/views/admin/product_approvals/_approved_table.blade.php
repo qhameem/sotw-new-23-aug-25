@@ -36,11 +36,11 @@
     </form>
     <div class="max-h-[70vh] overflow-auto">
         <table class="w-full min-w-[1120px] table-fixed text-left text-sm">
-            <colgroup><col class="w-[32%]"><col class="w-[10%]"><col class="w-[15%]"><col class="w-[13%]"><col class="w-[9%]"><col class="w-[9%]"><col class="w-[12%]"></colgroup>
+            <colgroup><col class="w-[42%]"><col class="w-[9%]"><col class="w-[12%]"><col class="w-[12%]"><col class="w-[7%]"><col class="w-[6%]"><col class="w-[12%]"></colgroup>
             <thead class="sticky top-0 z-10 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <tr>
                     <th scope="col" class="px-4 py-3"><div class="flex items-center gap-3"><input type="checkbox" data-select-page aria-label="Select all products on this page" class="h-4 w-4 rounded border-slate-400 text-indigo-600">Product</div></th>
-                    @foreach(['Submitter', 'Categories', 'Publish date', 'Status', 'Badge', 'Actions'] as $heading)<th scope="col" class="px-3 py-3 font-semibold">{{ $heading }}</th>@endforeach
+                    @foreach(['Submitter', 'Categories', 'Publish date', 'Status', 'Badge', 'Actions'] as $heading)<th scope="col" class="px-2 py-3 text-xs font-semibold">{{ $heading }}</th>@endforeach
                 </tr>
             </thead>
             @forelse($groups as $date => $products)

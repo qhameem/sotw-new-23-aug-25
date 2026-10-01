@@ -15,27 +15,27 @@
             <img src="{{ $product->logo ? (Str::startsWith($product->logo, 'http') ? $product->logo : asset('storage/'.$product->logo)) : 'https://www.google.com/s2/favicons?sz=64&domain_url='.urlencode($product->link) }}" alt="" width="32" height="32" loading="lazy" class="h-8 w-8 shrink-0 rounded-lg bg-slate-100 object-cover">
             <div class="min-w-0 flex-1">
                 <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="block break-words font-semibold leading-5 hover:underline">{{ $product->name }}</a>
-                <div class="mt-1 flex min-w-0 items-center gap-2">
+                <div class="mt-1 flex min-w-0 items-start gap-2">
                     @unless($adminSubmitter)
                     <span class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $source }}</span>
                     @endunless
-                    <p class="min-w-0 truncate text-xs text-slate-600 dark:text-slate-300" title="{{ $product->tagline }}">{{ $product->tagline }}</p>
+                    <p class="min-w-0 flex-1 whitespace-normal break-words text-xs leading-4 text-slate-600 dark:text-slate-300" title="{{ $product->tagline }}">{{ $product->tagline }}</p>
                 </div>
             </div>
         </div>
     </td>
-    <td class="px-3 text-xs">
+    <td class="px-2 text-xs">
         @if($adminSubmitter)
             <button type="button" data-tooltip="{{ $product->user->email ?? 'No email' }}" class="rounded bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">Admin</button>
         @else
             <button type="button" data-tooltip="{{ $product->user->email ?? 'No email' }}" class="block max-w-full truncate text-left">{{ $product->user->name ?? 'N/A' }}</button>
         @endif
     </td>
-    <td class="px-3"><button type="button" data-tooltip="{{ $product->categories->pluck('name')->join("\n") ?: 'No categories' }}" aria-label="All categories for {{ $product->name }}" class="flex w-full items-center gap-1 overflow-hidden text-left">
+    <td class="px-2"><button type="button" data-tooltip="{{ $product->categories->pluck('name')->join("\n") ?: 'No categories' }}" aria-label="All categories for {{ $product->name }}" class="flex w-full items-center gap-1 overflow-hidden text-left">
         @foreach($product->categories->take(1) as $category)<span class="min-w-0 max-w-full truncate rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ $category->name }}</span>@endforeach
         @if($product->categories->count() > 1)<span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">+{{ $product->categories->count() - 1 }}</span>@endif
     </button></td>
-    <td class="px-3">
+    <td class="px-2">
         <form id="date-form-{{ $product->id }}" data-date-form action="{{ route('admin.product-approvals.publish-date.update', $product) }}" method="POST" class="flex items-center gap-1">
             @csrf @method('PATCH')
             <div class="relative min-w-0 flex-1">
@@ -45,9 +45,9 @@
             <button type="submit" data-date-save hidden aria-label="Save publish date for {{ $product->name }}" class="rounded p-1 text-indigo-600 focus-visible:ring-2 dark:text-indigo-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z"/><path d="M7 3v6h10V3M7 21v-8h10v8"/></svg></button>
         </form>
     </td>
-    <td class="px-3"><span @class(['rounded-full px-2 py-1 text-xs font-medium', 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200' => $scheduled, 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => !$scheduled])>{{ $scheduled ? 'Scheduled' : 'Published' }}</span></td>
-    <td class="px-3">@if($badge)<button type="button" data-tooltip="{{ $badgeTooltip }}" @class(['rounded-full px-2 py-1 text-xs font-medium', 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->badge_verified, 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200' => $failed, 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => !$failed && !$product->badge_verified])>{{ $badgeStatus }}</button>@else<span class="text-slate-500" aria-label="Badge not required">—</span>@endif</td>
-    <td class="px-3">
+    <td class="px-2"><span @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200' => $scheduled, 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => !$scheduled])>{{ $scheduled ? 'Scheduled' : 'Published' }}</span></td>
+    <td class="px-2">@if($badge)<button type="button" data-tooltip="{{ $badgeTooltip }}" @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->badge_verified, 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200' => $failed, 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => !$failed && !$product->badge_verified])>{{ $badgeStatus }}</button>@else<span class="text-slate-500" aria-label="Badge not required">—</span>@endif</td>
+    <td class="px-2">
         <div class="flex items-center justify-end gap-1">
             @if($scheduled)
                 <form action="{{ route('admin.product-approvals.publish-scheduled-now') }}" method="POST">@csrf<input type="hidden" name="publish_scope" value="selected"><input type="hidden" name="products[]" value="{{ $product->id }}"><button class="whitespace-nowrap rounded-lg bg-indigo-600 px-2 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Publish now</button></form>
