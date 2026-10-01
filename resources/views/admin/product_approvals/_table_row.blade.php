@@ -32,8 +32,8 @@
         @endif
     </td>
     <td class="px-3"><button type="button" data-tooltip="{{ $product->categories->pluck('name')->join("\n") ?: 'No categories' }}" aria-label="All categories for {{ $product->name }}" class="flex w-full items-center gap-1 overflow-hidden text-left">
-        @foreach($product->categories->take(3) as $category)<span class="max-w-[70px] truncate rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ $category->name }}</span>@endforeach
-        @if($product->categories->count() > 3)<span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">+{{ $product->categories->count() - 3 }}</span>@endif
+        @foreach($product->categories->take(1) as $category)<span class="min-w-0 max-w-full truncate rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ $category->name }}</span>@endforeach
+        @if($product->categories->count() > 1)<span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">+{{ $product->categories->count() - 1 }}</span>@endif
     </button></td>
     <td class="px-3">
         <form id="date-form-{{ $product->id }}" data-date-form action="{{ route('admin.product-approvals.publish-date.update', $product) }}" method="POST" class="flex items-center gap-1">
