@@ -56,6 +56,7 @@ class Product extends Model implements Sitemapable
         'published_at',
         'has_pending_edits',
         'proposed_logo_path',
+        'proposed_additional_image',
         'proposed_screenshot_path',
         'proposed_screenshot_thumb_path',
         'proposed_screenshot_medium_path',
@@ -92,6 +93,7 @@ class Product extends Model implements Sitemapable
     ];
 
     protected $casts = [
+        'proposed_additional_image' => 'array',
         'hosting_details' => 'array',
         'proposed_hosting_details' => 'array',
         'approved' => 'boolean',

@@ -1,5 +1,8 @@
 <template>
-  <div id="field-link" :class="reviewMode ? 'sticky top-0 z-30 border-yellow-200 border-dashed bg-white/95 p-4 shadow-sm backdrop-blur' : 'border-yellow-500 bg-yellow-50 p-5'" class="rounded-xl border border-dashed mb-4">
+  <div id="field-link" :class="[
+    reviewMode ? 'sticky top-0 z-30 border-yellow-200 p-4 shadow-sm backdrop-blur' : 'border-yellow-500 p-5',
+    reviewMode && !isLoading ? 'bg-[#fffef5]' : 'bg-yellow-50'
+  ]" class="rounded-xl border border-dashed mb-4 transition-colors duration-300 motion-reduce:transition-none">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
@@ -157,6 +160,8 @@
       </div>
     </transition>
     
+    <slot name="details" />
+
     <!-- Debug Info (Temporary - Hidden for production look) -->
     <!-- <div class="text-xs text-gray-400 mt-2">Debug: Value="{{ modelValue }}" ...</div> -->
   </div>

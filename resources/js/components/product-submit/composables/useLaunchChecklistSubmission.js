@@ -85,11 +85,6 @@ export function useLaunchChecklistSubmission(props, emit) {
     '9 slots/day',
     'Standard visibility',
     'Up to 365 days scheduling',
-    {
-      textBefore: 'Display our badge to launch free.',
-      linkText: '',
-      action: 'badge-modal',
-    },
   ];
 
   const paidLaunchFeatures = [

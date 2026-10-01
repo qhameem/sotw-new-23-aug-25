@@ -713,7 +713,7 @@ export function useProductForm() {
     logo: typeof form.logo === 'string' ? form.logo : null,
     gallery: Array.isArray(form.gallery)
       ? form.gallery.map((item) => (typeof item === 'string' ? item : null))
-      : [null],
+      : [null, null],
     video_url: form.video_url || '',
     logos: Array.isArray(form.logos)
       ? form.logos.filter((item) => typeof item === 'string' && item !== '')
@@ -737,7 +737,7 @@ export function useProductForm() {
       : null,
     galleryPreviews: Array.isArray(globalFormState.galleryPreviews.value)
       ? globalFormState.galleryPreviews.value.map((item) => (typeof item === 'string' ? item : null))
-      : [null],
+      : [null, null],
   });
 
   const hasMeaningfulDraftContent = (payload) => {
@@ -1464,7 +1464,7 @@ export function useProductForm() {
     form.additional_resources = '';
     form.tech_stack = [];
     form.logo = null;
-    form.gallery = [null];
+    form.gallery = [null, null];
     form.video_url = '';
     form.maker_links = [];
     form.sell_product = false;
@@ -1479,7 +1479,7 @@ export function useProductForm() {
     form.free_schedule_date = getDefaultFreeScheduleDate(globalFormState.freeLaunchQueueMonths.value);
     form.paid_schedule_date = getDefaultPaidScheduleDate();
     globalFormState.logoPreview.value = null;
-    globalFormState.galleryPreviews.value = [null];
+    globalFormState.galleryPreviews.value = [null, null];
     resetManualMediaChoices();
     syncAdminDirectSubmissionState();
   };
@@ -1647,20 +1647,12 @@ export function useProductForm() {
         });
       }
 
-      const screenshotPreview = globalFormState.galleryPreviews.value?.[0];
       const logoSource = form.logo || globalFormState.logoPreview.value || null;
-      const screenshotSource = form.gallery?.[0] || screenshotPreview || null;
 
       const optimizedLogoFile = await prepareImageSubmissionAsset(logoSource, 'logo', {
         maxWidth: 1200,
         maxHeight: 1200,
         maxBytes: 900 * 1024,
-      });
-
-      const optimizedScreenshotFile = await prepareImageSubmissionAsset(screenshotSource, 'screenshot', {
-        maxWidth: 1920,
-        maxHeight: 1920,
-        maxBytes: 1800 * 1024,
       });
 
       // Add logo if available as file or URL
@@ -1678,15 +1670,19 @@ export function useProductForm() {
         formData.append('logo_url', globalFormState.logoPreview.value);
       }
 
-      // Submit only the single product screenshot slot.
-      if (optimizedScreenshotFile instanceof File) {
-        formData.append('media[0]', optimizedScreenshotFile);
-      } else if (
-        typeof screenshotPreview === 'string'
-        && screenshotPreview
-        && (screenshotPreview.startsWith('http') || screenshotPreview.startsWith('/storage/'))
-      ) {
-        formData.append('media_urls[0]', screenshotPreview);
+      for (let index = 0; index < 2; index++) {
+        const preview = globalFormState.galleryPreviews.value?.[index];
+        const source = form.gallery?.[index] || preview || null;
+        const file = await prepareImageSubmissionAsset(source, `screenshot-${index + 1}`, {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          maxBytes: 1800 * 1024,
+        });
+        if (file instanceof File) {
+          formData.append(`media[${index}]`, file);
+        } else if (typeof source === 'string' && (source.startsWith('http') || source.startsWith('/storage/'))) {
+          formData.append(`media_urls[${index}]`, source);
+        }
       }
 
       // Add video URL if available
@@ -2613,7 +2609,7 @@ export function useProductForm() {
     resetValidationState();
     resetAutofillRevealState(false);
     globalFormState.logoPreview.value = null;
-    globalFormState.galleryPreviews.value = [null];
+    globalFormState.galleryPreviews.value = [null, null];
     resetManualMediaChoices();
     // Reset URL validation state when form is reset
     globalFormState.urlExistsError.value = false;
@@ -2850,9 +2846,9 @@ export function useProductForm() {
 
             // Populate gallery previews from initial data
             if (initialData.gallery && Array.isArray(initialData.gallery)) {
-              const galleryPreviews = [null];
+              const galleryPreviews = [null, null];
               initialData.gallery.forEach((url, index) => {
-                if (index < 1) galleryPreviews[index] = url;
+                if (index < 2) galleryPreviews[index] = url;
               });
               globalFormState.galleryPreviews.value = galleryPreviews;
               console.log('Set galleryPreviews to:', globalFormState.galleryPreviews.value);
@@ -2969,9 +2965,9 @@ export function useProductForm() {
 
             // Populate gallery previews from initial data
             if (initialData.gallery && Array.isArray(initialData.gallery)) {
-              const galleryPreviews = [null];
+              const galleryPreviews = [null, null];
               initialData.gallery.forEach((url, index) => {
-                if (index < 1) galleryPreviews[index] = url;
+                if (index < 2) galleryPreviews[index] = url;
               });
               globalFormState.galleryPreviews.value = galleryPreviews;
             }
@@ -3145,8 +3141,8 @@ export function useProductForm() {
         syncAdminSandboxAvailability();
         globalFormState.logoPreview.value = savedData.logoPreview || null;
         globalFormState.galleryPreviews.value = savedData.galleryPreviews
-          ? [savedData.galleryPreviews[0] || null]
-          : [null];
+          ? savedData.galleryPreviews.slice(0, 2)
+          : [null, null];
         if (savedData.name) {
           globalFormState.step.value = 2;
         }

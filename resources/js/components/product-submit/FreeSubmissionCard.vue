@@ -38,19 +38,7 @@
         </span>
 
         <div class="min-w-0">
-          <p v-if="isBadgeFeature(feature)" class="leading-5 text-gray-500">
-            <span class="inline-flex flex-nowrap items-baseline gap-1 whitespace-nowrap">
-              <span>{{ feature.textBefore }}</span>
-            <button
-              type="button"
-              class="inline text-left align-baseline font-medium text-primary-700 underline underline-offset-4 transition hover:text-primary-800"
-              @click.stop="$emit('open-badge-modal')"
-            >
-              {{ feature.linkText }}
-            </button>
-            </span>
-          </p>
-          <p v-else class="leading-5 text-gray-500">{{ feature.text }}</p>
+          <p class="leading-5 text-gray-500">{{ feature.text }}</p>
 
           <ol v-if="feature.children.length" class="mt-2 space-y-1 pl-7 text-[12px] text-gray-500">
             <li v-for="(child, childIndex) in feature.children" :key="child">
@@ -60,6 +48,21 @@
         </div>
       </li>
     </ul>
+
+    <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <p class="text-xs font-semibold text-amber-900">Required for free launch</p>
+      <p class="mt-1 text-xs leading-5 text-amber-900">
+        Add
+        <button
+          type="button"
+          class="font-semibold underline underline-offset-2 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"
+          @click.stop="$emit('open-badge-modal')"
+          @keydown.enter.stop
+          @keydown.space.stop
+        >our badge</button>
+        to your website before launch.
+      </p>
+    </div>
   </div>
 </template>
 
@@ -79,16 +82,11 @@ const props = defineProps({
 
 defineEmits(['select', 'open-badge-modal']);
 
-const isBadgeFeature = (feature) => feature?.action === 'badge-modal';
-
 const normalizedFeatures = computed(() => props.features.map((feature) => (
   typeof feature === 'string'
     ? { text: feature, children: [] }
     : {
         text: feature?.text || '',
-        textBefore: feature?.textBefore || '',
-        linkText: feature?.linkText || '',
-        action: feature?.action || null,
         children: Array.isArray(feature?.children) ? feature.children : [],
       }
 )));

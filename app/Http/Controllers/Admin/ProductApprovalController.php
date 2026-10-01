@@ -546,6 +546,7 @@ class ProductApprovalController extends Controller
 
         // Clear all proposed data
         $product->proposed_logo_path = null;
+        $product->proposed_additional_image = null;
         $product->proposed_screenshot_path = null;
         $product->proposed_screenshot_thumb_path = null;
         $product->proposed_screenshot_medium_path = null;
@@ -587,6 +588,7 @@ class ProductApprovalController extends Controller
 
         // Clear all proposed data
         $product->proposed_logo_path = null;
+        $product->proposed_additional_image = null;
         $product->proposed_screenshot_path = null;
         $product->proposed_screenshot_thumb_path = null;
         $product->proposed_screenshot_medium_path = null;
@@ -741,6 +743,22 @@ class ProductApprovalController extends Controller
 
     private function applyProposedScreenshot(Product $product): void
     {
+        $this->applyPrimaryScreenshot($product);
+        if ($asset = $product->proposed_additional_image) {
+            $media = $product->media()->whereIn('type', ['image', 'screenshot'])->orderBy('id')->skip(1)->first();
+            $attributes = array_merge($asset, ['type' => 'image', 'alt_text' => ProductMediaSeo::productMediaAltText($product, 'image', 2)]);
+            if ($media) {
+                $this->deleteMediaFiles($media->path, $media->path_thumb, $media->path_medium);
+                $media->update($attributes);
+            } else {
+                $product->media()->create($attributes);
+            }
+        }
+
+    }
+
+    private function applyPrimaryScreenshot(Product $product): void
+    {
         if (! $product->proposed_screenshot_path) {
             return;
         }
@@ -773,6 +791,9 @@ class ProductApprovalController extends Controller
 
     private function deleteProposedScreenshotFiles(Product $product): void
     {
+        if ($asset = $product->proposed_additional_image) {
+            $this->deleteMediaFiles($asset['path'], $asset['path_thumb'] ?? null, $asset['path_medium'] ?? null);
+        }
         $this->deleteMediaFiles(
             $product->proposed_screenshot_path,
             $product->proposed_screenshot_thumb_path,

@@ -52,36 +52,54 @@
               @getStarted="handleUrlFetch"
               @clear="clearForm"
               @manual="openManualMode"
-            />
+            >
+              <template #details>
+                <AutofillStatus
+                  v-if="isLoading"
+                  :isLoading="isLoading"
+                  :autofillProgress="autofillProgress"
+                  :aiFilledCount="aiFilledCount"
+                  :aiFieldCount="aiFieldCount"
+                  :reviewRemaining="reviewRemaining"
+                  :draftAutosaveState="draftAutosaveState"
+                  :displayProgress="displayProgress"
+                  :currentAutofillFields="currentAutofillFields"
+                  :nextAutofillFields="nextAutofillFields"
+                  @regenerate="handleUrlFetch(form.link)"
+                />
+              </template>
+            </ProductURLInput>
 
-            <div v-if="showDraftList" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <h2 class="text-sm font-semibold text-slate-900">Unfinished submissions</h2>
-                  <p class="text-xs text-slate-500">Resume an earlier product draft.</p>
+            <Transition name="draft-list-fade">
+              <div v-if="showDraftList" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 class="text-sm font-semibold text-slate-900">Unfinished submissions</h2>
+                    <p class="text-xs text-slate-500">Resume an earlier product draft.</p>
+                  </div>
+                  <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                    {{ submissionDrafts.length }}
+                  </span>
                 </div>
-                <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                  {{ submissionDrafts.length }}
-                </span>
-              </div>
 
-              <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <a
-                  v-for="draft in submissionDrafts"
-                  :key="draft.uuid"
-                  :href="draft.resume_url"
-                  class="rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-sky-300 hover:bg-sky-50/40"
-                >
-                  <p class="text-sm font-semibold text-slate-900">{{ draft.title }}</p>
-                  <p v-if="draft.owner_name || draft.owner_email" class="mt-1 text-xs font-medium text-slate-600">
-                    {{ draft.owner_name || draft.owner_email }}
-                    <span v-if="draft.owner_name && draft.owner_email">({{ draft.owner_email }})</span>
-                  </p>
-                  <p v-if="draft.link" class="mt-1 line-clamp-2 text-xs text-slate-500">{{ draft.link }}</p>
-                  <p class="mt-3 text-xs text-slate-400">Saved {{ draft.updated_at_label || 'recently' }}</p>
-                </a>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <a
+                    v-for="draft in submissionDrafts"
+                    :key="draft.uuid"
+                    :href="draft.resume_url"
+                    class="rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-sky-300 hover:bg-sky-50/40"
+                  >
+                    <p class="text-sm font-semibold text-slate-900">{{ draft.title }}</p>
+                    <p v-if="draft.owner_name || draft.owner_email" class="mt-1 text-xs font-medium text-slate-600">
+                      {{ draft.owner_name || draft.owner_email }}
+                      <span v-if="draft.owner_name && draft.owner_email">({{ draft.owner_email }})</span>
+                    </p>
+                    <p v-if="draft.link" class="mt-1 line-clamp-2 text-xs text-slate-500">{{ draft.link }}</p>
+                    <p class="mt-3 text-xs text-slate-400">Saved {{ draft.updated_at_label || 'recently' }}</p>
+                  </a>
+                </div>
               </div>
-            </div>
+            </Transition>
           </div>
 
         </div>
@@ -197,35 +215,6 @@
                   </ol>
                 </div>
 
-                <div v-else class="rounded-xl border border-slate-200 bg-white p-4">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm font-semibold text-slate-900">
-                      <template v-if="isLoading">AI fill: {{ autofillProgress }}% complete.</template>
-                      <template v-else>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input.</template>
-                    </p>
-                    <div class="flex items-center gap-3">
-                      <span v-if="draftAutosaveState === 'saved'" class="text-xs text-emerald-700">Saved just now</span>
-                      <button type="button" class="text-xs font-semibold text-sky-700 hover:text-sky-900" @click="handleUrlFetch(form.link)">Regenerate</button>
-                    </div>
-                  </div>
-                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'" :aria-valuenow="displayProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: `${displayProgress}%` }"></div></div>
-                  <div v-if="isLoading" class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600" aria-live="polite">
-                    <span class="inline-flex items-center gap-2">
-                      <span class="font-semibold text-slate-700">Now:</span> {{ currentAutofillFields }}
-                      <span class="inline-flex items-end gap-0.5" aria-hidden="true">
-                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]"></span>
-                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]"></span>
-                        <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500"></span>
-                      </span>
-                    </span>
-                    <span v-if="nextAutofillFields"><span class="font-semibold text-slate-700">Next:</span> {{ nextAutofillFields }}</span>
-                  </div>
-                  <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p class="text-xs font-semibold text-amber-900">Needs your input</p>
-                    <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
-                  </div>
-                </div>
-
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
@@ -244,7 +233,23 @@
                     :reviewMode="!manualMode"
                     @getStarted="handleUrlFetch"
                     @clear="clearForm"
-                  />
+                  >
+                    <template #details>
+                      <AutofillStatus
+                        v-if="!manualMode"
+                        :isLoading="isLoading"
+                        :autofillProgress="autofillProgress"
+                        :aiFilledCount="aiFilledCount"
+                        :aiFieldCount="aiFieldCount"
+                        :reviewRemaining="reviewRemaining"
+                        :draftAutosaveState="draftAutosaveState"
+                        :displayProgress="displayProgress"
+                        :currentAutofillFields="currentAutofillFields"
+                        :nextAutofillFields="nextAutofillFields"
+                        @regenerate="handleUrlFetch(form.link)"
+                      />
+                    </template>
+                  </ProductURLInput>
                 </div>
 
                 <div v-show="!manualMode || manualStep <= 2" id="details-section" class="scroll-mt-6">
@@ -265,7 +270,11 @@
                     :autofillReveal="autofillReveal"
                     :isAdmin="isAdmin"
                     :reviewMode="!manualMode"
-                    :sourceScreenshot="galleryPreviews[0] || ''"
+                    :imagePreviews="galleryPreviews"
+                    :imageUploadError="imageUploadError"
+                    :isUploadingImage="isUploadingImage"
+                    :isLoading="isLoading"
+                    @upload-image="uploadProductImage"
                     :sourceSnippet="sourceSnippet"
                     :logoPreview="logoPreview || form.favicon || ''"
                     :showLogoError="submitAttempted && Boolean(validationErrors.logo)"
@@ -337,6 +346,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
+import AutofillStatus from './AutofillStatus.vue';
 import ProductDetailsForm from './ProductDetailsForm.vue';
 import LaunchChecklistForm from './LaunchChecklistForm.vue';
 import LogoPickerModal from './LogoPickerModal.vue';
@@ -372,6 +382,7 @@ const {
   existingProduct,
   logoPreview,
   galleryPreviews,
+  markManualScreenshotChosen,
   submitProduct,
   fetchInitialData,
   simulateSandboxAutofill,
@@ -437,7 +448,8 @@ const editProductName = computed(() => String(form.name || props.initialProduct?
 const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props.initialProduct?.logo_url || null);
 
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
-const showDraftList = computed(() => !isEditMode.value && submissionDrafts.value.length > 0);
+const draftListDismissed = ref(false);
+const showDraftList = computed(() => !draftListDismissed.value && !isEditMode.value && submissionDrafts.value.length > 0);
 const reviewFields = computed(() => ({
   pricing: Array.isArray(form.pricing) && form.pricing.length > 0,
   pricing_page_url: Boolean(String(form.pricing_page_url || '').trim()),
@@ -497,6 +509,7 @@ const openManualMode = () => {
   showForm.value = true;
 };
 const handleSubmit = async () => {
+  if (isUploadingImage.value) return;
   submitAttempted.value = true;
   await submitProduct();
 };
@@ -617,6 +630,7 @@ const handleUrlFetch = async (url) => {
     return;
   }
 
+  draftListDismissed.value = true;
   extractionTimer.start();
   try {
     resetManualMediaChoices();
@@ -692,6 +706,7 @@ const handleUrlInputUpdate = (val) => {
 };
 
 const clearForm = () => {
+    draftListDismissed.value = false;
     form.link = '';
     urlCheckPending.value = false;
     urlCheckFailed.value = false;
@@ -783,6 +798,39 @@ const applySelectedLogo = (logoUrl) => {
   isLogoPickerOpen.value = false;
 };
 
+const imageUploadError = ref('');
+const isUploadingImage = ref(false);
+const uploadProductImage = async ({ index, file }) => {
+  if (!file || ![0, 1].includes(index) || isUploadingImage.value || isLoading.value) return;
+  imageUploadError.value = '';
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'].includes(file.type) || file.size > 20 * 1024 * 1024) {
+    imageUploadError.value = 'Choose a supported image smaller than 20 MB.';
+    return;
+  }
+  isUploadingImage.value = true;
+  try {
+    const preview = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Unable to read image.'));
+      reader.readAsDataURL(file);
+    });
+    await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = reject;
+      image.src = preview;
+    });
+    form.gallery[index] = file;
+    galleryPreviews.value[index] = preview;
+    if (index === 0) markManualScreenshotChosen();
+  } catch {
+    imageUploadError.value = 'Unable to read this image. Choose another file.';
+  } finally {
+    isUploadingImage.value = false;
+  }
+};
+
 const uploadLogoFile = (file) => {
   markManualLogoChosen();
   form.logo = file;
@@ -830,6 +878,24 @@ const overallProgress = computed(() => {
 </script>
 
 <style scoped>
+.draft-list-fade-enter-active,
+.draft-list-fade-leave-active {
+  transition: opacity 250ms ease;
+}
+.draft-list-fade-enter-from,
+.draft-list-fade-leave-to {
+  opacity: 0;
+}
+.draft-list-fade-leave-active {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .draft-list-fade-enter-active,
+  .draft-list-fade-leave-active {
+    transition: none;
+  }
+}
+
 /* Add any specific overrides here if needed */
 .autofill-locked-section {
   filter: blur(1.5px);

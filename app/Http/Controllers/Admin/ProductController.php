@@ -26,6 +26,7 @@ use Intervention\Image\ImageManager;
 class ProductController extends Controller
 {
     use AuthorizesRequests;
+    use \App\Http\Controllers\Concerns\SavesAdditionalProductImage;
 
     private function loadProductCategoryGroups(): array
     {
@@ -479,9 +480,9 @@ class ProductController extends Controller
             'x_account' => 'nullable|string|max:255',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
-            'media' => 'nullable|array|max:1',
+            'media' => 'nullable|array:0,1|max:2',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
-            'media_urls' => 'nullable|array|max:1',
+            'media_urls' => 'nullable|array:0,1|max:2',
             'media_urls.*' => 'nullable|string|max:2048',
             'custom_tech_stacks' => 'nullable|array|max:3',
             'custom_tech_stacks.*.name' => 'required|string|max:100',
@@ -677,17 +678,17 @@ class ProductController extends Controller
             }
             $product->last_edited_by_id = Auth::id();
 
-            $mediaUrl = collect((array) $request->input('media_urls', []))
-                ->filter(fn ($url) => filled($url))
-                ->first();
+            $mediaUrl = $request->input('media_urls.0');
 
-            if ($request->hasFile('media')) {
+            if ($request->hasFile('media.0')) {
                 $manager = new ImageManager(new Driver);
-                $this->storeProposedScreenshotMedia($product, $request->file('media')[0], $manager);
+                $this->storeProposedScreenshotMedia($product, $request->file('media.0'), $manager);
             } elseif ($mediaUrl) {
                 $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
+
+            $this->saveAdditionalProductImage($product, $request, true);
 
             if ($categoriesChanged || $techStacksChanged || $request->has('custom_categories') || $request->has('custom_tech_stacks')) {
                 $this->syncPendingCustomSubmissions($product, $request);
@@ -745,17 +746,18 @@ class ProductController extends Controller
                 $product->techStacks()->sync($newTechStacks);
             }
 
-            $mediaUrl = collect((array) $request->input('media_urls', []))
-                ->filter(fn ($url) => filled($url))
-                ->first();
+            $mediaUrl = $request->input('media_urls.0');
 
-            if ($request->hasFile('media')) {
+            if ($request->hasFile('media.0')) {
                 $manager = new ImageManager(new Driver);
-                $this->replacePrimaryScreenshotMedia($product, $request->file('media')[0], $manager);
+                $this->replacePrimaryScreenshotMedia($product, $request->file('media.0'), $manager);
             } elseif ($mediaUrl) {
                 $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
             }
+
+            $this->saveAdditionalProductImage($product, $request, false);
+            $product->save();
 
             if ($categoriesChanged || $techStacksChanged || $request->has('custom_categories') || $request->has('custom_tech_stacks')) {
                 $this->syncPendingCustomSubmissions($product, $request);
@@ -999,6 +1001,7 @@ class ProductController extends Controller
         }
 
         $pendingFields = [
+            $product->proposed_additional_image,
             $product->proposed_logo_path,
             $product->proposed_screenshot_path,
             $product->proposed_screenshot_thumb_path,

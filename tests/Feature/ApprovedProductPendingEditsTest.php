@@ -43,6 +43,7 @@ class ApprovedProductPendingEditsTest extends TestCase
             ],
             'media' => [
                 UploadedFile::fake()->image('updated-screenshot.png', 1200, 630),
+                UploadedFile::fake()->image('additional-image.png', 800, 600),
             ],
         ]);
 
@@ -58,6 +59,8 @@ class ApprovedProductPendingEditsTest extends TestCase
         $this->assertTrue($product->has_pending_edits);
         $this->assertNotNull($product->proposed_screenshot_path);
         Storage::disk('public')->assertExists($product->proposed_screenshot_path);
+        $this->assertNotNull($product->proposed_additional_image);
+        Storage::disk('public')->assertExists($product->proposed_additional_image['path']);
 
         $this->assertDatabaseHas('custom_category_submissions', [
             'product_id' => $product->id,
@@ -66,6 +69,32 @@ class ApprovedProductPendingEditsTest extends TestCase
             'status' => 'pending',
         ]);
         $this->assertDatabaseCount('product_media', 0);
+    }
+
+    public function test_uploading_only_the_additional_slot_preserves_the_primary_image(): void
+    {
+        Storage::fake('public');
+        $owner = User::factory()->create();
+        [$softwareCategory, $pricingCategory] = $this->createRequiredCategories();
+        $product = Product::factory()->create(['user_id' => $owner->id, 'approved' => true, 'is_published' => true]);
+        $product->categories()->sync([$softwareCategory->id, $pricingCategory->id]);
+        $primary = $product->media()->create(['path' => 'product_media/original.png', 'type' => 'screenshot', 'alt_text' => 'Original homepage']);
+        Storage::disk('public')->put($primary->path, 'original');
+
+        $response = $this->actingAs($owner)->put(route('products.update', $product), [
+            'tagline' => 'Updated tagline',
+            'product_page_tagline' => 'Updated page tagline',
+            'description' => 'Updated description',
+            'categories' => [$softwareCategory->id, $pricingCategory->id],
+            'media' => [1 => UploadedFile::fake()->image('extra.png', 800, 600)],
+        ]);
+        $response->assertRedirect(route('products.my'));
+        $product->refresh();
+        $this->assertNull($product->proposed_screenshot_path);
+        $this->assertNotNull($product->proposed_additional_image);
+        $this->assertSame('product_media/original.png', $primary->fresh()->path);
+        Storage::disk('public')->assertExists($primary->path);
+        Storage::disk('public')->assertExists($product->proposed_additional_image['path']);
     }
 
     public function test_admin_can_approve_pending_edit_screenshot_and_custom_use_case_together(): void
@@ -95,11 +124,13 @@ class ApprovedProductPendingEditsTest extends TestCase
             'proposed_tagline' => 'Updated tagline',
             'proposed_product_page_tagline' => 'Updated page tagline',
             'proposed_description' => 'Updated description',
+            'proposed_additional_image' => ['path' => 'product_media/proposed-extra.png', 'path_thumb' => null, 'path_medium' => null],
             'proposed_screenshot_path' => 'product_media/proposed-screenshot.png',
             'proposed_screenshot_thumb_path' => 'product_media/thumb_proposed-screenshot.png',
             'proposed_screenshot_medium_path' => 'product_media/medium_proposed-screenshot.png',
         ]);
 
+        Storage::disk('public')->put('product_media/proposed-extra.png', 'image');
         Storage::disk('public')->put('product_media/proposed-screenshot.png', 'image');
         Storage::disk('public')->put('product_media/thumb_proposed-screenshot.png', 'thumb');
         Storage::disk('public')->put('product_media/medium_proposed-screenshot.png', 'medium');
@@ -128,6 +159,9 @@ class ApprovedProductPendingEditsTest extends TestCase
         $this->assertSame('unknown', $product->hosting_details['status']);
         $this->assertNull($product->proposed_hosting_details);
         $this->assertFalse($product->has_pending_edits);
+        $this->assertNull($product->proposed_additional_image);
+        $this->assertDatabaseHas('product_media', ['product_id' => $product->id, 'path' => 'product_media/proposed-extra.png', 'type' => 'image']);
+        $this->assertSame('product_media/proposed-screenshot.png', $product->media()->orderBy('id')->first()->path);
         $this->assertNull($product->proposed_screenshot_path);
 
         $this->assertDatabaseHas('product_media', [
@@ -183,6 +217,7 @@ class ApprovedProductPendingEditsTest extends TestCase
             ],
             'media' => [
                 UploadedFile::fake()->image('admin-screenshot.png', 1200, 630),
+                UploadedFile::fake()->image('admin-additional.png', 800, 600),
             ],
         ]);
 
@@ -198,7 +233,7 @@ class ApprovedProductPendingEditsTest extends TestCase
         $this->assertNull($product->proposed_domain_registrar);
         $this->assertFalse($product->has_pending_edits);
         $this->assertNull($product->proposed_screenshot_path);
-        $this->assertDatabaseCount('product_media', 1);
+        $this->assertDatabaseCount('product_media', 2);
 
         $this->assertDatabaseHas('custom_category_submissions', [
             'product_id' => $product->id,

@@ -58,6 +58,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductController extends Controller
 {
+    use \App\Http\Controllers\Concerns\SavesAdditionalProductImage;
     private const CATEGORY_PRODUCTS_PER_PAGE = 50;
 
     protected FaviconExtractorService $faviconExtractor;
@@ -367,10 +368,12 @@ class ProductController extends Controller
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
-            'media' => 'nullable|array|max:1',
+            'media' => 'nullable|array:0,1|max:2',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
-            'media_urls' => 'nullable|array|max:1',
+            'media_urls' => 'nullable|array:0,1|max:2',
             'media_urls.*' => 'nullable|string|max:2048',
+            'media_urls.0' => 'nullable|string|max:2048|prohibited_with:media.0',
+            'media_urls.1' => 'nullable|string|max:2048|prohibited_with:media.1',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'custom_tech_stacks' => 'nullable|array|max:3',
@@ -585,58 +588,53 @@ class ProductController extends Controller
             );
         }
 
-        if ($request->hasFile('media')) {
-            $manager = new ImageManager(new Driver);
-
-            foreach ($request->file('media') as $file) {
+        $manager = new ImageManager(new Driver);
+        for ($index = 0; $index < 2; $index++) {
+            if ($file = $request->file("media.$index")) {
                 $this->processMediaItem($product, $file, $manager);
+                continue;
             }
-        }
+            $url = $request->input("media_urls.$index");
+            if ($url) {
+                try {
+                    // Check if this is a local screenshot URL (already on disk)
+                    $appUrl = config('app.url');
+                    $isLocal = str_starts_with($url, $appUrl.'/storage/') || str_contains($url, '/storage/screenshots/');
 
-        if ($request->filled('media_urls')) {
-            $manager = new ImageManager(new Driver);
-            foreach ($request->input('media_urls') as $url) {
-                if ($url) {
-                    try {
-                        // Check if this is a local screenshot URL (already on disk)
-                        $appUrl = config('app.url');
-                        $isLocal = str_starts_with($url, $appUrl.'/storage/') || str_contains($url, '/storage/screenshots/');
+                    if ($isLocal) {
+                        // Extract the relative storage path from the URL
+                        // URL format: https://domain.com/storage/screenshots/filename.jpg
+                        $storagePath = preg_replace('#^.*?/storage/#', '', $url);
 
-                        if ($isLocal) {
-                            // Extract the relative storage path from the URL
-                            // URL format: https://domain.com/storage/screenshots/filename.jpg
-                            $storagePath = preg_replace('#^.*?/storage/#', '', $url);
+                        if (Storage::disk('public')->exists($storagePath)) {
+                            // Copy directly from disk — no HTTP request needed
+                            $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
+                            $filename = Str::uuid().'.'.$extension;
+                            $newPath = 'product_media/'.$filename;
+                            Storage::disk('public')->copy($storagePath, $newPath);
+                            $this->processMediaItem($product, Storage::disk('public')->path($newPath), $manager, true);
 
-                            if (Storage::disk('public')->exists($storagePath)) {
-                                // Copy directly from disk — no HTTP request needed
-                                $extension = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'jpg';
-                                $filename = Str::uuid().'.'.$extension;
-                                $newPath = 'product_media/'.$filename;
-                                Storage::disk('public')->copy($storagePath, $newPath);
-                                $this->processMediaItem($product, Storage::disk('public')->path($newPath), $manager, true);
-
-                                continue;
-                            }
+                            continue;
                         }
-
-                        // Fallback: download from external URL
-                        $imageContents = Http::get($url)->body();
-                        $extension = 'jpg';
-                        if (str_contains($url, '.png')) {
-                            $extension = 'png';
-                        }
-                        if (str_contains($url, '.webp')) {
-                            $extension = 'webp';
-                        }
-
-                        $filename = Str::uuid().'.'.$extension;
-                        $path = 'product_media/'.$filename;
-                        Storage::disk('public')->put($path, $imageContents);
-
-                        $this->processMediaItem($product, Storage::disk('public')->path($path), $manager, true);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to process media from URL: '.$url.' - '.$e->getMessage());
                     }
+
+                    // Fallback: download from external URL
+                    $imageContents = Http::get($url)->body();
+                    $extension = 'jpg';
+                    if (str_contains($url, '.png')) {
+                        $extension = 'png';
+                    }
+                    if (str_contains($url, '.webp')) {
+                        $extension = 'webp';
+                    }
+
+                    $filename = Str::uuid().'.'.$extension;
+                    $path = 'product_media/'.$filename;
+                    Storage::disk('public')->put($path, $imageContents);
+
+                    $this->processMediaItem($product, Storage::disk('public')->path($path), $manager, true);
+                } catch (\Exception $e) {
+                    Log::error('Failed to process media from URL: '.$url.' - '.$e->getMessage());
                 }
             }
         }
@@ -857,14 +855,18 @@ class ProductController extends Controller
 
         $liveGallery = $product->media
             ->whereIn('type', ['image', 'screenshot'])
-            ->take(1)
+            ->take(2)
             ->pluck('path')
             ->map(fn ($path) => \Illuminate\Support\Facades\Storage::url($path))
             ->toArray();
 
-        $proposedGallery = $product->proposed_screenshot_path
-            ? [\Illuminate\Support\Facades\Storage::url($product->proposed_screenshot_path)]
-            : $liveGallery;
+        $proposedGallery = $liveGallery;
+        if ($product->proposed_screenshot_path) {
+            $proposedGallery[0] = Storage::url($product->proposed_screenshot_path);
+        }
+        if ($product->proposed_additional_image) {
+            $proposedGallery[1] = Storage::url($product->proposed_additional_image['path']);
+        }
 
         $oldInput = session()->getOldInput();
 
@@ -1010,10 +1012,12 @@ class ProductController extends Controller
             'logo_url' => 'nullable|string',
             'remove_logo' => 'nullable|boolean', // For removing existing logo
             'video_url' => 'nullable|string|max:2048',
-            'media' => 'nullable|array|max:1',
+            'media' => 'nullable|array:0,1|max:2',
             'media.*' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif,mp4,mov,ogg,qt|max:20480',
-            'media_urls' => 'nullable|array|max:1',
+            'media_urls' => 'nullable|array:0,1|max:2',
             'media_urls.*' => 'nullable|string|max:2048',
+            'media_urls.0' => 'nullable|string|max:2048|prohibited_with:media.0',
+            'media_urls.1' => 'nullable|string|max:2048|prohibited_with:media.1',
             'tech_stacks' => 'nullable|array',
             'tech_stacks.*' => 'exists:tech_stacks,id',
             'custom_tech_stacks' => 'nullable|array|max:3',
@@ -1228,17 +1232,17 @@ class ProductController extends Controller
             // Only update proposed_logo_path if a new logo was uploaded or explicitly removed.
             // If no new logo and not removed, proposed_logo_path remains unchanged (or null if never set).
 
-            $mediaUrl = collect((array) $request->input('media_urls', []))
-                ->filter(fn ($url) => filled($url))
-                ->first();
+            $mediaUrl = $request->input('media_urls.0');
 
-            if ($request->hasFile('media')) {
+            if ($request->hasFile('media.0')) {
                 $manager = new ImageManager(new Driver);
-                $this->storeProposedScreenshotMedia($product, $request->file('media')[0], $manager);
+                $this->storeProposedScreenshotMedia($product, $request->file('media.0'), $manager);
             } elseif ($mediaUrl) {
                 $manager = new ImageManager(new Driver);
                 $this->storeProposedScreenshotFromUrl($product, $mediaUrl, $manager);
             }
+
+            $this->saveAdditionalProductImage($product, $request, true);
 
             if (array_key_exists('tagline', $updateData)) {
                 $product->proposed_tagline = $updateData['tagline'];
@@ -1281,7 +1285,7 @@ class ProductController extends Controller
             if ($shouldSyncPendingCustomSubmissions) {
                 $this->syncPendingCustomSubmissions($product, $request);
             }
-            if (! empty($updateData) || $categoriesChanged || $techStacksChanged || $logoPath || $request->boolean('remove_logo') || $request->hasFile('media') || $mediaUrl || $shouldSyncPendingCustomSubmissions) {
+            if (! empty($updateData) || $categoriesChanged || $techStacksChanged || $logoPath || $request->boolean('remove_logo') || $request->hasFile('media') || $mediaUrl || $request->filled('media_urls.1') || $shouldSyncPendingCustomSubmissions) {
                 $product->has_pending_edits = true;
             }
             $product->save();
@@ -1335,7 +1339,11 @@ class ProductController extends Controller
             $product->proposed_domain_registrar = null;
             $product->proposedCategories()->detach();
             $product->proposedTechStacks()->detach();
+            if ($asset = $product->proposed_additional_image) {
+                $this->deleteMediaFiles($asset['path'], $asset['path_thumb'] ?? null, $asset['path_medium'] ?? null);
+            }
             $this->deleteProposedScreenshotFiles($product);
+            $product->proposed_additional_image = null;
             $product->proposed_screenshot_path = null;
             $product->proposed_screenshot_thumb_path = null;
             $product->proposed_screenshot_medium_path = null;
@@ -1355,17 +1363,18 @@ class ProductController extends Controller
                 $this->syncPendingCustomSubmissions($product, $request);
             }
 
-            $mediaUrl = collect((array) $request->input('media_urls', []))
-                ->filter(fn ($url) => filled($url))
-                ->first();
+            $mediaUrl = $request->input('media_urls.0');
 
-            if ($request->hasFile('media')) {
+            if ($request->hasFile('media.0')) {
                 $manager = new ImageManager(new Driver);
-                $this->replacePrimaryScreenshotMedia($product, $request->file('media')[0], $manager);
+                $this->replacePrimaryScreenshotMedia($product, $request->file('media.0'), $manager);
             } elseif ($mediaUrl) {
                 $manager = new ImageManager(new Driver);
                 $this->replacePrimaryScreenshotFromUrl($product, $mediaUrl, $manager);
             }
+
+            $this->saveAdditionalProductImage($product, $request, false);
+            $product->save();
 
             // 'approved' status remains false as it's handled by admin
 

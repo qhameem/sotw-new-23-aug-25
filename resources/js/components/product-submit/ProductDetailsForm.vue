@@ -1,11 +1,56 @@
 <template>
   <div class="space-y-8 mt-4">
-    <aside v-if="reviewMode && (sourceScreenshot || sourceSnippet)" class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2" aria-label="Source used by AI">
-      <img v-if="sourceScreenshot" :src="sourceScreenshot" alt="Fetched homepage screenshot" class="w-full rounded-lg border border-slate-200 bg-white object-cover">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Source from your homepage</p>
-        <p class="mt-2 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
+    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
+      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview</h2>
+      <div class="grid items-start gap-4 sm:grid-cols-2">
+        <div
+          v-for="index in [0, 1]"
+          :key="index"
+          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
+          :class="[
+            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
+            { 'opacity-50': isUploadingImage || isLoading }
+          ]"
+          @dragenter.prevent="enterImageDrop(index, $event)"
+          @dragover.prevent="allowImageDrop($event)"
+          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
+          @drop.prevent="dropImage(index, $event)"
+        >
+          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
+          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#99BCFF" />
+                  <stop offset="1" stop-color="#315BA8" />
+                </linearGradient>
+                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6592DA" stop-opacity="0.95" />
+                  <stop offset="1" stop-color="#DCE7FA" />
+                </linearGradient>
+              </defs>
+              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
+              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
+              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
+              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
+            </svg>
+            <p class="text-xs leading-5 text-slate-800">
+              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
+              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
+            </p>
+            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
+          </div>
+          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
+            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
+              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
+            </span>
+          </label>
+        </div>
       </div>
+      <p class="mt-2 text-xs text-slate-500">Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
+      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
+      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
     </aside>
     
     <!-- Project Name -->
@@ -714,14 +759,32 @@ const props = defineProps({
   },
   isAdmin: { type: Boolean, default: false },
   reviewMode: { type: Boolean, default: false },
-  sourceScreenshot: { type: String, default: '' },
+  imagePreviews: { type: Array, default: () => [] },
+  imageUploadError: { type: String, default: '' },
+  isUploadingImage: { type: Boolean, default: false },
+  isLoading: { type: Boolean, default: false },
   sourceSnippet: { type: String, default: '' },
   logoPreview: { type: String, default: '' },
   showLogoError: { type: Boolean, default: false },
   regenerationRemaining: { type: Object, default: () => ({ tagline: 3, description: 3 }) }
 });
 
-const emit = defineEmits(['update:modelValue', 'rewrite-description', 'regenerate-tagline', 'regenerate-description', 'open-logo-picker']);
+const emit = defineEmits(['update:modelValue', 'rewrite-description', 'regenerate-tagline', 'regenerate-description', 'open-logo-picker', 'upload-image']);
+
+const imageDragDepth = ref([0, 0]);
+const enterImageDrop = (index, event) => {
+  if (props.isUploadingImage || props.isLoading || !Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+  imageDragDepth.value[index]++;
+};
+const allowImageDrop = (event) => {
+  if (event.dataTransfer) event.dataTransfer.dropEffect = props.isUploadingImage || props.isLoading ? 'none' : 'copy';
+};
+const dropImage = (index, event) => {
+  imageDragDepth.value[index] = 0;
+  if (props.isUploadingImage || props.isLoading) return;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) emit('upload-image', { index, file });
+};
 
 onMounted(() => {
   console.log('[ProductDetailsForm] Mounted. Initial modelValue:', props.modelValue);
@@ -1193,5 +1256,32 @@ function removeCustomTechStack(customTechStackId) {
   color: rgb(3 105 161);
   font-size: 16px;
   line-height: 1;
+}
+</style>
+
+<style scoped>
+.image-drop-zone-active {
+  border-color: #284b91;
+  background-color: #ebf2ff;
+}
+.image-drop-zone-active .image-drop-hint {
+  opacity: 1;
+}
+.image-drop-zone-active .image-upload-action {
+  opacity: 0;
+}
+.image-drop-zone-active .image-upload-overlay {
+  background-color: transparent;
+}
+@media (hover: none) {
+  .image-drop-hint {
+    opacity: 0;
+  }
+  .image-upload-action {
+    opacity: 1;
+  }
+  .image-upload-overlay {
+    background-color: rgb(255 255 255 / 40%);
+  }
 }
 </style>
