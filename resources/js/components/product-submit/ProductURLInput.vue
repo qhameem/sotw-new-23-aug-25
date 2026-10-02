@@ -1,5 +1,5 @@
 <template>
-  <div id="field-link" :class="{ 'sticky top-0 z-30': reviewMode }" class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-6">
+  <div id="field-link" :class="{ 'sticky top-0 z-30': reviewMode }" class="mb-4 bg-slate-50 border border-slate-300 rounded-xl p-6">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
@@ -37,10 +37,10 @@
             :spellcheck="false"
             required
             class="block w-full h-11 pl-4 pr-20 py-2 bg-white border-2 rounded-xl text-sm caret-black placeholder-gray-400
-                   focus:outline-none focus:ring-0 transition-[border-color,box-shadow]"
+                   shadow-none focus:outline-none focus:ring-0 focus:shadow-none transition-colors"
             :class="urlExistsError || urlMatchesDraft
-              ? 'border-amber-500 shadow-[0_4px_0_#f59e0b,0_6px_10px_rgba(15,23,42,0.08)] focus:border-amber-600 focus:shadow-[0_4px_0_#d97706,0_6px_10px_rgba(15,23,42,0.12)]'
-              : 'border-primary-500 shadow-[0_4px_0_var(--color-primary-500),0_6px_10px_rgba(15,23,42,0.08)] focus:border-[color:color-mix(in_srgb,var(--color-primary-500)_80%,black)] focus:shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-500)_80%,black),0_6px_10px_rgba(15,23,42,0.12)]'"
+              ? 'border-amber-500 focus:border-amber-600'
+              : 'border-slate-400 focus:border-primary-500'"
             placeholder="https://your-website.com"
           >
           <span v-if="caretStyle" aria-hidden="true" class="url-caret" :style="caretStyle" />
