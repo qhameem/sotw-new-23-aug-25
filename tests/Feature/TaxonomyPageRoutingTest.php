@@ -57,12 +57,24 @@ it('renders type-specific copy, canonical, breadcrumbs, and structured data', fu
     $category = taxonomyCategory('Remote Teams', 'remote-teams', [$type]);
     $url = route($routeName, $category->slug);
 
-    $this->get($url)
+    $response = $this->get($url)
         ->assertOk()
         ->assertSee($heading)
         ->assertSee($section)
         ->assertSee('<link rel="canonical" href="'.$url.'"', false)
         ->assertSee('BreadcrumbList');
+
+    preg_match_all('/<script\b[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/s', $response->getContent(), $matches);
+    $breadcrumbSchemas = collect($matches[1])
+        ->map(fn (string $json) => json_decode($json, true, 512, JSON_THROW_ON_ERROR))
+        ->filter(fn (array $schema) => ($schema['@type'] ?? null) === 'BreadcrumbList');
+
+    expect($breadcrumbSchemas)->toHaveCount(1);
+
+    $items = $breadcrumbSchemas->first()['itemListElement'];
+    expect(array_column($items, 'position'))->toBe([1, 2, 3]);
+    expect(array_column($items, 'item'))->toBe([route('home'), route('categories.index'), $url]);
+    expect(array_column($items, 'name'))->toBe(['Home', $section, $category->name]);
 })->with([
     ['Software', 'categories.show', 'Remote Teams Software', 'Categories'],
     ['Use Case', 'use-cases.show', 'Tools for Remote Teams', 'Use cases'],

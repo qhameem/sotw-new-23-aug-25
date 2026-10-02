@@ -154,8 +154,7 @@
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category))
         <div class="px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
             <x-breadcrumbs :items="[
-                ['label' => 'Home', 'link' => route('home')],
-                ['label' => $taxonomyLabel],
+                ['label' => $taxonomyLabel, 'link' => route('categories.index')],
                 ['label' => $category->name],
             ]" />
             <p class="mt-3 text-sm text-gray-800">{{ $pageIntro }}</p>
@@ -167,7 +166,7 @@
                 '@type' => 'BreadcrumbList',
                 'itemListElement' => [
                     ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
-                    ['@type' => 'ListItem', 'position' => 2, 'name' => $taxonomyLabel],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => $taxonomyLabel, 'item' => route('categories.index')],
                     ['@type' => 'ListItem', 'position' => 3, 'name' => $category->name, 'item' => $categoryCanonicalUrl],
                 ],
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
