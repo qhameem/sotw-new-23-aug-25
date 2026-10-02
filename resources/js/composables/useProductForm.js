@@ -6,6 +6,7 @@ import { useExtractionTimer } from './useExtractionTimer';
 // Create a global state for the product form
 const globalFormState = createProductFormState();
 const urlMatchesDraft = ref(false);
+const autofillNextMessage = ref('');
 
 // Create shared reactive objects to ensure consistency across all components
 const sharedForm = reactive({ ...globalFormState.form });
@@ -1125,6 +1126,7 @@ export function useProductForm() {
   const beginAutofillProgress = (message, progress = 5, sessionType = 'fullAutofill') => {
     globalFormState.isLoading.value = true;
     globalFormState.loadingMessage.value = message;
+    autofillNextMessage.value = '';
     globalFormState.loadingSessionType.value = sessionType;
     globalFormState.loadingStartedAt.value = Date.now();
     globalFormState.loadingTargetProgress.value = progress;
@@ -1132,18 +1134,21 @@ export function useProductForm() {
     ensureLoadingAnimation();
   };
 
-  const updateAutofillProgress = (message, progress) => {
+  const updateAutofillProgress = (message, progress, nextMessage = '') => {
     if (!globalFormState.loadingStartedAt.value) {
       beginAutofillProgress(message, progress);
+      autofillNextMessage.value = nextMessage;
       return;
     }
 
     globalFormState.loadingMessage.value = message;
+    autofillNextMessage.value = nextMessage;
     globalFormState.loadingTargetProgress.value = Math.max(globalFormState.loadingTargetProgress.value || 0, progress);
     ensureLoadingAnimation();
   };
 
   const completeAutofillProgress = () => {
+    autofillNextMessage.value = '';
     globalFormState.loadingTargetProgress.value = 100;
     globalFormState.loadingProgress.value = 100;
     globalFormState.loadingSessionType.value = null;
@@ -1954,7 +1959,7 @@ export function useProductForm() {
     beginAutofillProgress('Initializing request...', 5, 'fullAutofill');
 
     try {
-      updateAutofillProgress('Fetching basic metadata and taking screenshot...', 10);
+      updateAutofillProgress('Fetching product name, tagline, logo, and screenshot...', 10, 'Detailed website analysis');
       const response = await axios.post('/api/fetch-initial-metadata', {
         url: linkValue,
         additional_resources: form.additional_resources || '',
@@ -2222,7 +2227,7 @@ export function useProductForm() {
         fetch_content: shouldFetchContent,
       });
 
-      updateAutofillProgress('Connecting for detailed analysis...', 35);
+      updateAutofillProgress('Connecting for detailed analysis...', 35, 'Reading website content');
 
       const data = await processUrlStreamRequest({
         url: linkValue,
@@ -2273,10 +2278,12 @@ export function useProductForm() {
               isFinalStreamStep
                 ? 'Applying extracted data to the form...'
                 : (streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...'),
-              isFinalStreamStep ? 90 : mapStreamProgressToUi(streamData.progress)
+              isFinalStreamStep ? 90 : mapStreamProgressToUi(streamData.progress),
+              isFinalStreamStep ? '' : (streamData.next_message || '')
             );
           } else if (streamData.message) {
             globalFormState.loadingMessage.value = streamData.message;
+            autofillNextMessage.value = streamData.next_message || '';
           }
         }
       });
@@ -2398,7 +2405,7 @@ export function useProductForm() {
     try {
       await delay(260);
       form.link = sandboxPayload.link;
-      updateAutofillProgress('Fetching basic metadata and taking screenshot...', 10);
+      updateAutofillProgress('Fetching product name, tagline, logo, and screenshot...', 10, 'Detailed website analysis');
 
       await delay(420);
       form.name = sandboxPayload.name;
@@ -2408,7 +2415,7 @@ export function useProductForm() {
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
 
       await delay(520);
-      updateAutofillProgress('Connecting for detailed analysis...', 35);
+      updateAutofillProgress('Connecting for detailed analysis...', 35, 'Reading website content');
 
       await delay(420);
       form.tagline = sandboxPayload.tagline;
@@ -3186,6 +3193,7 @@ export function useProductForm() {
     extractionErrors: globalFormState.extractionErrors,
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,
+    autofillNextMessage,
     loadingStates,
     autofillReveal,
     logoPreview: globalFormState.logoPreview,

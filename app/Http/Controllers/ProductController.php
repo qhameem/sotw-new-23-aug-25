@@ -4171,8 +4171,8 @@ class ProductController extends Controller
         $isAdmin = (bool) ($request->user() && $request->user()->hasRole('admin'));
 
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request, $isAdmin, $timings) {
-            $sendUpdate = function ($message, $progress, $data = null) use ($request, $timings) {
-                echo json_encode(array_merge(['message' => $message, 'progress' => $progress, 'data' => $data], $timings->payload($request)))."\n";
+            $sendUpdate = function ($message, $progress, $data = null, $nextMessage = '') use ($request, $timings) {
+                echo json_encode(array_merge(['message' => $message, 'next_message' => $nextMessage, 'progress' => $progress, 'data' => $data], $timings->payload($request)))."\n";
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
@@ -4206,7 +4206,7 @@ class ProductController extends Controller
             $descriptionNotice = null;
 
             try {
-                $sendUpdate('Connecting to website...', 5);
+                $sendUpdate('Connecting to website...', 5, null, $fetchContent ? 'Analyzing page structure' : 'Finding additional logo options and links');
                 $htmlResponse = $timings->measure('metadata', fn () => \Illuminate\Support\Facades\Http::withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 ])->timeout(15)->get($url));
@@ -4237,7 +4237,7 @@ class ProductController extends Controller
                 $sendUpdate('Website fetched successfully...', 15);
 
                 if ($fetchContent) {
-                    $sendUpdate('Analyzing page structure...', 20);
+                    $sendUpdate('Analyzing page structure...', 20, null, 'Generating AI taglines');
 
                     $titleNode = $doc->getElementsByTagName('title')->item(0);
                     $title = $titleNode ? $titleNode->nodeValue : '';
@@ -4289,7 +4289,7 @@ class ProductController extends Controller
                         : ($timings->measure('name', fn () => $this->nameExtractor->extract($title ?: '', $url)) ?: 'this product');
                     $descriptionContext = $timings->measure('research', fn () => $this->appendLimitationResearchContext($textContent, $productNameForAI, $url));
 
-                    $sendUpdate('Generating AI taglines...', 40);
+                    $sendUpdate('Generating AI taglines...', 40, null, 'Writing product description');
                     try {
                         $taglineRewriter = new \App\Services\TaglineRewriterService;
                         $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
@@ -4327,7 +4327,7 @@ class ProductController extends Controller
                         'tagline_notice' => $taglineNotice,
                     ]);
 
-                    $sendUpdate('Writing product description...', 65);
+                    $sendUpdate('Writing product description...', 65, null, 'Finding additional logo options and links');
                     $rawDescForRewrite = $descriptionContent;
                     if (empty($rawDescForRewrite)) {
                         $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
@@ -4345,13 +4345,13 @@ class ProductController extends Controller
                         }
                     }
 
-                    $sendUpdate('Description ready. Extracting pricing page, socials, and logos...', 72, [
+                    $sendUpdate('Description ready. Finding additional logo options and links...', 72, [
                         'description' => $description,
                         'description_notice' => $descriptionNotice,
                     ]);
                 }
 
-                $sendUpdate('Extracting pricing page, socials, and logos...', 85);
+                $sendUpdate('Finding additional logo options, pricing page, and socials...', 85, null, 'Classifying features and categories');
 
                 $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
 
@@ -4362,7 +4362,7 @@ class ProductController extends Controller
                     'maker_links' => $autofillLinks['maker_links'],
                 ]);
 
-                $sendUpdate('Classifying features and categories...', 95);
+                $sendUpdate('Classifying features and categories...', 95, null, 'Refreshing website screenshot');
                 $classificationSource = $htmlContent;
                 if ($additionalResourcesContext !== '') {
                     $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
@@ -4409,6 +4409,8 @@ class ProductController extends Controller
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
                 ]);
+
+                $sendUpdate('Refreshing website screenshot...', 98, null, 'Applying extracted data to the form');
 
                 $responseData = [
                     'description' => $description,

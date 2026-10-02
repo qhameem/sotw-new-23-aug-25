@@ -421,6 +421,7 @@ const {
   sandboxNotice,
   loadingProgress,
   loadingMessage,
+  autofillNextMessage,
   autofillReveal,
   errorMessage,
   showErrorMessage,
@@ -478,35 +479,8 @@ const aiFieldCount = computed(() => aiFields.value.length);
 const aiFilledCount = computed(() => aiFields.value.filter(Boolean).length);
 const autofillProgress = computed(() => Math.max(0, Math.min(100, Math.round(loadingProgress.value || 0))));
 const displayProgress = computed(() => isLoading.value ? autofillProgress.value : reviewProgress.value);
-const activeAutofillStages = computed(() => {
-  const stages = [];
-
-  if (loadingStates.name) stages.push('product name and tagline');
-  if (loadingStates.description) stages.push('description');
-  if (loadingStates.categories || loadingStates.bestFor) {
-    stages.push('categories, use cases, best for, pricing, platforms, and tech stack');
-  }
-  if (loadingStates.logos) stages.push('logo and screenshot');
-
-  return stages;
-});
-const currentAutofillFields = computed(() => activeAutofillStages.value[0] || 'website details');
-const nextAutofillFields = computed(() => {
-  if (activeAutofillStages.value[1]) return activeAutofillStages.value[1];
-  if (activeAutofillStages.value.length === 0) {
-    return autofillProgress.value < 35 ? 'product name and tagline' : '';
-  }
-
-  const orderedStages = [
-    'product name and tagline',
-    'description',
-    'categories, use cases, best for, pricing, platforms, and tech stack',
-    'logo and screenshot',
-  ];
-  const currentIndex = orderedStages.indexOf(currentAutofillFields.value);
-
-  return currentIndex >= 0 ? (orderedStages[currentIndex + 1] || '') : '';
-});
+const currentAutofillFields = computed(() => loadingMessage.value || 'Preparing auto-fill...');
+const nextAutofillFields = computed(() => autofillNextMessage.value);
 const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
 const sourceSnippet = computed(() => '');
 const openManualMode = () => {

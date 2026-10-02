@@ -11,16 +11,19 @@
       </div>
     </div>
     <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'" :aria-valuenow="displayProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: `${displayProgress}%` }"></div></div>
-    <div v-if="isLoading" class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600" aria-live="polite">
-      <span class="inline-flex items-center gap-2">
-        <span class="font-semibold text-slate-700">Now:</span> {{ currentAutofillFields }}
-        <span class="inline-flex items-end gap-0.5" aria-hidden="true">
-          <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]"></span>
-          <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]"></span>
-          <span class="h-1 w-1 animate-bounce rounded-full bg-emerald-500"></span>
-        </span>
-      </span>
-      <span v-if="nextAutofillFields"><span class="font-semibold text-slate-700">Next:</span> {{ nextAutofillFields }}</span>
+    <div v-if="isLoading" class="mt-3 overflow-hidden rounded-lg border border-slate-700 bg-slate-950" role="status" aria-live="polite" aria-atomic="true">
+      <div class="border-b border-slate-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-slate-400" aria-hidden="true">AI fill</div>
+      <div class="space-y-2 px-3 py-3 font-mono text-xs leading-5">
+        <div class="flex items-start gap-2">
+          <span class="shrink-0 text-emerald-400" aria-hidden="true">&gt;</span>
+          <span class="min-w-0 break-words text-slate-100"><span class="font-semibold text-emerald-400">current</span> {{ currentAutofillFields || 'Preparing auto-fill' }}</span>
+          <span class="mt-1 h-3 w-1.5 shrink-0 bg-emerald-400 motion-safe:animate-pulse" aria-hidden="true"></span>
+        </div>
+        <div v-if="nextAutofillFields" class="flex items-start gap-2">
+          <span class="shrink-0 text-slate-500" aria-hidden="true">&gt;</span>
+          <span class="min-w-0 break-words text-slate-400"><span class="font-semibold text-slate-300">next</span> {{ nextAutofillFields }}</span>
+        </div>
+      </div>
     </div>
     <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
       <p class="text-xs font-semibold text-amber-900">Needs your input</p>
