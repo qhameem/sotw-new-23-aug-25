@@ -19,6 +19,7 @@
             @input="handleInput"
             @keydown.enter.prevent="handleAutoFillClick"
             :aria-invalid="inlineError ? 'true' : 'false'"
+            :aria-busy="isUrlChecking"
             :aria-describedby="inlineError ? 'product-url-help product-url-error' : 'product-url-help'"
             @focus="refreshCaret"
             @blur="refreshCaret"
@@ -60,6 +61,15 @@
           </button>
         </div>
         <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
+        <div role="status" aria-live="polite" aria-atomic="true">
+          <p v-if="isUrlChecking" class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+            <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Checking for duplicates
+          </p>
+        </div>
         <p v-if="inlineError && !urlExistsError" id="product-url-error" role="alert" class="mt-2 text-sm !text-red-600">{{ inlineError }}</p>
       </div>
 
