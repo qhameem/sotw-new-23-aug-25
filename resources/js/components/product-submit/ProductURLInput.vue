@@ -114,7 +114,7 @@
         class="text-xs font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
         @click="$emit('manual')"
       >
-        Skip auto-fill and enter the other details manually.
+        <span class="font-bold">Or</span> skip auto-fill and enter the other details manually.
       </button>
     </div>
     <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
