@@ -1,58 +1,76 @@
 <template>
-  <div id="field-link" :class="[
-    reviewMode ? 'sticky top-0 z-30 border-yellow-200 p-4 shadow-sm backdrop-blur' : 'border-yellow-500 p-5',
-    reviewMode && !isLoading ? 'bg-[#fffef5]' : 'bg-yellow-50'
-  ]" class="rounded-xl border border-dashed mb-4 transition-colors duration-300 motion-reduce:transition-none">
+  <div id="field-link" :class="{ 'sticky top-0 z-30': reviewMode }" class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-6">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
-        <span v-if="!reviewMode" class="text-sm text-gray-600">Enter your URL and we fill in the rest.</span>
       </div>
       <span v-if="extractionTiming.started" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
         {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
       </span>
-      <p v-if="fieldError && !urlExistsError" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ fieldError }}</p>
     </div>
-    
-    <div class="flex items-center gap-3">
-      <div class="relative flex-grow">
-        <input 
-          id="product-url" 
-          ref="inputRef" 
-          :value="modelValue" 
-          @input="handleInput" 
-          type="url" 
-          required 
-          class="block w-full pl-6 pr-20 py-1.5 bg-white border-2 border-sky-200 rounded-xl text-sm shadow-sm placeholder-gray-400
-                 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
-          placeholder="https://your-website.com"
-        >
-        <button
-          type="button"
-          @click="pasteFromClipboard"
-          :disabled="isLoading"
-          class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-sky-600 disabled:text-gray-300 transition-colors"
-          aria-label="Paste URL from clipboard"
-          title="Paste URL"
-        >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-        </button>
-        <button v-if="modelValue" type="button" @click="$emit('clear')" class="absolute inset-y-0 right-10 flex items-center text-gray-400 hover:text-gray-600">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+
+    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start">
+      <div class="min-w-0 flex-1">
+        <div class="relative">
+          <input
+            id="product-url"
+            ref="inputRef"
+            :value="modelValue"
+            @input="handleInput"
+            @keydown.enter.prevent="handleAutoFillClick"
+            :aria-invalid="inlineError ? 'true' : 'false'"
+            :aria-describedby="inlineError ? 'product-url-help product-url-error' : 'product-url-help'"
+            @focus="refreshCaret"
+            @blur="refreshCaret"
+            @input.capture="refreshCaret"
+            @keyup="refreshCaret"
+            @click="refreshCaret"
+            @select="refreshCaret"
+            @scroll="refreshCaret"
+            @compositionstart="refreshCaret"
+            @compositionend="refreshCaret"
+            :style="{ caretColor: caretStyle ? 'transparent' : 'black' }"
+            type="text"
+            inputmode="url"
+            autocomplete="url"
+            :spellcheck="false"
+            required
+            class="block w-full h-11 pl-4 pr-20 py-2 bg-white border-2 rounded-xl text-sm caret-black placeholder-gray-400
+                   focus:outline-none focus:ring-0 transition-[border-color,box-shadow]"
+            :class="urlExistsError || urlMatchesDraft
+              ? 'border-amber-500 shadow-[0_4px_0_#f59e0b,0_6px_10px_rgba(15,23,42,0.08)] focus:border-amber-600 focus:shadow-[0_4px_0_#d97706,0_6px_10px_rgba(15,23,42,0.12)]'
+              : 'border-primary-500 shadow-[0_4px_0_var(--color-primary-500),0_6px_10px_rgba(15,23,42,0.08)] focus:border-[color:color-mix(in_srgb,var(--color-primary-500)_80%,black)] focus:shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-500)_80%,black),0_6px_10px_rgba(15,23,42,0.12)]'"
+            placeholder="https://your-website.com"
+          >
+          <span v-if="caretStyle" aria-hidden="true" class="url-caret" :style="caretStyle" />
+          <button
+            type="button"
+            @click="pasteFromClipboard"
+            :disabled="isLoading"
+            class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-sky-600 disabled:text-gray-300 transition-colors"
+            aria-label="Paste from clipboard"
+            title="Paste from clipboard"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </button>
+          <button v-if="modelValue" type="button" @click="$emit('clear')" class="absolute inset-y-0 right-10 flex items-center text-gray-400 hover:text-gray-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
+        <p v-if="inlineError && !urlExistsError" id="product-url-error" role="alert" class="mt-2 text-sm !text-red-600">{{ inlineError }}</p>
       </div>
-      
+
       <div class="relative shrink-0">
         <button
           type="button"
           @click="handleAutoFillClick"
           :aria-disabled="isAutoFillDisabled ? 'true' : 'false'"
-          :class="[
-            'w-[168px] min-h-8 -translate-y-0.5 px-6 py-1.5 rounded-md border-2 border-[color:color-mix(in_srgb,var(--color-primary-700)_82%,black)] bg-primary-500 text-white font-bold text-sm flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_4px_0_color-mix(in_srgb,var(--color-primary-700)_82%,black),0_8px_14px_rgba(15,23,42,0.14)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-150',
-            isAutoFillDisabled ? '' : 'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none'
-          ]"
+          :disabled="isAutoFillDisabled"
+          :aria-busy="isLoading"
+          class="h-11 w-full sm:w-[168px] px-6 rounded-xl border-2 border-primary-700 bg-primary-500 shadow-[0_4px_0_var(--color-primary-700),0_6px_10px_rgba(15,23,42,0.12)] enabled:active:translate-y-1 enabled:active:shadow-none motion-safe:transition-all motion-safe:duration-150 text-white font-bold text-sm flex items-center justify-center gap-2 whitespace-nowrap hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
         <span v-if="isLoading" class="flex items-center gap-2">
           <svg class="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -62,8 +80,13 @@
           {{ loadingProgress > 0 && loadingProgress < 10 ? 'Starting...' : 'Working...' }}
         </span>
         <span v-else class="flex items-center gap-2">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M7 7L5.5 5.5M15 7L16.5 5.5M5.5 16.5L7 15M11 5L11 3M5 11L3 11M17.1603 16.9887L21.0519 15.4659C21.4758 15.3001 21.4756 14.7003 21.0517 14.5346L11.6992 10.8799C11.2933 10.7213 10.8929 11.1217 11.0515 11.5276L14.7062 20.8801C14.8719 21.304 15.4717 21.3042 15.6375 20.8803L17.1603 16.9887Z" stroke="currentColor"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
-          {{ reviewMode ? 'Refetch' : 'Auto-fill' }}
+          <svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 36 36" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M34.1,4,31.71,1.6a1.83,1.83,0,0,0-1.31-.54h0a2.05,2.05,0,0,0-1.45.62L1.76,29.23A2,2,0,0,0,1.68,32l2.4,2.43A1.83,1.83,0,0,0,5.39,35h0a2.05,2.05,0,0,0,1.45-.62L34,6.79A2,2,0,0,0,34.1,4ZM5.42,32.93,3.16,30.65h0L24.11,9.43l2.25,2.28ZM32.61,5.39l-5.12,5.18L25.24,8.29l5.13-5.2,2.25,2.28Z" />
+            <path d="M32.53,20.47l2.09-2.09a.8.8,0,0,0-1.13-1.13l-2.09,2.09-2.09-2.09a.8.8,0,0,0-1.13,1.13l2.09,2.09-2.09,2.09a.8.8,0,0,0,1.13,1.13l2.09-2.09,2.09,2.09a.8.8,0,0,0,1.13-1.13Z" />
+            <path d="M14.78,6.51a.8.8,0,0,0,1.13,0L17.4,5l1.49,1.49A.8.8,0,0,0,20,5.38L18.54,3.89,20,2.4a.8.8,0,0,0-1.13-1.13L17.4,2.76,15.91,1.27A.8.8,0,1,0,14.78,2.4l1.49,1.49L14.78,5.38A.8.8,0,0,0,14.78,6.51Z" />
+            <path d="M8.33,15.26a.8.8,0,0,0,1.13,0l1.16-1.16,1.16,1.16a.8.8,0,1,0,1.13-1.13L11.76,13l1.16-1.16a.8.8,0,1,0-1.13-1.13l-1.16,1.16L9.46,10.68a.8.8,0,1,0-1.13,1.13L9.49,13,8.33,14.13A.8.8,0,0,0,8.33,15.26Z" />
+          </svg>
+          Fill with AI →
         </span>
         </button>
         <div
@@ -76,13 +99,12 @@
       </div>
     </div>
     <div v-if="!reviewMode && !isLoading" class="mt-5">
-      <p class="mb-1 text-xs text-gray-500">Or</p>
       <button
         type="button"
         class="text-xs font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
         @click="$emit('manual')"
       >
-        Fill in the details manually
+        Skip auto-fill and enter the other details manually.
       </button>
     </div>
     <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
@@ -139,7 +161,7 @@
         </button>
       </div>
     </transition>
-    
+
     <!-- Error Message -->
     <transition name="fade">
       <div v-if="urlExistsError" class="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 flex items-start gap-2">
@@ -159,7 +181,7 @@
         </div>
       </div>
     </transition>
-    
+
     <slot name="details" />
 
     <!-- Debug Info (Temporary - Hidden for production look) -->
@@ -176,7 +198,8 @@ const phaseLabel = (key) => {
   const prefix = { initial: 'Initial', details: 'Detailed', fallback: 'Retry', client: '' }[scope] || '';
   return [prefix, labels[phase] || phase].filter(Boolean).join(' · ');
 };
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { useInputCaret } from '../../composables/useInputCaret';
 import { productFormService } from '../../services/productFormService';
 
 const props = defineProps({
@@ -190,6 +213,7 @@ const props = defineProps({
   isUrlInvalid: Boolean,
   urlTrimSuggestion: Object,
   urlExistsError: Boolean,
+  urlMatchesDraft: Boolean,
   existingProduct: Object,
   fieldError: {
     type: String,
@@ -210,6 +234,9 @@ const emit = defineEmits(['update:modelValue', 'getStarted', 'clear', 'validate-
 const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
+const { caretStyle, refreshCaret } = useInputCaret(inputRef);
+watch(() => props.modelValue, refreshCaret, { flush: 'post' });
+const inlineError = computed(() => props.fieldError || (props.isUrlInvalid && String(props.modelValue || '').trim() ? 'Enter a valid website URL.' : props.urlCheckFailed ? 'Unable to check this URL. Please try again.' : ''));
 const showDisabledTooltip = ref(false);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
@@ -232,6 +259,7 @@ const disabledReason = computed(() => {
 });
 
 const handleAutoFillClick = () => {
+  emit('validate-field', 'link');
   if (!isAutoFillDisabled.value) {
     performValidationAndFetch();
     return;
@@ -265,7 +293,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
   clipboardFeedback.value = '';
 
   const normalizedExplicitValue = explicitValue instanceof Event ? null : explicitValue;
-  
+
   // Get the current value directly from the input element to avoid timing issues
   const inputValue = normalizedExplicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
   console.log('[ProductURLInput] Using URL value:', inputValue);
@@ -274,7 +302,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
     emit('update:modelValue', inputValue);
   }
   emit('validate-field', 'link');
-  
+
   // Step 1: Check if anything is loading
   console.log('[ProductURLInput] Step 1: Checking if anything is loading...');
   if (isAutoFillDisabled.value) {
@@ -288,7 +316,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
     emit('getStarted', inputValue || '__sandbox__');
     return;
   }
-  
+
   // Step 2: Check if URL is valid
   console.log('[ProductURLInput] Step 2: Checking if URL is valid...');
   console.log('[ProductURLInput] URL to validate:', inputValue);
@@ -298,7 +326,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
     return;
   }
   console.log('[ProductURLInput] Step 2 passed: URL is valid');
-  
+
   // All validations passed, proceed with fetching data
   console.log('[ProductURLInput] All validations passed, proceeding to fetch data...');
   emit('getStarted', inputValue);
@@ -364,6 +392,20 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 </script>
 
 <style scoped>
+.url-caret {
+  position: absolute;
+  width: 2px;
+  background: #000;
+  pointer-events: none;
+  animation: caret-blink 1s step-end infinite;
+}
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .url-caret { animation: none; }
+}
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s;
 }

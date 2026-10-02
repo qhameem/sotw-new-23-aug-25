@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <p class="text-sm font-semibold text-slate-900">
         <template v-if="isLoading">AI fill: {{ autofillProgress }}% complete.</template>
-        <template v-else>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input.</template>
+        <template v-else>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input. Please review the highlighted fields before submitting.</template>
       </p>
       <div class="flex items-center gap-3">
         <span v-if="draftAutosaveState === 'saved'" class="text-xs text-emerald-700">Saved just now</span>

@@ -47,6 +47,7 @@
               :isUrlInvalid="isUrlInvalid"
               :urlTrimSuggestion="urlTrimSuggestion"
               :urlExistsError="urlExistsError"
+              :urlMatchesDraft="urlMatchesDraft"
               :existingProduct="existingProduct"
               :fieldError="validationErrors.link"
               @getStarted="handleUrlFetch"
@@ -71,10 +72,10 @@
             </ProductURLInput>
 
             <Transition name="draft-list-fade">
-              <div v-if="showDraftList" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div v-if="showDraftList" class="!mt-12 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div class="flex items-center justify-between gap-3">
                   <div>
-                    <h2 class="text-sm font-semibold text-slate-900">Unfinished submissions</h2>
+                    <h2 class="text-sm font-semibold text-slate-900">Your unfinished submissions</h2>
                     <p class="text-xs text-slate-500">Resume an earlier product draft.</p>
                   </div>
                   <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
@@ -228,9 +229,13 @@
                     :isUrlInvalid="isUrlInvalid"
                     :urlTrimSuggestion="urlTrimSuggestion"
                     :urlExistsError="urlExistsError"
+              :urlMatchesDraft="urlMatchesDraft"
                     :existingProduct="existingProduct"
                     :fieldError="validationErrors.link"
                     :reviewMode="!manualMode"
+                    :isUrlChecking="urlCheckPending"
+                    :urlCheckFailed="urlCheckFailed"
+                    @manual="openManualMode"
                     @getStarted="handleUrlFetch"
                     @clear="clearForm"
                   >
@@ -380,6 +385,7 @@ const {
   extractionErrors,
   urlExistsError,
   existingProduct,
+  urlMatchesDraft,
   logoPreview,
   galleryPreviews,
   markManualScreenshotChosen,

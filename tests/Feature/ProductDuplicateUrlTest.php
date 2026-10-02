@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\ProductSubmissionDraft;
 use App\Models\User;
 use App\Services\PaidSubmissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,6 +25,24 @@ class ProductDuplicateUrlTest extends TestCase
             ->assertOk()
             ->assertJsonPath('exists', true)
             ->assertJsonPath('product.id', $product->id);
+    }
+
+    public function test_url_check_identifies_a_draft_without_exposing_its_details(): void
+    {
+        ProductSubmissionDraft::create([
+            'user_id' => User::factory()->create()->id,
+            'name' => 'Private draft',
+            'link' => 'https://www.example.com/tool/?ref=draft',
+            'payload' => [],
+        ]);
+
+        $this->getJson('/check-product-url?url='.urlencode('https://example.com/tool'))
+            ->assertOk()
+            ->assertExactJson(['exists' => false, 'draft_exists' => true]);
+
+        $this->getJson('/check-product-url?url='.urlencode('https://example.com/different'))
+            ->assertOk()
+            ->assertExactJson(['exists' => false, 'draft_exists' => false]);
     }
 
     public function test_ajax_submission_returns_a_link_validation_error_for_a_duplicate_url(): void

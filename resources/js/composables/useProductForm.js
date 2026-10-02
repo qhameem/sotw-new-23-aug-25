@@ -5,6 +5,7 @@ import { useExtractionTimer } from './useExtractionTimer';
 
 // Create a global state for the product form
 const globalFormState = createProductFormState();
+const urlMatchesDraft = ref(false);
 
 // Create shared reactive objects to ensure consistency across all components
 const sharedForm = reactive({ ...globalFormState.form });
@@ -1323,6 +1324,7 @@ export function useProductForm() {
   };
 
   const checkUrlExists = async (urlToCheck = form.link) => {
+    urlMatchesDraft.value = false;
     console.log('checkUrlExists called with URL:', urlToCheck, 'and ID:', form.id);
     if (!urlToCheck) {
       globalFormState.urlExistsError.value = false;
@@ -1347,6 +1349,7 @@ export function useProductForm() {
         return response;
       }
 
+      urlMatchesDraft.value = Boolean(response.draft_exists);
       if (response.exists) {
         globalFormState.urlExistsError.value = true;
         globalFormState.existingProduct.value = response.product;
@@ -1989,6 +1992,7 @@ export function useProductForm() {
       resetValidationState();
       showErrorMessage.value = true;
       errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
+      validationErrors.link = 'Unable to reach this website. Check the URL and try Auto-fill again.';
       markAutofillFormReady();
       finishAutofillRevealState();
     } finally {
@@ -3166,6 +3170,7 @@ export function useProductForm() {
     submitState: globalFormState.submitState,
     urlExistsError: globalFormState.urlExistsError,
     existingProduct: globalFormState.existingProduct,
+    urlMatchesDraft,
     sandboxNotice: globalFormState.sandboxNotice,
     showPreviewModal: globalFormState.showPreviewModal,
     submissionBgUrl: globalFormState.submissionBgUrl,

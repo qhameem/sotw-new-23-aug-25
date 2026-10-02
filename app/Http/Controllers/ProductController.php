@@ -1400,7 +1400,7 @@ class ProductController extends Controller
         if (! $url) {
             \Log::info('URL is empty, returning false');
 
-            return response()->json(['exists' => false]);
+            return response()->json(['exists' => false, 'draft_exists' => false]);
         }
 
         $query = Product::matchingLink($url);
@@ -1435,7 +1435,10 @@ class ProductController extends Controller
 
         \Log::info('URL does not exist in database');
 
-        return response()->json(['exists' => false]);
+        return response()->json([
+            'exists' => false,
+            'draft_exists' => ProductSubmissionDraft::matchingLink($url)->exists(),
+        ]);
     }
 
     public function legacyCategoryProducts(Request $request, Category $category, AdDeliveryService $adDeliveryService)

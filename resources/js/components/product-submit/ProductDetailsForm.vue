@@ -206,7 +206,7 @@
     </div>
 
     <!-- Categories (Chip Selection) -->
-    <div id="field-categories" :class="autofillLockClass('taxonomy')">
+    <div id="field-categories" :class="[autofillLockClass('taxonomy'), reviewTint('categories')]">
        <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
             <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
@@ -294,7 +294,7 @@
     </div>
 
     <!-- Use Cases (Chip Selection) -->
-    <div id="field-use-cases" :class="autofillLockClass('taxonomy')">
+    <div id="field-use-cases" :class="[autofillLockClass('taxonomy'), reviewTint('useCases')]">
        <div class="mb-1 flex items-start justify-between gap-4">
           <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
           <p v-if="validationErrors.useCases" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases }}</p>
@@ -374,7 +374,7 @@
     </div>
 
     <!-- Platform (Chip Selection) -->
-    <div :class="autofillLockClass('taxonomy')">
+    <div :class="[autofillLockClass('taxonomy'), reviewTint('platforms')]">
        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Platform <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
        </div>
@@ -513,7 +513,7 @@
 
 
     <!-- Best For / Tags (Chip Selection) -->
-    <div id="field-pricing" :class="autofillLockClass('taxonomy')">
+    <div id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
        </div>
@@ -593,7 +593,7 @@
     </div>
 
     <!-- Pricing (Cards) -->
-    <div :class="autofillLockClass('taxonomy')">
+    <div :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
          <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode && !hasPricing" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
          <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
@@ -626,7 +626,7 @@
     </div>
 
     <!-- Pricing Page URL -->
-    <div id="field-pricing-page-url" :class="autofillLockClass('links')">
+    <div id="field-pricing-page-url" :class="[autofillLockClass('links'), reviewTint('pricing_page_url')]">
       <div class="mb-1 flex items-start justify-between gap-4">
         <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span> <span v-if="reviewMode && !hasPricingPageUrl" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
         <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
@@ -827,7 +827,7 @@ const confirmField = (field) => {
   reviewedFields.value = new Set([...reviewedFields.value, field]);
 };
 const reviewTint = (field) => (
-  props.reviewMode && props.modelValue[field] && !reviewedFields.value.has(field)
+  props.reviewMode && (Array.isArray(props.modelValue[field]) ? props.modelValue[field].length > 0 : Boolean(props.modelValue[field])) && !reviewedFields.value.has(field)
     ? 'rounded-xl border border-sky-100 bg-sky-50/60 p-4'
     : ''
 );

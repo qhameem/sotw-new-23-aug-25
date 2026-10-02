@@ -49,6 +49,19 @@ class ProductSubmissionDraft extends Model
         return $query->where('user_id', $userId);
     }
 
+    public function scopeMatchingLink(Builder $query, ?string $url): Builder
+    {
+        $candidates = Product::equivalentLinkCandidates($url);
+
+        return $query->where(function (Builder $query) use ($candidates) {
+            $query->whereIn('link', $candidates);
+            foreach ($candidates as $candidate) {
+                $query->orWhere('link', 'like', $candidate.'?%')
+                    ->orWhere('link', 'like', $candidate.'#%');
+            }
+        });
+    }
+
     public function scopeSummaryOnly(Builder $query): Builder
     {
         // Keep large JSON/image payloads out of list queries and MySQL sort buffers.
