@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-white text-gray-900 font-sans pb-20">
     <!-- Main Content Area -->
-    <div class="mx-auto mt-4 w-full max-w-[720px] px-4 pt-4 md:mt-12 md:pt-12">
+    <div class="mx-auto w-full max-w-[720px] px-4 pt-6 md:pt-8">
       
       <transition name="fade-slide" mode="out-in">
         <!-- Landing View -->
