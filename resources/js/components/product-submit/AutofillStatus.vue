@@ -2,7 +2,7 @@
   <div class="mt-4">
     <div class="overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
       <div class="border-b border-slate-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-slate-400" aria-hidden="true">AI fill</div>
-      <div v-if="isLoading" class="space-y-2 px-3 py-3 font-mono text-sm leading-6" role="status" aria-live="polite" aria-atomic="true">
+      <div v-if="isLoading" class="space-y-2 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite" aria-atomic="true">
         <div class="flex items-start gap-2">
           <span class="shrink-0 !text-emerald-400" aria-hidden="true">&gt;</span>
           <span class="min-w-0 break-words !text-slate-100"><span class="font-semibold !text-emerald-400">current</span> {{ currentAutofillFields || 'Preparing auto-fill' }}</span>
@@ -13,7 +13,7 @@
           <span class="min-w-0 break-words !text-slate-400"><span class="font-semibold !text-slate-300">next</span> {{ nextAutofillFields }}</span>
         </div>
       </div>
-      <div v-else class="space-y-3 px-3 py-3 font-mono text-sm leading-6" role="status" aria-live="polite">
+      <div v-else class="space-y-3 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite">
         <p class="!text-slate-100"><span class="font-semibold !text-emerald-400">&gt; complete</span> AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. <template v-if="reviewRemaining"> {{ reviewRemaining }} required {{ reviewRemaining === 1 ? 'field needs' : 'fields need' }} your input.</template> Please review the extracted details before submitting.</p>
         <div class="flex items-center justify-end gap-3">
           <span v-if="draftAutosaveState === 'saved'" class="!text-emerald-400">Saved just now</span>
@@ -25,7 +25,7 @@
         </div>
       </div>
       <div
-        class="flex items-center gap-3 border-t border-slate-800 bg-slate-900 px-3 py-2 font-mono text-xs sm:text-sm"
+        class="flex items-center gap-3 border-t border-slate-800 bg-slate-900 px-3 py-2 font-mono text-[10px] sm:text-xs"
         role="progressbar"
         :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'"
         :aria-valuenow="terminalProgress"
