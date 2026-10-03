@@ -1,18 +1,8 @@
 <template>
-  <div class="mt-4 border-t border-slate-200 pt-4">
-    <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-3">
-      <p class="text-sm font-semibold text-slate-900">
-        <template>AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input. Please review the highlighted fields before submitting.</template>
-      </p>
-      <div class="flex items-center gap-3">
-        <span v-if="draftAutosaveState === 'saved'" class="text-xs text-emerald-700">Saved just now</span>
-        <button type="button" class="text-xs font-semibold text-sky-700 hover:text-sky-900 disabled:opacity-50" @click="$emit('regenerate')" :disabled="isLoading">Regenerate</button>
-      </div>
-    </div>
-    <div v-if="!isLoading" class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'" :aria-valuenow="displayProgress" aria-valuemin="0" aria-valuemax="100"><div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: `${displayProgress}%` }"></div></div>
-    <div v-if="isLoading" class="mt-3 overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
+  <div class="mt-4">
+    <div class="overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
       <div class="border-b border-slate-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-slate-400" aria-hidden="true">AI fill</div>
-      <div class="space-y-2 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite" aria-atomic="true">
+      <div v-if="isLoading" class="space-y-2 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite" aria-atomic="true">
         <div class="flex items-start gap-2">
           <span class="shrink-0 text-emerald-400" aria-hidden="true">&gt;</span>
           <span class="min-w-0 break-words text-slate-100"><span class="font-semibold text-emerald-400">current</span> {{ currentAutofillFields || 'Preparing auto-fill' }}</span>
@@ -23,10 +13,21 @@
           <span class="min-w-0 break-words text-slate-400"><span class="font-semibold text-slate-300">next</span> {{ nextAutofillFields }}</span>
         </div>
       </div>
+      <div v-else class="space-y-3 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite">
+        <p class="text-slate-100"><span class="font-semibold text-emerald-400">&gt; complete</span> AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input. Please review the highlighted fields before submitting.</p>
+        <div class="flex items-center justify-end gap-3">
+          <span v-if="draftAutosaveState === 'saved'" class="text-emerald-400">Saved just now</span>
+          <button type="button" class="font-semibold text-sky-400 hover:text-sky-300" @click="$emit('regenerate')">Regenerate</button>
+        </div>
+        <div v-if="reviewRemaining" class="rounded border border-amber-400/30 bg-amber-400/10 p-3">
+          <p class="font-semibold text-amber-300">Needs your input</p>
+          <p class="mt-1 text-amber-200">{{ reviewFieldsLabel }}.</p>
+        </div>
+      </div>
       <div
         class="flex items-center gap-3 border-t border-slate-800 bg-slate-900 px-3 py-2 font-mono text-[10px] sm:text-xs"
         role="progressbar"
-        aria-label="AI autofill progress"
+        :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'"
         :aria-valuenow="terminalProgress"
         aria-valuemin="0"
         aria-valuemax="100"
@@ -36,10 +37,7 @@
         <span class="ml-auto shrink-0 tabular-nums text-emerald-400" aria-hidden="true">{{ terminalProgress }}%</span>
       </div>
     </div>
-    <div v-if="!isLoading && reviewRemaining" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-      <p class="text-xs font-semibold text-amber-900">Needs your input</p>
-      <p class="mt-1 text-xs text-amber-800">Pricing model, pricing page URL, hosting provider, domain registrar, and product sale choice.</p>
-    </div>
+
   </div>
 </template>
 
@@ -52,6 +50,7 @@ const props = defineProps({
   aiFilledCount: { type: Number, default: 0 },
   aiFieldCount: { type: Number, default: 0 },
   reviewRemaining: { type: Number, default: 0 },
+  reviewFieldsLabel: { type: String, default: '' },
   draftAutosaveState: { type: String, default: '' },
   displayProgress: { type: Number, default: 0 },
   currentAutofillFields: { type: String, default: '' },
@@ -59,7 +58,7 @@ const props = defineProps({
 });
 defineEmits(['regenerate']);
 
-const terminalProgress = computed(() => Math.max(0, Math.min(100, Math.round(Number(props.autofillProgress) || 0))));
+const terminalProgress = computed(() => Math.max(0, Math.min(100, Math.round(Number(props.isLoading ? props.autofillProgress : props.displayProgress) || 0))));
 const filledCount = computed(() => Math.floor(terminalProgress.value / 5));
 const filledSegments = computed(() => '='.repeat(filledCount.value));
 const remainingSegments = computed(() => '-'.repeat(20 - filledCount.value));

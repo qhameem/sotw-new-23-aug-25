@@ -62,6 +62,7 @@
                   :aiFilledCount="aiFilledCount"
                   :aiFieldCount="aiFieldCount"
                   :reviewRemaining="reviewRemaining"
+                  :reviewFieldsLabel="reviewFieldsLabel"
                   :draftAutosaveState="draftAutosaveState"
                   :displayProgress="displayProgress"
                   :currentAutofillFields="currentAutofillFields"
@@ -247,6 +248,7 @@
                         :aiFilledCount="aiFilledCount"
                         :aiFieldCount="aiFieldCount"
                         :reviewRemaining="reviewRemaining"
+                  :reviewFieldsLabel="reviewFieldsLabel"
                         :draftAutosaveState="draftAutosaveState"
                         :displayProgress="displayProgress"
                         :currentAutofillFields="currentAutofillFields"
@@ -462,10 +464,16 @@ const reviewFields = computed(() => ({
   pricing_page_url: Boolean(String(form.pricing_page_url || '').trim()),
   hosting_provider: Boolean(String(form.hosting_provider || '').trim()),
   domain_registrar: Boolean(String(form.domain_registrar || '').trim()),
-  sell_product: form.sell_product === true,
 }));
 const reviewRemaining = computed(() => Object.values(reviewFields.value).filter((complete) => !complete).length);
-const reviewProgress = computed(() => Math.round(((5 - reviewRemaining.value) / 5) * 100));
+const reviewFieldsLabel = computed(() => {
+  const labels = { pricing: 'Pricing model', pricing_page_url: 'pricing page URL', hosting_provider: 'hosting provider', domain_registrar: 'domain registrar' };
+  return Object.entries(reviewFields.value).filter(([, complete]) => !complete).map(([field]) => labels[field]).join(', ');
+});
+const reviewProgress = computed(() => {
+  const count = Object.keys(reviewFields.value).length;
+  return Math.round(((count - reviewRemaining.value) / count) * 100);
+});
 const aiFields = computed(() => [
   form.name,
   form.tagline,
