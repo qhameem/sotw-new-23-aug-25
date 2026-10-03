@@ -33,7 +33,20 @@
         aria-valuemax="100"
         :aria-valuetext="`${terminalProgress}% complete`"
       >
-        <span class="min-w-0 whitespace-nowrap !text-slate-400" aria-hidden="true">[<span class="!text-emerald-400">{{ filledSegments }}</span>{{ remainingSegments }}]</span>
+        <span class="inline-flex min-w-0 whitespace-nowrap !text-slate-400" aria-hidden="true">
+          <span>[</span>
+          <span
+            v-for="segment in 20"
+            :key="segment"
+            :class="[segment <= filledCount ? '!text-emerald-400' : '!text-slate-400', { 'terminal-segment-active': isLoading }]"
+            :style="{ animationDelay: `${(segment - 1) * 75}ms` }"
+          >{{ segment <= filledCount ? '=' : '-' }}</span>
+          <span>]</span>
+        </span>
+        <span v-if="isLoading" class="hidden items-center gap-2 !text-emerald-300 sm:inline-flex" aria-hidden="true">
+          <span class="h-3 w-3 rounded-full border-2 border-emerald-400/30 border-t-emerald-300 motion-safe:animate-spin"></span>
+          Working
+        </span>
         <span class="ml-auto shrink-0 tabular-nums !text-emerald-400" aria-hidden="true">{{ terminalProgress }}%</span>
       </div>
     </div>
@@ -60,6 +73,23 @@ defineEmits(['regenerate']);
 
 const terminalProgress = computed(() => Math.max(0, Math.min(100, Math.round(Number(props.isLoading ? props.autofillProgress : props.displayProgress) || 0))));
 const filledCount = computed(() => Math.floor(terminalProgress.value / 5));
-const filledSegments = computed(() => '='.repeat(filledCount.value));
-const remainingSegments = computed(() => '-'.repeat(20 - filledCount.value));
 </script>
+
+<style scoped>
+@media (prefers-reduced-motion: no-preference) {
+  .terminal-segment-active {
+    animation: terminal-scan 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes terminal-scan {
+  0%, 65%, 100% {
+    opacity: 1;
+    text-shadow: none;
+  }
+  30% {
+    opacity: 0.45;
+    text-shadow: 0 0 6px #34d399;
+  }
+}
+</style>
