@@ -30,12 +30,8 @@ class ProductAutofillProgressTest extends TestCase
         $this->mock(TechStackDetectorService::class, function ($mock) {
             $mock->shouldReceive('detect')->once()->andReturn([]);
         });
-        $this->mock(ScreenshotService::class, function ($mock) use (&$output) {
-            $mock->shouldReceive('capture')->once()->andReturnUsing(function () use (&$output) {
-                $this->assertStringContainsString('Refreshing website screenshot...', $output);
-
-                return 'https://example.com/screenshot.png';
-            });
+        $this->mock(ScreenshotService::class, function ($mock) {
+            $mock->shouldNotReceive('capture');
         });
 
         $response = app(ProductController::class)->processUrlStream(Request::create('/', 'POST', [
@@ -59,9 +55,10 @@ class ProductAutofillProgressTest extends TestCase
         $messages = array_column($events, 'message');
         $this->assertContains('Done!', $messages, $output);
         $this->assertLessThan(array_search('Classifying features and categories...', $messages), array_search('Finding additional logo options, pricing page, and socials...', $messages));
-        $this->assertLessThan(array_search('Refreshing website screenshot...', $messages), array_search('Classifying features and categories...', $messages));
+        $this->assertLessThan(array_search('Applying extracted data to the form...', $messages), array_search('Classifying features and categories...', $messages));
         $this->assertSame('Classifying features and categories', $events[array_search('Finding additional logo options, pricing page, and socials...', $messages)]['next_message']);
         $this->assertSame('Done!', end($events)['message']);
-        $this->assertSame('https://example.com/screenshot.png', end($events)['data']['screenshot_url']);
+        $this->assertArrayNotHasKey('screenshot_url', end($events)['data']);
+        $this->assertNotContains('Refreshing website screenshot...', $messages);
     }
 }

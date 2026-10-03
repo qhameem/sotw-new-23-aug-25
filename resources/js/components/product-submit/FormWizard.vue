@@ -461,13 +461,10 @@ const draftListDismissed = ref(false);
 const showDraftList = computed(() => !draftListDismissed.value && !isEditMode.value && submissionDrafts.value.length > 0);
 const reviewFields = computed(() => ({
   pricing: Array.isArray(form.pricing) && form.pricing.length > 0,
-  pricing_page_url: Boolean(String(form.pricing_page_url || '').trim()),
-  hosting_provider: Boolean(String(form.hosting_provider || '').trim()),
-  domain_registrar: Boolean(String(form.domain_registrar || '').trim()),
 }));
 const reviewRemaining = computed(() => Object.values(reviewFields.value).filter((complete) => !complete).length);
 const reviewFieldsLabel = computed(() => {
-  const labels = { pricing: 'Pricing model', pricing_page_url: 'pricing page URL', hosting_provider: 'hosting provider', domain_registrar: 'domain registrar' };
+  const labels = { pricing: 'Pricing model' };
   return Object.entries(reviewFields.value).filter(([, complete]) => !complete).map(([field]) => labels[field]).join(', ');
 });
 const reviewProgress = computed(() => {

@@ -14,7 +14,7 @@
         </div>
       </div>
       <div v-else class="space-y-3 px-3 py-3 font-mono text-sm leading-6" role="status" aria-live="polite">
-        <p class="!text-slate-100"><span class="font-semibold !text-emerald-400">&gt; complete</span> AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. {{ reviewRemaining }} need your input. Please review the highlighted fields before submitting.</p>
+        <p class="!text-slate-100"><span class="font-semibold !text-emerald-400">&gt; complete</span> AI filled {{ aiFilledCount }} out of {{ aiFieldCount }} fields. <template v-if="reviewRemaining"> {{ reviewRemaining }} required {{ reviewRemaining === 1 ? 'field needs' : 'fields need' }} your input.</template> Please review the extracted details before submitting.</p>
         <div class="flex items-center justify-end gap-3">
           <span v-if="draftAutosaveState === 'saved'" class="!text-emerald-400">Saved just now</span>
           <button type="button" class="font-semibold !text-sky-400 hover:!text-sky-300" @click="$emit('regenerate')">Regenerate</button>

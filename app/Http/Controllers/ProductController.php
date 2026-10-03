@@ -4362,7 +4362,7 @@ class ProductController extends Controller
                     'maker_links' => $autofillLinks['maker_links'],
                 ]);
 
-                $sendUpdate('Classifying features and categories...', 95, null, 'Refreshing website screenshot');
+                $sendUpdate('Classifying features and categories...', 95, null, 'Applying extracted data to the form');
                 $classificationSource = $htmlContent;
                 if ($additionalResourcesContext !== '') {
                     $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
@@ -4410,7 +4410,7 @@ class ProductController extends Controller
                     'suggestedUseCases' => $unmatchedUseCases,
                 ]);
 
-                $sendUpdate('Refreshing website screenshot...', 98, null, 'Applying extracted data to the form');
+                $sendUpdate('Applying extracted data to the form...', 98);
 
                 $responseData = [
                     'description' => $description,
@@ -4427,7 +4427,6 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
-                    'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
                     'x_account' => $autofillLinks['x_account'],
                     'maker_links' => $autofillLinks['maker_links'],
@@ -4704,7 +4703,6 @@ class ProductController extends Controller
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'suggestedUseCases' => $unmatchedUseCases,
-                'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
                 'maker_links' => $autofillLinks['maker_links'],

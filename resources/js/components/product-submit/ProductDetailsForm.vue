@@ -628,7 +628,7 @@
     <!-- Pricing Page URL -->
     <div id="field-pricing-page-url" :class="[autofillLockClass('links'), reviewTint('pricing_page_url')]">
       <div class="mb-1 flex items-start justify-between gap-4">
-        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span> <span v-if="reviewMode && !hasPricingPageUrl" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
         <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
@@ -843,7 +843,6 @@ const selectedUseCases = computed(() => selectedFrom(props.allUseCases, props.mo
 const selectedPlatforms = computed(() => selectedFrom(props.allPlatforms, props.modelValue.platforms));
 const selectedTags = computed(() => selectedFrom(props.allBestFor, props.modelValue.bestFor));
 const hasPricing = computed(() => Array.isArray(props.modelValue.pricing) && props.modelValue.pricing.length > 0);
-const hasPricingPageUrl = computed(() => Boolean(String(props.modelValue.pricing_page_url || '').trim()));
 const descriptionCharacterCount = computed(() => {
   const container = document.createElement('div');
   container.innerHTML = props.modelValue.description || '';
