@@ -69,33 +69,7 @@
         </div>
       </div>
 
-      <div>
-        <h4 class="mb-3 text-md font-medium text-gray-700">Product sale <span class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">Needs your input</span></h4>
-        <div class="flex items-center">
-          <input
-            id="sell-product"
-            type="checkbox"
-            :checked="modelValue.sell_product || false"
-            class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-sky-400"
-            @change="updateField('sell_product', $event.target.checked)"
-          >
-          <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product</label>
-        </div>
 
-        <div v-if="modelValue.sell_product" class="mt-3 ml-6">
-          <label for="asking-price" class="mb-2 block text-sm font-semibold text-gray-700">Asking Price (USD)</label>
-          <input
-            id="asking-price"
-            type="number"
-            :value="modelValue.asking_price || ''"
-            min="0"
-            step="0.01"
-            placeholder="Enter price in USD"
-            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
-            @input="updateField('asking_price', $event.target.value)"
-          >
-        </div>
-      </div>
     </div>
   </section>
 </template>
