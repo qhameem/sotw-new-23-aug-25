@@ -604,14 +604,14 @@
             v-for="price in allPricing" 
             :key="price.id"
             @click="togglePricing(price.id)"
-            class="cursor-pointer relative rounded-full border px-4 py-2 transition-all duration-200 hover:shadow-md flex flex-col justify-between h-full"
+            class="cursor-pointer relative rounded-full border px-4 py-2 transition-all duration-200 hover:shadow-md flex items-center h-full"
             :class="modelValue.pricing.includes(price.id)
               ? 'bg-sky-50 border-sky-500'
               : 'bg-white border-gray-200 hover:border-sky-300'"
           >
-             <div class="flex items-start justify-between">
-                <span class="font-medium text-xs text-gray-700">{{ price.name }}</span>
-                <div class="h-4 w-4 rounded-full border flex items-center justify-center"
+             <div class="flex w-full items-center justify-between gap-3">
+                <span class="font-medium text-xs leading-4 text-gray-700">{{ price.name }}</span>
+                <div class="h-4 w-4 shrink-0 rounded-full border flex items-center justify-center"
                      :class="modelValue.pricing.includes(price.id) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
                 >
                    <svg v-if="modelValue.pricing.includes(price.id)" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

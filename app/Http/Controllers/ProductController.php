@@ -5149,7 +5149,19 @@ class ProductController extends Controller
     private function loadProductCategoryGroups(array $columns = ['*']): array
     {
         return collect($this->productCategoryGroupQueries())
-            ->map(fn ($query) => $query->get($columns))
+            ->map(function ($query, $group) use ($columns) {
+                $categories = $query->get($columns);
+                if ($group === 'pricingCategories') {
+                    $categories->loadCount('products');
+                    $categories = $categories->sort(function ($a, $b) {
+                        return ($b->products_count <=> $a->products_count)
+                            ?: strcasecmp($a->name, $b->name)
+                            ?: ($a->id <=> $b->id);
+                    })->values();
+                }
+
+                return $categories;
+            })
             ->all();
     }
 
