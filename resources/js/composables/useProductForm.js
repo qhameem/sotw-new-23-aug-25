@@ -1328,7 +1328,7 @@ export function useProductForm() {
     }
   };
 
-  const checkUrlExists = async (urlToCheck = form.link) => {
+  const checkUrlExists = async (urlToCheck = form.link, signal) => {
     urlMatchesDraft.value = false;
     console.log('checkUrlExists called with URL:', urlToCheck, 'and ID:', form.id);
     if (!urlToCheck) {
@@ -1346,7 +1346,8 @@ export function useProductForm() {
     }
 
     try {
-      const response = await productFormService.checkUrlExists(urlToCheck, form.id);
+      const response = await productFormService.checkUrlExists(urlToCheck, form.id, signal);
+      signal?.throwIfAborted();
       console.log('checkUrlExists response:', response);
 
       if (urlToCheck !== form.link) {
@@ -1370,6 +1371,7 @@ export function useProductForm() {
       console.log('Updated state - urlExistsError:', globalFormState.urlExistsError.value, 'existingProduct:', globalFormState.existingProduct.value);
       return response;
     } catch (error) {
+      if (signal?.aborted) throw error;
       console.error('Error checking URL existence:', error);
       globalFormState.urlExistsError.value = false;
       globalFormState.existingProduct.value = null;
@@ -1944,7 +1946,18 @@ export function useProductForm() {
     return validateFields(validationFieldOrder, { force: true });
   };
 
-  const fetchInitialData = async (urlOverride) => {
+  const stopAutofill = () => {
+    Object.keys(loadingStates).forEach((key) => { loadingStates[key] = false; });
+    globalFormState.isLoading.value = false;
+    globalFormState.loadingStartedAt.value = null;
+    globalFormState.loadingSessionType.value = null;
+    globalFormState.loadingTargetProgress.value = 0;
+    stopLoadingAnimation();
+    finishAutofillRevealState();
+  };
+
+  const fetchInitialData = async (urlOverride, signal) => {
+    signal?.throwIfAborted();
     const linkValue = urlOverride || form.link;
     console.log('fetchInitialData called with link:', linkValue);
 
@@ -1963,7 +1976,8 @@ export function useProductForm() {
       const response = await axios.post('/api/fetch-initial-metadata', {
         url: linkValue,
         additional_resources: form.additional_resources || '',
-      });
+      }, { signal });
+      signal?.throwIfAborted();
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       const data = response.data;
       if (isAdmin.value) useExtractionTimer().record('initial', data.phase_timings);
@@ -1988,9 +2002,10 @@ export function useProductForm() {
       }
 
       // Keep the full auto-fill session active until all results have been applied.
-      await fetchRemainingData(false, linkValue);
+      await fetchRemainingData(false, linkValue, { signal });
 
     } catch (error) {
+      if (signal?.aborted) return;
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
       extractionErrors.name = 'Failed to extract name and taglines.';
@@ -2011,7 +2026,7 @@ export function useProductForm() {
     }
   };
 
-  const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, additionalResources = '', onProgress = null }) => {
+  const processUrlStreamRequest = async ({ url, name, tagline, fetchContent = true, additionalResources = '', onProgress = null, signal }) => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const requestPayload = {
@@ -2031,6 +2046,7 @@ export function useProductForm() {
           'X-Requested-With': 'XMLHttpRequest',
           ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
         },
+        signal,
         body: JSON.stringify(requestPayload)
       });
 
@@ -2039,6 +2055,7 @@ export function useProductForm() {
       }
 
       const fallbackData = await fallbackResponse.json();
+      signal?.throwIfAborted();
       if (fallbackData?.error) {
         throw new Error(fallbackData.error);
       }
@@ -2063,9 +2080,11 @@ export function useProductForm() {
           'X-Requested-With': 'XMLHttpRequest',
           ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
         },
+        signal,
         body: JSON.stringify(requestPayload)
       });
     } catch (streamError) {
+      if (signal?.aborted) throw streamError;
       console.warn('Streaming autofill request failed; retrying without streaming.', streamError);
       return requestWithoutStreaming();
     }
@@ -2088,6 +2107,7 @@ export function useProductForm() {
     try {
       while (true) {
         const { done, value } = await reader.read();
+        signal?.throwIfAborted();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -2115,6 +2135,7 @@ export function useProductForm() {
         }
       }
     } catch (streamError) {
+      if (signal?.aborted) throw streamError;
       console.warn('Autofill stream was interrupted; retrying without streaming.', streamError);
       return requestWithoutStreaming();
     }
@@ -2146,6 +2167,8 @@ export function useProductForm() {
       name: form.name
     });
 
+    const signal = options.signal;
+    signal?.throwIfAborted();
     const forceContentFetch = options.forceContentFetch === true;
     const forceDescriptionOverwrite = options.forceDescriptionOverwrite === true;
     const contentOnly = options.contentOnly === true;
@@ -2235,7 +2258,9 @@ export function useProductForm() {
         tagline: taglineValue,
         fetchContent: shouldFetchContent,
         additionalResources: form.additional_resources || '',
+        signal,
         onProgress: (streamData) => {
+          if (signal?.aborted) return;
           if (isAdmin.value) useExtractionTimer().record(streamData.timing_scope || 'details', streamData.phase_timings || streamData.data?.phase_timings);
           if (streamData.data) {
             applyAutofillPatch(streamData.data, { forceDescriptionOverwrite });
@@ -2288,6 +2313,7 @@ export function useProductForm() {
         }
       });
 
+      signal?.throwIfAborted();
       console.log('fetchRemainingData: Stream finished. Extracted data object:', data);
       console.log('fetchRemainingData: Extracted data object:', data);
 
@@ -2314,6 +2340,7 @@ export function useProductForm() {
       }
 
     } catch (error) {
+      if (signal?.aborted) return;
       console.error('Error fetching remaining data:', error);
       // Check if it's a timeout error
       const isTimeoutError = error.code === 'ECONNABORTED' || (error.response && error.response.status === 408);
@@ -2366,7 +2393,7 @@ export function useProductForm() {
       // Check if any other loading states are still active
       const anyLoadingActive = Object.values(loadingStates).some(loading => loading === true);
       if (!anyLoadingActive) {
-        completeAutofillProgress();
+        if (!signal?.aborted) completeAutofillProgress();
         globalFormState.isLoading.value = false;
         globalFormState.loadingTargetProgress.value = 0;
         globalFormState.loadingStartedAt.value = null;
@@ -2381,7 +2408,7 @@ export function useProductForm() {
     await fetchRemainingData(true);
   };
 
-  const simulateSandboxAutofill = async () => {
+  const simulateSandboxAutofill = async (signal) => {
     if (globalFormState.isLoading.value) {
       return false;
     }
@@ -2404,10 +2431,12 @@ export function useProductForm() {
 
     try {
       await delay(260);
+      signal?.throwIfAborted();
       form.link = sandboxPayload.link;
       updateAutofillProgress('Fetching product name, tagline, logo, and screenshot...', 10, 'Detailed website analysis');
 
       await delay(420);
+      signal?.throwIfAborted();
       form.name = sandboxPayload.name;
       unlockAutofillGroups('name');
       markAutofillFormReady();
@@ -2415,9 +2444,11 @@ export function useProductForm() {
       updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
 
       await delay(520);
+      signal?.throwIfAborted();
       updateAutofillProgress('Connecting for detailed analysis...', 35, 'Reading website content');
 
       await delay(420);
+      signal?.throwIfAborted();
       form.tagline = sandboxPayload.tagline;
       form.tagline_detailed = sandboxPayload.tagline_detailed;
       form.favicon = sandboxPayload.logos[0];
@@ -2425,12 +2456,14 @@ export function useProductForm() {
       updateAutofillProgress('Reading page content and rewriting product summary...', 56);
 
       await delay(420);
+      signal?.throwIfAborted();
       form.description = sandboxPayload.description;
       unlockAutofillGroups('description');
       loadingStates.description = false;
       updateAutofillProgress('Mapping categories, use cases, pricing, and tags...', 74);
 
       await delay(420);
+      signal?.throwIfAborted();
       form.categories = sandboxPayload.categories;
       form.useCases = sandboxPayload.useCases;
       form.platforms = sandboxPayload.platforms;
@@ -2446,6 +2479,7 @@ export function useProductForm() {
       updateAutofillProgress('Finishing logo and media suggestions...', 92);
 
       await delay(360);
+      signal?.throwIfAborted();
       form.logos = sandboxPayload.logos;
       if (!globalFormState.manualLogoChosen.value) {
         globalFormState.logoPreview.value = sandboxPayload.logos[0];
@@ -2462,6 +2496,7 @@ export function useProductForm() {
       finishAutofillRevealState();
       return true;
     } catch (error) {
+      if (signal?.aborted) return false;
       console.error('Sandbox autofill simulation failed:', error);
       showErrorMessage.value = true;
       errorMessage.value = 'Sandbox autofill failed. Please try again.';
@@ -3224,6 +3259,7 @@ export function useProductForm() {
     closeModal,
     validateForm,
     fetchInitialData,
+    stopAutofill,
     fetchRemainingData,
     simulateSandboxAutofill,
     extractLogos,

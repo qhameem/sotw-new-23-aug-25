@@ -1,7 +1,12 @@
 <template>
   <div class="mt-4">
     <div class="overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
-      <div class="border-b border-slate-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-slate-400" aria-hidden="true">AI fill</div>
+      <div class="border-b border-slate-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-slate-400" aria-hidden="false">
+        <div class="flex items-center justify-between gap-3">
+          <span>AI fill</span>
+          <button v-if="isLoading" type="button" class="rounded border border-rose-400/50 px-2 py-1 text-xs normal-case tracking-normal !text-rose-200 hover:bg-rose-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-300" @click="$emit('stop')">Stop fetching</button>
+        </div>
+      </div>
       <div v-if="isLoading" class="space-y-2 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite" aria-atomic="true">
         <div class="flex items-start gap-2">
           <span class="shrink-0 !text-emerald-400" aria-hidden="true">&gt;</span>
@@ -69,7 +74,7 @@ const props = defineProps({
   currentAutofillFields: { type: String, default: '' },
   nextAutofillFields: { type: String, default: '' },
 });
-defineEmits(['regenerate']);
+defineEmits(['regenerate', 'stop']);
 
 const terminalProgress = computed(() => Math.max(0, Math.min(100, Math.round(Number(props.isLoading ? props.autofillProgress : props.displayProgress) || 0))));
 const filledCount = computed(() => Math.floor(terminalProgress.value / 5));

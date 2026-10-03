@@ -68,6 +68,7 @@
                   :currentAutofillFields="currentAutofillFields"
                   :nextAutofillFields="nextAutofillFields"
                   @regenerate="handleUrlFetch(form.link)"
+                  @stop="handleStopFetching"
                 />
               </template>
             </ProductURLInput>
@@ -242,7 +243,7 @@
                   >
                     <template #details>
                       <AutofillStatus
-                        v-if="!manualMode"
+                        v-if="!manualMode && !fetchingStopped"
                         :isLoading="isLoading"
                         :autofillProgress="autofillProgress"
                         :aiFilledCount="aiFilledCount"
@@ -254,6 +255,7 @@
                         :currentAutofillFields="currentAutofillFields"
                         :nextAutofillFields="nextAutofillFields"
                         @regenerate="handleUrlFetch(form.link)"
+                  @stop="handleStopFetching"
                       />
                     </template>
                   </ProductURLInput>
@@ -393,6 +395,7 @@ const {
   markManualScreenshotChosen,
   submitProduct,
   fetchInitialData,
+  stopAutofill,
   simulateSandboxAutofill,
   checkUrlExists,
   extractLogos,
@@ -610,18 +613,35 @@ onUnmounted(() => {
 });
 
 // Handle URL Fetch Action (formerly "Get Started")
+let autofillController = null;
+const fetchingStopped = ref(false);
+const handleStopFetching = () => {
+  autofillController?.abort();
+  stopAutofill();
+  extractionTimer.stop();
+  urlCheckPending.value = false;
+  fetchingStopped.value = true;
+  manualMode.value = false;
+  showForm.value = true;
+};
+onUnmounted(() => autofillController?.abort());
+
 const handleUrlFetch = async (url) => {
-  if (isLoading.value || extractionTimer.timing.running) {
+  if (autofillController || isLoading.value || extractionTimer.timing.running) {
     return;
   }
 
+  const controller = new AbortController();
+  autofillController = controller;
+  fetchingStopped.value = false;
   draftListDismissed.value = true;
   extractionTimer.start();
   try {
     resetManualMediaChoices();
 
     if (showAdminSandboxControls.value && form.sandbox_mode) {
-      await simulateSandboxAutofill();
+      await simulateSandboxAutofill(controller.signal);
+      if (controller.signal.aborted) return;
       showForm.value = true;
       return;
     }
@@ -632,7 +652,8 @@ const handleUrlFetch = async (url) => {
     loadingMessage.value = 'Checking website URL...';
 
     const checkStarted = performance.now();
-    const duplicateCheck = await checkUrlExists(url);
+    const duplicateCheck = await checkUrlExists(url, controller.signal);
+    if (controller.signal.aborted) return;
     if (isAdmin.value) extractionTimer.record('client', { url_check: (performance.now() - checkStarted) / 1000 });
     if (duplicateCheck?.checkFailed) {
       urlCheckPending.value = false;
@@ -651,14 +672,20 @@ const handleUrlFetch = async (url) => {
       return;
     }
 
-    await fetchInitialData(url);
+    await fetchInitialData(url, controller.signal);
+    if (controller.signal.aborted) return;
     if (showErrorMessage.value) {
       manualMode.value = true;
     }
     showForm.value = true;
+  } catch (error) {
+    if (!controller.signal.aborted) throw error;
   } finally {
     await nextTick();
-    extractionTimer.stop();
+    if (autofillController === controller) {
+      autofillController = null;
+      extractionTimer.stop();
+    }
   }
 };
 
