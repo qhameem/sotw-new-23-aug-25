@@ -62,6 +62,8 @@
                   :aiFilledCount="aiFilledCount"
                   :aiFieldCount="aiFieldCount"
                   :reviewRemaining="reviewRemaining"
+                  :extractionIssues="extractionIssues"
+                  :canStop="submitState !== 'loading'"
                   :reviewFieldsLabel="reviewFieldsLabel"
                   :draftAutosaveState="draftAutosaveState"
                   :displayProgress="displayProgress"
@@ -249,6 +251,8 @@
                         :aiFilledCount="aiFilledCount"
                         :aiFieldCount="aiFieldCount"
                         :reviewRemaining="reviewRemaining"
+                  :extractionIssues="extractionIssues"
+                  :canStop="submitState !== 'loading'"
                   :reviewFieldsLabel="reviewFieldsLabel"
                         :draftAutosaveState="draftAutosaveState"
                         :displayProgress="displayProgress"
@@ -394,6 +398,9 @@ const {
   galleryPreviews,
   markManualScreenshotChosen,
   submitProduct,
+  missingRequiredInputs,
+  requiredInputFields,
+  extractionIssues,
   fetchInitialData,
   stopAutofill,
   simulateSandboxAutofill,
@@ -462,18 +469,9 @@ const headingLogoUrl = computed(() => logoPreview.value || form.favicon || props
 const showAdminSandboxControls = computed(() => isAdmin.value && adminSandboxEnabled.value && !form.id);
 const draftListDismissed = ref(false);
 const showDraftList = computed(() => !draftListDismissed.value && !isEditMode.value && submissionDrafts.value.length > 0);
-const reviewFields = computed(() => ({
-  pricing: Array.isArray(form.pricing) && form.pricing.length > 0,
-}));
-const reviewRemaining = computed(() => Object.values(reviewFields.value).filter((complete) => !complete).length);
-const reviewFieldsLabel = computed(() => {
-  const labels = { pricing: 'Pricing model' };
-  return Object.entries(reviewFields.value).filter(([, complete]) => !complete).map(([field]) => labels[field]).join(', ');
-});
-const reviewProgress = computed(() => {
-  const count = Object.keys(reviewFields.value).length;
-  return Math.round(((count - reviewRemaining.value) / count) * 100);
-});
+const reviewRemaining = computed(() => missingRequiredInputs.value.length);
+const reviewFieldsLabel = computed(() => missingRequiredInputs.value.map((field) => field.label).join(', '));
+const reviewProgress = computed(() => Math.round(((requiredInputFields.value.length - reviewRemaining.value) / requiredInputFields.value.length) * 100));
 const aiFields = computed(() => [
   form.name,
   form.tagline,

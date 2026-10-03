@@ -25,7 +25,7 @@ class ProductAutofillProgressTest extends TestCase
             });
         });
         $this->mock(CategoryClassifier::class, function ($mock) {
-            $mock->shouldReceive('classify')->once()->andReturn([]);
+            $mock->shouldReceive('classify')->once()->andReturn(['error' => 'Classifier unavailable']);
         });
         $this->mock(TechStackDetectorService::class, function ($mock) {
             $mock->shouldReceive('detect')->once()->andReturn([]);
@@ -59,6 +59,36 @@ class ProductAutofillProgressTest extends TestCase
         $this->assertSame('Classifying features and categories', $events[array_search('Finding additional logo options, pricing page, and socials...', $messages)]['next_message']);
         $this->assertSame('Done!', end($events)['message']);
         $this->assertArrayNotHasKey('screenshot_url', end($events)['data']);
+        $this->assertSame(['categories' => 'Classifier unavailable', 'useCases' => 'Classifier unavailable', 'pricing' => 'Classifier unavailable'], end($events)['data']['field_errors']);
         $this->assertNotContains('Refreshing website screenshot...', $messages);
     }
+    public function test_failed_stream_reports_an_error_without_erasing_partial_fields(): void
+    {
+        foreach ([Http::response('Denied', 403), Http::response('<title>Just a moment...</title>', 200)] as $failure) {
+            Http::fake(['*' => $failure]);
+            $response = app(ProductController::class)->processUrlStream(Request::create('/', 'POST', ['url' => 'https://8.8.8.8', 'name' => 'Existing name']));
+            $output = '';
+            ob_start(function ($chunk) use (&$output) { $output .= $chunk; return ''; }, 1);
+            try {
+                $response->sendContent();
+            } finally {
+                ob_end_clean();
+            }
+            $events = array_map(fn ($line) => json_decode($line, true), array_filter(explode("\n", trim($output))));
+            $data = end($events)['data'];
+            $this->assertNotEmpty($data['error']);
+            $this->assertArrayNotHasKey('categories', $data);
+            $this->assertArrayNotHasKey('tagline', $data);
+            $this->assertNotContains('Done!', array_column($events, 'message'));
+        }
+    }
+
+    public function test_initial_metadata_rejects_challenge_pages_before_extracting_identity(): void
+    {
+        Http::fake(['*' => Http::response('<title>Just a moment...</title>')]);
+        $response = app(ProductController::class)->fetchInitialMetadata(Request::create('/', 'POST', ['url' => 'https://8.8.8.8']));
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertStringContainsString('verification', $response->getData(true)['error']);
+    }
+
 }

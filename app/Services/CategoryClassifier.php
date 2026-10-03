@@ -57,7 +57,7 @@ class CategoryClassifier
             }
 
             if (! is_string($responseText) || trim($responseText) === '') {
-                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => []];
+                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
             }
 
             $jsonResponse = $this->decodeJsonResponse($responseText);
@@ -70,7 +70,7 @@ class CategoryClassifier
             if ($jsonResponse === null) {
                 Log::error('Failed to decode JSON from category classifier.', ['response' => $responseText]);
 
-                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => []];
+                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
             }
 
             return [
@@ -83,7 +83,7 @@ class CategoryClassifier
         } catch (\Exception $e) {
             Log::error('Failed to classify categories.', ['error' => $e->getMessage()]);
 
-            return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => []];
+            return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
         }
     }
 

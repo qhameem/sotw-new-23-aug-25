@@ -540,6 +540,19 @@ export function useProductForm() {
     }
   };
 
+  const requiredInputFields = computed(() => [
+    'link', 'name', 'tagline', 'description', 'categories', 'useCases', 'pricing', 'logo',
+    ...(form.badge_opt_in ? ['badge_placement_url', 'badge_verified'] : []),
+    ...(form.badge_opt_in && form.badge_verified ? ['badge_week_start'] : []),
+    ...(form.submission_type === 'paid' ? ['paid_schedule_date'] : []),
+  ]);
+  const missingRequiredInputs = computed(() => requiredInputFields.value
+    .filter((field) => getFieldValidationMessage(field))
+    .map((field) => ({ field, label: validationFieldMeta[field]?.label || field, message: getFieldValidationMessage(field) })));
+  const extractionIssues = computed(() => Object.entries(extractionErrors)
+    .filter(([, message]) => String(message || '').trim())
+    .map(([field, message]) => ({ field, label: validationFieldMeta[field]?.label || ({ logos: 'Logo options', bestFor: 'Audience tags' }[field]) || field, message })));
+
   const validateField = (fieldKey, options = {}) => {
     if (!Object.prototype.hasOwnProperty.call(validationErrors, fieldKey)) {
       return true;
@@ -1247,6 +1260,9 @@ export function useProductForm() {
       return;
     }
 
+    if (data.field_errors && typeof data.field_errors === 'object') {
+      Object.entries(data.field_errors).forEach(([field, message]) => { extractionErrors[field] = String(message || ''); });
+    }
     const forceDescriptionOverwrite = options.forceDescriptionOverwrite === true;
     const unlockTagline = options.unlockTagline !== false;
 
@@ -1969,6 +1985,7 @@ export function useProductForm() {
     loadingStates.name = true;
     extractionErrors.name = '';
     resetAutofillRevealState(true);
+    Object.keys(extractionErrors).forEach((field) => { extractionErrors[field] = ''; });
     beginAutofillProgress('Initializing request...', 5, 'fullAutofill');
 
     try {
@@ -2008,10 +2025,11 @@ export function useProductForm() {
       if (signal?.aborted) return;
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
-      extractionErrors.name = 'Failed to extract name and taglines.';
+      const message = error.response?.data?.error || 'Failed to fetch product metadata. Fill the missing fields manually.';
+      extractionErrors.name = message;
       resetValidationState();
       showErrorMessage.value = true;
-      errorMessage.value = 'Failed to fetch product metadata. Please check the URL and try again.';
+      errorMessage.value = message;
       validationErrors.link = 'Unable to reach this website. Check the URL and try Auto-fill again.';
       markAutofillFormReady();
       finishAutofillRevealState();
@@ -2154,6 +2172,7 @@ export function useProductForm() {
       }
     }
 
+    if (finalData.error) throw new Error(finalData.error);
     return finalData;
   };
 
@@ -2299,6 +2318,10 @@ export function useProductForm() {
 
           if (streamData.progress !== undefined && streamData.progress !== null) {
             const isFinalStreamStep = Number(streamData.progress) >= 100;
+            if (streamData.data?.error) {
+              globalFormState.loadingMessage.value = streamData.message || streamData.data.error;
+              return;
+            }
             updateAutofillProgress(
               isFinalStreamStep
                 ? 'Applying extracted data to the form...'
@@ -2347,12 +2370,12 @@ export function useProductForm() {
 
       // Only show error message if this is during active form filling, not during restoration
       if (shouldFetchContent) {
-        extractionErrors.tagline = 'Failed to extract taglines.';
-        extractionErrors.description = 'Failed to extract description.';
+        if (getFieldValidationMessage('tagline')) extractionErrors.tagline = 'Failed to extract taglines.';
+        if (getFieldValidationMessage('description')) extractionErrors.description = 'Failed to extract description.';
       }
       if (shouldFetchCategoriesAndBestFor) {
-        extractionErrors.categories = 'Failed to extract categories.';
-        extractionErrors.useCases = 'Failed to extract use cases.';
+        if (getFieldValidationMessage('categories')) extractionErrors.categories = 'Failed to extract categories.';
+        if (getFieldValidationMessage('useCases')) extractionErrors.useCases = 'Failed to extract use cases.';
         extractionErrors.bestFor = 'Failed to extract "best for" labels.';
       }
 
@@ -2361,7 +2384,7 @@ export function useProductForm() {
         if (isTimeoutError) {
           errorMessage.value = 'Logo extraction timed out. Please try again later.';
         } else {
-          errorMessage.value = 'Failed to fetch additional product data. You can continue filling the form manually.';
+          errorMessage.value = error.message || 'Failed to fetch additional product data. You can continue filling the form manually.';
         }
       }
       // Still allow the form to continue working even if data fetching fails
@@ -3258,6 +3281,9 @@ export function useProductForm() {
     confirmSubmit,
     closeModal,
     validateForm,
+    missingRequiredInputs,
+    requiredInputFields,
+    extractionIssues,
     fetchInitialData,
     stopAutofill,
     fetchRemainingData,

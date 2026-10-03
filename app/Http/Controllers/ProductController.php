@@ -3359,6 +3359,7 @@ class ProductController extends Controller
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url));
             $html = $response->body();
+            \App\Support\ExtractionPageGuard::assertUsable($html);
 
             $doc = new DOMDocument;
             @$doc->loadHTML($html);
@@ -3388,13 +3389,7 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             Log::warning('Basic metadata fetch timed out or blocked: '.$e->getMessage(), ['url' => $url]);
 
-            return response()->json([
-                'name' => '',
-                'tagline' => '',
-                'description' => '',
-                'favicon' => null,
-                ...$timings->payload($request),
-            ], 200);
+            return response()->json(['error' => $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Website metadata could not be fetched. Fill the product details manually.', ...$timings->payload($request)], 422);
         }
     }
 
@@ -3778,6 +3773,9 @@ class ProductController extends Controller
             return $metadataResponse;
         }
         $metadata = json_decode($metadataResponse->getContent(), true);
+        if (\App\Support\ExtractionPageGuard::isBlockedTitle($metadata['name'] ?? '')) {
+            return response()->json(['error' => 'The website returned a verification or access-denied page. Fill the product details manually.'], 422);
+        }
 
         // Extract additional information from the URL content
         $taglineDetailed = '';
@@ -4212,25 +4210,12 @@ class ProductController extends Controller
                 ])->timeout(15)->get($url));
 
                 if (! $htmlResponse->successful()) {
-                    $sendUpdate('Failed to fetch website.', 100, [
-                        'description' => $description,
-                        'logos' => [],
-                        'tagline' => $tagline,
-                        'tagline_detailed' => '',
-                        'categories' => [],
-                        'useCases' => [],
-                        'bestFor' => [],
-                        'pricing' => [],
-                        'platforms' => [],
-                        'tech_stacks' => [],
-                        'pricing_page_url' => null,
-                        'x_account' => null,
-                        'maker_links' => [],
-                    ]);
+                    $sendUpdate('Failed to fetch website.', 100, ['error' => 'The website could not be fetched. Retained data can be completed manually.']);
 
                     return;
                 }
                 $htmlContent = $htmlResponse->body();
+            \App\Support\ExtractionPageGuard::assertUsable($htmlContent);
                 $doc = new DOMDocument;
                 @$doc->loadHTML($htmlContent);
                 $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
@@ -4408,6 +4393,7 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
+                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
                 ]);
 
                 $sendUpdate('Applying extracted data to the form...', 98);
@@ -4427,6 +4413,7 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
+                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
                     'x_account' => $autofillLinks['x_account'],
                     'maker_links' => $autofillLinks['maker_links'],
@@ -4435,21 +4422,7 @@ class ProductController extends Controller
                 $sendUpdate('Done!', 100, $responseData);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Error in processUrlStream: '.$e->getMessage());
-                $sendUpdate('An error occurred during processing.', 100, [
-                    'description' => $description,
-                    'logos' => [],
-                    'tagline' => $tagline,
-                    'tagline_detailed' => '',
-                    'categories' => [],
-                    'useCases' => [],
-                    'bestFor' => [],
-                    'pricing' => [],
-                    'platforms' => [],
-                    'tech_stacks' => [],
-                    'pricing_page_url' => null,
-                    'x_account' => null,
-                    'maker_links' => [],
-                ]);
+                $sendUpdate('Extraction failed.', 100, ['error' => $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Detailed extraction failed. Retained data can be completed manually.']);
             }
         });
 
@@ -4496,24 +4469,10 @@ class ProductController extends Controller
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->timeout(15)->get($url));
             if (! $htmlResponse->successful()) {
-                return response()->json([
-                    'description' => $description,
-                    'logos' => [],
-                    'tagline' => $tagline,
-                    'tagline_detailed' => '',
-                    'categories' => [],
-                    'useCases' => [],
-                    'bestFor' => [],
-                    'pricing' => [],
-                    'platforms' => [],
-                    'tech_stacks' => [],
-                    'pricing_page_url' => null,
-                    'x_account' => null,
-                    'maker_links' => [],
-                    ...$timings->payload($request),
-                ]);
+                return response()->json(['error' => 'The website could not be fetched. Fill missing details manually.'], 422);
             }
             $htmlContent = $htmlResponse->body();
+            \App\Support\ExtractionPageGuard::assertUsable($htmlContent);
             $doc = new DOMDocument;
             @$doc->loadHTML($htmlContent);
             $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
@@ -4703,6 +4662,7 @@ class ProductController extends Controller
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'suggestedUseCases' => $unmatchedUseCases,
+                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
                 'maker_links' => $autofillLinks['maker_links'],
@@ -4718,23 +4678,7 @@ class ProductController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Return a response with empty logos but maintain the structure to prevent frontend errors
-            return response()->json([
-                'description' => $description,
-                'logos' => [],
-                'tagline' => $tagline,
-                'tagline_detailed' => '',
-                'categories' => [],
-                'useCases' => [],
-                'bestFor' => [],
-                'pricing' => [],
-                'platforms' => [],
-                'tech_stacks' => [],
-                'pricing_page_url' => null,
-                'x_account' => null,
-                'maker_links' => [],
-                ...$timings->payload($request),
-            ]);
+            return response()->json(['error' => $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Detailed extraction failed. Retained data can be completed manually.', ...$timings->payload($request)], 422);
         }
     }
 
