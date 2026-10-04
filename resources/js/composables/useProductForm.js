@@ -621,6 +621,8 @@ export function useProductForm() {
 
     const anchorElement = document.getElementById(meta.anchorId);
     if (anchorElement) {
+      const details = anchorElement.closest('details');
+      if (details) details.open = true;
       anchorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 

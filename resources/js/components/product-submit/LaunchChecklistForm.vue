@@ -1,15 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="mb-2"></div>
-
-    <LaunchChecklistExtrasSection
-      :model-value="modelValue"
-      :all-tech-stacks="allTechStacks"
-      @update:model-value="emit('update:modelValue', $event)"
-    />
-
-    <hr class="my-6 border-t border-gray-200">
-
     <LaunchChecklistSubmissionSection
       :model-value="modelValue"
       :is-admin="isAdmin"
@@ -90,7 +80,6 @@
 </template>
 
 <script setup>
-import LaunchChecklistExtrasSection from './LaunchChecklistExtrasSection.vue';
 import LaunchChecklistSubmissionSection from './LaunchChecklistSubmissionSection.vue';
 import { useLaunchChecklistSubmission } from './composables/useLaunchChecklistSubmission';
 

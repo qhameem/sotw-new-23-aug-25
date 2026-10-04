@@ -1,58 +1,5 @@
 <template>
   <div class="space-y-8 mt-4">
-    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
-      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview</h2>
-      <div class="grid items-start gap-4 sm:grid-cols-2">
-        <div
-          v-for="index in [0, 1]"
-          :key="index"
-          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
-          :class="[
-            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
-            { 'opacity-50': isUploadingImage || isLoading }
-          ]"
-          @dragenter.prevent="enterImageDrop(index, $event)"
-          @dragover.prevent="allowImageDrop($event)"
-          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
-          @drop.prevent="dropImage(index, $event)"
-        >
-          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
-          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
-            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#99BCFF" />
-                  <stop offset="1" stop-color="#315BA8" />
-                </linearGradient>
-                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6592DA" stop-opacity="0.95" />
-                  <stop offset="1" stop-color="#DCE7FA" />
-                </linearGradient>
-              </defs>
-              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
-              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
-              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
-              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
-            </svg>
-            <p class="text-xs leading-5 text-slate-800">
-              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
-              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
-            </p>
-            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
-          </div>
-          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
-            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
-              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
-            </span>
-          </label>
-        </div>
-      </div>
-      <p class="mt-2 text-xs text-slate-500">Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
-      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
-      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
-    </aside>
-    
     <!-- Project Name -->
     <div id="field-name" :class="[autofillLockClass('name'), reviewTint('name')]">
       <div class="mb-1 flex items-start justify-between gap-4">
@@ -179,30 +126,6 @@
            <WysiwygEditor :modelValue="modelValue.description" :showCharacterCount="false" @update:modelValue="updateField('description', $event)" />
         </div>
         <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
-    </div>
-
-    <div v-if="isAdmin" class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
-      <label class="block text-xs font-bold text-gray-900">Description cohort</label>
-      <select
-        :value="modelValue.description_format || 'full'"
-        @change="updateField('description_format', $event.target.value)"
-        class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
-      >
-        <option value="full">Cohort A — Full description</option>
-        <option value="facts">Cohort B — Product facts</option>
-      </select>
-      <p class="mt-2 text-[11px] text-gray-500">One stable format is shown to every visitor and crawler for this product.</p>
-
-      <template v-if="modelValue.description_format === 'facts'">
-        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="font-normal text-gray-400">(one per line, max 7)</span></label>
-        <textarea
-          :value="(modelValue.product_facts || []).join('\n')"
-          @input="updateProductFacts($event.target.value)"
-          rows="7"
-          placeholder="Leave empty to generate facts from the full description when saved."
-          class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
-        ></textarea>
-      </template>
     </div>
 
     <!-- Categories (Chip Selection) -->
@@ -373,6 +296,119 @@
        <p v-if="extractionErrors.useCases" class="mt-1 text-xs text-red-500">{{ extractionErrors.useCases }}</p>
     </div>
 
+    <!-- Pricing (Cards) -->
+    <div id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
+       <div class="mb-1 flex items-start justify-between gap-4">
+         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode && !hasPricing" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+         <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
+       </div>
+       <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
+       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div 
+            v-for="price in allPricing" 
+            :key="price.id"
+            @click="togglePricing(price.id)"
+            class="cursor-pointer relative rounded-full border px-4 py-2 transition-all duration-200 hover:shadow-md flex items-center h-full"
+            :class="modelValue.pricing.includes(price.id)
+              ? 'bg-sky-50 border-sky-500'
+              : 'bg-white border-gray-200 hover:border-sky-300'"
+          >
+             <div class="flex w-full items-center justify-between gap-3">
+                <span class="font-medium text-xs leading-4 text-gray-700">{{ price.name }}</span>
+                <div class="h-4 w-4 shrink-0 rounded-full border flex items-center justify-center"
+                     :class="modelValue.pricing.includes(price.id) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
+                >
+                   <svg v-if="modelValue.pricing.includes(price.id)" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                   </svg>
+                </div>
+             </div>
+             <!-- Optional description for pricing if we had it -->
+             <!-- <p class="text-xs text-gray-500">Description here...</p> -->
+          </div>
+       </div>
+    </div>
+
+    <details class="rounded-lg border border-slate-200 p-4">
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Add more details</summary>
+      <div class="mt-4 space-y-8">
+    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
+      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview</h2>
+      <div class="grid items-start gap-4 sm:grid-cols-2">
+        <div
+          v-for="index in [0, 1]"
+          :key="index"
+          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
+          :class="[
+            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
+            { 'opacity-50': isUploadingImage || isLoading }
+          ]"
+          @dragenter.prevent="enterImageDrop(index, $event)"
+          @dragover.prevent="allowImageDrop($event)"
+          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
+          @drop.prevent="dropImage(index, $event)"
+        >
+          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
+          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#99BCFF" />
+                  <stop offset="1" stop-color="#315BA8" />
+                </linearGradient>
+                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6592DA" stop-opacity="0.95" />
+                  <stop offset="1" stop-color="#DCE7FA" />
+                </linearGradient>
+              </defs>
+              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
+              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
+              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
+              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
+            </svg>
+            <p class="text-xs leading-5 text-slate-800">
+              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
+              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
+            </p>
+            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
+          </div>
+          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
+            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
+              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
+            </span>
+          </label>
+        </div>
+      </div>
+      <p class="mt-2 text-xs text-slate-500">Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
+      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
+      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
+    </aside>
+
+    <div v-if="isAdmin" class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
+      <label class="block text-xs font-bold text-gray-900">Description cohort</label>
+      <select
+        :value="modelValue.description_format || 'full'"
+        @change="updateField('description_format', $event.target.value)"
+        class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+      >
+        <option value="full">Cohort A — Full description</option>
+        <option value="facts">Cohort B — Product facts</option>
+      </select>
+      <p class="mt-2 text-[11px] text-gray-500">One stable format is shown to every visitor and crawler for this product.</p>
+
+      <template v-if="modelValue.description_format === 'facts'">
+        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="font-normal text-gray-400">(one per line, max 7)</span></label>
+        <textarea
+          :value="(modelValue.product_facts || []).join('\n')"
+          @input="updateProductFacts($event.target.value)"
+          rows="7"
+          placeholder="Leave empty to generate facts from the full description when saved."
+          class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+        ></textarea>
+      </template>
+    </div>
+
     <!-- Platform (Chip Selection) -->
     <div :class="[autofillLockClass('taxonomy'), reviewTint('platforms')]">
        <div class="flex items-center justify-between mb-1">
@@ -513,7 +549,7 @@
 
 
     <!-- Best For / Tags (Chip Selection) -->
-    <div id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
+    <div id="field-best-for" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
        </div>
@@ -592,39 +628,6 @@
        </div>
     </div>
 
-    <!-- Pricing (Cards) -->
-    <div :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
-       <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode && !hasPricing" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
-         <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
-       </div>
-       <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
-       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div 
-            v-for="price in allPricing" 
-            :key="price.id"
-            @click="togglePricing(price.id)"
-            class="cursor-pointer relative rounded-full border px-4 py-2 transition-all duration-200 hover:shadow-md flex items-center h-full"
-            :class="modelValue.pricing.includes(price.id)
-              ? 'bg-sky-50 border-sky-500'
-              : 'bg-white border-gray-200 hover:border-sky-300'"
-          >
-             <div class="flex w-full items-center justify-between gap-3">
-                <span class="font-medium text-xs leading-4 text-gray-700">{{ price.name }}</span>
-                <div class="h-4 w-4 shrink-0 rounded-full border flex items-center justify-center"
-                     :class="modelValue.pricing.includes(price.id) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
-                >
-                   <svg v-if="modelValue.pricing.includes(price.id)" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                   </svg>
-                </div>
-             </div>
-             <!-- Optional description for pricing if we had it -->
-             <!-- <p class="text-xs text-gray-500">Description here...</p> -->
-          </div>
-       </div>
-    </div>
-
     <!-- Pricing Page URL -->
     <div id="field-pricing-page-url" :class="[autofillLockClass('links'), reviewTint('pricing_page_url')]">
       <div class="mb-1 flex items-start justify-between gap-4">
@@ -643,8 +646,12 @@
       >
     </div>
 
-    <details class="rounded-lg border border-slate-200 p-4">
-      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Add more details</summary>
+        <LaunchChecklistExtrasSection
+          :model-value="modelValue"
+          :all-tech-stacks="allTechStacks"
+          @update:model-value="$emit('update:modelValue', $event)"
+        />
+      </div>
       <div class="mt-4">
         <h4 class="mb-3 text-md font-medium text-gray-700">Product sale <span class="ml-1 text-xs font-normal text-gray-400">(Optional)</span></h4>
         <div class="flex items-center">
@@ -732,6 +739,7 @@
 
 <script setup>
 import WebsiteProviderFields from './WebsiteProviderFields.vue';
+import LaunchChecklistExtrasSection from './LaunchChecklistExtrasSection.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
 import { getTabProgress } from '../../services/productFormService';
@@ -760,6 +768,7 @@ const props = defineProps({
       x_account: ''
     })
   },
+  allTechStacks: { type: Array, default: () => [] },
   allCategories: { type: Array, default: () => [] },
   allUseCases: { type: Array, default: () => [] },
   allPlatforms: { type: Array, default: () => [] },
