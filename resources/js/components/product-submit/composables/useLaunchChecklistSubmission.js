@@ -412,6 +412,7 @@ export function useLaunchChecklistSubmission(props, emit) {
   };
 
   const copyBadgeSnippet = async () => {
+    await loadBadgeSnippet();
     if (!badgeSnippet.value) {
       return;
     }
@@ -495,20 +496,23 @@ export function useLaunchChecklistSubmission(props, emit) {
   };
 
   const verifyBadgePlacement = async () => {
+    if (isVerifyingBadge.value) return;
     if (!badgePlacementUrlReady.value) {
       badgeVerificationSuccess.value = false;
       badgeVerificationMessage.value = 'Enter the full badge page URL, including https://.';
       return;
     }
 
+    const checkedUrl = props.modelValue.badge_placement_url;
     isVerifyingBadge.value = true;
     badgeVerificationSuccess.value = false;
     badgeVerificationMessage.value = '';
 
     try {
       const response = await axios.post('/api/verify-badge-placement', {
-        url: props.modelValue.badge_placement_url,
+        url: checkedUrl,
       });
+      if (props.modelValue.badge_placement_url !== checkedUrl || selectedSubmissionCard.value !== 'free') return;
 
       badgeVerificationSuccess.value = true;
       badgeVerificationMessage.value = response.data?.message || 'Badge verified. Choose your launch date.';
@@ -522,6 +526,7 @@ export function useLaunchChecklistSubmission(props, emit) {
         badge_verified: true,
       });
     } catch (error) {
+      if (props.modelValue.badge_placement_url !== checkedUrl || selectedSubmissionCard.value !== 'free') return;
       badgeVerificationSuccess.value = false;
       badgeVerificationMessage.value = error.response?.data?.message || 'We could not verify the badge on that page yet.';
 
@@ -585,7 +590,15 @@ export function useLaunchChecklistSubmission(props, emit) {
     selectedSubmissionCard.value = 'free';
     closePaidScheduleDropdown();
     closeFreeScheduleDropdown();
-    openBadgeModal();
+    wantsBadgeLaunch.value = true;
+    emit('update:modelValue', {
+      ...props.modelValue,
+      badge_opt_in: true,
+      submissionOption: props.modelValue.badge_verified ? 'badge' : 'free',
+      submission_type: props.modelValue.badge_verified ? 'badge' : 'free',
+      badge_placement_url: props.modelValue.badge_placement_url || props.modelValue.link || '',
+    });
+    loadBadgeSnippet();
   };
 
   const handleFreeScheduleDateInput = (value) => {
@@ -669,6 +682,7 @@ export function useLaunchChecklistSubmission(props, emit) {
   };
 
   const handleFreeCardSubmission = () => {
+    if (isVerifyingBadge.value || props.isLoading || props.modelValue.badge_verified !== true) return;
     activeSubmissionCard.value = 'free';
 
     if (!props.modelValue.badge_verified) {
@@ -711,7 +725,7 @@ export function useLaunchChecklistSubmission(props, emit) {
     const badgeFields = ['badge_placement_url', 'badge_verified', 'badge_week_start'];
 
     if (badgeFields.includes(fieldKey)) {
-      openBadgeModal();
+      selectFreeSubmission();
       window.setTimeout(() => {
         emit('focus-field', fieldKey);
       }, 180);

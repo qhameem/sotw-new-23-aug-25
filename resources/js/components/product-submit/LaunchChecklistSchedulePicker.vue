@@ -73,7 +73,7 @@
         </div>
       </Transition>
 
-      <div class="mt-2 flex w-1/2 flex-wrap items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2 py-2 text-xs">
+      <div v-if="!compact" class="mt-2 flex w-1/2 flex-wrap items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2 py-2 text-xs">
         <svg class="h-5 w-5 shrink-0 text-primary-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" d="M6 2a1 1 0 1 0-2 0v1H3a2 2 0 0 0-2 2v2h18V5a2 2 0 0 0-2-2h-1V2a1 1 0 1 0-2 0v1H6V2Zm13 7H1v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9ZM5 12a1 1 0 0 1 1-1h3a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z" clip-rule="evenodd" />
         </svg>
@@ -86,9 +86,11 @@
       <p v-if="error" class="mt-1 text-[11px] text-rose-600">{{ error }}</p>
     </div>
 
-    <div class="my-1 border-t border-gray-200"></div>
+    <div v-if="!compact" class="my-1 border-t border-gray-200"></div>
 
     <AnimatedSubmitButton
+      :class="{ 'compact-submit': compact }"
+      :variant="compact ? 'ghost' : 'primary'"
       :label="actionLabel"
       :state="actionState"
       :disabled="actionDisabled"
@@ -102,6 +104,7 @@
 import AnimatedSubmitButton from './AnimatedSubmitButton.vue';
 
 const props = defineProps({
+  compact: { type: Boolean, default: false },
   actionDisabled: {
     type: Boolean,
     default: false,
@@ -197,3 +200,19 @@ const availabilityClass = (value) => {
 
 const checkIconClass = props.variant === 'paid' ? '' : 'text-gray-500';
 </script>
+
+<style scoped>
+.compact-submit {
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  box-shadow: none;
+}
+.compact-submit :deep(.inline-flex) {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+.compact-submit :deep(.inline-flex > svg) {
+  display: none;
+}
+</style>

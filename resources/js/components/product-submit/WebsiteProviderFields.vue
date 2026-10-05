@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-3 border-t border-gray-100 pt-4">
     <div class="flex items-center justify-between gap-3">
-      <h3 class="text-xs font-bold text-gray-900">Website providers <span class="font-normal text-gray-400">(Optional)</span></h3>
+      <h3 class="text-xs font-bold text-gray-900">Website providers <span class="product-field-hint font-normal text-gray-400">(Optional)</span></h3>
       <button type="button" :disabled="loading || !modelValue.link" @click="lookup" class="text-xs text-sky-700 disabled:opacity-50">
         {{ loading ? 'Looking up…' : 'Look up from URL' }}
       </button>
@@ -9,7 +9,7 @@
     <p class="text-[11px] text-gray-500">Auto-detected from public records. Review or edit.</p>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div v-for="field in fields" :key="field.key">
-        <label :for="field.key" class="mb-1 block text-xs font-bold text-gray-900">{{ field.label }}
+        <label :for="field.key" class="mb-1 block text-xs font-bold text-gray-900">{{ field.label }} <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span>
           <span v-if="field.key === 'hosting_provider'" class="ml-2 rounded bg-slate-100 px-2 py-1 font-normal text-slate-600">{{ hostingStatus }}</span>
           <span v-if="field.key === 'hosting_provider' && hostingConfidence !== null" class="ml-2 font-normal text-gray-500" title="Heuristic evidence score, not a probability of correctness.">
             Confidence: {{ hostingConfidence }}/100

@@ -1,5 +1,57 @@
 <template>
   <div class="space-y-8 mt-4">
+    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
+      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview <span class="text-red-500">*</span></h2>
+      <div class="grid items-start gap-4 sm:grid-cols-2">
+        <div
+          v-for="index in [0, 1]"
+          :key="index"
+          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
+          :class="[
+            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
+            { 'opacity-50': isUploadingImage || isLoading }
+          ]"
+          @dragenter.prevent="enterImageDrop(index, $event)"
+          @dragover.prevent="allowImageDrop($event)"
+          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
+          @drop.prevent="dropImage(index, $event)"
+        >
+          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
+          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#99BCFF" />
+                  <stop offset="1" stop-color="#315BA8" />
+                </linearGradient>
+                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6592DA" stop-opacity="0.95" />
+                  <stop offset="1" stop-color="#DCE7FA" />
+                </linearGradient>
+              </defs>
+              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
+              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
+              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
+              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
+            </svg>
+            <p class="text-xs leading-5 text-slate-800">
+              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
+              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
+            </p>
+            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
+          </div>
+          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
+            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
+              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
+            </span>
+          </label>
+        </div>
+      </div>
+      <p class="mt-2 text-xs text-slate-500">At least one image required. Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
+      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
+      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
+    </aside>
     <!-- Project Name -->
     <div id="field-name" :class="[autofillLockClass('name'), reviewTint('name')]">
       <div class="mb-1 flex items-start justify-between gap-4">
@@ -296,97 +348,47 @@
        <p v-if="extractionErrors.useCases" class="mt-1 text-xs text-red-500">{{ extractionErrors.useCases }}</p>
     </div>
 
-    <!-- Pricing (Cards) -->
+    <!-- Pricing -->
     <div id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode && !hasPricing" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
-         <p v-if="validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing }}</p>
+         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+         <p :class="{ invisible: !validationErrors.pricing }" :aria-hidden="!validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing || 'At least one pricing model is required' }}</p>
        </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
-       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div 
-            v-for="price in allPricing" 
+       <div class="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 md:grid-cols-4">
+          <label
+            v-for="price in allPricing"
             :key="price.id"
-            @click="togglePricing(price.id)"
-            class="cursor-pointer relative rounded-full border px-4 py-2 transition-all duration-200 hover:shadow-md flex items-center h-full"
-            :class="modelValue.pricing.includes(price.id)
-              ? 'bg-sky-50 border-sky-500'
-              : 'bg-white border-gray-200 hover:border-sky-300'"
+            class="flex cursor-pointer items-center gap-2.5 py-1"
           >
-             <div class="flex w-full items-center justify-between gap-3">
-                <span class="font-medium text-xs leading-4 text-gray-700">{{ price.name }}</span>
-                <div class="h-4 w-4 shrink-0 rounded-full border flex items-center justify-center"
-                     :class="modelValue.pricing.includes(price.id) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
-                >
-                   <svg v-if="modelValue.pricing.includes(price.id)" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                   </svg>
-                </div>
-             </div>
-             <!-- Optional description for pricing if we had it -->
-             <!-- <p class="text-xs text-gray-500">Description here...</p> -->
-          </div>
+            <input
+              type="checkbox"
+              :checked="modelValue.pricing.includes(price.id)"
+              class="h-5 w-5 shrink-0 cursor-pointer rounded-md border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-2"
+              @change="togglePricing(price.id)"
+            >
+            <span class="text-xs font-medium leading-4" :class="modelValue.pricing.includes(price.id) ? 'text-gray-900' : 'text-gray-700'">{{ price.name }}</span>
+          </label>
        </div>
     </div>
 
-    <details class="rounded-lg border border-slate-200 p-4">
-      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Add more details</summary>
-      <div class="mt-4 space-y-8">
-    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
-      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview</h2>
-      <div class="grid items-start gap-4 sm:grid-cols-2">
-        <div
-          v-for="index in [0, 1]"
-          :key="index"
-          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
-          :class="[
-            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
-            { 'opacity-50': isUploadingImage || isLoading }
-          ]"
-          @dragenter.prevent="enterImageDrop(index, $event)"
-          @dragover.prevent="allowImageDrop($event)"
-          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
-          @drop.prevent="dropImage(index, $event)"
-        >
-          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
-          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
-            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#99BCFF" />
-                  <stop offset="1" stop-color="#315BA8" />
-                </linearGradient>
-                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6592DA" stop-opacity="0.95" />
-                  <stop offset="1" stop-color="#DCE7FA" />
-                </linearGradient>
-              </defs>
-              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
-              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
-              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
-              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
-            </svg>
-            <p class="text-xs leading-5 text-slate-800">
-              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
-              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
-            </p>
-            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
-          </div>
-          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
-            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
-              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
-            </span>
-          </label>
-        </div>
-      </div>
-      <p class="mt-2 text-xs text-slate-500">Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
-      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
-      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
-    </aside>
+    <details class="additional-details">
+      <summary class="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-slate-700">
+        <svg class="details-plus-icon h-4 w-4 shrink-0" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" transform="translate(-466 -1089)" d="M488,1106 L483,1106 L483,1111 C483,1111.55 482.553,1112 482,1112 C481.447,1112 481,1111.55 481,1111 L481,1106 L476,1106 C475.447,1106 475,1105.55 475,1105 C475,1104.45 475.447,1104 476,1104 L481,1104 L481,1099 C481,1098.45 481.447,1098 482,1098 C482.553,1098 483,1098.45 483,1099 L483,1104 L488,1104 C488.553,1104 489,1104.45 489,1105 C489,1105.55 488.553,1106 488,1106 Z M482,1089 C473.163,1089 466,1096.16 466,1105 C466,1113.84 473.163,1121 482,1121 C490.837,1121 498,1113.84 498,1105 C498,1096.16 490.837,1089 482,1089 Z" />
+        </svg>
+        <svg class="details-minus-icon h-4 w-4 shrink-0" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" transform="translate(-518 -1089)" d="M540,1106 L528,1106 C527.447,1106 527,1105.55 527,1105 C527,1104.45 527.447,1104 528,1104 L540,1104 C540.553,1104 541,1104.45 541,1105 C541,1105.55 540.553,1106 540,1106 Z M534,1089 C525.163,1089 518,1096.16 518,1105 C518,1113.84 525.163,1121 534,1121 C542.837,1121 550,1113.84 550,1105 C550,1096.16 542.837,1089 534,1089 Z" />
+        </svg>
+        Add more details
+        <span class="product-field-hint text-xs font-normal text-gray-400">(Optional)</span>
+      </summary>
+      <div class="additional-details-card mt-4">
+      <div class="space-y-8">
+
 
     <div v-if="isAdmin" class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
-      <label class="block text-xs font-bold text-gray-900">Description cohort</label>
+      <label class="block text-xs font-bold text-gray-900">Description cohort <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
       <select
         :value="modelValue.description_format || 'full'"
         @change="updateField('description_format', $event.target.value)"
@@ -398,7 +400,7 @@
       <p class="mt-2 text-[11px] text-gray-500">One stable format is shown to every visitor and crawler for this product.</p>
 
       <template v-if="modelValue.description_format === 'facts'">
-        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="font-normal text-gray-400">(one per line, max 7)</span></label>
+        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="product-field-hint font-normal text-gray-400">(one per line, max 7)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         <textarea
           :value="(modelValue.product_facts || []).join('\n')"
           @input="updateProductFacts($event.target.value)"
@@ -412,7 +414,7 @@
     <!-- Platform (Chip Selection) -->
     <div :class="[autofillLockClass('taxonomy'), reviewTint('platforms')]">
        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-bold text-gray-900">Platform <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+          <label class="block text-xs font-bold text-gray-900">Platform <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
        </div>
        <div class="mb-2 text-xs text-gray-500">Where does your product run? Choose the platform your product is built for, or add a custom one if needed.</div>
 
@@ -551,7 +553,7 @@
     <!-- Best For / Tags (Chip Selection) -->
     <div id="field-best-for" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="text-gray-400 font-normal text-xs ml-1">(Max 5)</span></label>
+          <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Max 5)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
        </div>
        <div class="mb-2 text-xs text-gray-500">Who is your product best for? Add tags that describe the audience, role, or situation it fits best.</div>
 
@@ -631,7 +633,7 @@
     <!-- Pricing Page URL -->
     <div id="field-pricing-page-url" :class="[autofillLockClass('links'), reviewTint('pricing_page_url')]">
       <div class="mb-1 flex items-start justify-between gap-4">
-        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
         <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
@@ -653,7 +655,7 @@
         />
       </div>
       <div class="mt-4">
-        <h4 class="mb-3 text-md font-medium text-gray-700">Product sale <span class="ml-1 text-xs font-normal text-gray-400">(Optional)</span></h4>
+        <h4 class="mb-3 text-md font-medium text-gray-700">Product sale <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></h4>
         <div class="flex items-center">
           <input
             id="sell-product"
@@ -662,11 +664,11 @@
             class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-sky-400"
             @change="updateField('sell_product', $event.target.checked)"
           >
-          <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product</label>
+          <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         </div>
 
         <div v-if="modelValue.sell_product" class="mt-3 ml-6">
-          <label for="asking-price" class="mb-2 block text-sm font-semibold text-gray-700">Asking Price (USD)</label>
+          <label for="asking-price" class="mb-2 block text-sm font-semibold text-gray-700">Asking Price (USD) <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
           <input
             id="asking-price"
             type="number"
@@ -680,17 +682,17 @@
         </div>
       </div>
       <div class="mt-4">
-        <label for="video-url" class="block text-xs font-bold text-gray-900">Video URL</label>
+        <label for="video-url" class="block text-xs font-bold text-gray-900">Video URL <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         <input id="video-url" type="url" :value="modelValue.video_url || ''" placeholder="https://youtube.com/watch?v=..." class="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500" @input="updateField('video_url', $event.target.value)">
       </div>
       <WebsiteProviderFields :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" />
 
     <!-- Social Links -->
     <div class="pt-4 border-t border-gray-100" :class="autofillLockClass('links')">
-        <label class="block text-xs font-bold text-gray-900 mb-4">Social Links</label>
+        <label class="block text-xs font-bold text-gray-900 mb-4">Social Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         <div class="grid grid-cols-1 gap-6">
             <div>
-                 <label class="block text-xs font-bold text-gray-900 mb-1">Twitter / X</label>
+                 <label class="block text-xs font-bold text-gray-900 mb-1">Twitter / X <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
                  <div class="mb-2 text-[11px] text-gray-500">Add your main product or founder profile so people can find updates and reach out.</div>
                  <input 
                     type="url" 
@@ -706,7 +708,7 @@
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
          <div id="field-maker-links" class="mt-4">
              <div class="mb-1 flex items-start justify-between gap-4">
-                 <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links</label>
+                 <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
                  <div class="flex items-center gap-3">
                    <p v-if="validationErrors.maker_links" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.maker_links }}</p>
                    <button type="button" @click="addMoreLink" class="flex items-center text-xs font-bold text-sky-600 hover:text-sky-700">
@@ -732,6 +734,7 @@
              </div>
          </div>
     </div>
+      </div>
     </details>
 
   </div>
@@ -1265,6 +1268,27 @@ function removeCustomTechStack(customTechStackId) {
 </script>
 
 <style scoped>
+.additional-details :deep(.product-field-hint) {
+  color: #9ca3af !important;
+  font-weight: 400;
+}
+.additional-details-card {
+  border: 1px solid var(--color-primary-100, #dbeafe);
+  border-radius: 0.75rem;
+  background-color: color-mix(in srgb, var(--color-primary-50, #eff6ff) 45%, white);
+  padding: 1rem;
+}
+.additional-details > summary::-webkit-details-marker {
+  display: none;
+}
+.details-minus-icon,
+.additional-details[open] .details-plus-icon {
+  display: none;
+}
+.additional-details[open] .details-minus-icon {
+  display: block;
+}
+
 .autofill-locked-group {
   filter: blur(1.25px);
   opacity: 0.58;

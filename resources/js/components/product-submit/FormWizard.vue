@@ -213,13 +213,6 @@
               </transition>
               
               <form @submit.prevent="handleSubmit" class="space-y-8">
-                <div v-if="manualMode" class="rounded-xl border border-slate-200 bg-white p-4" aria-label="Manual form progress">
-                  <div class="mb-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full bg-sky-500 transition-all" :style="{ width: `${manualProgress}%` }"></div></div>
-                  <ol class="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
-                    <li v-for="(step, index) in manualSteps" :key="step" :class="index === manualStep ? 'font-semibold text-sky-700' : 'text-slate-500'">{{ index + 1 }}. {{ step }}</li>
-                  </ol>
-                </div>
-
                 <div id="url-section" class="scroll-mt-6">
                   <ProductURLInput
                     :modelValue="form.link"
@@ -265,7 +258,7 @@
                   </ProductURLInput>
                 </div>
 
-                <div v-show="!manualMode || manualStep <= 2" id="details-section" class="scroll-mt-6">
+                <div id="details-section" class="scroll-mt-6">
                   <ProductDetailsForm
                     :modelValue="form"
                     @update:modelValue="handleFormDetailUpdate"
@@ -297,8 +290,8 @@
                   />
                 </div>
 
-                <div v-show="!manualMode || manualStep >= 3" id="launch-section" class="scroll-mt-6 border-t border-gray-100 pt-8">
-                  <h2 class="text-xl font-bold text-gray-800 mb-4">{{ manualMode ? manualSteps[manualStep] : 'Submission' }}</h2>
+                <div id="launch-section" class="scroll-mt-6 pt-8">
+                  <h2 class="text-xl font-bold text-gray-800 mb-4">Submission</h2>
                   <div
                     class="transition-all duration-300"
                     :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.launch }"
@@ -322,17 +315,9 @@
                     />
                   </div>
                 </div>
-                <div v-if="manualMode" class="flex items-center justify-between border-t border-slate-200 pt-5">
-                  <button v-if="manualStep > 0" type="button" class="text-sm font-semibold text-slate-600" @click="manualStep--">Back</button><span v-else></span>
-                  <button v-if="manualStep < manualSteps.length - 1" type="button" class="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white" @click="manualStep++">Continue</button>
-                </div>
               </form>
             </div>
             
-            <!-- Bottom Navigation Buttons -->
-            <div class="flex justify-between items-center pt-8 border-t border-gray-100">
-              
-            </div>
           </div>
 
          </div>
@@ -379,9 +364,7 @@ const props = defineProps({
 
 const showForm = ref(props.initialProduct ? true : false);
 const manualMode = ref(false);
-const manualStep = ref(0);
 const submitAttempted = ref(false);
-const manualSteps = ['Basics', 'Description', 'Categorization', 'Pricing and links', 'Extras'];
 const isLogoPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 const urlCheckPending = ref(false);
@@ -487,11 +470,9 @@ const autofillProgress = computed(() => Math.max(0, Math.min(100, Math.round(loa
 const displayProgress = computed(() => isLoading.value ? autofillProgress.value : reviewProgress.value);
 const currentAutofillFields = computed(() => loadingMessage.value || 'Preparing auto-fill...');
 const nextAutofillFields = computed(() => autofillNextMessage.value);
-const manualProgress = computed(() => Math.round(((manualStep.value + 1) / manualSteps.length) * 100));
 const sourceSnippet = computed(() => '');
 const openManualMode = () => {
   manualMode.value = true;
-  manualStep.value = 0;
   showForm.value = true;
 };
 const handleSubmit = async () => {

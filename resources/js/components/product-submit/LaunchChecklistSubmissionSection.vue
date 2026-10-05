@@ -39,33 +39,58 @@
         {{ progress.completed }} of {{ progress.total }} total required fields filled
       </div>
 
-      <div class="rounded-lg border border-gray-200 bg-white p-6">
+      <div>
         <div class="grid items-stretch gap-6 lg:grid-cols-2">
-          <FreeSubmissionCard
-            :features="freeLaunchFeatures"
-            :selected="selectedSubmissionCard === 'free'"
-            @select="$emit('select-free-submission')"
-            @open-badge-modal="$emit('open-badge-modal')"
-          />
-
-          <PaidSubmissionCard
-            :features="paidLaunchFeatures"
-            :price-label="premiumLaunchPriceLabel"
-            :selected="selectedSubmissionCard === 'paid'"
-            @select="$emit('select-paid-submission')"
-          />
-        </div>
-
-        <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50/70 p-4 lg:min-h-[232px]">
-          <div v-if="selectedSubmissionCard === 'paid'" class="flex flex-col gap-4">
-            <div class="space-y-1">
-              <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <p class="text-sm font-medium text-gray-900"><span class="text-primary-700">[Premium]</span> Choose the launch date</p>
-                <p class="text-[11px] text-gray-500">Default: next Monday. Maximum: 60 days ahead.</p>
+          <LaunchPlanCard :selected="selectedSubmissionCard === 'free'" @select="$emit('select-free-submission')">
+            <div class="space-y-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="text-sm font-medium text-gray-900">Add our badge to launch free</p>
+                <span class="rounded-md bg-primary-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary-700">Required</span>
+              </div>
+              <p class="text-xs text-gray-500">Place it on a public page of your site, then verify.</p>
+              <FreeLaunchBadgePreview :snippet="badgeSnippet">
+                <div id="field-badge-placement-url" class="space-y-2 pt-1">
+                  <label for="inline-badge-placement-url" class="flex items-center gap-2 text-xs font-medium text-gray-600"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-700">2</span> Verify placement</label>
+                  <div class="flex gap-2">
+                    <input id="inline-badge-placement-url" type="url" :value="modelValue.badge_placement_url || ''" placeholder="https://yoursite.com/page" class="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :aria-invalid="Boolean(validationErrors.badge_placement_url)" aria-describedby="field-badge-verified" :disabled="isVerifyingBadge || isLoading" @input="$emit('update-badge-url', $event.target.value)">
+                    <button type="button" :disabled="isVerifyingBadge || isLoading || !badgePlacementUrlReady" :aria-busy="isVerifyingBadge" class="shrink-0 rounded-lg border border-primary-300 bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50" @click="$emit('verify-badge')">
+                      {{ isVerifyingBadge ? 'Checking…' : modelValue.badge_verified ? 'Verified' : badgeVerificationMessage ? 'Check again' : 'Verify' }}
+                    </button>
+                  </div>
+                  <div id="field-badge-verified" role="status" aria-live="polite" class="text-xs leading-5" :class="modelValue.badge_verified ? '!text-green-700' : badgeVerificationMessage && !isVerifyingBadge ? '!text-red-600' : '!text-gray-500'">
+                    {{ isVerifyingBadge ? 'Scanning your page for the badge link…' : badgeVerificationMessage || 'We scan this page for the badge link.' }}
+                    <ul v-if="badgeVerificationMessage && !modelValue.badge_verified && !isVerifyingBadge" class="mt-1 list-disc space-y-1 pl-4 text-gray-500">
+                      <li>Place the badge on the exact page entered above.</li>
+                      <li>Make sure the page is public and accessible.</li>
+                      <li>Clear your site cache, then check again.</li>
+                    </ul>
+                  </div>
+                  <p v-if="validationErrors.badge_placement_url" class="text-xs !text-red-600">{{ validationErrors.badge_placement_url }}</p>
+                </div>
+              </FreeLaunchBadgePreview>
+              <div v-if="modelValue.badge_verified" id="field-badge-week-start" class="space-y-2">
+                <label for="inline-badge-launch-date" class="block text-xs font-medium text-gray-600">Pick your launch date</label>
+                <select id="inline-badge-launch-date" :value="modelValue.badge_week_start || ''" class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :disabled="isLoading" @change="$emit('update-badge-week-start', $event.target.value)">
+                  <option value="" disabled>Choose a launch date</option>
+                  <option v-for="option in launchWeekOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+                <p v-if="validationErrors.badge_week_start" class="text-xs !text-red-600">{{ validationErrors.badge_week_start }}</p>
               </div>
             </div>
+            <div v-if="badgeStatusMessage || modelValue.badge_verified || selectedLaunchWeekLabel" class="space-y-2">
+              <p v-if="modelValue.badge_verified" class="text-xs font-medium text-green-700">Badge verified</p>
+              <p v-if="selectedLaunchWeekLabel" class="text-xs text-gray-600">{{ selectedLaunchWeekLabel }}</p>
+              <p v-if="badgeStatusMessage" class="text-xs" :class="badgeStatusTone">{{ badgeStatusMessage }}</p>
+            </div>
+            <button type="button" class="launch-card-action mt-auto" :disabled="cardButtonDisabled || modelValue.badge_verified !== true || !modelValue.badge_week_start || isVerifyingBadge || isLoading" @click="$emit('submit-free-card')">
+              {{ isLoading ? freeButtonLabel : !modelValue.badge_verified ? 'Verify badge to continue' : !modelValue.badge_week_start ? 'Choose a launch date to continue' : 'Start free launch' }}
+            </button>
+          </LaunchPlanCard>
 
+          <LaunchPlanCard premium :price-label="premiumLaunchPriceLabel" :selected="selectedSubmissionCard === 'paid'" @select="$emit('select-paid-submission')">
+            <div class="mt-auto">
             <LaunchChecklistSchedulePicker
+              compact
               dropdown-id="paid-schedule-date"
               :dropdown-ref="paidScheduleDropdownRef"
               :selected-value="selectedPaidScheduleDate"
@@ -75,70 +100,18 @@
               :scheduled-date-label="paidScheduleMessageDateLabel"
               :publish-time-label="publishTimeLabel"
               :error="validationErrors.paid_schedule_date"
-              :action-label="premiumButtonLabel"
+              :action-label="isLoading ? premiumButtonLabel : 'Get premium launch'"
               :action-state="premiumButtonState"
               :action-disabled="cardButtonDisabled"
               variant="paid"
-              @toggle="$emit('toggle-paid-schedule-dropdown')"
-              @open="$emit('open-paid-schedule-dropdown')"
+              @toggle="activatePaidSchedule('toggle-paid-schedule-dropdown')"
+              @open="activatePaidSchedule('open-paid-schedule-dropdown')"
               @close="$emit('close-paid-schedule-dropdown')"
               @select="$emit('select-paid-schedule-option', $event)"
               @submit="$emit('submit-paid-card')"
             />
-          </div>
-
-          <div v-else class="flex flex-col gap-4">
-            <div class="space-y-2">
-              <div class="space-y-1">
-                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <p class="text-sm font-medium text-gray-900"><span class="text-primary-700">[Free]</span> Choose the launch date</p>
-                  <p class="text-[11px] text-gray-500">Badge required. Choose any date from next Monday.</p>
-                  <button
-                    type="button"
-                    class="text-[11px] font-medium text-primary-700 underline underline-offset-4 transition hover:text-primary-800"
-                    @click="$emit('open-badge-modal')"
-                  >
-                    {{ badgeActionLabel }}
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="wantsBadgeLaunch || badgeStatusMessage || selectedLaunchWeekLabel" class="flex flex-wrap gap-2">
-                <span
-                  v-if="wantsBadgeLaunch"
-                  class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium"
-                  :class="modelValue.badge_verified ? 'ring-1 ring-primary-200 bg-primary-50 text-primary-700' : 'ring-1 ring-amber-200 bg-amber-50 text-amber-800'"
-                >
-                  {{ modelValue.badge_verified ? 'Badge verified' : 'Badge setup in progress' }}
-                </span>
-                <span
-                  v-if="selectedLaunchWeekLabel"
-                  class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 ring-1 ring-gray-200"
-                >
-                  {{ selectedLaunchWeekLabel }}
-                </span>
-                <span
-                  v-if="badgePageHost"
-                  class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 ring-1 ring-gray-200"
-                >
-                  {{ badgePageHost }}
-                </span>
-              </div>
-
-              <p v-if="badgeStatusMessage" class="text-[11px]" :class="badgeStatusTone">
-                {{ badgeStatusMessage }}
-              </p>
             </div>
-
-            <button
-              type="button"
-              :disabled="cardButtonDisabled"
-              class="inline-flex min-h-11 items-center justify-center self-start rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="$emit('submit-free-card')"
-            >
-              {{ modelValue.badge_verified && modelValue.badge_week_start ? freeButtonLabel : 'Set up badge to launch free' }}
-            </button>
-          </div>
+          </LaunchPlanCard>
         </div>
 
         <div class="mt-6 flex flex-col items-start gap-4">
@@ -309,10 +282,10 @@
 <script setup>
 import AnimatedSubmitButton from './AnimatedSubmitButton.vue';
 import BadgeLaunchModal from './BadgeLaunchModal.vue';
-import FreeSubmissionCard from './FreeSubmissionCard.vue';
+import FreeLaunchBadgePreview from './FreeLaunchBadgePreview.vue';
+import LaunchPlanCard from './LaunchPlanCard.vue';
 import LaunchChecklistSchedulePicker from './LaunchChecklistSchedulePicker.vue';
 import LaunchChecklistValidationSummary from './LaunchChecklistValidationSummary.vue';
-import PaidSubmissionCard from './PaidSubmissionCard.vue';
 
 const props = defineProps({
   adminActionLabel: {
@@ -547,7 +520,38 @@ const emit = defineEmits([
   'verify-badge',
 ]);
 
+const activatePaidSchedule = (event) => {
+  if (props.selectedSubmissionCard !== 'paid') emit('select-paid-submission');
+  emit(event);
+};
+
 const emitFieldUpdate = (field, value) => {
   emit('update:modelValue', { ...props.modelValue, [field]: value });
 };
 </script>
+
+<style scoped>
+.launch-card-action {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  color: var(--color-site-text, #111827);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.launch-card-action:hover:not(:disabled) {
+  border-color: var(--color-primary-400, #60a5fa);
+  background: var(--color-primary-50, #eff6ff);
+}
+.launch-card-action:focus-visible {
+  outline: 2px solid var(--color-primary-500, #3b82f6);
+  outline-offset: 2px;
+}
+.launch-card-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+</style>
