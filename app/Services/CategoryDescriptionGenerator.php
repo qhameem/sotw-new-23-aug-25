@@ -358,7 +358,10 @@ HUMAN WRITING RULES:
 - Use simple words, short sentences, and contractions when they feel natural.
 - Mix sentence lengths so the copy does not sound robotic.
 - Keep a light human touch, but stay controlled and professional.
-- Avoid jargon, filler, and generic marketing hype.
+- Prefer concrete workflows, capabilities, and buyer concerns over abstract claims. Remove jargon, filler, empty enthusiasm, and generic marketing language.
+- Use varied sentence structures and specific openings; do not follow one reusable template across categories.
+- Avoid stock openings and closings that could fit any category. Every sentence should add category-specific information.
+- Do not force personality, humor, or decorative wording. Keep liveliness relevant to the category and context.
 - Do not use cliches like "game-changing", "revolutionary", "cutting-edge", or "unleash your potential".
 - Be honest. If the source material is limited, stay specific to what is commonly true about the category and avoid empty claims.
 - You may add at most 1-2 subtle, natural phrases that make the copy feel less mechanical, but do not become chatty.

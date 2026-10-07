@@ -54,7 +54,9 @@ Rules:
 - Do not reproduce or lightly paraphrase a title or heading from the source.
 - Combine the product category with its strongest verified differentiator.
 - Preserve useful product terminology. Do not invent claims.
-- Avoid hype, vague wording, promotional introductions, and exclamation marks.
+- Avoid hype, vague wording, promotional introductions, empty enthusiasm, generic phrases, and exclamation marks.
+- Make each candidate sound like clear human directory copy: lead with the product's actual function or a verified differentiator, and remove filler.
+- Vary sentence structure across candidates; do not force personality or decorative wording.
 - Aim for 35-85 characters. Hard maximum: 140 characters.
 - Return JSON only.
 
@@ -89,7 +91,7 @@ Do not copy or lightly paraphrase any of these website headings:
 Rules:
 - State the product category and primary function.
 - Preserve verified product terminology, but use a new sentence structure.
-- Do not invent claims or use hype.
+- Do not invent claims or use hype, filler, generic marketing language, or empty enthusiasm.
 - Aim for 35-85 characters. Hard maximum: 140 characters.
 - Return JSON only: {"candidates":["...","...","..."]}
 PROMPT;

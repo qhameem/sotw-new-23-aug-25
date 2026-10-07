@@ -109,6 +109,9 @@ REQUIREMENTS:
 - Explain what the product is, what it does, and its main practical value.
 - Mention "{$productName}" naturally in the first paragraph.
 - Use plain, neutral English. Keep claims specific and source-supported.
+- Write with a clear human voice: lead with the useful detail, vary sentence structure naturally, and remove filler, canned phrasing, empty enthusiasm, and generic marketing language.
+- Prefer concrete features, workflows, and outcomes from the source. Do not add colorful language or claims just to sound lively.
+- Avoid stock openings such as "Meet...", "Unlock...", or "The ultimate..." and stock closings that add no information.
 - Do not add headings, lists, key features, best-for audiences, use cases, comparisons, integrations, pros, limitations, FAQs, or editorial notes.
 - Do not return Markdown, labels, commentary, or code fences.
 PROMPT;
@@ -133,6 +136,8 @@ REQUIREMENTS:
 - Return only one or two <p> overview paragraphs.
 - Use only facts supported by the source material. Do not invent claims, limitations, integrations, audiences, or comparisons.
 - Write naturally in plain English without hype or unsupported superlatives.
+- Prefer concrete, product-specific wording; remove filler, canned phrasing, empty enthusiasm, and generic marketing language.
+- Vary sentence structure naturally without forcing humor, personality, or decorative wording.
 - Do not add headings, lists, key features, best-for audiences, use cases, comparisons, integrations, pros, limitations, FAQs, or editorial notes.
 - Return only clean HTML using <p> and optional <strong> or <em> elements.
 - Do not return Markdown, code fences, labels, or commentary.
