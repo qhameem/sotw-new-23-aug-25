@@ -17,6 +17,7 @@ class CategoryDescriptionGenerator
     private const MODEL = 'openai/gpt-oss-120b';
     private const TEMPERATURE = 0.75;
     private const MAX_ATTEMPTS = 3;
+    private const HUB_DESCRIPTION_MAX_CHARACTERS = 300;
 
     private array $trace = [];
 
@@ -373,7 +374,7 @@ HUMAN WRITING RULES:
 - Do not reuse stock endings like "Compare features and buyer fit".
 
 CATEGORY SEO RULES:
-- "description": Write 1-3 concise sentences for the category hub page. Use one compact paragraph for a simple topic or up to two short paragraphs for a capability-rich category. Orient visitors before they browse the multiple products listed below it.
+- "description": Aim for 160-300 characters, including spaces and punctuation. Never exceed 300 characters. Write a compact paragraph of complete sentences that introduces the category before visitors browse the products below it. Prioritize the most useful details within this limit.
 - For a capability-rich category, naturally mention 3-5 representative capabilities only when they are relevant and supported by the context.
 - An optional final sentence may invite visitors to discover, explore, or compare products, but vary or omit it when it would feel formulaic.
 - "meta_description": Write a punchy, click-optimized meta description that is exactly between 140 and 155 characters long.
@@ -537,7 +538,20 @@ PROMPT;
             $paragraphs
         )));
 
-        return implode("\n\n", $paragraphs);
+        $description = implode("\n\n", $paragraphs);
+
+        if (mb_strlen($description) <= self::HUB_DESCRIPTION_MAX_CHARACTERS) {
+            return $description;
+        }
+
+        // Prefer complete sentences; reserve one character for final punctuation.
+        $prefix = mb_substr($description, 0, self::HUB_DESCRIPTION_MAX_CHARACTERS);
+        if (preg_match('/^(.+[.!?])(?:\s|$)/us', $prefix, $matches)
+            && mb_strlen($matches[1]) >= 160) {
+            return trim($matches[1]);
+        }
+
+        return $this->trimToLength($description, self::HUB_DESCRIPTION_MAX_CHARACTERS - 1);
     }
 
     private function dedupeSentences(string $text): string
