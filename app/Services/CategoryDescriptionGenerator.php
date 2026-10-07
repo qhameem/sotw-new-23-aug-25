@@ -105,6 +105,15 @@ class CategoryDescriptionGenerator
 
                 $result = $this->normalizeResult($result);
 
+                if (!$this->hasValidHubDescription($result['description'])) {
+                    $lastFailureReason = 'invalid_hub_description';
+                    $context['hub_retry_feedback'] = 'The previous hub description was '.mb_strlen($result['description'])
+                        .' characters or ended with an incomplete sentence. Rewrite it as 1-2 complete sentences, ideally 180-260 characters and never more than 300. Omit secondary details instead of cutting a sentence. Previous description: '
+                        .$result['description'];
+                    $this->addTrace('warning', 'Hub description exceeded the character limit or was incomplete; requesting a shorter rewrite.');
+                    continue;
+                }
+
                 if (!$this->hasValidMetaLength($result['meta_description'])) {
                     $this->addTrace('warning', 'Meta description length was outside 140–155 characters; applying a safe repair.');
                     $result['meta_description'] = $this->repairMetaLength($categoryName, $result['meta_description'], $context);
@@ -302,8 +311,12 @@ class CategoryDescriptionGenerator
     {
         $retryInstructions = '';
 
+        if (!empty($context['hub_retry_feedback'])) {
+            $retryInstructions = "\n\nHUB DESCRIPTION REWRITE REQUIRED:\n".$context['hub_retry_feedback'];
+        }
+
         if ($attempt > 1) {
-            $retryInstructions = "\n\nRETRY RULES:\n"
+            $retryInstructions .= "\n\nRETRY RULES:\n"
                 . "- The last attempt was too repetitive, too similar across both fields, too generic, or did not follow the length constraint.\n"
                 . "- Use noticeably different wording, rhythm, and sentence construction between the description and the meta description.\n"
                 . "- Never repeat the description's opening phrase inside the meta description.\n"
@@ -540,20 +553,20 @@ PROMPT;
             $paragraphs
         )));
 
-        $description = implode("\n\n", $paragraphs);
+        return implode("\n\n", $paragraphs);
+    }
 
-        if (mb_strlen($description) <= self::HUB_DESCRIPTION_MAX_CHARACTERS) {
-            return $description;
+    private function hasValidHubDescription(string $description): bool
+    {
+        if ($description === '' || mb_strlen($description) > self::HUB_DESCRIPTION_MAX_CHARACTERS) {
+            return false;
         }
 
-        // Prefer complete sentences; reserve one character for final punctuation.
-        $prefix = mb_substr($description, 0, self::HUB_DESCRIPTION_MAX_CHARACTERS);
-        if (preg_match('/^(.+[.!?])(?:\s|$)/us', $prefix, $matches)
-            && mb_strlen($matches[1]) >= 160) {
-            return trim($matches[1]);
+        if (preg_match('/[.!?]["\x{201D}\x{2019}]*$/u', $description) !== 1) {
+            return false;
         }
 
-        return $this->trimToLength($description, self::HUB_DESCRIPTION_MAX_CHARACTERS - 1);
+        return preg_match('/\b(?:and|or|but|with|for|to|of|in|by|from|such as|including)[.!?]["\x{201D}\x{2019}]*$/iu', $description) !== 1;
     }
 
     private function dedupeSentences(string $text): string
