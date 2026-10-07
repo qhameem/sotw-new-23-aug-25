@@ -408,6 +408,9 @@
                                 <x-phosphor-seal-check class="h-4 w-4" />
                                 <span>{{ $pendingApprovalCount ?? 0 }}</span>
                                 <span class="hidden lg:inline">Pending</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{{ $scheduledApprovalCount ?? 0 }}</span>
+                                <span>Scheduled</span>
                             </a>
                         @endif
                     @endauth

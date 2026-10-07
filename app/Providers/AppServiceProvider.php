@@ -81,6 +81,10 @@ class AppServiceProvider extends ServiceProvider
 
             if (Auth::check() && Auth::user()->hasRole('admin')) {
                 $view->with('pendingApprovalCount', Product::where('approved', false)->count());
+                $view->with('scheduledApprovalCount', Product::where('approved', true)
+                    ->where('is_published', false)
+                    ->whereNotNull('published_at')
+                    ->count());
             }
 
             $view->with('categoryNavigationSummaries', $categoryNavigation->getMenuGroupSummaries())
