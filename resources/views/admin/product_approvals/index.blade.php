@@ -7,6 +7,7 @@
 @endphp
 
 @section('header-title', 'Product Approvals')
+@section('hide_desktop_page_header', 'true')
 
 @section('actions')
 @endsection
@@ -148,7 +149,6 @@
         @if($pendingProducts->isNotEmpty())
         <div class="mb-4 flex items-center justify-between gap-4">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">Pending Approval</h2>
                 <p class="text-sm text-slate-500">Approve individually or schedule multiple products in one pass.</p>
             </div>
         </div>

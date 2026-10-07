@@ -33,6 +33,7 @@ class TaglineController extends Controller
         }
 
         $apiKey = config('services.google.api_key');
+        $punctuationInstruction = \App\Support\GeneratedCopy::PUNCTUATION_INSTRUCTION;
         if (!$apiKey) {
             return $this->fallbackToMetadata($url, $regeneration);
         }
@@ -45,6 +46,7 @@ class TaglineController extends Controller
                         'contents' => [
                             [
                                 'parts' => [
+                                    ['text' => $punctuationInstruction],
                                     [
                                         'text' => "Based on the product description \"{$request->input('description')}\", generate two product taglines in JSON format. Write like a human product copywriter, not an AI assistant. Both lines must be clear, natural, and immediately explain what the product does. Lead with useful, product-specific information; remove filler, canned phrasing, empty enthusiasm, and generic marketing language. The 'short' tagline should ideally be 35-85 characters and never exceed 140. The 'detailed' tagline should ideally be 45-110 characters and never exceed 160. The detailed line can be slightly fuller, but it must still be a one-line explanation, not a mini paragraph. Avoid hype, slogans, rhetorical questions, ad-style openings like 'Meet...' or 'Your X shouldn't...'. Do not copy whole lines from the description, but if it contains a short, distinctive positioning phrase that is clearly the best explanation of the product, you may keep that phrase. Preserve strong hooks from the source when they are specific and useful, such as 'one-person company', instead of flattening them into generic terms like 'business', 'company', 'platform', or 'tool'. Prefer the source's clearest native terminology, so do not replace 'AI agents' with broader wording like 'AI team' unless the source clearly does that. Mention pricing, 'no subscription', 'free', or 'one-time purchase' only when the source clearly presents that as a meaningful differentiator or buyer reason to choose the product, especially in categories where recurring subscriptions are the norm. Return only the JSON object with keys 'short' and 'detailed'."
                                     ]
@@ -116,6 +118,7 @@ class TaglineController extends Controller
     private function normalizeGeneratedLine(string $text, int $softMax, int $hardMax): string
     {
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = \App\Support\GeneratedCopy::withoutEmDashes($text);
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
         $text = trim($text, " \t\n\r\0\x0B\"'`");
 

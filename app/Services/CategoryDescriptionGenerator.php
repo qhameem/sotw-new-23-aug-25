@@ -171,7 +171,8 @@ class CategoryDescriptionGenerator
 
     private function requestCategoryCopy(string $provider, string $apiKey, string $categoryName, array $context, int $attempt): ?array
     {
-        $prompt = $this->buildPrompt($categoryName, $context, $attempt);
+        $prompt = $this->buildPrompt($categoryName, $context, $attempt)
+            ."\n".\App\Support\GeneratedCopy::PUNCTUATION_INSTRUCTION;
         $response = match ($provider) {
             'gemini' => Http::withHeaders([
                 'X-goog-api-key' => $apiKey,
@@ -526,6 +527,7 @@ PROMPT;
 
     private function normalizeWhitespace(string $text): string
     {
+        $text = \App\Support\GeneratedCopy::withoutEmDashes($text);
         return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
 

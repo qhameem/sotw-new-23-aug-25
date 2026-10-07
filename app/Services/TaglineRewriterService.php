@@ -49,6 +49,7 @@ Source description: {$rawDescription}
 Website context: {$context}
 
 Rules:
+- Never use em dashes (U+2014). Use commas, periods, colons, or parentheses instead.
 - Explain the product's primary function using specific, searchable language.
 - Create original directory copy, not a quotation from the website.
 - Do not reproduce or lightly paraphrase a title or heading from the source.
@@ -66,7 +67,7 @@ Rules:
 PROMPT;
 
         foreach ($providers as $candidate) {
-            $cacheKey = 'ai_tagline:v4:'.hash('sha256', implode('|', [
+            $cacheKey = 'ai_tagline:v5:'.hash('sha256', implode('|', [
                 $candidate['provider'],
                 $productName,
                 $rawDescription,
@@ -89,6 +90,7 @@ Do not copy or lightly paraphrase any of these website headings:
 - {$forbiddenHeadings}
 
 Rules:
+- Never use em dashes (U+2014). Use commas, periods, colons, or parentheses instead.
 - State the product category and primary function.
 - Preserve verified product terminology, but use a new sentence structure.
 - Do not invent claims or use hype, filler, generic marketing language, or empty enthusiasm.
@@ -427,6 +429,7 @@ PROMPT;
     private function normalizeGeneratedLine(string $text, int $softMax, int $hardMax): string
     {
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = \App\Support\GeneratedCopy::withoutEmDashes($text);
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
         $text = trim($text, " \t\n\r\0\x0B\"'`");
 

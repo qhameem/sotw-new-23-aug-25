@@ -36,7 +36,8 @@ class DescriptionRewriterService
 
         $context = mb_substr(strip_tags($pageTextContext), 0, 8000);
         $adminInstruction = app(ProductDescriptionTemplates::class)->activeInstruction();
-        $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction);
+        $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction)
+            ."\n".\App\Support\GeneratedCopy::PUNCTUATION_INSTRUCTION;
 
         if ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
@@ -297,7 +298,7 @@ PROMPT;
 
     private function cleanHtmlResponse(string $content): ?string
     {
-        $content = trim($this->stripMarkdownFence($content));
+        $content = trim(\App\Support\GeneratedCopy::withoutEmDashes($this->stripMarkdownFence($content)));
 
         $firstHtmlPosition = $this->firstHtmlPosition($content);
 
@@ -489,8 +490,8 @@ PROMPT;
 
     private function buildFallbackHtml(string $productName, string $rawDescription, string $context): string
     {
-        $summary = $this->buildFallbackSummary($productName, $rawDescription);
-        $supporting = $this->buildFallbackSupportingSentence($rawDescription, $context);
+        $summary = \App\Support\GeneratedCopy::withoutEmDashes($this->buildFallbackSummary($productName, $rawDescription));
+        $supporting = \App\Support\GeneratedCopy::withoutEmDashes($this->buildFallbackSupportingSentence($rawDescription, $context));
 
         return implode("\n", [
             '<p><strong>'.e($summary).'</strong></p>',
