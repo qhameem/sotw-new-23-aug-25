@@ -1,6 +1,6 @@
 <template>
   <div class="mt-4">
-    <div class="overflow-hidden rounded-lg border border-[#cbd5e1] bg-[#f8fafc] dark:border-slate-700 dark:bg-slate-950">
+    <div class="overflow-hidden rounded-lg border border-[#cbd5e1] bg-[#fff] dark:border-slate-700 dark:bg-slate-950">
       <div class="border-b border-[#e2e8f0] px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-[#64748b] dark:border-slate-800 dark:!text-slate-400" aria-hidden="false">
         <div class="flex items-center justify-between gap-3">
           <span>AI fill</span>
@@ -36,7 +36,7 @@
         </div>
       </div>
       <div
-        class="flex items-center gap-3 border-t border-[#e2e8f0] bg-[#f1f5f9] px-3 py-2 font-mono text-[10px] dark:border-slate-800 dark:bg-slate-900 sm:text-xs"
+        class="flex items-center gap-3 border-t border-[#e2e8f0] bg-[#fff] px-3 py-2 font-mono text-[10px] dark:border-slate-800 dark:bg-slate-900 sm:text-xs"
         role="progressbar"
         :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'"
         :aria-valuenow="terminalProgress"
