@@ -103,6 +103,22 @@ class AiProviderRoutingService
         $this->putStatus($provider, $merged, $ttl);
     }
 
+    public function recordTransportFailure(string $provider): void
+    {
+        $checkedAt = now();
+        $retryAt = $checkedAt->copy()->addMinutes(5);
+
+        $this->putStatus($provider, array_merge($this->currentStatus($provider), [
+            'provider' => $provider,
+            'state' => 'error',
+            'checked_at' => $checkedAt->toIso8601String(),
+            'last_failure_at' => $checkedAt->toIso8601String(),
+            'status' => null,
+            'retry_at' => $retryAt->toIso8601String(),
+            'message' => 'Transport failure',
+        ]), $retryAt);
+    }
+
     public function currentStatus(string $provider): array
     {
         return Cache::get($this->cacheKey($provider), $this->defaultStatus($provider));

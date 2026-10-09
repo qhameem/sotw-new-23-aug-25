@@ -19,6 +19,8 @@ class CategoryClassifier
 
     private const MAX_CONTENT_LENGTH = 8000;
 
+    private const REQUEST_TIMEOUT_SECONDS = 25;
+
     public function classify(string $text): array
     {
         try {
@@ -37,54 +39,75 @@ class CategoryClassifier
             );
 
             $providerRouter = app(AiProviderRoutingService::class);
-            $responseText = null;
-
             foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) as $candidate) {
-                $responseText = match ($candidate['provider']) {
-                    'groq' => $this->classifyWithGroq($candidate['key'], $prompt),
-                    'openrouter' => $this->classifyWithOpenRouter($candidate['key'], $prompt),
-                    'cerebras', 'cloudflare' => $this->classifyWithCompatibleProvider(
-                        $candidate['provider'],
-                        $candidate['key'],
-                        $prompt
-                    ),
-                    default => $this->classifyWithGemini($candidate['key'], $prompt),
-                };
-
-                if (is_string($responseText) && trim($responseText) !== '') {
-                    break;
+                try {
+                    $responseText = match ($candidate['provider']) {
+                        'groq' => $this->classifyWithGroq($candidate['key'], $prompt),
+                        'openrouter' => $this->classifyWithOpenRouter($candidate['key'], $prompt),
+                        'cerebras', 'cloudflare' => $this->classifyWithCompatibleProvider(
+                            $candidate['provider'],
+                            $candidate['key'],
+                            $prompt
+                        ),
+                        default => $this->classifyWithGemini($candidate['key'], $prompt),
+                    };
+                } catch (\Throwable $e) {
+                    $providerRouter->recordTransportFailure($candidate['provider']);
+                    Log::warning('Category classifier provider request failed.', [
+                        'provider' => $candidate['provider'],
+                        'error' => $e->getMessage(),
+                    ]);
+                    continue;
                 }
+
+                $jsonResponse = is_string($responseText) && trim($responseText) !== ''
+                    ? $this->decodeJsonResponse($responseText)
+                    : null;
+
+                if ($jsonResponse === null || ! $this->hasValidClassification($jsonResponse)) {
+                    Log::warning('Category classifier returned an unusable response.', [
+                        'provider' => $candidate['provider'],
+                        'response_length' => is_string($responseText) ? strlen($responseText) : 0,
+                    ]);
+                    continue;
+                }
+
+                return [
+                    'categories' => $jsonResponse['categories'],
+                    'use_cases' => $jsonResponse['use_cases'],
+                    'best_for' => $jsonResponse['best_for'],
+                    'pricing' => $jsonResponse['pricing'],
+                    'platforms' => $jsonResponse['platforms'],
+                ];
             }
 
-            if (! is_string($responseText) || trim($responseText) === '') {
-                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
-            }
-
-            $jsonResponse = $this->decodeJsonResponse($responseText);
-
-            Log::info('Category Classification Response', [
-                'raw_response' => $responseText,
-                'json_decoded' => $jsonResponse,
-            ]);
-
-            if ($jsonResponse === null) {
-                Log::error('Failed to decode JSON from category classifier.', ['response' => $responseText]);
-
-                return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
-            }
-
-            return [
-                'categories' => $jsonResponse['categories'] ?? [],
-                'use_cases' => $jsonResponse['use_cases'] ?? [],
-                'best_for' => $jsonResponse['best_for'] ?? [],
-                'pricing' => $jsonResponse['pricing'] ?? [],
-                'platforms' => $jsonResponse['platforms'] ?? [],
-            ];
+            return $this->failureResult();
         } catch (\Exception $e) {
             Log::error('Failed to classify categories.', ['error' => $e->getMessage()]);
 
-            return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
+            return $this->failureResult();
         }
+    }
+
+    private function hasValidClassification(array $response): bool
+    {
+        foreach (['categories', 'use_cases', 'best_for', 'pricing', 'platforms'] as $field) {
+            if (! isset($response[$field]) || ! is_array($response[$field])) {
+                return false;
+            }
+            foreach ($response[$field] as $value) {
+                if (! is_string($value)) {
+                    return false;
+                }
+            }
+        }
+
+        return $response['categories'] !== [] || $response['use_cases'] !== [] || $response['pricing'] !== [];
+    }
+
+    private function failureResult(): array
+    {
+        return ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'error' => 'Classification could not be completed. Select categories, use cases, and pricing manually.'];
     }
 
     private function prepareWebsiteContent(string $text): string
@@ -103,7 +126,7 @@ class CategoryClassifier
         $response = Http::withHeaders([
             'X-goog-api-key' => $apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout(60)->post(self::GEMINI_API_URL, [
+        ])->timeout(self::REQUEST_TIMEOUT_SECONDS)->post(self::GEMINI_API_URL, [
             'contents' => [['parts' => [['text' => $prompt]]]],
         ]);
 
@@ -125,7 +148,7 @@ class CategoryClassifier
     private function classifyWithGroq(string $apiKey, string $prompt): ?string
     {
         $response = Http::withToken($apiKey)
-            ->timeout(60)
+            ->timeout(self::REQUEST_TIMEOUT_SECONDS)
             ->post(self::GROQ_API_URL, [
                 'model' => self::GROQ_MODEL,
                 'messages' => [
@@ -155,7 +178,7 @@ class CategoryClassifier
             'Authorization' => 'Bearer '.$apiKey,
             'HTTP-Referer' => config('app.url'),
             'X-OpenRouter-Title' => config('app.name'),
-        ])->timeout(60)->post(self::OPENROUTER_API_URL, [
+        ])->timeout(self::REQUEST_TIMEOUT_SECONDS)->post(self::OPENROUTER_API_URL, [
             'model' => (string) config('services.openrouter.model', 'openrouter/auto'),
             'messages' => [
                 ['role' => 'user', 'content' => $prompt],
@@ -186,7 +209,7 @@ class CategoryClassifier
             $prompt,
             0.2,
             1000,
-            60
+            self::REQUEST_TIMEOUT_SECONDS
         );
 
         if ($response->failed()) {

@@ -29,7 +29,7 @@
                 </button>
             </div>
 
-            @if ($errors->has('email'))
+            @if (isset($errors) && $errors->has('email'))
                 <p class="mt-2 text-xs text-red-600">{{ $errors->first('email') }}</p>
             @endif
 
@@ -37,7 +37,7 @@
                 <input name="consent" type="checkbox" value="1" required class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                 <span>I agree to receive the newsletter and can unsubscribe anytime.</span>
             </label>
-            @if ($errors->has('consent'))
+            @if (isset($errors) && $errors->has('consent'))
                 <p class="mt-2 text-xs text-red-600">{{ $errors->first('consent') }}</p>
             @endif
         </form>
