@@ -78,3 +78,21 @@ test('listing requests record rate limits and skip the limited provider', functi
     expect($client->json('Return JSON only.'))->toBeNull();
     Http::assertSentCount(1);
 });
+
+test('listing requests identify the app to OpenRouter', function () {
+    config([
+        'app.url' => 'https://softwareontheweb.com',
+        'app.name' => 'Software on the Web',
+        'services.openrouter.key' => 'test-openrouter-key',
+        'services.groq.key' => null,
+        'services.google.api_key' => null,
+        'services.cloudflare_ai.api_token' => null,
+        'services.cerebras.key' => null,
+    ]);
+    Cache::clear();
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"ok":true}']]]])]);
+
+    expect(app(ListingAiClient::class)->json('Return JSON only.'))->toBe(['ok' => true]);
+    Http::assertSent(fn ($request) => $request->hasHeader('HTTP-Referer', 'https://softwareontheweb.com')
+        && $request->hasHeader('X-OpenRouter-Title', 'Software on the Web'));
+});

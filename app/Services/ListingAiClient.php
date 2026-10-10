@@ -40,7 +40,10 @@ class ListingAiClient
                         ? config('services.groq.base_url', 'https://api.groq.com/openai/v1')
                         : config('services.openrouter.base_url', 'https://openrouter.ai/api/v1');
                     $model = $provider === 'groq' ? config('services.groq.model', 'openai/gpt-oss-120b') : config('services.openrouter.model', 'openrouter/auto');
-                    $response = Http::withToken($key)->timeout(30)->post(rtrim($base, '/').'/chat/completions', [
+                    $headers = $provider === 'openrouter'
+                        ? ['HTTP-Referer' => config('app.url'), 'X-OpenRouter-Title' => config('app.name')]
+                        : [];
+                    $response = Http::withToken($key)->withHeaders($headers)->timeout(30)->post(rtrim($base, '/').'/chat/completions', [
                         'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]],
                         'temperature' => 0.2, 'max_tokens' => $maxTokens,
                         ...($provider === 'groq' ? ['response_format' => ['type' => 'json_object']] : []),
