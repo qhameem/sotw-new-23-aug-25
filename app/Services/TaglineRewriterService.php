@@ -9,6 +9,39 @@ use Illuminate\Support\Str;
 
 class TaglineRewriterService
 {
+    public function rewriteFromFacts(string $productName, array $facts, string $source = ''): ?string
+    {
+        $client = app(ListingAiClient::class);
+        $validator = app(OutputValidator::class);
+        $prompt = $client->prompt('tagline_prompt.txt', [
+            '{productName}' => $productName,
+            '{factsJson}' => json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ]);
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $result = $client->json($prompt);
+            $errors = $validator->schema('tagline', $result);
+            if ($errors === []) {
+                $candidateErrors = [];
+                foreach ($result['candidates'] as $candidate) {
+                    $headings = [];
+                    preg_match_all('/^H[1-3]:\s*(.+)$/mi', $source, $headings);
+                    $copiesHeading = is_string($candidate) && collect($headings[1] ?? [])
+                        ->contains(fn ($heading) => mb_strtolower(trim($candidate, " .!?")) === mb_strtolower(trim($heading, " .!?")));
+                    $textErrors = is_string($candidate) ? $validator->text('tagline', $candidate, $source) : ['tagline candidate must be text.'];
+                    if ($copiesHeading) $textErrors[] = 'tagline candidate copies a source heading.';
+                    if ($textErrors === []) {
+                        return $candidate;
+                    }
+                    $candidateErrors = array_merge($candidateErrors, $textErrors);
+                }
+                $errors = array_values(array_unique($candidateErrors));
+            }
+            $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
+        }
+
+        return null;
+    }
+
     private const TAGLINE_SOFT_MAX = 88;
 
     private const TAGLINE_HARD_MAX = 140;

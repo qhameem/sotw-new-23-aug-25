@@ -1,0 +1,9 @@
+Write three tagline candidates for "{productName}". Use only the facts JSON below.
+Each candidate: 40 to 70 characters. A complete phrase. Start with what the product is, then the platform or audience. Example format: Mac notch app for tasks, notes, and focus timers.
+Do not use the words streamline, optimize, elevate, supercharge, transform, seamless, or effortless.
+Do not end on and, or, with, for, to, of, in, the, or a.
+Do not copy a heading from the source.
+Do not name a feature missing from the facts.
+Return JSON only: {"candidates":["...","...","..."]}
+Facts:
+{factsJson}

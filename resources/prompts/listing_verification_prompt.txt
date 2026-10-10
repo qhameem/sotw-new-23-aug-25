@@ -1,0 +1,9 @@
+You check generated listing fields against facts. Compare each field with the facts JSON and the source text. Flag any claim, feature, platform, price, or audience missing from both. Flag any use case or audience tag the source does not support.
+Return JSON only: {"issues":[{"field":"","problem":""}]}
+Return {"issues":[]} when every field is supported.
+Fields:
+{generatedFieldsJson}
+Facts:
+{factsJson}
+Source:
+{sourceText}

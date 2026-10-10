@@ -1,36 +1,18 @@
-Analyze the following website content and determine the most relevant software categories, use cases, audience tags, pricing models, and platforms for the product described.
-
-**Available Categories:**
-{available_categories}
-
-**Available Use Cases:**
-{available_use_cases}
-
-**Available "Best for" Tags:**
-{available_best_for_tags}
-
-**Available Pricing Models:**
-{available_pricing_models}
-
-**Available Platforms:**
-{available_platforms}
-
-**Website Content:**
-{website_content}
-
-**Instructions:**
-1.  From the "Available Categories" list, identify up to 3 that best describe the product.
-2.  From the "Available Use Cases" list, identify up to 3 short job-to-be-done labels that best match what the product helps users accomplish.
-3.  From the "Available 'Best for' Tags" list, identify up to 3 that best describe the target audience. Do not put use cases in this field.
-4.  From the "Available Pricing Models" list, identify up to 2 that best describe the product's pricing model.
-5.  From the "Available Platforms" list, identify up to 3 that best describe where the product runs or is available.
-6.  Return the results in JSON format, with the keys "categories", "use_cases", "best_for", "pricing", and "platforms".
-
-**Example Output:**
-{
-  "categories": ["Project Management", "Task Management"],
-  "use_cases": ["Meeting Summaries", "Task Automation"],
-  "best_for": ["Small businesses", "Remote teams"],
-  "pricing": ["Freemium", "Subscription"],
-  "platforms": ["Web", "iOS"]
-}
+Analyze the product facts and website content below. Choose the most relevant categories, use cases, best_for tags, pricing models, and platforms.
+Choose only from the lists provided. Choose at most 3 categories, 2 use_cases, 2 best_for, 1 pricing, and 3 platforms.
+For each pick, add a short quote from the source as evidence. If no quote supports a pick, leave the pick out. Empty lists are valid.
+Platforms: pick Browser only when users run the product in a web browser. A marketing website does not count. Pick MacOS, Windows, iOS, Android, or Chrome extension only when the source names a download, a store listing, or a system requirement.
+Use cases: pick a use case only when the source describes the task directly.
+Best for: pick the audience the product copy addresses. Do not pick a team audience for a single-user tool.
+If no listed category or use case fits, return up to 1 name for each in suggestions.
+Return JSON only:
+{"categories":[{"name":"","quote":""}],"use_cases":[{"name":"","quote":""}],"best_for":[{"name":"","quote":""}],"pricing":[{"name":"","quote":""}],"platforms":[{"name":"","quote":""}],"suggestions":{"categories":[],"use_cases":[]}}
+Categories: {categories}
+Use cases: {useCases}
+Best for: {bestFor}
+Pricing models: {pricingModels}
+Platforms: {platforms}
+Facts:
+{factsJson}
+Source:
+{sourceText}

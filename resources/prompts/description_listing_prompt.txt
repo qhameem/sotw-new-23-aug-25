@@ -1,0 +1,15 @@
+Write the listing body for "{productName}" from the facts JSON only. Return JSON only with these keys.
+summary: 40 to 60 words in one paragraph. Sentence one states the name, what the product is, the platform, the pricing model, and who uses the product. Sentence two states the main difference from similar products. Plain words. No praise.
+features: 4 to 6 items. Each item names a feature and states what the user gets.
+best_for: one line.
+not_for: one line.
+faq: 4 items, each with question and answer. Questions match what buyers type into search or ask an AI assistant. Examples: Does X work on Y? Is X free? Where does X store data? What is the best alternative to X? Answers run 1 to 2 sentences with a concrete fact.
+Rules:
+Do not copy any run of 8 words from the source.
+Do not write a closing summary sentence.
+Use active voice, short sentences, and direct address where the form allows.
+Do not use the words streamline, seamless, revolutionary, elevate, best-in-class, or all-in-one.
+Write "Not stated" for any missing fact. Do not infer.
+{adminToneInstruction}
+Facts:
+{factsJson}

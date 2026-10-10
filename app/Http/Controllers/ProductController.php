@@ -327,6 +327,7 @@ class ProductController extends Controller
             'tagline' => 'required|string|max:255',
             'product_page_tagline' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'generation_status' => 'nullable|in:ready,draft',
             'description_format' => $isAdmin ? 'nullable|in:full,facts' : 'prohibited',
             'product_facts' => $isAdmin ? 'nullable|array|max:7' : 'prohibited',
             'product_facts.*' => 'string|max:300',
@@ -382,6 +383,21 @@ class ProductController extends Controller
         ]);
 
         $validated['link'] = Product::normalizeLink($validated['link']);
+        $generatedListing = \Illuminate\Support\Facades\Cache::get('product_listing:'.hash('sha256', $validated['link']));
+        if (is_array($generatedListing)) {
+            foreach (['facts_json', 'summary', 'features', 'best_for_text', 'not_for_text', 'faq', 'seo_title', 'meta_description', 'generation_status', 'generation_noindex', 'generation_review_required'] as $field) {
+                if (array_key_exists($field, $generatedListing)) {
+                    $validated[$field] = $generatedListing[$field];
+                }
+            }
+        }
+        if ($request->input('generation_status') === 'draft') {
+            $validated['generation_status'] = 'draft';
+        }
+        if (is_array($generatedListing) && ($validated['generation_status'] ?? null) === 'ready'
+            && app(\App\Services\OutputValidator::class)->text('tagline', $validated['tagline']) !== []) {
+            $validated['generation_status'] = 'draft';
+        }
         $validated['product_page_tagline'] = filled(trim((string) ($validated['product_page_tagline'] ?? '')))
             ? trim((string) $validated['product_page_tagline'])
             : trim((string) $validated['tagline']);
@@ -501,6 +517,12 @@ class ProductController extends Controller
         }
         unset($validated['badge_week_start']);
         $validated['description'] = $this->ensureProperParagraphStructure($this->addNofollowToLinks($request->input('description')));
+        if (($validated['generation_status'] ?? null) === 'draft') {
+            $validated['approved'] = false;
+            $validated['is_published'] = false;
+            $validated['generation_noindex'] = true;
+            $validated['generation_review_required'] = true;
+        }
 
         // Handle optional fields
         $validated['maker_links'] = $request->input('maker_links', []);
@@ -2038,8 +2060,8 @@ class ProductController extends Controller
         $usesProductFacts = $product->usesProductFacts();
 
         $title = $product->name;
-        $pageTitle = $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
-        $metaDescription = $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $pageTitle = $product->seo_title ?: $this->buildProductPageTitle($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
+        $metaDescription = $product->meta_description ?: $this->buildProductMetaDescription($product, $primaryBreadcrumbCategory, $useCaseCategories, $bestForCategories);
         $meta_og_image = $isUnpublishedProduct ? null : app(\App\Services\ProductOgImageService::class)->url($product);
         $meta_og_image_type = 'image/jpeg';
         $meta_og_image_width = \App\Services\ProductOgImageService::WIDTH;
@@ -3380,7 +3402,7 @@ class ProductController extends Controller
             $faviconUrl = $timings->measure('logo', fn () => $this->productLogoResolver->discoverReplacementLogoUrl($url));
 
             return response()->json([
-                'name' => $timings->measure('name', fn () => $this->nameExtractor->extract(trim($title), $url)),
+                'name' => $timings->measure('name', fn () => $this->nameExtractor->extractFromHtml($html, $url)),
                 'tagline' => trim($description),
                 'description' => '',
                 'favicon' => $faviconUrl,
@@ -3851,7 +3873,7 @@ class ProductController extends Controller
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
 
-        return response()->json(array_merge($responseData, $timings->payload($request)));
+        return response()->json(array_merge($responseData, $generation, $timings->payload($request)));
     }
 
     protected function extractAutofillLinksFromDocument(DOMDocument $doc, string $pageUrl): array
@@ -4219,6 +4241,14 @@ class ProductController extends Controller
                 $doc = new DOMDocument;
                 @$doc->loadHTML($htmlContent);
                 $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
+                $generation = $fetchContent
+                    ? app(\App\Services\ListingGenerationService::class)->generate(
+                        trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),
+                        app(\App\Services\ProductSourceCollector::class)->collect($url, $htmlContent, $additionalResourcesContext)
+                    ) : [];
+                if ($generation !== []) {
+                    \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour());
+                }
                 $sendUpdate('Website fetched successfully...', 15);
 
                 if ($fetchContent) {
@@ -4269,66 +4299,13 @@ class ProductController extends Controller
                         $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                     }
 
-                    $productNameForAI = trim((string) $name) !== ''
-                        ? $name
-                        : ($timings->measure('name', fn () => $this->nameExtractor->extract($title ?: '', $url)) ?: 'this product');
-                    $descriptionContext = $timings->measure('research', fn () => $this->appendLimitationResearchContext($textContent, $productNameForAI, $url));
-
-                    $sendUpdate('Generating AI taglines...', 40, null, 'Writing product description');
-                    try {
-                        $taglineRewriter = new \App\Services\TaglineRewriterService;
-                        $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
-                        $aiTaglines = $timings->measure('tagline', fn () => $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent));
-
-                        if ($aiTaglines) {
-                            $extractedTagline = $aiTaglines['tagline'];
-                        }
-                    } catch (\Exception $e) {
-                        // fallback
-                    }
-
-                    if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
-                        $heuristicTaglines = $timings->measure('tagline', fn () => $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name));
-
-                        if (empty($extractedTagline)) {
-                            $extractedTagline = $heuristicTaglines['tagline'] ?? '';
-                        }
-
-                        if (empty($extractedTaglineDetailed)) {
-                            $extractedTaglineDetailed = $heuristicTaglines['tagline_detailed'] ?? '';
-                        }
-
-                        if (isset($taglineRewriter) && $taglineRewriter instanceof \App\Services\TaglineRewriterService) {
-                            $taglineNotice = $this->buildAiAutofillNotice($taglineRewriter->getFailures(), 'tagline', $isAdmin);
-                        }
-                    }
-
-                    $extractedTagline = \Illuminate\Support\Str::limit($extractedTagline, 140, '...');
-                    $extractedTaglineDetailed = \Illuminate\Support\Str::limit($extractedTaglineDetailed, 160, '...');
-
-                    $sendUpdate('Taglines ready. Writing product description...', 55, [
-                        'tagline' => $extractedTagline ?: $tagline,
-                        'tagline_detailed' => $extractedTaglineDetailed,
-                        'tagline_notice' => $taglineNotice,
+                    $extractedTagline = $generation['tagline'] ?? '';
+                    $description = $generation['description'] ?? '';
+                    $sendUpdate('Generated listing copy...', 70, [
+                        'tagline' => $extractedTagline,
+                        'description' => $description,
+                        'generation' => $generation,
                     ]);
-
-                    $sendUpdate('Writing product description...', 65, null, 'Finding additional logo options and links');
-                    $rawDescForRewrite = $descriptionContent;
-                    if (empty($rawDescForRewrite)) {
-                        $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
-                    }
-
-                    if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
-                        $descRewriter = new \App\Services\DescriptionRewriterService;
-                        $rewritten = $timings->measure('description', fn () => $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext));
-                        if ($rewritten) {
-                            $description = $rewritten;
-                        }
-
-                        if ($descRewriter->usedFallback()) {
-                            $descriptionNotice = $this->buildAiAutofillNotice($descRewriter->getFailures(), 'description', $isAdmin);
-                        }
-                    }
 
                     $sendUpdate('Description ready. Finding additional logo options and links...', 72, [
                         'description' => $description,
@@ -4348,22 +4325,14 @@ class ProductController extends Controller
                 ]);
 
                 $sendUpdate('Classifying features and categories...', 95, null, 'Applying extracted data to the form');
-                $classificationSource = $htmlContent;
-                if ($additionalResourcesContext !== '') {
-                    $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
-                }
-                $classificationResult = $timings->measure('categories', fn () => $this->categoryClassifier->classify($classificationSource));
-                $categories = $classificationResult['categories'] ?? [];
-                $useCases = $classificationResult['use_cases'] ?? [];
-                $bestFor = $classificationResult['best_for'] ?? [];
-                $pricing = $classificationResult['pricing'] ?? [];
-                $platforms = $classificationResult['platforms'] ?? [];
-
-                $categoryIds = ! empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('id')->toArray() : [];
-                $useCaseIds = ! empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('id')->toArray() : [];
-                $bestForIds = ! empty($bestFor) ? \App\Models\Category::whereIn('name', $bestFor)->pluck('id')->toArray() : [];
-                $pricingIds = ! empty($pricing) ? \App\Models\Category::whereIn('name', $pricing)->pluck('id')->toArray() : [];
-                $platformIds = ! empty($platforms) ? \App\Models\Category::whereIn('name', $platforms)->pluck('id')->toArray() : [];
+                $categoryIds = $generation['categories'] ?? [];
+                $useCaseIds = $generation['useCases'] ?? [];
+                $bestForIds = $generation['bestFor'] ?? [];
+                $pricingIds = $generation['pricing'] ?? [];
+                $platformIds = $generation['platforms'] ?? [];
+                $unmatchedCategories = $generation['suggestedCategories'] ?? [];
+                $unmatchedUseCases = $generation['suggestedUseCases'] ?? [];
+                $classificationResult = [];
                 $techStackIds = [];
 
                 try {
@@ -4377,12 +4346,6 @@ class ProductController extends Controller
                         'error' => $techStackError->getMessage(),
                     ]);
                 }
-
-                // Find category names the classifier suggested but that don't exist in DB
-                $matchedCategoryNames = ! empty($categories) ? \App\Models\Category::whereIn('name', $categories)->pluck('name')->toArray() : [];
-                $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
-                $matchedUseCaseNames = ! empty($useCases) ? \App\Models\Category::whereIn('name', $useCases)->pluck('name')->toArray() : [];
-                $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
 
                 $sendUpdate('Categories ready. Finalizing extracted data and response...', 97, [
                     'categories' => $categoryIds,
@@ -4401,7 +4364,7 @@ class ProductController extends Controller
                 $responseData = [
                     'description' => $description,
                     'logos' => $logos,
-                    'tagline' => $extractedTagline ?: $tagline,
+                    'tagline' => $extractedTagline,
                     'tagline_detailed' => $extractedTaglineDetailed,
                     'tagline_notice' => $taglineNotice,
                     'description_notice' => $descriptionNotice,
@@ -4419,7 +4382,7 @@ class ProductController extends Controller
                     'maker_links' => $autofillLinks['maker_links'],
                 ];
 
-                $sendUpdate('Done!', 100, $responseData);
+                $sendUpdate('Done!', 100, array_merge($responseData, $generation));
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Error in processUrlStream: '.$e->getMessage());
                 $sendUpdate('Extraction failed.', 100, ['error' => $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Detailed extraction failed. Retained data can be completed manually.']);
@@ -4476,6 +4439,14 @@ class ProductController extends Controller
             $doc = new DOMDocument;
             @$doc->loadHTML($htmlContent);
             $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
+            $generation = $fetchContent
+                ? app(\App\Services\ListingGenerationService::class)->generate(
+                    trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),
+                    app(\App\Services\ProductSourceCollector::class)->collect($url, $htmlContent, $additionalResourcesContext)
+                ) : [];
+            if ($generation !== []) {
+                \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour());
+            }
 
             if ($fetchContent) {
                 // Extract title
@@ -4521,119 +4492,22 @@ class ProductController extends Controller
                     $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
                 }
 
-                $productNameForAI = trim((string) $name) !== ''
-                    ? $name
-                    : ($timings->measure('name', fn () => $this->nameExtractor->extract($title ?: '', $url)) ?: 'this product');
-                $descriptionContext = $timings->measure('research', fn () => $this->appendLimitationResearchContext($textContent, $productNameForAI, $url));
-
-                // --- AI Tagline Generation (primary source) ---
-                try {
-                    $taglineRewriter = new \App\Services\TaglineRewriterService;
-                    $rawDescForTagline = $descriptionContent ?: implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 3))));
-                    $aiTaglines = $timings->measure('tagline', fn () => $taglineRewriter->rewrite($productNameForAI, $rawDescForTagline, $textContent));
-
-                    if ($aiTaglines) {
-                        $extractedTagline = $aiTaglines['tagline'];
-                        Log::info('TaglineRewriterService: AI-generated taglines', [
-                            'tagline' => $extractedTagline,
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('TaglineRewriterService failed, falling back to heuristic extraction', [
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                // --- Heuristic fallback if AI didn't produce taglines ---
-                if (empty($extractedTagline) || empty($extractedTaglineDetailed)) {
-                    // Collect all candidate strings: meta description, title, headings
-                    $heuristicTaglines = $timings->measure('tagline', fn () => $this->buildHeuristicTaglines($descriptionContent, trim($title), $potentialTaglines, $name));
-
-                    if (empty($extractedTagline)) {
-                        $extractedTagline = $heuristicTaglines['tagline'] ?? '';
-                    }
-
-                    if (empty($extractedTaglineDetailed)) {
-                        $extractedTaglineDetailed = $heuristicTaglines['tagline_detailed'] ?? '';
-                    }
-
-                    if (isset($taglineRewriter) && $taglineRewriter instanceof \App\Services\TaglineRewriterService) {
-                        $taglineNotice = $this->buildAiAutofillNotice($taglineRewriter->getFailures(), 'tagline', $isAdmin);
-                    }
-                }
-
-                // Final length enforcement
-                $extractedTagline = Str::limit($extractedTagline, 140, '...');
-                $extractedTaglineDetailed = Str::limit($extractedTaglineDetailed, 160, '...');
-
-                // --- AI Description Rewrite ---
-                // Generate description from page body text even if meta description is empty
-                $rawDescForRewrite = $descriptionContent;
-                if (empty($rawDescForRewrite)) {
-                    // Build a description from headings and first body paragraphs
-                    $rawDescForRewrite = implode('. ', array_filter(array_map('trim', array_slice($potentialTaglines, 0, 5))));
-                }
-
-                if (! empty($rawDescForRewrite) || ! empty(trim($textContent))) {
-                    $descRewriter = new DescriptionRewriterService;
-                    $rewritten = $timings->measure('description', fn () => $descRewriter->rewrite($productNameForAI, $rawDescForRewrite ?: 'No meta description available', $descriptionContext));
-                    if ($rewritten) {
-                        $description = $rewritten;
-                    }
-
-                    if ($descRewriter->usedFallback()) {
-                        $descriptionNotice = $this->buildAiAutofillNotice($descRewriter->getFailures(), 'description', $isAdmin);
-                    }
-                }
+                $extractedTagline = $generation['tagline'] ?? '';
+                $description = $generation['description'] ?? '';
             }
 
             // Extract Logos
             $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
 
             // Classify categories and bestFor from the HTML content
-            $classificationSource = $htmlContent;
-            if ($additionalResourcesContext !== '') {
-                $classificationSource .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
-            }
-            $classificationResult = $timings->measure('categories', fn () => $this->categoryClassifier->classify($classificationSource));
-            $categories = $classificationResult['categories'] ?? [];
-            $useCases = $classificationResult['use_cases'] ?? [];
-            $bestFor = $classificationResult['best_for'] ?? [];
-            $pricing = $classificationResult['pricing'] ?? [];
-            $platforms = $classificationResult['platforms'] ?? [];
-
-            // Convert category names to IDs
-            $categoryIds = [];
-            $matchedCategoryNames = [];
-            if (! empty($categories)) {
-                $categoryIds = Category::whereIn('name', $categories)->pluck('id')->toArray();
-                $matchedCategoryNames = Category::whereIn('name', $categories)->pluck('name')->toArray();
-            }
-            $unmatchedCategories = array_values(array_diff($categories, $matchedCategoryNames));
-
-            $useCaseIds = [];
-            $matchedUseCaseNames = [];
-            if (! empty($useCases)) {
-                $useCaseIds = Category::whereIn('name', $useCases)->pluck('id')->toArray();
-                $matchedUseCaseNames = Category::whereIn('name', $useCases)->pluck('name')->toArray();
-            }
-            $unmatchedUseCases = array_values(array_diff($useCases, $matchedUseCaseNames));
-
-            $bestForIds = [];
-            if (! empty($bestFor)) {
-                $bestForIds = Category::whereIn('name', $bestFor)->pluck('id')->toArray();
-            }
-
-            $pricingIds = [];
-            if (! empty($pricing)) {
-                $pricingIds = Category::whereIn('name', $pricing)->pluck('id')->toArray();
-            }
-
-            $platformIds = [];
-            if (! empty($platforms)) {
-                $platformIds = Category::whereIn('name', $platforms)->pluck('id')->toArray();
-            }
-
+            $categoryIds = $generation['categories'] ?? [];
+            $useCaseIds = $generation['useCases'] ?? [];
+            $bestForIds = $generation['bestFor'] ?? [];
+            $pricingIds = $generation['pricing'] ?? [];
+            $platformIds = $generation['platforms'] ?? [];
+            $unmatchedCategories = $generation['suggestedCategories'] ?? [];
+            $unmatchedUseCases = $generation['suggestedUseCases'] ?? [];
+            $classificationResult = [];
             $techStackIds = [];
             try {
                 $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
@@ -4650,7 +4524,7 @@ class ProductController extends Controller
             $responseData = [
                 'description' => $description,
                 'logos' => $logos,
-                'tagline' => $extractedTagline ?: $tagline, // Use extracted tagline, fallback to provided tagline
+                'tagline' => $extractedTagline,
                 'tagline_detailed' => $extractedTaglineDetailed, // Use extracted detailed tagline
                 'tagline_notice' => $taglineNotice,
                 'description_notice' => $descriptionNotice,
@@ -4670,7 +4544,7 @@ class ProductController extends Controller
 
             Log::info('Fetched remaining data', ['url' => $url, 'data' => $responseData]);
 
-            return response()->json(array_merge($responseData, $timings->payload($request)));
+            return response()->json(array_merge($responseData, $generation, $timings->payload($request)));
         } catch (\Exception $e) {
             Log::error('Error in processUrl: '.$e->getMessage(), [
                 'url' => $url,

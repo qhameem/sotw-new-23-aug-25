@@ -8,7 +8,7 @@
 
 @section('title', $pageTitle)
 @section('meta_description', $metaDescription)
-@if(!empty($isUnpublishedProduct))
+@if(!empty($isUnpublishedProduct) || $product->generation_noindex)
     @section('robots', 'noindex, nofollow, noarchive')
 @endif
 
@@ -110,7 +110,7 @@
         })
             ? $quickFacts->values()
             : collect();
-        $productFaqItems = collect($productEditorial['faq'] ?? [])
+        $productFaqItems = collect($product->faq ?: ($productEditorial['faq'] ?? []))
             ->map(function ($item) {
                 $question = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['question'] ?? ''))));
                 $answer = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['answer'] ?? ''))));
@@ -559,6 +559,22 @@
                     </section>
                 @endif
 
+                @if($product->features)
+                    <section class="mt-8" aria-labelledby="generated-features-title">
+                        <h2 id="generated-features-title" class="text-lg font-semibold">Features</h2>
+                        <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
+                            @foreach($product->features as $feature)
+                                <li>{{ is_array($feature) ? implode(' ', $feature) : $feature }}</li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
+                @if($product->best_for_text)
+                    <section class="mt-8"><h2 class="text-lg font-semibold">Best for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->best_for_text }}</p></section>
+                @endif
+                @if($product->not_for_text)
+                    <section class="mt-8"><h2 class="text-lg font-semibold">Not for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->not_for_text }}</p></section>
+                @endif
                 @if($productFaqItems->isNotEmpty())
                     <section id="faq" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
                         <div>

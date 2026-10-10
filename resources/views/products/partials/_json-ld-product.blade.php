@@ -36,21 +36,30 @@
         "description" => $product->usesProductFacts()
             ? implode(' ', $product->product_facts)
             : strip_tags(html_entity_decode($product->description ?? $product->tagline)),
-        "applicationCategory" => $product->application_category ?? 'BusinessApplication',
-        "operatingSystem" => $product->operating_system ?? 'Web',
+        "applicationCategory" => $product->facts_json['product_type'] ?? $product->application_category ?? 'BusinessApplication',
+        "operatingSystem" => implode(', ', $product->facts_json['platforms'] ?? []) ?: ($product->operating_system ?? 'Web'),
         "image" => $product->seoImageUrls(),
         "url" => route('products.show', $product->slug),
     ];
+
+    if (filled($product->facts_json['version'] ?? null)) {
+        $softwareApplicationSchema['softwareVersion'] = $product->facts_json['version'];
+    }
+    if (filled($product->facts_json['last_updated'] ?? null)) {
+        $softwareApplicationSchema['dateModified'] = $product->facts_json['last_updated'];
+    }
 
     if (filled($product->link)) {
         $softwareApplicationSchema['sameAs'] = [$product->link];
     }
 
-    if (is_numeric($product->price) && (float) $product->price > 0 && filled($product->currency)) {
+    $schemaPrice = $product->facts_json['price_amount'] ?? $product->price;
+    $schemaCurrency = $product->facts_json['currency'] ?? $product->currency;
+    if (is_numeric($schemaPrice) && (float) $schemaPrice > 0 && filled($schemaCurrency)) {
         $softwareApplicationSchema['offers'] = array_filter([
             '@type' => 'Offer',
-            'price' => number_format((float) $product->price, 2, '.', ''),
-            'priceCurrency' => strtoupper((string) $product->currency),
+            'price' => number_format((float) $schemaPrice, 2, '.', ''),
+            'priceCurrency' => strtoupper((string) $schemaCurrency),
             'url' => $product->pricing_page_url ?: $product->link,
         ], fn ($value) => filled($value));
     }

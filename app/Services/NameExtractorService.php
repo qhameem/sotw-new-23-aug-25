@@ -4,6 +4,45 @@ namespace App\Services;
 
 class NameExtractorService
 {
+    public function extractFromHtml(string $html, string $url = ''): string
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        foreach ($xpath->query('//meta[translate(@property,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="og:site_name"]') ?: [] as $meta) {
+            $name = trim($meta->getAttribute('content'));
+            if ($name !== '') {
+                return $name;
+            }
+        }
+        foreach ($xpath->query('//script[@type="application/ld+json"]') ?: [] as $script) {
+            $data = json_decode($script->textContent, true);
+            foreach ($this->jsonLdNodes($data) as $node) {
+                $types = (array) ($node['@type'] ?? []);
+                if (array_intersect($types, ['Organization', 'SoftwareApplication', 'WebSite']) && filled($node['name'] ?? null)) {
+                    return trim((string) $node['name']);
+                }
+            }
+        }
+        $title = trim($document->getElementsByTagName('title')->item(0)?->textContent ?? '');
+
+        return $this->extract($title, $url);
+    }
+
+    private function jsonLdNodes(mixed $data): array
+    {
+        if (! is_array($data)) {
+            return [];
+        }
+        $nodes = [];
+        foreach (array_merge([$data], $data['@graph'] ?? [], array_is_list($data) ? $data : []) as $node) {
+            if (is_array($node)) {
+                $nodes[] = $node;
+            }
+        }
+
+        return $nodes;
+    }
     /**
      * Extracts the most likely product name from a page title.
      *

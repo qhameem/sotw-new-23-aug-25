@@ -12,6 +12,38 @@ use Illuminate\Support\Str;
 
 class DescriptionRewriterService
 {
+    public function generateFromFacts(string $productName, array $facts, string $source = '', string $feedback = ''): ?array
+    {
+        $client = app(ListingAiClient::class);
+        $validator = app(OutputValidator::class);
+        $tone = app(ProductDescriptionTemplates::class)->activeInstruction();
+        preg_match_all('/\b(?:neutral|friendly|professional|conversational|technical|formal|casual|direct|plain|warm|serious)\b/i', (string) $tone, $matches);
+        $tone = $matches[0] ? 'Tone: '.implode(', ', array_unique(array_map('strtolower', $matches[0]))).'.' : '';
+        $prompt = $client->prompt('description_listing_prompt.txt', [
+            '{productName}' => $productName,
+            '{factsJson}' => json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            '{adminToneInstruction}' => $tone,
+        ]).($feedback ? "\nVerification issues:\n".$feedback : '');
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $result = $client->json($prompt);
+            $errors = $validator->schema('description', $result);
+            if ($errors === []) {
+                $errors = $validator->text('summary', $result['summary'], $source);
+                if (count($result['features']) < 4 || count($result['features']) > 6) $errors[] = 'features must have 4 to 6 items.';
+                if (count($result['faq']) !== 4) $errors[] = 'faq must have 4 items.';
+                foreach (['best_for', 'not_for'] as $field) $errors = array_merge($errors, $validator->text($field, $result[$field], $source));
+                foreach ($result['features'] as $feature) $errors = array_merge($errors, $validator->text('feature', $feature, $source));
+                foreach ($result['faq'] as $faq) {
+                    $errors = array_merge($errors, $validator->text('faq_question', $faq['question'], $source), $validator->text('faq_answer', $faq['answer'], $source));
+                }
+                if ($errors === []) return $result;
+            }
+            $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
+        }
+
+        return null;
+    }
+
     public const UNKNOWN_LIMITATION = 'Not clearly stated in the available source material.';
 
     private const TIMEOUT = 60;

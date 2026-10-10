@@ -25,7 +25,7 @@ class ProductAutofillProgressTest extends TestCase
             });
         });
         $this->mock(CategoryClassifier::class, function ($mock) {
-            $mock->shouldReceive('classify')->once()->andReturn(['error' => 'Classifier unavailable']);
+            $mock->shouldNotReceive('classify');
         });
         $this->mock(TechStackDetectorService::class, function ($mock) {
             $mock->shouldReceive('detect')->once()->andReturn([]);
@@ -59,7 +59,7 @@ class ProductAutofillProgressTest extends TestCase
         $this->assertSame('Classifying features and categories', $events[array_search('Finding additional logo options, pricing page, and socials...', $messages)]['next_message']);
         $this->assertSame('Done!', end($events)['message']);
         $this->assertArrayNotHasKey('screenshot_url', end($events)['data']);
-        $this->assertSame(['categories' => 'Classifier unavailable', 'useCases' => 'Classifier unavailable', 'pricing' => 'Classifier unavailable'], end($events)['data']['field_errors']);
+        $this->assertSame([], end($events)['data']['field_errors']);
         $this->assertNotContains('Refreshing website screenshot...', $messages);
     }
     public function test_failed_stream_reports_an_error_without_erasing_partial_fields(): void

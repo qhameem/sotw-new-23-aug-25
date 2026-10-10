@@ -36,6 +36,17 @@ class Product extends Model implements Sitemapable
         'tagline',
         'product_page_tagline',
         'description',
+        'facts_json',
+        'summary',
+        'features',
+        'best_for_text',
+        'not_for_text',
+        'faq',
+        'seo_title',
+        'meta_description',
+        'generation_status',
+        'generation_noindex',
+        'generation_review_required',
         'description_format',
         'product_facts',
         'content_test_group',
@@ -113,6 +124,11 @@ class Product extends Model implements Sitemapable
         'comparison_product_ids' => 'array',
         'alternative_product_ids' => 'array',
         'product_facts' => 'array',
+        'facts_json' => 'array',
+        'features' => 'array',
+        'faq' => 'array',
+        'generation_noindex' => 'boolean',
+        'generation_review_required' => 'boolean',
         'content_test_started_at' => 'datetime',
     ];
 
@@ -126,6 +142,12 @@ class Product extends Model implements Sitemapable
         parent::boot();
 
         static::saving(function ($product) {
+            if ($product->generation_status === 'draft') {
+                $product->approved = false;
+                $product->is_published = false;
+                $product->generation_noindex = true;
+                $product->generation_review_required = true;
+            }
             if ($product->isDirty('hosting_provider') || $product->isDirty('hosting_details') || ($product->isDirty('link') && $product->hosting_details !== null)) {
                 $product->hosting_details = \App\Support\HostingAttribution::normalize(
                     $product->hosting_provider, $product->hosting_details, $product->link

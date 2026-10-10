@@ -1266,6 +1266,12 @@ export function useProductForm() {
       Object.entries(data.field_errors).forEach(([field, message]) => { extractionErrors[field] = String(message || ''); });
     }
     const forceDescriptionOverwrite = options.forceDescriptionOverwrite === true;
+    if (data.generation_status === 'draft' || data.generation_status === 'ready') {
+      form.generation_status = data.generation_status;
+      if (data.generation_status === 'draft') {
+        extractionErrors.description = 'Automatic listing validation failed. This submission will remain a draft for admin review.';
+      }
+    }
     const unlockTagline = options.unlockTagline !== false;
 
     if (typeof data.name === 'string' && data.name.trim() !== '') {
@@ -1570,6 +1576,7 @@ export function useProductForm() {
       formData.append('tagline', form.tagline);
       formData.append('product_page_tagline', form.tagline);
       formData.append('description', form.description);
+      if (form.generation_status) formData.append('generation_status', form.generation_status);
       if (isAdmin.value) {
         formData.append('description_format', form.description_format || 'full');
         (form.product_facts || []).forEach((fact, index) => {

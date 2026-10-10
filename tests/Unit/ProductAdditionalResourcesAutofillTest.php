@@ -3,15 +3,8 @@
 namespace Tests\Unit;
 
 use App\Http\Controllers\ProductController;
-use App\Services\BadgeService;
-use App\Services\CategoryClassifier;
-use App\Services\FaviconExtractorService;
+use App\Services\ListingGenerationService;
 use App\Services\LogoExtractorService;
-use App\Services\NameExtractorService;
-use App\Services\ProductLogoResolver;
-use App\Services\RelatedProductService;
-use App\Services\ScreenshotService;
-use App\Services\SlugService;
 use App\Services\TechStackDetectorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -19,273 +12,64 @@ use Tests\TestCase;
 
 class ProductAdditionalResourcesAutofillTest extends TestCase
 {
-    #[\PHPUnit\Framework\Attributes\DataProvider('timingViewers')]
-    public function test_process_url_includes_additional_resources_in_ai_prompts_and_classification(?bool $admin): void
+    public function test_process_url_passes_labeled_pages_and_additional_resources_to_facts_pipeline(): void
     {
-        $capturedPrompts = [];
-        $this->fakeAutofillRequests($capturedPrompts);
-        $controller = $this->makeControllerWithClassifierExpectation();
+        $this->fakePages();
+        $this->mock(ListingGenerationService::class, function ($mock) {
+            $mock->shouldReceive('generate')->once()->withArgs(function ($name, $source) {
+                $this->assertSame('Acme', $name);
+                $this->assertStringContainsString('Source: https://1.1.1.1', $source);
+                $this->assertStringContainsString('Source: https://1.1.1.1/pricing', $source);
+                $this->assertStringContainsString('Acme pricing and enterprise docs', $source);
+                $this->assertStringContainsString('Focus on SOC 2 workflows', $source);
+                return true;
+            })->andReturn(['generation_status' => 'draft', 'generation_noindex' => true, 'generation_review_required' => true]);
+        });
+        $this->mock(LogoExtractorService::class, fn ($mock) => $mock->shouldReceive('extract')->andReturn([]));
+        $this->mock(TechStackDetectorService::class, fn ($mock) => $mock->shouldReceive('detect')->andReturn([]));
 
-        $request = Request::create('/api/process-url', 'POST', [
-            'url' => 'https://1.1.1.1',
-            'name' => 'Acme',
-            'fetch_content' => true,
-            'additional_resources' => "https://8.8.8.8/pricing\nFocus on SOC 2 workflows and the audit trail.",
-        ]);
-        $this->setTimingViewer($request, $admin);
-
-        $response = $controller->processUrl($request);
-        $this->assertTimingVisibility(json_decode($response->getContent(), true), $admin === true);
-        $this->assertSame(200, $response->getStatusCode(), $response->getContent());
-        $this->assertCount(2, $capturedPrompts);
-
-        foreach ($capturedPrompts as $prompt) {
-            $this->assertStringContainsString('Focus on SOC 2 workflows and the audit trail.', $prompt);
-            $this->assertStringContainsString('Additional resource URL: https://8.8.8.8/pricing', $prompt);
-            $this->assertStringContainsString('Acme pricing and enterprise docs', $prompt);
-        }
-
-        $this->assertTrue(collect($capturedPrompts)->contains(function ($prompt) {
-            return str_contains($prompt, 'LIMITATION RESEARCH:')
-                && str_contains($prompt, 'Search-based limitation research:')
-                && str_contains($prompt, 'steep learning curve')
-                && str_contains($prompt, 'limited native integrations');
-        }));
+        $response = app(ProductController::class)->processUrl(Request::create('/api/process-url', 'POST', [
+            'url' => 'https://1.1.1.1', 'name' => 'Acme', 'fetch_content' => true,
+            'additional_resources' => 'Focus on SOC 2 workflows',
+        ]));
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('draft', $response->getData(true)['generation_status']);
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('timingViewers')]
-    public function test_process_url_stream_includes_additional_resources_in_ai_prompts_and_classification(?bool $admin): void
+    public function test_stream_passes_the_same_sources_to_facts_pipeline(): void
     {
-        $capturedPrompts = [];
-        $this->fakeAutofillRequests($capturedPrompts);
-        $controller = $this->makeControllerWithClassifierExpectation();
+        $this->fakePages();
+        $this->mock(ListingGenerationService::class, function ($mock) {
+            $mock->shouldReceive('generate')->once()->withArgs(function ($name, $source) {
+                $this->assertStringContainsString('Source: https://1.1.1.1/pricing', $source);
+                return true;
+            })->andReturn(['generation_status' => 'draft']);
+        });
+        $this->mock(LogoExtractorService::class, fn ($mock) => $mock->shouldReceive('extract')->andReturn([]));
+        $this->mock(TechStackDetectorService::class, fn ($mock) => $mock->shouldReceive('detect')->andReturn([]));
 
-        $request = Request::create('/api/process-url-stream', 'POST', [
-            'url' => 'https://1.1.1.1',
-            'name' => 'Acme',
-            'fetch_content' => true,
-            'additional_resources' => "https://8.8.8.8/pricing\nFocus on SOC 2 workflows and the audit trail.",
-        ]);
-        $this->setTimingViewer($request, $admin);
-
-        $response = $controller->processUrlStream($request);
+        $response = app(ProductController::class)->processUrlStream(Request::create('/api/process-url-stream', 'POST', [
+            'url' => 'https://1.1.1.1', 'name' => 'Acme', 'fetch_content' => true,
+        ]));
         ob_start();
         ob_start();
         $response->sendContent();
         ob_end_flush();
-        $events = explode("\n", trim(ob_get_clean()));
-        foreach ($events as $event) {
-            $payload = json_decode($event, true);
-            $this->assertSame($admin === true, array_key_exists('phase_timings', $payload));
-        }
-        $this->assertTimingVisibility(json_decode(end($events), true), $admin === true);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertCount(2, $capturedPrompts);
-
-        foreach ($capturedPrompts as $prompt) {
-            $this->assertStringContainsString('Focus on SOC 2 workflows and the audit trail.', $prompt);
-            $this->assertStringContainsString('Additional resource URL: https://8.8.8.8/pricing', $prompt);
-            $this->assertStringContainsString('Acme pricing and enterprise docs', $prompt);
-        }
-
-        $this->assertTrue(collect($capturedPrompts)->contains(function ($prompt) {
-            return str_contains($prompt, 'LIMITATION RESEARCH:')
-                && str_contains($prompt, 'Search-based limitation research:')
-                && str_contains($prompt, 'steep learning curve')
-                && str_contains($prompt, 'limited native integrations');
-        }));
+        $output = ob_get_clean();
+        $events = array_values(array_filter(array_map(fn ($line) => json_decode($line, true), explode("\n", $output))));
+        $this->assertSame('draft', end($events)['data']['generation_status']);
     }
 
-    public static function timingViewers(): array
+    private function fakePages(): void
     {
-        return ['admin' => [true], 'member' => [false], 'guest' => [null]];
-    }
-
-    private function setTimingViewer(Request $request, ?bool $admin): void
-    {
-        $request->setUserResolver(fn () => $admin === null ? null : new class($admin)
-        {
-            public function __construct(private bool $admin) {}
-
-            public function hasRole(string $role): bool
-            {
-                return $role === 'admin' && $this->admin;
+        Http::fake(function ($request) {
+            if ($request->url() === 'https://1.1.1.1') {
+                return Http::response('<html><head><title>Acme</title></head><body><a href="/pricing">Pricing</a><p>Vendor reviews</p></body></html>', 200, ['Content-Type' => 'text/html']);
             }
-        });
-    }
-
-    private function assertTimingVisibility(array $payload, bool $admin): void
-    {
-        $this->assertSame($admin, array_key_exists('phase_timings', $payload));
-        if ($admin) {
-            foreach (['metadata', 'context', 'research', 'tagline', 'description', 'logo', 'categories', 'tech_stack', 'screenshot'] as $phase) {
-                $this->assertArrayHasKey($phase, $payload['phase_timings']);
-                $this->assertGreaterThanOrEqual(0, $payload['phase_timings'][$phase]);
+            if ($request->url() === 'https://1.1.1.1/pricing') {
+                return Http::response('<html><head><title>Acme pricing and enterprise docs</title></head><body>Plans for teams</body></html>', 200, ['Content-Type' => 'text/html']);
             }
-        }
-    }
-
-    private function fakeAutofillRequests(array &$capturedPrompts): void
-    {
-        config([
-            'services.google.api_key' => null,
-            'services.groq.key' => 'test-groq-key',
-        ]);
-
-        Http::fake(function ($request) use (&$capturedPrompts) {
-            $url = $request->url();
-
-            if ($url === 'https://1.1.1.1') {
-                return Http::response(<<<'HTML'
-                    <html>
-                        <head>
-                            <title>Acme</title>
-                            <meta name="description" content="Security workflow software for vendor reviews.">
-                        </head>
-                        <body>
-                            <h1>Security reviews with approvals and audit trails</h1>
-                            <p>Acme helps teams review vendors and document compliance work.</p>
-                        </body>
-                    </html>
-                HTML, 200);
-            }
-
-            if ($url === 'https://8.8.8.8/pricing') {
-                return Http::response(<<<'HTML'
-                    <html>
-                        <head>
-                            <title>Acme pricing and enterprise docs</title>
-                            <meta name="description" content="Plans, SOC 2 support, and procurement workflows.">
-                        </head>
-                        <body>
-                            <h1>Enterprise pricing</h1>
-                            <h2>SOC 2 support</h2>
-                            <p>Includes approval routing, audit logs, and procurement workflows for security teams.</p>
-                        </body>
-                    </html>
-                HTML, 200);
-            }
-
-            if ($url === 'https://api.groq.com/openai/v1/chat/completions') {
-                $prompt = (string) ($request['messages'][0]['content'] ?? '');
-                $capturedPrompts[] = $prompt;
-
-                if (str_contains($prompt, 'write two distinct taglines')) {
-                    return Http::response([
-                        'choices' => [
-                            [
-                                'message' => [
-                                    'content' => json_encode([
-                                        'tagline' => 'Security workflow software for vendor reviews',
-                                        'product_page_tagline' => 'Manage vendor reviews with approvals, audit logs, and compliance workflows',
-                                    ], JSON_UNESCAPED_SLASHES),
-                                ],
-                            ],
-                        ],
-                    ], 200);
-                }
-
-                return Http::response([
-                    'choices' => [
-                        [
-                            'message' => [
-                                'content' => json_encode([
-                                    'summary' => 'Acme helps security teams manage vendor reviews with approval routing, audit logs, and compliance workflows.',
-                                    'supporting_sentence' => 'It keeps procurement and security review work in one place instead of scattered docs and spreadsheets.',
-                                    'what_it_is' => 'Acme is security workflow software for vendor reviews. It helps teams manage approvals, documentation, and audit trails.',
-                                    'key_features' => [
-                                        'Approval routing for vendor review workflows.',
-                                        'Audit logs for compliance and security reviews.',
-                                        'Shared procurement and documentation workflows.',
-                                    ],
-                                    'best_for' => [
-                                        'Security teams reviewing vendors and documenting approvals.',
-                                        'Procurement workflows that need clearer audit trails.',
-                                    ],
-                                    'pros' => [
-                                        'Keeps vendor review work and approvals together.',
-                                        'Makes audit trails easier to track.',
-                                    ],
-                                    'limitations' => [
-                                        'Not clearly stated in the available source material.',
-                                    ],
-                                    'alternatives' => [],
-                                    'integrations' => [],
-                                    'faq' => [],
-                                ], JSON_UNESCAPED_SLASHES),
-                            ],
-                        ],
-                    ],
-                ], 200);
-            }
-
-            if (str_starts_with($url, 'https://html.duckduckgo.com/html')) {
-                return Http::response(<<<'HTML'
-                    <html>
-                        <body>
-                            <div class="result">
-                                <a class="result__a" href="https://reviews.example.com/acme-review">Acme review</a>
-                                <div class="result__snippet">Reviewers mention a steep learning curve and limited native integrations for smaller teams.</div>
-                            </div>
-                            <div class="result">
-                                <a class="result__a" href="https://docs.example.com/acme-faq">Acme FAQ</a>
-                                <div class="result__snippet">FAQ and setup guide.</div>
-                            </div>
-                        </body>
-                    </html>
-                HTML, 200);
-            }
-
             return Http::response('', 404);
         });
-    }
-
-    private function makeControllerWithClassifierExpectation(): ProductController
-    {
-        $categoryClassifier = $this->createMock(CategoryClassifier::class);
-        $categoryClassifier->expects($this->once())
-            ->method('classify')
-            ->with($this->callback(function ($source) {
-                $this->assertStringContainsString('ADDITIONAL RESOURCES:', $source);
-                $this->assertStringContainsString('Admin notes:', $source);
-                $this->assertStringContainsString('Focus on SOC 2 workflows and the audit trail.', $source);
-                $this->assertStringContainsString('Additional resource URL: https://8.8.8.8/pricing', $source);
-                $this->assertStringContainsString('Acme pricing and enterprise docs', $source);
-
-                return true;
-            }))
-            ->willReturn([
-                'categories' => [],
-                'use_cases' => [],
-                'best_for' => [],
-                'pricing' => [],
-                'platforms' => [],
-            ]);
-
-        $techStackDetector = $this->createMock(TechStackDetectorService::class);
-        $techStackDetector->method('detect')->willReturn([]);
-
-        $nameExtractor = $this->createMock(NameExtractorService::class);
-        $nameExtractor->method('extract')->willReturn('Acme');
-
-        $logoExtractor = $this->createMock(LogoExtractorService::class);
-        $logoExtractor->method('extract')->willReturn(['https://1.1.1.1/logo.png']);
-
-        $screenshotService = $this->createMock(ScreenshotService::class);
-        $screenshotService->method('capture')->willReturn('https://1.1.1.1/screenshot.png');
-
-        return new ProductController(
-            $this->createMock(FaviconExtractorService::class),
-            $this->createMock(SlugService::class),
-            $techStackDetector,
-            $nameExtractor,
-            $logoExtractor,
-            $categoryClassifier,
-            $screenshotService,
-            $this->createMock(BadgeService::class),
-            $this->createMock(RelatedProductService::class),
-            $this->createMock(ProductLogoResolver::class),
-        );
     }
 }
