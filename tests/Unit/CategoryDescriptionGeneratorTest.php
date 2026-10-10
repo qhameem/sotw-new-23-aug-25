@@ -95,6 +95,36 @@ test('category description generator falls back to gemini after an openrouter ti
         );
 });
 
+test('category description generator falls back to groq after an openrouter timeout', function () {
+    config([
+        'services.openrouter.key' => 'test-openrouter-key',
+        'services.openrouter.timeout' => 5,
+        'services.cerebras.key' => null,
+        'services.groq.key' => 'test-groq-key',
+        'services.google.api_key' => null,
+    ]);
+
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'openrouter.ai')) {
+            throw new ConnectionException('cURL error 28: Operation timed out');
+        }
+
+        return Http::response(['choices' => [[
+            'message' => ['content' => json_encode([
+                'description' => 'Automation software connects repetitive workflows, moves information between tools, and reduces manual follow-up. Teams can compare options for triggers, integrations, monitoring, and day-to-day control.',
+                'meta_description' => 'Explore automation software for connecting workflows, reducing manual tasks, and comparing integrations, controls, pricing, and practical team fit.',
+            ], JSON_THROW_ON_ERROR)],
+        ]]], 200);
+    });
+
+    $service = new CategoryDescriptionGenerator();
+    $result = $service->generate('Automation');
+
+    expect($result)->not->toBeNull()
+        ->and(array_column($service->trace(), 'message'))->toContain('Requesting copy from Groq.');
+    Http::assertSent(fn ($request) => $request->url() === 'https://api.groq.com/openai/v1/chat/completions');
+});
+
 test('category description generator retries when description and meta description are too similar', function () {
     config(['services.openrouter.key' => 'test-openrouter-key']);
 

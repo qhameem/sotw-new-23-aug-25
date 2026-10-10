@@ -12,9 +12,8 @@ use Illuminate\Http\Client\ConnectionException;
 class CategoryDescriptionGenerator
 {
     private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const MODEL = 'openai/gpt-oss-120b';
+    private const PROVIDERS = ['openrouter', 'cerebras', 'groq', 'gemini'];
     private const TEMPERATURE = 0.75;
     private const MAX_ATTEMPTS = 3;
     private const HUB_DESCRIPTION_MAX_CHARACTERS = 300;
@@ -35,10 +34,10 @@ class CategoryDescriptionGenerator
     {
         $this->trace = [];
         $providerRouter = app(AiProviderRoutingService::class);
-        $candidates = $providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']);
+        $candidates = $providerRouter->orderedConfiguredProviders(self::PROVIDERS);
 
         if ($candidates === []) {
-            $this->addTrace('error', 'No enabled OpenRouter or Gemini API key is available.');
+            $this->addTrace('error', 'No enabled AI provider is available.');
             Log::warning('CategoryDescriptionGenerator: No AI provider key is set.');
             return null;
         }
@@ -57,7 +56,7 @@ class CategoryDescriptionGenerator
             for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
                 $result = null;
                 $availableProviders = array_values(array_filter(
-                    $providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']),
+                    $providerRouter->orderedConfiguredProviders(self::PROVIDERS),
                     static fn (array $candidate): bool => !isset($transportFailures[$candidate['provider']])
                 ));
 
@@ -216,8 +215,9 @@ class CategoryDescriptionGenerator
                 ],
                 'temperature' => self::TEMPERATURE,
             ]),
-            default => Http::timeout(30)->withToken($apiKey)->post(self::GROQ_API_URL, [
-                'model' => self::MODEL,
+            'groq', 'cerebras' => Http::timeout($this->timeoutFor($provider))->withToken($apiKey)->post(
+                rtrim((string) config("services.{$provider}.base_url"), '/').'/chat/completions', [
+                'model' => (string) config("services.{$provider}.model"),
                 'messages' => [
                     [
                         'role' => 'user',
@@ -279,6 +279,7 @@ class CategoryDescriptionGenerator
         return max(5, match ($provider) {
             'openrouter' => (int) config('services.openrouter.timeout', 45),
             'gemini' => (int) config('services.google.gemini_timeout', 30),
+            'cerebras' => (int) config('services.cerebras.timeout', 30),
             default => 30,
         });
     }
