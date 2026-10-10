@@ -3873,7 +3873,7 @@ class ProductController extends Controller
 
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
 
-        return response()->json(array_merge($responseData, $generation, $timings->payload($request)));
+        return response()->json(array_merge($responseData, $timings->payload($request)));
     }
 
     protected function extractAutofillLinksFromDocument(DOMDocument $doc, string $pageUrl): array

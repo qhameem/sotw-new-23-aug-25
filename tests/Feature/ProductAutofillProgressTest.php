@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\ProductController;
 use App\Services\CategoryClassifier;
 use App\Services\LogoExtractorService;
+use App\Services\ProductLogoResolver;
 use App\Services\ScreenshotService;
 use App\Services\TechStackDetectorService;
 use Illuminate\Http\Request;
@@ -13,6 +14,18 @@ use Tests\TestCase;
 
 class ProductAutofillProgressTest extends TestCase
 {
+    public function test_initial_metadata_returns_name_for_a_reachable_site(): void
+    {
+        Http::fake(['*' => Http::response('<html><head><title>SaveGenie | Savings app</title><meta name="description" content="Track savings goals."></head><body><h1>SaveGenie</h1></body></html>', 200)]);
+        $this->mock(ProductLogoResolver::class, fn ($mock) => $mock->shouldReceive('discoverReplacementLogoUrl')->andReturn(null));
+        $this->mock(ScreenshotService::class, fn ($mock) => $mock->shouldReceive('capture')->andReturn(null));
+
+        $response = app(ProductController::class)->fetchInitialMetadata(Request::create('/', 'POST', ['url' => 'https://8.8.8.8']));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('SaveGenie', $response->getData(true)['name']);
+    }
+
     public function test_progress_announces_media_work_before_the_service_runs(): void
     {
         Http::fake(['*' => Http::response('<html><body>Example</body></html>')]);
