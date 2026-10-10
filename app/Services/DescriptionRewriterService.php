@@ -12,8 +12,16 @@ use Illuminate\Support\Str;
 
 class DescriptionRewriterService
 {
+    private array $listingErrors = [];
+
+    public function listingErrors(): array
+    {
+        return $this->listingErrors;
+    }
+
     public function generateFromFacts(string $productName, array $facts, string $source = '', string $feedback = ''): ?array
     {
+        $this->listingErrors = [];
         $client = app(ListingAiClient::class);
         $validator = app(OutputValidator::class);
         $tone = app(ProductDescriptionTemplates::class)->activeInstruction();
@@ -25,7 +33,7 @@ class DescriptionRewriterService
             '{adminToneInstruction}' => $tone,
         ]).($feedback ? "\nVerification issues:\n".$feedback : '');
         for ($attempt = 0; $attempt < 2; $attempt++) {
-            $result = $client->json($prompt);
+            $result = $client->json($prompt, 3000);
             $errors = $validator->schema('description', $result);
             if ($errors === []) {
                 $errors = $validator->text('summary', $result['summary'], $source);
@@ -39,6 +47,7 @@ class DescriptionRewriterService
                 if ($errors === []) return $result;
             }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
+            $this->listingErrors = $errors === ['description must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
         }
 
         return null;

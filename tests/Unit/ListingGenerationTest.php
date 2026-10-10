@@ -61,13 +61,49 @@ it('collects body facts when the meta description is empty', function () {
     expect((new FactExtractorService($client))->extract($source)['one_line_description'])->toBe('Exports notes to PDF.');
 });
 
+it('keeps supported facts when AI omits optional fields or evidence', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $client->shouldReceive('json')->once()->andReturn([
+        'product_type' => 'Desktop utility',
+        'one_line_description' => 'Shows notes beside the screen notch.',
+        'pricing_model' => 'Subscription',
+        'evidence' => [
+            'product_type' => 'Desktop utility',
+            'one_line_description' => 'Shows notes beside the screen notch.',
+        ],
+    ]);
+
+    $facts = (new FactExtractorService($client))->extract('Desktop utility. Shows notes beside the screen notch.');
+    expect($facts['product_type'])->toBe('Desktop utility');
+    expect($facts['pricing_model'])->toBeNull();
+    expect($facts['platforms'])->toBe([]);
+});
+
 it('marks failed generation as draft after two attempts', function () {
     $client = Mockery::mock(ListingAiClient::class);
     $client->shouldReceive('prompt')->once()->andReturn('prompt');
     $client->shouldReceive('json')->twice()->andReturn(null);
+    $client->shouldReceive('errors')->twice()->andReturn(['AI provider returned no usable response.']);
     $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
     $result = $service->generate('Example', 'Source: Example');
     expect($result['generation_status'])->toBe('draft');
     expect($result['generation_noindex'])->toBeTrue();
     expect($result['generation_review_required'])->toBeTrue();
+});
+
+it('accepts a valid meta description when the SEO title was built in code', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $meta = 'Weave helps independent creators organize tasks and project notes in one workspace. It runs in a browser and offers a free plan for individual work.';
+    $client->shouldReceive('json')->once()->andReturn([
+        'seo_title' => 'An invalid generated title',
+        'meta_description' => $meta,
+        'seo_title_length' => 0,
+        'meta_description_length' => 0,
+    ]);
+    $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
+    $method = new ReflectionMethod($service, 'generateField');
+    $result = $method->invoke($service, 'seo_fields_prompt.txt', [], 'seo', '', '', 2, true);
+    expect($result['meta_description'])->toBe($meta);
 });

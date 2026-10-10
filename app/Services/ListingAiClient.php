@@ -3,13 +3,24 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ListingAiClient
 {
+    private array $errors = [];
+
+    public function errors(): array
+    {
+        return $this->errors;
+    }
+
     public function json(string $prompt, int $maxTokens = 1800): ?array
     {
+        $this->errors = [];
         $router = app(AiProviderRoutingService::class);
-        foreach ($router->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) as $candidate) {
+        $candidates = $router->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']);
+        if ($candidates === []) $this->errors[] = 'No AI provider is currently available. Check provider keys, limits, and retry times.';
+        foreach ($candidates as $candidate) {
             try {
                 $provider = $candidate['provider'];
                 $key = $candidate['key'];
@@ -32,19 +43,34 @@ class ListingAiClient
                     $response = Http::withToken($key)->timeout(30)->post(rtrim($base, '/').'/chat/completions', [
                         'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]],
                         'temperature' => 0.2, 'max_tokens' => $maxTokens,
+                        ...($provider === 'groq' ? ['response_format' => ['type' => 'json_object']] : []),
                     ]);
                     $content = data_get($response->json(), 'choices.0.message.content');
                 }
                 if ($response->successful() && is_string($content)) {
-                    $decoded = json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($content))), true);
+                    $router->recordHttpSuccess($provider, $response);
+                    $clean = preg_replace('/\A```(?:json)?\s*|\s*```\z/iu', '', trim($content));
+                    $decoded = json_decode(trim($clean), true);
+                    if (! is_array($decoded) && preg_match('/\{.*\}/s', $clean, $match)) {
+                        $decoded = json_decode($match[0], true);
+                    }
                     if (is_array($decoded)) {
                         return $decoded;
                     }
+                    $this->errors[] = "$provider returned invalid JSON: ".json_last_error_msg();
+                } else {
+                    if (! $response->successful()) $router->recordHttpFailure($provider, $response);
+                    $this->errors[] = "$provider returned HTTP ".$response->status().'.';
                 }
-            } catch (\Throwable) {
+            } catch (\Throwable $error) {
+                $this->errors[] = "$provider request failed.";
+                if (isset($provider)) $router->recordTransportFailure($provider);
+                Log::warning('Listing AI provider exception.', ['provider' => $provider, 'error' => $error->getMessage()]);
                 continue;
             }
         }
+
+        Log::warning('Listing AI request failed.', ['errors' => $this->errors]);
 
         return null;
     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\AiProviderRoutingService;
+use App\Services\ListingAiClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -59,4 +60,21 @@ test('temporarily unavailable providers are skipped', function () {
 
     expect(array_column($router->orderedConfiguredProviders(['gemini', 'groq']), 'provider'))
         ->toBe(['groq']);
+});
+
+test('listing requests record rate limits and skip the limited provider', function () {
+    config([
+        'services.groq.key' => 'test-groq-key',
+        'services.google.api_key' => null,
+        'services.openrouter.key' => null,
+        'services.cloudflare_ai.api_token' => null,
+    ]);
+    Cache::clear();
+    Http::fake(['*' => Http::response(['error' => ['message' => 'Rate limit']], 429)]);
+
+    $client = app(ListingAiClient::class);
+    expect($client->json('Return JSON only.'))->toBeNull();
+    expect(app(AiProviderRoutingService::class)->orderedConfiguredProviders(['groq']))->toBe([]);
+    expect($client->json('Return JSON only.'))->toBeNull();
+    Http::assertSentCount(1);
 });

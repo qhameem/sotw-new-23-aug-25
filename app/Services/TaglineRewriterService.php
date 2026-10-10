@@ -9,8 +9,16 @@ use Illuminate\Support\Str;
 
 class TaglineRewriterService
 {
+    private array $listingErrors = [];
+
+    public function listingErrors(): array
+    {
+        return $this->listingErrors;
+    }
+
     public function rewriteFromFacts(string $productName, array $facts, string $source = ''): ?string
     {
+        $this->listingErrors = [];
         $client = app(ListingAiClient::class);
         $validator = app(OutputValidator::class);
         $prompt = $client->prompt('tagline_prompt.txt', [
@@ -37,6 +45,7 @@ class TaglineRewriterService
                 $errors = array_values(array_unique($candidateErrors));
             }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
+            $this->listingErrors = $errors === ['tagline must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
         }
 
         return null;
