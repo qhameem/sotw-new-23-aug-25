@@ -173,6 +173,30 @@ test('category description generator repairs short meta descriptions instead of 
     expect(strlen($result['meta_description']))->toBeLessThanOrEqual(155);
 });
 
+test('category description generator keeps complete sentences from an overlong response', function () {
+    config(['services.openrouter.key' => 'test-openrouter-key']);
+
+    $firstSentence = 'Email marketing tools help teams plan campaigns, segment audiences, and automate follow-ups.';
+    $secondSentence = 'Reporting shows which messages people open and where the next campaign needs work.';
+    $extraSentence = 'Teams can also compare templates, integrations, pricing, permissions, deliverability controls, and support before choosing a tool for a growing subscriber list and a more demanding publishing schedule.';
+
+    Http::fake(['*' => Http::response([
+        'choices' => [[
+            'message' => ['content' => json_encode([
+                'description' => "$firstSentence $secondSentence $extraSentence",
+                'meta_description' => 'Compare email marketing tools for campaign planning, audience segments, automation, and reporting. Find an option that fits your team and budget.',
+            ], JSON_THROW_ON_ERROR)],
+        ]],
+    ], 200)]);
+
+    $service = new CategoryDescriptionGenerator();
+    $result = $service->generate('Email Marketing');
+
+    expect($result)->not->toBeNull()
+        ->and($result['description'])->toBe("$firstSentence $secondSentence");
+    Http::assertSentCount(1);
+});
+
 test('category description generator rejects repetitive when openings', function () {
     Storage::disk('local')->put('settings.json', json_encode([
         'seo_generation_prompts' => [

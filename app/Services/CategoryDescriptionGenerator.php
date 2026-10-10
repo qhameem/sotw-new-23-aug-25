@@ -56,13 +56,19 @@ class CategoryDescriptionGenerator
 
             for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
                 $result = null;
+                $availableProviders = array_values(array_filter(
+                    $providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']),
+                    static fn (array $candidate): bool => !isset($transportFailures[$candidate['provider']])
+                ));
+
+                if ($availableProviders === []) {
+                    $this->addTrace('warning', 'No providers remain available for another attempt.');
+                    break;
+                }
+
                 $this->addTrace('info', "Generation attempt {$attempt} of ".self::MAX_ATTEMPTS.'.');
 
-                foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'gemini']) as $candidate) {
-                    if (isset($transportFailures[$candidate['provider']])) {
-                        continue;
-                    }
-
+                foreach ($availableProviders as $candidate) {
                     $this->addTrace('info', 'Requesting copy from '.$this->providerLabel($candidate['provider']).'.');
                     try {
                         $result = $this->requestCategoryCopy($candidate['provider'], $candidate['key'], $categoryName, $context, $attempt);
@@ -104,6 +110,7 @@ class CategoryDescriptionGenerator
                 }
 
                 $result = $this->normalizeResult($result);
+                $result['description'] = $this->fitHubDescription($result['description']);
 
                 if (!$this->hasValidHubDescription($result['description'])) {
                     $lastFailureReason = 'invalid_hub_description';
@@ -567,6 +574,28 @@ PROMPT;
         }
 
         return preg_match('/\b(?:and|or|but|with|for|to|of|in|by|from|such as|including)[.!?]["\x{201D}\x{2019}]*$/iu', $description) !== 1;
+    }
+
+    private function fitHubDescription(string $description): string
+    {
+        if (mb_strlen($description) <= self::HUB_DESCRIPTION_MAX_CHARACTERS) {
+            return $description;
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $description) ?: [];
+        $fitted = '';
+
+        foreach ($sentences as $sentence) {
+            $candidate = $fitted === '' ? $sentence : $fitted.' '.$sentence;
+
+            if (mb_strlen($candidate) > self::HUB_DESCRIPTION_MAX_CHARACTERS) {
+                break;
+            }
+
+            $fitted = $candidate;
+        }
+
+        return $this->hasValidHubDescription($fitted) ? $fitted : $description;
     }
 
     private function dedupeSentences(string $text): string
