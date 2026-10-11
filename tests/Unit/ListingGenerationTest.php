@@ -16,6 +16,13 @@ it('rejects incomplete endings and banned copy', function () {
     expect($validator->text('tagline', 'A seamless task manager for creative teams'))->not->toBeEmpty();
 });
 
+it('accepts a concise supported summary without padding', function () {
+    $validator = new OutputValidator;
+    $summary = 'HireKey helps job seekers compare their resumes with role requirements, tailor applications, practice interviews with a voice coach, and track applications. It also offers cover letter drafting and company research tools.';
+    expect($validator->text('summary', $summary))->toBe([]);
+    expect($validator->text('summary', 'HireKey helps job seekers track applications.'))->not->toBe([]);
+});
+
 it('builds a complete title without truncation', function () {
     $builder = new SeoTitleBuilder;
     expect($builder->build('Weave', 'Task planning for independent creative teams today'))

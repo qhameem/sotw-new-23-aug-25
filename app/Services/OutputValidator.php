@@ -16,8 +16,8 @@ class OutputValidator
         }
         if ($field === 'summary') {
             $count = count(preg_split('/\s+/u', trim($value), -1, PREG_SPLIT_NO_EMPTY));
-            if ($count < 40 || $count > 60) {
-                $errors[] = "summary must be 40 to 60 words; got $count.";
+            if ($count < 30 || $count > 60) {
+                $errors[] = "summary must be 30 to 60 words; got $count.";
             }
         }
         if (in_array($field, ['best_for', 'not_for'], true) && $length > 255) {

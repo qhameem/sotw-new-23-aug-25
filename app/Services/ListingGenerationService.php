@@ -10,6 +10,8 @@ class ListingGenerationService
 {
     private array $lastErrors = [];
 
+    private ?string $sourceHost = null;
+
     public function __construct(
         private ListingAiClient $ai,
         private FactExtractorService $facts,
@@ -20,6 +22,9 @@ class ListingGenerationService
 
     public function generate(string $name, string $source, ?array $factsOverride = null): array
     {
+        $this->sourceHost = preg_match('/^Source: (https?:\/\/[^\s]+)/', $source, $matches)
+            ? parse_url($matches[1], PHP_URL_HOST)
+            : null;
         $facts = $factsOverride ?? $this->facts->extract($source);
         if ($facts === null) {
             return $this->draft(array_merge(['facts extraction failed'], $this->facts->errors()));
@@ -222,7 +227,11 @@ class ListingGenerationService
 
     private function draft(array $errors): array
     {
-        \Illuminate\Support\Facades\Log::warning('Generated listing moved to draft.', ['errors' => $errors]);
+        \Illuminate\Support\Facades\Log::error('Generated listing moved to draft.', [
+            'source_host' => $this->sourceHost,
+            'stage' => $errors[0] ?? 'unknown',
+            'errors' => $errors,
+        ]);
         return ['generation_status' => 'draft', 'generation_noindex' => true, 'generation_review_required' => true, 'generation_errors' => $errors];
     }
 }

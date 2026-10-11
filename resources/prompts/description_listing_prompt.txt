@@ -1,5 +1,5 @@
 Write the listing body for "{productName}" from the facts JSON only. Return JSON only with these keys.
-summary: 40 to 60 words in one paragraph. Sentence one states the name, what the product is, the platform, the pricing model, and who uses the product. Sentence two states the main difference from similar products. Plain words. No praise.
+summary: 30 to 60 words in one paragraph. State the product name, what it does, and specific supported features. Mention platform, pricing, audience, or differences from similar products only when the facts explicitly support them. Plain words. No praise.
 features: 4 to 6 items. Each item names a feature and states what the user gets.
 best_for: one line.
 not_for: one line.
