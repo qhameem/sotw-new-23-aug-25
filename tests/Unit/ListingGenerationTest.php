@@ -182,3 +182,12 @@ it('accepts a valid meta description when the SEO title was built in code', func
     $result = $method->invoke($service, 'seo_fields_prompt.txt', [], 'seo', '', '', 2, true);
     expect($result['meta_description'])->toBe($meta);
 });
+
+it('accepts a complete short meta description without generated length fields', function () {
+    $validator = new OutputValidator;
+    $meta = 'Quivly records meetings and organizes notes for teams. Search transcripts, review decisions, and follow up after each call.';
+    expect(mb_strlen($meta))->toBe(123);
+    expect($validator->text('meta_description', $meta))->toBe([]);
+    expect($validator->schema('seo', ['seo_title' => 'Quivly: Meeting notes and searchable team transcripts', 'meta_description' => $meta]))->toBe([]);
+    expect($validator->text('meta_description', 'Incomplete description'))->not->toBe([]);
+});

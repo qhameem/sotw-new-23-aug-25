@@ -10,7 +10,7 @@ class OutputValidator
     {
         $errors = [];
         $length = mb_strlen($value);
-        $limits = ['tagline' => [40, 70], 'seo_title' => [50, 70], 'meta_description' => [140, 155]];
+        $limits = ['tagline' => [40, 70], 'seo_title' => [50, 70]];
         if (isset($limits[$field]) && ($length < $limits[$field][0] || $length > $limits[$field][1])) {
             $errors[] = "$field must be {$limits[$field][0]} to {$limits[$field][1]} characters; got $length.";
         }
@@ -23,8 +23,13 @@ class OutputValidator
         if (in_array($field, ['best_for', 'not_for'], true) && $length > 255) {
             $errors[] = "$field must be at most 255 characters.";
         }
-        if ($field === 'meta_description' && preg_match_all('/[.!?](?:\s|$)/u', $value) !== 2) {
-            $errors[] = 'meta_description must contain two complete sentences.';
+        if ($field === 'meta_description') {
+            if ($length === 0 || $length > 255) {
+                $errors[] = 'meta_description must be 1 to 255 characters.';
+            }
+            if (! preg_match('/[.!?]\s*$/u', $value)) {
+                $errors[] = 'meta_description must end with a complete sentence.';
+            }
         }
         if (preg_match('/\b('.implode('|', self::BAD_ENDINGS).')\W*$/iu', $value)) {
             $errors[] = "$field ends on an incomplete word.";
@@ -52,7 +57,7 @@ class OutputValidator
         $shapes = [
             'tagline' => ['candidates' => 'array'],
             'description' => ['summary' => 'string', 'features' => 'array', 'best_for' => 'string', 'not_for' => 'string', 'faq' => 'array'],
-            'seo' => ['seo_title' => 'string', 'meta_description' => 'string', 'seo_title_length' => 'integer', 'meta_description_length' => 'integer'],
+            'seo' => ['seo_title' => 'string', 'meta_description' => 'string'],
             'verification' => ['issues' => 'array'],
         ];
         $errors = [];
