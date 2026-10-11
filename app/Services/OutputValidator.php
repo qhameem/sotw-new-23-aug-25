@@ -10,7 +10,7 @@ class OutputValidator
     {
         $errors = [];
         $length = mb_strlen($value);
-        $limits = ['tagline' => [40, 70], 'seo_title' => [50, 60], 'meta_description' => [140, 155]];
+        $limits = ['tagline' => [40, 70], 'seo_title' => [50, 70], 'meta_description' => [140, 155]];
         if (isset($limits[$field]) && ($length < $limits[$field][0] || $length > $limits[$field][1])) {
             $errors[] = "$field must be {$limits[$field][0]} to {$limits[$field][1]} characters; got $length.";
         }

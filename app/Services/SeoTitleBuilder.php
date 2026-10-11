@@ -8,7 +8,7 @@ class SeoTitleBuilder
     {
         $title = trim($name).': '.trim($tagline);
 
-        return mb_strlen($title) <= 60 && app(OutputValidator::class)->text('seo_title', $title) === []
+        return app(OutputValidator::class)->text('seo_title', $title) === []
             ? $title : null;
     }
 }

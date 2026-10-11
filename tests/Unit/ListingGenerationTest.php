@@ -28,6 +28,10 @@ it('builds a complete title without truncation', function () {
     expect($builder->build('Weave', 'Task planning for independent creative teams today'))
         ->toBe('Weave: Task planning for independent creative teams today');
     expect($builder->build('Weave', 'Task planning for independent creative teams and'))->toBeNull();
+    $completeTitle = 'BetterWispr: Voice notes and dictation for professional teams';
+    expect(mb_strlen($completeTitle))->toBe(61);
+    expect($builder->build('BetterWispr', 'Voice notes and dictation for professional teams'))->toBe($completeTitle);
+    expect($builder->build('BetterWispr', 'Voice notes and dictation for productive teams everywhere today'))->toBeNull();
 });
 
 it('detects NotchOwl as MacOS without assuming Browser', function () {
