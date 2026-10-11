@@ -21,6 +21,7 @@ class FactExtractorService
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $facts = $this->client->json($prompt, 3000);
             $errors = [];
+            $unsupported = [];
             if (! is_array($facts)) {
                 $errors = array_merge(['AI provider returned no usable facts JSON.'], $this->client->errors());
             } else {
@@ -41,10 +42,11 @@ class FactExtractorService
                     }
                     if ($value === null || $value === '' || $value === []) continue;
                     $quote = $facts['evidence'][$field] ?? null;
-                    $supported = is_string($quote) && trim($quote) !== '' && mb_stripos($source, $quote) !== false;
+                    $supported = is_string($quote) && trim($quote) !== '' && self::containsQuote($source, $quote);
                     if (! $supported) {
                         $facts[$field] = $isList ? [] : null;
                         unset($facts['evidence'][$field]);
+                        $unsupported[] = $field;
                     }
                 }
                 if (filled($facts['product_type']) || filled($facts['one_line_description']) || $facts['top_features'] !== []) {
@@ -52,11 +54,21 @@ class FactExtractorService
                     return array_intersect_key($facts, array_flip($required));
                 }
                 $errors[] = 'No source-supported product type, description, or feature remained.';
+                if ($unsupported !== []) {
+                    $errors[] = 'These fields had evidence quotes absent from the source: '.implode(', ', $unsupported).'. Copy short evidence quotes verbatim from the source, including exact words and punctuation. Set unsupported fields to null or [].';
+                }
             }
             $this->errors = $errors;
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
         }
 
         return null;
+    }
+
+    private static function containsQuote(string $source, string $quote): bool
+    {
+        $normalize = static fn (string $text): string => trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+
+        return mb_stripos($normalize($source), $normalize($quote)) !== false;
     }
 }

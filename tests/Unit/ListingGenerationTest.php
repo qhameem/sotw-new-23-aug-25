@@ -80,6 +80,34 @@ it('keeps supported facts when AI omits optional fields or evidence', function (
     expect($facts['platforms'])->toBe([]);
 });
 
+it('accepts evidence with equivalent whitespace', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $client->shouldReceive('json')->once()->andReturn([
+        'one_line_description' => 'Tailor your resume to the role.',
+        'evidence' => ['one_line_description' => "Tailor your resume\nto the role."],
+    ]);
+
+    $facts = (new FactExtractorService($client))->extract('Tailor your resume to the role.');
+    expect($facts['one_line_description'])->toBe('Tailor your resume to the role.');
+});
+
+it('tells the AI which evidence failed before retrying', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $client->shouldReceive('json')->once()->with('prompt', 3000)->andReturn([
+        'one_line_description' => 'Job search support.',
+        'evidence' => ['one_line_description' => 'Unsupported paraphrase'],
+    ]);
+    $client->shouldReceive('json')->once()->withArgs(fn ($prompt, $tokens) => $tokens === 3000 && str_contains($prompt, 'one_line_description') && str_contains($prompt, 'Copy short evidence quotes verbatim'))->andReturn([
+        'one_line_description' => 'Track every application and next step.',
+        'evidence' => ['one_line_description' => 'Track every application and next step.'],
+    ]);
+
+    $facts = (new FactExtractorService($client))->extract('Track every application and next step.');
+    expect($facts['one_line_description'])->toBe('Track every application and next step.');
+});
+
 it('marks failed generation as draft after two attempts', function () {
     $client = Mockery::mock(ListingAiClient::class);
     $client->shouldReceive('prompt')->once()->andReturn('prompt');
