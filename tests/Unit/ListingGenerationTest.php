@@ -3,11 +3,13 @@
 use App\Services\FactExtractorService;
 use App\Services\ListingAiClient;
 use App\Services\ListingGenerationService;
+use App\Services\DescriptionRewriterService;
 use App\Services\NameExtractorService;
 use App\Services\OutputValidator;
 use App\Services\PlatformDetector;
 use App\Services\ProductSourceCollector;
 use App\Services\SeoTitleBuilder;
+use App\Support\ProductDescriptionTemplates;
 use Illuminate\Support\Facades\Http;
 
 it('rejects incomplete endings and banned copy', function () {
@@ -21,6 +23,40 @@ it('accepts a concise supported summary without padding', function () {
     $summary = 'HireKey helps job seekers compare their resumes with role requirements, tailor applications, practice interviews with a voice coach, and track applications. It also offers cover letter drafting and company research tools.';
     expect($validator->text('summary', $summary))->toBe([]);
     expect($validator->text('summary', 'HireKey helps job seekers track applications.'))->not->toBe([]);
+});
+
+it('normalizes named feature objects in a generated description', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $client->shouldReceive('json')->once()->andReturn([
+        'summary' => 'Quivly helps teams record meetings, organize discussion notes, and find follow up tasks in one workspace. It provides searchable transcripts and shared notes so participants can review decisions and keep track of work after each conversation.',
+        'features' => [
+            ['name' => 'Meeting notes', 'description' => 'Review key decisions after a call.'],
+            ['title' => 'Searchable transcripts', 'benefit' => 'Find past discussion details.'],
+            ['feature' => 'Shared workspace'],
+            'Task tracking: Keep follow up work visible.',
+        ],
+        'best_for' => 'Teams that need meeting records.',
+        'not_for' => 'People seeking an offline recorder.',
+        'faq' => [
+            ['question' => 'What is Quivly?', 'answer' => 'A meeting notes tool.'],
+            ['question' => 'Can teams share notes?', 'answer' => 'Yes, they can share notes.'],
+            ['question' => 'Are transcripts searchable?', 'answer' => 'Yes, they are searchable.'],
+            ['question' => 'Does it track tasks?', 'answer' => 'It tracks follow up work.'],
+        ],
+    ]);
+    app()->instance(ListingAiClient::class, $client);
+    $templates = Mockery::mock(ProductDescriptionTemplates::class);
+    $templates->shouldReceive('activeInstruction')->once()->andReturn(null);
+    app()->instance(ProductDescriptionTemplates::class, $templates);
+
+    $result = app(DescriptionRewriterService::class)->generateFromFacts('Quivly', []);
+    expect($result['features'])->toBe([
+        'Meeting notes: Review key decisions after a call.',
+        'Searchable transcripts: Find past discussion details.',
+        'Shared workspace',
+        'Task tracking: Keep follow up work visible.',
+    ]);
 });
 
 it('builds a complete title without truncation', function () {

@@ -34,6 +34,9 @@ class DescriptionRewriterService
         ]).($feedback ? "\nVerification issues:\n".$feedback : '');
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $result = $client->json($prompt, 3000);
+            if (is_array($result) && is_array($result['features'] ?? null)) {
+                $result['features'] = array_map(self::normalizeListingFeature(...), $result['features']);
+            }
             $errors = $validator->schema('description', $result);
             if ($errors === []) {
                 $errors = $validator->text('summary', $result['summary'], $source);
@@ -51,6 +54,24 @@ class DescriptionRewriterService
         }
 
         return null;
+    }
+
+    private static function normalizeListingFeature(mixed $feature): mixed
+    {
+        if (! is_array($feature)) {
+            return $feature;
+        }
+
+        $name = $feature['name'] ?? $feature['title'] ?? $feature['feature'] ?? null;
+        $benefit = $feature['description'] ?? $feature['benefit'] ?? null;
+        if (! is_string($name) || trim($name) === '') {
+            return $feature;
+        }
+        if ($benefit !== null && (! is_string($benefit) || trim($benefit) === '')) {
+            return $feature;
+        }
+
+        return trim($name).($benefit === null ? '' : ': '.trim($benefit));
     }
 
     public const UNKNOWN_LIMITATION = 'Not clearly stated in the available source material.';
