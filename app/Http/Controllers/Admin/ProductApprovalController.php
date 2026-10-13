@@ -54,6 +54,10 @@ class ProductApprovalController extends Controller
             $perPage = 20;
         }
         $search = trim((string) $request->input('search', ''));
+        $submitterType = $request->string('submitter_type')->toString();
+        if (! in_array($submitterType, ['admin', 'non_admin'], true)) {
+            $submitterType = '';
+        }
         $sortBy = $request->input('sort_by', 'published_at'); // Default sort by published_at
         $sortDirection = $request->input('sort_direction', 'desc'); // Default sort direction
 
@@ -97,6 +101,12 @@ class ProductApprovalController extends Controller
             });
         }
 
+        if ($submitterType === 'admin') {
+            $approvedProductsQuery->whereHas('user.roles', fn ($query) => $query->where('name', 'admin'));
+        } elseif ($submitterType === 'non_admin') {
+            $approvedProductsQuery->whereDoesntHave('user.roles', fn ($query) => $query->where('name', 'admin'));
+        }
+
         // Handle cases where published_at might be null for sorting
         if ($sortBy === 'published_at') {
             $approvedProductsQuery->orderByRaw(
@@ -132,7 +142,8 @@ class ProductApprovalController extends Controller
             'shownProductsCount',
             'failedBadgeProductsCount',
             'status',
-            'search'
+            'search',
+            'submitterType'
         ));
     }
 

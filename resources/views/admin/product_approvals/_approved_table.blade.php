@@ -1,7 +1,7 @@
 @php
     $groups = $approvedProducts->getCollection()->groupBy(fn ($product) => !$product->is_published && $product->published_at
         ? $product->published_at->copy()->timezone('UTC')->toDateString() : 'published');
-    $filterParams = ['search' => $search, 'per_page' => $perPage, 'sort_by' => 'published_at', 'sort_direction' => $sortDirection];
+    $filterParams = ['search' => $search, 'submitter_type' => $submitterType, 'per_page' => $perPage, 'sort_by' => 'published_at', 'sort_direction' => $sortDirection];
 @endphp
 <section id="approved-products" data-approval-table class="approval-panel scroll-mt-6 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
@@ -18,16 +18,23 @@
             </select>
         </label>
     </div>
-    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="flex flex-wrap items-center gap-3 px-4 py-3">
+    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto_auto_auto] lg:items-center">
         <input type="hidden" name="status" value="{{ $status }}">
         <input type="hidden" name="sort_by" value="published_at">
         <label class="min-w-48 flex-1"><span class="sr-only">Search products or submitters</span><input type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters…" class="w-full rounded-lg border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-500 dark:border-slate-600"></label>
-        <label class="flex items-center gap-2">Publish date
+        <label class="flex items-center gap-2 whitespace-nowrap">Submitted by
+            <select name="submitter_type" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
+                <option value="" @selected($submitterType === '')>Everyone</option>
+                <option value="admin" @selected($submitterType === 'admin')>Admins</option>
+                <option value="non_admin" @selected($submitterType === 'non_admin')>Non-admins</option>
+            </select>
+        </label>
+        <label class="flex items-center gap-2 whitespace-nowrap">Publish date
             <select name="sort_direction" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
                 <option value="asc" @selected($sortDirection === 'asc')>Earliest first</option><option value="desc" @selected($sortDirection === 'desc')>Latest first</option>
             </select>
         </label>
-        <label class="flex items-center gap-2">Rows
+        <label class="flex items-center gap-2 whitespace-nowrap">Rows
             <select name="per_page" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
                 @foreach([20, 50, 100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach
             </select>
@@ -35,8 +42,16 @@
         <button class="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white dark:bg-slate-100 dark:text-slate-900">Search</button>
     </form>
     <div class="max-h-[70vh] overflow-auto">
-        <table class="w-full min-w-[1120px] table-fixed text-left text-sm">
-            <colgroup><col class="w-[42%]"><col class="w-[9%]"><col class="w-[12%]"><col class="w-[12%]"><col class="w-[7%]"><col class="w-[6%]"><col class="w-[12%]"></colgroup>
+        <table class="w-full min-w-[1280px] table-fixed text-left text-sm">
+            <colgroup>
+                <col style="width: 34%">
+                <col style="width: 14%">
+                <col style="width: 14%">
+                <col style="width: 13%">
+                <col style="width: 9%">
+                <col style="width: 7%">
+                <col style="width: 9%">
+            </colgroup>
             <thead class="sticky top-0 z-10 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <tr>
                     <th scope="col" class="px-4 py-3"><div class="flex items-center gap-3"><input type="checkbox" data-select-page aria-label="Select all products on this page" class="h-4 w-4 rounded border-slate-400 text-indigo-600">Product</div></th>

@@ -40,6 +40,20 @@ class AdminProductApprovalTableTest extends TestCase
             ->assertSee('Oct 5, 2026 (1 scheduled)')->assertViewHas('perPage', 20);
     }
 
+    public function test_submitter_type_filter_separates_admin_and_non_admin_products(): void
+    {
+        $admin = User::role('admin')->firstOrFail();
+        $member = User::factory()->create();
+        Product::factory()->create(['name' => 'Admin Product', 'user_id' => $admin->id, 'approved' => true, 'is_published' => true, 'published_at' => now()]);
+        Product::factory()->create(['name' => 'Member Product', 'user_id' => $member->id, 'approved' => true, 'is_published' => true, 'published_at' => now()]);
+
+        $this->get(route('admin.product-approvals.index', ['submitter_type' => 'admin']))
+            ->assertOk()->assertSee('Admin Product')->assertDontSee('Member Product');
+
+        $this->get(route('admin.product-approvals.index', ['submitter_type' => 'non_admin']))
+            ->assertOk()->assertSee('Member Product')->assertDontSee('Admin Product');
+    }
+
     public function test_bulk_reschedule_changes_only_selected_approved_products(): void
     {
         $selected = Product::factory()->count(2)->create(['approved' => true, 'is_published' => true, 'published_at' => now()]);
