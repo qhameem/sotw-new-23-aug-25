@@ -188,6 +188,7 @@ class AiProviderRoutingService
     private function fallbackRetryAt(int $status, Carbon $checkedAt): ?Carbon
     {
         return match (true) {
+            $status === 402 => $checkedAt->copy()->addDay(),
             in_array($status, [401, 403], true) => $checkedAt->copy()->addMinutes(15),
             $status === 404 => $checkedAt->copy()->addMinutes(30),
             $status === 429 => $checkedAt->copy()->addMinutes(5),

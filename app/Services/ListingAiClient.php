@@ -45,7 +45,17 @@ class ListingAiClient
                     $model = config('services.google.gemini_model', 'gemini-2.5-flash');
                     $response = Http::withHeaders(['X-goog-api-key' => $key])->timeout(30)->post($base.'/models/'.$model.':generateContent', [
                         'contents' => [['parts' => [['text' => $prompt]]]],
-                        'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => $maxTokens, 'responseMimeType' => 'application/json'],
+                        'generationConfig' => [
+                            'temperature' => 0.2, 'maxOutputTokens' => $maxTokens, 'responseMimeType' => 'application/json',
+                            ...($task === 'seo' ? ['responseSchema' => [
+                                'type' => 'OBJECT',
+                                'properties' => [
+                                    'seo_title' => ['type' => 'STRING'],
+                                    'meta_descriptions' => ['type' => 'ARRAY', 'items' => ['type' => 'STRING'], 'minItems' => 3, 'maxItems' => 3],
+                                ],
+                                'required' => ['seo_title', 'meta_descriptions'],
+                            ], 'thinkingConfig' => ['thinkingBudget' => 0]] : []),
+                        ],
                     ]);
                     $content = $response->json('candidates.0.content.parts.0.text');
                 } else {
@@ -65,8 +75,27 @@ class ListingAiClient
                 }
                 if ($response->successful() && is_string($content)) {
                     $router->recordHttpSuccess($provider, $response);
+                    $finishReason = $provider === 'gemini'
+                        ? $response->json('candidates.0.finishReason')
+                        : $response->json('choices.0.finish_reason');
+                    if (in_array($finishReason, ['MAX_TOKENS', 'length'], true)) {
+                        Log::warning('Listing AI output truncated.', ['provider' => $provider, 'task' => $task, 'finish_reason' => $finishReason, 'output_budget' => $maxTokens]);
+                        if ($maxTokens < 3600) {
+                            $retried = $this->jsonWithProvider($prompt, $provider, 3600, $task);
+                            if ($retried !== null) {
+                                return $retried;
+                            }
+                        }
+                        $this->errors[] = "$provider output was truncated.";
+
+                        continue;
+                    }
                     $clean = preg_replace('/\A```(?:json)?\s*|\s*```\z/iu', '', trim($content));
                     $decoded = json_decode(trim($clean), true);
+                    if (json_last_error() === JSON_ERROR_CTRL_CHAR) {
+                        $clean = $this->escapeStringControls($clean);
+                        $decoded = json_decode($clean, true);
+                    }
                     if (! is_array($decoded) && preg_match('/\{.*\}/s', $clean, $match)) {
                         $decoded = json_decode($match[0], true);
                     }
@@ -84,6 +113,7 @@ class ListingAiClient
                         return $decoded;
                     }
                     $this->errors[] = "$provider returned invalid JSON: ".json_last_error_msg();
+                    Log::warning('Listing AI JSON parsing failed.', ['provider' => $provider, 'task' => $task, 'finish_reason' => $finishReason, 'parse_error' => json_last_error_msg(), 'response_characters' => mb_strlen($content)]);
                 } else {
                     if (! $response->successful()) {
                         $router->recordHttpFailure($provider, $response);
@@ -125,6 +155,29 @@ class ListingAiClient
             str_contains($prompt, 'Choose the most relevant categories') => 'classification',
             default => 'copy',
         };
+    }
+
+    private function escapeStringControls(string $json): string
+    {
+        $inside = false;
+        $escaped = false;
+        $result = '';
+        for ($i = 0; $i < strlen($json); $i++) {
+            $character = $json[$i];
+            if ($inside && ord($character) < 32) {
+                $result .= sprintf('\\u%04x', ord($character));
+                $escaped = false;
+
+                continue;
+            }
+            if ($character === '"' && ! $escaped) {
+                $inside = ! $inside;
+            }
+            $result .= $character;
+            $escaped = $inside && $character === '\\' && ! $escaped;
+        }
+
+        return $result;
     }
 
     public function prompt(string $file, array $bindings): string

@@ -1282,7 +1282,8 @@ export function useProductForm() {
           extractionErrors.verification = 'Unresolved factual issues. Submission remains a draft for admin review.';
         } else {
           const reason = Array.isArray(data.generation_errors) ? data.generation_errors.map(String).join(' ') : '';
-          extractionErrors.verification = `Automatic listing validation incomplete. ${reason} Submission remains a draft for admin review.`.trim();
+          const isSeoFailure = data.generation_errors?.[0] === 'SEO failed validation';
+          extractionErrors[isSeoFailure ? 'seo' : 'verification'] = `${isSeoFailure ? 'SEO metadata generation failed.' : 'Automatic listing validation incomplete.'} ${reason} Submission remains a draft for admin review.`.trim();
         }
       }
     }
