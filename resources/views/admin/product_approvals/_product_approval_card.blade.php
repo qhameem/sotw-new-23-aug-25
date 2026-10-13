@@ -4,6 +4,9 @@
         : 'https://www.google.com/s2/favicons?sz=64&domain_url=' . urlencode($product->link);
     $previewUrl = route('admin.product-approvals.preview', $product);
     $pendingCustomCategoryCount = $product->pending_custom_category_submissions_count;
+    $isBadgeSubmission = $product->submission_type === 'badge';
+    $submissionLabel = ['badge' => 'Badge launch', 'paid' => 'Paid launch', 'free' => 'Free submission'][$product->submission_type] ?? 'Unknown source';
+    $productDomain = parse_url($product->link, PHP_URL_HOST) ?: $product->link;
 @endphp
 
 <article class="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
@@ -34,9 +37,19 @@
                 </label>
             </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-                <span>{{ $product->created_at->format('d M, Y') }}</span>
-                <span>{{ $product->user->name ?? 'N/A' }}</span>
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">#{{ $product->id }}</span>
+                <span @class([
+                    'rounded-full px-2 py-1 font-semibold',
+                    'bg-emerald-50 text-emerald-700' => $isBadgeSubmission && $product->badge_verified,
+                    'bg-amber-50 text-amber-700' => $isBadgeSubmission && !$product->badge_verified,
+                    'bg-sky-50 text-sky-700' => !$isBadgeSubmission,
+                ])>{{ $submissionLabel }}@if($isBadgeSubmission) · {{ $product->badge_verified ? 'Verified' : 'Not verified' }}@endif</span>
+                @if($product->generation_review_required)
+                    <span class="rounded-full bg-violet-50 px-2 py-1 font-semibold text-violet-700">Generated copy needs review</span>
+                @endif
+                <span>Submitted {{ $product->created_at->format('d M Y, H:i') }}</span>
+                <span>{{ $productDomain }}</span>
 
                 @foreach($product->categories->take(3) as $category)
                     <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">{{ $category->name }}</span>
@@ -52,6 +65,16 @@
                         data-custom-category-open="{{ $product->id }}">
                         {{ $pendingCustomCategoryCount }} custom {{ Str::plural('category', $pendingCustomCategoryCount) }}
                     </button>
+                @endif
+            </div>
+
+            <div class="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
+                <div><span class="block font-medium text-slate-500">Submitter</span><span class="mt-0.5 block break-all font-semibold text-slate-800">{{ $product->user->name ?? 'Unknown' }} · {{ $product->user->email ?? 'No email' }}</span></div>
+                <div><span class="block font-medium text-slate-500">Submission method</span><span class="mt-0.5 block font-semibold text-slate-800">{{ $submissionLabel }}</span></div>
+                @if($isBadgeSubmission)
+                    <div><span class="block font-medium text-slate-500">Badge page</span><a href="{{ $product->badge_placement_url ?: $product->link }}" target="_blank" rel="noopener nofollow" class="pointer-events-auto relative z-10 mt-0.5 block truncate font-semibold text-sky-700 hover:underline">{{ $product->badge_placement_url ?: $product->link }}</a></div>
+                @elseif($product->published_at)
+                    <div><span class="block font-medium text-slate-500">Requested publish date</span><span class="mt-0.5 block font-semibold text-slate-800">{{ $product->published_at->copy()->timezone('UTC')->format('d M Y, H:i') }} UTC</span></div>
                 @endif
             </div>
         </div>

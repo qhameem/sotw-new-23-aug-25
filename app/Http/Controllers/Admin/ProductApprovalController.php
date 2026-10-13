@@ -42,6 +42,11 @@ class ProductApprovalController extends Controller
         $shownProductsCount = Product::where('approved', true)
             ->where('is_published', true)
             ->count();
+        $failedBadgeProductsCount = Product::where('approved', true)
+            ->where('submission_type', 'badge')
+            ->where('badge_verified', false)
+            ->where('badge_consecutive_failures', '>', 0)
+            ->count();
 
         // Approved Products Logic
         $perPage = (int) $request->input('per_page', 20);
@@ -125,6 +130,7 @@ class ProductApprovalController extends Controller
             'settings',
             'scheduledProductsCount',
             'shownProductsCount',
+            'failedBadgeProductsCount',
             'status',
             'search'
         ));

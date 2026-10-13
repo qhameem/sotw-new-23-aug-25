@@ -60,6 +60,32 @@ class AdminProductPreviewTest extends TestCase
             ->assertSee('Preview page');
     }
 
+    public function test_pending_card_reports_badge_submission_and_submitter_details(): void
+    {
+        Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $submitter = User::factory()->create(['name' => 'Crontinel', 'email' => 'support@crontinel.com']);
+        $product = Product::factory()->create([
+            'user_id' => $submitter->id,
+            'approved' => false,
+            'is_published' => false,
+            'submission_type' => 'badge',
+            'badge_verified' => true,
+            'badge_placement_url' => 'https://crontinel.com/',
+            'generation_review_required' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.product-approvals.index', ['status' => 'pending']))
+            ->assertOk()
+            ->assertSee('#'.$product->id)
+            ->assertSee('Badge launch · Verified')
+            ->assertSee('Generated copy needs review')
+            ->assertSee('support@crontinel.com')
+            ->assertSee('https://crontinel.com/');
+    }
+
     public function test_summary_cards_filter_products_by_approval_status(): void
     {
         Role::create(['name' => 'admin']);

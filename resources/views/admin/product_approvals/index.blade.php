@@ -139,9 +139,30 @@
         </div>
     @endif
 
-    <div class="mb-4 flex items-center justify-between gap-4">
+    <div class="mb-5">
         <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Product Approvals</h1>
-        <a href="{{ route('admin.product-approvals.index', ['status' => 'pending']) }}#pending-approval" class="text-sm font-medium text-indigo-700 dark:text-indigo-300">Pending ({{ $pendingProducts->count() }})</a>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review submissions, verify badge launches, and manage the publishing queue.</p>
+    </div>
+
+    <nav aria-label="Approval summary" class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        @foreach([
+            ['status' => 'pending', 'label' => 'Pending review', 'count' => $pendingProducts->count(), 'tone' => 'amber'],
+            ['status' => 'scheduled', 'label' => 'Scheduled', 'count' => $scheduledProductsCount, 'tone' => 'sky'],
+            ['status' => 'shown', 'label' => 'Published', 'count' => $shownProductsCount, 'tone' => 'emerald'],
+            ['status' => 'failed_badge', 'label' => 'Failed badge', 'count' => $failedBadgeProductsCount, 'tone' => 'red'],
+        ] as $summary)
+            <a href="{{ route('admin.product-approvals.index', ['status' => $summary['status']]) }}#{{ $summary['status'] === 'pending' ? 'pending-approval' : 'approved-products' }}"
+                @class([
+                    'rounded-xl border bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:bg-slate-900',
+                    'border-amber-200 dark:border-amber-900' => $summary['tone'] === 'amber',
+                    'border-sky-200 dark:border-sky-900' => $summary['tone'] === 'sky',
+                    'border-emerald-200 dark:border-emerald-900' => $summary['tone'] === 'emerald',
+                    'border-red-200 dark:border-red-900' => $summary['tone'] === 'red',
+                ])>
+                <span class="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $summary['label'] }}</span>
+                <span class="mt-1 block text-2xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['count']) }}</span>
+            </a>
+        @endforeach
     </div>
 
     @if($status === null || $status === 'pending')
