@@ -55,11 +55,11 @@ class DescriptionRewriterService
             $errors = $validator->schema('description', $result);
             if ($errors === []) {
                 $errors = $validator->text('summary', $result['summary'], $source);
-                if (count($result['features']) < 4 || count($result['features']) > 6) {
-                    $errors[] = 'features must have 4 to 6 items.';
+                if (count($result['features']) > 6) {
+                    $errors[] = 'features must have at most 6 items.';
                 }
-                if (count($result['faq']) !== 4) {
-                    $errors[] = 'faq must have 4 items.';
+                if (count($result['faq']) > 4) {
+                    $errors[] = 'faq must have at most 4 items.';
                 }
                 foreach (['best_for', 'not_for'] as $field) {
                     $errors = array_merge($errors, $validator->text($field, $result[$field], $source));

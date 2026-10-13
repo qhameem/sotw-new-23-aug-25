@@ -1,15 +1,15 @@
 Write the listing body for "{productName}" from the facts JSON only. Return JSON only with these keys.
-summary: 30 to 60 words in one paragraph. State the product name, what it does, and specific supported features. Mention platform, pricing, audience, or differences from similar products only when the facts explicitly support them. Plain words. No praise.
-features: an array of 4 to 6 plain strings. Each string names a feature and states what the user gets. Do not return objects or nested arrays for features.
-best_for: one line.
-not_for: one line.
-faq: 4 items, each with question and answer. Questions match what buyers type into search or ask an AI assistant. Examples: Does X work on Y? Is X free? Where does X store data? What is the best alternative to X? Answers run 1 to 2 sentences with a concrete fact.
+summary: one complete paragraph, at most 60 words. State the product name and its supported purpose. Use a shorter description when evidence is limited. Mention platform, pricing, audience, or differences only when explicitly supported. Plain words. No praise or padding.
+features: an array of 0 to 6 supported plain strings. Each string names a feature and states what the user gets. Use [] when no features are supported. Do not return objects or nested arrays.
+best_for: one supported audience line, or "" when unknown.
+not_for: one explicitly supported limitation line, or "" when unknown. Do not invent limitations from absent features.
+faq: 0 to 4 items, each with question and answer. Include only questions whose answers have concrete supporting facts. Use [] when evidence is insufficient.
 Rules:
 Do not copy any run of 8 words from the source.
 Do not write a closing summary sentence.
 Use active voice, short sentences, and direct address where the form allows.
 Do not use the words streamline, seamless, revolutionary, elevate, best-in-class, or all-in-one.
-Write "Not stated" for any missing fact. Do not infer.
+Omit missing facts from prose. Keep unknown optional strings empty and lists empty. Do not infer pricing from an open-source license or public website access.
 {adminToneInstruction}
 Facts:
 {factsJson}

@@ -167,11 +167,11 @@ class ListingGenerationService
                     $errors[] = 'No candidate passes tagline validation.';
                 } elseif ($kind === 'description') {
                     $errors = array_merge($errors, $this->validator->text('summary', $result['summary'], $source));
-                    if (count($result['features']) < 4 || count($result['features']) > 6) {
-                        $errors[] = 'features must contain 4 to 6 items.';
+                    if (count($result['features']) > 6) {
+                        $errors[] = 'features must contain at most 6 items.';
                     }
-                    if (count($result['faq']) !== 4) {
-                        $errors[] = 'faq must contain 4 items.';
+                    if (count($result['faq']) > 4) {
+                        $errors[] = 'faq must contain at most 4 items.';
                     }
                     if ($errors === []) {
                         return $result;
@@ -304,7 +304,7 @@ class ListingGenerationService
         for ($i = 0; $i < 2; $i++) {
             $result = $this->ai->json($prompt);
             if ($this->validator->schema('verification', $result) === []) {
-                return array_map(function (array $issue): array {
+                $issues = array_map(function (array $issue): array {
                     $field = preg_replace('/[.\[].*$/', '', trim($issue['field']));
                     $issue['field'] = match ($field) {
                         'use_cases' => 'useCases',
@@ -315,6 +315,25 @@ class ListingGenerationService
 
                     return $issue;
                 }, $result['issues']);
+
+                return array_values(array_filter($issues, function (array $issue) use ($reviewFields): bool {
+                    $field = $issue['field'];
+                    if (! array_key_exists($field, $reviewFields)) {
+                        return false;
+                    }
+                    $value = $reviewFields[$field];
+                    if ($value === null || $value === '' || $value === []) {
+                        return false;
+                    }
+                    if (is_string($value) && preg_match('/^not (?:stated|specified|provided)[.!]?$/i', trim($value))) {
+                        return false;
+                    }
+                    if (preg_match('/^(?:claim\s+)?["\']?not stated["\']?\s+(?:not supported|unsupported)/i', trim($issue['problem']))) {
+                        return false;
+                    }
+
+                    return true;
+                }));
             }
             $prompt .= "\nValidation errors to fix:\nverification.issues must be an array.";
             $this->lastErrors = array_merge(['Verification JSON schema is invalid.'], $result === null ? $this->ai->errors() : []);
