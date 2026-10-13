@@ -4,7 +4,7 @@
       <div class="flex items-center gap-2">
         <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
       </div>
-      <span v-if="extractionTiming.started" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
+      <span :class="{ invisible: !extractionTiming.started }" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
         {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
       </span>
     </div>
@@ -20,7 +20,7 @@
             @keydown.enter.prevent="handleAutoFillClick"
             :aria-invalid="inlineError ? 'true' : 'false'"
             :aria-busy="isUrlChecking"
-            :aria-describedby="inlineError ? 'product-url-help product-url-error' : 'product-url-help'"
+            aria-describedby="product-url-help product-url-status product-url-trim"
             @focus="refreshCaret"
             @blur="refreshCaret"
             @input.capture="refreshCaret"
@@ -60,17 +60,6 @@
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
-        <div role="status" aria-live="polite" aria-atomic="true">
-          <p v-if="isUrlChecking" class="mt-2 flex items-center gap-2 text-xs text-slate-600">
-            <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Checking for duplicates
-          </p>
-        </div>
-        <p v-if="inlineError && !urlExistsError" id="product-url-error" role="alert" class="mt-2 text-sm !text-red-600">{{ inlineError }}</p>
       </div>
 
       <div class="relative shrink-0">
@@ -108,6 +97,35 @@
         </div>
       </div>
     </div>
+    <div class="url-status-panel mt-3 rounded-lg border border-slate-200 bg-white px-3" aria-label="Website URL validation">
+      <div id="product-url-status" class="url-status-row text-xs" role="status" aria-live="polite" aria-atomic="true">
+        <p v-if="isUrlChecking" class="flex items-center gap-2 text-slate-600">
+          <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+          Checking for duplicates…
+        </p>
+        <div v-else-if="urlExistsError" class="min-w-0 text-red-600">
+          <p class="truncate" :title="`This exact URL already exists as ${existingProduct?.name || 'an existing product'}.`">URL already listed: <a :href="existingProduct?.view_url || `/product/${existingProduct?.slug}`" target="_blank" rel="noopener" class="font-semibold underline underline-offset-2">{{ existingProduct?.name || 'View product' }}</a></p>
+          <a v-if="existingProduct?.can_edit && existingProduct?.edit_url" :href="existingProduct.edit_url" class="inline-block font-semibold underline underline-offset-2">Edit existing product</a>
+        </div>
+        <p v-else-if="inlineError" class="text-red-600">{{ inlineError }}</p>
+        <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
+        <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
+        <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
+        <p v-else-if="String(modelValue || '').trim() && !isUrlInvalid" class="text-emerald-700">URL available. Ready to fill with AI.</p>
+        <p v-else class="text-slate-500">Enter a website URL to check availability.</p>
+      </div>
+      <div id="product-url-trim" class="url-trim-row border-t border-slate-100 text-xs" role="status" aria-live="polite" aria-atomic="true">
+        <template v-if="urlTrimSuggestion && !isLoading">
+          <div class="min-w-0 flex-1 text-amber-800">
+            <p class="truncate" :title="`You can trim ${urlTrimSuggestion.removedParts.join(', ')}.`">You can trim {{ urlTrimSuggestion.removedParts.join(', ') }}.</p>
+            <p class="truncate font-mono text-[11px]" :title="urlTrimSuggestion.suggestedUrl">{{ urlTrimSuggestion.suggestedUrl }}</p>
+          </div>
+          <button type="button" @click="applyTrimSuggestion" class="shrink-0 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200">Use trimmed URL</button>
+        </template>
+        <p v-else class="text-slate-500">{{ clipboardFeedbackType !== 'error' && clipboardFeedback ? clipboardFeedback : 'Trim suggestions appear here when available.' }}</p>
+      </div>
+    </div>
+    <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
     <div v-if="!reviewMode && !isLoading" class="mt-5">
       <button
         type="button"
@@ -117,7 +135,7 @@
         <span class="font-bold">Or</span> skip auto-fill and enter the other details manually.
       </button>
     </div>
-    <details v-if="showPhaseTimings && Object.keys(extractionTiming.phases).length" class="mt-3 text-xs text-gray-600">
+    <details v-if="showPhaseTimings" class="mt-3 text-xs text-gray-600">
       <summary class="cursor-pointer">Extraction phase timings</summary>
       <dl class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
         <div v-for="(seconds, phase) in extractionTiming.phases" :key="phase" class="flex justify-between gap-4">
@@ -126,71 +144,6 @@
       </dl>
       <p class="mt-2">Total includes network and form updates.</p>
     </details>
-    <transition name="fade">
-      <p
-        v-if="clipboardFeedback"
-        :class="[
-          'mt-3 text-xs',
-          clipboardFeedbackType === 'error' ? 'text-red-600' : 'text-sky-600'
-        ]"
-      >
-        {{ clipboardFeedback }}
-      </p>
-    </transition>
-
-    <transition name="fade">
-      <p
-        v-if="isSandboxMode && !isLoading"
-        class="mt-3 text-xs text-amber-700"
-      >
-        Sandbox mode: click AI Auto-fill to run a simulated product autofill without using a real URL.
-      </p>
-    </transition>
-
-    <transition name="fade">
-      <div
-        v-if="urlTrimSuggestion && !isLoading"
-        class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start justify-between gap-3"
-      >
-        <div class="flex items-start gap-2 min-w-0">
-          <svg class="h-5 w-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span class="min-w-0">
-            <span class="font-medium">Tip:</span> you can trim
-            {{ urlTrimSuggestion.removedParts.join(', ') }}.
-            <span class="block text-xs mt-1 font-mono break-all">{{ urlTrimSuggestion.suggestedUrl }}</span>
-          </span>
-        </div>
-        <button
-          type="button"
-          @click="applyTrimSuggestion"
-          class="px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold whitespace-nowrap"
-        >
-          Use trimmed URL
-        </button>
-      </div>
-    </transition>
-
-    <!-- Error Message -->
-    <transition name="fade">
-      <div v-if="urlExistsError" class="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 flex items-start gap-2">
-        <svg class="h-5 w-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div class="min-w-0">
-          <p>
-            This exact URL already exists as
-            <a :href="existingProduct?.view_url || `/product/${existingProduct.slug}`" target="_blank" class="font-bold hover:underline underline-offset-2">"{{ existingProduct.name }}"</a>.
-          </p>
-          <div v-if="existingProduct?.can_edit && existingProduct?.edit_url" class="mt-2">
-            <a :href="existingProduct.edit_url" class="inline-flex items-center text-xs font-semibold text-gray-700 underline underline-offset-2 hover:text-gray-950">
-              Edit existing product
-            </a>
-          </div>
-        </div>
-      </div>
-    </transition>
 
     <slot name="details" />
 
@@ -402,6 +355,27 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 </script>
 
 <style scoped>
+.url-status-panel {
+  height: 140px;
+}
+.url-status-row,
+.url-trim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 69px;
+  min-width: 0;
+  line-height: 16px;
+  overflow: auto;
+}
+.url-status-row > * {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (min-width: 640px) {
+  .url-status-panel { height: 108px; }
+  .url-status-row, .url-trim-row { height: 53px; }
+}
 .url-caret {
   position: absolute;
   width: 2px;
