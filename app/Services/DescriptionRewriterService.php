@@ -14,14 +14,29 @@ class DescriptionRewriterService
 {
     private array $listingErrors = [];
 
+    private ?string $listingProvider = null;
+
+    private ?string $lastProvider = null;
+
     public function listingErrors(): array
     {
         return $this->listingErrors;
     }
 
+    public function listingProvider(): ?string
+    {
+        return $this->listingProvider;
+    }
+
+    public function lastProvider(): ?string
+    {
+        return $this->lastProvider;
+    }
+
     public function generateFromFacts(string $productName, array $facts, string $source = '', string $feedback = ''): ?array
     {
         $this->listingErrors = [];
+        $this->listingProvider = null;
         $client = app(ListingAiClient::class);
         $validator = app(OutputValidator::class);
         $tone = app(ProductDescriptionTemplates::class)->activeInstruction();
@@ -40,14 +55,30 @@ class DescriptionRewriterService
             $errors = $validator->schema('description', $result);
             if ($errors === []) {
                 $errors = $validator->text('summary', $result['summary'], $source);
-                if (count($result['features']) < 4 || count($result['features']) > 6) $errors[] = 'features must have 4 to 6 items.';
-                if (count($result['faq']) !== 4) $errors[] = 'faq must have 4 items.';
-                foreach (['best_for', 'not_for'] as $field) $errors = array_merge($errors, $validator->text($field, $result[$field], $source));
-                foreach ($result['features'] as $feature) $errors = array_merge($errors, $validator->text('feature', $feature, $source));
+                if (count($result['features']) < 4 || count($result['features']) > 6) {
+                    $errors[] = 'features must have 4 to 6 items.';
+                }
+                if (count($result['faq']) !== 4) {
+                    $errors[] = 'faq must have 4 items.';
+                }
+                foreach (['best_for', 'not_for'] as $field) {
+                    $errors = array_merge($errors, $validator->text($field, $result[$field], $source));
+                }
+                foreach ($result['features'] as $feature) {
+                    $errors = array_merge($errors, $validator->text('feature', $feature, $source));
+                }
                 foreach ($result['faq'] as $faq) {
                     $errors = array_merge($errors, $validator->text('faq_question', $faq['question'], $source), $validator->text('faq_answer', $faq['answer'], $source));
                 }
-                if ($errors === []) return $result;
+                if ($errors === []) {
+                    try {
+                        $this->listingProvider = $client->lastProvider();
+                    } catch (\Throwable) {
+                        $this->listingProvider = null;
+                    }
+
+                    return $result;
+                }
             }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
             $this->listingErrors = $errors === ['description must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
@@ -85,10 +116,11 @@ class DescriptionRewriterService
     /**
      * Rewrite raw product information into a concise overview-only HTML block.
      */
-    public function rewrite(string $productName, string $rawDescription, string $pageTextContext = ''): ?string
+    public function rewrite(string $productName, string $rawDescription, string $pageTextContext = '', ?string $preferredProvider = null): ?string
     {
         $this->failures = [];
         $this->usedFallback = false;
+        $this->lastProvider = null;
         $productName = $this->normalizeProductName($productName);
         $providerRouter = app(AiProviderRoutingService::class);
 
@@ -101,7 +133,11 @@ class DescriptionRewriterService
         $prompt = $this->buildPrompt($productName, $rawDescription, $context, $adminInstruction)
             ."\n".\App\Support\GeneratedCopy::PUNCTUATION_INSTRUCTION;
 
-        if ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) === []) {
+        $providers = $preferredProvider
+            ? $providerRouter->orderedConfiguredProviders([$preferredProvider], preserveOrder: true)
+            : $providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']);
+
+        if ($providers === []) {
             Log::warning('DescriptionRewriterService: No AI provider key is set.');
             $this->recordFailure('system', null, 'No AI provider key is set.');
             $this->usedFallback = true;
@@ -110,7 +146,7 @@ class DescriptionRewriterService
         }
 
         try {
-            foreach ($providerRouter->orderedConfiguredProviders(['openrouter', 'cloudflare', 'groq', 'gemini']) as $candidate) {
+            foreach ($providers as $candidate) {
                 $response = match ($candidate['provider']) {
                     'groq' => $this->generateWithGroq($candidate['key'], $prompt),
                     'openrouter' => $this->generateWithOpenRouter($candidate['key'], $prompt),
@@ -129,6 +165,8 @@ class DescriptionRewriterService
                 $cleaned = $this->cleanHtmlResponse($response);
 
                 if ($cleaned !== null) {
+                    $this->lastProvider = $candidate['provider'];
+
                     return $cleaned;
                 }
             }

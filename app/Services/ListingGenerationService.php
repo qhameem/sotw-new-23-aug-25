@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Category;
-use App\Models\Type;
 use App\Support\CategoryTypeRegistry;
 
 class ListingGenerationService
@@ -33,35 +32,59 @@ class ListingGenerationService
         $facts['platforms'] = $detected !== [] ? $detected : array_values(array_filter((array) $facts['platforms'], fn ($platform) => $platform !== 'Browser'));
         $factsJson = json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $base = ['facts_json' => $facts];
+        $nonBlockingErrors = [];
 
         $taglineService = app(TaglineRewriterService::class);
         $tagline = $taglineService->rewriteFromFacts($name, $facts, $source);
-        if ($tagline === null) return $base + $this->draft(array_merge(['tagline failed validation'], $taglineService->listingErrors()));
+        if ($tagline === null) {
+            return $base + $this->draft(array_merge(['tagline failed validation'], $taglineService->listingErrors()));
+        }
         $base['tagline'] = $tagline;
+        $taglineProvider = $taglineService->listingProvider();
+        if ($taglineProvider) {
+            $base['tagline_generation'] = $this->generationAttribution($taglineProvider);
+        }
 
         $descriptionService = app(DescriptionRewriterService::class);
         $description = $descriptionService->generateFromFacts($name, $facts, $source);
-        if ($description === null) return $base + $this->draft(array_merge(['description failed validation'], $descriptionService->listingErrors()));
+        if ($description === null) {
+            return $base + $this->draft(array_merge(['description failed validation'], $descriptionService->listingErrors()));
+        }
         $base += ['summary' => $description['summary'], 'features' => $description['features'], 'best_for_text' => $description['best_for'], 'not_for_text' => $description['not_for'], 'faq' => $description['faq'], 'description' => '<p>'.e($description['summary']).'</p>'];
+        $descriptionProvider = $descriptionService->listingProvider();
+        if ($descriptionProvider) {
+            $base['description_generation'] = $this->generationAttribution($descriptionProvider);
+        }
 
         $preferredTitle = $this->titles->build($name, $tagline);
         $seo = $this->generateField('seo_fields_prompt.txt', ['{factsJson}' => $factsJson], 'seo', $source, '', 2, $preferredTitle !== null);
-        if ($seo === null) return $base + $this->draft(array_merge(['SEO failed validation'], $this->lastErrors));
-        $base['seo_title'] = $preferredTitle ?? $seo['seo_title'];
-        $base['meta_description'] = $seo['meta_description'];
+        if ($seo === null) {
+            $nonBlockingErrors = array_merge(['SEO failed validation'], $this->lastErrors);
+            $base['seo_title'] = $preferredTitle;
+            $base['meta_description'] = null;
+        } else {
+            $base['seo_title'] = $preferredTitle ?? $seo['seo_title'];
+            $base['meta_description'] = $seo['meta_description'];
+        }
 
         $classification = $this->classify($factsJson, $source, $facts['platforms']);
-        if ($classification === null) return $base + $this->draft(array_merge(['classification failed validation'], $this->lastErrors));
+        if ($classification === null) {
+            return $base + $this->draft(array_merge(['classification failed validation'], $this->lastErrors));
+        }
         $base += $classification;
 
         $issues = $this->verify($base, $factsJson, $source);
-        if ($issues === null) return $base + $this->draft(array_merge(['verification failed'], $this->lastErrors));
+        if ($issues === null) {
+            return $base + $this->draft(array_merge(['verification failed'], $this->lastErrors));
+        }
         if ($issues !== []) {
             $fields = array_unique(array_column($issues, 'field'));
             $feedback = implode("\n", array_map(fn ($issue) => ($issue['field'] ?? 'unknown').': '.($issue['problem'] ?? ''), $issues));
             if (array_intersect($fields, ['categories', 'use_cases', 'useCases', 'best_for', 'bestFor', 'pricing', 'platforms'])) {
                 $replacement = $this->classify($factsJson, $source, $facts['platforms'], $feedback, 1);
-                if ($replacement !== null) $base = array_merge($base, $replacement);
+                if ($replacement !== null) {
+                    $base = array_merge($base, $replacement);
+                }
             }
             $regenerated = [];
             foreach ($fields as $field) {
@@ -70,7 +93,9 @@ class ListingGenerationService
                 }
                 if (in_array($field, ['tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text', 'faq', 'seo_title', 'meta_description'], true)) {
                     $kind = $field === 'tagline' ? 'tagline' : (in_array($field, ['seo_title', 'meta_description']) ? 'seo' : 'description');
-                    if (isset($regenerated[$kind])) continue;
+                    if (isset($regenerated[$kind])) {
+                        continue;
+                    }
                     $regenerated[$kind] = true;
                     $file = ['tagline' => 'tagline_prompt.txt', 'seo' => 'seo_fields_prompt.txt', 'description' => 'description_listing_prompt.txt'][$kind];
                     $bindings = ['{productName}' => $name, '{factsJson}' => $factsJson];
@@ -78,7 +103,9 @@ class ListingGenerationService
                         ? app(DescriptionRewriterService::class)->generateFromFacts($name, $facts, $source, $feedback)
                         : $this->generateField($file, $bindings, $kind, $source, $feedback, 1, $kind === 'seo' && $this->titles->build($name, $base['tagline']) !== null);
                     if ($replacement !== null) {
-                        if ($kind === 'tagline') $base['tagline'] = $replacement;
+                        if ($kind === 'tagline') {
+                            $base['tagline'] = $replacement;
+                        }
                         if ($kind === 'seo') {
                             $base['seo_title'] = $this->titles->build($name, $base['tagline']) ?? $replacement['seo_title'];
                             $base['meta_description'] = $replacement['meta_description'];
@@ -94,8 +121,17 @@ class ListingGenerationService
                     }
                 }
             }
-            if ($this->verify($base, $factsJson, $source) !== []) return $base + $this->draft(['verification issues remain']);
+            if ($this->verify($base, $factsJson, $source) !== []) {
+                return $base + $this->draft(['verification issues remain']);
+            }
         }
+        if (filled($base['meta_description'] ?? null)) {
+            $nonBlockingErrors = [];
+        }
+        if ($nonBlockingErrors !== []) {
+            return $base + $this->draft($nonBlockingErrors);
+        }
+
         $base['generation_status'] = 'ready';
 
         return $base;
@@ -107,23 +143,53 @@ class ListingGenerationService
         $prompt = $this->ai->prompt($file, $bindings);
         for ($attempt = 0; $attempt < $tries; $attempt++) {
             $result = $this->ai->json($prompt);
-            $errors = $this->validator->schema($kind, $result);
-            if ($result === null) $errors = array_merge($errors, $this->ai->errors());
+            $errors = $kind === 'seo' ? $this->seoSchemaErrors($result) : $this->validator->schema($kind, $result);
+            if ($result === null) {
+                $errors = array_merge($errors, $this->ai->errors());
+            }
             if ($errors === []) {
                 if ($kind === 'tagline') {
                     foreach ($result['candidates'] as $candidate) {
-                        if (is_string($candidate) && $this->validator->text('tagline', $candidate, $source) === []) return $candidate;
+                        if (is_string($candidate) && $this->validator->text('tagline', $candidate, $source) === []) {
+                            return $candidate;
+                        }
                     }
                     $errors[] = 'No candidate passes tagline validation.';
                 } elseif ($kind === 'description') {
                     $errors = array_merge($errors, $this->validator->text('summary', $result['summary'], $source));
-                    if (count($result['features']) < 4 || count($result['features']) > 6) $errors[] = 'features must contain 4 to 6 items.';
-                    if (count($result['faq']) !== 4) $errors[] = 'faq must contain 4 items.';
-                    if ($errors === []) return $result;
+                    if (count($result['features']) < 4 || count($result['features']) > 6) {
+                        $errors[] = 'features must contain 4 to 6 items.';
+                    }
+                    if (count($result['faq']) !== 4) {
+                        $errors[] = 'faq must contain 4 items.';
+                    }
+                    if ($errors === []) {
+                        return $result;
+                    }
                 } elseif ($kind === 'seo') {
-                    $errors = $this->validator->text('meta_description', $result['meta_description'], $source);
-                    if (! $titleAlreadyBuilt) $errors = array_merge($this->validator->text('seo_title', $result['seo_title'], $source), $errors);
-                    if ($errors === []) return $result;
+                    $candidates = isset($result['meta_descriptions']) && is_array($result['meta_descriptions'])
+                        ? $result['meta_descriptions']
+                        : [$result['meta_description'] ?? null];
+                    $candidateErrors = [];
+                    $selected = null;
+                    foreach ($candidates as $candidate) {
+                        if (! is_string($candidate)) {
+                            continue;
+                        }
+                        $currentErrors = $this->validator->text('meta_description', $candidate, $source);
+                        if ($currentErrors === []) {
+                            $selected = $candidate;
+                            break;
+                        }
+                        $candidateErrors = array_merge($candidateErrors, $currentErrors);
+                    }
+                    $errors = $selected === null ? array_values(array_unique($candidateErrors ?: ['No meta description candidate passed validation.'])) : [];
+                    if (! $titleAlreadyBuilt) {
+                        $errors = array_merge($this->validator->text('seo_title', $result['seo_title'], $source), $errors);
+                    }
+                    if ($errors === []) {
+                        return ['seo_title' => $result['seo_title'], 'meta_description' => $selected];
+                    }
                 }
             }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors).($feedback === '' ? '' : "\nVerification issues:\n".$feedback);
@@ -156,12 +222,15 @@ class ListingGenerationService
                 && is_array($result['suggestions']) && is_array($result['suggestions']['categories'] ?? null) && is_array($result['suggestions']['use_cases'] ?? null)) {
                 $picks = [];
                 foreach (['categories' => 3, 'use_cases' => 2, 'best_for' => 2, 'pricing' => 1, 'platforms' => 3] as $key => $cap) {
-                    if (! is_array($result[$key])) continue 2;
+                    if (! is_array($result[$key])) {
+                        continue 2;
+                    }
                     $picks[$key] = $this->canonicalPicks(self::verifiedPicks($result[$key], $source, $cap), $available[$key]);
                 }
                 $aiPlatforms = array_values(array_filter($picks['platforms'], fn ($platform) => $platform !== 'Browser' || in_array('Browser', $detectedPlatforms, true)));
                 $picks['platforms'] = array_slice($this->canonicalPicks(array_merge($detectedPlatforms, $aiPlatforms), $available['platforms']), 0, 3);
                 $ids = fn ($items) => Category::whereIn('name', $items)->pluck('id')->all();
+
                 return [
                     'categories' => $ids($picks['categories']), 'useCases' => $ids($picks['use_cases']),
                     'bestFor' => $ids($picks['best_for']), 'pricing' => $ids($picks['pricing']),
@@ -193,11 +262,15 @@ class ListingGenerationService
     private function canonicalPicks(array $picks, array $available): array
     {
         $lookup = [];
-        foreach ($available as $name) $lookup[mb_strtolower($name)] = $name;
+        foreach ($available as $name) {
+            $lookup[mb_strtolower($name)] = $name;
+        }
         $canonical = [];
         foreach ($picks as $name) {
             $match = $lookup[mb_strtolower($name)] ?? null;
-            if ($match !== null && ! in_array($match, $canonical, true)) $canonical[] = $match;
+            if ($match !== null && ! in_array($match, $canonical, true)) {
+                $canonical[] = $match;
+            }
         }
 
         return $canonical;
@@ -217,7 +290,9 @@ class ListingGenerationService
         ]);
         for ($i = 0; $i < 2; $i++) {
             $result = $this->ai->json($prompt);
-            if ($this->validator->schema('verification', $result) === []) return $result['issues'];
+            if ($this->validator->schema('verification', $result) === []) {
+                return $result['issues'];
+            }
             $prompt .= "\nValidation errors to fix:\nverification.issues must be an array.";
             $this->lastErrors = array_merge(['Verification JSON schema is invalid.'], $result === null ? $this->ai->errors() : []);
         }
@@ -232,6 +307,39 @@ class ListingGenerationService
             'stage' => $errors[0] ?? 'unknown',
             'errors' => $errors,
         ]);
+
         return ['generation_status' => 'draft', 'generation_noindex' => true, 'generation_review_required' => true, 'generation_errors' => $errors];
+    }
+
+    private function seoSchemaErrors(?array $result): array
+    {
+        if ($result === null) {
+            return ['seo must be valid JSON object.'];
+        }
+        if (! is_string($result['seo_title'] ?? null)) {
+            return ['seo.seo_title must be string.'];
+        }
+        if (is_string($result['meta_description'] ?? null)) {
+            return [];
+        }
+        if (! is_array($result['meta_descriptions'] ?? null)) {
+            return ['seo.meta_descriptions must be array.'];
+        }
+        if (count($result['meta_descriptions']) !== 3 || count(array_filter($result['meta_descriptions'], 'is_string')) !== 3) {
+            return ['seo.meta_descriptions must contain three strings.'];
+        }
+
+        return [];
+    }
+
+    private function generationAttribution(string $provider): array
+    {
+        $router = app(AiProviderRoutingService::class);
+
+        return [
+            'provider' => $provider,
+            'provider_label' => $router->providerLabel($provider),
+            'model' => $router->modelFor($provider),
+        ];
     }
 }

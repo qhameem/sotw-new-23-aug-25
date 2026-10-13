@@ -110,14 +110,17 @@
           </div>
           <div class="ml-auto flex items-center justify-end gap-3">
             <p v-if="validationErrors.tagline" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.tagline }}</p>
-            <button v-if="reviewMode && modelValue.tagline" type="button" class="review-badge" @click="confirmField('tagline')">AI-generated. Check wording.</button>
+            <button v-if="reviewMode && modelValue.tagline" type="button" class="review-badge" @click="confirmField('tagline')">{{ generationLabel('tagline') }}</button>
+            <select v-if="reviewMode && isAdmin && aiModelOptions.length" v-model="taglineProvider" class="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-700" aria-label="Tagline regeneration model">
+              <option v-for="option in aiModelOptions" :key="`tagline-${option.provider}`" :value="option.provider">{{ option.label }}</option>
+            </select>
             <button
               v-if="reviewMode"
               type="button"
               class="review-refresh inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
               :disabled="loadingStates.tagline || (!isAdmin && regenerationRemaining.tagline <= 0)"
               :aria-label="loadingStates.tagline ? 'Regenerating tagline' : 'Regenerate tagline'"
-              @click.stop.prevent="$emit('regenerate-tagline')"
+              @click.stop.prevent="$emit('regenerate-tagline', isAdmin ? taglineProvider : null)"
             >
               <span :class="{ 'animate-spin': loadingStates.tagline }" aria-hidden="true">↻</span>
               <span v-if="loadingStates.tagline" class="text-[11px] font-medium">Regenerating…</span>
@@ -148,8 +151,11 @@
           </div>
           <div class="ml-auto flex items-center justify-end gap-3">
             <p v-if="validationErrors.description" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.description }}</p>
-            <button v-if="reviewMode && modelValue.description" type="button" class="review-badge" @click="confirmField('description')">AI-generated. Check wording.</button>
-            <button v-if="reviewMode" type="button" class="review-refresh disabled:cursor-not-allowed disabled:opacity-40" :disabled="loadingStates.description || (!isAdmin && regenerationRemaining.description <= 0)" aria-label="Regenerate description" @click.stop.prevent="$emit('regenerate-description')">↻</button>
+            <button v-if="reviewMode && modelValue.description" type="button" class="review-badge" @click="confirmField('description')">{{ generationLabel('description') }}</button>
+            <select v-if="reviewMode && isAdmin && aiModelOptions.length" v-model="descriptionProvider" class="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-700" aria-label="Description regeneration model">
+              <option v-for="option in aiModelOptions" :key="`description-${option.provider}`" :value="option.provider">{{ option.label }}</option>
+            </select>
+            <button v-if="reviewMode" type="button" class="review-refresh disabled:cursor-not-allowed disabled:opacity-40" :disabled="loadingStates.description || (!isAdmin && regenerationRemaining.description <= 0)" aria-label="Regenerate description" @click.stop.prevent="$emit('regenerate-description', isAdmin ? descriptionProvider : null)">↻</button>
             <span v-if="reviewMode && !isAdmin" class="text-[10px] text-slate-500">{{ regenerationRemaining.description }} left</span>
             <button
               v-if="showRewriteDescriptionButton"
@@ -805,12 +811,26 @@ const props = defineProps({
   sourceSnippet: { type: String, default: '' },
   logoPreview: { type: String, default: '' },
   showLogoError: { type: Boolean, default: false },
-  regenerationRemaining: { type: Object, default: () => ({ tagline: 3, description: 3 }) }
+  regenerationRemaining: { type: Object, default: () => ({ tagline: 3, description: 3 }) },
+  aiModelOptions: { type: Array, default: () => [] }
 });
 
 const emit = defineEmits(['update:modelValue', 'rewrite-description', 'regenerate-tagline', 'regenerate-description', 'open-logo-picker', 'upload-image']);
 
 const imageDragDepth = ref([0, 0]);
+const taglineProvider = ref('gemini');
+const descriptionProvider = ref('gemini');
+const generationLabel = (field) => {
+  const attribution = props.modelValue?.[`${field}_generation`];
+  if (!attribution?.model) return 'AI-generated. Check wording.';
+  return `Generated with ${attribution.provider_label || attribution.provider} · ${attribution.model}`;
+};
+
+watch(() => props.aiModelOptions, (options) => {
+  const fallback = options?.[0]?.provider || 'gemini';
+  if (!options.some((option) => option.provider === taglineProvider.value)) taglineProvider.value = fallback;
+  if (!options.some((option) => option.provider === descriptionProvider.value)) descriptionProvider.value = fallback;
+}, { immediate: true });
 const enterImageDrop = (index, event) => {
   if (props.isUploadingImage || props.isLoading || !Array.from(event.dataTransfer?.types || []).includes('Files')) return;
   imageDragDepth.value[index]++;

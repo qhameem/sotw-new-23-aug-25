@@ -11,14 +11,22 @@ class TaglineRewriterService
 {
     private array $listingErrors = [];
 
+    private ?string $listingProvider = null;
+
     public function listingErrors(): array
     {
         return $this->listingErrors;
     }
 
+    public function listingProvider(): ?string
+    {
+        return $this->listingProvider;
+    }
+
     public function rewriteFromFacts(string $productName, array $facts, string $source = ''): ?string
     {
         $this->listingErrors = [];
+        $this->listingProvider = null;
         $client = app(ListingAiClient::class);
         $validator = app(OutputValidator::class);
         $prompt = $client->prompt('tagline_prompt.txt', [
@@ -34,10 +42,18 @@ class TaglineRewriterService
                     $headings = [];
                     preg_match_all('/^H[1-3]:\s*(.+)$/mi', $source, $headings);
                     $copiesHeading = is_string($candidate) && collect($headings[1] ?? [])
-                        ->contains(fn ($heading) => mb_strtolower(trim($candidate, " .!?")) === mb_strtolower(trim($heading, " .!?")));
+                        ->contains(fn ($heading) => mb_strtolower(trim($candidate, ' .!?')) === mb_strtolower(trim($heading, ' .!?')));
                     $textErrors = is_string($candidate) ? $validator->text('tagline', $candidate, $source) : ['tagline candidate must be text.'];
-                    if ($copiesHeading) $textErrors[] = 'tagline candidate copies a source heading.';
+                    if ($copiesHeading) {
+                        $textErrors[] = 'tagline candidate copies a source heading.';
+                    }
                     if ($textErrors === []) {
+                        try {
+                            $this->listingProvider = $client->lastProvider();
+                        } catch (\Throwable) {
+                            $this->listingProvider = null;
+                        }
+
                         return $candidate;
                     }
                     $candidateErrors = array_merge($candidateErrors, $textErrors);

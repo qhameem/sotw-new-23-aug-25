@@ -55,6 +55,37 @@ class AiProviderRoutingService
         }, $candidates);
     }
 
+    public function providersForTask(string $task, array $exclude = []): array
+    {
+        $providers = config("listing_generation.provider_order.$task")
+            ?? config('listing_generation.provider_order.default', ['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras']);
+
+        $providers = array_values(array_diff($providers, $exclude));
+
+        return $this->orderedConfiguredProviders($providers, preserveOrder: true);
+    }
+
+    public function selectableModels(): array
+    {
+        return array_map(fn (array $candidate): array => [
+            'provider' => $candidate['provider'],
+            'model' => $this->modelFor($candidate['provider']),
+            'label' => $this->providerLabel($candidate['provider']).' · '.$this->modelFor($candidate['provider']),
+        ], $this->orderedConfiguredProviders(['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras'], preserveOrder: true));
+    }
+
+    public function providerLabel(string $provider): string
+    {
+        return match ($provider) {
+            'gemini' => 'Gemini',
+            'groq' => 'Groq',
+            'cloudflare' => 'Cloudflare Workers AI',
+            'openrouter' => 'OpenRouter',
+            'cerebras' => 'Cerebras',
+            default => ucfirst($provider),
+        };
+    }
+
     public function recordHttpSuccess(string $provider, Response $response): void
     {
         $status = $this->currentStatus($provider);

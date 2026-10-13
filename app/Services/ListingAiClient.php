@@ -9,17 +9,30 @@ class ListingAiClient
 {
     private array $errors = [];
 
+    private ?string $lastProvider = null;
+
     public function errors(): array
     {
         return $this->errors;
     }
 
-    public function json(string $prompt, int $maxTokens = 1800): ?array
+    public function lastProvider(): ?string
+    {
+        return $this->lastProvider;
+    }
+
+    public function json(string $prompt, int $maxTokens = 1800, string $task = 'default', array $excludeProviders = []): ?array
     {
         $this->errors = [];
+        $task = $task === 'default' ? $this->inferTask($prompt) : $task;
+        if ($excludeProviders === [] && $this->lastProvider !== null && str_contains($prompt, 'Validation errors to fix:')) {
+            $excludeProviders = [$this->lastProvider];
+        }
         $router = app(AiProviderRoutingService::class);
-        $candidates = $router->orderedConfiguredProviders(['openrouter', 'cerebras', 'cloudflare', 'groq', 'gemini']);
-        if ($candidates === []) $this->errors[] = 'No AI provider is currently available. Check provider keys, limits, and retry times.';
+        $candidates = $router->providersForTask($task, $excludeProviders);
+        if ($candidates === []) {
+            $this->errors[] = 'No AI provider is currently available. Check provider keys, limits, and retry times.';
+        }
         foreach ($candidates as $candidate) {
             try {
                 $provider = $candidate['provider'];
@@ -58,17 +71,32 @@ class ListingAiClient
                         $decoded = json_decode($match[0], true);
                     }
                     if (is_array($decoded)) {
+                        $this->lastProvider = $provider;
+                        Log::info('Listing AI response accepted.', [
+                            'provider' => $provider,
+                            'model' => $router->modelFor($provider),
+                            'task' => $task,
+                            'prompt_characters' => mb_strlen($prompt),
+                            'response_characters' => mb_strlen($content),
+                            'usage' => $response->json('usage'),
+                        ]);
+
                         return $decoded;
                     }
                     $this->errors[] = "$provider returned invalid JSON: ".json_last_error_msg();
                 } else {
-                    if (! $response->successful()) $router->recordHttpFailure($provider, $response);
+                    if (! $response->successful()) {
+                        $router->recordHttpFailure($provider, $response);
+                    }
                     $this->errors[] = "$provider returned HTTP ".$response->status().'.';
                 }
             } catch (\Throwable $error) {
                 $this->errors[] = "$provider request failed.";
-                if (isset($provider)) $router->recordTransportFailure($provider);
+                if (isset($provider)) {
+                    $router->recordTransportFailure($provider);
+                }
                 Log::warning('Listing AI provider exception.', ['provider' => $provider, 'error' => $error->getMessage()]);
+
                 continue;
             }
         }
@@ -76,6 +104,27 @@ class ListingAiClient
         Log::warning('Listing AI request failed.', ['errors' => $this->errors]);
 
         return null;
+    }
+
+    public function jsonWithProvider(string $prompt, string $provider, int $maxTokens = 1800, string $task = 'copy'): ?array
+    {
+        $allowed = ['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras'];
+        if (! in_array($provider, $allowed, true)) {
+            return null;
+        }
+
+        return $this->json($prompt, $maxTokens, $task, array_values(array_diff($allowed, [$provider])));
+    }
+
+    private function inferTask(string $prompt): string
+    {
+        return match (true) {
+            str_contains($prompt, 'You extract facts from a software product website') => 'facts',
+            str_contains($prompt, 'Write SEO fields') => 'seo',
+            str_contains($prompt, 'You check generated listing fields') => 'verification',
+            str_contains($prompt, 'Choose the most relevant categories') => 'classification',
+            default => 'copy',
+        };
     }
 
     public function prompt(string $file, array $bindings): string

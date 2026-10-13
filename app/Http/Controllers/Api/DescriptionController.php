@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiProviderRoutingService;
 use App\Services\DescriptionRewriterService;
 use App\Services\ProductRegenerationLimiter;
 use App\Support\PublicUrlGuard;
@@ -12,14 +13,19 @@ use Illuminate\Support\Facades\Http;
 
 class DescriptionController extends Controller
 {
-    public function generate(Request $request, DescriptionRewriterService $rewriter, ProductRegenerationLimiter $limiter)
+    public function generate(Request $request, DescriptionRewriterService $rewriter, ProductRegenerationLimiter $limiter, AiProviderRoutingService $router)
     {
         $validated = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'url' => ['required', 'url'],
             'additional_resources' => ['nullable', 'string', 'max:10000'],
             'draft_uuid' => ['required', 'string', 'size:36'],
+            'provider' => ['nullable', 'string', 'in:gemini,groq,cloudflare,openrouter,cerebras'],
         ]);
+        $provider = $validated['provider'] ?? null;
+        if ($provider && (! $request->user() || ! $request->user()->is_admin())) {
+            abort(403, 'Only administrators may choose an AI model.');
+        }
 
         $regeneration = $limiter->consume($request->user(), $validated['draft_uuid'], 'description');
 
@@ -56,12 +62,21 @@ class DescriptionController extends Controller
             trim((string) ($validated['name'] ?? '')) ?: 'This product',
             $rawDescription,
             $context,
+            $provider,
         );
 
         if (! is_string($description) || trim($description) === '') {
             return response()->json(['error' => 'A description could not be generated.'], 422);
         }
 
-        return response()->json(['description' => $description, 'regeneration' => $regeneration]);
+        $usedProvider = $rewriter->lastProvider();
+
+        return response()->json([
+            'description' => $description,
+            'regeneration' => $regeneration,
+            'ai_provider' => $usedProvider,
+            'ai_provider_label' => $usedProvider ? $router->providerLabel($usedProvider) : null,
+            'ai_model' => $usedProvider ? $router->modelFor($usedProvider) : null,
+        ]);
     }
 }

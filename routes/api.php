@@ -50,6 +50,7 @@ Route::get('/navigation/categories', [NavigationController::class, 'categories']
 
 // SEO API Routes
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/ai-model-options', \App\Http\Controllers\Api\AiModelOptionsController::class)->name('api.aiModelOptions');
     Route::get('/seo/pages', [SeoApiController::class, 'getPages'])->name('api.seo.pages');
     Route::get('/seo/meta/{page_id}', [SeoApiController::class, 'getMeta'])->name('api.seo.meta');
     Route::post('/seo/meta', [SeoApiController::class, 'saveMeta'])->name('api.seo.saveMeta');

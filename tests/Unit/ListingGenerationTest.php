@@ -1,9 +1,9 @@
 <?php
 
+use App\Services\DescriptionRewriterService;
 use App\Services\FactExtractorService;
 use App\Services\ListingAiClient;
 use App\Services\ListingGenerationService;
-use App\Services\DescriptionRewriterService;
 use App\Services\NameExtractorService;
 use App\Services\OutputValidator;
 use App\Services\PlatformDetector;
@@ -190,4 +190,29 @@ it('accepts a complete short meta description without generated length fields', 
     expect($validator->text('meta_description', $meta))->toBe([]);
     expect($validator->schema('seo', ['seo_title' => 'Quivly: Meeting notes and searchable team transcripts', 'meta_description' => $meta]))->toBe([]);
     expect($validator->text('meta_description', 'Incomplete description'))->not->toBe([]);
+});
+
+it('reports the exact eight word source overlap', function () {
+    $validator = new OutputValidator;
+    $source = 'Ngram helps teams create consistent product descriptions from verified website content.';
+    $errors = $validator->text('meta_description', 'Create consistent product descriptions from verified website content today.', $source);
+
+    expect($errors)->toContain('meta_description repeats eight consecutive source words: "create consistent product descriptions from verified website content".');
+});
+
+it('selects the first original meta description candidate', function () {
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('prompt');
+    $copied = 'Ngram helps teams create consistent product descriptions from verified website content.';
+    $original = 'Build accurate software listings from verified page details. Ngram produces concise directory copy while keeping unsupported claims out.';
+    $client->shouldReceive('json')->once()->andReturn([
+        'seo_title' => 'Ngram: Product descriptions from verified site facts',
+        'meta_descriptions' => [$copied, $original, 'Another complete description for Ngram.'],
+    ]);
+    $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
+    $method = new ReflectionMethod($service, 'generateField');
+
+    $result = $method->invoke($service, 'seo_fields_prompt.txt', [], 'seo', 'Ngram helps teams create consistent product descriptions from verified website content.', '', 1, true);
+
+    expect($result['meta_description'])->toBe($original);
 });

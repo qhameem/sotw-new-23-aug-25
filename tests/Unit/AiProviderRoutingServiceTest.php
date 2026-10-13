@@ -45,6 +45,22 @@ test('provider models can be configured', function () {
         ->and($router->modelFor('cloudflare'))->toBe('cloudflare-test');
 });
 
+test('provider order is selected by listing task', function () {
+    config([
+        'services.google.api_key' => 'gemini-key',
+        'services.groq.key' => 'groq-key',
+        'services.cloudflare_ai.account_id' => 'account-id',
+        'services.cloudflare_ai.api_token' => 'cloudflare-key',
+        'services.openrouter.key' => null,
+        'services.cerebras.key' => null,
+    ]);
+
+    $router = app(AiProviderRoutingService::class);
+
+    expect(array_column($router->providersForTask('seo'), 'provider'))->toBe(['gemini', 'groq', 'cloudflare'])
+        ->and(array_column($router->providersForTask('facts'), 'provider'))->toBe(['cloudflare', 'groq', 'gemini']);
+});
+
 test('temporarily unavailable providers are skipped', function () {
     config([
         'services.google.api_key' => 'test-gemini-key',

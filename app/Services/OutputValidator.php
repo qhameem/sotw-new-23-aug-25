@@ -42,8 +42,8 @@ class OutputValidator
         if (preg_match('/[—;*#]|[\x{1F300}-\x{1FAFF}]|<[^>]+>|\[[^]]+\]\([^)]+\)/u', $value)) {
             $errors[] = "$field contains forbidden punctuation, emoji, or markup.";
         }
-        if ($source !== '' && $this->sharesEightWords($value, $source)) {
-            $errors[] = "$field repeats eight consecutive source words.";
+        if ($source !== '' && ($overlap = $this->eightWordOverlap($value, $source)) !== null) {
+            $errors[] = "$field repeats eight consecutive source words: \"$overlap\".";
         }
 
         return $errors;
@@ -66,12 +66,16 @@ class OutputValidator
                 $errors[] = "$kind.$key must be $type.";
             }
         }
-        if ($errors !== []) return $errors;
+        if ($errors !== []) {
+            return $errors;
+        }
         if ($kind === 'tagline' && (count($value['candidates']) !== 3 || count(array_filter($value['candidates'], 'is_string')) !== 3)) {
             $errors[] = 'tagline.candidates must contain three strings.';
         }
         if ($kind === 'description') {
-            if (count(array_filter($value['features'], 'is_string')) !== count($value['features'])) $errors[] = 'description.features must contain strings.';
+            if (count(array_filter($value['features'], 'is_string')) !== count($value['features'])) {
+                $errors[] = 'description.features must contain strings.';
+            }
             foreach ($value['faq'] as $item) {
                 if (! is_array($item) || ! is_string($item['question'] ?? null) || ! is_string($item['answer'] ?? null)) {
                     $errors[] = 'description.faq items need question and answer strings.';
@@ -91,17 +95,17 @@ class OutputValidator
         return $errors;
     }
 
-    private function sharesEightWords(string $value, string $source): bool
+    public function eightWordOverlap(string $value, string $source): ?string
     {
         $words = fn ($s) => preg_split('/[^\pL\pN]+/u', mb_strtolower($s), -1, PREG_SPLIT_NO_EMPTY);
         $generated = $words($value);
         $original = ' '.implode(' ', $words($source)).' ';
         for ($i = 0; $i <= count($generated) - 8; $i++) {
             if (str_contains($original, ' '.implode(' ', array_slice($generated, $i, 8)).' ')) {
-                return true;
+                return implode(' ', array_slice($generated, $i, 8));
             }
         }
 
-        return false;
+        return null;
     }
 }

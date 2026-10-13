@@ -1287,6 +1287,9 @@ export function useProductForm() {
         unlockAutofillGroups('tagline');
       }
     }
+    if (data.tagline_generation && typeof data.tagline_generation === 'object') {
+      form.tagline_generation = { ...data.tagline_generation };
+    }
 
     if (typeof data.tagline_detailed === 'string' && data.tagline_detailed.trim() !== '') {
       const detailed = data.tagline_detailed.length > 160 ? `${data.tagline_detailed.substring(0, 157)}...` : data.tagline_detailed;
@@ -1313,6 +1316,9 @@ export function useProductForm() {
     ) {
       form.description = data.description;
       unlockAutofillGroups('description');
+    }
+    if (data.description_generation && typeof data.description_generation === 'object') {
+      form.description_generation = { ...data.description_generation };
     }
 
     if (typeof data.description_notice === 'string') {
@@ -2550,7 +2556,7 @@ export function useProductForm() {
     }
   };
 
-  const rewriteProductDescription = async (urlOverride = null) => {
+  const rewriteProductDescription = async (urlOverride = null, provider = null) => {
     const linkValue = urlOverride || form.link;
 
     if (!linkValue || linkValue.trim() === '') {
@@ -2571,6 +2577,7 @@ export function useProductForm() {
         name: form.name || '',
         additional_resources: form.additional_resources || '',
         draft_uuid: draftUuid,
+        ...(isAdmin.value && provider ? { provider } : {}),
       });
 
       if (typeof data?.description !== 'string' || data.description.trim() === '') {
@@ -2578,6 +2585,13 @@ export function useProductForm() {
       }
 
       form.description = data.description;
+      if (data.ai_provider && data.ai_model) {
+        form.description_generation = {
+          provider: data.ai_provider,
+          provider_label: data.ai_provider_label || data.ai_provider,
+          model: data.ai_model,
+        };
+      }
       applyRegenerationUsage('description', data);
       extractionErrors.description = typeof data.description_notice === 'string'
         ? data.description_notice.trim()
@@ -2593,7 +2607,7 @@ export function useProductForm() {
     }
   };
 
-  const regenerateProductTagline = async (urlOverride = null) => {
+  const regenerateProductTagline = async (urlOverride = null, provider = null) => {
     const linkValue = urlOverride || form.link;
 
     if (!linkValue || linkValue.trim() === '') {
@@ -2618,6 +2632,7 @@ export function useProductForm() {
         url: linkValue,
         description: (descriptionText || form.tagline || form.name || 'Product website').slice(0, 5000),
         draft_uuid: draftUuid,
+        ...(isAdmin.value && provider ? { provider } : {}),
       });
 
       if (typeof data?.tagline !== 'string' || data.tagline.trim() === '') {
@@ -2625,6 +2640,13 @@ export function useProductForm() {
       }
 
       form.tagline = data.tagline.slice(0, 140);
+      if (data.ai_provider && data.ai_model) {
+        form.tagline_generation = {
+          provider: data.ai_provider,
+          provider_label: data.ai_provider_label || data.ai_provider,
+          model: data.ai_model,
+        };
+      }
       applyRegenerationUsage('tagline', data);
     } catch (error) {
       applyRegenerationLimitError('tagline', error);

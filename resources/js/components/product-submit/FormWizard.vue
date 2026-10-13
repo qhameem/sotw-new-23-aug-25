@@ -286,6 +286,7 @@
                     :logoPreview="logoPreview || form.favicon || ''"
                     :showLogoError="submitAttempted && Boolean(validationErrors.logo)"
                     :regenerationRemaining="regenerationRemaining"
+                    :aiModelOptions="aiModelOptions"
                     @open-logo-picker="openLogoPicker"
                   />
                 </div>
@@ -342,6 +343,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import axios from 'axios';
 import AdminSandboxBanner from './AdminSandboxBanner.vue';
 import ProductURLInput from './ProductURLInput.vue';
 import AutofillStatus from './AutofillStatus.vue';
@@ -369,6 +371,7 @@ const isLogoPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 const urlCheckPending = ref(false);
 const urlCheckFailed = ref(false);
+const aiModelOptions = ref([]);
 
 const {
   form,
@@ -566,7 +569,7 @@ const scrollToSection = (id) => {
 
 // Intersection Observer for scroll spying
 let observer = null;
-onMounted(() => {
+onMounted(async () => {
   observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -581,6 +584,14 @@ onMounted(() => {
   });
   
   initializeFormData();
+  if (isAdmin.value) {
+    try {
+      const { data } = await axios.get('/api/ai-model-options');
+      aiModelOptions.value = Array.isArray(data?.models) ? data.models : [];
+    } catch (error) {
+      console.error('Failed to load AI model options:', error);
+    }
+  }
 });
 
 onUnmounted(() => {
@@ -752,20 +763,20 @@ const handleFocusField = (fieldKey) => {
   focusField(fieldKey);
 };
 
-const handleDescriptionRewrite = async () => {
+const handleDescriptionRewrite = async (provider = null) => {
   if (loadingStates.description || isLoading.value) {
     return;
   }
 
-  await rewriteProductDescription();
+  await rewriteProductDescription(null, provider);
 };
 
-const handleTaglineRegeneration = async () => {
+const handleTaglineRegeneration = async (provider = null) => {
   if (loadingStates.tagline || isLoading.value) {
     return;
   }
 
-  await regenerateProductTagline();
+  await regenerateProductTagline(null, provider);
 };
 
 const openLogoPicker = async () => {

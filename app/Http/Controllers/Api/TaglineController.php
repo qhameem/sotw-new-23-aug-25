@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Support\PublicUrlGuard;
+use App\Services\AiProviderRoutingService;
+use App\Services\ListingAiClient;
 use App\Services\ProductRegenerationLimiter;
+use App\Support\PublicUrlGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,17 +15,25 @@ use Illuminate\Support\Str;
 class TaglineController extends Controller
 {
     private const TAGLINE_SOFT_MAX = 88;
+
     private const TAGLINE_HARD_MAX = 140;
+
     private const TAGLINE_DETAILED_SOFT_MAX = 120;
+
     private const TAGLINE_DETAILED_HARD_MAX = 160;
 
-    public function generate(Request $request, ProductRegenerationLimiter $limiter)
+    public function generate(Request $request, ProductRegenerationLimiter $limiter, ListingAiClient $client, AiProviderRoutingService $router)
     {
         $validated = $request->validate([
             'description' => 'required|string|max:5000',
             'url' => 'required|url',
             'draft_uuid' => 'required|string|size:36',
+            'provider' => 'nullable|string|in:gemini,groq,cloudflare,openrouter,cerebras',
         ]);
+        $provider = $validated['provider'] ?? null;
+        if ($provider && (! $request->user() || ! $request->user()->is_admin())) {
+            abort(403, 'Only administrators may choose an AI model.');
+        }
         $regeneration = $limiter->consume($request->user(), $validated['draft_uuid'], 'tagline');
 
         try {
@@ -32,54 +42,35 @@ class TaglineController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        $apiKey = config('services.google.api_key');
         $punctuationInstruction = \App\Support\GeneratedCopy::PUNCTUATION_INSTRUCTION;
-        if (!$apiKey) {
-            return $this->fallbackToMetadata($url, $regeneration);
-        }
 
         try {
-            $response = Http::withHeaders([
-                'X-goog-api-key' => $apiKey,
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent", [
-                        'contents' => [
-                            [
-                                'parts' => [
-                                    ['text' => $punctuationInstruction],
-                                    [
-                                        'text' => "Based on the product description \"{$request->input('description')}\", generate two product taglines in JSON format. Write like a human product copywriter, not an AI assistant. Both lines must be clear, natural, and immediately explain what the product does. Lead with useful, product-specific information; remove filler, canned phrasing, empty enthusiasm, and generic marketing language. The 'short' tagline should ideally be 35-85 characters and never exceed 140. The 'detailed' tagline should ideally be 45-110 characters and never exceed 160. The detailed line can be slightly fuller, but it must still be a one-line explanation, not a mini paragraph. Avoid hype, slogans, rhetorical questions, ad-style openings like 'Meet...' or 'Your X shouldn't...'. Do not copy whole lines from the description, but if it contains a short, distinctive positioning phrase that is clearly the best explanation of the product, you may keep that phrase. Preserve strong hooks from the source when they are specific and useful, such as 'one-person company', instead of flattening them into generic terms like 'business', 'company', 'platform', or 'tool'. Prefer the source's clearest native terminology, so do not replace 'AI agents' with broader wording like 'AI team' unless the source clearly does that. Mention pricing, 'no subscription', 'free', or 'one-time purchase' only when the source clearly presents that as a meaningful differentiator or buyer reason to choose the product, especially in categories where recurring subscriptions are the norm. Return only the JSON object with keys 'short' and 'detailed'."
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]);
+            $prompt = $punctuationInstruction."\nBased on the product description \"{$validated['description']}\", generate two product taglines. Write clear, factual, human directory copy without hype. The short line should be 35-85 characters and never exceed 140. The detailed line should be 45-110 characters and never exceed 160. Preserve specific product terminology and supported pricing differentiators. Return JSON only with keys short and detailed.";
+            $taglines = $provider
+                ? $client->jsonWithProvider($prompt, $provider, 800, 'copy')
+                : $client->jsonWithProvider($prompt, 'gemini', 800, 'copy');
 
-            if ($response->failed()) {
-                throw new \Exception('API request failed.');
-            }
-
-            $generatedText = $response->json('candidates.0.content.parts.0.text', '');
-            $cleanedText = trim($generatedText);
-            if (strpos($cleanedText, '```json') === 0) {
-                $cleanedText = substr($cleanedText, 7, -3);
-            }
-
-            $taglines = json_decode($cleanedText, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE || !isset($taglines['short']) || !isset($taglines['detailed'])) {
+            if (! is_array($taglines) || ! isset($taglines['short'], $taglines['detailed'])) {
                 throw new \Exception('Failed to parse JSON response.');
             }
+
+            $usedProvider = $client->lastProvider();
 
             return response()->json([
                 'tagline' => $this->normalizeGeneratedLine((string) $taglines['short'], self::TAGLINE_SOFT_MAX, self::TAGLINE_HARD_MAX),
                 'tagline_detailed' => $this->normalizeGeneratedLine((string) $taglines['detailed'], self::TAGLINE_DETAILED_SOFT_MAX, self::TAGLINE_DETAILED_HARD_MAX),
                 'regeneration' => $regeneration,
+                'ai_provider' => $usedProvider,
+                'ai_provider_label' => $usedProvider ? $router->providerLabel($usedProvider) : null,
+                'ai_model' => $usedProvider ? $router->modelFor($usedProvider) : null,
             ]);
 
         } catch (\Exception $e) {
             Log::error('AI tagline generation failed, falling back to metadata.', ['error' => $e->getMessage()]);
-            return $this->fallbackToMetadata($url, $regeneration);
+
+            return $provider
+                ? response()->json(['error' => 'The selected AI model could not generate a tagline.'], 422)
+                : $this->fallbackToMetadata($url, $regeneration);
         }
     }
 
@@ -89,7 +80,7 @@ class TaglineController extends Controller
             $response = Http::get($url);
             $html = $response->body();
 
-            $doc = new \DOMDocument();
+            $doc = new \DOMDocument;
             @$doc->loadHTML($html);
 
             $titleNode = $doc->getElementsByTagName('title')->item(0);
@@ -111,6 +102,7 @@ class TaglineController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch metadata for tagline fallback.', ['url' => $url, 'error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Failed to fetch metadata.'], 500);
         }
     }
@@ -134,14 +126,14 @@ class TaglineController extends Controller
             $text = Str::limit($text, $hardMax, '...');
         }
 
-        return trim(rtrim($text, " .!?,;:-"));
+        return trim(rtrim($text, ' .!?,;:-'));
     }
 
     private function dropPromotionalLeadIn(string $text): string
     {
         $sentences = preg_split('/(?<=[.!?])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
 
-        if (!is_array($sentences) || count($sentences) < 2) {
+        if (! is_array($sentences) || count($sentences) < 2) {
             return $text;
         }
 
