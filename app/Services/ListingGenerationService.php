@@ -80,7 +80,7 @@ class ListingGenerationService
         if ($issues !== []) {
             $fields = array_unique(array_column($issues, 'field'));
             $feedback = implode("\n", array_map(fn ($issue) => ($issue['field'] ?? 'unknown').': '.($issue['problem'] ?? ''), $issues));
-            if (array_intersect($fields, ['categories', 'use_cases', 'useCases', 'best_for', 'bestFor', 'pricing', 'platforms'])) {
+            if (array_intersect($fields, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'])) {
                 $replacement = $this->classify($factsJson, $source, $facts['platforms'], $feedback, 1);
                 if ($replacement !== null) {
                     $base = array_merge($base, $replacement);
@@ -88,7 +88,7 @@ class ListingGenerationService
             }
             $regenerated = [];
             foreach ($fields as $field) {
-                if (in_array($field, ['categories', 'use_cases', 'useCases', 'best_for', 'bestFor', 'pricing', 'platforms'], true)) {
+                if (in_array($field, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], true)) {
                     continue;
                 }
                 if (in_array($field, ['tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text', 'faq', 'seo_title', 'meta_description'], true)) {
@@ -121,8 +121,15 @@ class ListingGenerationService
                     }
                 }
             }
-            if ($this->verify($base, $factsJson, $source) !== []) {
-                return $base + $this->draft(['verification issues remain']);
+            $remainingIssues = $this->verify($base, $factsJson, $source);
+            if ($remainingIssues === null) {
+                return $base + $this->draft(array_merge(['verification unavailable after repair'], $this->lastErrors));
+            }
+            if ($remainingIssues !== []) {
+                return $base + $this->draft([
+                    'verification issues remain',
+                    ...array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $remainingIssues),
+                ]) + ['generation_issues' => $remainingIssues];
             }
         }
         if (filled($base['meta_description'] ?? null)) {
@@ -141,6 +148,9 @@ class ListingGenerationService
     {
         $this->lastErrors = [];
         $prompt = $this->ai->prompt($file, $bindings);
+        if ($feedback !== '') {
+            $prompt .= "\nVerification issues to fix:\n".$feedback;
+        }
         for ($attempt = 0; $attempt < $tries; $attempt++) {
             $result = $this->ai->json($prompt);
             $errors = $kind === 'seo' ? $this->seoSchemaErrors($result) : $this->validator->schema($kind, $result);
@@ -279,7 +289,10 @@ class ListingGenerationService
     private function verify(array $fields, string $factsJson, string $source): ?array
     {
         $this->lastErrors = [];
-        $reviewFields = $fields;
+        $reviewFields = array_intersect_key($fields, array_flip([
+            'tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text',
+            'faq', 'seo_title', 'meta_description', 'categories', 'useCases', 'bestFor', 'pricing', 'platforms',
+        ]));
         foreach (['categories', 'useCases', 'bestFor', 'pricing', 'platforms'] as $field) {
             if (! empty($fields[$field])) {
                 $reviewFields[$field] = Category::whereIn('id', $fields[$field])->pluck('name')->all();
@@ -291,7 +304,17 @@ class ListingGenerationService
         for ($i = 0; $i < 2; $i++) {
             $result = $this->ai->json($prompt);
             if ($this->validator->schema('verification', $result) === []) {
-                return $result['issues'];
+                return array_map(function (array $issue): array {
+                    $field = preg_replace('/[.\[].*$/', '', trim($issue['field']));
+                    $issue['field'] = match ($field) {
+                        'use_cases' => 'useCases',
+                        'best_for' => 'best_for_text',
+                        'not_for' => 'not_for_text',
+                        default => $field,
+                    };
+
+                    return $issue;
+                }, $result['issues']);
             }
             $prompt .= "\nValidation errors to fix:\nverification.issues must be an array.";
             $this->lastErrors = array_merge(['Verification JSON schema is invalid.'], $result === null ? $this->ai->errors() : []);

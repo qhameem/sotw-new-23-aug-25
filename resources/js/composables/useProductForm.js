@@ -1269,8 +1269,21 @@ export function useProductForm() {
     if (data.generation_status === 'draft' || data.generation_status === 'ready') {
       form.generation_status = data.generation_status;
       if (data.generation_status === 'draft') {
-        const reason = Array.isArray(data.generation_errors) ? data.generation_errors.slice(0, 2).map(String).join(' ') : '';
-        extractionErrors.description = `Automatic listing validation failed. ${reason} This submission will remain a draft for admin review.`.trim();
+        const issues = Array.isArray(data.generation_issues) ? data.generation_issues : [];
+        if (issues.length) {
+          const grouped = {};
+          issues.forEach((issue) => {
+            const field = String(issue.field || 'verification');
+            (grouped[field] ||= []).push(String(issue.problem || 'Requires review.'));
+          });
+          Object.entries(grouped).forEach(([field, reasons]) => {
+            extractionErrors[field] = reasons.join(' ');
+          });
+          extractionErrors.verification = 'Unresolved factual issues. Submission remains a draft for admin review.';
+        } else {
+          const reason = Array.isArray(data.generation_errors) ? data.generation_errors.map(String).join(' ') : '';
+          extractionErrors.verification = `Automatic listing validation incomplete. ${reason} Submission remains a draft for admin review.`.trim();
+        }
       }
     }
     const unlockTagline = options.unlockTagline !== false;
