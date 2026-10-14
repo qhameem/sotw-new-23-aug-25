@@ -435,6 +435,9 @@ class PublicProductDiscoveryTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('FAQ about Generated Product');
+        $response->assertDontSee('Read full editorial notes');
+        $this->assertSame(1, substr_count($response->getContent(), '<li>Shared tasks</li>'));
+        $response->assertDontSee('<span>Shared tasks</span>', false);
         $response->assertSee('Who can use Generated Product?');
         $response->assertSee('"@type": "FAQPage"', false);
         $response->assertDontSee('<h3><strong>Frequently asked questions about Generated Product</strong></h3>', false);

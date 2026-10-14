@@ -463,45 +463,21 @@
                     </div>
 
                     @unless($usesProductFacts)
-                        @if($hasEditorialSections)
-                            <div class="mt-1">
-                                @include('products.partials._editorial-highlights', ['productEditorial' => $productEditorial])
-                            </div>
-
-                            @if(filled($detailDescriptionHtml))
-                                <details class="px-5 py-1">
-                                    <summary class="cursor-pointer text-sm font-semibold text-gray-900">Read full editorial notes</summary>
-                                    <div class="prose mt-2 max-w-none text-sm ql-editor-content product-detail-description">
-                                        @if(isset($isAdminView) && $isAdminView)
-                                            <div x-show="!editingDescription" @click="editingDescription = true">
-                                                {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                            </div>
-                                            <textarea x-show="editingDescription" x-model="description"
-                                                @keydown.enter="updateProduct(); editingDescription = false"
-                                                @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
-                                        @else
+                        @if(filled($detailDescriptionHtml))
+                            <div class="px-5 py-1">
+                                <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
+                                    @if(isset($isAdminView) && $isAdminView)
+                                        <div x-show="!editingDescription" @click="editingDescription = true">
                                             {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                        @endif
-                                    </div>
-                                </details>
-                            @endif
-                        @else
-                            @if(filled($detailDescriptionHtml))
-                                <div class="px-5 py-1">
-                                    <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
-                                        @if(isset($isAdminView) && $isAdminView)
-                                            <div x-show="!editingDescription" @click="editingDescription = true">
-                                                {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                            </div>
-                                            <textarea x-show="editingDescription" x-model="description"
-                                                @keydown.enter="updateProduct(); editingDescription = false"
-                                                @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
-                                        @else
-                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                        @endif
-                                    </div>
+                                        </div>
+                                        <textarea x-show="editingDescription" x-model="description"
+                                            @keydown.enter="updateProduct(); editingDescription = false"
+                                            @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
+                                    @else
+                                        {!! \App\Support\ExpandableEditorialLists::render(\App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description')) !!}
+                                    @endif
                                 </div>
-                            @endif
+                            </div>
                         @endif
                     @endunless
 
