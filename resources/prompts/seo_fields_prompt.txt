@@ -1,5 +1,5 @@
 Write SEO fields for a software directory page. Use only the facts JSON below.
-seo_title: 50 to 60 characters. Format: Name: what it does for whom. Put the main keyword right after the name. End on a complete phrase. Never end on a conjunction or preposition.
+seo_title: 50 to 60 characters. Format: Name: what it does for whom. Put the main keyword right after the name. End on a complete phrase.
 meta_descriptions: Write three distinct candidates. Each must be 120 to 160 characters and one or two complete sentences. State what the product does. Mention platform and pricing only when the facts explicitly support them. Do not pad with unsupported claims to reach a character target.
 Do not copy any sequence of eight consecutive words from the source-derived facts. Preserve facts while changing sentence structure and wording.
 Do not name a feature missing from the facts.

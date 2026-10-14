@@ -12,9 +12,9 @@ use App\Services\SeoTitleBuilder;
 use App\Support\ProductDescriptionTemplates;
 use Illuminate\Support\Facades\Http;
 
-it('rejects incomplete endings and banned copy', function () {
+it('accepts ending words while still rejecting banned copy', function () {
     $validator = new OutputValidator;
-    expect($validator->text('tagline', 'Weave task manager for creative teams and'))->not->toBeEmpty();
+    expect($validator->text('tagline', 'Weave task manager for creative teams and'))->toBe([]);
     expect($validator->text('tagline', 'A seamless task manager for creative teams'))->not->toBeEmpty();
 });
 
@@ -63,7 +63,7 @@ it('builds a complete title without truncation', function () {
     $builder = new SeoTitleBuilder;
     expect($builder->build('Weave', 'Task planning for independent creative teams today'))
         ->toBe('Weave: Task planning for independent creative teams today');
-    expect($builder->build('Weave', 'Task planning for independent creative teams and'))->toBeNull();
+    expect($builder->build('Weave', 'Task planning for independent creative teams and'))->toBe('Weave: Task planning for independent creative teams and');
     $completeTitle = 'BetterWispr: Voice notes and dictation for professional teams';
     expect(mb_strlen($completeTitle))->toBe(61);
     expect($builder->build('BetterWispr', 'Voice notes and dictation for professional teams'))->toBe($completeTitle);
@@ -226,3 +226,13 @@ it('selects the first original meta description candidate', function () {
 
     expect($result['meta_description'])->toBe($original);
 });
+
+it('accepts questions ending in previously rejected words', function (string $question) {
+    expect((new OutputValidator)->text('faq_question', $question))->toBe([]);
+})->with([
+    'Who is this product best for?',
+    'Which tools does it integrate with?',
+    'Which formats can I export to?',
+    'Which workspace can I sign in?',
+    'What does this feature consist of?',
+]);

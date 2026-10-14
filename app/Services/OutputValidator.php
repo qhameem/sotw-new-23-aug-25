@@ -4,8 +4,6 @@ namespace App\Services;
 
 class OutputValidator
 {
-    private const BAD_ENDINGS = ['and', 'or', 'with', 'for', 'to', 'of', 'in', 'the', 'a', 'an'];
-
     public function text(string $field, string $value, string $source = ''): array
     {
         $errors = [];
@@ -33,9 +31,6 @@ class OutputValidator
             if (! preg_match('/[.!?]\s*$/u', $value)) {
                 $errors[] = 'meta_description must end with a complete sentence.';
             }
-        }
-        if (preg_match('/\b('.implode('|', self::BAD_ENDINGS).')\W*$/iu', $value)) {
-            $errors[] = "$field ends on an incomplete word.";
         }
         foreach (config('listing_generation.banned_words', []) as $word) {
             if (preg_match('/\b'.preg_quote($word, '/').'\b/iu', $value)) {
