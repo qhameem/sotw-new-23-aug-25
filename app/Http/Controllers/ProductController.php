@@ -3384,7 +3384,7 @@ class ProductController extends Controller
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url));
             $html = $response->body();
-            \App\Support\ExtractionPageGuard::assertUsable($html);
+            $timings->measure('page validation', fn () => \App\Support\ExtractionPageGuard::assertUsable($html));
 
             $doc = new DOMDocument;
             @$doc->loadHTML($html);
@@ -3817,7 +3817,7 @@ class ProductController extends Controller
 
             $doc = new DOMDocument;
             @$doc->loadHTML($html);
-            $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
+            $autofillLinks = $timings->measure('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url));
 
             $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $metadata['name'] ?? '');
             $taglineDetailed = $this->selectBestAutofillTaglineCandidate(
@@ -3874,6 +3874,9 @@ class ProductController extends Controller
             }
         }
 
+        foreach (['name', 'favicon', 'screenshot_url', 'pricing_page_url', 'x_account', 'maker_links', 'tagline', 'tagline_detailed'] as $field) {
+            \App\Support\ExtractionReport::current()->record('metadata', $field.': '.(filled($responseData[$field] ?? null) ? 'extracted' : 'not found'), filled($responseData[$field] ?? null) ? 'success' : 'warning');
+        }
         Log::info('Fetched initial metadata', ['url' => $url, 'data' => $responseData]);
 
         return response()->json(array_merge($responseData, $timings->payload($request)));
@@ -4140,11 +4143,13 @@ class ProductController extends Controller
 
         foreach ($resources['urls'] as $resourceUrl) {
             try {
+                \App\Support\ExtractionReport::current()->record('additional resources', 'Reading '.$resourceUrl);
                 $response = Http::timeout(8)->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 ])->get($resourceUrl);
 
                 if (! $response->successful()) {
+                    \App\Support\ExtractionReport::current()->record('additional resources', 'Resource returned HTTP '.$response->status(), 'warning');
                     continue;
                 }
 
@@ -4152,10 +4157,12 @@ class ProductController extends Controller
                 @$doc->loadHTML($response->body());
 
                 $snippet = $this->buildDocumentTextSnippet($doc);
+                \App\Support\ExtractionReport::current()->record('additional resources', $snippet !== '' ? 'Resource text collected.' : 'No usable resource text found.', $snippet !== '' ? 'success' : 'warning');
                 $sections[] = $snippet !== ''
                     ? "Additional resource URL: {$resourceUrl}\n{$snippet}"
                     : "Additional resource URL: {$resourceUrl}";
             } catch (\Throwable $e) {
+                \App\Support\ExtractionReport::current()->record('additional resources', 'Resource unavailable; continuing.', 'warning');
                 Log::warning('Failed to fetch additional resource for add-product AI context.', [
                     'url' => $resourceUrl,
                     'error' => $e->getMessage(),
@@ -4202,6 +4209,16 @@ class ProductController extends Controller
                 flush();
             };
 
+            $report = \App\Support\ExtractionReport::current();
+            if ($isAdmin) {
+                $report->listen(function ($entry) {
+                    echo json_encode(['report_entry' => $entry])."\n";
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                });
+            }
             $url = $request->input('url');
             if (! $url) {
                 $sendUpdate('URL is required.', 0, ['error' => 'URL is required.']);
@@ -4235,20 +4252,26 @@ class ProductController extends Controller
                 ])->timeout(15)->get($url));
 
                 if (! $htmlResponse->successful()) {
+                    $report->record('metadata', 'Website returned HTTP '.$htmlResponse->status(), 'error');
                     $sendUpdate('Failed to fetch website.', 100, ['error' => 'The website could not be fetched. Retained data can be completed manually.']);
 
                     return;
                 }
                 $htmlContent = $htmlResponse->body();
-            \App\Support\ExtractionPageGuard::assertUsable($htmlContent);
+                $timings->measure('page validation', fn () => \App\Support\ExtractionPageGuard::assertUsable($htmlContent));
                 $doc = new DOMDocument;
                 @$doc->loadHTML($htmlContent);
-                $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
+                $autofillLinks = $timings->measure('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url));
                 $generation = $fetchContent
                     ? app(\App\Services\ListingGenerationService::class)->generate(
                         trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),
                         app(\App\Services\ProductSourceCollector::class)->collect($url, $htmlContent, $additionalResourcesContext)
                     ) : [];
+                foreach (($generation['field_errors'] ?? []) as $field => $issue) {
+                    if ($issue) {
+                        $report->record($field, $issue, 'warning');
+                    }
+                }
                 if ($generation !== []) {
                     \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour());
                 }
@@ -4343,12 +4366,16 @@ class ProductController extends Controller
                         ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                         : [];
                 } catch (\Throwable $techStackError) {
+                    $report->record('tech stack', 'Detection failed; continuing without technology matches.', 'warning');
                     \Illuminate\Support\Facades\Log::warning('Tech stack detection failed during processUrlStream.', [
                         'url' => $url,
                         'error' => $techStackError->getMessage(),
                     ]);
                 }
 
+                foreach (['logos' => $logos, 'tech stacks' => $techStackIds, 'categories' => $categoryIds, 'use cases' => $useCaseIds, 'best for' => $bestForIds, 'pricing' => $pricingIds, 'platforms' => $platformIds] as $field => $values) {
+                    $report->record($field, count($values).' results found.', $values === [] ? 'warning' : 'success');
+                }
                 $sendUpdate('Categories ready. Finalizing extracted data and response...', 97, [
                     'categories' => $categoryIds,
                     'useCases' => $useCaseIds,
@@ -4384,9 +4411,11 @@ class ProductController extends Controller
                     'maker_links' => $autofillLinks['maker_links'],
                 ];
 
+                $report->record('extraction', 'Server extraction finished; applying results in browser.', 'success');
                 $sendUpdate('Done!', 100, array_merge($responseData, $generation));
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Error in processUrlStream: '.$e->getMessage());
+                $report->record('extraction', 'Extraction failed ('.class_basename($e).'). Retained data can be completed manually.', 'error');
                 $sendUpdate('Extraction failed.', 100, ['error' => $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Detailed extraction failed. Retained data can be completed manually.']);
             }
         });
@@ -4437,10 +4466,10 @@ class ProductController extends Controller
                 return response()->json(['error' => 'The website could not be fetched. Fill missing details manually.'], 422);
             }
             $htmlContent = $htmlResponse->body();
-            \App\Support\ExtractionPageGuard::assertUsable($htmlContent);
+            $timings->measure('page validation', fn () => \App\Support\ExtractionPageGuard::assertUsable($htmlContent));
             $doc = new DOMDocument;
             @$doc->loadHTML($htmlContent);
-            $autofillLinks = $this->extractAutofillLinksFromDocument($doc, $url);
+            $autofillLinks = $timings->measure('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url));
             $generation = $fetchContent
                 ? app(\App\Services\ListingGenerationService::class)->generate(
                     trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),

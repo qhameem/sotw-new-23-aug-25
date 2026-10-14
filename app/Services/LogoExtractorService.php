@@ -17,6 +17,7 @@ class LogoExtractorService
 
     public function extract(string $url, string $html): array
     {
+        \App\Support\ExtractionReport::current()->record('logo', 'Collecting manifest icons, brand images, structured data, and favicon candidates.');
         $doc = new DOMDocument();
         @$doc->loadHTML($html);
 
@@ -75,6 +76,7 @@ class LogoExtractorService
                         }
                     }
                 } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Optional logo extraction or image probe failed; continuing.', 'warning');
                     // Ignore
                 }
             }
@@ -168,6 +170,7 @@ class LogoExtractorService
                 }
             }
         } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Optional logo extraction or image probe failed; continuing.', 'warning');
         }
 
         // JSON-LD Organization/Brand logo
@@ -183,6 +186,7 @@ class LogoExtractorService
                     $this->extractJsonLDCandidates($json, $candidates, $url);
                 }
             } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Optional logo extraction or image probe failed; continuing.', 'warning');
             }
         }
 
@@ -378,6 +382,7 @@ class LogoExtractorService
                                 }
                             }
                         } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Optional logo extraction or image probe failed; continuing.', 'warning');
                             // Can't probe — leave at 0, will not be discarded unless better exist
                         }
                     }
@@ -573,6 +578,7 @@ class LogoExtractorService
                 }
             }
         } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Optional logo extraction or image probe failed; continuing.', 'warning');
             // Fall back to original URL
         }
         return null;

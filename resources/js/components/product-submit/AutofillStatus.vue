@@ -35,6 +35,15 @@
           <p class="mt-1 !text-amber-900 dark:!text-amber-200">{{ reviewFieldsLabel }}.</p>
         </div>
       </div>
+      <div v-if="isAdmin && report.length" class="border-t border-slate-200 dark:border-slate-800">
+        <div class="flex justify-between px-3 py-2 font-mono text-xs">
+          <span>Admin extraction report · {{ report.length }} events</span>
+          <button type="button" class="text-sky-700 dark:text-sky-400" @click="downloadReport">Download report</button>
+        </div>
+        <div class="max-h-[640px] min-h-[240px] overflow-y-auto px-3 pb-3 font-mono text-xs leading-5" role="log" aria-live="polite" aria-label="Admin extraction report">
+          <div v-for="(entry, index) in report" :key="index" class="break-words whitespace-pre-wrap" :class="entry.level === 'error' ? 'text-rose-700 dark:text-rose-300' : entry.level === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'">{{ formatEntry(entry) }}</div>
+        </div>
+      </div>
       <div
         class="flex items-center gap-3 border-t border-[#e2e8f0] bg-[#fff] px-3 py-2 font-mono text-[10px] dark:border-slate-800 dark:bg-slate-900 sm:text-xs"
         role="progressbar"
@@ -69,6 +78,8 @@
 import { computed } from 'vue';
 
 const props = defineProps({
+  isAdmin: { type: Boolean, default: false },
+  report: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
   canStop: { type: Boolean, default: false },
   autofillProgress: { type: Number, default: 0 },
@@ -83,6 +94,16 @@ const props = defineProps({
   nextAutofillFields: { type: String, default: '' },
 });
 defineEmits(['regenerate', 'stop']);
+
+const formatEntry = (entry) => `[${new Date(entry.time).toLocaleTimeString()}] ${entry.level.toUpperCase()} [${entry.stage}] ${entry.message}`;
+const downloadReport = () => {
+  const url = URL.createObjectURL(new Blob([props.report.map(formatEntry).join('\n')], { type: 'text/plain;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'product-extraction-report.txt';
+  link.click();
+  URL.revokeObjectURL(url);
+};
 
 const terminalProgress = computed(() => Math.max(0, Math.min(100, Math.round(Number(props.isLoading ? props.autofillProgress : props.displayProgress) || 0))));
 const filledCount = computed(() => Math.floor(terminalProgress.value / 5));

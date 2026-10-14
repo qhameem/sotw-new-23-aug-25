@@ -21,6 +21,7 @@ class FactExtractorService
         $cacheKey = 'listing_facts:v1:'.hash('sha256', $source);
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
+            \App\Support\ExtractionReport::current()->record('facts', 'Using cached source facts.', 'success');
             return $cached;
         }
         $prompt = $this->client->prompt('facts_extraction_prompt.txt', ['{sourceText}' => $source]);
@@ -63,6 +64,7 @@ class FactExtractorService
                         $unsupported[] = $field;
                     }
                 }
+                foreach ($unsupported as $field) \App\Support\ExtractionReport::current()->record('facts', $field.': discarded because source quote did not match.', 'warning');
                 if (filled($facts['product_type']) || filled($facts['one_line_description']) || $facts['top_features'] !== []) {
                     $facts['top_features'] = array_slice($facts['top_features'], 0, 6);
                     $validated = array_intersect_key($facts, array_flip($required));
@@ -76,6 +78,7 @@ class FactExtractorService
                 }
             }
             $this->errors = $errors;
+            foreach ($errors as $error) \App\Support\ExtractionReport::current()->record('validation', $error, 'warning');
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
         }
 

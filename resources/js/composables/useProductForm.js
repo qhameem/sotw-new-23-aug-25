@@ -7,6 +7,8 @@ import { useExtractionTimer } from './useExtractionTimer';
 const globalFormState = createProductFormState();
 const urlMatchesDraft = ref(false);
 const autofillNextMessage = ref('');
+const extractionReport = ref([]);
+const reportSeen = new Set();
 
 // Create shared reactive objects to ensure consistency across all components
 const sharedForm = reactive({ ...globalFormState.form });
@@ -1138,7 +1140,28 @@ export function useProductForm() {
     }
   };
 
+  const addReport = (message, level = 'info', stage = 'browser', time = new Date().toISOString()) => {
+    if (isAdmin.value && message) extractionReport.value.push({ time, stage, level, message });
+  };
+  const receiveReport = (data, scope) => {
+    if (!isAdmin.value) return;
+    const entries = data?.report_entry ? [data.report_entry] : (data?.extraction_report || data?.data?.extraction_report || []);
+    for (const entry of entries) {
+      const key = `${scope}:${entry.id}:${entry.time}`;
+      if (reportSeen.has(key)) continue;
+      reportSeen.add(key);
+      addReport(entry.message, entry.level, entry.stage, entry.time);
+    }
+  };
+
+  const startExtractionReport = () => {
+    extractionReport.value = [];
+    reportSeen.clear();
+    addReport('Checking product URL before extraction.');
+  };
+
   const beginAutofillProgress = (message, progress = 5, sessionType = 'fullAutofill') => {
+    addReport(message);
     globalFormState.isLoading.value = true;
     globalFormState.loadingMessage.value = message;
     autofillNextMessage.value = '';
@@ -1150,6 +1173,7 @@ export function useProductForm() {
   };
 
   const updateAutofillProgress = (message, progress, nextMessage = '') => {
+    if (extractionReport.value.at(-1)?.message !== message) addReport(message);
     if (!globalFormState.loadingStartedAt.value) {
       beginAutofillProgress(message, progress);
       autofillNextMessage.value = nextMessage;
@@ -1163,6 +1187,7 @@ export function useProductForm() {
   };
 
   const completeAutofillProgress = () => {
+    addReport('Process finished. Full report retained below.', Object.values(extractionErrors).some(Boolean) || extractionReport.value.some((entry) => ['error', 'warning'].includes(entry.level)) ? 'warning' : 'success');
     autofillNextMessage.value = '';
     globalFormState.loadingTargetProgress.value = 100;
     globalFormState.loadingProgress.value = 100;
@@ -1993,6 +2018,7 @@ export function useProductForm() {
   };
 
   const stopAutofill = () => {
+    addReport('Fetching stopped by administrator. Partial report retained.', 'warning');
     Object.keys(loadingStates).forEach((key) => { loadingStates[key] = false; });
     globalFormState.isLoading.value = false;
     globalFormState.loadingStartedAt.value = null;
@@ -2025,8 +2051,9 @@ export function useProductForm() {
         additional_resources: form.additional_resources || '',
       }, { signal });
       signal?.throwIfAborted();
-      updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       const data = response.data;
+      receiveReport(data, 'initial');
+      updateAutofillProgress('Basic metadata received. Preparing detailed analysis...', 30);
       if (isAdmin.value) useExtractionTimer().record('initial', data.phase_timings);
 
       console.log('fetchInitialData response:', data);
@@ -2055,7 +2082,9 @@ export function useProductForm() {
       if (signal?.aborted) return;
       console.error('Error fetching initial metadata:', error);
       loadingStates.name = false;
+      receiveReport(error.response?.data, 'initial');
       const message = error.response?.data?.error || 'Failed to fetch product metadata. Fill the missing fields manually.';
+      addReport(message, 'error');
       extractionErrors.name = message;
       resetValidationState();
       showErrorMessage.value = true;
@@ -2103,6 +2132,7 @@ export function useProductForm() {
       }
 
       const fallbackData = await fallbackResponse.json();
+      receiveReport(fallbackData, 'fallback');
       signal?.throwIfAborted();
       if (fallbackData?.error) {
         throw new Error(fallbackData.error);
@@ -2133,16 +2163,19 @@ export function useProductForm() {
       });
     } catch (streamError) {
       if (signal?.aborted) throw streamError;
+      addReport('Streaming unavailable or interrupted; retrying using non-streaming extraction.', 'warning');
       console.warn('Streaming autofill request failed; retrying without streaming.', streamError);
       return requestWithoutStreaming();
     }
 
     if (!response.ok) {
+      addReport('Streaming unavailable or interrupted; retrying using non-streaming extraction.', 'warning');
       console.warn(`Streaming autofill returned HTTP ${response.status}; retrying without streaming.`);
       return requestWithoutStreaming();
     }
 
     if (!response.body || typeof response.body.getReader !== 'function') {
+      addReport('Streaming unavailable or interrupted; retrying using non-streaming extraction.', 'warning');
       console.warn('Streaming response is unsupported; retrying without streaming.');
       return requestWithoutStreaming();
     }
@@ -2151,6 +2184,7 @@ export function useProductForm() {
     const decoder = new TextDecoder();
     let buffer = '';
     let finalData = {};
+    let sawCompletion = false;
 
     try {
       while (true) {
@@ -2169,6 +2203,7 @@ export function useProductForm() {
 
           try {
             const streamData = JSON.parse(line);
+            if (Number(streamData.progress) >= 100) sawCompletion = true;
 
             if (streamData.data) {
               finalData = { ...finalData, ...streamData.data };
@@ -2178,12 +2213,14 @@ export function useProductForm() {
               onProgress(streamData);
             }
           } catch (error) {
+            addReport('Unreadable stream event: '+error.message, 'warning');
             console.error('Error parsing stream chunk', error, line);
           }
         }
       }
     } catch (streamError) {
       if (signal?.aborted) throw streamError;
+      addReport('Streaming unavailable or interrupted; retrying using non-streaming extraction.', 'warning');
       console.warn('Autofill stream was interrupted; retrying without streaming.', streamError);
       return requestWithoutStreaming();
     }
@@ -2191,6 +2228,7 @@ export function useProductForm() {
     if (buffer.trim()) {
       try {
         const streamData = JSON.parse(buffer);
+        if (Number(streamData.progress) >= 100) sawCompletion = true;
         if (streamData.data) {
           finalData = { ...finalData, ...streamData.data };
         }
@@ -2203,6 +2241,10 @@ export function useProductForm() {
     }
 
     if (finalData.error) throw new Error(finalData.error);
+    if (!sawCompletion) {
+      addReport('Stream ended before a completion event; retrying without streaming.', 'warning');
+      return requestWithoutStreaming();
+    }
     return finalData;
   };
 
@@ -2310,6 +2352,12 @@ export function useProductForm() {
         signal,
         onProgress: (streamData) => {
           if (signal?.aborted) return;
+          receiveReport(streamData, streamData.timing_scope || 'details');
+          if (isAdmin.value && streamData.report_entry) {
+            globalFormState.loadingMessage.value = `${streamData.report_entry.stage}: ${streamData.report_entry.message}`;
+            autofillNextMessage.value = '';
+          }
+          if (streamData.data?.error) addReport(streamData.data.error, 'error');
           if (isAdmin.value) useExtractionTimer().record(streamData.timing_scope || 'details', streamData.phase_timings || streamData.data?.phase_timings);
           if (streamData.data) {
             applyAutofillPatch(streamData.data, { forceDescriptionOverwrite });
@@ -2355,9 +2403,9 @@ export function useProductForm() {
             updateAutofillProgress(
               isFinalStreamStep
                 ? 'Applying extracted data to the form...'
-                : (streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...'),
+                : (isAdmin.value ? globalFormState.loadingMessage.value : (streamData.message || globalFormState.loadingMessage.value || 'Analyzing product website...')),
               isFinalStreamStep ? 90 : mapStreamProgressToUi(streamData.progress),
-              isFinalStreamStep ? '' : (streamData.next_message || '')
+              isFinalStreamStep || isAdmin.value ? '' : (streamData.next_message || '')
             );
           } else if (streamData.message) {
             globalFormState.loadingMessage.value = streamData.message;
@@ -2371,6 +2419,7 @@ export function useProductForm() {
       console.log('fetchRemainingData: Extracted data object:', data);
 
       updateAutofillProgress('Applying extracted data to the form...', 91);
+      receiveReport(data, 'details');
       applyAutofillPatch(data, { forceDescriptionOverwrite });
 
       if (shouldFetchContent) {
@@ -2394,6 +2443,7 @@ export function useProductForm() {
 
     } catch (error) {
       if (signal?.aborted) return;
+      addReport(error.message || 'Detailed extraction failed.', 'error');
       console.error('Error fetching remaining data:', error);
       // Check if it's a timeout error
       const isTimeoutError = error.code === 'ECONNABORTED' || (error.response && error.response.status === 408);
@@ -3298,6 +3348,8 @@ export function useProductForm() {
     loadingProgress: globalFormState.loadingProgress,
     loadingMessage: globalFormState.loadingMessage,
     autofillNextMessage,
+    extractionReport,
+    startExtractionReport,
     loadingStates,
     autofillReveal,
     logoPreview: globalFormState.logoPreview,

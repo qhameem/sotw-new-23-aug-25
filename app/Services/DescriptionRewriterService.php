@@ -84,6 +84,7 @@ class DescriptionRewriterService
                     return $result;
                 }
             }
+            foreach ($errors as $error) \App\Support\ExtractionReport::current()->record('validation', $error, 'warning');
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
             $this->listingErrors = $errors === ['description must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
         }

@@ -38,6 +38,7 @@ class ProductLogoResolver
             return $resolvedLogo;
         }
 
+        \App\Support\ExtractionReport::current()->record('logo', 'No usable primary logo; trying favicon fallback.', 'warning');
         $faviconCandidates = $this->safeExtract(fn () => $this->faviconExtractor->extract($productUrl));
 
         return $this->firstUsableCandidate($faviconCandidates);
@@ -68,7 +69,8 @@ class ProductLogoResolver
             $result = $extractor();
 
             return is_array($result) ? $result : [];
-        } catch (\Throwable) {
+        } catch (\Throwable $error) {
+            \App\Support\ExtractionReport::current()->record('logo', 'Candidate extraction failed ('.class_basename($error).'); trying fallback.', 'warning');
             return [];
         }
     }

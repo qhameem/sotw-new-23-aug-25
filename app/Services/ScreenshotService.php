@@ -109,6 +109,7 @@ class ScreenshotService
                 $attemptStartedAt = microtime(true);
 
                 try {
+                    \App\Support\ExtractionReport::current()->record('screenshot', 'Trying '.$provider);
                     $imageContents = $this->downloadProviderScreenshot($provider, $normalizedUrl);
                     $disk->put($relativePath, $imageContents);
 
@@ -152,6 +153,7 @@ class ScreenshotService
 
         $localStartedAt = microtime(true);
         try {
+            \App\Support\ExtractionReport::current()->record('screenshot', 'Trying local Chrome fallback.');
             $this->captureProgrammatically($normalizedUrl, $absolutePath);
 
             $this->logEvent('info', 'Local Chrome screenshot capture succeeded.', array_merge(
@@ -833,6 +835,7 @@ class ScreenshotService
 
     protected function logEvent(string $level, string $message, array $context = []): void
     {
+        \App\Support\ExtractionReport::current()->record('screenshot', $message.(isset($context['driver']) ? ' Provider: '.$context['driver'].'.' : '').(isset($context['duration_ms']) ? ' Duration: '.$context['duration_ms'].'ms.' : ''), $level);
         match ($level) {
             'error' => Log::error($message, $context),
             'warning' => Log::warning($message, $context),

@@ -25,13 +25,17 @@ class TechStackDetectorService
         $apiKey = config('services.builtwith.api_key');
 
         if ($apiKey) {
+            \App\Support\ExtractionReport::current()->record('tech stack', 'Trying BuiltWith.');
             try {
                 $response = Http::get('https://api.builtwith.com/free1/api.json', [
                     'KEY' => $apiKey,
                     'LOOKUP' => $url,
                 ]);
 
-                if ($response->successful()) {
+                if (!$response->successful()) {
+                \App\Support\ExtractionReport::current()->record('tech stack', 'Provider returned HTTP '.$response->status(), 'warning');
+            }
+            if ($response->successful()) {
                     $results = $response->json();
                     Log::info('BuiltWith API Response:', ['url' => $url, 'response' => $results]);
 
@@ -44,6 +48,7 @@ class TechStackDetectorService
                     }
                 }
             } catch (\Exception $e) {
+                \App\Support\ExtractionReport::current()->record('tech stack', 'BuiltWith failed; trying fallback.', 'warning');
                 Log::error("Failed to detect tech stack for {$url} with BuiltWith: " . $e->getMessage());
             }
         }
@@ -54,12 +59,16 @@ class TechStackDetectorService
         }
 
         try {
+            \App\Support\ExtractionReport::current()->record('tech stack', 'Trying Wappalyzer.');
             $response = Http::withHeaders([
                 'x-api-key' => config('services.wappalyzer.api_key')
             ])->get('https://api.wappalyzer.com/v2/lookup/', [
                 'urls' => $url,
             ]);
 
+            if (!$response->successful()) {
+                \App\Support\ExtractionReport::current()->record('tech stack', 'Provider returned HTTP '.$response->status(), 'warning');
+            }
             if ($response->successful()) {
                 $results = $response->json();
                 Log::info('Wappalyzer API Response:', ['url' => $url, 'response' => $results]);
@@ -76,9 +85,11 @@ class TechStackDetectorService
                 }
             }
         } catch (\Exception $e) {
+            \App\Support\ExtractionReport::current()->record('tech stack', 'Wappalyzer failed; trying HTML detection.', 'warning');
             Log::error("Failed to detect tech stack for {$url} with Wappalyzer: " . $e->getMessage());
         }
 
+        \App\Support\ExtractionReport::current()->record('tech stack', 'Trying HTML heuristics.');
         return $this->detectFromHtml($url);
     }
 
@@ -192,6 +203,7 @@ class TechStackDetectorService
 
             return array_values(array_unique($detected));
         } catch (\Throwable $e) {
+            \App\Support\ExtractionReport::current()->record('tech stack', 'HTML heuristic detection failed.', 'warning');
             Log::warning("Failed HTML heuristic tech detection for {$url}: " . $e->getMessage());
             return [];
         }

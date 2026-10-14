@@ -13,6 +13,8 @@ class ProductSourceCollector
 
     public function collect(string $url, string $html, string $additional = ''): string
     {
+        $report = \App\Support\ExtractionReport::current();
+        $report->record('source collection', 'Reading homepage text, headings, and links.');
         $blocks = [$this->textBlock($url, $html)];
         $document = new DOMDocument;
         @$document->loadHTML($html);
@@ -36,13 +38,17 @@ class ProductSourceCollector
                     if (parse_url($candidate, PHP_URL_HOST) !== parse_url($url, PHP_URL_HOST)) {
                         continue;
                     }
+                    $report->record('source collection', 'Reading '.$candidate);
                     $response = Http::timeout(4)->withOptions(['allow_redirects' => false, 'stream' => true])->get($candidate);
                     $body = $response->toPsrResponse()->getBody()->read(262145);
                     if ($response->successful() && strlen($body) <= 262144 && str_contains(strtolower((string) $response->header('Content-Type')), 'text/html')) {
+                        $report->record('source collection', $kind.' page collected.', 'success');
                         $blocks[] = $this->textBlock($candidate, $body);
                         break;
                     }
+                    $report->record('source collection', $kind.' skipped: HTTP '.$response->status().', non-HTML content, or page exceeds size limit.', 'warning');
                 } catch (\Throwable) {
+                    $report->record('source collection', $kind.' unavailable or URL rejected; continuing.', 'warning');
                     // An optional page must not stop extraction.
                 }
             }
@@ -51,6 +57,7 @@ class ProductSourceCollector
             $blocks[] = "Source: Additional resources\n".mb_substr(strip_tags($additional), 0, 2000);
         }
 
+        $report->record('source collection', count($blocks).' source blocks collected; context limited to 24000 characters.', 'success');
         return mb_substr(implode("\n\n", $blocks), 0, 24000);
     }
 

@@ -23,6 +23,7 @@ class ListingAiClient
 
     public function json(string $prompt, int $maxTokens = 1800, string $task = 'default', array $excludeProviders = []): ?array
     {
+        $report = \App\Support\ExtractionReport::current();
         $this->errors = [];
         $task = $task === 'default' ? $this->inferTask($prompt) : $task;
         if ($excludeProviders === [] && $this->lastProvider !== null && str_contains($prompt, 'Validation errors to fix:')) {
@@ -37,6 +38,7 @@ class ListingAiClient
             try {
                 $provider = $candidate['provider'];
                 $key = $candidate['key'];
+                $report->record($task, 'Requesting '.$provider.' / '.$router->modelFor($provider));
                 if (in_array($provider, ['cloudflare', 'cerebras'], true)) {
                     $response = app(OpenAiCompatibleProviderService::class)->request($provider, $key, $prompt, 0.2, $maxTokens, 30);
                     $content = data_get($response->json(), 'choices.0.message.content');
@@ -80,6 +82,7 @@ class ListingAiClient
                         : $response->json('choices.0.finish_reason');
                     if (in_array($finishReason, ['MAX_TOKENS', 'length'], true)) {
                         Log::warning('Listing AI output truncated.', ['provider' => $provider, 'task' => $task, 'finish_reason' => $finishReason, 'output_budget' => $maxTokens]);
+                        $report->record($task, $provider.' output truncated; retrying with larger budget or next provider.', 'warning');
                         if ($maxTokens < 3600) {
                             $retried = $this->jsonWithProvider($prompt, $provider, 3600, $task);
                             if ($retried !== null) {
@@ -100,6 +103,7 @@ class ListingAiClient
                         $decoded = json_decode($match[0], true);
                     }
                     if (is_array($decoded)) {
+                        $report->record($task, $provider.' returned usable JSON.', 'success');
                         $this->lastProvider = $provider;
                         Log::info('Listing AI response accepted.', [
                             'provider' => $provider,
@@ -112,15 +116,18 @@ class ListingAiClient
 
                         return $decoded;
                     }
+                    $report->record($task, $provider.' returned invalid JSON: '.json_last_error_msg().'; trying next provider.', 'warning');
                     $this->errors[] = "$provider returned invalid JSON: ".json_last_error_msg();
                     Log::warning('Listing AI JSON parsing failed.', ['provider' => $provider, 'task' => $task, 'finish_reason' => $finishReason, 'parse_error' => json_last_error_msg(), 'response_characters' => mb_strlen($content)]);
                 } else {
                     if (! $response->successful()) {
                         $router->recordHttpFailure($provider, $response);
                     }
+                    $report->record($task, $provider.' returned HTTP '.$response->status().'; trying next provider.', 'warning');
                     $this->errors[] = "$provider returned HTTP ".$response->status().'.';
                 }
             } catch (\Throwable $error) {
+                $report->record($task, $provider.' request failed ('.class_basename($error).'); trying next provider.', 'warning');
                 $this->errors[] = "$provider request failed.";
                 if (isset($provider)) {
                     $router->recordTransportFailure($provider);
@@ -131,6 +138,7 @@ class ListingAiClient
             }
         }
 
+        foreach ($this->errors as $error) $report->record($task, $error, 'error');
         Log::warning('Listing AI request failed.', ['errors' => $this->errors]);
 
         return null;

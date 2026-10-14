@@ -60,6 +60,7 @@ class TaglineRewriterService
                 }
                 $errors = array_values(array_unique($candidateErrors));
             }
+            foreach ($errors as $error) \App\Support\ExtractionReport::current()->record('validation', $error, 'warning');
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
             $this->listingErrors = $errors === ['tagline must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
         }

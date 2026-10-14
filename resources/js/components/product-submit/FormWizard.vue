@@ -56,13 +56,15 @@
             >
               <template #details>
                 <AutofillStatus
-                  v-if="isLoading"
+                  v-if="isLoading || (isAdmin && extractionReport.length)"
                   :isLoading="isLoading"
                   :autofillProgress="autofillProgress"
                   :aiFilledCount="aiFilledCount"
                   :aiFieldCount="aiFieldCount"
                   :reviewRemaining="reviewRemaining"
                   :extractionIssues="extractionIssues"
+                  :isAdmin="isAdmin"
+                  :report="extractionReport"
                   :canStop="submitState !== 'loading'"
                   :reviewFieldsLabel="reviewFieldsLabel"
                   :draftAutosaveState="draftAutosaveState"
@@ -238,13 +240,15 @@
                   >
                     <template #details>
                       <AutofillStatus
-                        v-if="!manualMode && !fetchingStopped"
+                        v-if="(!manualMode && !fetchingStopped) || (isAdmin && extractionReport.length)"
                         :isLoading="isLoading"
                         :autofillProgress="autofillProgress"
                         :aiFilledCount="aiFilledCount"
                         :aiFieldCount="aiFieldCount"
                         :reviewRemaining="reviewRemaining"
                   :extractionIssues="extractionIssues"
+                  :isAdmin="isAdmin"
+                  :report="extractionReport"
                   :canStop="submitState !== 'loading'"
                   :reviewFieldsLabel="reviewFieldsLabel"
                         :draftAutosaveState="draftAutosaveState"
@@ -420,6 +424,8 @@ const {
   loadingProgress,
   loadingMessage,
   autofillNextMessage,
+  extractionReport,
+  startExtractionReport,
   autofillReveal,
   errorMessage,
   showErrorMessage,
@@ -625,6 +631,7 @@ const handleUrlFetch = async (url) => {
   autofillController = controller;
   fetchingStopped.value = false;
   draftListDismissed.value = true;
+  startExtractionReport();
   extractionTimer.start();
   try {
     resetManualMediaChoices();
@@ -646,6 +653,7 @@ const handleUrlFetch = async (url) => {
     if (controller.signal.aborted) return;
     if (isAdmin.value) extractionTimer.record('client', { url_check: (performance.now() - checkStarted) / 1000 });
     if (duplicateCheck?.checkFailed) {
+      if (isAdmin.value) extractionReport.value.push({ time: new Date().toISOString(), stage: 'URL check', level: 'error', message: 'URL validation failed. Extraction was not started.' });
       urlCheckPending.value = false;
       urlCheckFailed.value = true;
       isLoading.value = false;
@@ -656,6 +664,7 @@ const handleUrlFetch = async (url) => {
     urlCheckPending.value = false;
     urlCheckFailed.value = false;
     if (urlExistsError.value) {
+      if (isAdmin.value) extractionReport.value.push({ time: new Date().toISOString(), stage: 'URL check', level: 'warning', message: 'Product URL already exists. Extraction was not started.' });
       isLoading.value = false;
       loadingProgress.value = 0;
       loadingMessage.value = '';

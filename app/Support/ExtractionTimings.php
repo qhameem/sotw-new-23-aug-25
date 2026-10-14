@@ -10,10 +10,12 @@ class ExtractionTimings
 
     private array $elapsed = [];
 
+    public function __construct(private Request $request) {}
+
     public static function forRequest(Request $request): self
     {
         if (! $request->attributes->has(self::class)) {
-            $request->attributes->set(self::class, new self);
+            $request->attributes->set(self::class, new self($request));
         }
 
         return $request->attributes->get(self::class);
@@ -36,7 +38,7 @@ class ExtractionTimings
     {
         $this->start($phase);
         try {
-            return $work();
+            return ExtractionReport::forRequest($this->request)->measure($phase, $work);
         } finally {
             $this->stop($phase);
         }
@@ -52,6 +54,6 @@ class ExtractionTimings
             $phases[$phase] = ($phases[$phase] ?? 0) + (hrtime(true) - $start) / 1e9;
         }
 
-        return ['phase_timings' => array_map(fn ($seconds) => round($seconds, 3), $phases)];
+        return ['phase_timings' => array_map(fn ($seconds) => round($seconds, 3), $phases), ...ExtractionReport::forRequest($this->request)->payload($request)];
     }
 }
