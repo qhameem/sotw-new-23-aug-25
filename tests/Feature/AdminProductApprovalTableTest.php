@@ -83,4 +83,29 @@ class AdminProductApprovalTableTest extends TestCase
     {
         $this->actingAs(User::factory()->create())->post(route('admin.product-approvals.bulk-manage'), ['products' => [1], 'action' => 'disapprove'])->assertForbidden();
     }
+
+    public function test_admin_can_delete_pending_scheduled_and_published_products(): void
+    {
+        foreach ([[false, false], [true, false], [true, true]] as [$approved, $published]) {
+            $product = Product::factory()->create([
+                'approved' => $approved,
+                'is_published' => $published,
+                'published_at' => $approved ? now()->addWeek() : null,
+            ]);
+            $this->get(route('admin.product-approvals.index'))
+                ->assertOk()->assertSee(route('admin.product-approvals.destroy', $product), false);
+            $this->delete(route('admin.product-approvals.destroy', $product))
+                ->assertRedirect(route('admin.product-approvals.index'))
+                ->assertSessionHas('success', 'Product deleted successfully.');
+            $this->assertDatabaseMissing('products', ['id' => $product->id]);
+        }
+    }
+
+    public function test_non_admin_cannot_delete_products_from_approvals(): void
+    {
+        $product = Product::factory()->create();
+        $this->actingAs(User::factory()->create())
+            ->delete(route('admin.product-approvals.destroy', $product))->assertForbidden();
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
+    }
 }

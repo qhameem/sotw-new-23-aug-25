@@ -1343,7 +1343,11 @@ class ProductController extends Controller
     {
         $product->delete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
+        $redirectRoute = request()->routeIs('admin.product-approvals.destroy')
+            ? 'admin.product-approvals.index'
+            : 'admin.products.index';
+
+        return redirect()->route($redirectRoute)->with('success', 'Product deleted successfully.');
     }
 
     public function unpublish(Product $product)

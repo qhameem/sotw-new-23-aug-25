@@ -82,6 +82,7 @@
     </div>
 
     <div class="relative z-10 mt-3 flex flex-wrap items-end justify-end gap-2">
+        @include('admin.product_approvals._delete_form')
         <div class="mr-auto">
             <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
         </div>
