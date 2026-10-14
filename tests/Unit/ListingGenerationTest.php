@@ -166,9 +166,10 @@ it('tells the AI which evidence failed before retrying', function () {
 
 it('marks failed generation as draft after two attempts', function () {
     $client = Mockery::mock(ListingAiClient::class);
-    $client->shouldReceive('prompt')->once()->andReturn('prompt');
-    $client->shouldReceive('json')->twice()->andReturn(null);
-    $client->shouldReceive('errors')->twice()->andReturn(['AI provider returned no usable response.']);
+    $client->shouldReceive('prompt')->andReturn('prompt');
+    $client->shouldReceive('json')->andReturn(null);
+    $client->shouldReceive('errors')->andReturn(['AI provider returned no usable response.']);
+    app()->instance(ListingAiClient::class, $client);
     $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
     $result = $service->generate('Example', 'Source: Example');
     expect($result['generation_status'])->toBe('draft');

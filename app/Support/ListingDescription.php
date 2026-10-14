@@ -4,7 +4,7 @@ namespace App\Support;
 
 class ListingDescription
 {
-    public const LIST_LIMITS = ['features' => 6, 'top_use_cases' => 4, 'comparisons' => 3, 'integrations' => 4, 'pros' => 4];
+    public const LIST_LIMITS = ['features' => 6, 'top_use_cases' => 4, 'comparisons' => 3, 'integrations' => 4, 'pros' => null];
 
     public static function fields(array $body): array
     {

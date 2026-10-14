@@ -77,15 +77,15 @@ class OutputValidator
         }
         if ($kind === 'description') {
             foreach (\App\Support\ListingDescription::LIST_LIMITS as $field => $limit) {
-                if (array_key_exists($field, $value) && (! is_array($value[$field]) || count($value[$field]) > $limit || count(array_filter($value[$field], 'is_string')) !== count($value[$field]))) {
-                    $errors[] = "description.$field must contain at most $limit strings.";
+                if (array_key_exists($field, $value) && (! is_array($value[$field]) || ($limit !== null && count($value[$field]) > $limit) || count(array_filter($value[$field], 'is_string')) !== count($value[$field]))) {
+                    $errors[] = $limit === null ? "description.$field must contain strings." : "description.$field must contain at most $limit strings.";
                 }
             }
             foreach (['editorial_qa' => 7, 'faq' => 4] as $field => $limit) {
                 if (! array_key_exists($field, $value)) {
                     continue;
                 }
-                if (! is_array($value[$field]) || count($value[$field]) > $limit) {
+                if (! is_array($value[$field]) || ($limit !== null && count($value[$field]) > $limit)) {
                     $errors[] = "description.$field must contain at most $limit question and answer items.";
 
                     continue;

@@ -25,136 +25,118 @@ class ListingGenerationService
         $this->sourceHost = preg_match('/^Source: (https?:\/\/[^\s]+)/', $source, $matches)
             ? parse_url($matches[1], PHP_URL_HOST)
             : null;
-        $facts = $factsOverride ?? $report->measure('fact extraction', fn () => $this->facts->extract($source));
-        if ($facts === null) {
-            return $this->draft(array_merge(['facts extraction failed'], $this->facts->errors()));
-        }
-        $report->record('facts', count(array_filter($facts, fn ($value) => $value !== null && $value !== '' && $value !== [])).' populated fact fields (including evidence).', 'success');
-        $detected = $report->measure('platform detection', fn () => $this->platforms->detect($source));
-        $facts['platforms'] = $detected !== [] ? $detected : array_values(array_filter((array) $facts['platforms'], fn ($platform) => $platform !== 'Browser'));
+        $errors = [];
+        $facts = $factsOverride ?? $this->stage('facts', fn () => $this->facts->extract($source), $errors, fn () => $this->facts->errors());
+        $facts ??= ['product_name' => $name, 'platforms' => [], 'top_features' => [], 'integrations' => [], 'evidence' => []];
+        $detected = $this->stage('platform detection', fn () => $this->platforms->detect($source), $errors) ?? [];
+        $facts['platforms'] = $detected !== [] ? $detected : array_values(array_filter((array) ($facts['platforms'] ?? []), fn ($platform) => $platform !== 'Browser'));
+        $report->record('facts', count(array_filter($facts, fn ($value) => $value !== null && $value !== '' && $value !== [])).' populated fact fields (including evidence).');
         $factsJson = json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $base = ['facts_json' => $facts];
-        $nonBlockingErrors = [];
+        $base = ['facts_json' => $facts, 'field_errors' => []];
 
         $taglineService = app(TaglineRewriterService::class);
-        $tagline = $report->measure('tagline generation', fn () => $taglineService->rewriteFromFacts($name, $facts, $source));
-        if ($tagline === null) {
-            return $base + $this->draft(array_merge(['tagline failed validation'], $taglineService->listingErrors()));
-        }
-        $report->record('tagline', 'Validated tagline: '.$tagline, 'success');
-        $base['tagline'] = $tagline;
-        $taglineProvider = $taglineService->listingProvider();
-        if ($taglineProvider) {
-            $base['tagline_generation'] = $this->generationAttribution($taglineProvider);
+        $tagline = $this->stage('tagline', fn () => $taglineService->rewriteFromFacts($name, $facts, $source), $errors, fn () => $taglineService->listingErrors());
+        if ($tagline !== null) {
+            $report->record('tagline', 'Validated tagline: '.$tagline, 'success');
+            $base['tagline'] = $tagline;
+            $provider = $taglineService->listingProvider();
+            if ($provider) {
+                $base['tagline_generation'] = $this->generationAttribution($provider);
+            }
         }
 
         $descriptionService = app(DescriptionRewriterService::class);
-        $description = $report->measure('description generation', fn () => $descriptionService->generateFromFacts($name, $facts, $source));
-        if ($description === null) {
-            return $base + $this->draft(array_merge(['description failed validation'], $descriptionService->listingErrors()));
-        }
-        $report->record('description', 'Validated summary and '.count($description['features']).' features; '.count($description['faq']).' FAQ entries.', 'success');
-        foreach (['best_for', 'not_for', 'top_use_cases', 'comparisons', 'integrations', 'pros', 'editorial_qa'] as $field) {
-            $report->record('description', $field.': '.(filled($description[$field] ?? null) ? 'generated' : 'omitted; no supported content'), filled($description[$field] ?? null) ? 'success' : 'info');
-        }
-        $base += \App\Support\ListingDescription::fields($description);
-        $descriptionProvider = $descriptionService->listingProvider();
-        if ($descriptionProvider) {
-            $base['description_generation'] = $this->generationAttribution($descriptionProvider);
+        $description = $this->stage('description', fn () => $descriptionService->generateFromFacts($name, $facts, $source), $errors, fn () => $descriptionService->listingErrors());
+        if ($description !== null) {
+            $report->record('description', 'Validated summary; '.count($description['features']).' features; '.count($description['pros'] ?? []).' pros; '.count($description['faq']).' FAQs.', 'success');
+            $base = array_merge($base, \App\Support\ListingDescription::fields($description));
+            $provider = $descriptionService->listingProvider();
+            if ($provider) {
+                $base['description_generation'] = $this->generationAttribution($provider);
+            }
         }
 
-        $report->record('SEO', 'Building title and generating meta description');
-        $preferredTitle = $this->titles->build($name, $tagline);
-        $seo = $this->generateField('seo_fields_prompt.txt', ['{factsJson}' => $factsJson], 'seo', $source, '', 2, $preferredTitle !== null);
-        if ($seo === null) {
-            $nonBlockingErrors = array_merge(['SEO failed validation'], $this->lastErrors);
-            $base['seo_title'] = $preferredTitle;
-            $base['meta_description'] = null;
-        } else {
-            $base['seo_title'] = $preferredTitle ?? $seo['seo_title'];
-            $base['meta_description'] = $seo['meta_description'];
-        }
+        $preferredTitle = $this->stage('title building', fn () => $this->titles->build($name, $tagline ?? ''), $errors, optional: true);
+        $seo = $this->stage('SEO', fn () => $this->generateField('seo_fields_prompt.txt', ['{factsJson}' => $factsJson], 'seo', $source, '', 2, $preferredTitle !== null), $errors, fn () => $this->lastErrors);
+        $base['seo_title'] = $preferredTitle ?? ($seo['seo_title'] ?? null);
+        $base['meta_description'] = $seo['meta_description'] ?? null;
 
-        $classification = $report->measure('classification', fn () => $this->classify($factsJson, $source, $facts['platforms']));
-        if ($classification === null) {
-            return $base + ['field_errors' => array_fill_keys(['categories', 'useCases', 'pricing'], 'Classification failed validation. Regenerate or select these fields manually.')]
-                + $this->draft(array_merge(['classification failed validation'], $this->lastErrors));
-        }
-        if ($report->enabled()) {
+        $classification = $this->stage('classification', fn () => $this->classify($factsJson, $source, $facts['platforms']), $errors, fn () => $this->lastErrors);
+        if ($classification !== null) {
             foreach (['categories', 'useCases', 'bestFor', 'pricing', 'platforms'] as $field) {
-                $names = Category::whereIn('id', $classification[$field])->pluck('name')->all();
-                $report->record('classification', $field.': '.($names ? implode(', ', $names) : 'no supported match'), $names ? 'success' : 'warning');
+                $report->record('classification', $field.': '.count($classification[$field]).' results.', $classification[$field] ? 'success' : 'warning');
             }
+            $base = array_merge($base, $classification);
+        } else {
+            $base['field_errors'] += array_fill_keys(['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], 'Classification failed. Regenerate or select these fields manually.');
         }
-        $base += $classification;
 
-        $issues = $report->measure('verification', fn () => $this->verify($base, $factsJson, $source));
-        if ($issues === null) {
-            return $base + $this->draft(array_merge(['verification failed'], $this->lastErrors));
-        }
-        if ($issues !== []) {
-            foreach ($issues as $issue) $report->record('verification', $issue['field'].': '.$issue['problem'], 'warning');
-            $report->record('repair', 'Regenerating flagged fields before second verification');
-            $fields = array_unique(array_column($issues, 'field'));
-            $feedback = implode("\n", array_map(fn ($issue) => ($issue['field'] ?? 'unknown').': '.($issue['problem'] ?? ''), $issues));
-            if (array_intersect($fields, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'])) {
-                $replacement = $this->classify($factsJson, $source, $facts['platforms'], $feedback, 1);
-                if ($replacement !== null) {
-                    $base = array_merge($base, $replacement);
-                }
+        $issues = $this->stage('verification', fn () => $this->verify($base, $factsJson, $source), $errors, fn () => $this->lastErrors);
+        if ($issues) {
+            foreach ($issues as $issue) {
+                $report->record('verification', $issue['field'].': '.$issue['problem'], 'warning');
             }
-            $regenerated = [];
-            foreach ($fields as $field) {
-                if (in_array($field, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], true)) {
+            $feedback = implode("\n", array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $issues));
+            $kinds = [];
+            foreach (array_unique(array_column($issues, 'field')) as $field) {
+                $kind = match (true) {
+                    in_array($field, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], true) => 'classification',
+                    $field === 'tagline' => 'tagline',
+                    in_array($field, ['seo_title', 'meta_description'], true) => 'SEO',
+                    default => 'description',
+                };
+                $kinds[$kind] = true;
+            }
+            foreach (array_keys($kinds) as $kind) {
+                $replacement = $this->stage($kind.' repair', fn () => match ($kind) {
+                    'classification' => $this->classify($factsJson, $source, $facts['platforms'], $feedback, 1),
+                    'tagline' => $this->generateField('tagline_prompt.txt', ['{productName}' => $name, '{factsJson}' => $factsJson], 'tagline', $source, $feedback, 1),
+                    'SEO' => $this->generateField('seo_fields_prompt.txt', ['{factsJson}' => $factsJson], 'seo', $source, $feedback, 1, $preferredTitle !== null),
+                    'description' => $descriptionService->generateFromFacts($name, $facts, $source, $feedback),
+                }, $errors);
+                if ($replacement === null) {
                     continue;
                 }
-                if (in_array($field, ['tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text', 'top_use_cases', 'comparisons', 'integrations', 'pros', 'editorial_qa', 'faq', 'seo_title', 'meta_description'], true)) {
-                    $kind = $field === 'tagline' ? 'tagline' : (in_array($field, ['seo_title', 'meta_description']) ? 'seo' : 'description');
-                    if (isset($regenerated[$kind])) {
-                        continue;
-                    }
-                    $regenerated[$kind] = true;
-                    $file = ['tagline' => 'tagline_prompt.txt', 'seo' => 'seo_fields_prompt.txt', 'description' => 'description_listing_prompt.txt'][$kind];
-                    $bindings = ['{productName}' => $name, '{factsJson}' => $factsJson];
-                    $replacement = $kind === 'description'
-                        ? app(DescriptionRewriterService::class)->generateFromFacts($name, $facts, $source, $feedback)
-                        : $this->generateField($file, $bindings, $kind, $source, $feedback, 1, $kind === 'seo' && $this->titles->build($name, $base['tagline']) !== null);
-                    if ($replacement !== null) {
-                        if ($kind === 'tagline') {
-                            $base['tagline'] = $replacement;
-                        }
-                        if ($kind === 'seo') {
-                            $base['seo_title'] = $this->titles->build($name, $base['tagline']) ?? $replacement['seo_title'];
-                            $base['meta_description'] = $replacement['meta_description'];
-                        }
-                        if ($kind === 'description') {
-                            $base = array_merge($base, \App\Support\ListingDescription::fields($replacement));
-                        }
-                    }
+                if ($kind === 'tagline') {
+                    $base['tagline'] = $replacement;
+                } elseif ($kind === 'description') {
+                    $base = array_merge($base, \App\Support\ListingDescription::fields($replacement));
+                } else {
+                    $base = array_merge($base, $replacement);
+                }
+                if ($kind === 'SEO') {
+                    $base['seo_title'] = $preferredTitle ?? $replacement['seo_title'];
                 }
             }
-            $remainingIssues = $report->measure('verification', fn () => $this->verify($base, $factsJson, $source));
-            if ($remainingIssues === null) {
-                return $base + $this->draft(array_merge(['verification unavailable after repair'], $this->lastErrors));
+            $remaining = $this->stage('verification after repair', fn () => $this->verify($base, $factsJson, $source), $errors, fn () => $this->lastErrors);
+            if ($remaining) {
+                $base['generation_issues'] = $remaining;
+                $errors['verification issues'] = array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $remaining);
             }
-            if ($remainingIssues !== []) {
-                return $base + $this->draft([
-                    'verification issues remain',
-                    ...array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $remainingIssues),
-                ]) + ['generation_issues' => $remainingIssues];
-            }
-        }
-        if (filled($base['meta_description'] ?? null)) {
-            $nonBlockingErrors = [];
-        }
-        if ($nonBlockingErrors !== []) {
-            return $base + $this->draft($nonBlockingErrors);
         }
 
+        foreach (['tagline', 'description', 'SEO'] as $stage) {
+            if (isset($errors[$stage])) {
+                $base['field_errors'][$stage === 'SEO' ? 'meta_description' : $stage] = implode(' ', $errors[$stage]);
+            }
+        }
+        if ($errors !== []) {
+            return array_merge($base, $this->draft(array_merge(...array_values($errors))));
+        }
         $report->record('generation', 'All generation stages passed validation and verification.', 'success');
         $base['generation_status'] = 'ready';
 
         return $base;
+    }
+
+    private function stage(string $stage, callable $work, array &$errors, ?callable $details = null, bool $optional = false): mixed
+    {
+        $result = \App\Support\ExtractionReport::current()->attempt($stage, $work);
+        if ($result === null && ! $optional) {
+            $errors[$stage] = array_merge([$stage.' failed; remaining stages continued.'], $details ? $details() : []);
+        }
+
+        return $result;
     }
 
     private function generateField(string $file, array $bindings, string $kind, string $source, string $feedback = '', int $tries = 2, bool $titleAlreadyBuilt = false): mixed
@@ -215,7 +197,9 @@ class ListingGenerationService
                     }
                 }
             }
-            foreach ($errors as $error) \App\Support\ExtractionReport::current()->record('validation', $error, 'warning');
+            foreach ($errors as $error) {
+                \App\Support\ExtractionReport::current()->record('validation', $error, 'warning');
+            }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors).($feedback === '' ? '' : "\nVerification issues:\n".$feedback);
             $this->lastErrors = $errors;
         }
@@ -379,7 +363,9 @@ class ListingGenerationService
 
     private function draft(array $errors): array
     {
-        foreach ($errors as $error) \App\Support\ExtractionReport::current()->record('generation draft', $error, 'error');
+        foreach ($errors as $error) {
+            \App\Support\ExtractionReport::current()->record('generation draft', $error, 'error');
+        }
         \Illuminate\Support\Facades\Log::error('Generated listing moved to draft.', [
             'source_host' => $this->sourceHost,
             'stage' => $errors[0] ?? 'unknown',
@@ -389,7 +375,6 @@ class ListingGenerationService
         return [
             'generation_status' => 'draft', 'generation_noindex' => true,
             'generation_review_required' => true, 'generation_errors' => $errors,
-            'field_errors' => array_fill_keys(['categories', 'useCases', 'pricing'], 'Automatic classification was not completed. Regenerate or select these fields manually.'),
         ];
     }
 

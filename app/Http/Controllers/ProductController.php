@@ -3402,10 +3402,10 @@ class ProductController extends Controller
 
             }
 
-            $faviconUrl = $timings->measure('logo', fn () => $this->productLogoResolver->discoverReplacementLogoUrl($url));
+            $faviconUrl = \App\Support\ExtractionReport::current()->attempt('initial logo', fn () => $timings->measure('logo', fn () => $this->productLogoResolver->discoverReplacementLogoUrl($url)));
 
             return response()->json([
-                'name' => $timings->measure('name', fn () => $this->nameExtractor->extractFromHtml($html, $url)),
+                'name' => \App\Support\ExtractionReport::current()->attempt('initial name', fn () => $timings->measure('name', fn () => $this->nameExtractor->extractFromHtml($html, $url)), ''),
                 'tagline' => trim($description),
                 'description' => '',
                 'favicon' => $faviconUrl,
@@ -3794,12 +3794,10 @@ class ProductController extends Controller
         }
 
         $metadataResponse = $this->fetchMetadata($request);
-        if ($metadataResponse->getStatusCode() !== 200) {
-            return $metadataResponse;
-        }
         $metadata = json_decode($metadataResponse->getContent(), true);
-        if (\App\Support\ExtractionPageGuard::isBlockedTitle($metadata['name'] ?? '')) {
-            return response()->json(['error' => 'The website returned a verification or access-denied page. Fill the product details manually.'], 422);
+        if ($metadataResponse->getStatusCode() !== 200 || \App\Support\ExtractionPageGuard::isBlockedTitle($metadata['name'] ?? '')) {
+            \App\Support\ExtractionReport::current()->record('metadata', 'Basic metadata unavailable; continuing screenshot and detailed extraction.', 'warning');
+            $metadata = ['name' => '', 'tagline' => '', 'favicon' => null];
         }
 
         // Extract additional information from the URL content
@@ -3813,7 +3811,11 @@ class ProductController extends Controller
             $response = $timings->measure('metadata', fn () => Http::timeout(5)->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ])->get($url));
+            if (! $response->successful()) {
+                throw new \RuntimeException('Metadata HTTP '.$response->status());
+            }
             $html = $response->body();
+            \App\Support\ExtractionPageGuard::assertUsable($html);
 
             $doc = new DOMDocument;
             @$doc->loadHTML($html);
@@ -3834,7 +3836,8 @@ class ProductController extends Controller
 
             // Limit the length of the detailed tagline
             $taglineDetailed = Str::limit($taglineDetailed, 160, '...');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            \App\Support\ExtractionReport::current()->record('metadata links', 'Link and heading extraction failed; continuing screenshot and detailed extraction.', 'warning');
             Log::error('Error extracting detailed tagline from URL: '.$e->getMessage(), ['url' => $url]);
             // Use the regular tagline as fallback
             $taglineDetailed = $metadata['tagline'] ?? '';
@@ -3843,7 +3846,7 @@ class ProductController extends Controller
         $responseData = [
             'name' => $metadata['name'],
             'favicon' => $metadata['favicon'],
-            'screenshot_url' => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url)),
+            'screenshot_url' => \App\Support\ExtractionReport::current()->attempt('screenshot capture', fn () => $timings->measure('screenshot', fn () => $this->screenshotService->capture($url))),
             'pricing_page_url' => $autofillLinks['pricing_page_url'],
             'x_account' => $autofillLinks['x_account'],
             'maker_links' => $autofillLinks['maker_links'],
@@ -4194,6 +4197,36 @@ class ProductController extends Controller
         return $context."\n\nLIMITATION RESEARCH:\n".$researchContext;
     }
 
+    protected function readSubmissionHomepage(string $url, \App\Support\ExtractionTimings $timings): string
+    {
+        return \App\Support\ExtractionReport::current()->attempt('homepage', function () use ($url, $timings) {
+            $response = $timings->measure('metadata', fn () => Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            ])->timeout(15)->get($url));
+            if (! $response->successful()) {
+                \App\Support\ExtractionReport::current()->record('homepage', 'Website returned HTTP '.$response->status(), 'error');
+
+                return null;
+            }
+            $html = $response->body();
+            \App\Support\ExtractionPageGuard::assertUsable($html);
+
+            return $html;
+        }, '<html></html>');
+    }
+
+    protected function generateSubmissionListing(string $url, string $html, string $name, string $additional): array
+    {
+        $report = \App\Support\ExtractionReport::current();
+        $name = trim($name) ?: $report->attempt('product name', fn () => $this->nameExtractor->extractFromHtml($html, $url), (string) parse_url($url, PHP_URL_HOST));
+        $source = $report->attempt('source collection', fn () => app(\App\Services\ProductSourceCollector::class)->collect($url, $html, $additional), 'Source: '.$url."\n".strip_tags($html)."\n".$additional);
+
+        return $report->attempt('listing generation', fn () => app(\App\Services\ListingGenerationService::class)->generate($name, $source), [
+            'generation_status' => 'draft', 'generation_noindex' => true, 'generation_review_required' => true,
+            'generation_errors' => ['Listing generation failed; media and technology extraction continued.'],
+        ]);
+    }
+
     public function processUrlStream(Request $request)
     {
         $timings = \App\Support\ExtractionTimings::forRequest($request);
@@ -4237,7 +4270,7 @@ class ProductController extends Controller
             $name = $request->input('name');
             $tagline = $request->input('tagline');
             $fetchContent = $request->input('fetch_content', true);
-            $additionalResourcesContext = $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources')));
+            $additionalResourcesContext = \App\Support\ExtractionReport::current()->attempt('additional resources', fn () => $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources'))), '');
 
             $description = '';
             $extractedTagline = '';
@@ -4247,93 +4280,31 @@ class ProductController extends Controller
 
             try {
                 $sendUpdate('Connecting to website...', 5, null, $fetchContent ? 'Analyzing page structure' : 'Finding additional logo options and links');
-                $htmlResponse = $timings->measure('metadata', fn () => \Illuminate\Support\Facades\Http::withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                ])->timeout(15)->get($url));
-
-                if (! $htmlResponse->successful()) {
-                    $report->record('metadata', 'Website returned HTTP '.$htmlResponse->status(), 'error');
-                    $sendUpdate('Failed to fetch website.', 100, ['error' => 'The website could not be fetched. Retained data can be completed manually.']);
-
-                    return;
-                }
-                $htmlContent = $htmlResponse->body();
-                $timings->measure('page validation', fn () => \App\Support\ExtractionPageGuard::assertUsable($htmlContent));
+                $htmlContent = $this->readSubmissionHomepage($url, $timings);
                 $doc = new DOMDocument;
                 @$doc->loadHTML($htmlContent);
-                $autofillLinks = $timings->measure('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url));
-                $generation = $fetchContent
-                    ? app(\App\Services\ListingGenerationService::class)->generate(
-                        trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),
-                        app(\App\Services\ProductSourceCollector::class)->collect($url, $htmlContent, $additionalResourcesContext)
-                    ) : [];
+                $autofillLinks = \App\Support\ExtractionReport::current()->attempt('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url), ['pricing_page_url' => null, 'x_account' => null, 'maker_links' => []]);
+                $generation = $fetchContent ? $this->generateSubmissionListing($url, $htmlContent, (string) $name, $additionalResourcesContext) : [];
                 foreach (($generation['field_errors'] ?? []) as $field => $issue) {
                     if ($issue) {
                         $report->record($field, $issue, 'warning');
                     }
                 }
                 if ($generation !== []) {
-                    \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour());
+                    \App\Support\ExtractionReport::current()->attempt('listing cache', fn () => \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour()));
                 }
-                $sendUpdate('Website fetched successfully...', 15);
+                $sendUpdate('Website request finished...', 15);
 
                 if ($fetchContent) {
-                    $sendUpdate('Analyzing page structure...', 20, null, 'Generating AI taglines');
-
-                    $titleNode = $doc->getElementsByTagName('title')->item(0);
-                    $title = $titleNode ? $titleNode->nodeValue : '';
-
-                    $descriptionContent = '';
-                    $metas = $doc->getElementsByTagName('meta');
-                    for ($i = 0; $i < $metas->length; $i++) {
-                        $meta = $metas->item($i);
-                        if (strtolower($meta->getAttribute('name')) == 'description') {
-                            $descriptionContent = $meta->getAttribute('content');
-                            break;
-                        }
-                    }
-
-                    $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $name);
-
-                    $description = $descriptionContent;
-
-                    $cleanDoc = clone $doc;
-                    $cleanXpath = new \DOMXPath($cleanDoc);
-                    // Remove common noise: layout elements, scripts, and third-party widgets
-                    // (video embeds, iframes, cookie banners, chat widgets can pollute the AI context)
-                    $noiseQuery = '//nav | //header | //footer | //script | //style | //noscript | //aside'
-                        .' | //video | //iframe | //form | //figure | //picture | //template'
-                        .' | //*[contains(@class,"cookie") or contains(@class,"banner") or contains(@class,"intercom") or contains(@class,"chat") or contains(@class,"widget")]';
-                    $noise = $cleanXpath->query($noiseQuery);
-                    foreach ($noise as $node) {
-                        $node->parentNode?->removeChild($node);
-                    }
-
-                    $textContent = "Title: {$title}\n";
-                    if (! empty($descriptionContent)) {
-                        $textContent .= "Meta Description: {$descriptionContent}\n";
-                    }
-                    foreach (['h1', 'h2', 'h3'] as $tag) {
-                        foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
-                            $textContent .= "\n".strtoupper($tag).': '.trim($node->textContent);
-                        }
-                    }
-                    // Cap body content to avoid drowning out product metadata in the AI context window
-                    $rawBodyText = trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
-                    $textContent .= "\n\nBODY CONTENT:\n".mb_substr($rawBodyText, 0, 4000);
-                    if ($additionalResourcesContext !== '') {
-                        $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
-                    }
-
                     $extractedTagline = $generation['tagline'] ?? '';
                     $description = $generation['description'] ?? '';
-                    $sendUpdate('Generated listing copy...', 70, [
+                    $sendUpdate('Listing generation finished...', 70, [
                         'tagline' => $extractedTagline,
                         'description' => $description,
                         'generation' => $generation,
                     ]);
 
-                    $sendUpdate('Description ready. Finding additional logo options and links...', 72, [
+                    $sendUpdate('Description generation finished. Finding additional logo options and links...', 72, [
                         'description' => $description,
                         'description_notice' => $descriptionNotice,
                     ]);
@@ -4341,7 +4312,7 @@ class ProductController extends Controller
 
                 $sendUpdate('Finding additional logo options, pricing page, and socials...', 85, null, 'Classifying features and categories');
 
-                $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
+                $logos = \App\Support\ExtractionReport::current()->attempt('logo extraction', fn () => $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent)), []);
 
                 $sendUpdate('Logos and links ready. Classifying features and categories...', 88, [
                     'logos' => $logos,
@@ -4361,7 +4332,7 @@ class ProductController extends Controller
                 $techStackIds = [];
 
                 try {
-                    $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
+                    $techStackNames = \App\Support\ExtractionReport::current()->attempt('technology detection', fn () => $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url)), []);
                     $techStackIds = ! empty($techStackNames)
                         ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                         : [];
@@ -4449,7 +4420,7 @@ class ProductController extends Controller
         $tagline = $request->input('tagline');
 
         $fetchContent = $request->input('fetch_content', true);
-        $additionalResourcesContext = $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources')));
+        $additionalResourcesContext = \App\Support\ExtractionReport::current()->attempt('additional resources', fn () => $timings->measure('context', fn () => $this->buildAdditionalResourcesContext($request->input('additional_resources'))), '');
 
         $description = '';
         $extractedTagline = '';
@@ -4459,76 +4430,22 @@ class ProductController extends Controller
 
         try {
             // 3. Fetch HTML for content extraction with timeout
-            $htmlResponse = $timings->measure('metadata', fn () => Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            ])->timeout(15)->get($url));
-            if (! $htmlResponse->successful()) {
-                return response()->json(['error' => 'The website could not be fetched. Fill missing details manually.'], 422);
-            }
-            $htmlContent = $htmlResponse->body();
-            $timings->measure('page validation', fn () => \App\Support\ExtractionPageGuard::assertUsable($htmlContent));
+            $htmlContent = $this->readSubmissionHomepage($url, $timings);
             $doc = new DOMDocument;
             @$doc->loadHTML($htmlContent);
-            $autofillLinks = $timings->measure('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url));
-            $generation = $fetchContent
-                ? app(\App\Services\ListingGenerationService::class)->generate(
-                    trim((string) $name) ?: $this->nameExtractor->extractFromHtml($htmlContent, $url),
-                    app(\App\Services\ProductSourceCollector::class)->collect($url, $htmlContent, $additionalResourcesContext)
-                ) : [];
+            $autofillLinks = \App\Support\ExtractionReport::current()->attempt('pricing, social, and resource links', fn () => $this->extractAutofillLinksFromDocument($doc, $url), ['pricing_page_url' => null, 'x_account' => null, 'maker_links' => []]);
+            $generation = $fetchContent ? $this->generateSubmissionListing($url, $htmlContent, (string) $name, $additionalResourcesContext) : [];
             if ($generation !== []) {
-                \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour());
+                \App\Support\ExtractionReport::current()->attempt('listing cache', fn () => \Illuminate\Support\Facades\Cache::put('product_listing:'.hash('sha256', Product::normalizeLink($url)), $generation, now()->addHour()));
             }
 
             if ($fetchContent) {
-                // Extract title
-                $titleNode = $doc->getElementsByTagName('title')->item(0);
-                $title = $titleNode ? $titleNode->nodeValue : '';
-
-                // Extract meta description
-                $descriptionContent = '';
-                $metas = $doc->getElementsByTagName('meta');
-                for ($i = 0; $i < $metas->length; $i++) {
-                    $meta = $metas->item($i);
-                    if (strtolower($meta->getAttribute('name')) == 'description') {
-                        $descriptionContent = $meta->getAttribute('content');
-                        break;
-                    }
-                }
-
-                // Extract potential taglines from h1, h2, h3 tags or specific classes
-                $potentialTaglines = $this->extractPotentialTaglinesFromDocument($doc, $name);
-
-                // --- Gather raw material for taglines and description ---
-                $description = $descriptionContent; // meta description as raw material
-
-                // Gather page text for additional context (cleaned of noise)
-                $cleanDoc = clone $doc;
-                $cleanXpath = new \DOMXPath($cleanDoc);
-                $noise = $cleanXpath->query('//nav | //header | //footer | //script | //style | //noscript | //aside');
-                foreach ($noise as $node) {
-                    $node->parentNode?->removeChild($node);
-                }
-
-                $textContent = "Title: {$title}\n";
-                if (! empty($descriptionContent)) {
-                    $textContent .= "Meta Description: {$descriptionContent}\n";
-                }
-                foreach (['h1', 'h2', 'h3'] as $tag) {
-                    foreach ($cleanDoc->getElementsByTagName($tag) as $node) {
-                        $textContent .= "\n".strtoupper($tag).': '.trim($node->textContent);
-                    }
-                }
-                $textContent .= "\n\nBODY CONTENT:\n".trim($cleanDoc->getElementsByTagName('body')->item(0)?->textContent ?? '');
-                if ($additionalResourcesContext !== '') {
-                    $textContent .= "\n\nADDITIONAL RESOURCES:\n".$additionalResourcesContext;
-                }
-
                 $extractedTagline = $generation['tagline'] ?? '';
                 $description = $generation['description'] ?? '';
             }
 
             // Extract Logos
-            $logos = $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent));
+            $logos = \App\Support\ExtractionReport::current()->attempt('logo extraction', fn () => $timings->measure('logo', fn () => $this->logoExtractor->extract($url, $htmlContent)), []);
 
             // Classify categories and bestFor from the HTML content
             $categoryIds = $generation['categories'] ?? [];
@@ -4540,7 +4457,7 @@ class ProductController extends Controller
             $unmatchedUseCases = $generation['suggestedUseCases'] ?? [];
             $techStackIds = [];
             try {
-                $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
+                $techStackNames = \App\Support\ExtractionReport::current()->attempt('technology detection', fn () => $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url)), []);
                 $techStackIds = ! empty($techStackNames)
                     ? \App\Models\TechStack::whereIn('name', $techStackNames)->pluck('id')->toArray()
                     : [];

@@ -47,6 +47,9 @@ class DescriptionRewriterService
             '{factsJson}' => json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             '{adminToneInstruction}' => $tone,
         ]).($feedback ? "\nVerification issues:\n".$feedback : '');
+        if (empty($facts['evidence']) && $source !== '') {
+            $prompt .= "\nFact extraction was unavailable. Use only explicit evidence from the source below; leave unsupported details empty.\nSource:\n".$source;
+        }
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $result = $provider
                 ? $client->jsonWithProvider($prompt, $provider, 3000, 'copy')

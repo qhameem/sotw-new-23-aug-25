@@ -54,12 +54,28 @@ class ExtractionReport
         $this->record($stage, 'Started');
         try {
             $result = $work();
-            $this->record($stage, 'Completed in '.round((hrtime(true) - $start) / 1e9, 3).'s', 'success');
+            $this->record($stage, ($result === null ? 'Returned no result' : 'Completed').' in '.round((hrtime(true) - $start) / 1e9, 3).'s', $result === null ? 'info' : 'success');
 
             return $result;
         } catch (\Throwable $error) {
             $this->record($stage, 'Failed ('.class_basename($error).'). See server logs for details.', 'error');
             throw $error;
+        }
+    }
+
+    public function attempt(string $stage, callable $work, mixed $fallback = null): mixed
+    {
+        try {
+            $result = $this->measure($stage, $work);
+            if ($result === null) {
+                $this->record($stage, 'No usable result; continuing remaining stages.', 'warning');
+            }
+
+            return $result ?? $fallback;
+        } catch (\Throwable) {
+            $this->record($stage, 'Continuing remaining stages after failure.', 'warning');
+
+            return $fallback;
         }
     }
 
