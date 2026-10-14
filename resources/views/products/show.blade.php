@@ -474,7 +474,7 @@
                                             @keydown.enter="updateProduct(); editingDescription = false"
                                             @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
                                     @else
-                                        {!! \App\Support\ExpandableEditorialLists::render(\App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description')) !!}
+                                        {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
                                     @endif
                                 </div>
                             </div>
