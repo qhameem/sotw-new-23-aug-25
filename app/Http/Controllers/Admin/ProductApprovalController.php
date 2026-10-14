@@ -153,7 +153,6 @@ class ProductApprovalController extends Controller
             return back()->with('error', 'Resolve all custom categories before publishing or scheduling this product.');
         }
 
-        $product->approved = true;
         $publishOption = $request->input('publish_option', 'specific_date'); // Default to specific_date
 
         switch ($publishOption) {
@@ -218,7 +217,7 @@ class ProductApprovalController extends Controller
             }
         }
 
-        $product->save();
+        $this->saveApprovedProduct($product);
 
         // Clear homepage-related caches when a product is approved and published
         if ($product->is_published && $product->published_at) {
@@ -271,8 +270,6 @@ class ProductApprovalController extends Controller
                         continue;
                     }
 
-                    $product->approved = true;
-
                     if (! empty($bulkPublishDate)) {
                         try {
                             $product->published_at = ProductPublishSchedule::forDate($bulkPublishDate);
@@ -285,7 +282,7 @@ class ProductApprovalController extends Controller
                         $product->published_at = now()->utc();
                         $product->is_published = true; // Publish now if no date
                     }
-                    $product->save();
+                    $this->saveApprovedProduct($product);
 
                     // Collect weeks that need cache clearing
                     if ($product->is_published && $product->published_at) {
@@ -841,6 +838,21 @@ class ProductApprovalController extends Controller
             return $parts[0];
         } catch (\Exception $e) {
             return $url;
+        }
+    }
+
+    private function saveApprovedProduct(Product $product): void
+    {
+        if ($product->generation_status === 'draft' || $product->generation_review_required) {
+            $product->generation_status = 'ready';
+            $product->generation_noindex = false;
+            $product->generation_review_required = false;
+        }
+
+        $product->approved = true;
+
+        if (! $product->save() || ! $product->refresh()->approved) {
+            throw new \RuntimeException("Approval was not saved for product {$product->id}.");
         }
     }
 
