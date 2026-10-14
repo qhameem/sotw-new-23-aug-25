@@ -2384,6 +2384,9 @@ class ProductController extends Controller
         $splitIndex = null;
 
         foreach ($children as $index => $node) {
+            if ($overviewBlocks !== [] && $node instanceof \DOMElement && in_array(strtolower($node->tagName), ['h2', 'h3'], true)) {
+                break;
+            }
             $text = $this->normalizeDescriptionComparisonText((string) $node->textContent);
 
             if ($text === '') {
@@ -4332,7 +4335,6 @@ class ProductController extends Controller
                 $platformIds = $generation['platforms'] ?? [];
                 $unmatchedCategories = $generation['suggestedCategories'] ?? [];
                 $unmatchedUseCases = $generation['suggestedUseCases'] ?? [];
-                $classificationResult = [];
                 $techStackIds = [];
 
                 try {
@@ -4356,7 +4358,7 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
-                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
+                    'field_errors' => $generation['field_errors'] ?? [],
                 ]);
 
                 $sendUpdate('Applying extracted data to the form...', 98);
@@ -4376,7 +4378,7 @@ class ProductController extends Controller
                     'tech_stacks' => $techStackIds,
                     'suggestedCategories' => $unmatchedCategories,
                     'suggestedUseCases' => $unmatchedUseCases,
-                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
+                    'field_errors' => $generation['field_errors'] ?? [],
                     'pricing_page_url' => $autofillLinks['pricing_page_url'],
                     'x_account' => $autofillLinks['x_account'],
                     'maker_links' => $autofillLinks['maker_links'],
@@ -4507,7 +4509,6 @@ class ProductController extends Controller
             $platformIds = $generation['platforms'] ?? [];
             $unmatchedCategories = $generation['suggestedCategories'] ?? [];
             $unmatchedUseCases = $generation['suggestedUseCases'] ?? [];
-            $classificationResult = [];
             $techStackIds = [];
             try {
                 $techStackNames = $timings->measure('tech_stack', fn () => $this->techStackDetector->detect($url));
@@ -4536,7 +4537,7 @@ class ProductController extends Controller
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'suggestedUseCases' => $unmatchedUseCases,
-                    'field_errors' => isset($classificationResult['error']) ? array_fill_keys(['categories', 'useCases', 'pricing'], $classificationResult['error']) : [],
+                    'field_errors' => $generation['field_errors'] ?? [],
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
                 'maker_links' => $autofillLinks['maker_links'],

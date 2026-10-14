@@ -202,10 +202,10 @@ class ProductEditorialContentService
 
         return match ($normalized) {
             'key features' => 'key_features',
-            'ideal for' => 'ideal_for',
+            'ideal for', 'best for' => 'ideal_for',
             'top use cases' => 'top_use_cases',
-            'known alternatives' => 'known_alternatives',
-            'integrations ecosystem', 'integrations ecosystem ' => 'integrations',
+            'known alternatives', 'comparisons' => 'known_alternatives',
+            'integrations', 'integrations ecosystem', 'integrations ecosystem ' => 'integrations',
             'pros cons' => 'pros_cons',
             'frequently asked questions' => 'faq',
             default => null,

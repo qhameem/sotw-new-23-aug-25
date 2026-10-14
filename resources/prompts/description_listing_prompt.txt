@@ -1,5 +1,5 @@
 Write the listing body for "{productName}" from the facts JSON only. Return JSON only with these keys.
-summary: one complete paragraph, at most 60 words. State the product name and its supported purpose. Use a shorter description when evidence is limited. Mention platform, pricing, audience, or differences only when explicitly supported. Plain words. No praise or padding.
+summary: one complete paragraph, at most 120 words. State the product name, supported purpose, main workflows, and practical value. Use the available facts to explain the product fully without padding. Use a shorter description when evidence is limited. Mention platform, pricing, audience, or differences only when explicitly supported. Plain words. No praise or padding.
 features: an array of 0 to 6 supported plain strings. Each string names a feature and states what the user gets. Use [] when no features are supported. Do not return objects or nested arrays.
 best_for: one supported audience line, or "" when unknown.
 not_for: one explicitly supported limitation line, or "" when unknown. Do not invent limitations from absent features.

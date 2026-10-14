@@ -7,7 +7,6 @@ use App\Services\AiProviderRoutingService;
 use App\Services\DescriptionRewriterService;
 use App\Services\ProductRegenerationLimiter;
 use App\Support\PublicUrlGuard;
-use DOMDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -43,33 +42,22 @@ class DescriptionController extends Controller
             return response()->json(['error' => 'The website could not be read.'], 422);
         }
 
-        $document = new DOMDocument;
-        @$document->loadHTML($response->body());
-
-        $metaDescription = '';
-        foreach ($document->getElementsByTagName('meta') as $meta) {
-            if (strtolower($meta->getAttribute('name')) === 'description') {
-                $metaDescription = trim($meta->getAttribute('content'));
-                break;
-            }
-        }
-
-        $pageText = trim($document->getElementsByTagName('body')->item(0)?->textContent ?? '');
-        $additionalContext = trim((string) ($validated['additional_resources'] ?? ''));
-        $context = trim(mb_substr($pageText, 0, 8000)."\n".$additionalContext);
-        $rawDescription = $metaDescription !== '' ? $metaDescription : mb_substr($pageText, 0, 1500);
-        $description = $rewriter->rewrite(
-            trim((string) ($validated['name'] ?? '')) ?: 'This product',
-            $rawDescription,
-            $context,
-            $provider,
+        $source = app(\App\Services\ProductSourceCollector::class)->collect(
+            $url, $response->body(), trim((string) ($validated['additional_resources'] ?? ''))
         );
-
-        if (! is_string($description) || trim($description) === '') {
-            return response()->json(['error' => 'A description could not be generated.'], 422);
+        $facts = app(\App\Services\FactExtractorService::class)->extract($source);
+        $body = $facts === null ? null : $rewriter->generateFromFacts(
+            trim((string) ($validated['name'] ?? '')) ?: 'This product', $facts, $source, '', $provider
+        );
+        if ($body === null) {
+            return response()->json(['error' => 'A supported description could not be generated. Try again or provide additional source information.'], 422);
         }
-
-        $usedProvider = $rewriter->lastProvider();
+        $fields = \App\Support\ListingDescription::fields($body);
+        $description = $fields['description'];
+        $cacheKey = 'product_listing:'.hash('sha256', \App\Models\Product::normalizeLink($url));
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey, []);
+        \Illuminate\Support\Facades\Cache::put($cacheKey, array_merge(is_array($cached) ? $cached : [], $fields, ['facts_json' => $facts]), now()->addHour());
+        $usedProvider = $rewriter->listingProvider();
 
         return response()->json([
             'description' => $description,

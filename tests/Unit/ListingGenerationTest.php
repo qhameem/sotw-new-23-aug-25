@@ -91,6 +91,15 @@ it('drops classification picks without source quotes', function () {
     expect(ListingGenerationService::verifiedPicks($picks, $source, 2))->toBe(['Task Management']);
 });
 
+it('accepts classification evidence across whitespace differences without accepting changed words', function () {
+    $picks = [
+        ['name' => 'Sports', 'quote' => ' football profiles '],
+        ['name' => 'Free', 'quote' => 'Free plan'],
+        ['name' => 'Subscription', 'quote' => 'Paid plan'],
+    ];
+    expect(ListingGenerationService::verifiedPicks($picks, "Create football\nprofiles. Free\tplan.", 3))->toBe(['Sports', 'Free']);
+});
+
 it('collects body facts when the meta description is empty', function () {
     Http::fake(['*' => Http::response('', 404)]);
     $source = (new ProductSourceCollector)->collect('https://example.com', '<html><head><title>Example</title><meta name="description" content=""></head><body><main>Exports notes to PDF.</main></body></html>');

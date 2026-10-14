@@ -535,7 +535,7 @@
                     </section>
                 @endif
 
-                @if($product->features)
+                @if($product->features && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Key Features/i', $detailDescriptionHtml ?? ''))
                     <section class="mt-8" aria-labelledby="generated-features-title">
                         <h2 id="generated-features-title" class="text-lg font-semibold">Features</h2>
                         <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
@@ -545,10 +545,10 @@
                         </ul>
                     </section>
                 @endif
-                @if($product->best_for_text)
+                @if($product->best_for_text && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Best For/i', $detailDescriptionHtml ?? ''))
                     <section class="mt-8"><h2 class="text-lg font-semibold">Best for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->best_for_text }}</p></section>
                 @endif
-                @if($product->not_for_text)
+                @if($product->not_for_text && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Limitations/i', $detailDescriptionHtml ?? ''))
                     <section class="mt-8"><h2 class="text-lg font-semibold">Not for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->not_for_text }}</p></section>
                 @endif
                 @if($productFaqItems->isNotEmpty())

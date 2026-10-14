@@ -50,7 +50,7 @@ class ListingGenerationService
         if ($description === null) {
             return $base + $this->draft(array_merge(['description failed validation'], $descriptionService->listingErrors()));
         }
-        $base += ['summary' => $description['summary'], 'features' => $description['features'], 'best_for_text' => $description['best_for'], 'not_for_text' => $description['not_for'], 'faq' => $description['faq'], 'description' => '<p>'.e($description['summary']).'</p>'];
+        $base += \App\Support\ListingDescription::fields($description);
         $descriptionProvider = $descriptionService->listingProvider();
         if ($descriptionProvider) {
             $base['description_generation'] = $this->generationAttribution($descriptionProvider);
@@ -69,7 +69,8 @@ class ListingGenerationService
 
         $classification = $this->classify($factsJson, $source, $facts['platforms']);
         if ($classification === null) {
-            return $base + $this->draft(array_merge(['classification failed validation'], $this->lastErrors));
+            return $base + ['field_errors' => array_fill_keys(['categories', 'useCases', 'pricing'], 'Classification failed validation. Regenerate or select these fields manually.')]
+                + $this->draft(array_merge(['classification failed validation'], $this->lastErrors));
         }
         $base += $classification;
 
@@ -91,7 +92,7 @@ class ListingGenerationService
                 if (in_array($field, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], true)) {
                     continue;
                 }
-                if (in_array($field, ['tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text', 'faq', 'seo_title', 'meta_description'], true)) {
+                if (in_array($field, ['tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text', 'top_use_cases', 'comparisons', 'integrations', 'pros', 'editorial_qa', 'faq', 'seo_title', 'meta_description'], true)) {
                     $kind = $field === 'tagline' ? 'tagline' : (in_array($field, ['seo_title', 'meta_description']) ? 'seo' : 'description');
                     if (isset($regenerated[$kind])) {
                         continue;
@@ -111,12 +112,7 @@ class ListingGenerationService
                             $base['meta_description'] = $replacement['meta_description'];
                         }
                         if ($kind === 'description') {
-                            $base['summary'] = $replacement['summary'];
-                            $base['description'] = '<p>'.e($replacement['summary']).'</p>';
-                            $base['features'] = $replacement['features'];
-                            $base['best_for_text'] = $replacement['best_for'];
-                            $base['not_for_text'] = $replacement['not_for'];
-                            $base['faq'] = $replacement['faq'];
+                            $base = array_merge($base, \App\Support\ListingDescription::fields($replacement));
                         }
                     }
                 }
@@ -240,11 +236,28 @@ class ListingGenerationService
                 $aiPlatforms = array_values(array_filter($picks['platforms'], fn ($platform) => $platform !== 'Browser' || in_array('Browser', $detectedPlatforms, true)));
                 $picks['platforms'] = array_slice($this->canonicalPicks(array_merge($detectedPlatforms, $aiPlatforms), $available['platforms']), 0, 3);
                 $ids = fn ($items) => Category::whereIn('name', $items)->pluck('id')->all();
+                $fieldErrors = [];
+                foreach (['categories' => 'categories', 'use_cases' => 'useCases', 'pricing' => 'pricing'] as $key => $field) {
+                    if ($picks[$key] !== []) {
+                        $fieldErrors[$field] = '';
+                    } elseif ($available[$key] === []) {
+                        $fieldErrors[$field] = 'No configured options are available. Ask an administrator to configure them.';
+                    } elseif ($result[$key] === []) {
+                        $fieldErrors[$field] = $key === 'pricing'
+                            ? 'No explicit pricing evidence was identified in the collected pages. Select pricing manually or provide a pricing page.'
+                            : 'No supported match was identified among the available options. Select an option or add a custom suggestion.';
+                    } elseif (self::verifiedPicks($result[$key], $source, 3) === []) {
+                        $fieldErrors[$field] = 'Suggested options were rejected because their evidence quotes could not be found in the collected pages.';
+                    } else {
+                        $fieldErrors[$field] = 'Supported suggestions did not match the configured options. Select an option or add a custom suggestion.';
+                    }
+                }
 
                 return [
                     'categories' => $ids($picks['categories']), 'useCases' => $ids($picks['use_cases']),
                     'bestFor' => $ids($picks['best_for']), 'pricing' => $ids($picks['pricing']),
                     'platforms' => $ids($picks['platforms']),
+                    'field_errors' => $fieldErrors,
                     'suggestedCategories' => $picks['categories'] === [] ? array_slice((array) ($result['suggestions']['categories'] ?? []), 0, 1) : [],
                     'suggestedUseCases' => $picks['use_cases'] === [] ? array_slice((array) ($result['suggestions']['use_cases'] ?? []), 0, 1) : [],
                 ];
@@ -259,9 +272,11 @@ class ListingGenerationService
     public static function verifiedPicks(array $picks, string $source, int $cap): array
     {
         $valid = [];
+        $normalize = static fn (string $text): string => trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        $source = $normalize($source);
         foreach ($picks as $pick) {
             if (is_array($pick) && is_string($pick['name'] ?? null) && is_string($pick['quote'] ?? null)
-                && trim($pick['quote']) !== '' && mb_stripos($source, $pick['quote']) !== false) {
+                && $normalize($pick['quote']) !== '' && mb_stripos($source, $normalize($pick['quote'])) !== false) {
                 $valid[] = $pick['name'];
             }
         }
@@ -291,7 +306,7 @@ class ListingGenerationService
         $this->lastErrors = [];
         $reviewFields = array_intersect_key($fields, array_flip([
             'tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text',
-            'faq', 'seo_title', 'meta_description', 'categories', 'useCases', 'bestFor', 'pricing', 'platforms',
+            'faq', 'top_use_cases', 'comparisons', 'integrations', 'pros', 'editorial_qa', 'seo_title', 'meta_description', 'categories', 'useCases', 'bestFor', 'pricing', 'platforms',
         ]));
         foreach (['categories', 'useCases', 'bestFor', 'pricing', 'platforms'] as $field) {
             if (! empty($fields[$field])) {
@@ -350,7 +365,11 @@ class ListingGenerationService
             'errors' => $errors,
         ]);
 
-        return ['generation_status' => 'draft', 'generation_noindex' => true, 'generation_review_required' => true, 'generation_errors' => $errors];
+        return [
+            'generation_status' => 'draft', 'generation_noindex' => true,
+            'generation_review_required' => true, 'generation_errors' => $errors,
+            'field_errors' => array_fill_keys(['categories', 'useCases', 'pricing'], 'Automatic classification was not completed. Regenerate or select these fields manually.'),
+        ];
     }
 
     private function seoSchemaErrors(?array $result): array

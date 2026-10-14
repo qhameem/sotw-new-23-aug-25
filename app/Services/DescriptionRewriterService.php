@@ -33,7 +33,7 @@ class DescriptionRewriterService
         return $this->lastProvider;
     }
 
-    public function generateFromFacts(string $productName, array $facts, string $source = '', string $feedback = ''): ?array
+    public function generateFromFacts(string $productName, array $facts, string $source = '', string $feedback = '', ?string $provider = null): ?array
     {
         $this->listingErrors = [];
         $this->listingProvider = null;
@@ -48,7 +48,9 @@ class DescriptionRewriterService
             '{adminToneInstruction}' => $tone,
         ]).($feedback ? "\nVerification issues:\n".$feedback : '');
         for ($attempt = 0; $attempt < 2; $attempt++) {
-            $result = $client->json($prompt, 3000);
+            $result = $provider
+                ? $client->jsonWithProvider($prompt, $provider, 3000, 'copy')
+                : $client->json($prompt, 3000);
             if (is_array($result) && is_array($result['features'] ?? null)) {
                 $result['features'] = array_map(self::normalizeListingFeature(...), $result['features']);
             }
@@ -64,10 +66,12 @@ class DescriptionRewriterService
                 foreach (['best_for', 'not_for'] as $field) {
                     $errors = array_merge($errors, $validator->text($field, $result[$field], $source));
                 }
-                foreach ($result['features'] as $feature) {
-                    $errors = array_merge($errors, $validator->text('feature', $feature, $source));
+                foreach (\App\Support\ListingDescription::LIST_LIMITS as $field => $limit) {
+                    foreach ($result[$field] ?? [] as $item) {
+                        $errors = array_merge($errors, $validator->text($field, $item, $source));
+                    }
                 }
-                foreach ($result['faq'] as $faq) {
+                foreach ([...($result['editorial_qa'] ?? []), ...$result['faq']] as $faq) {
                     $errors = array_merge($errors, $validator->text('faq_question', $faq['question'], $source), $validator->text('faq_answer', $faq['answer'], $source));
                 }
                 if ($errors === []) {

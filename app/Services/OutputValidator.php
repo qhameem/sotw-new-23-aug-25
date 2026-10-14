@@ -16,8 +16,8 @@ class OutputValidator
         }
         if ($field === 'summary') {
             $count = count(preg_split('/\s+/u', trim($value), -1, PREG_SPLIT_NO_EMPTY));
-            if ($count === 0 || $count > 60) {
-                $errors[] = "summary must be 1 to 60 words; got $count.";
+            if ($count === 0 || $count > 120) {
+                $errors[] = "summary must be 1 to 120 words; got $count.";
             }
             if (! preg_match('/[.!?]\s*$/u', $value)) {
                 $errors[] = 'summary must end with a complete sentence.';
@@ -76,6 +76,26 @@ class OutputValidator
             $errors[] = 'tagline.candidates must contain three strings.';
         }
         if ($kind === 'description') {
+            foreach (\App\Support\ListingDescription::LIST_LIMITS as $field => $limit) {
+                if (array_key_exists($field, $value) && (! is_array($value[$field]) || count($value[$field]) > $limit || count(array_filter($value[$field], 'is_string')) !== count($value[$field]))) {
+                    $errors[] = "description.$field must contain at most $limit strings.";
+                }
+            }
+            foreach (['editorial_qa' => 7, 'faq' => 4] as $field => $limit) {
+                if (! array_key_exists($field, $value)) {
+                    continue;
+                }
+                if (! is_array($value[$field]) || count($value[$field]) > $limit) {
+                    $errors[] = "description.$field must contain at most $limit question and answer items.";
+
+                    continue;
+                }
+                foreach ($value[$field] as $item) {
+                    if (! is_array($item) || ! is_string($item['question'] ?? null) || ! is_string($item['answer'] ?? null)) {
+                        $errors[] = "description.$field items need question and answer strings.";
+                    }
+                }
+            }
             if (count(array_filter($value['features'], 'is_string')) !== count($value['features'])) {
                 $errors[] = 'description.features must contain strings.';
             }
