@@ -235,6 +235,18 @@ class ListingGenerationService
                     }
                     $picks[$key] = $this->canonicalPicks(self::verifiedPicks($result[$key], $source, $cap), $available[$key]);
                 }
+                foreach ($result['pricing'] as $pick) {
+                    if (! is_array($pick)) {
+                        continue;
+                    }
+                    $name = is_string($pick['name'] ?? null) ? $pick['name'] : 'unknown';
+                    $quote = is_string($pick['quote'] ?? null) ? $pick['quote'] : '';
+                    $accepted = in_array($name, self::verifiedPicks([$pick], $source, 1), true)
+                        && $this->canonicalPicks([$name], $available['pricing']) !== [];
+                    \App\Support\ExtractionReport::current()->record('pricing classification evidence',
+                        $name.': '.($accepted ? 'source quote matched' : 'rejected; quote missing or category unavailable').'; quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        $accepted ? 'info' : 'warning');
+                }
                 $aiPlatforms = array_values(array_filter($picks['platforms'], fn ($platform) => $platform !== 'Browser' || in_array('Browser', $detectedPlatforms, true)));
                 $picks['platforms'] = array_slice($this->canonicalPicks(array_merge($detectedPlatforms, $aiPlatforms), $available['platforms']), 0, 3);
                 $ids = fn ($items) => Category::whereIn('name', $items)->pluck('id')->all();
@@ -316,8 +328,30 @@ class ListingGenerationService
                 $reviewFields[$field] = Category::whereIn('id', $fields[$field])->pluck('name')->all();
             }
         }
+        $pricingService = app(PricingEvidenceService::class);
+        $billingEvidence = $pricingService->extract($source);
+        $supportedPricing = [];
+        foreach ($reviewFields['pricing'] ?? [] as $name) {
+            $quotes = $pricingService->supportingQuotes($name, $billingEvidence);
+            if ($quotes !== []) {
+                $supportedPricing[$name] = $quotes;
+            }
+        }
+        if (! empty($reviewFields['pricing'])) {
+            $report = \App\Support\ExtractionReport::current();
+            $report->record('pricing verification evidence', 'Selected categories: '.implode(', ', $reviewFields['pricing']));
+            foreach ($billingEvidence as $kind => $quotes) {
+                foreach ($quotes as $quote) {
+                    $report->record('pricing verification evidence', $kind.'; source: '.($quote['source_url'] ?? 'unlabelled').'; quote: '.json_encode($quote['quote'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'; context: '.json_encode($quote['context'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                }
+            }
+            if (! array_filter($billingEvidence)) {
+                $report->record('pricing verification evidence', 'No recognized billing quotes found; relying on semantic source review.', 'warning');
+            }
+        }
         $prompt = $this->ai->prompt('listing_verification_prompt.txt', [
             '{generatedFieldsJson}' => json_encode($reviewFields), '{factsJson}' => $factsJson, '{sourceText}' => $source,
+            '{pricingEvidenceJson}' => json_encode(['billing_quotes' => $billingEvidence, 'supported_category_candidates' => $supportedPricing], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
         for ($i = 0; $i < 2; $i++) {
             $result = $this->ai->json($prompt);
@@ -333,6 +367,18 @@ class ListingGenerationService
 
                     return $issue;
                 }, $result['issues']);
+
+                foreach ($issues as $issue) {
+                    if ($issue['field'] !== 'pricing') {
+                        continue;
+                    }
+                    $quote = is_string($issue['source_quote'] ?? null) ? $issue['source_quote'] : '';
+                    $normalizedSource = preg_replace('/\s+/u', ' ', $source);
+                    $normalizedQuote = trim(preg_replace('/\s+/u', ' ', $quote));
+                    $matches = $normalizedQuote !== '' && mb_stripos($normalizedSource, $normalizedQuote) !== false;
+                    \App\Support\ExtractionReport::current()->record('pricing verification verdict',
+                        $issue['problem'].'; verifier quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'; '.($matches ? 'quote matched collected source' : 'no matching source quote provided'), 'warning');
+                }
 
                 return array_values(array_filter($issues, function (array $issue) use ($reviewFields): bool {
                     $field = $issue['field'];

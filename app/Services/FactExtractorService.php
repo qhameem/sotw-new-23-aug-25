@@ -18,7 +18,7 @@ class FactExtractorService
     public function extract(string $source): ?array
     {
         $this->errors = [];
-        $cacheKey = 'listing_facts:v1:'.hash('sha256', $source);
+        $cacheKey = 'listing_facts:v2:'.hash('sha256', $source);
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
             \App\Support\ExtractionReport::current()->record('facts', 'Using cached source facts.', 'success');
