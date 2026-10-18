@@ -51,7 +51,7 @@
     <td class="px-2 py-3 align-top"><span @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200' => $scheduled, 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => !$scheduled])>{{ $scheduled ? 'Scheduled' : 'Published' }}</span></td>
     <td class="px-2 py-3 align-top">@if($badge)<button type="button" data-tooltip="{{ $badgeTooltip }}" @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->badge_verified, 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200' => $failed, 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => !$failed && !$product->badge_verified])>{{ $badgeStatus }}</button>@else<span class="text-slate-500" aria-label="Badge not required">—</span>@endif</td>
     <td class="px-2 py-3 align-top">
-        <div class="flex items-center justify-end gap-1">
+        <div class="flex flex-wrap items-center justify-end gap-1">
             @if($scheduled)
                 <form action="{{ route('admin.product-approvals.publish-scheduled-now') }}" method="POST">@csrf<input type="hidden" name="publish_scope" value="selected"><input type="hidden" name="products[]" value="{{ $product->id }}"><button class="whitespace-nowrap rounded-lg bg-indigo-600 px-2 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Publish now</button></form>
             @endif

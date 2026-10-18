@@ -44,13 +44,13 @@
     <div class="max-h-[70vh] overflow-auto">
         <table class="w-full min-w-[1280px] table-fixed text-left text-sm">
             <colgroup>
-                <col style="width: 34%">
+                <col style="width: calc(43% - 240px)">
                 <col style="width: 14%">
                 <col style="width: 14%">
                 <col style="width: 13%">
                 <col style="width: 9%">
                 <col style="width: 7%">
-                <col style="width: 9%">
+                <col style="width: 240px">
             </colgroup>
             <thead class="sticky top-0 z-10 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <tr>
