@@ -30,7 +30,7 @@
           <input
             id="product-url"
             ref="inputRef"
-            :value="modelValue"
+            :value="displayUrl"
             @input="handleInput"
             @keydown.enter.prevent="handleAutoFillClick"
             :aria-invalid="inlineError ? 'true' : 'false'"
@@ -185,7 +185,10 @@ const clipboardFeedback = ref('');
 const clipboardFeedbackType = ref('info');
 const inputRef = ref(null);
 const { caretStyle, refreshCaret } = useInputCaret(inputRef);
-watch(() => props.modelValue, refreshCaret, { flush: 'post' });
+const displayUrl = computed(() => props.isUrlUnique && !props.isUrlChecking
+  ? productFormService.getDuplicateCheckUrl(props.modelValue)
+  : props.modelValue);
+watch(displayUrl, refreshCaret, { flush: 'post' });
 const inlineError = computed(() => props.fieldError || (props.isUrlInvalid && String(props.modelValue || '').trim() ? 'Enter a valid website URL.' : props.urlCheckFailed ? 'Unable to check this URL. Please try again.' : ''));
 const showDisabledTooltip = ref(false);
 let disabledTooltipTimeout = null;
@@ -246,7 +249,7 @@ const performValidationAndFetch = async (explicitValue = null) => {
   const normalizedExplicitValue = explicitValue instanceof Event ? null : explicitValue;
 
   // Get the current value directly from the input element to avoid timing issues
-  const inputValue = normalizedExplicitValue ?? inputRef.value?.value ?? document.getElementById('product-url')?.value ?? props.modelValue;
+  const inputValue = normalizedExplicitValue ?? props.modelValue;
   console.log('[ProductURLInput] Using URL value:', inputValue);
 
   if (inputValue !== props.modelValue) {
@@ -337,12 +340,12 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  height: 80px;
+  height: 24px;
 }
 .url-label-feedback {
   flex: 1;
   min-width: 0;
-  height: 80px;
+  height: 24px;
   overflow: auto;
 }
 .url-status-row {
@@ -358,9 +361,6 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 }
 @media (max-width: 639px) {
   .url-label-row > span { display: none; }
-}
-@media (min-width: 640px) {
-  .url-label-row, .url-label-feedback { height: 48px; }
 }
 .url-caret {
   position: absolute;
