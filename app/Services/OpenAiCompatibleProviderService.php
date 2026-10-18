@@ -13,7 +13,8 @@ class OpenAiCompatibleProviderService
         string $prompt,
         float $temperature,
         int $maxTokens,
-        ?int $timeout = null
+        ?int $timeout = null,
+        array $options = []
     ): Response {
         $configuration = $this->configuration($provider);
 
@@ -28,6 +29,7 @@ class OpenAiCompatibleProviderService
                 ]],
                 'temperature' => $temperature,
                 'max_tokens' => $maxTokens,
+                ...$options,
             ]);
     }
 

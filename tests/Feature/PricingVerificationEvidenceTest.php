@@ -43,7 +43,7 @@ it('passes semantic billing evidence to verification and reports quotes only to 
     $payload = ExtractionReport::current()->payload($request);
     if ($admin) {
         $messages = implode("\n", array_column($payload['extraction_report'], 'message'));
-        expect($messages)->toContain('$9.99/month', 'https://example.com/pricing', 'Free Mode.', 'quote matched collected source');
+        expect($messages)->toContain('$9.99/month', 'https://example.com/pricing', 'Free Mode.', 'verifier quote:');
     } else {
         expect($payload)->toBe([]);
     }
@@ -66,5 +66,5 @@ it('preserves classification evidence quotes when the semantic label is absent f
     $method = new ReflectionMethod($service, 'classify');
     $result = $method->invoke($service, '{}', 'Starter $9.99/month.', []);
     expect($result['pricing'])->toBe([$category->id]);
-    expect(implode("\n", array_column(ExtractionReport::current()->payload(request())['extraction_report'], 'message')))->toContain('Subscription', '$9.99/month', 'source quote matched');
+    expect(implode("\n", array_column(ExtractionReport::current()->payload(request())['extraction_report'], 'message')))->toContain('Subscription', '$9.99/month', 'category accepted');
 });

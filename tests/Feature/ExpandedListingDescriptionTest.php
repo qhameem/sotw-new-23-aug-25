@@ -78,7 +78,8 @@ it('explains empty classification results and clears diagnostics for supported m
     $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
     $method = new ReflectionMethod($service, 'classify');
     $result = $method->invoke($service, '{}', 'Create football profiles. Free plan.', []);
-    expect($result['field_errors']['categories'])->toContain('evidence quotes');
+    expect($result['field_errors']['categories'])->toBe('');
+    expect($result['categories'])->toHaveCount(1);
     expect($result['field_errors']['useCases'])->toContain('configured options');
     expect($result['field_errors']['pricing'])->toContain('pricing evidence');
     $result = $method->invoke($service, '{}', 'Create football profiles. Free plan.', []);
