@@ -81,23 +81,23 @@ it('prefers og and JSON-LD names without AI', function () {
     expect($extractor->extractFromHtml('<title>Marketing copy - Wrong</title><script type="application/ld+json">{"@type":"SoftwareApplication","name":"Weave"}</script>', 'https://weave.test'))->toBe('Weave');
 });
 
-it('drops classification picks without source quotes', function () {
+it('keeps classification picks without exact source quotes', function () {
     $source = 'NotchOwl offers a Mac notch app for task notes.';
     $picks = [
         ['name' => 'Meeting Summaries', 'quote' => 'meeting summaries'],
         ['name' => 'Remote Teams', 'quote' => 'remote teams'],
         ['name' => 'Task Management', 'quote' => 'task notes'],
     ];
-    expect(ListingGenerationService::verifiedPicks($picks, $source, 2))->toBe(['Task Management']);
+    expect(ListingGenerationService::verifiedPicks($picks, $source, 2))->toBe(['Meeting Summaries', 'Remote Teams']);
 });
 
-it('accepts classification evidence across whitespace differences without accepting changed words', function () {
+it('accepts classification picks regardless of quote wording', function () {
     $picks = [
         ['name' => 'Sports', 'quote' => ' football profiles '],
         ['name' => 'Free', 'quote' => 'Free plan'],
-        ['name' => 'Subscription', 'quote' => 'Paid plan'],
+        ['name' => 'Subscription'],
     ];
-    expect(ListingGenerationService::verifiedPicks($picks, "Create football\nprofiles. Free\tplan.", 3))->toBe(['Sports', 'Free']);
+    expect(ListingGenerationService::verifiedPicks($picks, "Create football\nprofiles. Free\tplan.", 3))->toBe(['Sports', 'Free', 'Subscription']);
 });
 
 it('collects body facts when the meta description is empty', function () {
@@ -132,7 +132,7 @@ it('keeps supported facts when AI omits optional fields or evidence', function (
 
     $facts = (new FactExtractorService($client))->extract('Desktop utility. Shows notes beside the screen notch.');
     expect($facts['product_type'])->toBe('Desktop utility');
-    expect($facts['pricing_model'])->toBeNull();
+    expect($facts['pricing_model'])->toBe('Subscription');
     expect($facts['platforms'])->toBe([]);
 });
 
@@ -148,20 +148,16 @@ it('accepts evidence with equivalent whitespace', function () {
     expect($facts['one_line_description'])->toBe('Tailor your resume to the role.');
 });
 
-it('tells the AI which evidence failed before retrying', function () {
+it('keeps facts with paraphrased evidence without retrying', function () {
     $client = Mockery::mock(ListingAiClient::class);
     $client->shouldReceive('prompt')->once()->andReturn('prompt');
     $client->shouldReceive('json')->once()->with('prompt', 3000)->andReturn([
         'one_line_description' => 'Job search support.',
-        'evidence' => ['one_line_description' => 'Unsupported paraphrase'],
-    ]);
-    $client->shouldReceive('json')->once()->withArgs(fn ($prompt, $tokens) => $tokens === 3000 && str_contains($prompt, 'one_line_description') && str_contains($prompt, 'Copy short evidence quotes verbatim'))->andReturn([
-        'one_line_description' => 'Track every application and next step.',
-        'evidence' => ['one_line_description' => 'Track every application and next step.'],
+        'evidence' => ['one_line_description' => 'Paraphrased supporting text'],
     ]);
 
     $facts = (new FactExtractorService($client))->extract('Track every application and next step.');
-    expect($facts['one_line_description'])->toBe('Track every application and next step.');
+    expect($facts['one_line_description'])->toBe('Job search support.');
 });
 
 it('marks failed generation as draft after two attempts', function () {

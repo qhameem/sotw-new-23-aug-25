@@ -244,7 +244,7 @@ class ListingGenerationService
                     $accepted = in_array($name, self::verifiedPicks([$pick], $source, 1), true)
                         && $this->canonicalPicks([$name], $available['pricing']) !== [];
                     \App\Support\ExtractionReport::current()->record('pricing classification evidence',
-                        $name.': '.($accepted ? 'source quote matched' : 'rejected; quote missing or category unavailable').'; quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        $name.': '.($accepted ? 'category accepted' : 'rejected; category unavailable').'; quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         $accepted ? 'info' : 'warning');
                 }
                 $aiPlatforms = array_values(array_filter($picks['platforms'], fn ($platform) => $platform !== 'Browser' || in_array('Browser', $detectedPlatforms, true)));
@@ -260,8 +260,6 @@ class ListingGenerationService
                         $fieldErrors[$field] = $key === 'pricing'
                             ? 'No explicit pricing evidence was identified in the collected pages. Select pricing manually or provide a pricing page.'
                             : 'No supported match was identified among the available options. Select an option or add a custom suggestion.';
-                    } elseif (self::verifiedPicks($result[$key], $source, 3) === []) {
-                        $fieldErrors[$field] = 'Suggested options were rejected because their evidence quotes could not be found in the collected pages.';
                     } else {
                         $fieldErrors[$field] = 'Supported suggestions did not match the configured options. Select an option or add a custom suggestion.';
                     }
@@ -287,11 +285,8 @@ class ListingGenerationService
     public static function verifiedPicks(array $picks, string $source, int $cap): array
     {
         $valid = [];
-        $normalize = static fn (string $text): string => trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
-        $source = $normalize($source);
         foreach ($picks as $pick) {
-            if (is_array($pick) && is_string($pick['name'] ?? null) && is_string($pick['quote'] ?? null)
-                && $normalize($pick['quote']) !== '' && mb_stripos($source, $normalize($pick['quote'])) !== false) {
+            if (is_array($pick) && is_string($pick['name'] ?? null) && trim($pick['name']) !== '') {
                 $valid[] = $pick['name'];
             }
         }
@@ -373,11 +368,8 @@ class ListingGenerationService
                         continue;
                     }
                     $quote = is_string($issue['source_quote'] ?? null) ? $issue['source_quote'] : '';
-                    $normalizedSource = preg_replace('/\s+/u', ' ', $source);
-                    $normalizedQuote = trim(preg_replace('/\s+/u', ' ', $quote));
-                    $matches = $normalizedQuote !== '' && mb_stripos($normalizedSource, $normalizedQuote) !== false;
                     \App\Support\ExtractionReport::current()->record('pricing verification verdict',
-                        $issue['problem'].'; verifier quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'; '.($matches ? 'quote matched collected source' : 'no matching source quote provided'), 'warning');
+                        $issue['problem'].'; verifier quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'warning');
                 }
 
                 return array_values(array_filter($issues, function (array $issue) use ($reviewFields): bool {

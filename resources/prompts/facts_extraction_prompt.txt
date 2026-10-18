@@ -5,6 +5,6 @@ Return this shape:
 pricing_model: normalize explicit billing evidence by meaning. Nonzero monthly/yearly recurring charges support Subscription; an ongoing free plan plus paid upgrades supports Freemium. The label need not appear verbatim. Quote actual billing evidence. A free trial, self-serve checkout, or third-party subscription alone does not establish these models. Free and paid plans can coexist.
 top_features: at most 6 items. Each item names a feature and what the user gets.
 platforms: list a platform only when a download, store listing, system requirement, or explicit statement names the platform.
-evidence: one short, verbatim quote copied from the source for each non-null field. The quote must appear in the source text with the same words and punctuation. A paraphrase is not evidence. If no exact quote supports a field, use null or [] and omit its evidence key. At least one of product_type, one_line_description, or top_features should have source-supported evidence when the source describes the product.
+evidence: optionally provide a short supporting excerpt or explanation for each populated field. Exact quotation is not required. Base all facts on the source; leave unstated fields null or [].
 Source:
 {sourceText}

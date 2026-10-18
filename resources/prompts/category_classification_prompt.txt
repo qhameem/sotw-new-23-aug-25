@@ -1,6 +1,6 @@
 Analyze the product facts and website content below. Choose the most relevant categories, use cases, best_for tags, pricing models, and platforms.
 Choose only from the lists provided. Choose at most 3 categories, 2 use_cases, 2 best_for, 1 pricing, and 3 platforms.
-For each pick, add a short quote from the source as evidence. If no quote supports a pick, leave the pick out. Empty lists are valid.
+For each pick, optionally include a supporting excerpt or explanation in quote. Exact quotation is not required. Choose only picks supported by the source. Empty lists are valid.
 Platforms: pick Browser only when users run the product in a web browser. A marketing website does not count. Pick MacOS, Windows, iOS, Android, or Chrome extension only when the source names a download, a store listing, or a system requirement.
 Use cases: pick a use case only when the source describes the task directly.
 Best for: pick the audience the product copy addresses. Do not pick a team audience for a single-user tool.
