@@ -135,7 +135,7 @@
                 @foreach($product->customCategorySubmissions as $submission)
                     <form class="js-custom-category-form rounded-xl border border-slate-200 p-4" action="{{ route('admin.product-approvals.approve-custom-category', [$product, $submission]) }}" data-product-id="{{ $product->id }}">
                         @csrf
-                        <div class="custom-category-name font-semibold text-slate-900">{{ $submission->name }}</div>
+                        <input type="text" name="name" value="{{ $submission->name }}" required maxlength="255" readonly aria-label="Category name" title="Click to edit category name" class="custom-category-name js-custom-category-name block w-full cursor-pointer rounded-lg border-transparent bg-transparent font-semibold text-slate-900 focus:cursor-text focus:border-sky-500 focus:ring-sky-500">
                         <div class="mt-1 text-xs uppercase tracking-wide text-slate-500">{{ str_replace('_', ' ', $submission->type) }}</div>
                         <input type="hidden" name="slug" value="{{ Str::slug($submission->name) }}">
                         <div class="mt-3">

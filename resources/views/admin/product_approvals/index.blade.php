@@ -333,6 +333,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.querySelectorAll('.js-custom-category-form').forEach(form => {
+        const nameInput = form.querySelector('.js-custom-category-name');
+        nameInput.addEventListener('focus', () => {
+            nameInput.readOnly = false;
+        });
+        nameInput.addEventListener('blur', () => {
+            nameInput.value = nameInput.value.trim();
+            nameInput.readOnly = true;
+        });
+        nameInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                nameInput.blur();
+            }
+        });
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (!form.reportValidity()) return;
@@ -413,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value,
                     },
                     body: JSON.stringify({
-                        category_name: form.querySelector('.custom-category-name').textContent.trim(),
+                        category_name: form.querySelector('.custom-category-name').value.trim(),
                         category_type: form.querySelector('.custom-category-name').nextElementSibling?.textContent.trim().replaceAll(' ', '_'),
                     }),
                 });

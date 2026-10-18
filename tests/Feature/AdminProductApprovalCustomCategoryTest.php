@@ -59,6 +59,36 @@ class AdminProductApprovalCustomCategoryTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_rename_custom_category_when_saving()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::firstOrCreate(['name' => 'admin']));
+        $product = Product::factory()->create();
+        $submission = CustomCategorySubmission::create([
+            'product_id' => $product->id,
+            'type' => 'use_case',
+            'name' => 'Original name',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)->postJson(
+            route('admin.product-approvals.approve-custom-category', [$product, $submission]),
+            [
+                'name' => 'MCP Server Management',
+                'slug' => 'original-name',
+                'description' => 'Manage MCP servers and their configuration.',
+                'meta_description' => 'Compare tools for managing MCP servers.',
+            ]
+        )->assertOk()->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('categories', [
+            'name' => 'MCP Server Management',
+            'slug' => 'mcp-server-management',
+        ]);
+        $this->assertSame('MCP Server Management', $submission->fresh()->name);
+        $this->assertTrue($product->categories()->where('name', 'MCP Server Management')->exists());
+    }
+
     public function test_product_cannot_be_published_while_a_custom_category_is_pending()
     {
         $adminRole = Role::firstOrCreate(['name' => 'admin']);

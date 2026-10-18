@@ -636,6 +636,7 @@ class ProductApprovalController extends Controller
         abort_unless($submission->product_id === $product->id, 404);
 
         $request->validate([
+            'name' => 'sometimes|required|string|max:255',
             'slug' => 'required|string|max:255',
             'description' => 'required|string',
             'meta_description' => 'required|string|max:255',
@@ -644,10 +645,16 @@ class ProductApprovalController extends Controller
         try {
             \DB::beginTransaction();
 
+            $slug = $request->slug;
+            if ($submission->status === 'pending' && $request->has('name') && $request->name !== $submission->name) {
+                $submission->update(['name' => $request->name]);
+                $slug = Str::slug($submission->name);
+            }
+
             $this->persistCustomSubmission(
                 $product,
                 $submission,
-                $request->slug,
+                $slug,
                 $request->description,
                 $request->meta_description
             );
