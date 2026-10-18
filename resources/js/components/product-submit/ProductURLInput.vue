@@ -1,10 +1,35 @@
 <template>
   <div id="field-link" :class="{ 'sticky top-0 z-30': reviewMode }" class="mb-4 bg-slate-50 border border-slate-300 rounded-xl p-6">
-    <div class="mb-3 flex flex-wrap items-start justify-between gap-4">
-      <div class="flex items-center gap-2">
-        <label for="product-url" class="block text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
+    <div class="url-label-row mb-3">
+      <label for="product-url" class="shrink-0 text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
+      <div class="url-label-feedback" aria-label="Website URL validation">
+        <div id="product-url-status" class="url-status-row text-xs" role="status" aria-live="polite" aria-atomic="true">
+          <p v-if="isUrlChecking" class="flex items-center gap-2 text-slate-600">
+            <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+            Checking URL uniqueness…
+          </p>
+          <div v-else-if="urlExistsError" class="min-w-0 text-red-600">
+            <p class="truncate" :title="`This exact URL already exists as ${existingProduct?.name || 'an existing product'}.`">URL already listed: <a :href="existingProduct?.view_url || `/product/${existingProduct?.slug}`" target="_blank" rel="noopener" class="font-semibold underline underline-offset-2">{{ existingProduct?.name || 'View product' }}</a></p>
+            <a v-if="existingProduct?.can_edit && existingProduct?.edit_url" :href="existingProduct.edit_url" class="inline-block font-semibold underline underline-offset-2">Edit existing product</a>
+          </div>
+          <p v-else-if="inlineError" class="text-red-600">{{ inlineError }}</p>
+          <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
+          <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
+          <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
+          <p v-else-if="isUrlUnique" class="text-emerald-700">URL available. Ready to fill with AI.</p>
+        </div>
+        <div id="product-url-trim" class="url-trim-row text-xs" role="status" aria-live="polite" aria-atomic="true">
+          <template v-if="urlTrimSuggestion && !isLoading">
+            <div class="min-w-0 flex-1 text-amber-800">
+              <p class="truncate" :title="`You can trim ${urlTrimSuggestion.removedParts.join(', ')}.`">You can trim {{ urlTrimSuggestion.removedParts.join(', ') }}.</p>
+              <p class="truncate font-mono text-[11px]" :title="urlTrimSuggestion.suggestedUrl">{{ urlTrimSuggestion.suggestedUrl }}</p>
+            </div>
+            <button type="button" @click="applyTrimSuggestion" class="shrink-0 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200">Use trimmed URL</button>
+          </template>
+          <p v-else class="text-slate-500">{{ clipboardFeedbackType !== 'error' ? clipboardFeedback : '' }}</p>
+        </div>
       </div>
-      <span :class="{ invisible: !extractionTiming.started }" class="ml-auto shrink-0 text-xs font-medium tabular-nums text-gray-700">
+      <span :class="{ invisible: !extractionTiming.started }" class="shrink-0 text-xs font-medium tabular-nums text-gray-700">
         {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
       </span>
     </div>
@@ -97,34 +122,6 @@
         </div>
       </div>
     </div>
-    <div class="url-status-panel mt-3 rounded-lg border border-slate-200 bg-white px-3" aria-label="Website URL validation">
-      <div id="product-url-status" class="url-status-row text-xs" role="status" aria-live="polite" aria-atomic="true">
-        <p v-if="isUrlChecking" class="flex items-center gap-2 text-slate-600">
-          <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-          Checking for duplicates…
-        </p>
-        <div v-else-if="urlExistsError" class="min-w-0 text-red-600">
-          <p class="truncate" :title="`This exact URL already exists as ${existingProduct?.name || 'an existing product'}.`">URL already listed: <a :href="existingProduct?.view_url || `/product/${existingProduct?.slug}`" target="_blank" rel="noopener" class="font-semibold underline underline-offset-2">{{ existingProduct?.name || 'View product' }}</a></p>
-          <a v-if="existingProduct?.can_edit && existingProduct?.edit_url" :href="existingProduct.edit_url" class="inline-block font-semibold underline underline-offset-2">Edit existing product</a>
-        </div>
-        <p v-else-if="inlineError" class="text-red-600">{{ inlineError }}</p>
-        <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
-        <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
-        <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
-        <p v-else-if="String(modelValue || '').trim() && !isUrlInvalid" class="text-emerald-700">URL available. Ready to fill with AI.</p>
-        <p v-else class="text-slate-500">Enter a website URL to check availability.</p>
-      </div>
-      <div id="product-url-trim" class="url-trim-row border-t border-slate-100 text-xs" role="status" aria-live="polite" aria-atomic="true">
-        <template v-if="urlTrimSuggestion && !isLoading">
-          <div class="min-w-0 flex-1 text-amber-800">
-            <p class="truncate" :title="`You can trim ${urlTrimSuggestion.removedParts.join(', ')}.`">You can trim {{ urlTrimSuggestion.removedParts.join(', ') }}.</p>
-            <p class="truncate font-mono text-[11px]" :title="urlTrimSuggestion.suggestedUrl">{{ urlTrimSuggestion.suggestedUrl }}</p>
-          </div>
-          <button type="button" @click="applyTrimSuggestion" class="shrink-0 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200">Use trimmed URL</button>
-        </template>
-        <p v-else class="text-slate-500">{{ clipboardFeedbackType !== 'error' && clipboardFeedback ? clipboardFeedback : 'Trim suggestions appear here when available.' }}</p>
-      </div>
-    </div>
     <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
     <div v-if="!reviewMode && !isLoading" class="mt-5">
       <button
@@ -170,6 +167,7 @@ const props = defineProps({
   isLoading: Boolean,
   showPhaseTimings: Boolean,
   isUrlChecking: Boolean,
+  isUrlUnique: Boolean,
   urlCheckFailed: Boolean,
   loadingProgress: Number,
   loadingMessage: String,
@@ -204,7 +202,8 @@ const showDisabledTooltip = ref(false);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
   !props.isSandboxMode && (
-    props.isUrlChecking
+    !props.isUrlUnique
+    || props.isUrlChecking
     || props.urlCheckFailed
     || props.urlExistsError
     || props.isUrlInvalid
@@ -355,26 +354,38 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 </script>
 
 <style scoped>
-.url-status-panel {
-  height: 140px;
+.url-label-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  height: 80px;
+}
+.url-label-feedback {
+  flex: 1;
+  min-width: 0;
+  height: 80px;
+  overflow: auto;
 }
 .url-status-row,
 .url-trim-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 69px;
   min-width: 0;
   line-height: 16px;
-  overflow: auto;
 }
+.url-status-row { min-height: 16px; }
+.url-trim-row { min-height: 32px; }
 .url-status-row > * {
   min-width: 0;
   max-width: 100%;
 }
+@media (max-width: 639px) {
+  .url-label-row > span { display: none; }
+  .url-trim-row { flex-wrap: wrap; }
+}
 @media (min-width: 640px) {
-  .url-status-panel { height: 108px; }
-  .url-status-row, .url-trim-row { height: 53px; }
+  .url-label-row, .url-label-feedback { height: 48px; }
 }
 .url-caret {
   position: absolute;

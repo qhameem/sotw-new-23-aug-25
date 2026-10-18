@@ -40,6 +40,7 @@
               :isLoading="isLoading"
               :isUrlChecking="urlCheckPending"
               :urlCheckFailed="urlCheckFailed"
+              :isUrlUnique="urlCheckedValue === form.link && !!urlCheckedValue && !urlExistsError"
               :isSandboxMode="showAdminSandboxControls && form.sandbox_mode"
               :loadingProgress="loadingProgress"
               :showPhaseTimings="isAdmin"
@@ -234,6 +235,7 @@
                     :reviewMode="!manualMode"
                     :isUrlChecking="urlCheckPending"
                     :urlCheckFailed="urlCheckFailed"
+                    :isUrlUnique="urlCheckedValue === form.link && !!urlCheckedValue && !urlExistsError"
                     @manual="openManualMode"
                     @getStarted="handleUrlFetch"
                     @clear="clearForm"
@@ -375,6 +377,7 @@ const isLogoPickerOpen = ref(false);
 let urlExistsCheckTimeout = null;
 const urlCheckPending = ref(false);
 const urlCheckFailed = ref(false);
+const urlCheckedValue = ref('');
 const aiModelOptions = ref([]);
 
 const {
@@ -542,8 +545,8 @@ watch(() => form.favicon, (newVal) => {
 watch(() => form.link, (newVal) => {
   // Reset original favicon when URL changes
   if (!newVal) originalFavicon.value = null;
-  console.log('[FormWizard] form.link changed:', newVal);
-});
+  scheduleUrlCheck(newVal);
+}, { flush: 'sync', immediate: true });
 
 watch(showAdminSandboxControls, (isVisible) => {
   if (!isVisible && form.sandbox_mode) {
@@ -691,19 +694,18 @@ const handleUrlFetch = async (url) => {
 const handleUrlInputUpdate = (val) => {
   console.log('[FormWizard] update:modelValue:', val);
   form.link = val;
-  urlCheckPending.value = Boolean(val) && !isUrlInvalid.value;
-  urlCheckFailed.value = false;
   touchField('link');
   validateField('link');
+};
 
-  if (urlExistsCheckTimeout) {
-    clearTimeout(urlExistsCheckTimeout);
-  }
+function scheduleUrlCheck(val) {
+  urlCheckedValue.value = '';
+  urlCheckPending.value = Boolean(String(val || '').trim()) && !isUrlInvalid.value;
+  urlCheckFailed.value = false;
+  if (urlExistsCheckTimeout) clearTimeout(urlExistsCheckTimeout);
 
-  if (!val) {
-    urlCheckPending.value = false;
-    urlCheckFailed.value = false;
-    checkUrlExists('');
+  if (!urlCheckPending.value) {
+    checkUrlExists(val || '');
     return;
   }
 
@@ -712,9 +714,10 @@ const handleUrlInputUpdate = (val) => {
     if (form.link === val) {
       urlCheckPending.value = false;
       urlCheckFailed.value = Boolean(result?.checkFailed);
+      if (result && !result.checkFailed && !result.exists) urlCheckedValue.value = val;
     }
   }, 300);
-};
+}
 
 const clearForm = () => {
     draftListDismissed.value = false;
