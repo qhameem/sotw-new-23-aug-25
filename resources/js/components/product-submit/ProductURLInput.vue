@@ -16,7 +16,6 @@
           <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
           <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
           <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
-          <p v-else-if="isUrlUnique" class="text-emerald-700">URL available. Ready to fill with AI.</p>
         </div>
         <div id="product-url-trim" class="url-trim-row text-xs" role="status" aria-live="polite" aria-atomic="true">
           <template v-if="urlTrimSuggestion && !isLoading">
