@@ -46,7 +46,6 @@
               :showPhaseTimings="isAdmin"
               :loadingMessage="loadingMessage"
               :isUrlInvalid="isUrlInvalid"
-              :urlTrimSuggestion="urlTrimSuggestion"
               :urlExistsError="urlExistsError"
               :urlMatchesDraft="urlMatchesDraft"
               :existingProduct="existingProduct"
@@ -227,7 +226,6 @@
                     :showPhaseTimings="isAdmin"
                     :loadingMessage="loadingMessage"
                     :isUrlInvalid="isUrlInvalid"
-                    :urlTrimSuggestion="urlTrimSuggestion"
                     :urlExistsError="urlExistsError"
               :urlMatchesDraft="urlMatchesDraft"
                     :existingProduct="existingProduct"
@@ -419,7 +417,6 @@ const {
   draftAutosavedAtLabel,
   regenerationRemaining,
   isUrlInvalid,
-  urlTrimSuggestion,
   initializeFormData,
   isLoading,
   submitState,

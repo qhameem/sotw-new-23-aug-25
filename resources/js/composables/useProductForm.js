@@ -388,9 +388,6 @@ export function useProductForm() {
   const isUrlInvalid = computed(() => {
     return productFormService.isUrlInvalid(form.link);
   });
-  const urlTrimSuggestion = computed(() => {
-    return productFormService.getUrlTrimSuggestion(form.link);
-  });
   const validationSummary = computed(() => validationFieldOrder
     .filter((fieldKey) => validationErrors[fieldKey])
     .map((fieldKey) => ({
@@ -3369,7 +3366,6 @@ export function useProductForm() {
     validationErrors,
     validationSummary,
     isUrlInvalid,
-    urlTrimSuggestion,
     completionPercentage,
     getStarted,
     clearUrlInput,

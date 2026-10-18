@@ -19,12 +19,6 @@ const TRACKING_QUERY_PARAMS = new Set([
   'si',
 ]);
 
-const formatUrlWithoutRootSlash = (urlObject) => {
-  const protocol = urlObject.protocol.replace(':', '');
-  const path = urlObject.pathname === '/' ? '' : urlObject.pathname;
-  return `${protocol}://${urlObject.host}${path}${urlObject.search}${urlObject.hash}`;
-};
-
 export const getLocalDateValue = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -253,69 +247,21 @@ export const productFormService = {
     }
   },
 
-  /**
-   * Suggest if trailing URL parts can be trimmed (anchor, tracking params, trailing slash)
-   */
-  getUrlTrimSuggestion(url) {
-    if (!url || typeof url !== 'string') {
-      return null;
-    }
-
-    const rawUrl = url.trim();
-    if (!rawUrl) {
-      return null;
-    }
+  /** Remove known tracking parameters only; keep the original URL for extraction. */
+  getDuplicateCheckUrl(url) {
+    if (typeof url !== 'string' || !url.trim()) return url;
 
     try {
-      const withScheme = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
-      const parsed = new URL(withScheme);
-      const trimmed = new URL(parsed.toString());
-      const removedParts = [];
-
-      if (trimmed.hash) {
-        trimmed.hash = '';
-        removedParts.push('the page anchor (#...)');
-      }
-
-      const hasTrailingSlash = trimmed.pathname !== '/' && /\/+$/.test(trimmed.pathname);
-      if (hasTrailingSlash) {
-        trimmed.pathname = trimmed.pathname.replace(/\/+$/, '');
-        removedParts.push('the trailing slash');
-      }
-
-      const removedTrackingParams = [];
-      for (const key of [...trimmed.searchParams.keys()]) {
-        const lowered = key.toLowerCase();
-        if (lowered.startsWith('utm_') || TRACKING_QUERY_PARAMS.has(lowered)) {
-          trimmed.searchParams.delete(key);
-          removedTrackingParams.push(key);
-        }
-      }
-
-      if (removedTrackingParams.length > 0) {
-        removedParts.push(
-          removedTrackingParams.length === 1
-            ? `tracking parameter "${removedTrackingParams[0]}"`
-            : `${removedTrackingParams.length} tracking parameters`
-        );
-      }
-
-      if (removedParts.length === 0) {
-        return null;
-      }
-
-      const currentUrl = formatUrlWithoutRootSlash(parsed);
-      const suggestedUrl = formatUrlWithoutRootSlash(trimmed);
-      if (!suggestedUrl || suggestedUrl === currentUrl) {
-        return null;
-      }
-
-      return {
-        suggestedUrl,
-        removedParts,
-      };
-    } catch (e) {
-      return null;
+      const rawUrl = url.trim();
+      const parsed = new URL(/^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`);
+      const query = parsed.search.slice(1).split('&').filter((part) => {
+        const key = decodeURIComponent(part.split('=')[0].replace(/\+/g, ' ')).toLowerCase();
+        return !key.startsWith('utm_') && !TRACKING_QUERY_PARAMS.has(key);
+      });
+      parsed.search = query.join('&');
+      return parsed.toString();
+    } catch {
+      return url;
     }
   },
 
@@ -425,7 +371,7 @@ export const productFormService = {
       const response = await axios.get('/check-product-url', {
         signal,
         params: {
-          url: url,
+          url: this.getDuplicateCheckUrl(url),
           exclude_id: excludeId
         }
       });
