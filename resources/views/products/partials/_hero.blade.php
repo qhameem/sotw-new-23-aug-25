@@ -76,7 +76,7 @@
                 </p>
             </div>
 
-            @include('products.partials._generated-facts')
+            @include('products.partials._launch-metadata')
 
             <div class="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                 @php

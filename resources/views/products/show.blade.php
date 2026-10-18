@@ -131,7 +131,7 @@
         $sectionNavItems = array_values(array_filter([
             ['id' => 'overview', 'label' => 'Overview'],
             (
-                (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml)))
+                filled($product->summary) || (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml)))
                 || $product->techStacks->isNotEmpty()
             ) ? ['id' => 'details', 'label' => 'Details'] : null,
             $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
@@ -456,11 +456,15 @@
                     </section>
                 @endif
 
-                @if(!$usesProductFacts || $product->techStacks->isNotEmpty())
+                @if(filled($product->summary) || !$usesProductFacts || $product->techStacks->isNotEmpty())
                 <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Details</h2>
                     </div>
+
+                    @if(filled($product->summary))
+                        <p class="mt-4 text-sm leading-6 text-gray-700">{{ $product->summary }}</p>
+                    @endif
 
                     @unless($usesProductFacts)
                         @if(filled($detailDescriptionHtml))
