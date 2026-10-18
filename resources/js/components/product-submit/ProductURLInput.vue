@@ -373,7 +373,6 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
   min-width: 0;
   line-height: 16px;
 }
-.url-status-row { min-height: 16px; }
 .url-trim-row { min-height: 32px; }
 .url-status-row > * {
   min-width: 0;
