@@ -1,6 +1,3 @@
-@extends('layouts.app')
-
-@section('content')
 @php
     $templateData = $templates->map(fn ($template) => [
         'id' => $template->id,
@@ -9,14 +6,14 @@
         'is_active' => $template->is_active,
     ])->values();
 @endphp
-<div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8" x-data="{
+<div class="w-full rounded-lg bg-white p-6 shadow-sm" x-data="{
     templates: @js($templateData), selectedId: @js(optional($templates->firstWhere('is_active', true))->id), name: '', instruction: '',
     load(id) { const item = this.templates.find(row => row.id === Number(id)); this.selectedId = item ? item.id : null; this.name = item ? item.name : ''; this.instruction = item ? item.instruction : ''; }
 }" x-init="load(selectedId)">
     <h1 class="text-3xl font-bold text-gray-900">Product description instructions</h1>
     <p class="mt-2 text-sm text-gray-600">The active template applies to the next AI-generated product description.</p>
     @if(session('success'))<div class="mt-6 rounded-lg bg-green-50 p-4 text-sm text-green-700">{{ session('success') }}</div>@endif
-    <div class="mt-8 grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <div class="mt-8 grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
         <aside class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <button type="button" @click="load(null)" class="mb-4 w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">New template</button>
             <div class="space-y-2">
@@ -47,4 +44,3 @@
         </section>
     </div>
 </div>
-@endsection

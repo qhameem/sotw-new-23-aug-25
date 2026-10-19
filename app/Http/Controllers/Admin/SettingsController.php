@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductDescriptionTemplate;
+use App\Support\ProductDescriptionTemplates;
 use App\Services\AiProviderStatusService;
 use App\Services\BadgeService;
 use App\Services\ScreenshotService;
@@ -29,7 +31,7 @@ class SettingsController extends Controller
     /**
      * Display the admin settings page.
      */
-    public function index(AiProviderStatusService $aiProviderStatusService)
+    public function index(AiProviderStatusService $aiProviderStatusService, ScreenshotService $screenshotService, ProductDescriptionTemplates $descriptionTemplates)
     {
         $settings = $this->loadSettings();
         $toolSettings = app(ToolSettings::class);
@@ -56,7 +58,15 @@ class SettingsController extends Controller
         );
         $aiProviderStatusSnapshots = $aiProviderStatusService->latestSnapshots();
 
-        return view('admin.settings.index', compact(
+        $descriptionTemplates->ensureDefaultExists();
+        $templates = ProductDescriptionTemplate::query()->latest('updated_at')->get();
+        $screenshotDashboard = $screenshotService->providerDashboard();
+        $configuredProviders = $screenshotDashboard['configured_providers'];
+        $providerSnapshots = $screenshotDashboard['snapshots'];
+        $availableProviderOrder = $screenshotDashboard['available_provider_order'];
+        $appearanceSettings = app(ThemeController::class)->settingsData();
+
+        return view('admin.settings.index', array_merge($appearanceSettings, compact(
             'googleAnalyticsCode',
             'hasHeaderCodeInjection',
             'premiumProductSpots',
@@ -73,8 +83,12 @@ class SettingsController extends Controller
             'badgeEmbedCode',
             'footerBadgeEmbedCodes',
             'footerBadgeEmbedDofollow',
-            'aiProviderStatusSnapshots'
-        ));
+            'aiProviderStatusSnapshots',
+            'templates',
+            'configuredProviders',
+            'providerSnapshots',
+            'availableProviderOrder'
+        )));
     }
 
     public function aiProviderStatus(Request $request, AiProviderStatusService $aiProviderStatusService)
@@ -147,15 +161,9 @@ class SettingsController extends Controller
         return view('admin.settings.email_templates', compact('template'));
     }
 
-    public function screenshotProviders(ScreenshotService $screenshotService)
+    public function screenshotProviders()
     {
-        $dashboard = $screenshotService->providerDashboard();
-
-        return view('admin.settings.screenshot_providers', [
-            'configuredProviders' => $dashboard['configured_providers'],
-            'providerSnapshots' => $dashboard['snapshots'],
-            'availableProviderOrder' => $dashboard['available_provider_order'],
-        ]);
+        return redirect()->to(route('admin.settings.index').'#settings-screenshot-provider-debug');
     }
 
     public function storeEmailTemplates(Request $request)

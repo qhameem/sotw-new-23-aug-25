@@ -6,6 +6,30 @@
     Admin Settings
 @endsection
 
+@push('styles')
+    <style>
+        .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+        .settings-sidebar, .settings-panels { min-width: 0; }
+        .settings-menu ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+        .settings-menu a { overflow-wrap: anywhere; }
+        .settings-menu [hidden] { display: none; }
+        .settings-section { scroll-margin-top: 9rem; }
+        @media (min-width: 768px) {
+            .settings-layout { grid-template-columns: 16rem minmax(0, 1fr); align-items: start; gap: 2rem; }
+            .settings-sidebar { position: sticky; top: 8rem; }
+            .settings-menu { max-height: calc(100vh - 9rem); overflow-y: auto; }
+        }
+        .settings-menu a[aria-current="page"] {
+            background: #eef2ff;
+            border-left-color: #4f46e5;
+            color: #3730a3;
+            font-weight: 600;
+        }
+        .settings-panels.is-ready > .settings-section { margin-top: 0; }
+        .settings-panels > .settings-section[hidden] { display: none; }
+    </style>
+@endpush
+
 @section('content')
     <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
         @if(session('success'))
@@ -19,7 +43,57 @@
             </div>
         @endif
 
-        <div class="bg-white  shadow sm:rounded-lg">
+        @php
+            $settingsSections = [
+                'settings-appearance' => 'Appearance',
+                'settings-description-instructions' => 'Description Instructions',
+                'settings-database-export' => 'Database Export',
+                'settings-premium-product-spots' => 'Premium Product Spots',
+                'settings-product-publishing-time' => 'Product Publishing Time',
+                'settings-add-product-sandbox-mode' => 'Add Product Sandbox Mode',
+                'settings-free-launch-queue' => 'Free Launch Queue',
+                'settings-tool-url-settings' => 'Tool URL Settings',
+                'settings-header-code-injection' => 'Header Code Injection',
+                'settings-test-email-sending' => 'Test Email Sending',
+                'settings-email-templates' => 'Email Templates',
+                'settings-screenshot-provider-debug' => 'Screenshot Provider Debug',
+                'settings-ai-provider-status' => 'AI Provider Status',
+                'settings-outbound-link-policy' => 'Outbound Link Policy',
+                'settings-footer-badge-embed-codes' => 'Footer Badge Embed Codes',
+                'settings-badge-image' => 'Badge Image',
+            ];
+        @endphp
+
+        <div class="settings-layout">
+            <aside class="settings-sidebar">
+                <nav aria-label="Settings sections" class="settings-menu rounded-lg border border-gray-200 bg-white py-4 shadow-sm">
+                    <h2 class="mb-3 px-5 text-xs font-semibold uppercase tracking-wide text-gray-500">Settings sections</h2>
+                    <div class="px-4 mb-3">
+                        <label for="settings-menu-search" class="sr-only">Search settings sections</label>
+                        <input id="settings-menu-search" type="search" placeholder="Search settings…"
+                            aria-controls="settings-menu-items" autocomplete="off"
+                            class="block w-full rounded-md border-gray-300 text-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <p id="settings-menu-empty" hidden role="status" class="px-5 py-3 text-sm text-gray-500">No matching settings.</p>
+                    <ul id="settings-menu-items">
+                        @foreach ($settingsSections as $sectionId => $sectionLabel)
+                            <li>
+                                <a href="#{{ $sectionId }}" class="block border-l-4 border-transparent px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
+                                    {{ $sectionLabel }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </nav>
+            </aside>
+            <div class="settings-panels">
+                <div id="settings-appearance" tabindex="-1" class="settings-section">
+                    @include('admin.settings.partials.appearance')
+                </div>
+                <div id="settings-description-instructions" tabindex="-1" class="settings-section mt-10">
+                    @include('admin.settings.partials.description-instructions')
+                </div>
+        <div id="settings-database-export" tabindex="-1" class="settings-section bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
                     Database Export
@@ -44,7 +118,7 @@
         </div>
 
         <!-- Premium Product Spots Section -->
-        <div class="mt-10 bg-white  shadow sm:rounded-lg">
+        <div id="settings-premium-product-spots" tabindex="-1" class="settings-section mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
                     Premium Product Spots
@@ -100,7 +174,7 @@
         </div>
 
         <!-- Product Publishing Time Section -->
-        <div class="mt-10 bg-white  shadow sm:rounded-lg">
+        <div id="settings-product-publishing-time" tabindex="-1" class="settings-section mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
                     Product Publishing Time
@@ -137,7 +211,7 @@
             $adminSandboxEnabledInput = old('admin_add_product_sandbox_enabled', $adminSandboxEnabled ? '1' : '0');
         @endphp
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-add-product-sandbox-mode" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Add Product Sandbox Mode
@@ -175,7 +249,7 @@
             </div>
         </div>
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-free-launch-queue" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Free Launch Queue
@@ -215,7 +289,7 @@
             </div>
         </div>
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-tool-url-settings" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Tool URL Settings
@@ -262,7 +336,7 @@
         </div>
 
         <!-- Header Code Injection Section -->
-        <div class="mt-10 bg-white  shadow sm:rounded-lg">
+        <div id="settings-header-code-injection" tabindex="-1" class="settings-section mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
                     Header Code Injection
@@ -304,7 +378,7 @@
         </div>
 
         <!-- Email Sending Test Section -->
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-test-email-sending" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Test Email Sending
@@ -336,7 +410,7 @@
 
 
         <!-- Email Templates Section -->
-        <div class="mt-10 bg-white  shadow sm:rounded-lg">
+        <div id="settings-email-templates" tabindex="-1" class="settings-section mt-10 bg-white  shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 ">
                     Email Templates
@@ -353,24 +427,11 @@
             </div>
         </div>
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
-            <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                    Screenshot Provider Debug
-                </h3>
-                <div class="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>Inspect weighted provider rotation, local usage counters, remaining quota, and reset windows.</p>
-                </div>
-                <div class="mt-5">
-                    <a href="{{ route('admin.settings.screenshotProviders') }}"
-                        class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ">
-                        Open Screenshot Debug
-                    </a>
-                </div>
-            </div>
+        <div id="settings-screenshot-provider-debug" tabindex="-1" class="settings-section mt-10">
+            @include('admin.settings.partials.screenshot-providers')
         </div>
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-ai-provider-status" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -399,7 +460,7 @@
             </div>
         </div>
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-outbound-link-policy" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Outbound Link Policy
@@ -435,7 +496,7 @@
             }
         @endphp
 
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-footer-badge-embed-codes" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Footer Badge Embed Codes
@@ -526,7 +587,7 @@
         </div>
 
         <!-- Badge Image Management Section -->
-        <div class="mt-10 bg-white shadow sm:rounded-lg">
+        <div id="settings-badge-image" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
                     Badge Image
@@ -627,12 +688,72 @@
                 </form>
             </div>
         </div>
+            </div>
+        </div>
     </div>
 @endsection
 
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const settingsPanels = document.querySelector('.settings-panels');
+            const settingsSections = Array.from(settingsPanels.querySelectorAll(':scope > .settings-section'));
+            const settingsLinks = Array.from(document.querySelectorAll('.settings-menu a'));
+            const settingsSearch = document.getElementById('settings-menu-search');
+            const settingsEmpty = document.getElementById('settings-menu-empty');
+
+            function filterSettingsMenu() {
+                const words = settingsSearch.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+                let matches = 0;
+                settingsLinks.forEach(link => {
+                    const label = link.textContent.toLocaleLowerCase();
+                    const visible = words.every(word => label.includes(word));
+                    link.closest('li').hidden = !visible;
+                    if (visible) matches++;
+                });
+                settingsEmpty.hidden = matches > 0;
+            }
+
+            settingsSearch.addEventListener('input', filterSettingsMenu);
+            settingsSearch.addEventListener('keydown', event => {
+                if (event.key === 'Escape') {
+                    settingsSearch.value = '';
+                    filterSettingsMenu();
+                } else if (event.key === 'Enter') {
+                    event.preventDefault();
+                    settingsLinks.find(link => !link.closest('li').hidden)?.click();
+                }
+            });
+            filterSettingsMenu();
+
+
+            function selectSettingsSection(sectionId, focus = false) {
+                const selected = settingsSections.find(section => section.id === sectionId) || settingsSections[0];
+                settingsSections.forEach(section => { section.hidden = section !== selected; });
+                settingsLinks.forEach(link => {
+                    if (link.hash === '#' + selected.id) {
+                        link.setAttribute('aria-current', 'page');
+                    } else {
+                        link.removeAttribute('aria-current');
+                    }
+                });
+                if (focus) selected.focus({ preventScroll: true });
+            }
+
+            const firstErrorField = @json($errors->keys()[0] ?? null);
+            const errorSection = Array.from(settingsPanels.querySelectorAll('[name]'))
+                .find(field => field.name === firstErrorField)?.closest('.settings-section');
+            selectSettingsSection(errorSection?.id || window.location.hash.slice(1));
+            settingsPanels.classList.add('is-ready');
+            settingsLinks.forEach(link => {
+                link.addEventListener('click', event => {
+                    event.preventDefault();
+                    if (window.location.hash !== link.hash) history.pushState(null, '', link.hash);
+                    selectSettingsSection(link.hash.slice(1), true);
+                });
+            });
+            window.addEventListener('hashchange', () => selectSettingsSection(window.location.hash.slice(1)));
+
             var form = document.getElementById('test-email-form');
             var button = document.getElementById('send-test-email-btn');
             var logContainer = document.getElementById('email-log-container');

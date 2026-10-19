@@ -1,17 +1,4 @@
-@extends('layouts.app', [
-    'hideSidebar' => true,
-    'mainContentMaxWidth' => 'max-w-none',
-    'containerMaxWidth' => 'max-w-none',
-])
-
-@section('title', 'Theme Settings')
-
-@section('header-title')
-    Theme Settings
-@endsection
-
-@section('content')
-    @php
+@php
         $productHuntSystemStack =
             'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
         $darkThemeFields = [
@@ -28,8 +15,8 @@
             $key => old($key, $currentDarkThemeColors[$key] ?? $field['default']),
         ])->all();
     @endphp
-    <div class="w-full py-12">
-        <div class="w-full px-4 sm:px-6 lg:px-8">
+    <div class="w-full">
+        <div class="w-full">
             <div class="bg-white  overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 ">
                     @if (session('success'))
@@ -978,7 +965,7 @@
                             </div>
                         </div>
 
-                        <div class="admin-theme-save" style="position: fixed; bottom: 1.5rem; z-index: 70;">
+                        <div class="admin-theme-save" style="margin-top: 1.5rem;">
                             <x-primary-button style="min-height: 2.5rem; padding: 0.5rem 1rem; background: var(--color-primary-500); color: var(--color-primary-button-text); border: 2px solid var(--color-primary-700); box-shadow: 0 4px 0 var(--color-primary-700), 0 8px 14px rgba(15, 23, 42, 0.14);">
                                 {{ __('Save Settings') }}
                             </x-primary-button>
@@ -988,4 +975,3 @@
             </div>
         </div>
     </div>
-@endsection

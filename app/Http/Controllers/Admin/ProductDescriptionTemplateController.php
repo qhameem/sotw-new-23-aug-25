@@ -4,21 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProductDescriptionTemplate;
-use App\Support\ProductDescriptionTemplates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
 
 class ProductDescriptionTemplateController extends Controller
 {
-    public function index(ProductDescriptionTemplates $templates): View
+    public function index(): RedirectResponse
     {
-        $templates->ensureDefaultExists();
-
-        return view('admin.settings.product-description-templates', [
-            'templates' => ProductDescriptionTemplate::query()->latest('updated_at')->get(),
-        ]);
+        return redirect()->to(route('admin.settings.index').'#settings-description-instructions');
     }
 
     public function store(Request $request): RedirectResponse
@@ -42,7 +36,7 @@ class ProductDescriptionTemplateController extends Controller
             );
         });
 
-        return redirect()->route('admin.settings.product-description-templates.index')
+        return redirect()->to(route('admin.settings.index').'#settings-description-instructions')
             ->with('success', 'Product description instruction saved and activated.');
     }
 }

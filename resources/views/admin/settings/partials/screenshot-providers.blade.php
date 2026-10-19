@@ -1,13 +1,4 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'hideSidebar' => true])
-
-@section('title', 'Screenshot Provider Debug')
-
-@section('header-title')
-    Screenshot Provider Debug
-@endsection
-
-@section('content')
-    <div class="w-full px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+<div class="w-full space-y-8">
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-semibold text-gray-900">Screenshot Provider Quotas</h2>
@@ -15,10 +6,6 @@
                     Current weighted rotation, local usage counters, and remaining free-tier quota.
                 </p>
             </div>
-            <a href="{{ route('admin.settings.index') }}"
-                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Back to Settings
-            </a>
         </div>
 
         <div class="rounded-xl border border-blue-100 bg-blue-50 p-5">
@@ -97,4 +84,3 @@
             </div>
         </div>
     </div>
-@endsection

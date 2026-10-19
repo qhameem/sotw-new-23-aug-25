@@ -74,6 +74,11 @@ class ThemeController extends Controller
 
     public function edit()
     {
+        return redirect()->to(route('admin.settings.index').'#settings-appearance');
+    }
+
+    public function settingsData(): array
+    {
         $settings = $this->loadSettings();
 
         $currentFontUrl = array_key_exists('font_url', $settings) ? $settings['font_url'] : Config::get('theme.font_url');
@@ -107,7 +112,7 @@ class ThemeController extends Controller
         $defaultFaviconUrl = ''; // e.g., asset('images/default-favicon.ico');
         $defaultSubmissionBgUrl = asset('images/submission-pattern.png');
 
-        return view('admin.theme.edit', compact(
+        return compact(
             'currentFontUrl',
             'currentFontFamily',
             'currentFontColor',
@@ -127,7 +132,7 @@ class ThemeController extends Controller
             'currentProductHoverColor',
             'currentFaviconAssets',
             'currentDarkThemeColors'
-        ));
+        );
     }
 
     public function update(Request $request)
@@ -193,7 +198,7 @@ class ThemeController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -201,14 +206,14 @@ class ThemeController extends Controller
         $faviconBundleFiles = array_values(array_filter($request->file('favicon_bundle', [])));
 
         if (!empty($faviconBundleFiles) && $request->hasFile('site_favicon')) {
-            return redirect()->back()
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')
                 ->withErrors(['favicon_bundle' => 'Upload either a favicon bundle or a single favicon file, not both at the same time.'])
                 ->withInput();
         }
 
         $faviconBundleErrors = $this->validateFaviconBundle($faviconBundleFiles);
         if ($faviconBundleErrors !== []) {
-            return redirect()->back()
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')
                 ->withErrors($faviconBundleErrors)
                 ->withInput();
         }
@@ -222,7 +227,7 @@ class ThemeController extends Controller
         $fontFamilies = $this->extractFontFamiliesFromUrl($fontUrl);
 
         if (empty($fontFamilies) && $fontUrl) { // only error if URL was provided but family extraction failed
-            return redirect()->back()
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')
                 ->withErrors(['font_url' => 'Could not automatically extract font family name. Ensure a valid Google Font URL.'])
                 ->withInput();
         }
@@ -331,10 +336,10 @@ class ThemeController extends Controller
             // Update the tailwind-theme.json file
             $this->updateTailwindThemeConfig($settings['font_families'] ?? []);
 
-            return redirect()->back()->with('success', 'Theme settings updated successfully.');
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')->with('success', 'Theme settings updated successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to update theme settings: ' . $e->getMessage());
-            return redirect()->back()
+            return redirect()->to(route('admin.settings.index').'#settings-appearance')
                 ->withErrors(['error' => 'Failed to save theme settings. Please check storage permissions and logs.'])
                 ->withInput();
         }

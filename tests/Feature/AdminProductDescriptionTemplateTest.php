@@ -19,14 +19,14 @@ class AdminProductDescriptionTemplateTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->get(route('admin.settings.product-description-templates.index'))
+            ->get(route('admin.settings.index'))
             ->assertOk()
             ->assertSee(ProductDescriptionTemplates::DEFAULT_NAME);
 
         $this->actingAs($admin)->post(route('admin.settings.product-description-templates.store'), [
             'name' => 'Short overview',
             'instruction' => 'Write only a two-paragraph overview in a neutral style.',
-        ])->assertRedirect(route('admin.settings.product-description-templates.index'));
+        ])->assertRedirect(route('admin.settings.index').'#settings-description-instructions');
 
         $shortTemplate = ProductDescriptionTemplate::query()->where('name', 'Short overview')->firstOrFail();
 
@@ -38,7 +38,7 @@ class AdminProductDescriptionTemplateTest extends TestCase
             'template_id' => $shortTemplate->id,
             'name' => 'Short direct overview',
             'instruction' => 'Write one direct overview paragraph.',
-        ])->assertRedirect(route('admin.settings.product-description-templates.index'));
+        ])->assertRedirect(route('admin.settings.index').'#settings-description-instructions');
 
         $this->assertDatabaseHas('product_description_templates', [
             'id' => $shortTemplate->id,
@@ -46,6 +46,28 @@ class AdminProductDescriptionTemplateTest extends TestCase
             'instruction' => 'Write one direct overview paragraph.',
             'is_active' => true,
         ]);
+    }
+
+    public function test_legacy_settings_pages_redirect_to_sidebar_sections(): void
+    {
+        $this->actingAs($this->createAdmin());
+
+        foreach ([
+            'admin.theme.edit' => 'settings-appearance',
+            'admin.settings.product-description-templates.index' => 'settings-description-instructions',
+            'admin.settings.screenshotProviders' => 'settings-screenshot-provider-debug',
+        ] as $route => $section) {
+            $this->get(route($route))->assertRedirect(route('admin.settings.index').'#'.$section);
+        }
+
+        $this->get(route('admin.settings.index'))
+            ->assertOk()
+            ->assertSee('id="settings-appearance"', false)
+            ->assertSee('id="settings-description-instructions"', false)
+            ->assertSee('Screenshot Provider Quotas')
+            ->assertDontSee('>Theme Settings</a>', false)
+            ->assertDontSee('>Description Instructions</a>', false)
+            ->assertDontSee('>Screenshot Debug</a>', false);
     }
 
     public function test_non_admin_cannot_access_description_template_settings(): void

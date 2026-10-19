@@ -84,7 +84,7 @@ class AdminThemeFaviconBundleTest extends TestCase
                 ],
             ]);
 
-        $response->assertRedirect(route('admin.theme.edit'));
+        $response->assertRedirect(route('admin.settings.index').'#settings-appearance');
         $response->assertSessionHas('success');
 
         $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
@@ -116,7 +116,7 @@ class AdminThemeFaviconBundleTest extends TestCase
             md5_file($this->publicFaviconPath)
         );
 
-        $editResponse = $this->actingAs($admin)->get(route('admin.theme.edit'));
+        $editResponse = $this->actingAs($admin)->get(route('admin.settings.index'));
 
         $editResponse->assertOk();
         $editResponse->assertSee('Active Favicon Files');
@@ -147,7 +147,7 @@ class AdminThemeFaviconBundleTest extends TestCase
                 ],
             ]);
 
-        $response->assertRedirect(route('admin.theme.edit'));
+        $response->assertRedirect(route('admin.settings.index').'#settings-appearance');
         $response->assertSessionHasErrors('favicon_bundle');
     }
 
@@ -169,7 +169,7 @@ class AdminThemeFaviconBundleTest extends TestCase
         $this->assertSame('#fff4e6', $settings['product_hover_color']);
 
         $this->actingAs($admin)
-            ->get(route('admin.theme.edit'))
+            ->get(route('admin.settings.index'))
             ->assertOk()
             ->assertSee('Product Card Hover Background')
             ->assertSee('#fff4e6');
@@ -206,7 +206,7 @@ class AdminThemeFaviconBundleTest extends TestCase
         }
 
         $this->actingAs($admin)
-            ->get(route('admin.theme.edit'))
+            ->get(route('admin.settings.index'))
             ->assertOk()
             ->assertSee('Dark Mode Colors')
             ->assertSee('#07101f');
