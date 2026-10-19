@@ -151,3 +151,28 @@ it('keeps inferred browser classifications and does not cap classifications', fu
     expect($result['categories'])->toHaveCount(4);
     expect($result['platforms'])->toBe([$browser->id]);
 });
+
+it('keeps retained descriptions editable and marks the listing as draft', function () {
+    $body = expandedListingBody();
+    $body['_generation_warnings'] = ['faq repeats eight consecutive source words.'];
+    $tagline = Mockery::mock(TaglineRewriterService::class);
+    $tagline->shouldReceive('rewriteFromFacts')->once()->andReturn('Football profiles for players tracking career progress');
+    $tagline->shouldReceive('listingProvider')->andReturn(null);
+    app()->instance(TaglineRewriterService::class, $tagline);
+    $description = Mockery::mock(DescriptionRewriterService::class);
+    $description->shouldReceive('generateFromFacts')->once()->andReturn($body);
+    $description->shouldReceive('listingProvider')->andReturn(null);
+    app()->instance(DescriptionRewriterService::class, $description);
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->andReturnUsing(fn ($file) => $file);
+    $client->shouldReceive('json')->with('seo_fields_prompt.txt')->andReturn(['seo_title' => 'Example: Football profiles for career progress', 'meta_description' => 'Example helps players organize their football career.']);
+    $client->shouldReceive('json')->with('category_classification_prompt.txt')->andReturn(['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'suggestions' => ['categories' => [], 'use_cases' => []]]);
+    $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
+    $result = $service->generate('Example', 'Football career profiles.', ['platforms' => []]);
+    expect($result['generation_status'])->toBe('draft');
+    expect($result['generation_review_required'])->toBeTrue();
+    expect($result['description'])->toBe(ListingDescription::html($body));
+    expect($result['summary'])->toBe($body['summary']);
+    expect($result['description_notice'])->toContain('draft retained', 'eight consecutive');
+    expect($result['field_errors']['description'])->toContain('eight consecutive');
+});

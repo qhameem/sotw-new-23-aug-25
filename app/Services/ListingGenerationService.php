@@ -48,7 +48,12 @@ class ListingGenerationService
         $descriptionService = app(DescriptionRewriterService::class);
         $description = $this->stage('description', fn () => $descriptionService->generateFromFacts($name, $facts, $source), $errors, fn () => $descriptionService->listingErrors());
         if ($description !== null) {
-            $report->record('description', 'Validated summary; '.count($description['features']).' features; '.count($description['pros'] ?? []).' pros; '.count($description['faq']).' FAQs.', 'success');
+            $warnings = $description['_generation_warnings'] ?? [];
+            if ($warnings !== []) {
+                $errors['description'] = $warnings;
+                $base['description_notice'] = 'Generated draft retained for editing. '.implode(' ', $warnings);
+            }
+            $report->record('description', ($warnings === [] ? 'Validated summary; ' : 'Draft retained; ').count($description['features']).' features; '.count($description['pros'] ?? []).' pros; '.count($description['faq']).' FAQs.', $warnings === [] ? 'success' : 'warning');
             $base = array_merge($base, \App\Support\ListingDescription::fields($description));
             $provider = $descriptionService->listingProvider();
             if ($provider) {

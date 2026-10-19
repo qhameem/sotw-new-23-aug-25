@@ -52,12 +52,18 @@ class DescriptionRewriterService
         }
         $previous = null;
         $repairFields = [];
+        $repairExclusions = [];
+        $retainedProvider = null;
+        $retainedErrors = [];
         for ($attempt = 0; $attempt < 2; $attempt++) {
-            $result = $provider
-                ? $client->jsonWithProvider($prompt, $provider, 3000, 'copy')
-                : $client->json($prompt, 3000);
+            $result = $attempt > 0 && $previous !== null
+                ? $client->json($prompt, 3000, 'copy', $repairExclusions)
+                : ($provider ? $client->jsonWithProvider($prompt, $provider, 3000, 'copy') : $client->json($prompt, 3000));
             if (is_array($result) && is_array($result['features'] ?? null)) {
                 $result['features'] = array_map(self::normalizeListingFeature(...), $result['features']);
+            }
+            if (is_array($result)) {
+                $result = app(ListingTextCleaner::class)->clean($result);
             }
             if ($previous !== null && is_array($result)) {
                 $result = array_replace($previous, array_intersect_key($result, array_flip($repairFields)));
@@ -99,6 +105,8 @@ class DescriptionRewriterService
                         'populated_sections' => array_keys(array_filter($result, fn ($value) => $value !== '' && $value !== [])),
                     ]);
 
+                    $this->listingErrors = [];
+
                     return $result;
                 }
             }
@@ -111,6 +119,13 @@ class DescriptionRewriterService
             }
             if (is_array($result) && $validator->schema('description', $result) === []) {
                 $previous = $result;
+                $retainedErrors = $errors;
+                try {
+                    $retainedProvider = $client->lastProvider();
+                } catch (\Throwable) {
+                    $retainedProvider = null;
+                }
+                $repairExclusions = array_values(array_filter([$retainedProvider ?? $provider]));
                 $repairFields = [];
                 foreach ($errors as $error) {
                     if (preg_match('/^(?:description\.)?([a-z_]+)/', $error, $match) && array_key_exists($match[1], $result)) {
@@ -118,12 +133,22 @@ class DescriptionRewriterService
                     }
                 }
                 $repairFields = array_values(array_unique($repairFields));
-                \App\Support\ExtractionReport::current()->record('description repair', 'Rewriting sections: '.implode(', ', $repairFields).'; preserving other sections.');
+                if ($attempt === 0) {
+                    \App\Support\ExtractionReport::current()->record('description repair', 'Rewriting sections: '.implode(', ', $repairFields).'; preserving other sections and using another provider.');
+                }
                 $prompt .= "\nPrevious body:\n".json_encode($previous, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                    ."\nRewrite only these sections: ".implode(', ', $repairFields).'. Return the complete JSON body; keep other sections unchanged.';
+                    ."\nRewrite only these sections: ".implode(', ', $repairFields).'. Return the complete JSON body; keep other sections unchanged. Preserve all facts and meaning. Fix formatting and rewrite copied passages in original wording. Do not add claims or remove useful details.';
             }
             $prompt .= "\nValidation errors to fix:\n".implode("\n", $errors);
             $this->listingErrors = $errors === ['description must be valid JSON object.'] ? array_merge($errors, $client->errors()) : $errors;
+        }
+
+        if ($previous !== null) {
+            $this->listingProvider = $retainedProvider;
+            $this->listingErrors = array_values(array_unique(array_merge($retainedErrors, $this->listingErrors)));
+            \App\Support\ExtractionReport::current()->record('description', 'Retained generated content as an editable draft; manual review needed.', 'warning');
+
+            return array_merge($previous, ['_generation_warnings' => $this->listingErrors]);
         }
 
         return null;

@@ -2653,6 +2653,11 @@ export function useProductForm() {
           model: data.ai_model,
         };
       }
+      if (data.generation_status === 'draft') {
+        form.generation_status = 'draft';
+        form.generation_noindex = true;
+        form.generation_review_required = true;
+      }
       applyRegenerationUsage('description', data);
       extractionErrors.description = typeof data.description_notice === 'string'
         ? data.description_notice.trim()

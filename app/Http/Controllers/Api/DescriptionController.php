@@ -54,13 +54,20 @@ class DescriptionController extends Controller
         }
         $fields = \App\Support\ListingDescription::fields($body);
         $description = $fields['description'];
+        $warnings = $body['_generation_warnings'] ?? [];
+        $draft = $warnings === [] ? [] : [
+            'generation_status' => 'draft', 'generation_noindex' => true,
+            'generation_review_required' => true, 'generation_errors' => $warnings,
+            'description_notice' => 'Generated draft retained for editing. '.implode(' ', $warnings),
+        ];
         $cacheKey = 'product_listing:'.hash('sha256', \App\Models\Product::normalizeLink($url));
         $cached = \Illuminate\Support\Facades\Cache::get($cacheKey, []);
-        \Illuminate\Support\Facades\Cache::put($cacheKey, array_merge(is_array($cached) ? $cached : [], $fields, ['facts_json' => $facts]), now()->addHour());
+        \Illuminate\Support\Facades\Cache::put($cacheKey, array_merge(is_array($cached) ? $cached : [], $fields, ['facts_json' => $facts], $draft), now()->addHour());
         $usedProvider = $rewriter->listingProvider();
 
         return response()->json([
             'description' => $description,
+            ...$draft,
             'regeneration' => $regeneration,
             'ai_provider' => $usedProvider,
             'ai_provider_label' => $usedProvider ? $router->providerLabel($usedProvider) : null,
