@@ -14,8 +14,9 @@ class ProductSourceCollector
     public function collect(string $url, string $html, string $additional = ''): string
     {
         $report = \App\Support\ExtractionReport::current();
-        $report->record('source collection', 'Reading homepage text, headings, and links.');
-        $blocks = [$this->textBlock($url, $html)];
+        $report->record('source collection', 'Converting homepage and supporting pages to cleaned Markdown.');
+        $markdown = app(ProductPageMarkdown::class);
+        $pages = [['url' => $url, 'markdown' => $markdown->convert($html, $url)]];
         $document = new DOMDocument;
         @$document->loadHTML($html);
         $xpath = new DOMXPath($document);
@@ -23,7 +24,10 @@ class ProductSourceCollector
         $links = [];
         foreach ($xpath->query('//a[@href]') ?: [] as $anchor) {
             $href = trim($anchor->getAttribute('href'));
-            $target = filter_var($href, FILTER_VALIDATE_URL) ? $href : rtrim($origin, '/').'/'.ltrim($href, '/');
+            $target = $markdown->resolveUrl($url, $href);
+            if ($target === null) {
+                continue;
+            }
             $path = strtolower((string) parse_url($target, PHP_URL_PATH));
             foreach (self::PATHS as $kind) {
                 if (! isset($links[$kind]) && preg_match('~(?:^|/)(?:'.$kind.')(?:/|$)~', $path)) {
@@ -43,7 +47,7 @@ class ProductSourceCollector
                     $body = $response->toPsrResponse()->getBody()->read(262145);
                     if ($response->successful() && strlen($body) <= 262144 && str_contains(strtolower((string) $response->header('Content-Type')), 'text/html')) {
                         $report->record('source collection', $kind.' page collected.', 'success');
-                        $blocks[] = $this->textBlock($candidate, $body);
+                        $pages[] = ['url' => $candidate, 'markdown' => $markdown->convert($body, $candidate)];
                         break;
                     }
                     $report->record('source collection', $kind.' skipped: HTTP '.$response->status().', non-HTML content, or page exceeds size limit.', 'warning');
@@ -54,31 +58,21 @@ class ProductSourceCollector
             }
         }
         if (trim($additional) !== '') {
-            $blocks[] = "Source: Additional resources\n".mb_substr(strip_tags($additional), 0, 2000);
+            $pages[] = ['url' => 'Additional resources', 'markdown' => $markdown->convert($additional, $url)];
         }
+        $budget = 24000;
+        $headers = array_sum(array_map(fn ($page) => mb_strlen('Source: '.$page['url']."\n") + 2, $pages));
+        $pageBudget = max(1, (int) floor(($budget - $headers) / count($pages)));
+        $blocks = [];
+        foreach ($pages as $page) {
+            $content = $markdown->limit($page['markdown'], $pageBudget);
+            if (mb_strlen($content) < mb_strlen($page['markdown'])) {
+                $report->record('source collection', $page['url'].': Markdown shortened by section priority to '.$pageBudget.' characters.');
+            }
+            $blocks[] = 'Source: '.$page['url']."\n".$content;
+        }
+        $report->record('source collection', count($blocks).' Markdown source blocks collected; context limited to '.$budget.' characters.', 'success');
 
-        $report->record('source collection', count($blocks).' source blocks collected; context limited to 24000 characters.', 'success');
-        return mb_substr(implode("\n\n", $blocks), 0, 24000);
-    }
-
-    private function textBlock(string $url, string $html): string
-    {
-        $document = new DOMDocument;
-        @$document->loadHTML($html);
-        $xpath = new DOMXPath($document);
-        foreach ($xpath->query('//script|//style|//nav|//footer|//aside|//form') ?: [] as $node) {
-            $node->parentNode?->removeChild($node);
-        }
-        $text = preg_replace('/\s+/u', ' ', $document->textContent ?? '') ?? '';
-        $headings = [];
-        foreach ($xpath->query('//h1|//h2|//h3') ?: [] as $heading) {
-            $headings[] = strtoupper($heading->nodeName).': '.trim($heading->textContent);
-        }
-        $links = [];
-        foreach ($xpath->query('//a[@href]') ?: [] as $anchor) {
-            $links[] = $anchor->getAttribute('href');
-        }
-
-        return 'Source: '.$url."\n".mb_substr(implode("\n", array_slice($headings, 0, 12)), 0, 400)."\n".mb_substr(trim($text), 0, 2700)."\nLinks: ".mb_substr(implode(' ', $links), 0, 350);
+        return mb_substr(implode("\n\n", $blocks), 0, $budget);
     }
 }
