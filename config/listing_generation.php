@@ -12,7 +12,6 @@ return [
         'classification' => ['cloudflare', 'groq', 'gemini', 'openrouter', 'cerebras'],
         'copy' => ['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras'],
         'seo' => ['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras'],
-        'verification' => ['groq', 'gemini', 'cloudflare', 'openrouter', 'cerebras'],
         'default' => ['gemini', 'groq', 'cloudflare', 'openrouter', 'cerebras'],
     ],
 ];

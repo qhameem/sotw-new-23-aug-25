@@ -18,9 +18,6 @@ class ListingOutputSchema
             ]),
             str_contains($prompt, 'Write three tagline candidates') => $this->object(['candidates' => $strings]),
             str_contains($prompt, 'Write SEO fields') => $this->object(['seo_title' => $string, 'meta_descriptions' => $strings]),
-            str_contains($prompt, 'You check generated listing fields') => $this->object([
-                'issues' => ['type' => 'array', 'items' => $this->object(['field' => $string, 'problem' => $string, 'source_quote' => $string])],
-            ]),
             str_contains($prompt, 'Choose the most relevant categories') => $this->classification($string, $strings),
             str_contains($prompt, 'You extract facts from a software product website') => $this->facts($strings),
             default => null,

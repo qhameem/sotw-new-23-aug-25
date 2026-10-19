@@ -88,7 +88,7 @@ it('keeps classification picks without exact source quotes', function () {
         ['name' => 'Remote Teams', 'quote' => 'remote teams'],
         ['name' => 'Task Management', 'quote' => 'task notes'],
     ];
-    expect(ListingGenerationService::verifiedPicks($picks, $source, 2))->toBe(['Meeting Summaries', 'Remote Teams']);
+    expect(ListingGenerationService::classificationNames($picks))->toBe(['Meeting Summaries', 'Remote Teams', 'Task Management']);
 });
 
 it('accepts classification picks regardless of quote wording', function () {
@@ -97,7 +97,7 @@ it('accepts classification picks regardless of quote wording', function () {
         ['name' => 'Free', 'quote' => 'Free plan'],
         ['name' => 'Subscription'],
     ];
-    expect(ListingGenerationService::verifiedPicks($picks, "Create football\nprofiles. Free\tplan.", 3))->toBe(['Sports', 'Free', 'Subscription']);
+    expect(ListingGenerationService::classificationNames($picks))->toBe(['Sports', 'Free', 'Subscription']);
 });
 
 it('collects body facts when the meta description is empty', function () {

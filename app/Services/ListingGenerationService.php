@@ -29,7 +29,7 @@ class ListingGenerationService
         $facts = $factsOverride ?? $this->stage('facts', fn () => $this->facts->extract($source), $errors, fn () => $this->facts->errors());
         $facts ??= ['product_name' => $name, 'platforms' => [], 'top_features' => [], 'integrations' => [], 'evidence' => []];
         $detected = $this->stage('platform detection', fn () => $this->platforms->detect($source), $errors) ?? [];
-        $facts['platforms'] = $detected !== [] ? $detected : array_values(array_filter((array) ($facts['platforms'] ?? []), fn ($platform) => $platform !== 'Browser'));
+        $facts['platforms'] = $detected !== [] ? $detected : array_values((array) ($facts['platforms'] ?? []));
         $report->record('facts', count(array_filter($facts, fn ($value) => $value !== null && $value !== '' && $value !== [])).' populated fact fields (including evidence).');
         $factsJson = json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $base = ['facts_json' => $facts, 'field_errors' => []];
@@ -71,50 +71,6 @@ class ListingGenerationService
             $base['field_errors'] += array_fill_keys(['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], 'Classification failed. Regenerate or select these fields manually.');
         }
 
-        $issues = $this->stage('verification', fn () => $this->verify($base, $factsJson, $source), $errors, fn () => $this->lastErrors);
-        if ($issues) {
-            foreach ($issues as $issue) {
-                $report->record('verification', $issue['field'].': '.$issue['problem'], 'warning');
-            }
-            $feedback = implode("\n", array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $issues));
-            $kinds = [];
-            foreach (array_unique(array_column($issues, 'field')) as $field) {
-                $kind = match (true) {
-                    in_array($field, ['categories', 'useCases', 'bestFor', 'pricing', 'platforms'], true) => 'classification',
-                    $field === 'tagline' => 'tagline',
-                    in_array($field, ['seo_title', 'meta_description'], true) => 'SEO',
-                    default => 'description',
-                };
-                $kinds[$kind] = true;
-            }
-            foreach (array_keys($kinds) as $kind) {
-                $replacement = $this->stage($kind.' repair', fn () => match ($kind) {
-                    'classification' => $this->classify($factsJson, $source, $facts['platforms'], $feedback, 1),
-                    'tagline' => $this->generateField('tagline_prompt.txt', ['{productName}' => $name, '{factsJson}' => $factsJson], 'tagline', $source, $feedback, 1),
-                    'SEO' => $this->generateField('seo_fields_prompt.txt', ['{factsJson}' => $factsJson], 'seo', $source, $feedback, 1, $preferredTitle !== null),
-                    'description' => $descriptionService->generateFromFacts($name, $facts, $source, $feedback),
-                }, $errors);
-                if ($replacement === null) {
-                    continue;
-                }
-                if ($kind === 'tagline') {
-                    $base['tagline'] = $replacement;
-                } elseif ($kind === 'description') {
-                    $base = array_merge($base, \App\Support\ListingDescription::fields($replacement));
-                } else {
-                    $base = array_merge($base, $replacement);
-                }
-                if ($kind === 'SEO') {
-                    $base['seo_title'] = $preferredTitle ?? $replacement['seo_title'];
-                }
-            }
-            $remaining = $this->stage('verification after repair', fn () => $this->verify($base, $factsJson, $source), $errors, fn () => $this->lastErrors);
-            if ($remaining) {
-                $base['generation_issues'] = $remaining;
-                $errors['verification issues'] = array_map(fn ($issue) => $issue['field'].': '.$issue['problem'], $remaining);
-            }
-        }
-
         foreach (['tagline', 'description', 'SEO'] as $stage) {
             if (isset($errors[$stage])) {
                 $base['field_errors'][$stage === 'SEO' ? 'meta_description' : $stage] = implode(' ', $errors[$stage]);
@@ -123,7 +79,7 @@ class ListingGenerationService
         if ($errors !== []) {
             return array_merge($base, $this->draft(array_merge(...array_values($errors))));
         }
-        $report->record('generation', 'All generation stages passed validation and verification.', 'success');
+        $report->record('generation', 'Generation completed; AI claim verification is disabled.', 'success');
         $base['generation_status'] = 'ready';
 
         return $base;
@@ -207,7 +163,7 @@ class ListingGenerationService
         return null;
     }
 
-    private function classify(string $factsJson, string $source, array $detectedPlatforms, string $feedback = '', int $maxAttempts = 2): ?array
+    private function classify(string $factsJson, string $source, array $detectedPlatforms, int $maxAttempts = 2): ?array
     {
         $this->lastErrors = [];
         $names = function (string $type): array {
@@ -223,17 +179,17 @@ class ListingGenerationService
             '{bestFor}' => implode(', ', $available['best_for']), '{pricingModels}' => implode(', ', $available['pricing']),
             '{platforms}' => implode(', ', $available['platforms']), '{factsJson}' => $factsJson, '{sourceText}' => $source,
         ];
-        $prompt = $this->ai->prompt('category_classification_prompt.txt', $bindings).($feedback === '' ? '' : "\nVerification issues:\n".$feedback);
+        $prompt = $this->ai->prompt('category_classification_prompt.txt', $bindings);
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             $result = $this->ai->json($prompt);
             if (is_array($result) && isset($result['categories'], $result['use_cases'], $result['best_for'], $result['pricing'], $result['platforms'], $result['suggestions'])
                 && is_array($result['suggestions']) && is_array($result['suggestions']['categories'] ?? null) && is_array($result['suggestions']['use_cases'] ?? null)) {
                 $picks = [];
-                foreach (['categories' => 3, 'use_cases' => 2, 'best_for' => 2, 'pricing' => 1, 'platforms' => 3] as $key => $cap) {
+                foreach (['categories', 'use_cases', 'best_for', 'pricing', 'platforms'] as $key) {
                     if (! is_array($result[$key])) {
                         continue 2;
                     }
-                    $picks[$key] = $this->canonicalPicks(self::verifiedPicks($result[$key], $source, $cap), $available[$key]);
+                    $picks[$key] = $this->canonicalPicks(self::classificationNames($result[$key]), $available[$key]);
                 }
                 foreach ($result['pricing'] as $pick) {
                     if (! is_array($pick)) {
@@ -241,14 +197,13 @@ class ListingGenerationService
                     }
                     $name = is_string($pick['name'] ?? null) ? $pick['name'] : 'unknown';
                     $quote = is_string($pick['quote'] ?? null) ? $pick['quote'] : '';
-                    $accepted = in_array($name, self::verifiedPicks([$pick], $source, 1), true)
+                    $accepted = in_array($name, self::classificationNames([$pick]), true)
                         && $this->canonicalPicks([$name], $available['pricing']) !== [];
                     \App\Support\ExtractionReport::current()->record('pricing classification evidence',
                         $name.': '.($accepted ? 'category accepted' : 'rejected; category unavailable').'; quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         $accepted ? 'info' : 'warning');
                 }
-                $aiPlatforms = array_values(array_filter($picks['platforms'], fn ($platform) => $platform !== 'Browser' || in_array('Browser', $detectedPlatforms, true)));
-                $picks['platforms'] = array_slice($this->canonicalPicks(array_merge($detectedPlatforms, $aiPlatforms), $available['platforms']), 0, 3);
+                $picks['platforms'] = $this->canonicalPicks(array_merge($detectedPlatforms, $picks['platforms']), $available['platforms']);
                 $ids = fn ($items) => Category::whereIn('name', $items)->pluck('id')->all();
                 $fieldErrors = [];
                 foreach (['categories' => 'categories', 'use_cases' => 'useCases', 'pricing' => 'pricing'] as $key => $field) {
@@ -257,11 +212,9 @@ class ListingGenerationService
                     } elseif ($available[$key] === []) {
                         $fieldErrors[$field] = 'No configured options are available. Ask an administrator to configure them.';
                     } elseif ($result[$key] === []) {
-                        $fieldErrors[$field] = $key === 'pricing'
-                            ? 'No explicit pricing evidence was identified in the collected pages. Select pricing manually or provide a pricing page.'
-                            : 'No supported match was identified among the available options. Select an option or add a custom suggestion.';
+                        $fieldErrors[$field] = 'No options were returned. Select an option or add a custom suggestion.';
                     } else {
-                        $fieldErrors[$field] = 'Supported suggestions did not match the configured options. Select an option or add a custom suggestion.';
+                        $fieldErrors[$field] = 'Returned options did not match the configured options. Select an option or add a custom suggestion.';
                     }
                 }
 
@@ -270,8 +223,8 @@ class ListingGenerationService
                     'bestFor' => $ids($picks['best_for']), 'pricing' => $ids($picks['pricing']),
                     'platforms' => $ids($picks['platforms']),
                     'field_errors' => $fieldErrors,
-                    'suggestedCategories' => $picks['categories'] === [] ? array_slice((array) ($result['suggestions']['categories'] ?? []), 0, 1) : [],
-                    'suggestedUseCases' => $picks['use_cases'] === [] ? array_slice((array) ($result['suggestions']['use_cases'] ?? []), 0, 1) : [],
+                    'suggestedCategories' => $picks['categories'] === [] ? (array) ($result['suggestions']['categories'] ?? []) : [],
+                    'suggestedUseCases' => $picks['use_cases'] === [] ? (array) ($result['suggestions']['use_cases'] ?? []) : [],
                 ];
             }
             \App\Support\ExtractionReport::current()->record('classification', 'Invalid classification schema; retrying.', 'warning');
@@ -282,7 +235,7 @@ class ListingGenerationService
         return null;
     }
 
-    public static function verifiedPicks(array $picks, string $source, int $cap): array
+    public static function classificationNames(array $picks): array
     {
         $valid = [];
         foreach ($picks as $pick) {
@@ -291,7 +244,7 @@ class ListingGenerationService
             }
         }
 
-        return array_slice(array_values(array_unique($valid)), 0, $cap);
+        return array_values(array_unique($valid));
     }
 
     private function canonicalPicks(array $picks, array $available): array
@@ -309,94 +262,6 @@ class ListingGenerationService
         }
 
         return $canonical;
-    }
-
-    private function verify(array $fields, string $factsJson, string $source): ?array
-    {
-        $this->lastErrors = [];
-        $reviewFields = array_intersect_key($fields, array_flip([
-            'tagline', 'description', 'summary', 'features', 'best_for_text', 'not_for_text',
-            'faq', 'top_use_cases', 'comparisons', 'integrations', 'pros', 'editorial_qa', 'seo_title', 'meta_description', 'categories', 'useCases', 'bestFor', 'pricing', 'platforms',
-        ]));
-        foreach (['categories', 'useCases', 'bestFor', 'pricing', 'platforms'] as $field) {
-            if (! empty($fields[$field])) {
-                $reviewFields[$field] = Category::whereIn('id', $fields[$field])->pluck('name')->all();
-            }
-        }
-        $pricingService = app(PricingEvidenceService::class);
-        $billingEvidence = $pricingService->extract($source);
-        $supportedPricing = [];
-        foreach ($reviewFields['pricing'] ?? [] as $name) {
-            $quotes = $pricingService->supportingQuotes($name, $billingEvidence);
-            if ($quotes !== []) {
-                $supportedPricing[$name] = $quotes;
-            }
-        }
-        if (! empty($reviewFields['pricing'])) {
-            $report = \App\Support\ExtractionReport::current();
-            $report->record('pricing verification evidence', 'Selected categories: '.implode(', ', $reviewFields['pricing']));
-            foreach ($billingEvidence as $kind => $quotes) {
-                foreach ($quotes as $quote) {
-                    $report->record('pricing verification evidence', $kind.'; source: '.($quote['source_url'] ?? 'unlabelled').'; quote: '.json_encode($quote['quote'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'; context: '.json_encode($quote['context'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                }
-            }
-            if (! array_filter($billingEvidence)) {
-                $report->record('pricing verification evidence', 'No recognized billing quotes found; relying on semantic source review.', 'warning');
-            }
-        }
-        $prompt = $this->ai->prompt('listing_verification_prompt.txt', [
-            '{generatedFieldsJson}' => json_encode($reviewFields), '{factsJson}' => $factsJson, '{sourceText}' => $source,
-            '{pricingEvidenceJson}' => json_encode(['billing_quotes' => $billingEvidence, 'supported_category_candidates' => $supportedPricing], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ]);
-        for ($i = 0; $i < 2; $i++) {
-            $result = $this->ai->json($prompt);
-            if ($this->validator->schema('verification', $result) === []) {
-                $issues = array_map(function (array $issue): array {
-                    $field = preg_replace('/[.\[].*$/', '', trim($issue['field']));
-                    $issue['field'] = match ($field) {
-                        'use_cases' => 'useCases',
-                        'best_for' => 'best_for_text',
-                        'not_for' => 'not_for_text',
-                        default => $field,
-                    };
-
-                    return $issue;
-                }, $result['issues']);
-
-                foreach ($issues as $issue) {
-                    if ($issue['field'] !== 'pricing') {
-                        continue;
-                    }
-                    $quote = is_string($issue['source_quote'] ?? null) ? $issue['source_quote'] : '';
-                    \App\Support\ExtractionReport::current()->record('pricing verification verdict',
-                        $issue['problem'].'; verifier quote: '.json_encode($quote, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'warning');
-                }
-
-                return array_values(array_filter($issues, function (array $issue) use ($reviewFields): bool {
-                    $field = $issue['field'];
-                    if (! array_key_exists($field, $reviewFields)) {
-                        return false;
-                    }
-                    $value = $reviewFields[$field];
-                    if ($value === null || $value === '' || $value === []) {
-                        return false;
-                    }
-                    if (is_string($value) && preg_match('/^not (?:stated|specified|provided)[.!]?$/i', trim($value))) {
-                        return false;
-                    }
-                    if (preg_match('/^(?:claim\s+)?["\']?not stated["\']?\s+(?:not supported|unsupported)/i', trim($issue['problem']))) {
-                        return false;
-                    }
-
-                    return true;
-                }));
-            }
-            \App\Support\ExtractionReport::current()->record('verification', 'Invalid verification schema; retrying.', 'warning');
-            $prompt .= "\nValidation errors to fix:\nverification.issues must be an array.";
-            $this->lastErrors = array_merge(['Verification JSON schema is invalid.'], $result === null ? $this->ai->errors() : []);
-        }
-
-        return null;
     }
 
     private function draft(array $errors): array

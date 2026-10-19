@@ -215,7 +215,6 @@ class ListingAiClient
         return match (true) {
             str_contains($prompt, 'You extract facts from a software product website') => 'facts',
             str_contains($prompt, 'Write SEO fields') => 'seo',
-            str_contains($prompt, 'You check generated listing fields') => 'verification',
             str_contains($prompt, 'Choose the most relevant categories') => 'classification',
             default => 'copy',
         };

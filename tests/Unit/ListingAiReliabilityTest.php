@@ -14,7 +14,7 @@ beforeEach(function () {
     ]);
 });
 
-it('sends strict schemas for description and verification requests', function (string $file, string $field) {
+it('sends strict schemas for description and tagline requests', function (string $file, string $field) {
     Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"ok":true}']]]])]);
     $client = new ListingAiClient;
     $client->json($client->prompt($file, []));
@@ -23,14 +23,14 @@ it('sends strict schemas for description and verification requests', function (s
         && isset($request['response_format']['json_schema']['schema']['properties'][$field]));
 })->with([
     ['description_listing_prompt.txt', 'summary'],
-    ['listing_verification_prompt.txt', 'issues'],
+    ['tagline_prompt.txt', 'candidates'],
 ]);
 
 it('retries empty truncated messages with a bounded larger budget', function () {
     Http::fakeSequence()
         ->push(['choices' => [['finish_reason' => 'length', 'message' => ['content' => null]]]])
-        ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => '{"issues":[]}']]]]);
-    expect((new ListingAiClient)->json('You check generated listing fields', 1800))->toBe(['issues' => []]);
+        ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => '{"candidates":[]}']]]]);
+    expect((new ListingAiClient)->json('Write three tagline candidates', 1800))->toBe(['candidates' => []]);
     Http::assertSentCount(2);
     Http::assertSent(fn ($request) => $request['max_tokens'] === 3600);
 });
@@ -54,30 +54,30 @@ it('lets the successful provider correct a validation failure', function () {
 
 it('requires parameter support from OpenRouter endpoints', function () {
     config(['services.groq.key' => null, 'services.openrouter.key' => 'test-key']);
-    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"issues":[]}']]]])]);
-    (new ListingAiClient)->json('You check generated listing fields');
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"candidates":[]}']]]])]);
+    (new ListingAiClient)->json('Write three tagline candidates');
     Http::assertSent(fn ($request) => $request['provider']['require_parameters'] === true && $request['response_format']['type'] === 'json_schema');
 });
 
 it('sends a native JSON schema to Gemini', function () {
     config(['services.groq.key' => null, 'services.google.api_key' => 'test-key']);
-    Http::fake(['*' => Http::response(['candidates' => [['finishReason' => 'STOP', 'content' => ['parts' => [['text' => '{"issues":[]}']]]]]])]);
-    expect((new ListingAiClient)->json('You check generated listing fields'))->toBe(['issues' => []]);
+    Http::fake(['*' => Http::response(['candidates' => [['finishReason' => 'STOP', 'content' => ['parts' => [['text' => '{"candidates":[]}']]]]]])]);
+    expect((new ListingAiClient)->json('Write three tagline candidates'))->toBe(['candidates' => []]);
     Http::assertSent(fn ($request) => $request['generationConfig']['responseMimeType'] === 'application/json'
-        && isset($request['generationConfig']['responseJsonSchema']['properties']['issues']));
+        && isset($request['generationConfig']['responseJsonSchema']['properties']['candidates']));
 });
 
 it('keeps JSON mode for Groq models without configured strict support', function () {
     config(['services.groq.model' => 'custom-model']);
-    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"issues":[]}']]]])]);
-    (new ListingAiClient)->json('You check generated listing fields');
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"candidates":[]}']]]])]);
+    (new ListingAiClient)->json('Write three tagline candidates');
     Http::assertSent(fn ($request) => $request['response_format'] === ['type' => 'json_object']);
 });
 
 it('reads text blocks without mixing reasoning into JSON', function () {
     Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => [
         ['type' => 'reasoning', 'text' => 'Internal reasoning'],
-        ['type' => 'text', 'text' => '{"issues":[]}'],
+        ['type' => 'text', 'text' => '{"candidates":[]}'],
     ]]]]])]);
-    expect((new ListingAiClient)->json('You check generated listing fields'))->toBe(['issues' => []]);
+    expect((new ListingAiClient)->json('Write three tagline candidates'))->toBe(['candidates' => []]);
 });

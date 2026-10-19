@@ -10,45 +10,6 @@ use App\Services\PlatformDetector;
 use App\Services\SeoTitleBuilder;
 use App\Support\ExtractionReport;
 
-it('passes semantic billing evidence to verification and reports quotes only to admins', function (bool $admin) {
-    $request = request();
-    $request->setUserResolver(fn () => new class($admin)
-    {
-        public function __construct(private bool $admin) {}
-
-        public function hasRole(string $role): bool
-        {
-            return $this->admin && $role === 'admin';
-        }
-    });
-    $category = Category::factory()->create(['name' => 'Freemium']);
-    $category->types()->attach(Type::create(['name' => 'Pricing']));
-    $source = "Source: https://example.com/pricing\nFree Mode. Starter $9.99/month. Paid plans offer ad-free runs.";
-    $ai = Mockery::mock(ListingAiClient::class);
-    $ai->shouldReceive('prompt')->once()->withArgs(function ($file, $bindings) use ($source) {
-        $evidence = json_decode($bindings['{pricingEvidenceJson}'], true);
-        expect($bindings['{sourceText}'])->toBe($source);
-        expect($evidence['billing_quotes']['monthly_subscription'][0]['quote'])->toBe('$9.99/month');
-        expect($evidence['supported_category_candidates'])->toHaveKey('Freemium');
-        $prompt = strtr(file_get_contents(resource_path('prompts/'.$file)), $bindings);
-        expect($prompt)->toContain('category labels need not appear verbatim', 'Free access and paid subscriptions can coexist', '$9.99/month');
-
-        return true;
-    })->andReturn('verify');
-    $ai->shouldReceive('json')->once()->andReturn(['issues' => [['field' => 'pricing', 'problem' => 'Example verifier verdict for diagnosis.', 'source_quote' => 'Free Mode.']]]);
-    $service = new ListingGenerationService($ai, new FactExtractorService($ai), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
-    $method = new ReflectionMethod($service, 'verify');
-    $result = $method->invoke($service, ['pricing' => [$category->id]], '{}', $source);
-    expect($result[0]['source_quote'])->toBe('Free Mode.');
-    $payload = ExtractionReport::current()->payload($request);
-    if ($admin) {
-        $messages = implode("\n", array_column($payload['extraction_report'], 'message'));
-        expect($messages)->toContain('$9.99/month', 'https://example.com/pricing', 'Free Mode.', 'verifier quote:');
-    } else {
-        expect($payload)->toBe([]);
-    }
-})->with([true, false]);
-
 it('preserves classification evidence quotes when the semantic label is absent from source', function () {
     request()->setUserResolver(fn () => new class
     {

@@ -56,7 +56,6 @@ class OutputValidator
             'tagline' => ['candidates' => 'array'],
             'description' => ['summary' => 'string', 'features' => 'array', 'best_for' => 'string', 'not_for' => 'string', 'faq' => 'array'],
             'seo' => ['seo_title' => 'string', 'meta_description' => 'string'],
-            'verification' => ['issues' => 'array'],
         ];
         $errors = [];
         foreach ($shapes[$kind] ?? [] as $key => $type) {
@@ -97,14 +96,6 @@ class OutputValidator
             foreach ($value['faq'] as $item) {
                 if (! is_array($item) || ! is_string($item['question'] ?? null) || ! is_string($item['answer'] ?? null)) {
                     $errors[] = 'description.faq items need question and answer strings.';
-                    break;
-                }
-            }
-        }
-        if ($kind === 'verification') {
-            foreach ($value['issues'] as $item) {
-                if (! is_array($item) || ! is_string($item['field'] ?? null) || ! is_string($item['problem'] ?? null)) {
-                    $errors[] = 'verification.issues items need field and problem strings.';
                     break;
                 }
             }

@@ -39,13 +39,19 @@ it('maps expanded generation to the editor and persists every section without re
     $descriptions->shouldReceive('listingProvider')->andReturn(null);
     app()->instance(DescriptionRewriterService::class, $descriptions);
     $client = Mockery::mock(ListingAiClient::class);
-    $client->shouldReceive('prompt')->andReturnUsing(fn ($file) => $file);
+    $requestedPrompts = [];
+    $client->shouldReceive('prompt')->andReturnUsing(function ($file) use (&$requestedPrompts) {
+        $requestedPrompts[] = $file;
+
+        return $file;
+    });
     $client->shouldReceive('json')->with('seo_fields_prompt.txt')->andReturn(['seo_title' => 'Example: Football profiles for career progress', 'meta_description' => 'Example helps players organize their football career.']);
     $client->shouldReceive('json')->with('category_classification_prompt.txt')->andReturn(['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'suggestions' => ['categories' => [], 'use_cases' => []]]);
-    $client->shouldReceive('json')->with('listing_verification_prompt.txt')->andReturn(['issues' => []]);
     $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
     $generated = $service->generate('Example', 'Football career profiles.', ['platforms' => []]);
     expect($generated['description'])->toBe(ListingDescription::html($body));
+    expect($generated['generation_status'])->toBe('ready');
+    expect($requestedPrompts)->toBe(['seo_fields_prompt.txt', 'category_classification_prompt.txt']);
     $stored = array_intersect_key($generated, array_flip(['summary', 'features', 'best_for_text', 'not_for_text', 'faq', 'description']));
     $product = Product::factory()->create($stored);
     expect($product->fresh()->description)->toContain($generated['description']);
@@ -81,7 +87,7 @@ it('explains empty classification results and clears diagnostics for supported m
     expect($result['field_errors']['categories'])->toBe('');
     expect($result['categories'])->toHaveCount(1);
     expect($result['field_errors']['useCases'])->toContain('configured options');
-    expect($result['field_errors']['pricing'])->toContain('pricing evidence');
+    expect($result['field_errors']['pricing'])->toContain('No options were returned');
     $result = $method->invoke($service, '{}', 'Create football profiles. Free plan.', []);
     expect($result['field_errors'])->toBe(['categories' => '', 'useCases' => '', 'pricing' => '']);
     expect($result['categories'])->toHaveCount(1);
@@ -121,4 +127,27 @@ it('regenerates an expanded description and updates the submission cache', funct
     expect($cached['description'])->toBe(ListingDescription::html($body));
     expect($cached['categories'])->toBe([123]);
     expect($cached['features'])->toBe($body['features']);
+});
+
+it('keeps inferred browser classifications and does not cap classifications', function () {
+    $ids = [];
+    foreach (['One', 'Two', 'Three', 'Four'] as $name) {
+        $category = Category::factory()->create(['name' => $name]);
+        $category->types()->attach(Type::firstOrCreate(['name' => 'Software Categories']));
+        $ids[] = $category->id;
+    }
+    $browser = Category::factory()->create(['name' => 'Browser']);
+    $browser->types()->syncWithoutDetaching([Type::firstOrCreate(['name' => 'Platform'])->id]);
+    $client = Mockery::mock(ListingAiClient::class);
+    $client->shouldReceive('prompt')->once()->andReturn('classify');
+    $client->shouldReceive('json')->once()->andReturn([
+        'categories' => array_map(fn ($name) => ['name' => $name], ['One', 'Two', 'Three', 'Four']),
+        'use_cases' => [], 'best_for' => [], 'pricing' => [],
+        'platforms' => [['name' => 'Browser', 'quote' => '']],
+        'suggestions' => ['categories' => [], 'use_cases' => []],
+    ]);
+    $service = new ListingGenerationService($client, new FactExtractorService($client), new PlatformDetector, new OutputValidator, new SeoTitleBuilder);
+    $result = (new ReflectionMethod($service, 'classify'))->invoke($service, '{}', 'Product overview.', []);
+    expect($result['categories'])->toHaveCount(4);
+    expect($result['platforms'])->toBe([$browser->id]);
 });

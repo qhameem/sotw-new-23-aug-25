@@ -56,14 +56,13 @@ it('runs every listing stage and retains successful fields when another stage fa
         return match (true) {
             str_starts_with($prompt, 'seo_fields') => $failure('SEO', ['seo_title' => 'Example: Human verification API confirms real people online', 'meta_description' => 'Example checks human visitors through an API.']),
             str_starts_with($prompt, 'category_classification') => $failure('classification', ['categories' => [], 'use_cases' => [], 'best_for' => [], 'pricing' => [], 'platforms' => [], 'suggestions' => ['categories' => [], 'use_cases' => []]]),
-            str_starts_with($prompt, 'listing_verification') => $failure('verification', ['issues' => []]),
         };
     });
     $ai->shouldReceive('errors')->andReturn(['AI unavailable.']);
     $service = new ListingGenerationService($ai, $factService, $platforms, new OutputValidator, new SeoTitleBuilder);
     $result = $service->generate('Example', 'Source: https://example.com Human verification API.');
 
-    foreach (['facts', 'platform', 'tagline', 'description', 'SEO', 'classification', 'verification'] as $stage) {
+    foreach (['facts', 'platform', 'tagline', 'description', 'SEO', 'classification'] as $stage) {
         expect($visited)->toContain($stage);
     }
     expect($result['generation_status'])->toBe('draft');
@@ -82,7 +81,7 @@ it('runs every listing stage and retains successful fields when another stage fa
         expect($result)->toHaveKey('categories');
         expect($result['field_errors']['categories'])->not->toContain('Classification failed');
     }
-})->with(['facts', 'platform', 'tagline', 'description', 'SEO', 'classification', 'verification', 'all'])->with([false, true]);
+})->with(['facts', 'platform', 'tagline', 'description', 'SEO', 'classification', 'all'])->with([false, true]);
 
 it('accepts and renders every returned pro without removing content checks', function () {
     $body = ['summary' => 'Example checks visitors.', 'features' => [], 'best_for' => '', 'not_for' => '', 'faq' => [], 'pros' => array_map(fn ($i) => 'Benefit '.$i, range(1, 100))];

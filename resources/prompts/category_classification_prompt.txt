@@ -1,17 +1,12 @@
-Analyze the product facts and website content below. Choose the most relevant categories, use cases, best_for tags, pricing models, and platforms.
-Choose only from the lists provided. Choose at most 3 categories, 2 use_cases, 2 best_for, 1 pricing, and 3 platforms.
-For each pick, optionally include a supporting excerpt or explanation in quote. Exact quotation is not required. Choose only picks supported by the source. Empty lists are valid.
-Platforms: pick Browser only when users run the product in a web browser. A marketing website does not count. Pick MacOS, Windows, iOS, Android, or Chrome extension only when the source names a download, a store listing, or a system requirement.
-Use cases: pick a use case only when the source describes the task directly.
-Best for: pick the audience the product copy addresses. Do not pick a team audience for a single-user tool.
-If no listed category or use case fits, return up to 1 name for each in suggestions.
-Return JSON only:
+Analyze the product facts and website content below. Choose the most relevant categories, use cases, best_for tags, pricing models, and platforms using your judgment.
+Use the available option names for database mapping. Include other category or use case names in suggestions when useful.
+Return JSON in this shape:
 {"categories":[{"name":"","quote":""}],"use_cases":[{"name":"","quote":""}],"best_for":[{"name":"","quote":""}],"pricing":[{"name":"","quote":""}],"platforms":[{"name":"","quote":""}],"suggestions":{"categories":[],"use_cases":[]}}
+The quote fields are optional context and may be empty.
 Categories: {categories}
 Use cases: {useCases}
 Best for: {bestFor}
 Pricing models: {pricingModels}
-Choose pricing by billing meaning, not exact category words. A nonzero monthly/yearly recurring price supports Subscription (and the matching monthly/yearly option). An ongoing free tier with paid upgrades supports Freemium, even when the source never says "Freemium". Free trials alone do not establish Freemium. Free tiers and paid subscriptions can coexist. Self-serve payment and credits do not rule out subscriptions. Require evidence for this product, not a competitor or third-party provider. Quote the actual billing terms or price, not an unrelated mention of "free".
 Platforms: {platforms}
 Facts:
 {factsJson}
