@@ -18,7 +18,7 @@
                 'text-gray-700 hover:bg-white hover:text-primary-600' => !$isHomeRoute,
             ])
         >
-            <x-phosphor-grid-nine class="h-4 w-4" />
+            <x-phosphor-grid-nine @class(['h-4 w-4', 'text-gray-500' => !$isHomeRoute]) />
             <span>All</span>
         </a>
 
@@ -34,7 +34,7 @@
                     ])
                     aria-label="Browse {{ $group['label'] }} software"
                 >
-                    <span @class(['text-primary-400' => request()->route('group') !== $group['key']]) aria-hidden="true">
+                    <span @class(['text-gray-500' => request()->route('group') !== $group['key']]) aria-hidden="true">
                         @switch($group['icon'])
                             @case('brain')
                                 <x-phosphor-brain class="h-4 w-4" />
@@ -78,7 +78,7 @@
                 'text-primary-500 hover:bg-white hover:text-primary-600' => !request()->routeIs('categories.index'),
             ])
         >
-            <x-phosphor-grid-nine class="h-4 w-4" />
+            <x-phosphor-grid-nine @class(['h-4 w-4', 'text-gray-500' => !request()->routeIs('categories.index')]) />
             <span>Explore</span>
         </a>
     </nav>
