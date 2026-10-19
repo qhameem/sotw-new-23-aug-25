@@ -2,23 +2,6 @@
   <div id="field-link" :class="{ 'sticky top-0 z-30': reviewMode }" class="mb-4 bg-slate-50 border border-slate-300 rounded-xl p-6">
     <div class="url-label-row mb-3">
       <label for="product-url" class="shrink-0 text-sm font-bold text-gray-900">Website URL <span class="text-red-500">*</span></label>
-      <div class="url-label-feedback" aria-label="Website URL validation">
-        <div id="product-url-status" class="url-status-row text-xs" role="status" aria-live="polite" aria-atomic="true">
-          <p v-if="isUrlChecking" class="flex items-center gap-2 text-slate-600">
-            <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-            Checking URL uniqueness…
-          </p>
-          <div v-else-if="urlExistsError" class="min-w-0 text-red-600">
-            <p class="truncate" :title="`This exact URL already exists as ${existingProduct?.name || 'an existing product'}.`">URL already listed: <a :href="existingProduct?.view_url || `/product/${existingProduct?.slug}`" target="_blank" rel="noopener" class="font-semibold underline underline-offset-2">{{ existingProduct?.name || 'View product' }}</a></p>
-            <a v-if="existingProduct?.can_edit && existingProduct?.edit_url" :href="existingProduct.edit_url" class="inline-block font-semibold underline underline-offset-2">Edit existing product</a>
-          </div>
-          <p v-else-if="inlineError" class="text-red-600">{{ inlineError }}</p>
-          <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
-          <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
-          <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
-        </div>
-        <p v-if="clipboardFeedbackType !== 'error' && clipboardFeedback" class="text-xs text-slate-500" role="status">{{ clipboardFeedback }}</p>
-      </div>
       <span :class="{ invisible: !extractionTiming.started }" class="shrink-0 text-xs font-medium tabular-nums text-gray-700">
         {{ extractionTiming.running ? 'Elapsed' : 'Total' }}: {{ extractionTiming.seconds.toFixed(1) }}s
       </span>
@@ -112,7 +95,24 @@
         </div>
       </div>
     </div>
-    <p id="product-url-help" class="mt-3 text-xs text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
+    <div id="product-url-help" class="mt-3 text-xs" aria-label="Website URL validation">
+        <div id="product-url-status" class="url-status-row text-xs" role="status" aria-live="polite" aria-atomic="true">
+          <p v-if="isUrlChecking" class="flex items-center gap-2 text-slate-600">
+            <svg class="h-3.5 w-3.5 shrink-0 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+            Checking URL uniqueness…
+          </p>
+          <div v-else-if="urlExistsError" class="min-w-0 text-red-600">
+            <p class="truncate" :title="`This exact URL already exists as ${existingProduct?.name || 'an existing product'}.`">URL already listed: <a :href="existingProduct?.view_url || `/product/${existingProduct?.slug}`" target="_blank" rel="noopener" class="font-semibold underline underline-offset-2">{{ existingProduct?.name || 'View product' }}</a></p>
+            <a v-if="existingProduct?.can_edit && existingProduct?.edit_url" :href="existingProduct.edit_url" class="inline-block font-semibold underline underline-offset-2">Edit existing product</a>
+          </div>
+          <p v-else-if="inlineError" class="text-red-600">{{ inlineError }}</p>
+          <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
+          <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
+          <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
+          <p v-if="!hasUrlFeedback" class="text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
+        </div>
+        <p v-if="clipboardFeedbackType !== 'error' && clipboardFeedback" class="text-xs text-slate-500" role="status">{{ clipboardFeedback }}</p>
+      </div>
     <div v-if="!reviewMode && !isLoading" class="mt-5">
       <button
         type="button"
@@ -190,6 +190,14 @@ const displayUrl = computed(() => props.isUrlUnique && !props.isUrlChecking
   : props.modelValue);
 watch(displayUrl, refreshCaret, { flush: 'post' });
 const inlineError = computed(() => props.fieldError || (props.isUrlInvalid && String(props.modelValue || '').trim() ? 'Enter a valid website URL.' : props.urlCheckFailed ? 'Unable to check this URL. Please try again.' : ''));
+const hasUrlFeedback = computed(() => Boolean(
+  props.isUrlChecking
+  || props.urlExistsError
+  || inlineError.value
+  || props.urlMatchesDraft
+  || clipboardFeedback.value
+  || props.isSandboxMode
+));
 const showDisabledTooltip = ref(false);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
@@ -339,14 +347,9 @@ onUnmounted(() => window.clearTimeout(disabledTooltipTimeout));
 .url-label-row {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
   height: 24px;
-}
-.url-label-feedback {
-  flex: 1;
-  min-width: 0;
-  height: 24px;
-  overflow: auto;
 }
 .url-status-row {
   display: flex;
