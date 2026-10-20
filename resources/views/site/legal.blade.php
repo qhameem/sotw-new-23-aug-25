@@ -90,6 +90,7 @@
             <p class="mb-4">Email: <a href="mailto:hello@softwareontheweb.com" class="text-blue-600 hover:underline">hello@softwareontheweb.com</a><br>
                 Address: Canberra, ACT, Australia</p>
         </section>
+        <x-submission-policy />
     </div>
 </div>
 @endsection

@@ -13,8 +13,7 @@
             <p class="text-gray-700 leading-relaxed">
                 <strong>Software On The Web</strong> is a curated platform for discovering standout digital products—
                 built for makers, seekers, and anyone passionate about innovative software.
-                We surface <strong>exceptional tools weekly</strong>, chosen through a rigorous handpicking process by a team
-                that lives and breathes digital.
+                Our directory combines editorial discoveries with products submitted by makers.
             </p>
             <p class="text-gray-700 mt-2 leading-relaxed">
                 We’re not a firehose of launches. We’re a growing library of quality.
@@ -25,7 +24,7 @@
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Our Mission</h2>
             <p class="text-gray-700 leading-relaxed">
                 Our mission is simple: <strong>to connect people with the most useful, inspiring, and well-made digital products on the web</strong>.
-                Every day, we handpick software that solves real problems, delights users, and pushes digital creativity forward.
+                We help people discover software that solves real problems.
                 No noise. Just the tools that matter.
             </p>
         </section>
@@ -33,19 +32,17 @@
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Quality Over Quantity</h2>
             <p class="text-gray-700 leading-relaxed">
-                Curation is our craft. Unlike open-submission platforms, we don’t list everything—we select <strong>only the best</strong>.
-                Each product featured has been evaluated by our team of experts with years of experience in digital product strategy, design, and development.
+                We welcome maker submissions alongside editorial discoveries. Badge verification and paid checkout can automatically approve a product for scheduling; not every listing receives an individual expert review.
             </p>
             <p class="text-gray-700 mt-2 leading-relaxed">
-                We look for products with clear purpose, solid execution, and thoughtful design. If it’s on Software On The Web, it’s there because it earned its place.
+                A listing helps visitors discover a product and does not constitute an expert endorsement.
             </p>
         </section>
 
         <section class="mb-10">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">A Permanent Collection</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">A Lasting Collection</h2>
             <p class="text-gray-700 leading-relaxed">
-                We believe great products deserve lasting recognition. That’s why <strong>no product is ever removed</strong> from our platform.
-                Our library grows every day, becoming a richer, more reliable resource for discovering software that stands the test of time.
+                Listings are intended to remain available long term, subject to our Terms of Use. Content may be removed, and badge-based listings can be unpublished if badge verification fails.
             </p>
         </section>
 
@@ -66,8 +63,7 @@
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Transparent and Independent</h2>
             <p class="text-gray-700 leading-relaxed">
-                We don’t accept pay-to-play listings or hidden promotions. Every product is featured because it meets our standards—not because it paid to be there.
-                <strong>You can trust what you see.</strong>
+                We offer a Free Launch with a verified website badge and a paid Premium Launch without a badge requirement. Paid launch services and promotional placement are separate from organic rankings.
             </p>
         </section>
 
@@ -87,9 +83,11 @@
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Always Growing, Always Evolving</h2>
             <p class="text-gray-700 leading-relaxed">
                 With a rapidly expanding catalog and new features on the way, our vision is to become the most trusted,
-                human-curated resource for discovering digital products that matter.
+                resource for discovering digital products that matter.
             </p>
         </section>
+
+        <x-submission-policy />
 
         <section>
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Start Exploring</h2>

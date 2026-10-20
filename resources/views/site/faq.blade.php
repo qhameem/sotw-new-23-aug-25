@@ -20,7 +20,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">How do you select the software featured on your site?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Our experienced team meticulously handpicks every product. We look for software that solves real problems, offers a great user experience, and demonstrates innovation. We prioritize quality over quantity, ensuring that every tool listed has earned its place through merit.
+                        Our directory includes editorial discoveries and maker submissions. Verified badge submissions and completed Premium Launch payments can be automatically approved for scheduling. A listing is not an individual expert review or endorsement. See the submission policy below.
                     </p>
                 </div>
                 <div>
@@ -32,7 +32,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">When are submitted software products published?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Submitted software products are published daily at the configured UTC launch time shown in the admin settings.
+                        Scheduled products publish at {{ \App\Support\ProductPublishSchedule::getPublishTime() }} UTC on their selected launch date. Available dates appear in the submission form.
                     </p>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">How can I submit my product to be featured?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        We currently have a hand-curation process. While we don't have a public submission form at this moment, we are always on the lookout for new and exciting products. The best way to get on our radar is to build an amazing product that people love and talk about! We plan to introduce a more formal submission process in the future.
+                        Use <a href="{{ route('products.create') }}" class="text-primary-600 underline">Add Product</a>, sign in, complete your product details, and choose a launch option. You can read the submission conditions before registering.
                     </p>
                 </div>
                 <div>
@@ -56,7 +56,7 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">Do you charge for featuring products?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        No, we do not charge for featuring products. Our selection is based purely on merit and our curation criteria. We believe in transparent and independent discovery.
+                        Free Launch has no monetary fee and requires a verified badge on your website. Premium Launch is a one-time paid option without a badge requirement. Browsing is free. See the current price and conditions below.
                     </p>
                 </div>
             </div>
@@ -85,6 +85,8 @@
                 </div>
             </div>
         </section>
+
+        <x-submission-policy />
 
         <section>
             <h2 class="text-2xl font-semibold text-gray-800 mb-3">Contact & Support</h2>

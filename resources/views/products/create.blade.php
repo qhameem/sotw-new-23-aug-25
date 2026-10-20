@@ -25,17 +25,20 @@
 
 @section('content')
     <div class="relative flex-1 flex flex-col h-full">
+        @unless(isset($product))
+            <x-submission-policy />
+        @endunless
         @guest
             <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
                 <div class="text-center p-8 bg-white border rounded-lg shadow-md">
                     <h2 class="text-lg font-semibold text-gray-800 mb-2">Please log in to add your product</h2>
-                    <p class="text-gray-600 mb-4 text-sm tracking-tight">Join our community and showcase your product to a wider
-                        audience.</p>
+                    <p class="text-gray-600 mb-4 text-sm tracking-tight">Sign in to submit and manage your product. Review the launch conditions above before creating an account.</p>
                     <button @click.prevent="$dispatch('open-login-modal')"
                         class="bg-primary-500 text-white font-semibold text-sm hover:bg-primary-60 transition-colors duration-200 py-1 px-4 rounded-md hover:opacity-90">
                         Log in or Sign up &rarr;
                     </button>
                 </div>
+            </div>
         @endguest
             <div class="w-full flex-1 flex flex-col h-full @guest blur-sm pointer-events-none @endguest">
                 @if(isset($product))

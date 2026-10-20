@@ -214,6 +214,9 @@ class StripeController extends Controller
                 'mode' => 'payment',
                 'success_url' => route('stripe.paid-submission.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('stripe.paid-submission.cancel', $checkout),
+                'custom_text' => [
+                    'submit' => ['message' => \App\Support\SubmissionPolicy::premiumSummary()],
+                ],
                 'metadata' => [
                     'checkout_id' => (string) $checkout->id,
                     'checkout_uuid' => $checkout->uuid,
