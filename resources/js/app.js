@@ -7,11 +7,21 @@ function syncSiteHeaderOffset() {
 
     if (!header || window.matchMedia('(max-width: 767px)').matches) {
         document.documentElement.style.removeProperty('--site-header-offset');
+        document.documentElement.style.removeProperty('--site-content-offset');
         return;
     }
 
     const headerBottom = Math.max(0, Math.ceil(header.getBoundingClientRect().bottom));
-    document.documentElement.style.setProperty('--site-header-offset', `${headerBottom}px`);
+    const layout = document.querySelector('[data-site-content-layout]');
+    const contentTop = layout ? layout.getBoundingClientRect().top + window.scrollY : 0;
+    const contentOffset = Math.max(0, Math.ceil(headerBottom - contentTop));
+    const rootStyle = document.documentElement.style;
+    if (rootStyle.getPropertyValue('--site-header-offset') !== `${headerBottom}px`) {
+        rootStyle.setProperty('--site-header-offset', `${headerBottom}px`);
+    }
+    if (rootStyle.getPropertyValue('--site-content-offset') !== `${contentOffset}px`) {
+        rootStyle.setProperty('--site-content-offset', `${contentOffset}px`);
+    }
 }
 
 function initializeSiteHeaderOffset() {
@@ -29,6 +39,10 @@ function initializeSiteHeaderOffset() {
         attributes: true,
         attributeFilter: ['class', 'style'],
     });
+    const pageOffsetObserver = new MutationObserver(syncSiteHeaderOffset);
+    for (const element of [document.body, document.documentElement]) {
+        pageOffsetObserver.observe(element, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
 }
 
 // Add this line to set the CSRF token for all Axios requests

@@ -463,7 +463,7 @@
 
         @media (min-width: 768px) {
             .site-header-padding {
-                padding-top: var(--site-header-offset);
+                padding-top: var(--site-content-offset, var(--site-header-offset));
             }
 
             .site-header-sticky {
