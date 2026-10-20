@@ -39,7 +39,7 @@ class ProductSubmissionConfirmation extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => 'Your product "' . $this->product->name . '" has been submitted for approval',
+            'message' => $this->submissionMessage(),
             'link' => route('products.my'),
             'product_id' => $this->product->id,
         ];
@@ -51,10 +51,21 @@ class ProductSubmissionConfirmation extends Notification
     public function toBroadcast(object $notifiable): array
     {
         return [
-            'message' => 'Your product "' . $this->product->name . '" has been submitted for approval',
+            'message' => $this->submissionMessage(),
             'link' => route('products.my'),
             'product_id' => $this->product->id,
             'created_at' => now()->toISOString(),
         ];
     }
+    private function submissionMessage(): string
+    {
+        $name = $this->product->name;
+
+        if (! $this->product->approved) {
+            return 'Your product "'.$name.'" has been received and is awaiting manual review.';
+        }
+
+        return 'Your product "'.$name.'" is automatically approved for scheduling. Our team still manually reviews every tool and may withhold or remove unsuitable listings.';
+    }
+
 }

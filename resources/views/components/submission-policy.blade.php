@@ -12,5 +12,6 @@
         <a href="{{ route('products.create') }}" class="text-primary-600 underline">Submit a product</a>
         · <a href="{{ url('/get-the-badge') }}" class="text-primary-600 underline">Badge instructions</a>
         · <a href="{{ route('legal') }}" class="text-primary-600 underline">Terms of Use</a>
+        · <a href="{{ route('refund-policy') }}" class="text-primary-600 underline">Refund &amp; Cancellation Policy</a>
     </p>
 </section>

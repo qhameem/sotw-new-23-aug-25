@@ -42,7 +42,7 @@
                     </svg>
                 </div>
                 <div>
-                    <span class="font-semibold">Your product is approved!</span>
+                    <span class="font-semibold">Your product is automatically approved for scheduling.</span>
                     Launching on <strong>{{ $launchDateFormatted }}</strong>.
                 </div>
             </div>
@@ -50,9 +50,9 @@
             <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">What Happens Next</h3>
                 <ol class="space-y-2 text-sm text-gray-700 list-decimal list-inside">
-                    <li>Your placement is already approved.</li>
+                    <li>Your placement is automatically approved for scheduling. Our team still manually reviews every tool and may withhold or remove unsuitable products.</li>
                     <li>Your badge was verified successfully and your launch week is reserved.</li>
-                    <li>Keep the badge live on your website so our automatic checks continue to pass.</li>
+                    <li>Keep the badge live. If you remove it, the system automatically removes your listing from public view.</li>
                     <li>Your listing goes live on <strong>{{ $launchDateFormatted }}</strong>.</li>
                 </ol>
             </div>
@@ -62,7 +62,7 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Keep This Badge On Your Site</h3>
                 <p class="text-sm text-gray-600 mb-4">
                     Keep this badge on your website so your scheduled launch stays verified.
-                    This gives you a guaranteed <strong>dofollow backlink</strong>.
+                    Your listing and <strong>dofollow backlink</strong> remain available while the badge stays verified, subject to manual suitability review and our Terms of Use.
                 </p>
 
                 <div class="relative">
@@ -77,7 +77,7 @@
 
                 <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p class="text-xs text-blue-800">
-                        <strong>Tip:</strong> Place this in your site's footer, homepage, or an "As Seen On" section.
+                        <strong>Tip:</strong> Place this on a publicly accessible page of your website. Homepage placement is encouraged.
                         We'll continue checking for the badge automatically.
                     </p>
                 </div>

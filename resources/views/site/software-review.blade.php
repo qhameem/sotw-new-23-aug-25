@@ -43,7 +43,7 @@ Software Review
             <li class="flex items-start gap-3">
                 <div class="text-sky-500 text-xl font-extrabold mt-1">✓</div>
                 <div>
-                    <span class="font-semibold">Includes Fast-Track:</span> Your product submission is automatically fast-tracked at no extra cost.
+                    <span class="font-semibold">Product listings:</span> Choose a badge or paid listing through Add Product. All tools remain subject to manual suitability review.
                 </div>
             </li>
         </ul>

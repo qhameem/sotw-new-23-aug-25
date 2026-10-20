@@ -79,7 +79,7 @@
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">3. Listings and Submissions</h3>
             <p class="mb-4">You may post or submit content (e.g. product listings) as long as it complies with applicable laws and our guidelines. We reserve the right to remove any content at our discretion.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">4. Payments</h3>
-            <p class="mb-4">Paid services (e.g. featured listings) are handled by secure third-party processors. Refunds are subject to our refund policy.</p>
+            <p class="mb-4">Paid services (e.g. featured listings) are handled by secure third-party processors. Refunds and cancellations are governed by our <a href="{{ route('refund-policy') }}" class="text-blue-600 underline">Refund &amp; Cancellation Policy</a>.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">5. Affiliate Links & Ads</h3>
             <p class="mb-4">Some links or listings may contain affiliate links or sponsored content. We may earn a commission at no extra cost to you.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">6. Limitation of Liability</h3>

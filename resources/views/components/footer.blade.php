@@ -30,6 +30,7 @@
         <a href="{{ route('faq') }}" class="hover:underline">FAQ</a> •
         <a href="{{ route('newsletter.index') }}" class="hover:underline">Newsletter</a> •
         <a href="{{ route('legal') }}" class="hover:underline">Privacy Policy</a> •
+        <a href="{{ route('refund-policy') }}" class="hover:underline">Refund Policy</a> •
         <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
         <a href="{{ route('badges.index') }}" class="hover:underline">Badge</a> •
         <a href="https://x.com/software_on_web" target="_blank" rel="{{ \App\Support\OutboundLink::rel('https://x.com/software_on_web', 'system_view') }}" class="hover:underline">X.com</a> •

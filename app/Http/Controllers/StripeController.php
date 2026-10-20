@@ -31,50 +31,7 @@ class StripeController extends Controller
 
     public function checkout(Request $request)
     {
-        $request->validate([
-            'product_ids' => 'required|string',
-        ]);
-
-        $productIds = explode(',', $request->product_ids);
-        $publishDates = $request->publish_dates ?? [];
-        $products = Product::whereIn('id', $productIds)->get();
-
-        Stripe::setApiKey(config('stripe.sk'));
-
-        $lineItems = [];
-        foreach ($products as $product) {
-            $lineItems[] = [
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => [
-                        'name' => $product->name,
-                        'description' => 'Fast-track your submission',
-                    ],
-                    'unit_amount' => 3000,
-                ],
-                'quantity' => 1,
-            ];
-        }
-
-        try {
-            $session = Session::create([
-                'payment_method_types' => ['card'],
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'success_url' => route('promote.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('stripe.cancel'),
-                'metadata' => [
-                    'product_ids' => implode(',', $productIds),
-                    'publish_dates' => json_encode($publishDates),
-                    'user_id' => Auth::id(),
-                    'type' => 'fast-track',
-                ]
-            ]);
-
-            return redirect($session->url);
-        } catch (ApiErrorException $e) {
-            return back()->with('error', 'Error creating checkout session: ' . $e->getMessage());
-        }
+        abort(410, 'Fast-track is no longer available. Use Add Product for badge or paid listings.');
     }
 
     public function promoteSuccess(Request $request)
@@ -215,7 +172,7 @@ class StripeController extends Controller
                 'success_url' => route('stripe.paid-submission.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('stripe.paid-submission.cancel', $checkout),
                 'custom_text' => [
-                    'submit' => ['message' => \App\Support\SubmissionPolicy::premiumSummary()],
+                    'submit' => ['message' => \App\Support\SubmissionPolicy::premiumSummary().' Refund policy: '.route('refund-policy')],
                 ],
                 'metadata' => [
                     'checkout_id' => (string) $checkout->id,

@@ -14,13 +14,13 @@
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">What is Software on the Web?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Software on the Web is a curated platform dedicated to helping you discover exceptional digital products and software tools. We handpick and showcase innovative software daily, focusing on quality, utility, and design. Our goal is to connect makers with users and provide a trusted resource for finding the best tools for your needs.
+                        Software on the Web is a curated platform dedicated to helping you discover exceptional digital products and software tools. We handpick innovative software through weekly curation, focusing on quality, utility, and design. Our goal is to connect makers with users and provide a trusted resource for finding the best tools for your needs.
                     </p>
                 </div>
                 <div>
                     <h3 class="text-xl font-medium text-gray-700">How do you select the software featured on your site?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Our directory includes editorial discoveries and maker submissions. Verified badge submissions and completed Premium Launch payments can be automatically approved for scheduling. A listing is not an individual expert review or endorsement. See the submission policy below.
+                        Our team handpicks and manually reviews every tool through weekly curation. Verified badges and paid submissions can automatically approve scheduling, but the team may withhold or remove unsuitable products. See the submission policy below.
                     </p>
                 </div>
                 <div>

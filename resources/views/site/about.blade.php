@@ -13,7 +13,7 @@
             <p class="text-gray-700 leading-relaxed">
                 <strong>Software On The Web</strong> is a curated platform for discovering standout digital products—
                 built for makers, seekers, and anyone passionate about innovative software.
-                Our directory combines editorial discoveries with products submitted by makers.
+                We handpick tools through weekly curation, combining editorial discoveries with products submitted by makers.
             </p>
             <p class="text-gray-700 mt-2 leading-relaxed">
                 We’re not a firehose of launches. We’re a growing library of quality.
@@ -32,17 +32,17 @@
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Quality Over Quantity</h2>
             <p class="text-gray-700 leading-relaxed">
-                We welcome maker submissions alongside editorial discoveries. Badge verification and paid checkout can automatically approve a product for scheduling; not every listing receives an individual expert review.
+                Our team manually reviews every tool, including submissions automatically approved through badge verification or paid checkout. Automatic approval reserves a launch; our team may still withhold or remove a product that is unsuitable.
             </p>
             <p class="text-gray-700 mt-2 leading-relaxed">
-                A listing helps visitors discover a product and does not constitute an expert endorsement.
+                We handpick software for its purpose, usefulness, and quality as part of our weekly curation.
             </p>
         </section>
 
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">A Lasting Collection</h2>
             <p class="text-gray-700 leading-relaxed">
-                Listings are intended to remain available long term, subject to our Terms of Use. Content may be removed, and badge-based listings can be unpublished if badge verification fails.
+                Listings are permanent, subject to suitability review and our Terms of Use. For badge listings, the badge must remain live on your website. If it is removed, our system automatically removes the listing from public view. Paid listings have no badge requirement.
             </p>
         </section>
 
@@ -83,7 +83,7 @@
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Always Growing, Always Evolving</h2>
             <p class="text-gray-700 leading-relaxed">
                 With a rapidly expanding catalog and new features on the way, our vision is to become the most trusted,
-                resource for discovering digital products that matter.
+                human-curated resource for discovering digital products that matter.
             </p>
         </section>
 

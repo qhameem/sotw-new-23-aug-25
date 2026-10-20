@@ -47,7 +47,7 @@
                 <p class="text-sm font-medium text-gray-900">Add our badge to launch free</p>
                 <span class="rounded-md bg-primary-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary-700">Required</span>
               </div>
-              <p class="text-xs text-gray-500">Place it on a public page of your site, then verify.</p>
+              <p class="text-xs text-gray-500">Place it on a public page of your site, then verify. Homepage placement is encouraged. Keep it live; removing it automatically removes your listing from public view.</p>
               <FreeLaunchBadgePreview :snippet="badgeSnippet">
                 <div id="field-badge-placement-url" class="space-y-2 pt-1">
                   <label for="inline-badge-placement-url" class="flex items-center gap-2 text-xs font-medium text-gray-600"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-700">2</span> Verify placement</label>

@@ -52,8 +52,8 @@ const props = defineProps({
 defineEmits(['select']);
 const comparisonRows = computed(() => [
   { label: 'Launch date', value: props.premium ? 'Date you choose' : 'Open slot, 9 per day' },
-  { label: 'Permanent listing', value: props.premium ? 'Guaranteed' : 'Not guaranteed', guaranteed: props.premium, muted: !props.premium },
-  { label: 'Do-follow backlink', value: props.premium ? 'Guaranteed' : 'Not guaranteed', guaranteed: props.premium, muted: !props.premium, info: 'A link to your website that search engines can follow.' },
+  { label: 'Permanent listing', value: props.premium ? 'Included' : 'While badge stays live', info: 'Permanent, subject to manual suitability review and our Terms of Use.' },
+  { label: 'Do-follow backlink', value: props.premium ? 'Included' : 'While badge stays verified', info: 'A link to your website that search engines can follow, subject to the listing remaining public.' },
   { label: 'Schedule ahead', value: props.premium ? 'Up to 60 days' : 'Up to 365 days' },
 ]);
 </script>

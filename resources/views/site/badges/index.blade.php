@@ -15,7 +15,7 @@
     <div class="max-w-3xl">
         <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How to add your Software on the Web badge</h1>
         <p class="mt-4 text-base leading-7 text-gray-600">
-            Add the badge to your homepage, link it back to <strong>Software on the Web</strong>, and keep it live so our verification can pass.
+            Add the badge to a publicly accessible page of your website, link it back to <strong>Software on the Web</strong>, and keep it live so our verification can pass.
             The easiest place is usually your homepage footer, but your header or an "As Seen On" section also works.
         </p>
     </div>
@@ -28,7 +28,7 @@
                         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Current Badge</p>
                         <h2 class="mt-2 text-2xl font-semibold text-gray-900">{{ $badgeTitle }}</h2>
                         <p class="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
-                            This is the current badge we expect to find on your homepage when verification runs.
+                            This is the current badge we expect to find at the public page URL you verify. Homepage placement is encouraged.
                         </p>
                     </div>
                     <a
@@ -59,7 +59,7 @@
                         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 1</p>
                         <h2 class="mt-2 text-2xl font-semibold text-gray-900">Copy the badge code</h2>
                         <p class="mt-3 text-sm leading-6 text-gray-600">
-                            Paste this exact code into your homepage HTML. The link must stay <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">rel="dofollow"</code>.
+                            Paste this exact code into your public page HTML. The link must stay <code class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700">rel="dofollow"</code>.
                         </p>
                     </div>
                     <button
@@ -81,15 +81,15 @@
                 </div>
 
                 <p id="copy-badge-code-feedback" class="mt-3 hidden text-sm font-semibold text-emerald-700">
-                    Badge code copied. Paste it into your homepage and publish your changes.
+                    Badge code copied. Paste it into a public page and publish your changes.
                 </p>
             </section>
 
             <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Step 2</p>
-                <h2 class="mt-2 text-2xl font-semibold text-gray-900">Paste it into your homepage</h2>
+                <h2 class="mt-2 text-2xl font-semibold text-gray-900">Paste it into a public page</h2>
                 <p class="mt-3 text-sm leading-6 text-gray-600">
-                    Use your homepage, not a hidden page. These placements work best for verification:
+                    Any publicly accessible page is acceptable; homepage placement is encouraged. Submit the exact page URL for verification. These homepage placements work well:
                 </p>
 
                 <div class="mt-6 grid gap-4 sm:grid-cols-3">
@@ -209,7 +209,7 @@
                     </li>
                     <li class="flex items-start gap-3">
                         <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">2</span>
-                        <span>Paste it on your homepage footer, header, or visible trust section.</span>
+                        <span>Paste it on a public page of your website; your homepage footer, header, or trust section is encouraged.</span>
                     </li>
                     <li class="flex items-start gap-3">
                         <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">3</span>
@@ -217,7 +217,7 @@
                     </li>
                     <li class="flex items-start gap-3">
                         <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">4</span>
-                        <span>Back on <code class="rounded bg-gray-100 px-1 py-0.5 text-gray-700">/add-product</code>, enter your homepage URL and verify the badge.</span>
+                        <span>Back on <code class="rounded bg-gray-100 px-1 py-0.5 text-gray-700">/add-product</code>, enter the exact public page URL where you placed the badge and verify it.</span>
                     </li>
                 </ul>
             </section>
@@ -225,10 +225,10 @@
             <section class="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Important</p>
                 <ul class="mt-4 space-y-3 text-sm leading-6 text-amber-900">
-                    <li>The badge should be visible on your homepage.</li>
+                    <li>The badge must remain on the public page you verified. Homepage placement is encouraged.</li>
                     <li>Do not change the badge image URL to another image.</li>
                     <li>Do not add <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">nofollow</code> to the link.</li>
-                    <li>Keep the badge live after launch so future badge checks keep passing.</li>
+                    <li>Keep the badge live after launch. If you remove it, the system automatically removes your listing from public view.</li>
                 </ul>
             </section>
         </aside>

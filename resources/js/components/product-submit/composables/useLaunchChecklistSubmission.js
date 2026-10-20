@@ -89,9 +89,9 @@ export function useLaunchChecklistSubmission(props, emit) {
 
   const paidLaunchFeatures = [
     'Scheduled premium launch',
-    'Guaranteed permanent listing',
+    'Permanent listing, subject to suitability review',
     {
-      text: 'Guaranteed do-follow backlink',
+      text: 'Do-follow backlink while your listing remains public',
       underline: true,
     },
     'Up to 60 days scheduling',
