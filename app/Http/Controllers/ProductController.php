@@ -1816,7 +1816,7 @@ class ProductController extends Controller
         $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfWeek->toDateString();
-        $title = 'Top Products of the Week'; // For potential in-page display
+        $title = 'Top products of the week'; // For potential in-page display
         $pageTitle = 'Best of Week '.$week.' of '.$year.' | '.config('app.name', 'Software on the Web'); // For <title> tag
         $meta_title = $isHomepage
             ? 'Discover New SaaS Tools Every Week | '.config('app.name', 'Software on the Web')

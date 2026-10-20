@@ -22,12 +22,16 @@
 @section('meta_description', request()->routeIs('home') ? 'Find new SaaS tools every week. Browse curated picks across AI, productivity, developer tools, and design software on Software on the Web.' : ($metaDescription ?? $meta_description ?? ''))
 
 @section('header-title')
-    {{ $title ?? '' }}
+    {{ request()->routeIs('home') ? 'Software on the Web' : ($title ?? '') }}
 @endsection
+
+@if(request()->routeIs('home'))
+    @section('hide_desktop_page_header', '1')
+@endif
 
 @section('before_header_title')
     @guest
-        @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
+        @if(request()->routeIs('products.byWeek', 'products.byMonth', 'products.byYear'))
             <x-site-intro-card class="hidden md:block" />
         @endif
     @endguest
@@ -90,6 +94,10 @@
 @endif
 
 @section('content')
+    @if(request()->routeIs('home'))
+        <x-home-hero />
+    @endif
+
     @if(request()->routeIs('home', 'products.byWeek', ...$taxonomyRoutes))
     <div class="xl:hidden border-b border-gray-100 px-4 py-3" x-data="{ filtersOpen: false }">
         <button type="button" @click="filtersOpen = true"
@@ -114,10 +122,19 @@
 
     <div class="flex-shrink-0 z-10 relative" style="background-color: var(--color-body-bg, #ffffff);">
     @guest
-        @if(request()->routeIs('home', 'products.byWeek', 'products.byMonth', 'products.byYear'))
+        @if(request()->routeIs('products.byWeek', 'products.byMonth', 'products.byYear'))
             <x-site-intro-card class="md:hidden" />
         @endif
     @endguest
+
+    @if(request()->routeIs('home'))
+        <h1 class="flex items-center gap-2 px-4 pb-4 text-[24px] font-semibold text-gray-900">
+            <svg class="h-6 w-6 shrink-0" style="color: var(--color-primary-500);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M7 14h2m6 0h2M7 18h2m6 0h2" />
+            </svg>
+            {{ $title ?? 'Top products of the week' }}
+        </h1>
+    @endif
 
     @if(!isset($isCategoryPage) || !$isCategoryPage)
         <div class="px-4 py-2">

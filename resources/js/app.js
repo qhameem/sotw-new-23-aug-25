@@ -1,5 +1,6 @@
 // Components will be dynamically imported
 import axios from 'axios';
+import homeHeroRotation from './homeHeroRotation';
 
 function syncSiteHeaderOffset() {
     const header = document.querySelector('[data-site-top-bar]');
@@ -154,6 +155,7 @@ function normalizeCollectionOptions(collections) {
 }
 
 function registerAlpineComponents(Alpine) {
+    Alpine.data('homeHeroRotation', homeHeroRotation);
     Alpine.data('upvote', (
         isUpvoted,
         initialVotesCount,

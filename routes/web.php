@@ -223,6 +223,10 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     }); // End of articles prefix group
 
     // Admin Settings Routes (should be direct children of admin group)
+    Route::patch('settings/home-hero', [\App\Http\Controllers\Admin\HomeHeroController::class, 'update'])->name('home-hero.update');
+    Route::patch('settings/home-hero/description', [\App\Http\Controllers\Admin\HomeHeroController::class, 'updateDescription'])->name('home-hero.description.update');
+    Route::patch('settings/home-hero/features/{feature}', [\App\Http\Controllers\Admin\HomeHeroController::class, 'updateFeature'])->where('feature', '[0-2]')->name('home-hero.features.update');
+    Route::post('settings/home-hero/features/{feature}/icon', [\App\Http\Controllers\Admin\HomeHeroController::class, 'updateFeatureIcon'])->where('feature', '[0-2]')->name('home-hero.features.icon.update');
     Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'index'])->name('settings.product-description-templates.index');
     Route::post('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'store'])->name('settings.product-description-templates.store');
