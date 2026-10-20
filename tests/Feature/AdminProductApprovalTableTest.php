@@ -67,7 +67,7 @@ class AdminProductApprovalTableTest extends TestCase
             ->assertViewHas('scheduledProductsCount', 3)
             ->assertViewHas('shownProductsCount', 1)
             ->assertViewHas('failedBadgeProductsCount', 1)
-            ->assertSee('class="mb-6 grid grid-cols-4 gap-3"', false);
+            ->assertSee('class="approval-summary"', false);
 
         $this->assertSame(3, $scheduledCount);
 

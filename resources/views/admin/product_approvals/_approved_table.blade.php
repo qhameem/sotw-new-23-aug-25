@@ -18,10 +18,13 @@
             </select>
         </label>
     </div>
-    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto_auto_auto] lg:items-center">
+    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="approval-filters">
         <input type="hidden" name="status" value="{{ $status }}">
         <input type="hidden" name="sort_by" value="published_at">
-        <label class="min-w-48 flex-1"><span class="sr-only">Search products or submitters</span><input type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters…" class="w-full rounded-lg border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-500 dark:border-slate-600"></label>
+        <div class="approval-search">
+            <label class="min-w-0 flex-1"><span class="sr-only">Search products or submitters</span><input type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters…" class="w-full rounded-lg border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-500 dark:border-slate-600"></label>
+            <button type="submit" class="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white dark:bg-slate-100 dark:text-slate-900">Search</button>
+        </div>
         <label class="flex items-center gap-2 whitespace-nowrap">Submitted by
             <select name="submitter_type" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
                 <option value="" @selected($submitterType === '')>Everyone</option>
@@ -39,7 +42,6 @@
                 @foreach([20, 50, 100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach
             </select>
         </label>
-        <button class="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white dark:bg-slate-100 dark:text-slate-900">Search</button>
     </form>
     <div class="max-h-[70vh] overflow-auto">
         <table class="w-full min-w-[1280px] table-fixed text-left text-sm">

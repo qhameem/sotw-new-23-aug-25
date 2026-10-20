@@ -14,6 +14,35 @@
 
 @section('content')
 <style>
+    .approval-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    .approval-summary > a { min-width: 0; }
+    .approval-filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+    }
+    .approval-filters > label { min-width: 0; }
+    .approval-search {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+    .approval-search > label { flex: 1; min-width: 0; }
+    .approval-search > button { flex-shrink: 0; }
+    @media (min-width: 640px) {
+        .approval-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1024px) {
+        .approval-filters { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+    }
     .custom-category-modal {
         position: fixed !important;
         inset: 0 !important;
@@ -144,7 +173,7 @@
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review submissions, verify badge launches, and manage the publishing queue.</p>
     </div>
 
-    <nav aria-label="Approval summary" class="mb-6 grid grid-cols-4 gap-3">
+    <nav aria-label="Approval summary" class="approval-summary">
         @foreach([
             ['status' => 'pending', 'label' => 'Pending review', 'count' => $pendingProducts->count(), 'tone' => 'amber'],
             ['status' => 'scheduled', 'label' => 'Scheduled', 'count' => $scheduledProductsCount, 'tone' => 'sky'],
