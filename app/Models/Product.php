@@ -796,6 +796,17 @@ class Product extends Model implements Sitemapable
         ));
     }
 
+    public function scopeReadyForScheduledPublication(Builder $query): Builder
+    {
+        return $query->where('approved', true)
+            ->where('is_published', false)
+            ->whereNotNull('published_at')
+            ->where(function (Builder $query) {
+                $query->where('submission_type', '!=', 'badge')
+                    ->orWhere('badge_verified', true);
+            });
+    }
+
     /**
      * Scope to get only approved and published products
      */

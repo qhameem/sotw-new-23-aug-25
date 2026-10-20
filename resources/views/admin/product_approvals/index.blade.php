@@ -144,7 +144,7 @@
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review submissions, verify badge launches, and manage the publishing queue.</p>
     </div>
 
-    <nav aria-label="Approval summary" class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <nav aria-label="Approval summary" class="mb-6 grid grid-cols-4 gap-3">
         @foreach([
             ['status' => 'pending', 'label' => 'Pending review', 'count' => $pendingProducts->count(), 'tone' => 'amber'],
             ['status' => 'scheduled', 'label' => 'Scheduled', 'count' => $scheduledProductsCount, 'tone' => 'sky'],
@@ -163,7 +163,7 @@
                 <span class="mt-1 block text-2xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['count']) }}</span>
             </a>
         @endforeach
-    </div>
+    </nav>
 
     @if($status === null || $status === 'pending')
     <div id="pending-approval" class="mb-10 scroll-mt-6">

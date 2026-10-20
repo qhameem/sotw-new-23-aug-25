@@ -62,9 +62,18 @@ class AdminProductApprovalTableTest extends TestCase
             $scheduledCount = $view->getData()['scheduledApprovalCount'];
         });
 
-        $this->get(route('admin.product-approvals.index'))->assertOk();
+        $this->get(route('admin.product-approvals.index'))
+            ->assertOk()
+            ->assertViewHas('scheduledProductsCount', 3)
+            ->assertViewHas('shownProductsCount', 1)
+            ->assertViewHas('failedBadgeProductsCount', 1)
+            ->assertSee('class="mb-6 grid grid-cols-4 gap-3"', false);
 
         $this->assertSame(3, $scheduledCount);
+
+        $this->get(route('admin.product-approvals.index', ['status' => 'scheduled']))
+            ->assertOk()
+            ->assertViewHas('approvedProducts', fn ($products) => $products->total() === 3);
     }
 
     public function test_submitter_type_filter_separates_admin_and_non_admin_products(): void

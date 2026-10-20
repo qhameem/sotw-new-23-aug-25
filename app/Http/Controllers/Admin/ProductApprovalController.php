@@ -35,10 +35,7 @@ class ProductApprovalController extends Controller
             ->where('approved', false)
             ->orderByDesc('id')
             ->get();
-        $scheduledProductsCount = Product::where('approved', true)
-            ->where('is_published', false)
-            ->whereNotNull('published_at')
-            ->count();
+        $scheduledProductsCount = Product::readyForScheduledPublication()->count();
         $shownProductsCount = Product::where('approved', true)
             ->where('is_published', true)
             ->count();
@@ -81,9 +78,7 @@ class ProductApprovalController extends Controller
             });
 
         if ($status === 'scheduled') {
-            $approvedProductsQuery
-                ->where('is_published', false)
-                ->whereNotNull('published_at');
+            $approvedProductsQuery->readyForScheduledPublication();
         } elseif ($status === 'shown') {
             $approvedProductsQuery->where('is_published', true);
         }
