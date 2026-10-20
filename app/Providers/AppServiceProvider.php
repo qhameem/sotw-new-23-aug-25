@@ -84,6 +84,10 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('scheduledApprovalCount', Product::where('approved', true)
                     ->where('is_published', false)
                     ->whereNotNull('published_at')
+                    ->where(function ($query) {
+                        $query->where('submission_type', '!=', 'badge')
+                            ->orWhere('badge_verified', true);
+                    })
                     ->count());
             }
 

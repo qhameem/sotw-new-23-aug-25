@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -38,6 +39,32 @@ class AdminProductApprovalTableTest extends TestCase
         $this->get(route('admin.product-approvals.index', ['status' => 'failed_badge', 'search' => 'Target', 'per_page' => 999]))
             ->assertOk()->assertSee('Failed Target')->assertDontSee('Pending Badge')
             ->assertSee('Oct 5, 2026 (1 scheduled)')->assertViewHas('perPage', 20);
+    }
+
+    public function test_top_bar_scheduled_count_excludes_unverified_badge_submissions(): void
+    {
+        $scheduled = ['approved' => true, 'is_published' => false, 'published_at' => now()->addWeek()];
+        foreach ([
+            ['submission_type' => 'badge', 'badge_verified' => true],
+            ['submission_type' => 'paid', 'badge_verified' => false],
+            ['submission_type' => 'free', 'badge_verified' => false],
+            ['submission_type' => 'badge', 'badge_verified' => false, 'badge_consecutive_failures' => 1],
+            ['submission_type' => 'badge', 'badge_verified' => false, 'badge_consecutive_failures' => 0],
+            ['submission_type' => 'badge', 'badge_verified' => true, 'approved' => false],
+            ['submission_type' => 'badge', 'badge_verified' => true, 'is_published' => true],
+            ['submission_type' => 'badge', 'badge_verified' => true, 'published_at' => null],
+        ] as $attributes) {
+            Product::factory()->create(array_merge($scheduled, $attributes));
+        }
+
+        $scheduledCount = null;
+        View::composer('components.top-bar', function ($view) use (&$scheduledCount) {
+            $scheduledCount = $view->getData()['scheduledApprovalCount'];
+        });
+
+        $this->get(route('admin.product-approvals.index'))->assertOk();
+
+        $this->assertSame(3, $scheduledCount);
     }
 
     public function test_submitter_type_filter_separates_admin_and_non_admin_products(): void
