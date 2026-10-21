@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
-use Intervention\Image\Laravel\Facades\Image;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 use Illuminate\Support\Facades\Log;
 
 class ThemeController extends Controller
@@ -310,7 +311,7 @@ class ThemeController extends Controller
             // Generate different sizes if it's a PNG
             if (strtolower($uploadedFaviconFile->getClientOriginalExtension()) === 'png') {
                 try {
-                    $this->generateFaviconVersions($uploadedFaviconFile, $originalFaviconPath);
+                    $this->generateFaviconVersions($originalFaviconPath);
                 } catch (\Exception $e) {
                     Log::error('Failed to generate favicon versions: ' . $e->getMessage());
                 }
@@ -433,8 +434,9 @@ class ThemeController extends Controller
         return array_unique($fontFamilies); // Return unique font families
     }
 
-    private function generateFaviconVersions(UploadedFile $uploadedFile, string $originalStoredPath): void
+    private function generateFaviconVersions(string $originalStoredPath): void
     {
+        $manager = new ImageManager(new Driver());
         $sourcePath = Storage::disk('public')->path($originalStoredPath);
         $directory = dirname($originalStoredPath); // e.g., 'theme/branding'
 
@@ -448,8 +450,8 @@ class ThemeController extends Controller
 
         foreach ($sizes as $filename => $size) {
             try {
-                $image = Image::read($sourcePath);
-                $image->resize($size, $size); // Maintain aspect ratio, fit within dimensions
+                $image = $manager->read($sourcePath);
+                $image->resize($size, $size);
 
                 $destinationPath = Storage::disk('public')->path($directory . '/' . $filename);
                 $image->save($destinationPath);

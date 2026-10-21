@@ -56,6 +56,42 @@ class AdminThemeFaviconBundleTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_admin_can_upload_a_single_png_and_generate_favicon_sizes(): void
+    {
+        Storage::fake('public');
+
+        $adminRole = Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $response = $this->actingAs($admin)->put(route('admin.theme.update'), [
+            'font_family' => 'Inter',
+            'primary_color' => '#ee3923',
+            'site_favicon' => UploadedFile::fake()->image('favicon #ee3923.png', 256, 256),
+        ]);
+
+        $response->assertRedirect(route('admin.settings.index').'#settings-appearance');
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success');
+
+        $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
+        Storage::disk('public')->assertExists($settings['favicon_url']);
+
+        foreach ([16, 32, 180, 192, 512] as $size) {
+            $filename = match ($size) {
+                180 => 'apple-touch-icon.png',
+                192, 512 => "android-chrome-{$size}x{$size}.png",
+                default => "favicon-{$size}x{$size}.png",
+            };
+            $path = dirname($settings['favicon_url']).'/'.$filename;
+            Storage::disk('public')->assertExists($path);
+            $dimensions = getimagesize(Storage::disk('public')->path($path));
+            $this->assertSame($size, $dimensions[0]);
+            $this->assertSame($size, $dimensions[1]);
+            $this->assertSame('image/png', $dimensions['mime']);
+        }
+    }
+
     public function test_admin_can_upload_a_full_favicon_bundle(): void
     {
         Storage::fake('public');
