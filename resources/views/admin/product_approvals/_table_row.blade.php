@@ -8,7 +8,8 @@
     $failed = $badge && !$product->badge_verified && $product->badge_consecutive_failures > 0;
     $badgeStatus = $product->badge_verified ? 'Verified' : ($failed ? 'Failed' : 'Pending');
     $checkedAt = $product->badge_verification_attempts_max_checked_at;
-    $badgeTooltip = ($product->badge_placement_url ?: $product->link)."\nLast checked: ".($checkedAt ? \Carbon\Carbon::parse($checkedAt)->timezone('UTC')->format('M j, Y H:i').' UTC' : 'Never');
+    $badgePageUrl = $product->badge_placement_url ?: $product->link;
+    $badgeTooltip = $badgePageUrl."\nLast checked: ".($checkedAt ? \Carbon\Carbon::parse($checkedAt)->timezone('UTC')->format('M j, Y H:i').' UTC' : 'Never');
     $source = ['free' => 'Free/admin approval', 'badge' => 'Badge', 'paid' => 'Paid'][$product->submission_type] ?? ucfirst((string) $product->submission_type);
 @endphp
 <tr data-product-row data-scheduled="{{ $scheduled ? '1' : '0' }}" class="approval-row border-b border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
@@ -49,7 +50,11 @@
         </form>
     </td>
     <td class="px-2 py-3 align-top"><span @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200' => $scheduled, 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => !$scheduled])>{{ $scheduled ? 'Scheduled' : 'Published' }}</span></td>
-    <td class="px-2 py-3 align-top">@if($badge)<button type="button" data-tooltip="{{ $badgeTooltip }}" @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->badge_verified, 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200' => $failed, 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => !$failed && !$product->badge_verified])>{{ $badgeStatus }}</button>@else<span class="text-slate-500" aria-label="Badge not required">—</span>@endif</td>
+    <td class="px-2 py-3 align-top">@if($badge)<button type="button" data-tooltip="{{ $badgeTooltip }}" @class(['whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-medium', 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $product->badge_verified, 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200' => $failed, 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' => !$failed && !$product->badge_verified])>{{ $badgeStatus }}</button>
+        @if($badgePageUrl)
+            <a href="{{ $badgePageUrl }}" target="_blank" rel="noopener nofollow" class="mt-2 block text-xs font-medium text-sky-700 hover:underline dark:text-sky-300" aria-label="Badge page for {{ $product->name }}">Badge page ↗</a>
+        @endif
+    @else<span class="text-slate-500" aria-label="Badge not required">—</span>@endif</td>
     <td class="px-2 py-3 align-top">
         <div class="flex flex-wrap items-center justify-end gap-1">
             @if($scheduled)
