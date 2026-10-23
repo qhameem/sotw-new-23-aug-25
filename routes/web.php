@@ -63,6 +63,9 @@ Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'
 Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
 Route::get('/product/{product:slug}/og-image.jpg', ProductOgImageController::class)->name('products.og-image');
 Route::get('/site.webmanifest', SiteManifestController::class)->name('site.manifest');
+Route::get('/llms.txt', [\App\Http\Controllers\AgentAccessController::class, 'index'])->name('agent.index');
+Route::get('/product/{slug}/document.{format}', [\App\Http\Controllers\AgentAccessController::class, 'product'])
+    ->where('format', 'md|json')->name('products.document');
 Route::get('/{key}.txt', IndexNowKeyController::class)
     ->where('key', '[A-Za-z0-9\-]{8,128}')
     ->name('indexnow.key');

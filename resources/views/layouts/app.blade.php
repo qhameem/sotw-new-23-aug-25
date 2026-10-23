@@ -367,6 +367,7 @@
     <meta name="twitter:title" content="@yield('title', $meta_title ?? 'Software on the Web')">
     <meta name="twitter:description" content="@yield('meta_description', $meta_description ?? '')">
     @stack('structured-data')
+    @stack('alternate-formats')
     @include('partials.social-image-meta')
     @php
         $customLogoUrl = config('theme.logo_url');
