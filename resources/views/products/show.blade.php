@@ -527,6 +527,8 @@
                     </section>
                 @endif
 
+                <x-research-links :products="[$product]" :include-alternatives="false" :heading="'Compare '.$product->name" />
+
                 @if($hasResourcesSection)
                     <section id="resources" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
                         <div>

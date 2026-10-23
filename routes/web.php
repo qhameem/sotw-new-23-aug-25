@@ -371,6 +371,8 @@ Route::get('/faq', function () {
 use App\Http\Controllers\PseoController;
 
 // pSEO pages
+Route::get('/alternatives', \App\Http\Controllers\AlternativesDirectoryController::class)->name('alternatives.index');
+
 foreach (config('legacy_redirects', []) as $source => $destination) {
     Route::redirect($source, $destination, 301);
 }

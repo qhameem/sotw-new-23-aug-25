@@ -70,6 +70,8 @@
         ])
     </section>
 
+    <x-research-links :products="$regularProducts->items()" :heading="$broadCategory['label'].' alternatives and comparisons'" />
+
     @if($lastPage > 1)
         <nav class="flex items-center justify-between border-t border-gray-100 px-4 py-6 text-sm" aria-label="Product pages">
             @if($currentPage > 1)

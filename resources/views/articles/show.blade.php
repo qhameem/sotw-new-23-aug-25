@@ -129,6 +129,8 @@
                         {!! \App\Support\OutboundLink::sanitizeHtml($post->content, 'article') !!}
                     </div>
 
+                    <x-research-links :article="$post" heading="Research software in this article" />
+
                     @if($post->categories->isNotEmpty() || $post->tags->isNotEmpty())
                         <footer class="mt-14 border-t border-stone-200 pt-8">
                             <div class="flex flex-wrap gap-2">

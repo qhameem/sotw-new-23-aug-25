@@ -82,6 +82,7 @@ it('generates a recent launches sitemap and excludes unpublished products from p
     expect(File::exists($recentLaunchesSitemapPath))->toBeTrue();
 
     expect($sitemapIndex)->toContain(url('sitemaps/recent-launches.xml'));
+    expect(File::get(public_path('sitemaps/static.xml')))->toContain(route('alternatives.index'));
 
     expect($productsSitemap)
         ->toContain(route('products.show', $recentProduct->slug))

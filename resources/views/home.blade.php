@@ -213,6 +213,10 @@
                 ])
             </div>
 
+            @if(!empty($isCategoryPage))
+                <x-research-links :products="$regularProducts->items()" :heading="$category->name.' alternatives and comparisons'" />
+            @endif
+
             @if(!empty($isCategoryPage) && ($lastPage ?? 1) > 1)
                 <nav class="flex items-center justify-between border-t border-gray-100 px-4 py-6 text-sm" aria-label="Product pages">
                     @if(!empty($categoryPagination['previous_url']))

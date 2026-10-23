@@ -26,6 +26,7 @@
                 @include('partials._newsletter-signup-form', ['placement' => 'mobile_footer'])
             </div>
         @endunless
+        <a href="{{ route('alternatives.index') }}" class="hover:underline">Software alternatives</a> •
         <a href="{{ route('about') }}" class="hover:underline">About</a> •
         <a href="{{ route('faq') }}" class="hover:underline">FAQ</a> •
         <a href="{{ route('newsletter.index') }}" class="hover:underline">Newsletter</a> •

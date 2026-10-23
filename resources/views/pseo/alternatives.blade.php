@@ -112,6 +112,7 @@
     <div class="py-4">
         @php
             $breadcrumbs = [
+                ['label' => 'All alternatives', 'link' => route('alternatives.index')],
                 ['label' => $product->name, 'link' => route('products.show', $product->slug)],
                 ['label' => 'Alternatives'],
             ];

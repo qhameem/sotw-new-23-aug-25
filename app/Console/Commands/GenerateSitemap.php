@@ -52,6 +52,7 @@ class GenerateSitemap extends Command
         }
 
         $staticPagesSitemap = Sitemap::create();
+        $staticPagesSitemap->add(Url::create(route('alternatives.index'))->setPriority(0.8)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
         $staticPagesSitemap->add(Url::create(route('home'))->setPriority(1.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
         $staticPagesSitemap->add(Url::create(route('articles.index'))->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
         $staticPagesSitemap->add(Url::create(route('about'))->setPriority(0.5)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY));
