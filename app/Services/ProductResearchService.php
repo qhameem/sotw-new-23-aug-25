@@ -3,24 +3,42 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\Product;
 use DOMDocument;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ProductResearchService
 {
     public function __construct(private readonly RelatedProductService $relatedProducts) {}
 
+    public function preloadResearchMatches(iterable $products): void
+    {
+        $this->relatedProducts->preloadResearchMatches($products);
+    }
+
     public function directoryQuery(): Builder
     {
+        $populatedCategoryIds = DB::table('category_product')
+            ->select('category_product.category_id')
+            ->join('products as peers', 'peers.id', '=', 'category_product.product_id')
+            ->where('peers.approved', true)
+            ->where('peers.is_published', true)
+            ->groupBy('category_product.category_id')
+            ->havingRaw('COUNT(*) >= 3');
+        $softwareCategoryIds = Category::query()->select('categories.id')
+            ->whereHas('types', fn (Builder $types) => $types->whereIn('name', ['Software Categories', 'Software', 'Category']))
+            ->whereIn('categories.id', $populatedCategoryIds);
+        $candidateProductIds = DB::table('category_product')->select('product_id')
+            ->whereIn('category_id', $softwareCategoryIds);
+
         return $this->publicProducts()
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query) use ($candidateProductIds) {
                 $query->whereJsonLength('alternative_product_ids', '>=', 2)
                     ->orWhereJsonLength('comparison_product_ids', '>=', 1)
-                    ->orWhereHas('categories', fn (Builder $categories) => $categories
-                        ->whereHas('types', fn (Builder $types) => $types->whereIn('name', ['Software Categories', 'Software', 'Category']))
-                        ->whereHas('products', fn (Builder $products) => $products->approvedAndPublished(), '>=', 3));
+                    ->orWhereIn('products.id', $candidateProductIds);
             })
             ->with(['categories.types', 'techStacks'])
             ->orderBy('name')

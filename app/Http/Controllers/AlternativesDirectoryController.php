@@ -19,6 +19,7 @@ class AlternativesDirectoryController extends Controller
             ->paginate(18)->withQueryString();
 
         abort_if($products->currentPage() > $products->lastPage(), 404);
+        $research->preloadResearchMatches($products->getCollection());
 
         $entries = $products->getCollection()->map(function ($product) use ($research) {
             $links = $research->forProducts([$product], 3);

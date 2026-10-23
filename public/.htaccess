@@ -48,6 +48,11 @@
 
     RewriteEngine On
 
+    # Session-bearing Laravel responses must bypass shared full-page caching.
+    RewriteCond %{REQUEST_FILENAME} !-f [OR]
+    RewriteCond %{REQUEST_URI} \.php(?:/|$) [NC]
+    RewriteRule .* - [E=Cache-Control:no-cache]
+
     # Block selected crawlers that add little value and create analytics noise.
     RewriteCond %{HTTP_USER_AGENT} (AhrefsBot|SemrushBot|SERankingBacklinksBot|Bytespider|TikTokSpider) [NC]
     RewriteRule .* - [F,L]

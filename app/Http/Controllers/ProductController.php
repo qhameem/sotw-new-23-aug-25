@@ -3115,20 +3115,9 @@ class ProductController extends Controller
 
     private function publishedWeekArchiveBounds(): ?array
     {
-        $dateExpressions = $this->productDateExpressions();
-
-        $baseQuery = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week');
-
-        $earliestWeek = (clone $baseQuery)
-            ->orderBy('year')
-            ->orderBy('week')
-            ->first();
-
-        $latestWeek = (clone $baseQuery)
-            ->orderByDesc('year')
-            ->orderByDesc('week')
-            ->first();
+        $weeks = $this->publishedWeekRecords();
+        $earliestWeek = $weeks->first();
+        $latestWeek = $weeks->last();
 
         if (! $earliestWeek || ! $latestWeek) {
             return null;
@@ -3169,14 +3158,8 @@ class ProductController extends Controller
     private function buildWeekNavigationItems(int $selectedYear, int $selectedWeek): array
     {
         $now = Carbon::now();
-        $dateExpressions = $this->productDateExpressions();
 
-        return Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week')
-            ->groupBy('year', 'week')
-            ->orderBy('year')
-            ->orderBy('week')
-            ->get()
+        return $this->publishedWeekRecords()
             ->map(function ($activeWeek) use ($selectedYear, $selectedWeek, $now) {
                 $year = (int) $activeWeek->year;
                 $week = (int) $activeWeek->week;
@@ -3192,6 +3175,20 @@ class ProductController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    private function publishedWeekRecords(): \Illuminate\Support\Collection
+    {
+        $version = Cache::get('homepage.latest_week_version', '1');
+        $key = 'homepage.published_weeks:v1:'.$version;
+        $dateExpressions = $this->productDateExpressions();
+
+        return Cache::remember($key, now()->addMinutes(10), fn () => Product::approvedAndPublished()
+            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week')
+            ->groupBy('year', 'week')
+            ->orderBy('year')
+            ->orderBy('week')
+            ->get());
     }
 
     private function buildWeekPagination(array $weekNavigationItems, int $windowSize = 7): array

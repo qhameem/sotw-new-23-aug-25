@@ -9,6 +9,20 @@ use Illuminate\Support\Str;
 
 class RelatedProductService
 {
+    private array $preloadedMatches = [];
+
+    public function preloadResearchMatches(iterable $products): void
+    {
+        $keys = collect($products)->flatMap(fn (Product $product) => [
+            "products.related.v2.alternative.{$product->id}.15",
+            "products.related.v2.comparison.{$product->id}.2",
+        ])->unique()->values()->all();
+
+        if ($keys !== []) {
+            $this->preloadedMatches = Cache::many($keys);
+        }
+    }
+
     /**
      * Broad categories are useful for discovery but weak for direct comparisons.
      */
@@ -76,9 +90,14 @@ class RelatedProductService
     private function getRelatedProducts(Product $product, int $limit, string $mode): Collection
     {
         $product->loadMissing('categories.types', 'techStacks');
+        $cacheKey = "products.related.v2.{$mode}.{$product->id}.{$limit}";
+
+        if (($this->preloadedMatches[$cacheKey] ?? null) instanceof Collection) {
+            return $this->preloadedMatches[$cacheKey];
+        }
 
         return Cache::remember(
-            "products.related.v2.{$mode}.{$product->id}.{$limit}",
+            $cacheKey,
             now()->addMinutes(15),
             function () use ($product, $limit, $mode) {
                 $manualProducts = $this->getManualMatches($product, $mode);
@@ -123,8 +142,8 @@ class RelatedProductService
                     ->orderByDesc('created_at')
                     ->take(250)
                     ->get()
-                    ->map(function (Product $candidate) use ($product) {
-                        $match = $this->calculateMatch($product, $candidate);
+                    ->map(function (Product $candidate) use ($product, $profile) {
+                        $match = $this->calculateMatch($product, $candidate, $profile);
                         $candidate->setAttribute('match_score', $match['score']);
                         $candidate->setAttribute('match_summary', $match['summary']);
                         $candidate->setAttribute('match_reason_labels', $match['reasonLabels']);
@@ -201,9 +220,9 @@ class RelatedProductService
             ->values();
     }
 
-    private function calculateMatch(Product $source, Product $candidate): array
+    private function calculateMatch(Product $source, Product $candidate, ?array $sourceProfile = null): array
     {
-        $sourceProfile = $this->buildProfile($source);
+        $sourceProfile ??= $this->buildProfile($source);
         $candidateProfile = $this->buildProfile($candidate);
 
         $sharedSoftwareIds = array_values(array_intersect($sourceProfile['softwareIds'], $candidateProfile['softwareIds']));

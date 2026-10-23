@@ -10,7 +10,7 @@ class TodoListComposer
 {
     public function compose(View $view)
     {
-        $user = Auth::user();
+        $user = request()->routeIs('todolists.*') ? Auth::user() : null;
         $lists = $user ? TodoList::where('user_id', $user->id)->with('items')->get() : collect();
         $view->with('lists', $lists);
     }

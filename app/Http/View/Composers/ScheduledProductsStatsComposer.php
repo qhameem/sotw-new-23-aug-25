@@ -9,6 +9,12 @@ class ScheduledProductsStatsComposer
 {
     public function compose(View $view)
     {
+        if (! request()->routeIs('admin.product-approvals.index') || ! request()->user()?->hasRole('admin')) {
+            $view->with('scheduledProductsStats', collect());
+
+            return;
+        }
+
         $scheduledProductsStats = Product::where('approved', true)
             ->where('is_published', false)
             ->where('published_at', '>', now())

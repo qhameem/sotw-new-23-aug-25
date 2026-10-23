@@ -1,6 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Session-bearing Laravel responses must bypass shared full-page caching.
+    RewriteCond %{REQUEST_FILENAME} !-f [OR]
+    RewriteCond %{REQUEST_URI} \.php(?:/|$) [NC]
+    RewriteRule .* - [E=Cache-Control:no-cache]
+
     # Current production OpenLiteSpeed docRoot is the project root, so bot
     # blocking needs to exist here to affect site URLs like /alternatives/*.
     RewriteCond %{HTTP_USER_AGENT} (AhrefsBot|SemrushBot|SERankingBacklinksBot|Bytespider|TikTokSpider) [NC]

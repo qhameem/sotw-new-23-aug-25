@@ -290,11 +290,11 @@ class OutboundLinkPolicyService
             return $this->activeRules;
         }
 
-        if (! Schema::hasTable('outbound_link_rules')) {
-            return $this->activeRules = collect();
-        }
-
         return $this->activeRules = cache()->remember(self::RULE_CACHE_KEY, now()->addMinutes(5), function () {
+            if (! Schema::hasTable('outbound_link_rules')) {
+                return collect();
+            }
+
             return OutboundLinkRule::query()
                 ->where('is_active', true)
                 ->orderByDesc('priority')
