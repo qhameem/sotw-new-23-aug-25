@@ -250,10 +250,15 @@ class CategoryNavigationService
         return 'ai-automation';
     }
 
+    public static function broadGroupKeys(): array
+    {
+        return array_values(array_diff(array_keys(self::GROUPS), ['view-all']));
+    }
+
     public function getBroadGroups(): array
     {
         return collect(self::GROUPS)
-            ->reject(fn (array $group, string $key) => $key === 'view-all')
+            ->only(self::broadGroupKeys())
             ->map(fn (array $group, string $key) => [
                 'key' => $key,
                 ...$group,

@@ -75,6 +75,18 @@ class BroadCategoryPageTest extends TestCase
         $this->get('/software/not-a-real-group')->assertNotFound();
     }
 
+    public function test_pricing_pages_are_not_shadowed_by_broad_category_routes(): void
+    {
+        $type = Type::create(['name' => 'Pricing']);
+
+        foreach (['freemium', 'pay-as-you-go'] as $slug) {
+            $category = Category::create(['name' => ucfirst($slug), 'slug' => $slug]);
+            $category->types()->attach($type);
+
+            $this->get('/software/'.$slug)->assertOk();
+        }
+    }
+
     public function test_other_group_has_a_stable_landing_page(): void
     {
         $this->get(route('software-groups.show', ['group' => 'other']))

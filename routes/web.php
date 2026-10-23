@@ -287,9 +287,11 @@ Route::get('/topics/{category:slug}', [TopicController::class, 'show'])->name('t
 // Categories page (alias for topics)
 Route::get('/categories', [TopicController::class, 'index'])->name('categories.index');
 Route::get('/software/{group}/page/{page}', [\App\Http\Controllers\BroadCategoryController::class, 'show'])
+    ->whereIn('group', \App\Services\CategoryNavigationService::broadGroupKeys())
     ->whereNumber('page')
     ->name('software-groups.page');
 Route::get('/software/{group}', [\App\Http\Controllers\BroadCategoryController::class, 'show'])
+    ->whereIn('group', \App\Services\CategoryNavigationService::broadGroupKeys())
     ->name('software-groups.show');
 Route::get('/use-case/{category:slug}/page/{page}', [ProductController::class, 'categoryProducts'])
     ->whereNumber('page')
@@ -369,6 +371,10 @@ Route::get('/faq', function () {
 use App\Http\Controllers\PseoController;
 
 // pSEO pages
+foreach (config('legacy_redirects', []) as $source => $destination) {
+    Route::redirect($source, $destination, 301);
+}
+
 Route::get('/best/{category:slug}/for/{bestfor:slug}', [PseoController::class, 'bestFor'])->name('pseo.bestFor');
 Route::get('/best/{category:slug}', [PseoController::class, 'bestOf'])->name('pseo.best');
 Route::get('/alternatives/{product:slug}', [PseoController::class, 'alternatives'])->name('pseo.alternatives');
@@ -425,7 +431,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('email-logs', [\App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
 });
 
-Route::get('/free-todo-list-tool/{path?}', function (?string $path, ToolSettings $toolSettings) {
+Route::get('/free-todo-list-tool/{path?}', function (ToolSettings $toolSettings, ?string $path = null) {
     $target = $toolSettings->path(ToolSettings::TODO_LIST_KEY);
 
     if ($path) {
