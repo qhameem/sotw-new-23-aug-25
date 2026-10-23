@@ -1,4 +1,13 @@
-<x-guest-layout>
+@extends('layouts.app', ['hideSidebar' => true])
+
+@section('hide_desktop_page_header', '1')
+
+@section('content')
+    <div class="mx-auto my-8 w-full max-w-md rounded-xl border border-gray-300 bg-transparent px-6 py-6 sm:my-12">
+    @php
+        $lastMethod = request()->cookie(\App\Support\LastSignInMethod::COOKIE);
+        $methods = ['google', 'email'];
+    @endphp
     <div
         x-data="{
             intendedUrl: @js(session('url.intended', url()->previous())),
@@ -9,18 +18,27 @@
             otpSent: {{ session('status') === 'otp-sent' || $errors->has('otp') ? 'true' : 'false' }},
             otpEmail: @js(old('email', session('auth_email')))
         }"
-        class="space-y-6"
+        class="login-page space-y-6"
     >
         <x-auth-session-status class="mb-4" :status="session('status') === 'otp-sent' ? null : session('status')" />
 
         <div class="text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">Continue to your account</h1>
-            <p class="mt-2 text-sm text-gray-600">Use Google or continue with email. New users are created automatically the first time they sign in.</p>
+            <h1 class="text-3xl font-bold text-gray-900">Sign in or create an account</h1>
+            <p class="mt-2 text-sm text-gray-600">Submit products, track your launches and create collections.</p>
         </div>
 
-        <div x-show="!otpSent" class="space-y-4">
-            @include('auth.partials.google-login-button')
-            @include('auth.partials.email-login-button')
+        <div x-show="!otpSent" class="space-y-4 pt-2">
+            @foreach ($methods as $method)
+                @if (! $loop->first)
+                    <div class="login-divider flex items-center gap-3 text-xs text-gray-700"><span class="h-px flex-1 bg-gray-300"></span><span>or</span><span class="h-px flex-1 bg-gray-300"></span></div>
+                @endif
+                <div class="relative">
+                    @if ($lastMethod === $method)
+                        <span class="login-last-used absolute right-3 z-10 rounded-md px-2 py-0.5 text-[10px] font-semibold">Last used</span>
+                    @endif
+                    @include('auth.partials.'.$method.'-login-button', ['loginPage' => true, 'primary' => $loop->first])
+                </div>
+            @endforeach
         </div>
 
         <div x-show="showEmail && !otpSent" x-transition.opacity.duration.200ms style="display: none;">
@@ -51,7 +69,8 @@
         </div>
 
         <div class="text-center text-sm text-gray-600" x-show="!otpSent">
-            No separate sign-up form is needed. Continuing with Google or email will create your account automatically if it doesn&apos;t exist yet.
+            <p class="text-xs leading-relaxed">By continuing, you agree to the <a href="{{ route('legal') }}#terms-of-use" class="underline underline-offset-2">Terms</a> and <a href="{{ route('legal') }}#privacy-policy" class="underline underline-offset-2">Privacy Policy</a>.</p>
         </div>
     </div>
-</x-guest-layout>
+    </div>
+@endsection

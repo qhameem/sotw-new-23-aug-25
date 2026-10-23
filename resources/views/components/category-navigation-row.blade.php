@@ -4,7 +4,7 @@
     $isHomeRoute = request()->routeIs('home', 'products.byWeek', 'products.byDate');
 @endphp
 
-<div class="h-14 w-full">
+<div data-category-navigation-row class="h-14 w-full">
     <nav
         class="flex h-full w-full items-center justify-between gap-1 overflow-x-auto bg-stone-100 px-5 scrollbar-hide"
         aria-label="Software categories"

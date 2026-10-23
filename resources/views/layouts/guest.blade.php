@@ -151,7 +151,7 @@
 <body class="font-sans text-gray-900 antialiased " data-auth-sync-event="{{ session('auth_sync_event', '') }}"
     data-auth-session-state="{{ Auth::check() ? 'authenticated' : 'guest' }}"> {{-- Added for consistency if dark mode is ever enabled globally
     --}}
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 "> {{-- Added --}}
+    <div class="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-gray-100 "> {{-- Added --}}
         <div>
             <a href="/" class="theme-logo-contrast inline-block" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                 <x-application-logo class="w-40 h-auto max-h-24 object-contain fill-current text-gray-500" />
@@ -159,12 +159,16 @@
             </a>
         </div>
 
-        <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white  shadow-md overflow-hidden sm:rounded-lg">
+        <div class="w-full sm:max-w-md mt-4 px-6 py-6 bg-white  shadow-md overflow-hidden rounded-xl">
             {{ $slot }}
         </div>
+        <footer class="auth-footer mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs text-gray-700">
+            <a href="{{ url('/') }}" class="underline underline-offset-4">Back to site</a>
+            <a href="mailto:hello@softwareontheweb.com" class="underline underline-offset-4">Need help?</a>
+            @include('partials.theme.switcher', ['floating' => false])
+        </footer>
     </div>
     <template id="delayed-livewire-scripts">@livewireScripts</template>
-    @include('partials.theme.switcher')
 </body>
 
 </html>

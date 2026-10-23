@@ -12,7 +12,12 @@ use Symfony\Component\Mailer\Exception\TransportException;
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
 
-    $response->assertStatus(200);
+    $response->assertStatus(200)
+        ->assertSee('data-site-top-bar', false)
+        ->assertSee(config('app.name', 'Software on the Web').' home')
+        ->assertSee('<footer', false)
+        ->assertSee(route('about'))
+        ->assertSee(route('refund-policy'));
 });
 
 test('existing users can request an email otp and sign in', function () {

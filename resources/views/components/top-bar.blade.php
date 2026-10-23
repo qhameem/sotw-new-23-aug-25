@@ -11,7 +11,7 @@
                     <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
                 @if(!request()->routeIs('todolists.*'))
-                    <div class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
+                    <div data-site-top-bar-controls class="w-[120px] lg:w-[160px] xl:w-[200px] shrink-0">
                         <button type="button" @click="$dispatch('open-search-modal')"
                             x-data="{ isMac: /Mac|iPhone|iPad|iPod/.test(navigator.platform) || /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) }"
                             aria-keyshortcuts="Meta+K Control+K"
@@ -25,7 +25,7 @@
                     </div>
                 @endif
             </div>
-            <div class="flex min-w-0 flex-1 justify-center px-2 lg:px-6">
+            <div data-site-top-bar-controls class="flex min-w-0 flex-1 justify-center px-2 lg:px-6">
                 <div class="flex items-center gap-6 lg:gap-9">
                     <div
                         x-data="{
@@ -372,7 +372,7 @@
                     <a href="{{ route('articles.index') }}" wire:navigate.hover class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Read</a>
                 </div>
             </div>
-            <div class="flex shrink-0 items-center gap-4">
+            <div data-site-top-bar-controls class="flex shrink-0 items-center gap-4">
                 @guest
                     <div class="flex items-center gap-2">
                         <x-add-product-button />

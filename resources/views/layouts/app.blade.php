@@ -461,6 +461,19 @@
             --site-header-offset: 7rem;
         }
 
+        body[data-route-name="login"] [data-site-top-bar-controls],
+        body[data-route-name="login"] [data-category-navigation-row] {
+            display: none;
+        }
+
+        body[data-route-name="login"] [data-site-top-bar] {
+            height: 3.5rem;
+        }
+
+        body[data-route-name="login"] {
+            --site-header-offset: 3.5rem;
+        }
+
         @media (min-width: 768px) {
             .site-header-padding {
                 padding-top: var(--site-content-offset, var(--site-header-offset));

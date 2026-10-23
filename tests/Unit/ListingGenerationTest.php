@@ -12,6 +12,19 @@ use App\Services\SeoTitleBuilder;
 use App\Support\ProductDescriptionTemplates;
 use Illuminate\Support\Facades\Http;
 
+it('validates generated taglines against the 140 character limit', function () {
+    $validator = new OutputValidator;
+
+    foreach ([40, 70, 72, 75, 140] as $length) {
+        expect($validator->text('tagline', str_repeat('a', $length)))->toBe([]);
+    }
+
+    foreach ([39, 141] as $length) {
+        expect($validator->text('tagline', str_repeat('a', $length)))
+            ->toContain("tagline must be 40 to 140 characters; got $length.");
+    }
+});
+
 it('accepts ending words while still rejecting banned copy', function () {
     $validator = new OutputValidator;
     expect($validator->text('tagline', 'Weave task manager for creative teams and'))->toBe([]);

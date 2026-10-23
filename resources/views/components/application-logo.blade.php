@@ -10,7 +10,7 @@
 @endphp
 
 @if ($customLogoUrl)
-    <img src="{{ Storage::url($customLogoUrl) }}" alt="{{ $customLogoAltText }}" {{ $attributes }}>
+    <img src="{{ Storage::url($customLogoUrl) }}" alt="{{ $customLogoAltText }}" onerror="this.onerror = null; this.src = @js(asset('images/branding/site-logo.png'))" {{ $attributes }}>
 @else
     <svg viewBox="0 0 316 316" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $customLogoAltText }}" {{ $attributes }}>
         <title>{{ $customLogoAltText }}</title>

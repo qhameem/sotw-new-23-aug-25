@@ -1,4 +1,11 @@
 @import "dark-mode.css";
+@font-face {
+  font-family: 'Google Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/google-sans/google-sans-button.ttf') format('truetype');
+}
 @config "../../tailwind.public.config.js";
 
 @tailwind base;
@@ -72,3 +79,90 @@
     color: var(--color-site-body-text) !important;
   }
 }
+
+/* Keep authentication contrast independent of configurable site text colors. */
+.login-page {
+  --color-site-text: #111827;
+  --color-site-body-text: #1f2937;
+  color: #1f2937;
+}
+.login-page .login-method {
+  min-height: 3.25rem;
+  background: #ffffff;
+  color: #111827;
+}
+.login-page .login-method:hover { background: #f3f4f6; }
+.login-page .login-method--primary {
+  background: #1e40af;
+  border-color: #1e40af;
+  color: #ffffff;
+}
+.login-page .login-method--primary:hover { background: #1e3a8a; }
+.login-page .login-method--primary svg { color: #ffffff; }
+.login-page .login-method:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+html.dark .login-page {
+  --color-site-text: #f9fafb;
+  --color-site-body-text: #d1d5db;
+  color: #d1d5db;
+}
+html.dark .login-page .login-method { background: #1f2937; color: #f9fafb; }
+html.dark .login-page .login-method:hover { background: #374151; }
+html.dark .login-page .login-method--primary { background: #1e40af !important; color: #ffffff !important; }
+html.dark .login-page .login-method--primary:hover { background: #1e3a8a; }
+
+.login-page .login-divider { color: #1f2937 !important; }
+.login-page .login-last-used {
+  top: 50%;
+  transform: translateY(-50%);
+  @apply bg-gray-100;
+  color: #111827;
+  line-height: 1rem;
+  pointer-events: none;
+}
+.login-page .login-google-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  background: transparent !important;
+}
+.login-page .login-google-icon img { width: 20px; height: 20px; }
+.auth-footer .theme-switcher { display: flex; align-items: center; }
+.auth-footer .theme-switcher__button {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.auth-footer .theme-switcher__icon { width: 1rem; height: 1rem; stroke-width: 2; }
+html.dark .login-page .login-divider { color: #e5e7eb !important; }
+
+.login-page .login-method.login-method--google,
+html.dark .login-page .login-method.login-method--google {
+  background: #ffffff !important;
+  border: 1px solid #747775 !important;
+  border-radius: 9999px;
+  color: #1f1f1f !important;
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: normal;
+  padding: 12px;
+  box-sizing: border-box;
+  box-shadow: none;
+}
+.login-page .login-method.login-method--google:hover,
+html.dark .login-page .login-method.login-method--google:hover {
+  @apply bg-gray-50 !important;
+}
+
+.login-page .login-email-link { color: #4b5563; }
+html.dark .login-page .login-email-link { color: #d1d5db !important; }
+
+html.dark .login-page .login-method.login-method--google span { color: #1f1f1f !important; }
