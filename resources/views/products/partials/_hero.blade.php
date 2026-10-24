@@ -4,7 +4,7 @@
     $productLogo = ProductLogo::storedUrl($product);
 @endphp
 
-<div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:gap-5">
+<div class="flex flex-col gap-4 md:flex-row md:items-start md:gap-5">
     <div class="flex-shrink-0">
         @if(isset($isAdminView) && $isAdminView)
             <div @click="editingLogo = true" class="cursor-pointer">

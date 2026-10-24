@@ -1,5 +1,5 @@
-@php 
-                                    $mainContentMaxWidth = 'max-w-7xl';
+@php
+    $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
     $mainPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
     $headerPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
@@ -19,13 +19,11 @@
 @endif
 
 @push('styles')
-    @vite('resources/css/rich-content.css')
+    @vite(['resources/css/rich-content.css', 'resources/css/product-page.css'])
 @endpush
 
 @section('content')
     @php
-        $mediaAssetCount = $product->media->count() + ($product->video_url ? 1 : 0);
-        $hasMediaSection = $mediaAssetCount > 0;
         $appendQueryParam = function (?string $url, string $key, string $value): ?string {
             if (!filled($url)) {
                 return $url;
@@ -49,73 +47,7 @@
         $hasResourcesSection = $xProfileUrl || $makerLinks->contains(function ($link) use ($normalizedXProfileUrl) {
             return !$normalizedXProfileUrl || \App\Models\Product::normalizeLink($link) !== $normalizedXProfileUrl;
         });
-        $overviewBlocks = $descriptionContent['overview_blocks'] ?? [];
-        $detailDescriptionHtml = $descriptionContent['details_html'] ?? null;
-        $idealForItems = $bestForCategories->take(2)->values();
-        $quickFactUseCases = $useCaseCategories
-            ->take(2)
-            ->map(fn ($category) => [
-                'label' => $category->name,
-                'link' => $category->publicUrl(),
-            ])
-            ->values();
-        $quickFactPlatforms = $platformCategories
-            ->take(2)
-            ->map(fn ($category) => [
-                'label' => $category->name,
-                'link' => $category->publicUrl(),
-            ])
-            ->values();
-        $quickFactIdealFor = $idealForItems
-            ->map(fn ($category) => [
-                'label' => $category->name,
-                'link' => $category->publicUrl(),
-            ])
-            ->values();
-        $pricingValue = $pricingCategory?->name ?: ((float) ($product->price ?? 0) > 0 ? trim(($product->currency ?: 'USD') . ' ' . number_format((float) $product->price, 2)) : null);
-        $quickFacts = collect([
-            [
-                'label' => 'Use Cases',
-                'items' => $quickFactUseCases->isNotEmpty() ? $quickFactUseCases->all() : [[
-                    'label' => 'Not listed yet',
-                    'link' => null,
-                ]],
-                'icon' => 'spark',
-                'link' => null,
-            ],
-            [
-                'label' => 'Pricing',
-                'items' => [[
-                    'label' => $pricingValue ?: 'Not listed yet',
-                    'link' => $pricingCategory?->publicUrl(),
-                ]],
-                'icon' => 'pricing',
-                'link' => $product->pricing_page_url ?: null,
-            ],
-            [
-                'label' => 'Platforms',
-                'items' => $quickFactPlatforms->isNotEmpty() ? $quickFactPlatforms->all() : [[
-                    'label' => 'Not listed yet',
-                    'link' => null,
-                ]],
-                'icon' => 'platform',
-                'link' => null,
-            ],
-            [
-                'label' => 'Ideal For',
-                'items' => $quickFactIdealFor->isNotEmpty() ? $quickFactIdealFor->all() : [[
-                    'label' => 'Not listed yet',
-                    'link' => null,
-                ]],
-                'icon' => 'ideal-for',
-                'link' => null,
-            ],
-        ]);
-        $quickFacts = $quickFacts->contains(function ($item) {
-            return !empty($item['items'] ?? []);
-        })
-            ? $quickFacts->values()
-            : collect();
+        $pageSections = app(\App\Services\ProductPageSections::class)->build($product, $productEditorial, $descriptionContent);
         $productFaqItems = collect($product->faq ?: ($productEditorial['faq'] ?? []))
             ->map(function ($item) {
                 $question = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($item['question'] ?? ''))));
@@ -134,16 +66,6 @@
             ->unique('question')
             ->take(6)
             ->values();
-        $sectionNavItems = array_values(array_filter([
-            ['id' => 'overview', 'label' => 'Overview'],
-            (
-                filled($product->summary) || (!$usesProductFacts && ($hasEditorialSections || filled($detailDescriptionHtml)))
-                || $product->techStacks->isNotEmpty()
-            ) ? ['id' => 'details', 'label' => 'Details'] : null,
-            $alternativeProducts->isNotEmpty() ? ['id' => 'alternatives', 'label' => 'Alternatives'] : null,
-            $hasResourcesSection ? ['id' => 'resources', 'label' => 'Resources'] : null,
-            $productFaqItems->isNotEmpty() ? ['id' => 'faq', 'label' => 'FAQ'] : null,
-        ]));
     @endphp
     @if(empty($isUnpublishedProduct))
         @include('products.partials._json-ld-product', ['productFaqItems' => $productFaqItems])
@@ -159,465 +81,74 @@
         </div>
     @endif
 
-    <div class="rounded-lg pt-2 pb-6 md:pt-3 md:pb-8"
+    <div class="product-page pt-2 pb-6 md:pt-3 md:pb-8"
         x-data="{
-                                                                                        @if(isset($isAdminView) && $isAdminView)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingName: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingTagline: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingProductPageTagline: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingDescription: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingCategories: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingLogo: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        editingVideoUrl: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        name: '{{ $product->name }}',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        tagline: '{{ $product->tagline }}',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        product_page_tagline: '{{ $product->product_page_tagline }}',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        description: `{{ $product->description }}`,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        category_ids: {{ $product->categories->pluck('id') }},
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        video_url: '{{ $product->video_url }}',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        updateProduct() {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            let formData = new FormData();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            formData.append('name', this.name);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            formData.append('tagline', this.tagline);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            formData.append('product_page_tagline', this.product_page_tagline);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            formData.append('description', this.description);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            formData.append('video_url', this.video_url);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            this.category_ids.forEach(id => formData.append('categories[]', id));
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            let logoInput = document.querySelector('input[type="
-                                                                                            file"]'); if (logoInput.files[0]) { formData.append('logo', logoInput.files[0]); } fetch('{{ route('admin.products.update', ['product' => $product->id]) }}', { method: 'POST' , // Use POST for FormData with
-                                                                                            file uploads headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' , 'X-HTTP-Method-Override' : 'PUT' // Method spoofing
-                                                                                            }, body: formData }).then(response=> {
-                                                                                            if (response.ok) {
-                                                                                            window.location.reload();
-                                                                                            }
-                                                                                            });
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             }
-                                                                                        @endif
+            @if(isset($isAdminView) && $isAdminView)
+                editingName: false,
+                editingTagline: false,
+                editingProductPageTagline: false,
+                editingDescription: false,
+                editingCategories: false,
+                editingLogo: false,
+                editingVideoUrl: false,
+                saveError: '',
+                name: {{ Js::from($product->name) }},
+                tagline: {{ Js::from($product->tagline) }},
+                product_page_tagline: {{ Js::from($product->product_page_tagline) }},
+                description: {{ Js::from($product->description) }},
+                category_ids: {{ Js::from($product->categories->pluck('id')->all()) }},
+                video_url: {{ Js::from($product->video_url) }},
+                async updateProduct() {
+                    this.saveError = '';
+                    const formData = new FormData();
+                    for (const key of ['name', 'tagline', 'product_page_tagline', 'description', 'video_url']) {
+                        formData.append(key, this[key] || '');
+                    }
+                    this.category_ids.forEach(id => formData.append('categories[]', id));
+                    const logoInput = this.$el.querySelector('input[type=file]');
+                    if (logoInput?.files?.[0]) formData.append('logo', logoInput.files[0]);
+                    try {
+                        const response = await fetch({{ Js::from(route('admin.products.update', $product)) }}, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': {{ Js::from(csrf_token()) }}, 'X-HTTP-Method-Override': 'PUT', 'Accept': 'application/json' },
+                            body: formData
+                        });
+                        if (response.ok) window.location.reload();
+                        else this.saveError = 'Product could not be saved. Check required fields or use the full editor.';
+                    } catch (error) {
+                        this.saveError = 'Product could not be saved. Check your connection.';
+                    }
+                }
+            @endif
         }">
-        <div class="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div class="px-5 py-5 sm:px-6 lg:px-8 xl:px-10">
+        @if(isset($isAdminView) && $isAdminView)
+            <p x-show="saveError" x-text="saveError" role="alert" class="mb-4 text-sm text-red-700" x-cloak></p>
+        @endif
+        <div class="product-sheet overflow-hidden rounded-lg">
+            <div class="px-4 py-6 sm:px-6">
                 @include('products.partials._hero')
-
-                @if($quickFacts->isNotEmpty())
-                    <div class="mt-8 py-2">
-                        <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            @foreach($quickFacts as $fact)
-                                <div class="min-w-0 rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-4 shadow-sm transition hover:border-gray-300 hover:bg-white">
-                                    <dt class="flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
-                                        @if($fact['icon'] === 'spark')
-                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                <path d="M10 2.75v4.5M10 12.75v4.5M2.75 10h4.5M12.75 10h4.5M4.9 4.9l3.18 3.18M11.92 11.92l3.18 3.18M15.1 4.9l-3.18 3.18M8.08 11.92L4.9 15.1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        @elseif($fact['icon'] === 'pricing')
-                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                <path d="M10 2.75v14.5M13.75 5.5H8.875a2.375 2.375 0 1 0 0 4.75h2.25a2.375 2.375 0 1 1 0 4.75H5.75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        @elseif($fact['icon'] === 'platform')
-                                            @php
-                                                $platformName = Str::lower((string) (($fact['items'][0]['label'] ?? null) ?: ''));
-                                            @endphp
-                                            @if(in_array($platformName, ['macos', 'mac', 'mac app'], true))
-                                                <svg class="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                    <path d="M16.37 12.47c.02 2.44 2.14 3.25 2.16 3.26-.02.06-.34 1.17-1.12 2.32-.68.99-1.38 1.98-2.49 2-.99.02-1.31-.58-2.44-.58-1.13 0-1.48.56-2.42.6-1 .04-1.77-1-2.45-1.98-1.39-2.01-2.46-5.69-1.03-8.18.71-1.23 1.97-2.02 3.34-2.04.98-.02 1.9.66 2.44.66.54 0 1.72-.82 2.9-.7.49.02 1.86.2 2.74 1.49-.07.04-1.64.96-1.63 2.85Zm-2.05-8.07c.57-.69.95-1.64.84-2.59-.82.03-1.82.54-2.41 1.23-.53.61-.99 1.58-.86 2.51.91.07 1.85-.47 2.43-1.15Z" />
-                                                </svg>
-                                            @else
-                                                <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                    <path d="M3.75 4.75A1.75 1.75 0 0 1 5.5 3h9A1.75 1.75 0 0 1 16.25 4.75v5.5A1.75 1.75 0 0 1 14.5 12h-9a1.75 1.75 0 0 1-1.75-1.75v-5.5ZM7.5 15.5h5M8.5 12v3.5M11.5 12v3.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                            @endif
-                                        @else
-                                            <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                                                <path d="M6.5 8.25a3.5 3.5 0 1 1 7 0c0 2.75-3.5 4.75-3.5 4.75s-3.5-2-3.5-4.75Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                                                <path d="M4.25 16.5c1.5-1.25 3.42-1.88 5.75-1.88s4.25.63 5.75 1.88" stroke-width="1.6" stroke-linecap="round" />
-                                            </svg>
-                                        @endif
-                                        <span>{{ $fact['label'] }}</span>
-                                        @if(!empty($fact['link']))
-                                            <a href="{{ $appendQueryParam($fact['link'], 'utm_source', 'softwareontheweb.com') }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel($fact['link'], 'pricing_page') }}"
-                                                class="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal text-gray-400 underline-offset-2 transition hover:text-gray-600 hover:underline">
-                                                <span>View</span>
-                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M7 17 17 7M9 7h8v8" />
-                                                </svg>
-                                            </a>
-                                        @endif
-                                    </dt>
-
-                                    <dd class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-                                        @foreach($fact['items'] as $item)
-                                            @if(!empty($item['link']))
-                                                <a href="{{ $item['link'] }}" wire:navigate.hover
-                                                    class="text-xs font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                                                    {{ $item['label'] }}
-                                                </a>
-                                            @else
-                                                <span class="text-xs font-medium leading-5 text-gray-400">
-                                                    {{ $item['label'] }}
-                                                </span>
-                                            @endif
-                                        @endforeach
-                                    </dd>
-                                </div>
-                            @endforeach
-                        </dl>
-                    </div>
-                @endif
-
-                <div class="mt-8">
-                    @include('products.partials._section-nav', ['sectionNavItems' => $sectionNavItems])
-                </div>
-
-                <section id="overview" class="scroll-mt-28 pt-8">
-                    <div class="max-w-3xl">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Overview</p>
-                        @if($usesProductFacts)
-                            <ul class="mt-4 space-y-3 text-base text-gray-600">
-                                @foreach($product->product_facts as $fact)
-                                    <li class="flex gap-3">
-                                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
-                                        <span>{{ $fact }}</span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @elseif(!empty($overviewBlocks))
-                            <div class="prose product-detail-description ql-editor-content mt-4 max-w-none text-base text-gray-600">
-                                @foreach($overviewBlocks as $overviewBlock)
-                                    {!! \App\Support\OutboundLink::sanitizeHtml($overviewBlock, 'product_description') !!}
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                </section>
-
-                @if(isset($isAdminView) && $isAdminView)
-                    <div class="mt-8 border-t border-gray-100 pt-8">
-                        <h2 class="text-lg font-semibold mb-2">Video URL</h2>
-                        <div x-show="!editingVideoUrl" @click="editingVideoUrl = true" x-text="video_url"></div>
-                        <div x-show="editingVideoUrl">
-                            <input type="text" x-model="video_url" class="form-input">
-                            <button @click="updateProduct(); editingVideoUrl = false" class="btn btn-primary mt-2">Save</button>
-                            <button @click="editingVideoUrl = false" class="btn btn-secondary mt-2">Cancel</button>
-                        </div>
-                    </div>
-                @endif
-
-                @if($hasMediaSection)
-                    @php
-                        $mediaSlides = [];
-
-                        if ($product->video_url && $product->getEmbedUrl()) {
-                            $mediaSlides[] = [
-                                'type' => 'video',
-                                'embed_url' => $product->getEmbedUrl(),
-                                'title' => $product->name . ' video',
-                            ];
-                        }
-
-                        foreach ($product->media as $mediaIndex => $media) {
-                            $mediaSlides[] = [
-                                'type' => 'image',
-                                'src' => asset('storage/' . ($media->path_medium ?? $media->path)),
-                                'src_full' => asset('storage/' . $media->path),
-                                'srcset' => trim(implode(' ', array_filter([
-                                    $media->path_thumb ? asset('storage/' . $media->path_thumb) . ' 300w,' : null,
-                                    $media->path_medium ? asset('storage/' . $media->path_medium) . ' 800w,' : null,
-                                    asset('storage/' . $media->path) . ' 1200w',
-                                ]))),
-                                'alt' => $media->alt_text ?: $product->name . ' screenshot ' . ($mediaIndex + 1),
-                            ];
-                        }
-
-                        $hasMultipleMediaSlides = count($mediaSlides) > 1;
-                        $productClickUrl = filled($product->link)
-                            ? route('products.click', ['product' => $product->slug, 'surface' => 'product_details'])
-                            : null;
-                    @endphp
-
-                    <section class="mt-8"
-                        x-data="{ enlargedImage: null }"
-                        @keydown.escape.window="enlargedImage = null">
-                        @if($hasMultipleMediaSlides)
-                            <div x-data="{
-                                    canScrollLeft: false,
-                                    canScrollRight: false,
-                                    updateScroll() {
-                                        const el = this.$refs.mediaContainer;
-                                        if (!el) return;
-                                        this.canScrollLeft = el.scrollLeft > 5;
-                                        this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 5);
-                                    },
-                                    scroll(direction) {
-                                        const el = this.$refs.mediaContainer;
-                                        if (!el) return;
-                                        el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' });
-                                    }
-                                }" x-init="$nextTick(() => updateScroll())" class="relative group">
-                                <button x-show="canScrollLeft" x-cloak @click="scroll(-1)"
-                                    class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/95 p-2 shadow-sm transition hover:bg-white"
-                                    aria-label="Scroll media left">
-                                    <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-
-                                <button x-show="canScrollRight" x-cloak @click="scroll(1)"
-                                    class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/95 p-2 shadow-sm transition hover:bg-white"
-                                    aria-label="Scroll media right">
-                                    <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-
-                                <div x-ref="mediaContainer" @scroll.debounce.100ms="updateScroll()"
-                                    class="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 no-scrollbar">
-                                    @foreach($mediaSlides as $slide)
-                                        <article class="group/image relative w-full min-w-full snap-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                                            @if($slide['type'] === 'video')
-                                                <div class="aspect-video w-full">
-                                                    <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
-                                                        title="{{ $slide['title'] }}" frameborder="0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowfullscreen></iframe>
-                                                </div>
-                                            @else
-                                                <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                                    sizes="100vw" alt="{{ $slide['alt'] }}"
-                                                    class="block h-auto w-full object-contain"
-                                                    itemprop="image"
-                                                    loading="{{ $loop->first ? 'eager' : 'lazy' }}">
-                                                <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-gray-950/35 opacity-100 transition-opacity md:opacity-0 md:group-hover/image:opacity-100 md:group-focus-within/image:opacity-100">
-                                                    <button type="button"
-                                                        @click="enlargedImage = {{ Js::from(['src' => $slide['src_full'], 'alt' => $slide['alt']]) }}"
-                                                        class="pointer-events-auto inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
-                                                        Enlarge Image
-                                                    </button>
-                                                    @if($productClickUrl)
-                                                        <a href="{{ $productClickUrl }}" target="_blank" rel="nofollow noopener noreferrer"
-                                                            class="pointer-events-auto inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900">
-                                                            <span>Visit Website</span>
-                                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                                                <path d="M14 5h5v5M19 5l-9 9M19 14v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                                                            </svg>
-                                                        </a>
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </article>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @else
-                            @foreach($mediaSlides as $slide)
-                                <article class="group/image relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                                    @if($slide['type'] === 'video')
-                                        <div class="aspect-video w-full">
-                                            <iframe src="{{ $slide['embed_url'] }}" class="h-full w-full"
-                                                title="{{ $slide['title'] }}" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                    @else
-                                        <img src="{{ $slide['src'] }}" srcset="{{ $slide['srcset'] }}"
-                                            sizes="100vw" alt="{{ $slide['alt'] }}"
-                                            class="block h-auto w-full object-contain"
-                                            itemprop="image"
-                                            loading="eager">
-                                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-gray-950/35 opacity-100 transition-opacity md:opacity-0 md:group-hover/image:opacity-100 md:group-focus-within/image:opacity-100">
-                                            <button type="button"
-                                                @click="enlargedImage = {{ Js::from(['src' => $slide['src_full'], 'alt' => $slide['alt']]) }}"
-                                                class="pointer-events-auto inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
-                                                Enlarge Image
-                                            </button>
-                                            @if($productClickUrl)
-                                                <a href="{{ $productClickUrl }}" target="_blank" rel="nofollow noopener noreferrer"
-                                                    class="pointer-events-auto inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900">
-                                                    <span>Visit Website</span>
-                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                                        <path d="M14 5h5v5M19 5l-9 9M19 14v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                                                    </svg>
-                                                </a>
-                                            @endif
-                                        </div>
-                                    @endif
-                                </article>
-                            @endforeach
-                        @endif
-
-                        <template x-teleport="body">
-                            <div x-show="enlargedImage" x-cloak
-                                class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950/90 p-4 sm:p-8"
-                                role="dialog" aria-modal="true" aria-label="Enlarged product image"
-                                @click.self="enlargedImage = null">
-                                <img :src="enlargedImage?.src" :alt="enlargedImage?.alt || ''"
-                                    class="max-h-full max-w-full rounded-lg object-contain shadow-2xl">
-                                <button type="button" @click="enlargedImage = null"
-                                    class="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white"
-                                    aria-label="Close enlarged image">
-                                    &times;
-                                </button>
-                            </div>
-                        </template>
-                    </section>
-                @endif
-
-                @if(filled($product->summary) || !$usesProductFacts || $product->techStacks->isNotEmpty())
-                <section id="details" class="scroll-mt-28 mt-4 pt-6" @class(['border-t border-gray-100' => !$hasMediaSection])>
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Details</h2>
-                    </div>
-
-                    @if(filled($product->summary))
-                        <p class="mt-4 text-sm leading-6 text-gray-700">{{ $product->summary }}</p>
-                    @endif
-
-                    @unless($usesProductFacts)
-                        @if(filled($detailDescriptionHtml))
-                            <div class="px-5 py-1">
-                                <div class="prose max-w-none text-sm ql-editor-content product-detail-description">
-                                    @if(isset($isAdminView) && $isAdminView)
-                                        <div x-show="!editingDescription" @click="editingDescription = true">
-                                            {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                        </div>
-                                        <textarea x-show="editingDescription" x-model="description"
-                                            @keydown.enter="updateProduct(); editingDescription = false"
-                                            @keydown.escape="editingDescription = false" class="form-input" rows="10"></textarea>
-                                    @else
-                                        {!! \App\Support\OutboundLink::sanitizeHtml($detailDescriptionHtml, 'product_description') !!}
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-                    @endunless
-
-                    @if($product->techStacks->isNotEmpty())
-                        <div class="mt-6 grid gap-6 sm:grid-cols-2">
-                            <div>
-                                <h3 class="mb-2 text-xs text-gray-500">Built with</h3>
-                                <div class="flex flex-wrap gap-x-3 gap-y-2">
-                                    @foreach($product->techStacks as $techStack)
-                                        <a href="{{ route('pseo.builtWith', $techStack->slug) }}" wire:navigate.hover
-                                            class="text-xs font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                                            {{ $techStack->name }}
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                </section>
-                @endif
-
-                @if($alternativeProducts->isNotEmpty())
-                    <section id="alternatives" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 class="text-xl font-semibold text-gray-900">Keep researching {{ $product->name }}</h2>
-                                <p class="mt-1 text-sm text-gray-500">Explore relevant products with a similar category, audience, or use case.</p>
-                            </div>
-                            <a href="{{ route('pseo.alternatives', $product->slug) }}"
-                                class="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-gray-700 transition hover:text-primary-700">
-                                <span>{{ $product->name }} alternatives</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M5 12h14" />
-                                    <path d="m12 5 7 7-7 7" />
-                                </svg>
-                            </a>
-                        </div>
-
-                        <div class="mt-6">
-                            @include('products.partials._alternatives-section', ['product' => $product, 'alternativeProducts' => $alternativeProducts])
-                        </div>
-                    </section>
-                @endif
-
-                <x-research-links :products="[$product]" :include-alternatives="false" :heading="'Compare '.$product->name" />
-
-                @if($hasResourcesSection)
-                    <section id="resources" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Resources</h2>
-                        </div>
-
-                        <div class="mt-6">
-                            @include('products.partials._resource-links', ['product' => $product])
-                        </div>
-                    </section>
-                @endif
-
-                @if($product->features && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Key Features/i', $detailDescriptionHtml ?? ''))
-                    <section class="mt-8" aria-labelledby="generated-features-title">
-                        <h2 id="generated-features-title" class="text-lg font-semibold">Features</h2>
-                        <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
-                            @foreach($product->features as $feature)
-                                <li>{{ is_array($feature) ? implode(' ', $feature) : $feature }}</li>
-                            @endforeach
-                        </ul>
-                    </section>
-                @endif
-                @if($product->best_for_text && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Best For/i', $detailDescriptionHtml ?? ''))
-                    <section class="mt-8"><h2 class="text-lg font-semibold">Best for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->best_for_text }}</p></section>
-                @endif
-                @if($product->not_for_text && !preg_match('/<h[23][^>]*>\s*(?:<strong>)?Limitations/i', $detailDescriptionHtml ?? ''))
-                    <section class="mt-8"><h2 class="text-lg font-semibold">Not for</h2><p class="mt-2 text-sm text-gray-700">{{ $product->not_for_text }}</p></section>
-                @endif
-                @if($productFaqItems->isNotEmpty())
-                    <section id="faq" class="scroll-mt-28 mt-8 border-t border-gray-100 pt-8">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">FAQ about {{ $product->name }}</h2>
-                            <p class="mt-1 text-sm text-gray-500">Concise answers based on the product's editorial information.</p>
-                        </div>
-
-                        <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                            @foreach($productFaqItems as $faqItem)
-                                <details class="group border-b border-gray-200 last:border-b-0">
-                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-left text-base font-semibold text-gray-900 transition hover:bg-gray-50 sm:px-6 [&::-webkit-details-marker]:hidden">
-                                        <span>{{ $faqItem['question'] }}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="m6 9 6 6 6-6" />
-                                        </svg>
-                                    </summary>
-                                    <div class="border-t border-gray-100 bg-gray-50/50 px-5 py-5 sm:px-6">
-                                        <p class="max-w-4xl text-sm leading-6 text-gray-600">{{ $faqItem['answer'] }}</p>
-                                    </div>
-                                </details>
-                            @endforeach
-                        </div>
-                    </section>
-                @endif
-
-                @if(!empty($weekNavigation))
-                    @include('products.partials._week-navigation', ['weekNavigation' => $weekNavigation])
-                @endif
-
-                <div class="md:hidden mt-8 border-t border-gray-100 pt-8">
-                    @include('products.partials._sidebar-info')
-                </div>
-
-                @if(isset($isAdminView) && $isAdminView)
-                    <div class="mt-8 border-t border-gray-100 pt-8">
-                        <h2 class="text-lg font-semibold mb-2">Categories</h2>
-                        <div x-show="!editingCategories" @click="editingCategories = true">
-                            @foreach($product->categories as $category)
-                                <span
-                                    class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">{{ $category->name }}</span>
-                            @endforeach
-                        </div>
-                        <div x-show="editingCategories">
-                            <select multiple x-model="category_ids" class="form-multiselect block w-full mt-1">
-                                @foreach($allCategories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                @endforeach
-                            </select>
-                            <button @click="updateProduct(); editingCategories = false" class="btn btn-primary mt-2">Save</button>
-                            <button @click="editingCategories = false" class="btn btn-secondary mt-2">Cancel</button>
-                        </div>
-                    </div>
-                @endif
             </div>
+            @include('products.partials._structured-content')
+            @if(!empty($weekNavigation))
+                <div class="border-t border-gray-100 px-4 pb-6 sm:px-6">
+                    @include('products.partials._week-navigation', ['weekNavigation' => $weekNavigation])
+                </div>
+            @endif
+            <div class="border-t border-gray-100 p-4 md:hidden">
+                @include('products.partials._sidebar-info')
+            </div>
+            @if(isset($isAdminView) && $isAdminView)
+                <div class="border-t border-gray-100 p-4">
+                    <h2 class="mb-2 text-sm font-semibold">Edit categories and video</h2>
+                    <label for="admin-product-video" class="text-xs">Video URL</label>
+                    <input id="admin-product-video" type="url" x-model="video_url" class="form-input mb-3 block w-full">
+                    <label for="admin-product-categories" class="text-xs">Categories</label>
+                    <select id="admin-product-categories" multiple x-model="category_ids" class="form-multiselect block w-full">
+                        @foreach($allCategories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>@endforeach
+                    </select>
+                    <button type="button" @click="updateProduct()" class="mt-3 text-sm font-semibold">Save</button>
+                </div>
+            @endif
         </div>
     </div>
 @endsection

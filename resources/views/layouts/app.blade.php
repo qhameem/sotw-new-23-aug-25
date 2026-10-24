@@ -497,12 +497,13 @@
         $websiteSchema = [
             '@context' => 'https://schema.org',
             '@type' => 'WebSite',
+            '@id' => url('/').'/#website',
             'name' => config('app.name', 'Software on the Web'),
             'alternateName' => ['softwareontheweb.com', 'SOTW'],
             'url' => rtrim(config('app.url', 'https://softwareontheweb.com'), '/'),
         ];
     @endphp
-    <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 
     @include('partials.header-code-injection')
 
