@@ -240,7 +240,7 @@
                   >
                     <template #details>
                       <AutofillStatus
-                        v-if="(!manualMode && !fetchingStopped) || (isAdmin && extractionReport.length)"
+                        v-if="(!manualMode && !fetchingStopped && extractionTimer.timing.started) || (isAdmin && extractionReport.length)"
                         :isLoading="isLoading"
                         :autofillProgress="autofillProgress"
                         :aiFilledCount="aiFilledCount"
@@ -368,7 +368,10 @@ const props = defineProps({
   // Removed props that are now fetched via useProductForm
 });
 
-const showForm = ref(props.initialProduct ? true : false);
+const hasSubmissionDetails = (product) => Boolean(product && (
+  product.id || product.draft_uuid || product.name || product.tagline || product.description
+));
+const showForm = ref(hasSubmissionDetails(props.initialProduct));
 const manualMode = ref(false);
 const submitAttempted = ref(false);
 const isLogoPickerOpen = ref(false);
@@ -517,7 +520,7 @@ const draftStatusMessage = computed(() => {
 
 // When editing an existing product, show the form once data is loaded
 watch(isRestored, (val) => {
-  if (val && form.link) {
+  if (val && form.link && (hasSubmissionDetails(form) || activeDraftId.value)) {
     showForm.value = true;
   }
 });

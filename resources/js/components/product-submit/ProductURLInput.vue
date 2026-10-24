@@ -122,7 +122,7 @@
         <span class="font-bold">Or</span> skip auto-fill and enter the other details manually.
       </button>
     </div>
-    <details v-if="showPhaseTimings" class="mt-3 text-xs text-gray-600">
+    <details v-if="showPhaseTimings && extractionTiming.started" class="mt-3 text-xs text-gray-600">
       <summary class="cursor-pointer">Extraction phase timings</summary>
       <dl class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
         <div v-for="(seconds, phase) in extractionTiming.phases" :key="phase" class="flex justify-between gap-4">

@@ -95,13 +95,14 @@
         </ul>
     </div>
 
-    <form action="{{ route('products.create') }}" method="GET" class="mt-6 flex flex-col gap-3 rounded-2xl border-2 border-gray-900 bg-white p-2 shadow-[4px_4px_0_0_var(--color-primary-500)] sm:flex-row sm:items-center">
+    <form action="{{ route('products.create') }}" method="GET" x-data="{ submitting: false }" @submit="if (submitting) { $event.preventDefault(); return; } submitting = true" @pageshow.window="submitting = false" :aria-busy="submitting" class="mt-6 flex flex-col gap-3 rounded-2xl border-2 border-gray-900 bg-white p-2 shadow-[4px_4px_0_0_var(--color-primary-500)] sm:flex-row sm:items-center">
         <label for="hero-website-url" class="sr-only">Your software website URL</label>
         <input id="hero-website-url" name="link" type="url" required maxlength="2000" autocomplete="url" inputmode="url" placeholder="https://your-website.com"
             class="min-w-0 flex-1 rounded-lg border-0 bg-transparent px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0">
-        <button type="submit" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2 text-sm font-semibold text-[var(--color-primary-button-text)] transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+        <button type="submit" :disabled="submitting" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2 text-sm font-semibold text-[var(--color-primary-button-text)] transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:cursor-wait">
             Submit your product
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            <svg x-show="!submitting" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            <svg x-show="submitting" x-cloak class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.3"/><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
         </button>
     </form>
 

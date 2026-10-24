@@ -26,7 +26,7 @@
 @section('content')
     <div class="relative flex-1 flex flex-col h-full">
         @unless(isset($product))
-            <x-submission-policy />
+            <x-submission-policy collapsible />
         @endunless
         @guest
             <div class="mt-10 inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
