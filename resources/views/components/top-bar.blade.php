@@ -375,7 +375,6 @@
             <div data-site-top-bar-controls class="flex shrink-0 items-center gap-4">
                 @guest
                     <div class="flex items-center gap-2">
-                        <x-add-product-button />
                         @include('partials.theme.switcher', ['floating' => false])
                         <a href="{{ route('login') }}" class="inline-flex min-h-8 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-gray-300 bg-white px-4 py-1 text-sm font-semibold text-gray-700 transition duration-300 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
@@ -387,10 +386,6 @@
                     </div>
                 @else
                     <div class="flex items-center">
-                    <div class="flex items-center space-x-2">
-                       <x-add-product-button />
-                       <span class=" w-0.5"></span>
-                    </div>
                     <div class="mr-2">
                         @auth
                         <div id="notification-bell-app">
@@ -418,6 +413,7 @@
                     <x-user-dropdown />
                 </div>
                 @endguest
+                <x-add-product-button />
             </div>
         </div>
     </div>
