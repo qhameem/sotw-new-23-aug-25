@@ -4,7 +4,7 @@
     $publicDisk = \Illuminate\Support\Facades\Storage::disk('public');
 
     $versionedStorageUrl = function (string $path) use ($publicDisk) {
-        return \Illuminate\Support\Facades\Storage::url($path) . '?v=' . $publicDisk->lastModified($path);
+        return \Illuminate\Support\Facades\Storage::url($path) . '?v=' . hash('sha256', $publicDisk->get($path));
     };
 
     $hasCustomFavicon = $customFaviconPath && $publicDisk->exists($customFaviconPath);

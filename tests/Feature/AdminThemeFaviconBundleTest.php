@@ -248,6 +248,26 @@ class AdminThemeFaviconBundleTest extends TestCase
             ->assertSee('#07101f');
     }
 
+    public function test_favicon_urls_change_when_contents_change_with_the_same_timestamp(): void
+    {
+        Storage::fake('public');
+        $disk = Storage::disk('public');
+        $path = 'theme/branding/test/favicon-source.png';
+        config(['theme.favicon_url' => $path]);
+
+        $disk->put($path, 'first-icon');
+        touch($disk->path($path), 1700000000);
+        $first = view('partials.theme.favicon-links')->render();
+
+        $disk->put($path, 'replacement-icon');
+        touch($disk->path($path), 1700000000);
+        $second = view('partials.theme.favicon-links')->render();
+
+        $this->assertStringContainsString('?v='.hash('sha256', 'first-icon'), $first);
+        $this->assertStringContainsString('?v='.hash('sha256', 'replacement-icon'), $second);
+        $this->assertNotSame($first, $second);
+    }
+
     private function fakeIcoUpload(): UploadedFile
     {
         return UploadedFile::fake()->createWithContent(
