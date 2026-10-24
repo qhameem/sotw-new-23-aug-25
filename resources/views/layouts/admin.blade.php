@@ -59,6 +59,7 @@
         }
     </style>
 
+    @include('partials.theme.favicon-links')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.theme.text-color-overrides')
     @livewireStyles

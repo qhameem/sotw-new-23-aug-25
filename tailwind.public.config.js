@@ -5,7 +5,7 @@ export default {
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './resources/views/**/*.blade.php',
-        '!./resources/views/admin/**/*.blade.php',
+        '!./resources/views/admin/!(product_approvals)/**/*.blade.php',
         '!./resources/views/layouts/admin.blade.php',
         '!./resources/views/layouts/submission.blade.php',
         '!./resources/views/layouts/todolist.blade.php',

@@ -8,10 +8,16 @@
     };
 
     $hasCustomFavicon = $customFaviconPath && $publicDisk->exists($customFaviconPath);
+    $versionedDefaultUrl = function (string $filename) {
+        $path = 'favicon/' . $filename;
+        $file = public_path($path);
+
+        return asset($path) . (is_file($file) ? '?v=' . hash_file('sha256', $file) : '');
+    };
 
     $mainFaviconUrl = $hasCustomFavicon
         ? $versionedStorageUrl($customFaviconPath)
-        : asset('favicon/favicon.ico');
+        : $versionedDefaultUrl('favicon.ico');
 
     $resolveGeneratedFaviconUrl = function (string $filename) use ($customFaviconDirectory, $publicDisk, $versionedStorageUrl) {
         if (!$customFaviconDirectory) {
@@ -26,11 +32,11 @@
     };
 
     $appleTouchIconUrl = $resolveGeneratedFaviconUrl('apple-touch-icon.png')
-        ?? ($hasCustomFavicon ? $mainFaviconUrl : asset('favicon/apple-touch-icon.png'));
+        ?? ($hasCustomFavicon ? $mainFaviconUrl : $versionedDefaultUrl('apple-touch-icon.png'));
     $favicon32Url = $resolveGeneratedFaviconUrl('favicon-32x32.png')
-        ?? ($hasCustomFavicon ? $mainFaviconUrl : asset('favicon/favicon-32x32.png'));
+        ?? ($hasCustomFavicon ? $mainFaviconUrl : $versionedDefaultUrl('favicon-32x32.png'));
     $favicon16Url = $resolveGeneratedFaviconUrl('favicon-16x16.png')
-        ?? ($hasCustomFavicon ? $mainFaviconUrl : asset('favicon/favicon-16x16.png'));
+        ?? ($hasCustomFavicon ? $mainFaviconUrl : $versionedDefaultUrl('favicon-16x16.png'));
     $customManifestPath = config('theme.favicon_manifest_url');
     $manifestUrl = $customManifestPath && $publicDisk->exists($customManifestPath)
         ? $versionedStorageUrl($customManifestPath)
