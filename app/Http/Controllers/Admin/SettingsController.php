@@ -91,6 +91,21 @@ class SettingsController extends Controller
         )));
     }
 
+    public function storeSocialLinks(Request $request)
+    {
+        $validated = $request->validate([
+            'x_profile_url' => ['required', 'string', 'max:255', 'regex:~^https://(?:www\.)?x\.com/[A-Za-z0-9_]{1,15}/?$~i'],
+        ], [
+            'x_profile_url.regex' => 'Enter an X profile URL such as https://x.com/qHameem.',
+        ]);
+
+        $settings = $this->loadSettings();
+        $settings['x_profile_url'] = $validated['x_profile_url'];
+        $this->saveSettings($settings);
+
+        return back()->with('success', 'X profile link saved successfully.');
+    }
+
     public function aiProviderStatus(Request $request, AiProviderStatusService $aiProviderStatusService)
     {
         if (! Auth::check() || ! Auth::user()->hasRole('admin')) {

@@ -46,6 +46,7 @@
         @php
             $settingsSections = [
                 'settings-appearance' => 'Appearance',
+                'settings-social-links' => 'Social Links',
                 'settings-description-instructions' => 'Description Instructions',
                 'settings-database-export' => 'Database Export',
                 'settings-premium-product-spots' => 'Premium Product Spots',
@@ -87,6 +88,22 @@
                 </nav>
             </aside>
             <div class="settings-panels">
+                <div id="settings-social-links" tabindex="-1" class="settings-section bg-white p-6 shadow-sm rounded-lg">
+                    <h2 class="text-lg font-medium text-gray-900">Social Links</h2>
+                    <form action="{{ route('admin.settings.storeSocialLinks') }}" method="POST" class="mt-5">
+                        @csrf
+                        <label for="x_profile_url" class="block text-sm font-medium text-gray-700">X profile URL</label>
+                        <input id="x_profile_url" name="x_profile_url" type="url" required maxlength="255"
+                            value="{{ old('x_profile_url', \App\Support\SocialLinks::xProfileUrl()) }}"
+                            placeholder="https://x.com/qHameem"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <p class="mt-2 text-sm text-gray-500">The X logo in the top menu opens this profile in a new tab.</p>
+                        @error('x_profile_url')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <button type="submit" class="mt-4 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Save Social Links</button>
+                    </form>
+                </div>
                 <div id="settings-appearance" tabindex="-1" class="settings-section">
                     @include('admin.settings.partials.appearance')
                 </div>

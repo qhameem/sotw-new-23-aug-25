@@ -240,6 +240,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::post('settings/store-publish-time', [\App\Http\Controllers\Admin\SettingsController::class, 'storePublishTime'])->name('settings.storePublishTime');
     Route::post('settings/store-admin-sandbox-mode', [\App\Http\Controllers\Admin\SettingsController::class, 'storeAdminSandboxMode'])->name('settings.storeAdminSandboxMode');
     Route::post('settings/store-free-launch-queue', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFreeLaunchQueue'])->name('settings.storeFreeLaunchQueue');
+    Route::post('settings/social-links', [\App\Http\Controllers\Admin\SettingsController::class, 'storeSocialLinks'])->name('settings.storeSocialLinks');
     Route::post('settings/store-tool-settings', [\App\Http\Controllers\Admin\SettingsController::class, 'storeToolSettings'])->name('settings.storeToolSettings');
     Route::post('settings/store-footer-embed-codes', [\App\Http\Controllers\Admin\SettingsController::class, 'storeFooterEmbedCodes'])->name('settings.storeFooterEmbedCodes');
     Route::post('settings/store-badge-embed-code', [\App\Http\Controllers\Admin\SettingsController::class, 'storeBadgeEmbedCode'])->name('settings.storeBadgeEmbedCode');
