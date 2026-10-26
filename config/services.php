@@ -14,6 +14,14 @@ return [
     |
     */
 
+    'firecrawl' => [
+        'enabled' => env('FIRECRAWL_ENABLED', false),
+        'api_key' => env('FIRECRAWL_API_KEY'),
+        'timeout' => (int) env('FIRECRAWL_TIMEOUT', 20),
+        'cache_minutes' => (int) env('FIRECRAWL_CACHE_MINUTES', 1440),
+        'min_characters' => (int) env('FIRECRAWL_MIN_CHARACTERS', 300),
+    ],
+
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),

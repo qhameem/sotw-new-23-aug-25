@@ -17,6 +17,27 @@ class ProductSourceCollector
         $report->record('source collection', 'Converting homepage and supporting pages to cleaned Markdown.');
         $markdown = app(ProductPageMarkdown::class);
         $pages = [['url' => $url, 'markdown' => $markdown->convert($html, $url)]];
+        $firecrawl = app(FirecrawlService::class);
+        $fallbackAttempts = 0;
+        $fallback = function (string $target) use ($firecrawl, &$fallbackAttempts, $report): ?array {
+            if ($fallbackAttempts >= 2) {
+                return null;
+            }
+            $fallbackAttempts++;
+            $result = $firecrawl->scrape($target);
+            if ($result) {
+                $report->record('source collection', 'Firecrawl collected '.$target.' at '.$result['retrieved_at'], 'success');
+            }
+
+            return $result;
+        };
+        if ($firecrawl->insufficient($pages[0]['markdown'])) {
+            $result = $fallback($url);
+            if ($result) {
+                $pages[0]['markdown'] = $result['markdown'];
+                $html = $result['html'] ?: $html;
+            }
+        }
         $document = new DOMDocument;
         @$document->loadHTML($html);
         $xpath = new DOMXPath($document);
@@ -47,13 +68,28 @@ class ProductSourceCollector
                     $body = $response->toPsrResponse()->getBody()->read(262145);
                     if ($response->successful() && strlen($body) <= 262144 && str_contains(strtolower((string) $response->header('Content-Type')), 'text/html')) {
                         $report->record('source collection', $kind.' page collected.', 'success');
-                        $pages[] = ['url' => $candidate, 'markdown' => $markdown->convert($body, $candidate)];
+                        $content = $markdown->convert($body, $candidate);
+                        if ($firecrawl->insufficient($content)) {
+                            $content = $fallback($candidate)['markdown'] ?? $content;
+                        }
+                        $pages[] = ['url' => $candidate, 'markdown' => $content];
                         break;
+                    }
+                    if (in_array($response->status(), [403, 429, 500, 502, 503], true)) {
+                        $result = $fallback($candidate);
+                        if ($result) {
+                            $pages[] = ['url' => $candidate, 'markdown' => $result['markdown']];
+                            break;
+                        }
                     }
                     $report->record('source collection', $kind.' skipped: HTTP '.$response->status().', non-HTML content, or page exceeds size limit.', 'warning');
                 } catch (\Throwable) {
                     $report->record('source collection', $kind.' unavailable or URL rejected; continuing.', 'warning');
-                    // An optional page must not stop extraction.
+                    $result = $fallback($candidate);
+                    if ($result) {
+                        $pages[] = ['url' => $candidate, 'markdown' => $result['markdown']];
+                        break;
+                    }
                 }
             }
         }
