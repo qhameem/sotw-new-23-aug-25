@@ -68,11 +68,7 @@ class ProductStructuredData
         }
 
         $graph = [
-            [
-                '@type' => 'Organization', '@id' => $site.'/#organization',
-                'name' => 'Software on the Web', 'url' => $site,
-                'logo' => asset('favicon/android-chrome-512x512.png'),
-            ],
+            app(\App\Support\SiteIdentity::class)->organization(),
             [
                 '@type' => 'WebSite', '@id' => $site.'/#website',
                 'name' => config('app.name', 'Software on the Web'), 'url' => $site,

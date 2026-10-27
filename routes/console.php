@@ -34,3 +34,5 @@ Schedule::command('products:discover')
     ->dailyAt('04:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('agent:refresh')->dailyAt('05:00')->withoutOverlapping();

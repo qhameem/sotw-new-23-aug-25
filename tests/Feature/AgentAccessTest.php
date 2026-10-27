@@ -14,10 +14,10 @@ class AgentAccessTest extends TestCase
     public function test_discovery_file_documents_real_routes(): void
     {
         $this->get('/llms.txt')->assertOk()
-            ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
-            ->assertSee(route('alternatives.index'), false)
-            ->assertSee('/document.json', false)
-            ->assertSee('schema_version 1', false);
+            ->assertHeader('Content-Type', 'text/plain; charset=utf-8')
+            ->assertSee('/about.md', false)
+            ->assertSee('/api/md/_catalog', false)
+            ->assertSee('/about.md', false);
     }
 
     public function test_documents_use_public_fields_without_changing_records(): void
@@ -33,7 +33,7 @@ class AgentAccessTest extends TestCase
         $json = $this->get($url.'json')->assertOk()
             ->assertHeader('Content-Type', 'application/json; charset=UTF-8')
             ->assertHeader('X-Robots-Tag', 'noindex, follow')
-            ->assertHeader('Link', '<'.route('products.show', $product->slug).'>; rel="canonical"')
+            ->assertHeader('Content-Location', route('products.show', $product->slug))
             ->assertJsonPath('schema_version', 1)
             ->assertJsonPath('name', 'Agent Product')
             ->assertDontSee('private hosting password')->assertDontSee('unreviewed edit')
@@ -43,8 +43,8 @@ class AgentAccessTest extends TestCase
             'description_markdown', 'categories', 'published_at', 'updated_at',
         ], array_keys($json->json()));
         $this->get($url.'md')->assertOk()
-            ->assertHeader('Content-Type', 'text/markdown; charset=UTF-8')
-            ->assertHeader('X-LiteSpeed-Cache-Control', 'no-cache')
+            ->assertHeader('Content-Type', 'text/markdown; charset=utf-8')
+            ->assertHeader('Access-Control-Allow-Origin', '*')
             ->assertSee('# Agent Product', false)->assertSee('## Features', false)
             ->assertDontSee('<script', false);
         $this->assertSame($before, $product->fresh()->getRawOriginal());

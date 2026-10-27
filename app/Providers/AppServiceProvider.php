@@ -59,6 +59,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach ([Product::class, Article::class, Category::class, PageMetaTag::class,
+            \App\Models\ProductCollection::class, \App\Models\ProductCollectionItem::class,
+            \App\Models\Changelog::class, \App\Models\ToolScan::class,
+            \App\Models\ArticleCategory::class, \App\Models\ArticleTag::class,
+            \App\Models\TechStack::class, \App\Models\PremiumProduct::class,
+            \App\Models\Badge::class, ProductMedia::class] as $model) {
+            $invalidate = function ($record) {
+                if ($record instanceof Product && !$record->wasRecentlyCreated && array_diff(array_keys($record->getChanges()), ['updated_at', 'impressions']) === []) {
+                    return;
+                }
+                app(\App\Services\Markdown\CacheVersion::class)->invalidate();
+            };
+            $model::saved($invalidate);
+            $model::deleted($invalidate);
+        }
+
         Article::observe(ArticleObserver::class);
         Product::observe(ProductObserver::class);
         ProductMedia::observe(ProductMediaObserver::class);

@@ -10,7 +10,6 @@
 @section('meta_description', $metaDescription)
 @if($product->approved && $product->is_published && !$product->generation_noindex)
     @push('alternate-formats')
-        <link rel="alternate" type="text/markdown" href="{{ route('products.document', ['slug' => $product->slug, 'format' => 'md']) }}">
         <link rel="alternate" type="application/json" href="{{ route('products.document', ['slug' => $product->slug, 'format' => 'json']) }}">
     @endpush
 @endif

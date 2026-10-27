@@ -1,0 +1,10 @@
+{
+    "resources/views/site/badges/index.blade.php": "7bcfd7fd25817f0e506488d1251d37bcb010ee1b5d6727bb45a7939b4671e7be",
+    "resources/views/site/about.blade.php": "f8f1b92d7a963210b73c5d5ab915ce7dc5b8d6c3322e607fce3f6ec8831c5045",
+    "resources/views/site/faq.blade.php": "dfb0db3c594d914fd3efbbb8861a1e4a7f789331248d70842accf92ac3243f8f",
+    "resources/views/site/legal.blade.php": "a0a01b7f48db7880516f275d5370c5b9f7334731d060c165af607f43cf0fffc2",
+    "resources/views/site/refund-policy.blade.php": "05aefae1f531cfcef49b8fffbac7fa690cdf804f07f1e1c21dd6e2869b8ab906",
+    "resources/views/site/software-review.blade.php": "8229a5eb8ba0939032f3af957682201bb868f1c3f015b202585413dce4f01d85",
+    "resources/views/premium-spot/details.blade.php": "bcd848b6869523567af4eeb1577641e528a41e88a42cd7887eb477df89a2e8c7",
+    "resources/views/todolists/partials/content-section.blade.php": "4f84ede06a04d7b37baa829790dca4e42df8d34a0e79b041d48ffef033182703"
+}

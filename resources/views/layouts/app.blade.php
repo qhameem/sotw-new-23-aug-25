@@ -507,6 +507,7 @@
 
     @include('partials.header-code-injection')
 
+    @include('partials.agent-head')
 </head>
 
 <body class="font-sans antialiased" style="background-color: var(--color-body-bg);" x-data="{}" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"

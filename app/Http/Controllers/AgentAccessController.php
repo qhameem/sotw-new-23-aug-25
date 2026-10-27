@@ -10,16 +10,21 @@ class AgentAccessController extends Controller
 {
     public function index(): Response
     {
-        return response(view('agent.llms')->render(), 200, $this->headers('text/plain; charset=UTF-8'));
+        return app(MarkdownController::class)->discovery(request(), 'llms.txt');
     }
 
     public function product(string $slug, string $format, PublicProductDocument $document): Response
     {
+        if ($format === 'md') {
+            return app(MarkdownController::class)->show(request(), 'product/'.$slug);
+        }
+
         $product = Product::approvedAndPublished()
             ->where(fn ($query) => $query->where('generation_noindex', false)->orWhereNull('generation_noindex'))
             ->where('slug', $slug)->with('categories:id,name')->firstOrFail();
         $data = $document->data($product);
         $headers = $this->headers($format === 'json' ? 'application/json; charset=UTF-8' : 'text/markdown; charset=UTF-8');
+        $headers['Content-Location'] = route('products.show', $product->slug);
         $headers['Link'] = '<'.route('products.show', $product->slug).'>; rel="canonical"';
         $headers['X-Robots-Tag'] = 'noindex, follow';
 

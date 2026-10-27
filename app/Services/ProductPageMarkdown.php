@@ -102,6 +102,19 @@ class ProductPageMarkdown
             return '';
         }
         $tag = strtolower($node->nodeName);
+        if ($tag === 'pre') {
+            $code = $node->getElementsByTagName('code')->item(0);
+            $language = '';
+            if ($code && preg_match('/language-([a-z0-9_+-]+)/i', $code->getAttribute('class'), $match)) {
+                $language = $match[1];
+            }
+            $content = rtrim($node->textContent);
+            preg_match_all('/`+/', $content, $runs);
+            $width = max(3, ...array_map(fn ($run) => strlen($run) + 1, $runs[0] ?: ['']));
+            $fence = str_repeat('`', $width);
+
+            return "\n\n".$fence.$language."\n".$content."\n".$fence."\n\n";
+        }
         if ($tag === 'table') {
             return $this->table($node, $url);
         }
@@ -123,6 +136,19 @@ class ProductPageMarkdown
             $href = $this->resolveUrl($url, $node->getAttribute('href'));
 
             return $href && $trimmed !== '' ? '['.str_replace(['[', ']'], ['\\[', '\\]'], $trimmed).']('.str_replace(['(', ')', ' '], ['%28', '%29', '%20'], $href).')' : $text;
+        }
+        if (in_array($tag, ['strong', 'b'], true)) {
+            return '**'.$trimmed.'**';
+        }
+        if (in_array($tag, ['em', 'i'], true)) {
+            return '*'.$trimmed.'*';
+        }
+        if ($tag === 'code') {
+            $fence = str_contains($trimmed, '`') ? '``' : '`';
+            return $fence.$trimmed.$fence;
+        }
+        if ($tag === 'blockquote') {
+            return "\n\n> ".str_replace("\n", "\n> ", $trimmed)."\n\n";
         }
         if ($tag === 'br') {
             return "\n";

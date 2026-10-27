@@ -35,8 +35,8 @@
         <a href="{{ route('refund-policy') }}" class="hover:underline">Refund Policy</a> •
         <a href="{{ route('changelog.index') }}" class="hover:underline">Changelog</a> •
         <a href="{{ route('badges.index') }}" class="hover:underline">Badge</a> •
-        <a href="https://x.com/software_on_web" target="_blank" rel="{{ \App\Support\OutboundLink::rel('https://x.com/software_on_web', 'system_view') }}" class="hover:underline">X.com</a> •
-        Contact us: <a href="mailto:hello@softwareontheweb.com" target="_blank" class="hover:underline">hello@softwareontheweb.com</a>
+        <a href="{{ config('agent_access.socials.0') }}" target="_blank" rel="{{ \App\Support\OutboundLink::rel(config('agent_access.socials.0'), 'system_view') }}" class="hover:underline">X.com</a> •
+        Contact us: <a href="mailto:{{ config('agent_access.contact') }}" target="_blank" class="hover:underline">{{ config('agent_access.contact') }}</a>
         <div class="h-2"></div>
         @if (!empty($footerBadgeEmbedCodes))
             <div class="mb-3 flex flex-wrap items-center justify-center gap-3">

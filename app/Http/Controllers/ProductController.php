@@ -1978,6 +1978,17 @@ class ProductController extends Controller
 
     public function showProductPage(Product $product)
     {
+        $view = $this->publicPageView($product);
+        $response = response()->view($view->name(), $view->getData());
+        if ($view->getData()['isUnpublishedProduct']) {
+            $response->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
+
+        return $response;
+    }
+
+    public function publicPageView(Product $product): \Illuminate\View\View
+    {
         $isAdminPreview = request()->routeIs('admin.product-approvals.preview');
 
         if (! $product->approved && ! $isAdminPreview) {
@@ -2132,7 +2143,7 @@ class ProductController extends Controller
             }
         }
 
-        $response = response()->view('products.show', compact(
+        return view('products.show', compact(
             'product',
             'title',
             'pageTitle',
@@ -2161,12 +2172,6 @@ class ProductController extends Controller
             'isUnpublishedProduct',
             'weekNavigation'
         ));
-
-        if ($isUnpublishedProduct) {
-            $response->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
-        }
-
-        return $response;
     }
 
     protected function buildProductWeekNavigation(Product $product): ?array
@@ -2986,8 +2991,8 @@ class ProductController extends Controller
         ])->whereIn('id', $regularProductIdsOnPage);
 
         if ($regularProductIdsOnPage->isNotEmpty()) {
-            $placeholders = implode(',', array_fill(0, count($regularProductIdsOnPage), '?'));
-            $regularProductsOnPageQuery->orderByRaw("FIELD(id, $placeholders)", $regularProductIdsOnPage->all());
+            $ordering = $regularProductIdsOnPage->values()->map(fn ($id, $index) => "WHEN ? THEN {$index}")->implode(' ');
+            $regularProductsOnPageQuery->orderByRaw("CASE id {$ordering} END", $regularProductIdsOnPage->all());
         }
 
         $regularProductsOnPage = $regularProductsOnPageQuery->get();

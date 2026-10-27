@@ -63,7 +63,12 @@ Route::get('/ads/{ad}/impression', [AdInteractionController::class, 'impression'
 Route::get('/product/{product:slug}/click', [ProductInteractionController::class, 'click'])->name('products.click');
 Route::get('/product/{product:slug}/og-image.jpg', ProductOgImageController::class)->name('products.og-image');
 Route::get('/site.webmanifest', SiteManifestController::class)->name('site.manifest');
-Route::get('/llms.txt', [\App\Http\Controllers\AgentAccessController::class, 'index'])->name('agent.index');
+Route::get('/llms.txt', fn (\Illuminate\Http\Request $request) => app(\App\Http\Controllers\MarkdownController::class)->discovery($request, 'llms.txt'))->name('agent.index');
+Route::get('/llms-full.txt', fn (\Illuminate\Http\Request $request) => app(\App\Http\Controllers\MarkdownController::class)->discovery($request, 'llms-full.txt'))->name('agent.full');
+Route::get('/ai.txt', fn (\Illuminate\Http\Request $request) => app(\App\Http\Controllers\MarkdownController::class)->discovery($request, 'ai.txt'))->name('agent.policy');
+Route::get('/robots.txt', fn (\Illuminate\Http\Request $request) => app(\App\Http\Controllers\MarkdownController::class)->discovery($request, 'robots.txt'))->name('agent.robots');
+Route::get('/api/md/_catalog', [\App\Http\Controllers\MarkdownController::class, 'catalog'])->name('agent.catalog');
+Route::get('/api/md/{path?}', [\App\Http\Controllers\MarkdownController::class, 'show'])->where('path', '.*')->name('agent.markdown');
 Route::get('/product/{slug}/document.{format}', [\App\Http\Controllers\AgentAccessController::class, 'product'])
     ->where('format', 'md|json')->name('products.document');
 Route::get('/{key}.txt', IndexNowKeyController::class)
@@ -471,7 +476,8 @@ Route::prefix('tools/{toolSlug}')
     ->where(['toolSlug' => '[A-Za-z0-9\-]+'])
     ->name('launch-readiness.')
     ->group(function () {
-        Route::get('/', [LaunchReadinessController::class, 'index'])->name('index');
+        Route::get('/', \App\Http\Controllers\PublicToolController::class)
+            ->withoutMiddleware('configured.tool:launch_readiness')->name('index');
         Route::post('/analyze', [LaunchReadinessController::class, 'analyze'])->middleware('throttle:30,1')->name('analyze');
         Route::get('/history', [LaunchReadinessController::class, 'history'])->name('history');
         Route::get('/results/{toolScan:result_token}', [LaunchReadinessController::class, 'show'])->name('results.show');
