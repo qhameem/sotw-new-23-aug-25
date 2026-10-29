@@ -68,15 +68,15 @@
     </div>
     <div class="content">
         <p>Hi,</p>
-        <p>We noticed that the <strong>Software on the Web</strong> badge is missing from your website for
-            <strong>{{ $product->name }}</strong>.</p>
+        <p>Badge verification failed for <strong>{{ $product->name }}</strong>.</p>
+        <p>{{ $failureMessage ?? 'We could not verify the Software on the Web badge on your website. Please check the badge and its backlink.' }}</p>
 
         <div class="warning">
             <strong>Important:</strong>
             @if($wasPublished)
-                Your product has been unpublished because the badge could not be verified.
+                Your listing has been unpublished because badge verification failed.
             @else
-                Your product will not be published while the badge cannot be verified.
+                Your listing cannot be published until badge verification succeeds.
             @endif
         </div>
 
@@ -86,7 +86,10 @@
             &lt;img src="{{ url('/images/badge.png') }}" alt="Featured on Software on the Web"&gt;
             &lt;/a&gt;</div>
 
-        <p>After restoring the badge, contact us or wait for the next automatic verification.</p>
+        <p>After fixing the issue, contact us or wait for the next automatic check.
+            @if($wasPublished)
+                If your listing was unpublished, contact us to restore publication after verification succeeds.
+            @endif</p>
 
         <a href="{{ url('/product/' . $product->slug) }}" class="btn">View Your Listing</a>
 

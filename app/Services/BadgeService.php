@@ -107,7 +107,8 @@ class BadgeService
         } catch (\InvalidArgumentException $e) {
             return [
                 'verified' => false,
-                'message' => $e->getMessage(),
+                'reason' => 'invalid_url',
+                'message' => 'We could not check your badge because its saved placement URL is invalid or does not point to a public website. Please update the badge placement URL.',
             ];
         }
 
@@ -117,17 +118,26 @@ class BadgeService
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
         ];
 
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'User-Agent' => $userAgents[array_rand($userAgents)],
-            'Accept' => 'text/html,application/xhtml+xml',
-        ])->timeout(15)->get($url);
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent' => $userAgents[array_rand($userAgents)],
+                'Accept' => 'text/html,application/xhtml+xml',
+            ])->timeout(15)->get($url);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return [
+                'verified' => false,
+                'reason' => 'connection_failed',
+                'message' => "We could not connect to {$url} to check your badge. Please check that your website is online and publicly accessible.",
+            ];
+        }
 
         if ($response->failed()) {
             return [
                 'verified' => false,
+                'reason' => 'http_error',
                 'http_status' => $response->status(),
                 'response_hash' => hash('sha256', $response->body()),
-                'message' => "We couldn't reach that page right now (HTTP {$response->status()}).",
+                'message' => "Your badge page at {$url} returned HTTP {$response->status()}. We could not check the badge. Please ensure the page is publicly accessible and allows verification requests.",
             ];
         }
 
@@ -143,6 +153,7 @@ class BadgeService
         $expectedHost = parse_url($this->getBadgeDestinationUrl(), PHP_URL_HOST);
         $allowedBadgePaths = $this->getAllowedBadgeImagePaths();
 
+        $hasNofollowBadge = false;
         foreach ($links as $link) {
             $href = trim($link->getAttribute('href'));
             $linkHost = parse_url($href, PHP_URL_HOST);
@@ -152,7 +163,9 @@ class BadgeService
             }
 
             $rel = strtolower($link->getAttribute('rel'));
-            if (str_contains($rel, 'nofollow')) {
+            if (in_array('nofollow', preg_split('/\\s+/', trim($rel)), true)) {
+                $hasNofollowBadge = $hasNofollowBadge || $this->linkContainsExpectedBadgeImage($link, $allowedBadgePaths);
+
                 continue;
             }
 
@@ -166,10 +179,24 @@ class BadgeService
             }
         }
 
+        $hasBadgeImage = $this->linkContainsExpectedBadgeImage($doc->documentElement, $allowedBadgePaths, false);
+        $destination = $this->getBadgeDestinationUrl();
+        if ($hasNofollowBadge) {
+            $reason = 'nofollow';
+            $message = "Your badge link on {$url} contains rel=\"nofollow\". Verification requires a link without nofollow. Remove only nofollow; you can keep noopener and noreferrer.";
+        } elseif ($hasBadgeImage) {
+            $reason = 'incorrect_backlink';
+            $message = "We found your badge on {$url}, but it does not link to {$destination}. Please wrap the badge image in a link to {$destination}.";
+        } else {
+            $reason = 'badge_missing';
+            $message = "We could not find the Software on the Web badge in the HTML returned by {$url}. Please add the badge using the embed code below. If it is already visible, ensure it appears in the page’s initial HTML rather than being added only through JavaScript.";
+        }
+
         return [
             'verified' => false,
             ...$evidence,
-            'message' => 'We found the page, but not a dofollow Software on the Web badge yet.',
+            'reason' => $reason,
+            'message' => $message,
         ];
     }
 
@@ -349,8 +376,12 @@ class BadgeService
         return $url.$separator.'v='.filemtime($publicFilePath);
     }
 
-    private function linkContainsExpectedBadgeImage(\DOMElement $link, array $allowedBadgePaths): bool
+    private function linkContainsExpectedBadgeImage(?\DOMElement $link, array $allowedBadgePaths, bool $allowGenericBadge = true): bool
     {
+        if (! $link) {
+            return false;
+        }
+
         foreach ($link->getElementsByTagName('img') as $image) {
             $src = trim($image->getAttribute('src'));
             $srcPath = parse_url($src, PHP_URL_PATH);
@@ -360,7 +391,7 @@ class BadgeService
                 return true;
             }
 
-            if (str_contains($alt, 'software on the web') || str_contains(strtolower($srcPath ?? ''), 'badge')) {
+            if (str_contains($alt, 'software on the web') || ($allowGenericBadge && str_contains(strtolower($srcPath ?? ''), 'badge'))) {
                 return true;
             }
         }

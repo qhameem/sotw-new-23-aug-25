@@ -16,6 +16,7 @@ class BadgeWarningMail extends Mailable
     public function __construct(
         public Product $product,
         public bool $wasPublished = false,
+        public ?string $failureMessage = null,
     ) {}
 
     public function envelope(): Envelope

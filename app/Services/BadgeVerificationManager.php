@@ -59,7 +59,7 @@ class BadgeVerificationManager
 
         if (! $product->badge_warning_sent_at && $product->user?->email) {
             try {
-                Mail::to($product->user->email)->send(new BadgeWarningMail($product, $wasPublished));
+                Mail::to($product->user->email)->send(new BadgeWarningMail($product, $wasPublished, $result['message'] ?? null));
                 $product->update(['badge_warning_sent_at' => now()]);
             } catch (\Throwable $e) {
                 Log::error('Failed to send badge verification failure email.', [
