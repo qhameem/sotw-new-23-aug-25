@@ -9,117 +9,142 @@
     $productDomain = parse_url($product->link, PHP_URL_HOST) ?: $product->link;
 @endphp
 
-<article class="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-    <a href="{{ $previewUrl }}" target="_blank" rel="noopener"
-        class="absolute inset-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-        aria-label="Open {{ $product->name }} product page"></a>
+<article class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-start gap-3.5">
+        <div class="pt-1 flex-shrink-0">
+            <input type="checkbox" name="products[]" value="{{ $product->id }}"
+                class="product-checkbox h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer dark:border-slate-600 dark:bg-slate-800"
+                form="bulk-approve-form"
+                @disabled($pendingCustomCategoryCount > 0)
+                title="{{ $pendingCustomCategoryCount > 0 ? 'Complete custom category details before bulk approval' : 'Select for bulk approval' }}"
+                aria-label="Select {{ $product->name }} for bulk approval">
+        </div>
 
-    <div class="pointer-events-none relative flex items-start gap-4">
         <img src="{{ $logoUrl }}" alt="{{ $product->name }} logo"
-            class="h-12 w-12 flex-shrink-0 rounded-xl border border-slate-200 bg-gray-100 object-contain">
+            class="h-12 w-12 flex-shrink-0 rounded-xl border border-slate-200 bg-slate-50 object-contain shadow-2xs dark:border-slate-700 dark:bg-slate-800">
 
         <div class="min-w-0 flex-1">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
-                    <h3 class="truncate text-base font-semibold text-slate-900">{{ $product->name }}</h3>
-                    <p class="mt-1 line-clamp-1 text-sm text-slate-600">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</h3>
+                        <span class="text-xs font-mono text-slate-400 dark:text-slate-500">#{{ $product->id }}</span>
+                    </div>
+                    <p class="mt-0.5 line-clamp-1 text-sm text-slate-600 dark:text-slate-300">
                         {{ $product->product_page_tagline ?: $product->tagline }}
                     </p>
                 </div>
 
-                <label class="pointer-events-auto relative z-10 inline-flex flex-shrink-0 items-center gap-2 text-sm font-medium text-slate-600">
-                    <input type="checkbox" name="products[]" value="{{ $product->id }}"
-                        class="product-checkbox h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-                        form="bulk-approve-form"
-                        @disabled($pendingCustomCategoryCount > 0)
-                        title="{{ $pendingCustomCategoryCount > 0 ? 'Complete custom category details before bulk approval' : 'Select for bulk approval' }}">
-                    Select
-                </label>
+                <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow"
+                    class="inline-flex items-center gap-1 rounded-md border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 hover:text-sky-800 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300 self-start">
+                    <span>{{ $productDomain }}</span>
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </a>
             </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">#{{ $product->id }}</span>
+            <div class="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
                 <span @class([
-                    'rounded-full px-2 py-1 font-semibold',
-                    'bg-emerald-50 text-emerald-700' => $isBadgeSubmission && $product->badge_verified,
-                    'bg-amber-50 text-amber-700' => $isBadgeSubmission && !$product->badge_verified,
-                    'bg-sky-50 text-sky-700' => !$isBadgeSubmission,
+                    'inline-flex items-center rounded-full px-2.5 py-0.5 font-medium border',
+                    'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' => $isBadgeSubmission && $product->badge_verified,
+                    'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300' => $isBadgeSubmission && !$product->badge_verified,
+                    'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300' => !$isBadgeSubmission,
                 ])>{{ $submissionLabel }}@if($isBadgeSubmission) · {{ $product->badge_verified ? 'Verified' : 'Not verified' }}@endif</span>
+
                 @if($product->generation_review_required)
-                    <span class="rounded-full bg-violet-50 px-2 py-1 font-semibold text-violet-700">Generated copy needs review</span>
-                @endif
-                <span>Submitted {{ $product->created_at->format('d M Y, H:i') }}</span>
-                <span>{{ $productDomain }}</span>
-
-                @foreach($product->categories->take(3) as $category)
-                    <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">{{ $category->name }}</span>
-                @endforeach
-
-                @if($product->categories->count() > 3)
-                    <span>+{{ $product->categories->count() - 3 }} more</span>
+                    <span class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 font-semibold text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300">Generated copy needs review</span>
                 @endif
 
-                @if($pendingCustomCategoryCount > 0)
-                    <button type="button"
-                        class="pointer-events-auto relative z-10 rounded-full bg-amber-50 px-2 py-1 font-medium text-amber-700 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        data-custom-category-open="{{ $product->id }}">
-                        {{ $pendingCustomCategoryCount }} custom {{ Str::plural('category', $pendingCustomCategoryCount) }}
-                    </button>
-                @endif
-            </div>
+                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300" title="Submitter">
+                    <svg class="h-3 w-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <span>{{ $product->user->name ? $product->user->name . ' · ' : '' }}{{ $product->user->email ?? 'No email' }}</span>
+                </span>
 
-            <div class="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
-                <div><span class="block font-medium text-slate-500">Submitter</span><span class="mt-0.5 block break-all font-semibold text-slate-800">{{ $product->user->name ?? 'Unknown' }} · {{ $product->user->email ?? 'No email' }}</span></div>
-                <div><span class="block font-medium text-slate-500">Submission method</span><span class="mt-0.5 block font-semibold text-slate-800">{{ $submissionLabel }}</span></div>
-                @if($isBadgeSubmission)
-                    <div><span class="block font-medium text-slate-500">Badge page</span><a href="{{ $product->badge_placement_url ?: $product->link }}" target="_blank" rel="noopener nofollow" class="pointer-events-auto relative z-10 mt-0.5 block truncate font-semibold text-sky-700 hover:underline">{{ $product->badge_placement_url ?: $product->link }}</a></div>
-                @elseif($product->published_at)
-                    <div><span class="block font-medium text-slate-500">Requested publish date</span><span class="mt-0.5 block font-semibold text-slate-800">{{ $product->published_at->copy()->timezone('UTC')->format('d M Y, H:i') }} UTC</span></div>
+                @if($isBadgeSubmission && $product->badge_placement_url)
+                    <a href="{{ $product->badge_placement_url }}" target="_blank" rel="noopener nofollow"
+                        class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-medium text-sky-700 hover:underline dark:border-slate-700 dark:bg-slate-800 dark:text-sky-300"
+                        title="Badge page">
+                        <span>Badge page</span>
+                        <span class="truncate max-w-[14rem]">({{ $product->badge_placement_url }})</span>
+                    </a>
+                @elseif($product->published_at && !$isBadgeSubmission)
+                    <span class="text-slate-500 dark:text-slate-400">Req: {{ $product->published_at->copy()->timezone('UTC')->format('d M Y, H:i') }} UTC</span>
                 @endif
+
+                <span class="text-slate-400">·</span>
+                <span class="text-slate-500 dark:text-slate-400">Submitted {{ $product->created_at->format('d M Y, H:i') }}</span>
+
+                <div class="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+                    @foreach($product->categories->take(3) as $category)
+                        <span class="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $category->name }}</span>
+                    @endforeach
+
+                    @if($product->categories->count() > 3)
+                        <span class="text-slate-400" title="{{ $product->categories->skip(3)->pluck('name')->implode(', ') }}">+{{ $product->categories->count() - 3 }} more</span>
+                    @endif
+
+                    @if($pendingCustomCategoryCount > 0)
+                        <button type="button"
+                            class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700 border border-amber-200 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            data-custom-category-open="{{ $product->id }}">
+                            {{ $pendingCustomCategoryCount }} custom {{ Str::plural('category', $pendingCustomCategoryCount) }}
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
-
     </div>
 
-    <div class="relative z-10 mt-3 flex flex-wrap items-end justify-end gap-2">
-        @include('admin.product_approvals._delete_form')
-        <div class="mr-auto">
-            <x-scheduled-datepicker name="published_at[{{ $product->id }}]" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
+    <div class="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        @include('admin.product_approvals._delete_form', ['withIcon' => true, 'class' => 'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 transition dark:hover:bg-red-950 dark:hover:text-red-300'])
+
+        <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <a href="{{ $previewUrl }}" target="_blank" rel="noopener"
+                title="Preview page" aria-label="Preview page"
+                class="inline-flex items-center justify-center rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span class="sr-only">Preview page</span>
+            </a>
+            <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals"
+                title="Edit product" aria-label="Edit product"
+                class="inline-flex items-center justify-center rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span class="sr-only">Edit</span>
+            </a>
+
+            <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
+                @csrf
+                <input type="hidden" name="publish_option" value="now">
+                <button type="submit" class="js-loading-button inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 disabled:cursor-wait disabled:opacity-70 transition dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900">
+                    <svg class="js-button-icon h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" /></svg>
+                    <svg class="js-button-spinner js-publish-spinner hidden h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                    <span class="js-publish-label">Publish now</span>
+                </button>
+            </form>
+
+            <span class="hidden sm:inline-block h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5"></span>
+
+            <div class="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50/50 p-1 gap-1.5 shadow-2xs dark:border-sky-900 dark:bg-sky-950/40">
+                <x-scheduled-datepicker class="!mt-0 !py-1 !text-xs !rounded-lg !border-slate-300 dark:!border-slate-700 dark:!bg-slate-800" name="published_at[{{ $product->id }}]" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
+
+                <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
+                    @csrf
+                    <input type="hidden" name="publish_option" value="specific_date">
+                    <input type="hidden" name="published_at" value="">
+                    <button type="submit" class="js-loading-button inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70 shadow-xs transition">
+                        <svg class="js-button-icon h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
+                        <svg class="js-button-spinner js-publish-spinner hidden h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span class="js-publish-label">Publish on selected date</span>
+                    </button>
+                </form>
+            </div>
         </div>
-        <a href="{{ $previewUrl }}" target="_blank" rel="noopener"
-            class="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Preview page
-        </a>
-        <a href="{{ route('admin.products.edit', $product->id) }}?from=approvals"
-            class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit
-        </a>
-        <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
-            @csrf
-            <input type="hidden" name="publish_option" value="now">
-            <button type="submit" class="js-loading-button inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70">
-                <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" /></svg>
-                <svg class="js-button-spinner js-publish-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                <span class="js-publish-label">Publish now</span>
-            </button>
-        </form>
-        <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
-            @csrf
-            <input type="hidden" name="publish_option" value="specific_date">
-            <input type="hidden" name="published_at" value="">
-            <button type="submit" class="js-loading-button inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70">
-                <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
-                <svg class="js-button-spinner js-publish-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                <span class="js-publish-label">Publish on selected date</span>
-            </button>
-        </form>
     </div>
 </article>
 
