@@ -218,7 +218,11 @@
                             <span>Select all pending</span>
                         </label>
                         <x-scheduled-datepicker name="bulk_published_at" value="{{ today('UTC')->next(\Carbon\Carbon::MONDAY)->toDateString() }}" />
-                        <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700">Approve selected</button>
+                        <button type="submit" class="js-loading-button inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70">
+                            <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" /></svg>
+                            <svg class="js-button-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                            Approve selected
+                        </button>
                     </div>
                 </div>
             </form>

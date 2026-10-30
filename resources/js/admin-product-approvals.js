@@ -1,3 +1,14 @@
+document.addEventListener('submit', event => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    const button = event.submitter || form.querySelector('button[type="submit"], button:not([type])');
+    if (!button || !button.matches('.js-loading-button')) return;
+
+    button.disabled = true;
+    button.querySelector('.js-button-icon')?.classList.add('hidden');
+    button.querySelector('.js-button-spinner')?.classList.remove('hidden');
+});
+
 function initializeApprovalTable() {
     const panel = document.querySelector('[data-approval-table]');
     if (!panel) return;
