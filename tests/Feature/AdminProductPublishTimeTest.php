@@ -42,10 +42,10 @@ class AdminProductPublishTimeTest extends TestCase
         $response->assertSeeInOrder([
             'js-publish-approval-form',
             'js-publish-spinner',
-            'Publish on selected date',
+            'Publish now',
             'js-publish-approval-form',
             'js-publish-spinner',
-            'Publish now',
+            'Publish on selected date',
         ], false);
         $response->assertSee("label.textContent = 'Publishing...'", false);
 

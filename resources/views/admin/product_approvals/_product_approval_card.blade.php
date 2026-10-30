@@ -96,21 +96,21 @@
         </a>
         <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
             @csrf
+            <input type="hidden" name="publish_option" value="now">
+            <button type="submit" class="js-loading-button inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70">
+                <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" /></svg>
+                <svg class="js-button-spinner js-publish-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                <span class="js-publish-label">Publish now</span>
+            </button>
+        </form>
+        <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
+            @csrf
             <input type="hidden" name="publish_option" value="specific_date">
             <input type="hidden" name="published_at" value="">
             <button type="submit" class="js-loading-button inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70">
                 <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
-                <svg class="js-button-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                <svg class="js-button-spinner js-publish-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
                 <span class="js-publish-label">Publish on selected date</span>
-            </button>
-        </form>
-        <form action="{{ route('admin.product-approvals.approve', $product->id) }}" method="POST" class="js-publish-approval-form order-last sm:order-none" data-product-id="{{ $product->id }}" data-has-pending-categories="{{ $pendingCustomCategoryCount > 0 ? '1' : '0' }}">
-            @csrf
-            <input type="hidden" name="publish_option" value="now">
-            <button type="submit" class="js-loading-button inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70">
-                <svg class="js-button-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" /></svg>
-                <svg class="js-button-spinner hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                <span class="js-publish-label">Publish now</span>
             </button>
         </form>
     </div>
