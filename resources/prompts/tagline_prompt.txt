@@ -1,9 +1,47 @@
-Write three tagline candidates for "{productName}". Use only the facts JSON below.
-Each candidate: 40 to 140 characters. A complete phrase. Start with what the product is, then the platform or audience. Example format: Mac notch app for tasks, notes, and focus timers.
-Do not use the words streamline, optimize, elevate, supercharge, transform, seamless, or effortless.
-Do not end on and, or, with, for, to, of, in, the, or a.
-Do not copy a heading from the source.
-Do not name a feature missing from the facts.
+Write three tagline candidates for "{productName}" using only the facts JSON below.
+
+Creative direction:
+- Aim for award-winning precision and originality.
+- Earn attention through a specific, verified benefit.
+- Sound human, natural, and direct.
+- Find a fresh angle without inventing claims.
+- Borrow a movie trailer's brevity, not its drama.
+
+Each candidate must:
+- Express ONE central idea: the primary function or strongest verified benefit.
+- Aim for 5 to 10 words and 30 to 75 characters.
+- Hard maximum: 140 characters, including spaces and punctuation.
+- Use extra length only when essential for clarity. Never fill it with additional features.
+- Be a complete phrase that makes the product's purpose understandable.
+- Use a different angle from the other candidates.
+
+Prevent description-style output:
+- Do not include the product name.
+- Do not introduce the product with "a," "an," "meet," or "introducing."
+- Do not list features, capabilities, or benefits.
+- Do not join separate capabilities with commas, semicolons, "and," or "plus."
+- Mention at most one differentiator, platform, or audience, only when central to the idea.
+- Omit secondary details such as language counts, integrations, and compatibility.
+- Avoid explanatory sentences, relative clauses, and trailing qualifications.
+- If a candidate reads like a product description, rewrite it around one clear idea.
+
+Accuracy and style:
+- Use only facts supplied below.
+- Do not invent outcomes, superiority, accuracy, or performance claims.
+- Do not copy source headings.
+- Avoid hype, generic slogans, clickbait, rhetorical questions, clichés, and exclamation marks.
+- Do not use em dashes.
+- Do not use streamline, optimize, elevate, supercharge, transform, seamless, or effortless.
+- Do not end on and, or, with, for, to, of, in, the, or a.
+
+Example of unacceptable structure:
+"ProductName, a desktop email client for Mac, prepares replies, orders your inbox, and supports 99 languages with accuracy."
+
+Reason: product introduction followed by a feature list and an unsupported quality claim.
+
+Before returning, check every candidate against the 140-character maximum and the single-idea requirement. Rewrite any candidate that fails.
+
 Return JSON only: {"candidates":["...","...","..."]}
+
 Facts:
 {factsJson}
