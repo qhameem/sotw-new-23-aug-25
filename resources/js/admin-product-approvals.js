@@ -28,17 +28,43 @@ function initializeApprovalTable() {
     };
     const updateSelection = () => {
         const selected = rows.filter(input => input.checked);
-        bulk.hidden = selected.length === 0;
-        master.checked = rows.length > 0 && selected.length === rows.length;
-        master.indeterminate = selected.length > 0 && selected.length < rows.length;
-        panel.querySelector('[data-selection-count]').textContent = `${selected.length} selected`;
+        const hasSelection = selected.length > 0;
+
+        if (hasSelection) {
+            bulk.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+            bulk.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            bulk.removeAttribute('aria-hidden');
+            bulk.removeAttribute('inert');
+        } else {
+            bulk.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            bulk.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+            bulk.setAttribute('aria-hidden', 'true');
+            bulk.setAttribute('inert', '');
+        }
+
+        if (master) {
+            master.checked = rows.length > 0 && selected.length === rows.length;
+            master.indeterminate = selected.length > 0 && selected.length < rows.length;
+        }
+
+        const countEl = panel.querySelector('[data-selection-count]');
+        if (countEl) {
+            countEl.textContent = `${selected.length} selected`;
+        }
+
         const inputs = panel.querySelector('[data-selected-inputs]');
-        inputs.replaceChildren(...selected.map(checkbox => {
-            const input = document.createElement('input');
-            input.type = 'hidden'; input.name = 'products[]'; input.value = checkbox.value;
-            return input;
-        }));
-        bulk.querySelector('[name="publish_scope"]').disabled = !selected.some(input => input.closest('[data-product-row]').dataset.scheduled === '1');
+        if (inputs) {
+            inputs.replaceChildren(...selected.map(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden'; input.name = 'products[]'; input.value = checkbox.value;
+                return input;
+            }));
+        }
+
+        const publishScopeBtn = bulk.querySelector('[name="publish_scope"]');
+        if (publishScopeBtn) {
+            publishScopeBtn.disabled = !selected.some(input => input.closest('[data-product-row]')?.dataset.scheduled === '1');
+        }
     };
     master.addEventListener('change', () => { rows.forEach(input => { input.checked = master.checked; }); updateSelection(); });
     rows.forEach(input => input.addEventListener('change', updateSelection));

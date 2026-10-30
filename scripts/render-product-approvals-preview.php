@@ -40,7 +40,7 @@ $items = collect([
     return $product;
 });
 $approvedProducts = new LengthAwarePaginator($items, 6, 20, 1);
-$html = view('admin.product_approvals._approved_table', ['approvedProducts' => $approvedProducts, 'search' => '', 'status' => null, 'perPage' => 20, 'sortDirection' => 'asc'])->render();
+$html = view('admin.product_approvals._approved_table', ['approvedProducts' => $approvedProducts, 'search' => '', 'status' => null, 'perPage' => 20, 'sortDirection' => 'asc', 'submitterType' => ''])->render();
 foreach ($items as $item) {
     $html = preg_replace('/src="https:\/\/example.com\/logo.svg"/', 'src="'.$item->previewLogo.'"', $html, 1);
 }

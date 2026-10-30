@@ -73,14 +73,51 @@
         </table>
     </div>
     <div class="border-t border-slate-200 px-4 py-3 dark:border-slate-700">{{ $approvedProducts->links() }}</div>
-    <form method="POST" action="{{ route('admin.product-approvals.bulk-manage') }}" data-bulk-form class="approval-bulk sticky bottom-4 z-20 mx-4 my-3 flex flex-wrap items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-white shadow-lg dark:bg-indigo-950" hidden>
+    <form method="POST" action="{{ route('admin.product-approvals.bulk-manage') }}" data-bulk-form
+        class="approval-bulk fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-2xl shadow-slate-900/15 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/50 transition-all duration-300 ease-out translate-y-24 opacity-0 pointer-events-none"
+        aria-hidden="true" inert>
         @csrf
-        <span data-selection-count class="mr-auto font-semibold" aria-live="polite"></span>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex h-2 w-2 rounded-full bg-sky-500 animate-pulse"></span>
+            <span data-selection-count class="text-xs font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap" aria-live="polite">0 selected</span>
+        </div>
+
+        <span class="h-4 w-px bg-slate-200 dark:bg-slate-700"></span>
+
         <div data-selected-inputs></div>
-        <button type="submit" formaction="{{ route('admin.product-approvals.publish-scheduled-now') }}" name="publish_scope" value="selected" class="rounded-lg bg-emerald-600 px-3 py-2 font-medium hover:bg-emerald-500">Publish selected</button>
-        <button type="button" data-bulk-reschedule class="rounded-lg border border-slate-500 px-3 py-2 hover:bg-slate-800">Reschedule</button>
-        <button type="button" data-bulk-disapprove class="rounded-lg px-3 py-2 text-red-300 hover:bg-red-950">Disapprove</button>
-        <button type="button" data-clear-selection class="rounded-lg px-2 py-2" aria-label="Clear selection">✕</button>
+
+        <button type="submit" formaction="{{ route('admin.product-approvals.publish-scheduled-now') }}" name="publish_scope" value="selected"
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 disabled:opacity-40 disabled:cursor-not-allowed transition whitespace-nowrap">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6" />
+            </svg>
+            <span>Publish selected</span>
+        </button>
+
+        <button type="button" data-bulk-reschedule
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 whitespace-nowrap">
+            <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>Reschedule</span>
+        </button>
+
+        <button type="button" data-bulk-disapprove
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition focus:outline-none dark:text-rose-400 dark:hover:bg-rose-950/50 whitespace-nowrap">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span>Disapprove</span>
+        </button>
+
+        <button type="button" data-clear-selection
+            title="Clear selection" aria-label="Clear selection"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition dark:hover:bg-slate-800 dark:hover:text-slate-200">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span class="sr-only">Clear selection</span>
+        </button>
     </form>
     <form method="POST" action="{{ route('admin.product-approvals.publish-scheduled-now') }}" class="border-t border-slate-200 px-4 py-2 dark:border-slate-700">
         @csrf
