@@ -13,6 +13,35 @@ class AdminProductIndexTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_submitter_filter_applies_to_products_and_autocomplete(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'admin']));
+        $member = User::factory()->create();
+        $adminProduct = Product::factory()->create(['name' => 'Filter Admin', 'user_id' => $admin->id]);
+        $memberProduct = Product::factory()->create(['name' => 'Filter Member', 'user_id' => $member->id]);
+
+        foreach (['admin' => $adminProduct, 'non_admin' => $memberProduct] as $filter => $product) {
+            $params = ['q' => 'Filter', 'submitter_filter' => $filter];
+            $response = $this->actingAs($admin)->get(route('admin.products.index', $params));
+            $response->assertOk()->assertSee('Submitted by');
+            $this->assertSame([$product->id], $response->viewData('products')->pluck('id')->all());
+            $this->assertSame($filter, $response->viewData('submitterFilter'));
+            $this->assertStringContainsString('submitter_filter='.$filter, $response->viewData('products')->url(2));
+
+            $response = $this->getJson(route('admin.products.autocomplete', $params));
+            $response->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $product->id);
+            $this->assertStringContainsString('submitter_filter='.$filter, $response->json('0.select_url'));
+        }
+
+        foreach (['all', 'invalid'] as $filter) {
+            $response = $this->get(route('admin.products.index', ['submitter_filter' => $filter]));
+            $response->assertOk();
+            $this->assertSame(2, $response->viewData('products')->total());
+            $this->assertSame('all', $response->viewData('submitterFilter'));
+        }
+    }
+
     public function test_admin_products_search_matches_domain_and_owner_email(): void
     {
         $adminRole = Role::create(['name' => 'admin']);

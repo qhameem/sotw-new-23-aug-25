@@ -58,7 +58,7 @@ class ProductApprovalController extends Controller
         $sortBy = $request->input('sort_by', 'published_at'); // Default sort by published_at
         $sortDirection = $request->input('sort_direction', 'desc'); // Default sort direction
 
-        $validSortColumns = ['name', 'published_at'];
+        $validSortColumns = ['name', 'published_at', 'created_at', 'id'];
         if (! in_array($sortBy, $validSortColumns)) {
             $sortBy = 'published_at';
         }
@@ -96,11 +96,7 @@ class ProductApprovalController extends Controller
             });
         }
 
-        if ($submitterType === 'admin') {
-            $approvedProductsQuery->whereHas('user.roles', fn ($query) => $query->where('name', 'admin'));
-        } elseif ($submitterType === 'non_admin') {
-            $approvedProductsQuery->whereDoesntHave('user.roles', fn ($query) => $query->where('name', 'admin'));
-        }
+        $approvedProductsQuery->submittedByRole($submitterType);
 
         // Handle cases where published_at might be null for sorting
         if ($sortBy === 'published_at') {

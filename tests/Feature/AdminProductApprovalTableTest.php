@@ -90,6 +90,23 @@ class AdminProductApprovalTableTest extends TestCase
             ->assertOk()->assertSee('Member Product')->assertDontSee('Admin Product');
     }
 
+    public function test_table_sorting_preserves_submitter_filter(): void
+    {
+        $member = User::factory()->create();
+        $first = Product::factory()->create(['name' => 'Zebra', 'user_id' => $member->id, 'approved' => true, 'is_published' => true, 'created_at' => now()->subDay()]);
+        $second = Product::factory()->create(['name' => 'Alpha', 'user_id' => $member->id, 'approved' => true, 'is_published' => true]);
+        Product::factory()->create(['name' => 'Admin Only', 'user_id' => User::role('admin')->firstOrFail()->id, 'approved' => true, 'is_published' => true]);
+
+        foreach (['name' => [$second->id, $first->id], 'created_at' => [$first->id, $second->id], 'id' => [$first->id, $second->id]] as $sort => $ids) {
+            $response = $this->get(route('admin.product-approvals.index', [
+                'submitter_type' => 'non_admin', 'sort_by' => $sort, 'sort_direction' => 'asc',
+            ]));
+            $response->assertOk();
+            $this->assertSame($ids, $response->viewData('approvedProducts')->pluck('id')->all());
+            $this->assertStringContainsString('submitter_type=non_admin', $response->viewData('approvedProducts')->url(2));
+        }
+    }
+
     public function test_bulk_reschedule_changes_only_selected_approved_products(): void
     {
         $selected = Product::factory()->count(2)->create(['approved' => true, 'is_published' => true, 'published_at' => now()]);

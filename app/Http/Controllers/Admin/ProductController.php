@@ -83,6 +83,16 @@ class ProductController extends Controller
         return in_array($logoFilter, ['all', 'missing'], true) ? $logoFilter : 'all';
     }
 
+    protected function normalizeSubmitterFilter(?string $submitterFilter): string
+    {
+        return in_array($submitterFilter, ['admin', 'non_admin'], true) ? $submitterFilter : 'all';
+    }
+
+    protected function applySubmitterFilter($query, string $submitterFilter): void
+    {
+        $query->submittedByRole($submitterFilter);
+    }
+
     protected function applyLogoFilter($query, string $logoFilter): void
     {
         if ($logoFilter !== 'missing') {
@@ -151,8 +161,10 @@ class ProductController extends Controller
         $searchTerm = trim((string) $request->input('q'));
         $this->applySearch($query, $searchTerm);
         $selectedProductId = $request->integer('selected_product_id');
+        $submitterFilter = $this->normalizeSubmitterFilter($request->input('submitter_filter'));
         $logoFilter = $this->normalizeLogoFilter($request->input('logo_filter'));
         $this->applyLogoFilter($query, $logoFilter);
+        $this->applySubmitterFilter($query, $submitterFilter);
 
         // Sorting functionality
         $sortOptions = $this->sortOptions();
@@ -171,7 +183,7 @@ class ProductController extends Controller
             $selectedProduct = Product::with(['user', 'categories'])->withCount('userUpvotes')->find($selectedProductId);
         }
 
-        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct', 'sortOptions', 'logoFilter'));
+        return view('admin.products.index', compact('products', 'searchTerm', 'sortBy', 'sortDir', 'selectedProduct', 'sortOptions', 'logoFilter', 'submitterFilter'));
     }
 
     public function autocomplete(Request $request)
@@ -179,6 +191,7 @@ class ProductController extends Controller
         $searchTerm = trim((string) $request->input('q'));
         $sortBy = $this->normalizeSortBy($request->input('sort_by'));
         $sortDir = $this->normalizeSortDir($request->input('sort_dir'));
+        $submitterFilter = $this->normalizeSubmitterFilter($request->input('submitter_filter'));
         $logoFilter = $this->normalizeLogoFilter($request->input('logo_filter'));
 
         if (mb_strlen($searchTerm) < 2) {
@@ -189,12 +202,13 @@ class ProductController extends Controller
             ->select(['id', 'user_id', 'name', 'slug', 'tagline', 'link', 'logo'])
             ->tap(fn ($query) => $this->applySearch($query, $searchTerm))
             ->tap(fn ($query) => $this->applyLogoFilter($query, $logoFilter))
+            ->tap(fn ($query) => $this->applySubmitterFilter($query, $submitterFilter))
             ->orderBy('is_promoted', 'desc')
             ->orderBy('name')
             ->limit(8)
             ->get();
 
-        return response()->json($products->map(function (Product $product) use ($searchTerm, $sortBy, $sortDir, $logoFilter) {
+        return response()->json($products->map(function (Product $product) use ($searchTerm, $sortBy, $sortDir, $logoFilter, $submitterFilter) {
             $domain = parse_url($product->link, PHP_URL_HOST);
             $domain = is_string($domain) ? preg_replace('/^www\./i', '', $domain) : null;
 
@@ -213,6 +227,7 @@ class ProductController extends Controller
                     'sort_by' => $sortBy,
                     'sort_dir' => $sortDir,
                     'logo_filter' => $logoFilter,
+                    'submitter_filter' => $submitterFilter,
                     'selected_product_id' => $product->id,
                 ]).'#selected-product-card',
             ];

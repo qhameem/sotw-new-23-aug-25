@@ -6,12 +6,13 @@
     $hideSidebar = true;
     $headerPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
     $mainPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
-    $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc' || ($logoFilter ?? 'all') !== 'all';
+    $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc' || ($logoFilter ?? 'all') !== 'all' || ($submitterFilter ?? 'all') !== 'all';
     $showingFrom = $products->firstItem() ?? 0;
     $showingTo = $products->lastItem() ?? 0;
     $activeSortLabel = $sortOptions[$sortBy] ?? ucfirst(str_replace('_', ' ', $sortBy));
     $sortTagBaseParams = array_filter([
         'q' => $searchTerm ?: null,
+        'submitter_filter' => ($submitterFilter ?? 'all') !== 'all' ? $submitterFilter : null,
         'sort_dir' => $sortDir,
         'logo_filter' => ($logoFilter ?? 'all') !== 'all' ? $logoFilter : null,
         'selected_product_id' => request()->integer('selected_product_id') ?: null,
@@ -75,8 +76,10 @@
                             sortBy: @js($sortBy),
                             sortDir: @js($sortDir),
                             logoFilter: @js($logoFilter ?? 'all'),
+                            submitterFilter: @js($submitterFilter ?? 'all'),
                         })"
                         @keydown.escape.window="open = false">
+                        <input type="hidden" name="submitter_filter" value="{{ $submitterFilter }}">
                         <div class="space-y-2">
                             <label for="admin-product-search" class="dashboard-label block">
                                 Search products
@@ -313,6 +316,21 @@
                     <span class="dashboard-badge">Page {{ $products->currentPage() }} of {{ $products->lastPage() }}</span>
                 </div>
             </div>
+
+            <form method="GET" action="{{ route('admin.products.index') }}" class="flex flex-wrap items-end gap-3">
+                @foreach (['q' => $searchTerm, 'sort_by' => $sortBy, 'sort_dir' => $sortDir, 'logo_filter' => $logoFilter] as $key => $value)
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                @endforeach
+                <div class="space-y-2">
+                    <label for="admin-submitter-filter" class="dashboard-label block">Submitted by</label>
+                    <select id="admin-submitter-filter" name="submitter_filter" class="dashboard-select" onchange="this.form.requestSubmit()">
+                        <option value="all" @selected($submitterFilter === 'all')>All users</option>
+                        <option value="admin" @selected($submitterFilter === 'admin')>Admin users</option>
+                        <option value="non_admin" @selected($submitterFilter === 'non_admin')>Non-admin users</option>
+                    </select>
+                </div>
+                <button type="submit" class="dashboard-secondary-button">Apply filter</button>
+            </form>
 
             @if ($products->isEmpty())
                 <div class="dashboard-panel border-dashed px-6 py-16 text-center">
@@ -663,6 +681,7 @@ function adminProductSearchAutocomplete(config) {
         sortBy: config.sortBy || 'created_at',
         sortDir: config.sortDir || 'desc',
         logoFilter: config.logoFilter || 'all',
+        submitterFilter: config.submitterFilter || 'all',
         suggestions: [],
         open: false,
         loading: false,
@@ -690,6 +709,7 @@ function adminProductSearchAutocomplete(config) {
                         sort_by: this.sortBy,
                         sort_dir: this.sortDir,
                         logo_filter: this.logoFilter,
+                        submitter_filter: this.submitterFilter,
                     });
 
                     const response = await fetch(`/admin/products/autocomplete?${params.toString()}`, {

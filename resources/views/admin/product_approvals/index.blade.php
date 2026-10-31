@@ -41,7 +41,7 @@
         .approval-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (min-width: 1024px) {
-        .approval-filters { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+        .approval-filters { grid-template-columns: minmax(0, 1fr) auto auto auto auto; }
     }
     .custom-category-modal {
         position: fixed !important;

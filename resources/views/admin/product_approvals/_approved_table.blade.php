@@ -1,7 +1,7 @@
 @php
     $groups = $approvedProducts->getCollection()->groupBy(fn ($product) => !$product->is_published && $product->published_at
         ? $product->published_at->copy()->timezone('UTC')->toDateString() : 'published');
-    $filterParams = ['search' => $search, 'submitter_type' => $submitterType, 'per_page' => $perPage, 'sort_by' => 'published_at', 'sort_direction' => $sortDirection];
+    $filterParams = ['search' => $search, 'submitter_type' => $submitterType, 'per_page' => $perPage, 'sort_by' => $sortBy, 'sort_direction' => $sortDirection];
 @endphp
 <section id="approved-products" data-approval-table class="approval-panel scroll-mt-6 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
@@ -20,21 +20,28 @@
     </div>
     <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="approval-filters">
         <input type="hidden" name="status" value="{{ $status }}">
-        <input type="hidden" name="sort_by" value="published_at">
+
         <div class="approval-search">
             <label class="min-w-0 flex-1"><span class="sr-only">Search products or submitters</span><input type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters…" class="w-full rounded-lg border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-500 dark:border-slate-600"></label>
             <button type="submit" class="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white dark:bg-slate-100 dark:text-slate-900">Search</button>
         </div>
         <label class="flex items-center gap-2 whitespace-nowrap">Submitted by
             <select name="submitter_type" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                <option value="" @selected($submitterType === '')>Everyone</option>
-                <option value="admin" @selected($submitterType === 'admin')>Admins</option>
-                <option value="non_admin" @selected($submitterType === 'non_admin')>Non-admins</option>
+                <option value="" @selected($submitterType === '')>All users</option>
+                <option value="admin" @selected($submitterType === 'admin')>Admin users</option>
+                <option value="non_admin" @selected($submitterType === 'non_admin')>Non-admin users</option>
             </select>
         </label>
-        <label class="flex items-center gap-2 whitespace-nowrap">Publish date
+        <label class="flex items-center gap-2 whitespace-nowrap">Sort by
+            <select name="sort_by" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
+                @foreach(['published_at' => 'Publish date', 'created_at' => 'Created date', 'name' => 'Name', 'id' => 'Product ID'] as $key => $label)
+                    <option value="{{ $key }}" @selected($sortBy === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label class="flex items-center gap-2 whitespace-nowrap">Order
             <select name="sort_direction" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                <option value="asc" @selected($sortDirection === 'asc')>Earliest first</option><option value="desc" @selected($sortDirection === 'desc')>Latest first</option>
+                <option value="asc" @selected($sortDirection === 'asc')>Ascending</option><option value="desc" @selected($sortDirection === 'desc')>Descending</option>
             </select>
         </label>
         <label class="flex items-center gap-2 whitespace-nowrap">Rows

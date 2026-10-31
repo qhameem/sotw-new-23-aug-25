@@ -342,6 +342,21 @@ class Product extends Model implements Sitemapable
         return null;
     }
 
+    public function scopeSubmittedByRole($query, string $roleType)
+    {
+        if (! in_array($roleType, ['admin', 'non_admin'], true)) {
+            return $query;
+        }
+
+        return $query->whereHas('user', function ($userQuery) use ($roleType) {
+            if ($roleType === 'admin') {
+                $userQuery->role('admin');
+            } else {
+                $userQuery->withoutRole('admin');
+            }
+        });
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
