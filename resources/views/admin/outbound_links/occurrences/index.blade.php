@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Discovered Outbound Links')
 
@@ -140,7 +140,7 @@
             </div>
 
             <div class="border-t border-gray-200 px-4 py-4">
-                {{ $occurrences->links() }}
+                {{ $occurrences->onEachSide(1)->links('admin.pagination') }}
             </div>
         </div>
     </div>

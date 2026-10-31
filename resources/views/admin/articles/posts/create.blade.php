@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true, 'mainPadding' => 'px-0', 'headerPadding' => 'px-4 sm:px-6 md:px-0'])
+@extends('layouts.admin')
 
 @section('title', 'Create Article Post | Software on the Web')
 @section('hide_desktop_page_header', 'true')

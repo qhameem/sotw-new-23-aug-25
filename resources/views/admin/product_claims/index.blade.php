@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Product Claims')
 
 @section('header-title')
-    <h2 class="text-base font-semibold py-[3px] hidden md:block">Product Claims</h2>
+    Product claims
 @endsection
 
 @section('content')
@@ -22,7 +22,7 @@
 
         <section class="space-y-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Pending product claims</h1>
+                <h2 class="text-lg font-medium">Pending product claims</h2>
                 <p class="text-sm text-gray-600 mt-1">Approve a claim to reassign product ownership. The product will then show that user as the submitter and they will be able to edit it.</p>
             </div>
 

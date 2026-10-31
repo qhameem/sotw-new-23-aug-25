@@ -54,7 +54,7 @@ class AdminProductPreviewTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.product-approvals.index'))
+            ->get(route('admin.product-approvals.index', ['status' => 'pending']))
             ->assertOk()
             ->assertSee(route('admin.product-approvals.preview', $product), false)
             ->assertSee('Preview page');

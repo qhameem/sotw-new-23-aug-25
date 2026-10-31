@@ -38,7 +38,7 @@ class AdminProductApprovalTableTest extends TestCase
         Product::factory()->create(['name' => 'Pending Badge', 'approved' => true, 'is_published' => false, 'published_at' => '2026-10-05 07:00:00', 'submission_type' => 'badge', 'badge_verified' => false, 'badge_consecutive_failures' => 0]);
         $this->get(route('admin.product-approvals.index', ['status' => 'failed_badge', 'search' => 'Target', 'per_page' => 999]))
             ->assertOk()->assertSee('Failed Target')->assertDontSee('Pending Badge')
-            ->assertSee('Oct 5, 2026 (1 scheduled)')->assertViewHas('perPage', 20);
+            ->assertSee('Oct 5, 2026')->assertViewHas('perPage', 20);
     }
 
     public function test_top_bar_scheduled_count_excludes_unverified_badge_submissions(): void
@@ -69,6 +69,7 @@ class AdminProductApprovalTableTest extends TestCase
             ->assertViewHas('failedBadgeProductsCount', 1)
             ->assertSee('class="approval-summary"', false);
 
+        view('components.top-bar')->render();
         $this->assertSame(3, $scheduledCount);
 
         $this->get(route('admin.product-approvals.index', ['status' => 'scheduled']))
@@ -105,6 +106,19 @@ class AdminProductApprovalTableTest extends TestCase
             $this->assertSame($ids, $response->viewData('approvedProducts')->pluck('id')->all());
             $this->assertStringContainsString('submitter_type=non_admin', $response->viewData('approvedProducts')->url(2));
         }
+    }
+
+    public function test_pending_review_is_accessible_separately_from_the_catalog_table(): void
+    {
+        Product::factory()->create(['name' => 'Awaiting Review', 'approved' => false, 'is_published' => false, 'published_at' => null]);
+        Product::factory()->create(['name' => 'Live Catalog Product', 'approved' => true, 'is_published' => true]);
+
+        $this->get(route('admin.product-approvals.index'))
+            ->assertOk()->assertSee('Live Catalog Product')->assertDontSee('Awaiting Review')
+            ->assertSee('data-product-detail', false)->assertSee('data-detail-open', false);
+
+        $this->get(route('admin.product-approvals.index', ['status' => 'pending']))
+            ->assertOk()->assertSee('Awaiting Review')->assertDontSee('data-approval-table', false);
     }
 
     public function test_bulk_reschedule_changes_only_selected_approved_products(): void
@@ -145,7 +159,7 @@ class AdminProductApprovalTableTest extends TestCase
                 'is_published' => $published,
                 'published_at' => $approved ? now()->addWeek() : null,
             ]);
-            $this->get(route('admin.product-approvals.index'))
+            $this->get(route('admin.product-approvals.index', $approved ? [] : ['status' => 'pending']))
                 ->assertOk()->assertSee(route('admin.product-approvals.destroy', $product), false);
             $this->delete(route('admin.product-approvals.destroy', $product))
                 ->assertRedirect(route('admin.product-approvals.index'))

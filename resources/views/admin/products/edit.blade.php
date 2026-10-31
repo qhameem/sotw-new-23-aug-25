@@ -1,4 +1,4 @@
-@extends('layouts.submission')
+@extends('layouts.admin')
 
 @section('header-title')
     <div class="flex gap-4 justify-between items-center">

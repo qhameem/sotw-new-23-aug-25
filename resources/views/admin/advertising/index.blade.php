@@ -3,7 +3,7 @@
     $mainContentMaxWidth = 'max-w-none';
     $containerMaxWidth = 'max-w-none';
 @endphp
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Advertising Management')
 

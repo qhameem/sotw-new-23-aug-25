@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @php
     $hideSidebar = true;
@@ -35,7 +35,7 @@
                 </tbody>
             </table>
         </div>
-        @if($drafts->hasPages())<div class="border-t border-slate-200 px-5 py-4">{{ $drafts->links() }}</div>@endif
+        @if($drafts->hasPages())<div class="border-t border-slate-200 px-5 py-4">{{ $drafts->onEachSide(1)->links('admin.pagination') }}</div>@endif
     </div>
 </div>
 @endsection

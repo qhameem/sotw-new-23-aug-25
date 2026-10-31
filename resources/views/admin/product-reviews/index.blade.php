@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('header-title')
     Product Reviews
@@ -89,7 +89,7 @@
     </div>
 
     <div class="mt-6">
-        {{ $productReviews->links() }}
+        {{ $productReviews->onEachSide(1)->links('admin.pagination') }}
     </div>
 </div>
 @endsection

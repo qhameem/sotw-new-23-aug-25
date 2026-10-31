@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Articles Management')
 
@@ -155,7 +155,7 @@
                     </div>
 
                     <div class="mt-6">
-                        {{ $posts->links() }}
+                        {{ $posts->onEachSide(1)->links('admin.pagination') }}
                     </div>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-approvals')
 
 @php
     $hideSidebar = true;
@@ -14,35 +14,6 @@
 
 @section('content')
 <style>
-    .approval-summary {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-bottom: 24px;
-    }
-    .approval-summary > a { min-width: 0; }
-    .approval-filters {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-    }
-    .approval-filters > label { min-width: 0; }
-    .approval-search {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-    }
-    .approval-search > label { flex: 1; min-width: 0; }
-    .approval-search > button { flex-shrink: 0; }
-    @media (min-width: 640px) {
-        .approval-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (min-width: 1024px) {
-        .approval-filters { grid-template-columns: minmax(0, 1fr) auto auto auto auto; }
-    }
     .custom-category-modal {
         position: fixed !important;
         inset: 0 !important;
@@ -135,7 +106,7 @@
     .custom-category-modal .custom-category-name { font-size: 14px !important; }
     .custom-category-modal textarea { font-size: 13px !important; line-height: 1.4 !important; }
 </style>
-<div class="mx-auto w-full max-w-none px-4 py-5 sm:px-6 lg:px-8">
+<div class="approval-page-content">
     @if(session('success'))
         <div class="mb-6 flex items-center gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
@@ -168,11 +139,6 @@
         </div>
     @endif
 
-    <div class="mb-5">
-        <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Product Approvals</h1>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review submissions, verify badge launches, and manage the publishing queue.</p>
-    </div>
-
     <nav aria-label="Approval summary" class="approval-summary">
         @foreach([
             ['status' => 'pending', 'label' => 'Pending review', 'count' => $pendingProducts->count(), 'tone' => 'amber'],
@@ -180,7 +146,8 @@
             ['status' => 'shown', 'label' => 'Published', 'count' => $shownProductsCount, 'tone' => 'emerald'],
             ['status' => 'failed_badge', 'label' => 'Failed badge', 'count' => $failedBadgeProductsCount, 'tone' => 'red'],
         ] as $summary)
-            <a href="{{ route('admin.product-approvals.index', ['status' => $summary['status']]) }}#{{ $summary['status'] === 'pending' ? 'pending-approval' : 'approved-products' }}"
+            <a href="{{ route('admin.product-approvals.index', array_merge(request()->except(['page', 'status']), ['status' => $summary['status']])) }}#{{ $summary['status'] === 'pending' ? 'pending-approval' : 'approved-products' }}"
+                @if($status === $summary['status']) aria-current="page" @endif
                 @class([
                     'rounded-xl border bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:bg-slate-900',
                     'border-amber-200 dark:border-amber-900' => $summary['tone'] === 'amber',
@@ -194,7 +161,7 @@
         @endforeach
     </nav>
 
-    @if($status === null || $status === 'pending')
+    @if($status === 'pending')
     <div id="pending-approval" class="mb-10 scroll-mt-6">
         @if($pendingProducts->isNotEmpty())
         <div class="mb-4 flex items-center justify-between gap-4">

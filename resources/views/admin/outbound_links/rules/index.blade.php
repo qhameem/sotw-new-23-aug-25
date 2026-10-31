@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Outbound Link Rules')
 
@@ -170,7 +170,7 @@
             </div>
 
             <div class="mt-6">
-                {{ $rules->links() }}
+                {{ $rules->onEachSide(1)->links('admin.pagination') }}
             </div>
         </div>
     </div>

@@ -219,10 +219,10 @@ class AdminProductIndexTest extends TestCase
 
         $this->actingAs($admin)->post(route('admin.products.unpublish', $product));
 
-        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index'));
+        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index', ['status' => 'pending']));
 
         $response->assertOk();
-        $response->assertSee('Pending Approval');
+        $response->assertSee('Pending review');
         $response->assertSee('Reapproval Product');
         $this->assertTrue(
             $response->viewData('pendingProducts')->contains(fn (Product $pendingProduct) => $pendingProduct->id === $product->id)
@@ -265,9 +265,9 @@ class AdminProductIndexTest extends TestCase
         $response->assertSee('Upvote button');
         $response->assertSee('3');
         $response->assertSee('37.5% of votes');
-        $response->assertSee('Views');
-        $response->assertSee('25% of votes');
-        $response->assertSee('Link clicks');
+        $response->assertSee('Other');
+        $response->assertSee('50% of votes');
+        $response->assertSee('12.5% of votes');
         $response->assertSee('Base vote');
         $response->assertSee('8 views');
         $response->assertSee('4 link clicks');

@@ -1,15 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @php
-    $mainContentMaxWidth = 'max-w-none';
-    $containerMaxWidth = 'max-w-[1680px]';
-    $hideSidebar = true;
-    $headerPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
-    $mainPadding = 'px-4 sm:px-6 lg:pl-[126px] lg:pr-[122px]';
     $hasActiveFilters = ($searchTerm ?? '') !== '' || $sortBy !== 'created_at' || $sortDir !== 'desc' || ($logoFilter ?? 'all') !== 'all' || ($submitterFilter ?? 'all') !== 'all';
     $showingFrom = $products->firstItem() ?? 0;
     $showingTo = $products->lastItem() ?? 0;
-    $activeSortLabel = $sortOptions[$sortBy] ?? ucfirst(str_replace('_', ' ', $sortBy));
     $sortTagBaseParams = array_filter([
         'q' => $searchTerm ?: null,
         'submitter_filter' => ($submitterFilter ?? 'all') !== 'all' ? $submitterFilter : null,
@@ -19,22 +13,16 @@
     ], fn ($value) => $value !== null && $value !== '');
 @endphp
 
-@section('title', 'Admin Products')
+@section('title', 'Products')
+@section('header-title', 'Products')
 
 @section('hide_desktop_page_header')
     1
 @endsection
 
-@push('styles')
-    @vite('resources/css/app.css')
-@endpush
 
 @section('content')
     <div class="w-full py-6 space-y-6">
-        <div>
-            <h1 class="site-heading-text text-xl md:text-[2.125rem] font-semibold tracking-tight text-slate-950">Products</h1>
-        </div>
-
         @if (session('success'))
             <div class="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
                 {{ session('success') }}
@@ -47,29 +35,14 @@
             </div>
         @endif
 
-        <section class="dashboard-panel p-5 lg:p-6">
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)]">
-                <div class="space-y-5">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="space-y-2">
-                            <p class="dashboard-section-label">Catalog operations</p>
-                            <div>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                                    Search, sort, reassign, promote, and review products from one streamlined admin workspace.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2">
-                            <a href="{{ route('admin.product-claims.index') }}" class="dashboard-secondary-button">
-                                Claims queue
-                            </a>
-                            <a href="{{ route('admin.products.create') }}" class="dashboard-primary-button">
-                                New product
-                            </a>
-                        </div>
-                    </div>
-
+        <section class="admin-products-toolbar">
+            <div class="admin-products-toolbar-heading">
+                <p class="dashboard-section-label">Catalog management</p>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.product-claims.index') }}" class="dashboard-secondary-button">Claims queue</a>
+                    <a href="{{ route('admin.products.create') }}" class="dashboard-primary-button">New product</a>
+                </div>
+            </div>
                     <form action="{{ route('admin.products.index') }}" method="GET" class="space-y-4"
                         x-data="adminProductSearchAutocomplete({
                             initialQuery: @js($searchTerm ?? ''),
@@ -151,7 +124,7 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-3 lg:grid-cols-[220px_160px_180px_auto]">
+                        <div class="admin-products-search-filters">
                             <div class="space-y-2">
                                 <label for="admin-sort-by" class="dashboard-label block">Sort by</label>
                                 <select id="admin-sort-by" name="sort_by" x-model="sortBy" class="dashboard-select">
@@ -200,64 +173,6 @@
                             @endif
                         </div>
                     </form>
-                </div>
-
-                <aside class="dashboard-subpanel p-5">
-                    <div class="space-y-4">
-                        <div>
-                            <p class="dashboard-section-label">Snapshot</p>
-                            <h2 class="mt-1 text-base font-semibold text-slate-950">Current result set</h2>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">
-                                Review the current page, then apply bulk cleanup carefully.
-                            </p>
-                        </div>
-
-                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-                            <div class="dashboard-metric">
-                                <p class="dashboard-section-label">Results</p>
-                                <p class="dashboard-emphasis mt-2 text-2xl font-semibold tracking-tight">{{ number_format($products->total()) }}</p>
-                                <p class="dashboard-muted mt-1 text-sm">Matching the current filters</p>
-                            </div>
-
-                            <div class="dashboard-metric">
-                                <p class="dashboard-section-label">Showing</p>
-                                <p class="dashboard-emphasis mt-2 text-2xl font-semibold tracking-tight">{{ $showingFrom }}-{{ $showingTo }}</p>
-                                <p class="dashboard-muted mt-1 text-sm">Rows on this page</p>
-                            </div>
-
-                            <div class="dashboard-metric">
-                                <p class="dashboard-section-label">Selection</p>
-                                <p class="dashboard-emphasis mt-2 text-2xl font-semibold tracking-tight"><span id="selected-count-mirror">0</span></p>
-                                <p class="dashboard-muted mt-1 text-sm">Checked on the current page</p>
-                            </div>
-
-                            <div class="dashboard-metric">
-                                <p class="dashboard-section-label">Sort</p>
-                                <p class="dashboard-emphasis mt-2 text-base font-semibold">{{ $activeSortLabel }}</p>
-                                <p class="dashboard-muted mt-1 text-sm">{{ $sortDir === 'asc' ? 'Ascending order' : 'Descending order' }}</p>
-                            </div>
-                        </div>
-
-                        <form id="bulk-delete-form" action="{{ url('/temporary-bulk-delete-test-no-name') }}" method="POST" class="border-t border-slate-200 pt-4">
-                            @csrf
-
-                            <div class="space-y-4">
-                                <label for="select-all-products" class="flex items-start gap-3 text-sm text-slate-700">
-                                    <input type="checkbox" id="select-all-products" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/10">
-                                    <span>
-                                        <span class="block font-semibold text-slate-900">Select all on this page</span>
-                                        <span class="mt-1 block text-slate-500">Bulk selection applies only to the visible results below.</span>
-                                    </span>
-                                </label>
-
-                                <button type="submit" id="bulk-delete-button" class="dashboard-danger-button w-full" disabled>
-                                    Delete selected (<span id="selected-count">0</span>)
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </aside>
-            </div>
         </section>
 
         @if ($selectedProduct)
@@ -272,7 +187,7 @@
         @endif
 
         <section class="space-y-4">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-col gap-3">
                 <div>
                     <p class="dashboard-section-label">Product list</p>
                     <h2 class="mt-1 text-xl font-semibold text-slate-950">Catalog results</h2>
@@ -332,6 +247,15 @@
                 <button type="submit" class="dashboard-secondary-button">Apply filter</button>
             </form>
 
+            <form id="bulk-delete-form" action="{{ url('/temporary-bulk-delete-test-no-name') }}" method="POST" class="admin-products-bulk-toolbar">
+                @csrf
+                <label for="select-all-products" class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" id="select-all-products" class="h-4 w-4 rounded">
+                    Select all on this page
+                </label>
+                <button type="submit" id="bulk-delete-button" class="dashboard-danger-button" disabled>Delete selected (<span id="selected-count">0</span>)</button>
+            </form>
+
             @if ($products->isEmpty())
                 <div class="dashboard-panel border-dashed px-6 py-16 text-center">
                     <p class="text-lg font-medium text-slate-900">No products found.</p>
@@ -368,17 +292,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const productCheckboxes = document.querySelectorAll('.product-checkbox');
     const bulkDeleteButton = document.getElementById('bulk-delete-button');
     const selectedCountSpan = document.getElementById('selected-count');
-    const selectedCountMirror = document.getElementById('selected-count-mirror');
 
     function updateSelectedCount() {
         const count = document.querySelectorAll('.product-checkbox:checked').length;
 
         if (selectedCountSpan) {
             selectedCountSpan.textContent = count;
-        }
-
-        if (selectedCountMirror) {
-            selectedCountMirror.textContent = count;
         }
 
         if (bulkDeleteButton) {

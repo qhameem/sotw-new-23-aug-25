@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('header-title')
     Tech Stacks
@@ -73,7 +73,7 @@
             
             @if($techStacks->hasPages())
             <div class="mt-4">
-                {{ $techStacks->links() }}
+                {{ $techStacks->onEachSide(1)->links('admin.pagination') }}
             </div>
             @endif
         </div>

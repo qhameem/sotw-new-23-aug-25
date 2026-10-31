@@ -1,5 +1,7 @@
 @import "base.css";
 @import "dashboard.css";
+@import "admin-product-approvals.css";
+@import "admin-workspace.css";
 
 /* Product approvals: fixed density without adding controls to row height. */
 .approval-panel [hidden] { display: none !important; }

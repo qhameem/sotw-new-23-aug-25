@@ -1,98 +1,61 @@
-<!DOCTYPE html>
+@php
+    $adminVariant = trim($__env->yieldContent('admin-layout-variant')) ?: 'standard';
+    $activeAdminRoute = null;
+    $adminPageTitle = 'Administration';
+    foreach (config('admin-navigation.primary') as $item) {
+        if (request()->routeIs(...$item['patterns'])) {
+            $activeAdminRoute = $item['route'];
+            $adminPageTitle = $item['label'];
+            break;
+        }
+    }
+    if ($activeAdminRoute === null) {
+        foreach (config('admin-navigation.additional') as $item) {
+            if (request()->routeIs(preg_replace('/\.index$/', '.*', $item['route']))) {
+                $adminPageTitle = $item['label'];
+                break;
+            }
+        }
+    }
+    $adminHeading = trim(strip_tags($__env->yieldContent('header-title')));
+@endphp
+<!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-
 <head>
-    @include('partials.theme.boot')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <script>
-        window.loadDelayedScripts = function () {
-            if (window.delayedScriptsLoaded) return;
-            window.delayedScriptsLoaded = true;
-
-            // Load Livewire Scripts
-            const livewireTemplate = document.getElementById('delayed-livewire-scripts');
-            if (livewireTemplate && window.Livewire === undefined) {
-                const div = document.createElement('div');
-                div.innerHTML = livewireTemplate.innerHTML;
-                Array.from(div.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    document.body.appendChild(newScript);
-                });
-            }
-        };
-
-        ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
-            window.addEventListener(event, window.loadDelayedScripts, { once: true, passive: true });
-        });
-    </script>
-
-    <title>@yield('title', 'Admin Panel')</title>
-
-    @if(config('theme.font_url'))
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="{{ config('theme.font_url') }}" rel="stylesheet">
-    @endif
-
-    @php
-        $fontFamily = config('theme.font_family', 'Inter');
-        $fontCssStack = config('theme.font_css_stack', "'Inter', sans-serif");
-        $siteFontColor = config('theme.font_color', '#111827');
-        $siteBodyTextColor = config('theme.body_text_color', '#4b5563');
-    @endphp
-
-    <style>
-        :root {
-            --font-family-sans: {!! $fontCssStack !!};
-            --color-site-text: {{ $siteFontColor }};
-            --color-site-body-text: {{ $siteBodyTextColor }};
-        }
-
-        html,
-        body {
-            font-family: var(--font-family-sans);
-            color: var(--color-site-body-text);
-        }
-    </style>
-
+    <title>@yield('title', $adminHeading ?: $adminPageTitle) · {{ config('app.name') }}</title>
+    @include('partials.theme.boot')
     @include('partials.theme.favicon-links')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @include('partials.theme.text-color-overrides')
     @livewireStyles
     @stack('styles')
 </head>
-
-<body class="font-sans antialiased bg-gray-100" data-is-authenticated="{{ Auth::check() ? '1' : '0' }}"
-    data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
-    <div class="min-h-screen bg-gray-100" id="app">
-        {{-- @include('layouts.navigation') --}}
-
-        <!-- Page Heading -->
-        @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
+<body class="approval-workspace admin-workspace admin-variant-{{ $adminVariant }} {{ $adminVariant === 'approvals' && ($status ?? null) === 'pending' ? 'is-pending-view' : '' }}"
+    data-is-authenticated="{{ auth()->check() ? '1' : '0' }}" data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
+    <div class="approval-shell">
+        @include('admin.partials.navigation')
+        <main class="approval-main">
+            <header class="approval-page-header">
+                <div class="admin-page-heading">
+                    @if($adminHeading !== '' && str_contains($__env->yieldContent('header-title'), '<'))
+                        @yield('header-title')
+                    @else
+                        <h1>{{ $adminHeading ?: $adminPageTitle }}</h1>
+                    @endif
                 </div>
+                <a href="{{ route('profile.edit') }}" class="approval-account"><span class="approval-account-avatar">{{ mb_substr(auth()->user()?->name ?: 'Admin', 0, 1) }}</span><span><strong>{{ auth()->user()?->name ?: 'Admin' }}</strong><small>{{ auth()->user()?->email }}</small></span></a>
             </header>
-        @endif
-
-        <!-- Page Content -->
-        <main>
-            @yield('content')
+            @hasSection('actions')
+                <div class="admin-page-actions">@yield('actions')</div>
+            @endif
+            @yield('below_header')
+            <div class="admin-content">@yield('content')</div>
         </main>
     </div>
-    <template id="delayed-livewire-scripts">@livewireScripts</template>
+    @livewireScripts
     @stack('scripts')
-    <script>
-        window.isAuthenticated = document.body.dataset.isAuthenticated === '1';
-        window.loginUrl = document.body.dataset.loginUrl;
-        window.csrfToken = document.body.dataset.csrfToken;
-    </script>
-    @include('partials.theme.switcher')
+    @stack('form-scripts')
 </body>
-
 </html>

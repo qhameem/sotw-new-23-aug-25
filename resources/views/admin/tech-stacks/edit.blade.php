@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('header-title')
     Edit Tech Stack: {{ $tech_stack->name }}

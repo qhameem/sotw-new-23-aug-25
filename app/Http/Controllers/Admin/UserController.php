@@ -13,7 +13,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::latest()->get();
+        $users = User::with('roles')->withCount('products')->latest()->orderByDesc('id')->paginate(20)->withQueryString();
         $userCount = User::count();
         return view('admin.users.index', [
             'users' => $users,

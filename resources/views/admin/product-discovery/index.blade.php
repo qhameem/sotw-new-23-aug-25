@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Product Discovery')
 
@@ -191,7 +191,7 @@
             </article>
         @empty <div class="bg-white rounded-lg p-8 text-center text-gray-500">No {{ $status }} recommendations.</div> @endforelse
         </div>
-        <div class="mt-6">{{ $recommendations->links() }}</div>
+        <div class="mt-6">{{ $recommendations->onEachSide(1)->links('admin.pagination') }}</div>
     </section>
 </div>
 @endsection

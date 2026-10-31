@@ -23,7 +23,7 @@ $items = collect([
     $product = new Product([
         'name' => $name, 'tagline' => $tagline, 'slug' => Illuminate\Support\Str::slug($name),
         'link' => 'https://example.com/'.Illuminate\Support\Str::slug($name),
-        'logo' => 'https://example.com/logo.svg', 'approved' => true,
+        'logo' => 'https://example.com/logo.svg', 'created_at' => '2026-09-29 10:00:00', 'approved' => true,
         'is_published' => $state === 'published',
         'published_at' => $state === 'published' ? '2026-10-01 07:00:00' : '2026-10-05 07:00:00',
         'submission_type' => $badge ? 'badge' : 'free', 'badge_verified' => $badge === 'Verified',
@@ -31,6 +31,7 @@ $items = collect([
         'badge_placement_url' => 'https://example.com/badge',
     ]);
     $product->id = $index + 1;
+    $product->created_at = '2026-09-29 10:00:00';
     $product->badge_verification_attempts_max_checked_at = $badge === 'Pending' ? null : '2026-10-01 06:30:00';
     $user = new User(['name' => ['Avery Chen', 'Maya Patel', 'Noah Williams', 'Sofia Garcia', 'Ethan Kim', 'Admin'][$index], 'email' => 'submitter'.$index.'@example.com']);
     $user->setRelation('roles', $index === 5 ? collect([new Role(['name' => 'admin', 'guard_name' => 'web'])]) : collect());
@@ -40,13 +41,25 @@ $items = collect([
     return $product;
 });
 $approvedProducts = new LengthAwarePaginator($items, 6, 20, 1);
-$html = view('admin.product_approvals._approved_table', ['approvedProducts' => $approvedProducts, 'search' => '', 'status' => null, 'perPage' => 20, 'sortDirection' => 'asc', 'submitterType' => ''])->render();
-foreach ($items as $item) {
-    $html = preg_replace('/src="https:\/\/example.com\/logo.svg"/', 'src="'.$item->previewLogo.'"', $html, 1);
-}
+$html = view('admin.product_approvals.index', [
+    'approvedProducts' => $approvedProducts, 'pendingProducts' => collect(),
+    'search' => '', 'status' => null, 'perPage' => 20, 'sortBy' => 'published_at',
+    'sortDirection' => 'asc', 'submitterType' => '', 'scheduledProductsCount' => 4,
+    'shownProductsCount' => 2, 'failedBadgeProductsCount' => 1,
+    'settings' => ['product_publish_time' => '07:00'],
+    'errors' => new Illuminate\Support\ViewErrorBag,
+])->render();
 $manifest = json_decode(file_get_contents(__DIR__.'/../public/build/manifest.json'), true);
 $css = file_get_contents(__DIR__.'/../public/build/'.$manifest['resources/css/app.css']['file']);
 $js = file_get_contents(__DIR__.'/../resources/js/admin-product-approvals.js');
-$preview = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product Approvals — sample preview</title><style>:root{--font-family-sans:ui-sans-serif;}'.$css.'</style></head><body class="bg-slate-50 p-6 font-sans dark:bg-slate-950"><header class="mb-4 flex justify-between text-slate-900 dark:text-slate-100"><div><h1 class="text-xl font-semibold">Product Approvals</h1><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">No products pending.</p></div><button id="theme-toggle" class="rounded-lg border px-3 py-2 text-sm">Toggle dark mode</button></header>'.$html.'<p id="preview-message" class="mt-4 text-sm text-slate-600 dark:text-slate-300" role="status">Sample data. Form submissions are disabled in this preview.</p><script>'.$js.'</script><script>document.getElementById("theme-toggle").onclick=()=>document.documentElement.classList.toggle("dark"); document.addEventListener("submit", e=>{e.preventDefault();document.getElementById("preview-message").textContent="Sample action captured. Production page submits this action to Laravel."}); document.querySelectorAll("a").forEach(a=>a.addEventListener("click",e=>e.preventDefault()));</script></body></html>';
-file_put_contents(__DIR__.'/../docs/previews/product-approvals.html', $preview);
-echo "Preview rendered: 6 rows\n";
+$html = preg_replace('/<link[^>]+(?:stylesheet|modulepreload)[^>]*>/', '', $html);
+$html = preg_replace('/<script[^>]+type="module"[^>]*><\/script>/', '', $html);
+$html = str_replace('</head>', '<style>:root{--font-family-sans:ui-sans-serif,system-ui;}'.$css.'</style></head>', $html);
+$html = str_replace('</body>', '<script>'.$js.'</script><script>document.addEventListener("submit", e=>e.preventDefault());</script></body>', $html);
+$logoIndex = 0;
+$html = preg_replace_callback('/src="https:\/\/example.com\/logo.svg"/', function () use ($items, &$logoIndex) {
+    return 'src="'.$items[$logoIndex++ % $items->count()]->previewLogo.'"';
+}, $html);
+$output = $argv[1] ?? __DIR__.'/../docs/previews/product-approvals.html';
+file_put_contents($output, $html);
+echo "Preview rendered: ".$items->count()." rows\n";

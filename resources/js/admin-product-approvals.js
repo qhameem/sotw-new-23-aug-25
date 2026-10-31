@@ -12,6 +12,59 @@ document.addEventListener('submit', event => {
 function initializeApprovalTable() {
     const panel = document.querySelector('[data-approval-table]');
     if (!panel) return;
+    const detail = panel.querySelector('[data-product-detail]');
+    const detailTriggers = [...panel.querySelectorAll('[data-detail-open]')];
+    const openDetail = id => {
+        if (!detail) return;
+        panel.classList.remove('is-detail-closed');
+        panel.classList.add('has-detail-open');
+        detail.querySelectorAll('[data-detail-content]').forEach(content => {
+            content.hidden = content.dataset.detailContent !== id;
+        });
+        panel.querySelectorAll('[data-product-row]').forEach(row => row.classList.toggle('is-active', row.dataset.productId === id));
+        detailTriggers.forEach(trigger => trigger.setAttribute('aria-expanded', String(trigger.dataset.detailOpen === id)));
+        if (window.matchMedia('(max-width: 1050px)').matches) {
+            detail.setAttribute('role', 'dialog');
+            detail.setAttribute('aria-modal', 'true');
+            detail.querySelector('[data-detail-content]:not([hidden]) [data-detail-close]')?.focus();
+        }
+    };
+    let lastDetailTrigger = null;
+    const closeDetail = () => {
+        panel.classList.add('is-detail-closed');
+        panel.classList.remove('has-detail-open');
+        detail?.removeAttribute('role');
+        detail?.removeAttribute('aria-modal');
+        detailTriggers.forEach(trigger => trigger.setAttribute('aria-expanded', 'false'));
+        panel.querySelectorAll('[data-product-row]').forEach(row => row.classList.remove('is-active'));
+        lastDetailTrigger?.focus();
+    };
+    detailTriggers.forEach(trigger => trigger.addEventListener('click', () => {
+        lastDetailTrigger = trigger;
+        openDetail(trigger.dataset.detailOpen);
+    }));
+    panel.querySelectorAll('[data-detail-close]').forEach(button => button.addEventListener('click', closeDetail));
+    panel.querySelectorAll('[data-detail-disapprove]').forEach(button => button.addEventListener('click', () => {
+        panel.querySelector(`[data-product-id="${button.dataset.detailDisapprove}"] [data-disapprove]`)?.click();
+    }));
+    if (detailTriggers.length && window.matchMedia('(min-width: 1051px)').matches) openDetail(detailTriggers[0].dataset.detailOpen);
+    const syncDetailMode = () => {
+        if (!detail || !panel.classList.contains('has-detail-open')) return;
+        const modal = window.matchMedia('(max-width: 1050px)').matches;
+        if (modal) { detail.setAttribute('role', 'dialog'); detail.setAttribute('aria-modal', 'true'); }
+        else { detail.removeAttribute('role'); detail.removeAttribute('aria-modal'); }
+    };
+    window.addEventListener('resize', syncDetailMode);
+    document.addEventListener('keydown', event => {
+        if (!detail || !panel.classList.contains('has-detail-open')) return;
+        if (event.key === 'Escape' && !panel.querySelector('dialog[open], [data-row-menu]:not([hidden])')) closeDetail();
+        if (event.key !== 'Tab' || detail.getAttribute('aria-modal') !== 'true' || panel.querySelector('dialog[open]')) return;
+        const content = detail.querySelector('[data-detail-content]:not([hidden])');
+        const focusable = [...content.querySelectorAll('a[href], button:not(:disabled), input:not([type="hidden"]), select')];
+        const first = focusable[0], last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    });
     const rows = [...panel.querySelectorAll('[data-row-select]')];
     const master = panel.querySelector('[data-select-page]');
     const bulk = panel.querySelector('[data-bulk-form]');

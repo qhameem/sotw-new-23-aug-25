@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true])
+@extends('layouts.admin')
 
 @section('title', 'Search History')
 
@@ -76,7 +76,7 @@
 
                 @if ($searchLogs->hasPages())
                     <div class="mt-4">
-                        {{ $searchLogs->links() }}
+                        {{ $searchLogs->onEachSide(1)->links('admin.pagination') }}
                     </div>
                 @endif
             </div>

@@ -28,7 +28,7 @@ class AdminProductPublishTimeTest extends TestCase
             'published_at' => null,
         ]);
 
-        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index'));
+        $response = $this->actingAs($admin)->get(route('admin.product-approvals.index', ['status' => 'pending']));
 
         $response->assertOk();
         $this->assertMatchesRegularExpression(

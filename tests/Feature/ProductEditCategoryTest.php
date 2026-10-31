@@ -55,9 +55,17 @@ class ProductEditCategoryTest extends TestCase
 
         // Assertions
         $response->assertStatus(200);
-        $response->assertSee('product-form', false);
-        $response->assertSee(':regular-categories=\'[{"id":' . $regularCategory->id . ',"name":"Regular Category"', false);
-        $response->assertSee(':best-for-categories=\'[{"id":' . $bestForCategory->id . ',"name":"Best For Category"', false);
-        $response->assertSee(':pricing-categories=\'[{"id":' . $pricingCategory->id . ',"name":"Pricing Category"', false);
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $form = $document->getElementById('product-submit-app');
+        $this->assertNotNull($form);
+        foreach ([
+            'data-regular-categories' => $regularCategory,
+            'data-best-for-categories' => $bestForCategory,
+            'data-pricing-categories' => $pricingCategory,
+        ] as $attribute => $category) {
+            $categories = collect(json_decode($form->getAttribute($attribute), true));
+            $this->assertTrue($categories->contains(fn ($item) => $item['id'] === $category->id && $item['name'] === $category->name));
+        }
     }
 }

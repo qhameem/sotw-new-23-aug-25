@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('SEO Management')])
+@extends('layouts.admin')
 
 @section('header-title')
     SEO Management

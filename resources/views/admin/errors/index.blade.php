@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true])
+@extends('layouts.admin')
 
 @section('title', 'System Errors')
 
@@ -75,6 +75,6 @@
         @endforelse
     </div>
 
-    <div class="mt-6">{{ $reports->links() }}</div>
+    <div class="mt-6">{{ $reports->onEachSide(1)->links('admin.pagination') }}</div>
 </div>
 @endsection

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('header-title')
     Email Logs
@@ -37,7 +37,7 @@
         </table>
     </div>
     <div class="mt-6">
-        {{ $logs->links() }}
+        {{ $logs->onEachSide(1)->links('admin.pagination') }}
     </div>
 
     

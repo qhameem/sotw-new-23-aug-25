@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Assuming you have a main app layout --}}
+@extends('layouts.admin') {{-- Assuming you have a main app layout --}}
 
 @section('content')
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

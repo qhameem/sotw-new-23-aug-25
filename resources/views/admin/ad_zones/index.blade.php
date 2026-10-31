@@ -74,6 +74,6 @@
     </div>
 
     <div class="mt-6">
-        {{ $adZones->appends(['tab' => 'ad_zones'])->links() }}
+        {{ $adZones->appends(['tab' => 'ad_zones'])->onEachSide(1)->links('admin.pagination') }}
     </div>
 </div>

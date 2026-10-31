@@ -1,12 +1,6 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-7xl'])
+@extends('layouts.admin')
 
-@section('header-title')
-    <!-- <div class="flex gap-4 justify-between items-center">
-        <h1 class="text-xl font-semibold text-gray-700 py-[1px]">
-            Add New Product
-        </h1>
-    </div> -->
-@endsection
+@section('header-title', 'Add product')
 
 @section('content')
 <div class="relative">

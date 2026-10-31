@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mainContentMaxWidth' => 'max-w-none', 'containerMaxWidth' => 'max-w-none', 'hideSidebar' => true]) {{-- Or your admin layout if different --}}
+@extends('layouts.admin')
 
 @section('title', 'Admin Settings')
 
@@ -16,8 +16,8 @@
         .settings-section { scroll-margin-top: 9rem; }
         @media (min-width: 768px) {
             .settings-layout { grid-template-columns: 16rem minmax(0, 1fr); align-items: start; gap: 2rem; }
-            .settings-sidebar { position: sticky; top: 8rem; }
-            .settings-menu { max-height: calc(100vh - 9rem); overflow-y: auto; }
+            .settings-sidebar { position: sticky; top: 1.5rem; }
+            .settings-menu { max-height: calc(100vh - 3rem); overflow-y: auto; }
         }
         .settings-menu a[aria-current="page"] {
             background: #eef2ff;

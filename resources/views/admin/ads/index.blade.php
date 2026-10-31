@@ -277,6 +277,6 @@
     </div>
 
     <div class="mt-6">
-        {{ $ads->appends(['tab' => 'ads'])->links() }}
+        {{ $ads->appends(['tab' => 'ads'])->onEachSide(1)->links('admin.pagination') }}
     </div>
 </div>

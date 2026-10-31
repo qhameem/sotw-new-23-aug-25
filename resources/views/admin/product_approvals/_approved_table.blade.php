@@ -1,85 +1,61 @@
-@php
-    $groups = $approvedProducts->getCollection()->groupBy(fn ($product) => !$product->is_published && $product->published_at
-        ? $product->published_at->copy()->timezone('UTC')->toDateString() : 'published');
-    $filterParams = ['search' => $search, 'submitter_type' => $submitterType, 'per_page' => $perPage, 'sort_by' => $sortBy, 'sort_direction' => $sortDirection];
-@endphp
-<section id="approved-products" data-approval-table class="approval-panel scroll-mt-6 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-        <nav aria-label="Product status" class="flex gap-1">
-            @foreach(['' => 'All', 'scheduled' => 'Scheduled', 'shown' => 'Published', 'failed_badge' => 'Failed badge'] as $value => $label)
-                <a href="{{ route('admin.product-approvals.index', array_merge($filterParams, ['status' => $value])) }}#approved-products"
-                    @if(($status ?? '') === $value) aria-current="page" @endif
-                    @class(['rounded-lg px-3 py-2 font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-500', 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' => ($status ?? '') === $value, 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' => ($status ?? '') !== $value])>{{ $label }}</a>
-            @endforeach
-        </nav>
-        <label class="flex items-center gap-2 text-slate-600 dark:text-slate-300">Density
-            <select data-density aria-label="Table density" class="rounded-lg border-slate-300 bg-transparent py-1 text-sm dark:border-slate-600 dark:bg-slate-900">
-                <option value="compact">Compact</option><option value="comfortable">Comfortable</option>
-            </select>
-        </label>
-    </div>
-    <form method="GET" action="{{ route('admin.product-approvals.index') }}" class="approval-filters">
-        <input type="hidden" name="status" value="{{ $status }}">
-
-        <div class="approval-search">
-            <label class="min-w-0 flex-1"><span class="sr-only">Search products or submitters</span><input type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters…" class="w-full rounded-lg border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-500 dark:border-slate-600"></label>
-            <button type="submit" class="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white dark:bg-slate-100 dark:text-slate-900">Search</button>
-        </div>
-        <label class="flex items-center gap-2 whitespace-nowrap">Submitted by
-            <select name="submitter_type" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                <option value="" @selected($submitterType === '')>All users</option>
+<section id="approved-products" data-approval-table class="approval-panel approval-catalog scroll-mt-6" aria-label="Product approval list">
+    <div class="approval-list-pane">
+        <form method="GET" action="{{ route('admin.product-approvals.index') }}#approved-products" class="approval-filters">
+            <label><span class="sr-only">Product status</span><select name="status" onchange="this.form.requestSubmit()">
+                @foreach(['' => 'Any status', 'scheduled' => 'Scheduled', 'shown' => 'Published', 'failed_badge' => 'Failed badge'] as $value => $label)
+                    <option value="{{ $value }}" @selected(($status ?? '') === $value)>{{ $label }}</option>
+                @endforeach
+            </select></label>
+            <label><span class="sr-only">Submitted by</span><select name="submitter_type" aria-label="Submitted by" onchange="this.form.requestSubmit()">
+                <option value="" @selected($submitterType === '')>All submitters</option>
                 <option value="admin" @selected($submitterType === 'admin')>Admin users</option>
                 <option value="non_admin" @selected($submitterType === 'non_admin')>Non-admin users</option>
-            </select>
-        </label>
-        <label class="flex items-center gap-2 whitespace-nowrap">Sort by
-            <select name="sort_by" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                @foreach(['published_at' => 'Publish date', 'created_at' => 'Created date', 'name' => 'Name', 'id' => 'Product ID'] as $key => $label)
-                    <option value="{{ $key }}" @selected($sortBy === $key)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label class="flex items-center gap-2 whitespace-nowrap">Order
-            <select name="sort_direction" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                <option value="asc" @selected($sortDirection === 'asc')>Ascending</option><option value="desc" @selected($sortDirection === 'desc')>Descending</option>
-            </select>
-        </label>
-        <label class="flex items-center gap-2 whitespace-nowrap">Rows
-            <select name="per_page" class="rounded-lg border-slate-300 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" onchange="this.form.requestSubmit()">
-                @foreach([20, 50, 100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach
-            </select>
-        </label>
-    </form>
-    <div class="max-h-[70vh] overflow-auto">
-        <table class="w-full min-w-[1280px] table-fixed text-left text-sm">
-            <colgroup>
-                <col style="width: calc(43% - 240px)">
-                <col style="width: 14%">
-                <col style="width: 14%">
-                <col style="width: 13%">
-                <col style="width: 9%">
-                <col style="width: 7%">
-                <col style="width: 240px">
-            </colgroup>
-            <thead class="sticky top-0 z-10 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                <tr>
-                    <th scope="col" class="px-4 py-3"><div class="flex items-center gap-3"><input type="checkbox" data-select-page aria-label="Select all products on this page" class="h-4 w-4 rounded border-slate-400 text-indigo-600">Product</div></th>
-                    @foreach(['Submitter', 'Categories', 'Publish date', 'Status', 'Badge', 'Actions'] as $heading)<th scope="col" class="px-2 py-3 text-xs font-semibold">{{ $heading }}</th>@endforeach
-                </tr>
-            </thead>
-            @forelse($groups as $date => $products)
-                <tbody>
-                    <tr class="bg-slate-50 dark:bg-slate-800/60"><th scope="rowgroup" colspan="7" class="border-y border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">{{ $date === 'published' ? 'Published' : \Carbon\Carbon::parse($date)->format('M j, Y').' ('.$products->count().' scheduled)' }}</th></tr>
-                    @foreach($products as $product)
-                        @include('admin.product_approvals._table_row')
+            </select></label>
+            <div class="approval-sort-controls">
+                <label><span class="sr-only">Sort by</span><select name="sort_by" onchange="this.form.requestSubmit()">
+                    @foreach(['published_at' => 'Publish date', 'created_at' => 'Created date', 'name' => 'Name', 'id' => 'Product ID'] as $key => $label)
+                        <option value="{{ $key }}" @selected($sortBy === $key)>Sort by {{ $label }}</option>
                     @endforeach
+                </select></label>
+                <label><span class="sr-only">Sort direction</span><select name="sort_direction" onchange="this.form.requestSubmit()"><option value="desc" @selected($sortDirection === 'desc')>Latest first</option><option value="asc" @selected($sortDirection === 'asc')>Earliest first</option></select></label>
+            </div>
+            <div class="approval-search">
+                <x-admin.approval-icon name="search" width="18" height="18" />
+                <input aria-label="Search products or submitters" type="search" name="search" value="{{ $search }}" placeholder="Search products or submitters">
+                <button type="submit">Search</button>
+            </div>
+            <label class="approval-rows-control">Rows <select name="per_page" onchange="this.form.requestSubmit()">@foreach([20, 50, 100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach</select></label>
+            <label class="approval-density-control"><span class="sr-only">Table density</span><select data-density aria-label="Table density"><option value="compact">Compact</option><option value="comfortable">Comfortable</option></select></label>
+        </form>
+        <div class="approval-table-scroll">
+            <table class="approval-products-table">
+                <colgroup><col class="approval-col-product"><col class="approval-col-submitter"><col class="approval-col-status"><col class="approval-col-date"><col class="approval-col-badge"><col class="approval-col-actions"></colgroup>
+                <thead><tr>
+                    <th scope="col"><div class="approval-product-heading"><input type="checkbox" data-select-page aria-label="Select all products on this page">Product</div></th>
+                    @foreach(['Submitter', 'Status', 'Publish date', 'Badge', ''] as $heading)<th scope="col">{{ $heading }}</th>@endforeach
+                </tr></thead>
+                <tbody>
+                    @forelse($approvedProducts as $product)
+                        @include('admin.product_approvals._table_row')
+                    @empty
+                        <tr><td colspan="6" class="approval-empty">No products match these filters.</td></tr>
+                    @endforelse
                 </tbody>
-            @empty
-                <tbody><tr><td colspan="7" class="px-4 py-8 text-center text-slate-600 dark:text-slate-300">No products match these filters.</td></tr></tbody>
-            @endforelse
-        </table>
+            </table>
+        </div>
+        <footer class="approval-table-footer">
+            <span>{{ $approvedProducts->firstItem() ?? 0 }}–{{ $approvedProducts->lastItem() ?? 0 }} of {{ number_format($approvedProducts->total()) }} products</span>
+            {{ $approvedProducts->withQueryString()->fragment('approved-products')->onEachSide(1)->links('admin.product_approvals.pagination') }}
+        </footer>
     </div>
-    <div class="border-t border-slate-200 px-4 py-3 dark:border-slate-700">{{ $approvedProducts->links() }}</div>
+    @if($approvedProducts->isNotEmpty())
+        <button type="button" class="approval-detail-backdrop" data-detail-close aria-label="Close product details"></button>
+        <aside class="approval-detail" data-product-detail aria-label="Product details">
+            @foreach($approvedProducts as $product)
+                @include('admin.product_approvals._details', ['initial' => $loop->first])
+            @endforeach
+        </aside>
+    @endif
     <form method="POST" action="{{ route('admin.product-approvals.bulk-manage') }}" data-bulk-form
         class="approval-bulk fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-2xl shadow-slate-900/15 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/50 transition-all duration-300 ease-out translate-y-24 opacity-0 pointer-events-none"
         aria-hidden="true" inert>
@@ -126,7 +102,7 @@
             <span class="sr-only">Clear selection</span>
         </button>
     </form>
-    <form method="POST" action="{{ route('admin.product-approvals.publish-scheduled-now') }}" class="border-t border-slate-200 px-4 py-2 dark:border-slate-700">
+    <form method="POST" action="{{ route('admin.product-approvals.publish-scheduled-now') }}" class="approval-publish-all">
         @csrf
         <button name="publish_scope" value="all" class="text-xs font-medium text-slate-600 hover:underline dark:text-slate-300" onclick="return confirm('Publish all scheduled products immediately?')">Publish all scheduled now</button>
     </form>
