@@ -95,7 +95,7 @@ it('generates a recent launches sitemap and excludes unpublished products from p
         ->not->toContain(route('products.show', $scheduledProduct->slug));
 });
 
-it('excludes the current week archive URL from the archives sitemap because it redirects home', function () {
+it('excludes weekly archives from sitemaps while they remain noindex', function () {
     Product::factory()->create([
         'name' => 'Current Week Launch',
         'slug' => 'current-week-launch',
@@ -122,7 +122,7 @@ it('excludes the current week archive URL from the archives sitemap because it r
             'year' => now()->year,
             'week' => now()->weekOfYear,
         ]))
-        ->toContain(route('products.byWeek', [
+        ->not->toContain(route('products.byWeek', [
             'year' => $olderWeekStart->year,
             'week' => $olderWeekStart->weekOfYear,
         ]));
@@ -171,6 +171,20 @@ it('generates alternatives separately without building comparisons', function ()
     expect($sitemapIndex)
         ->toContain(url('sitemaps/alternatives.xml'))
         ->not->toContain('compare.xml');
+});
+
+it('only lists canonical comparison pairs with sufficient decision content', function () {
+    $a = Product::factory()->create(['slug' => 'alpha', 'features' => ['Offline edits', 'Batch exports'], 'best_for_text' => 'Editors']);
+    $b = Product::factory()->create(['slug' => 'beta', 'features' => ['Cloud edits', 'Shared projects'], 'best_for_text' => 'Teams']);
+    $thin = Product::factory()->create(['slug' => 'gamma', 'features' => [], 'description' => '<p>Brief listing.</p>']);
+    $a->update(['comparison_product_ids' => [$b->id, $thin->id]]);
+    $b->update(['comparison_product_ids' => [$a->id]]);
+
+    $this->artisan('sitemap:generate', ['--with-pseo' => true])->assertExitCode(0);
+    $xml = File::get(public_path('sitemaps/compare.xml'));
+    expect($xml)->toContain('/compare/alpha-vs-beta')
+        ->not->toContain('/compare/beta-vs-alpha')->not->toContain('/compare/alpha-vs-gamma');
+    expect(substr_count($xml, '/compare/alpha-vs-beta'))->toBe(1);
 });
 
 it('preserves independently generated alternatives when rebuilding core sitemaps', function () {

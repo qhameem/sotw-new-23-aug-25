@@ -76,7 +76,7 @@ class ProductResearchService
 
                 $links->push([
                     'label' => $product->name.' vs '.$comparison->name,
-                    'url' => route('pseo.compare', ['params' => $product->slug.'-vs-'.$comparison->slug]),
+                    'url' => \App\Support\ComparisonUrl::forSlugs($product->slug, $comparison->slug),
                 ]);
             }
 

@@ -14,8 +14,8 @@ class RelatedProductService
     public function preloadResearchMatches(iterable $products): void
     {
         $keys = collect($products)->flatMap(fn (Product $product) => [
-            "products.related.v2.alternative.{$product->id}.15",
-            "products.related.v2.comparison.{$product->id}.2",
+            "products.related.v3.alternative.{$product->id}.15",
+            "products.related.v3.comparison.{$product->id}.2",
         ])->unique()->values()->all();
 
         if ($keys !== []) {
@@ -33,6 +33,11 @@ class RelatedProductService
         'marketing',
         'productivity',
         'saas',
+        'ai',
+        'ai tools',
+        'ai & automation',
+        'automation',
+        'content creation',
     ];
 
     /**
@@ -62,6 +67,11 @@ class RelatedProductService
 
     public function shouldNoindexComparison(Product $productA, Product $productB, ?array $match = null): bool
     {
+        $content = app(ProductComparisonData::class);
+        if (! $content->hasDecisionContent($productA) || ! $content->hasDecisionContent($productB)) {
+            return true;
+        }
+
         if ($this->isCuratedComparisonPair($productA, $productB)) {
             return false;
         }
@@ -90,7 +100,7 @@ class RelatedProductService
     private function getRelatedProducts(Product $product, int $limit, string $mode): Collection
     {
         $product->loadMissing('categories.types', 'techStacks');
-        $cacheKey = "products.related.v2.{$mode}.{$product->id}.{$limit}";
+        $cacheKey = "products.related.v3.{$mode}.{$product->id}.{$limit}";
 
         if (($this->preloadedMatches[$cacheKey] ?? null) instanceof Collection) {
             return $this->preloadedMatches[$cacheKey];
@@ -109,15 +119,8 @@ class RelatedProductService
                 }
 
                 $profile = $this->buildProfile($product);
-                $seedCategoryIds = collect()
-                    ->merge($profile['softwareIds'])
-                    ->merge($profile['bestForIds'])
-                    ->merge($profile['pricingIds'])
-                    ->unique()
-                    ->values();
-                $seedTechIds = collect($profile['techStackIds'])->unique()->values();
-
-                if ($seedCategoryIds->isEmpty() && $seedTechIds->isEmpty()) {
+                $seedCategoryIds = collect($profile['softwareIds']);
+                if ($seedCategoryIds->isEmpty()) {
                     return $manualProducts->take($limit)->values();
                 }
 
@@ -126,18 +129,7 @@ class RelatedProductService
                     ->where('approved', true)
                     ->where('is_published', true)
                     ->whereNotIn('id', $manualIds)
-                    ->where(function ($query) use ($seedCategoryIds, $seedTechIds) {
-                        if ($seedCategoryIds->isNotEmpty()) {
-                            $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $seedCategoryIds));
-                        }
-                        if ($seedTechIds->isNotEmpty()) {
-                            if ($seedCategoryIds->isNotEmpty()) {
-                                $query->orWhereHas('techStacks', fn ($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
-                            } else {
-                                $query->whereHas('techStacks', fn ($q) => $q->whereIn('tech_stacks.id', $seedTechIds));
-                            }
-                        }
-                    })
+                    ->whereHas('categories', fn ($query) => $query->whereIn('categories.id', $seedCategoryIds))
                     ->with(['categories.types', 'techStacks'])
                     ->orderByDesc('created_at')
                     ->take(250)
@@ -277,9 +269,7 @@ class RelatedProductService
 
         $hasOnlyBroadOverlap = $sharedSoftwareCount > 0
             && $sharedSoftwareCount === $sharedBroadSoftwareCount
-            && $sharedBestForCount === 0
-            && $sharedTechCount === 0
-            && $textSimilarity < 0.14;
+            && $textSimilarity < 0.25;
 
         $qualifiesComparison = ! $hasOnlyBroadOverlap
             && $score >= 60

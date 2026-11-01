@@ -16,7 +16,6 @@ use App\Models\UserProductUpvote;
 use App\Notifications\ProductSubmitted;
 use App\Services\AdDeliveryService;
 use App\Services\BadgeService;
-use App\Services\DescriptionRewriterService;
 use App\Services\FaviconExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\NameExtractorService;
@@ -59,6 +58,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class ProductController extends Controller
 {
     use \App\Http\Controllers\Concerns\SavesAdditionalProductImage;
+
     private const CATEGORY_PRODUCTS_PER_PAGE = 50;
 
     protected FaviconExtractorService $faviconExtractor;
@@ -614,6 +614,7 @@ class ProductController extends Controller
         for ($index = 0; $index < 2; $index++) {
             if ($file = $request->file("media.$index")) {
                 $this->processMediaItem($product, $file, $manager);
+
                 continue;
             }
             $url = $request->input("media_urls.$index");
@@ -2555,14 +2556,11 @@ class ProductController extends Controller
             return $fullTitle;
         }
 
-        if ($tagline !== '') {
-            $trimmedTitle = $name.': '.$this->trimSeoTextToLength(
-                $tagline,
-                max(0, $maxLength - Str::length($name) - 2)
-            );
-
-            if (Str::length($trimmedTitle) <= $maxLength) {
-                return $trimmedTitle;
+        $categoryName = $this->cleanSeoText($primaryBreadcrumbCategory?->name ?? '');
+        if ($categoryName !== '') {
+            $categoryTitle = $name.': '.$categoryName;
+            if (Str::length($categoryTitle) <= $maxLength) {
+                return $categoryTitle;
             }
         }
 
@@ -4155,6 +4153,7 @@ class ProductController extends Controller
 
                 if (! $response->successful()) {
                     \App\Support\ExtractionReport::current()->record('additional resources', 'Resource returned HTTP '.$response->status(), 'warning');
+
                     continue;
                 }
 
@@ -4485,7 +4484,7 @@ class ProductController extends Controller
                 'tech_stacks' => $techStackIds,
                 'suggestedCategories' => $unmatchedCategories,
                 'suggestedUseCases' => $unmatchedUseCases,
-                    'field_errors' => $generation['field_errors'] ?? [],
+                'field_errors' => $generation['field_errors'] ?? [],
                 'pricing_page_url' => $autofillLinks['pricing_page_url'],
                 'x_account' => $autofillLinks['x_account'],
                 'maker_links' => $autofillLinks['maker_links'],

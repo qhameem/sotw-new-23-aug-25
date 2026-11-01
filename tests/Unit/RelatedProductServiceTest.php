@@ -70,6 +70,26 @@ it('does not qualify a product as an alternative from tech-stack overlap alone',
     expect($match['qualifiesAlternative'])->toBeFalse();
 });
 
+it('rejects generic automation overlap despite shared audience and pricing', function () {
+    $software = new Type(['name' => 'Software']);
+    $automation = new Category(['name' => 'Automation']);
+    $automation->id = 10;
+    $automation->setRelation('types', collect([$software]));
+    $audience = new Category(['name' => 'Creators']);
+    $audience->id = 11;
+    $audience->setRelation('types', collect([new Type(['name' => 'Best for'])]));
+    $pricing = new Category(['name' => 'Subscription']);
+    $pricing->id = 12;
+    $pricing->setRelation('types', collect([new Type(['name' => 'Pricing'])]));
+    $categories = collect([$automation, $audience, $pricing]);
+    $source = relatedProductForTest(['name' => 'Video generator', 'tagline' => 'Create films from written scripts'], $categories, collect());
+    $candidate = relatedProductForTest(['name' => 'Social publisher', 'tagline' => 'Schedule posts across social networks'], $categories, collect());
+    $match = app(RelatedProductService::class)->scorePair($source, $candidate);
+
+    expect($match['qualifiesAlternative'])->toBeFalse()
+        ->and($match['qualifiesComparison'])->toBeFalse();
+});
+
 it('indexes an alternatives page with two strong relevant products', function () {
     $product = new Product(['alternative_product_ids' => []]);
     $alternatives = collect([
@@ -90,9 +110,9 @@ it('keeps a thin alternatives page out of the index', function () {
 });
 
 it('indexes a comparison when the pair qualifies as an alternative', function () {
-    $productA = new Product(['comparison_product_ids' => []]);
+    $productA = relatedProductForTest(['comparison_product_ids' => [], 'features' => ['Local edits', 'Batch jobs'], 'best_for_text' => 'Editors'], collect(), collect());
     $productA->id = 1;
-    $productB = new Product(['comparison_product_ids' => []]);
+    $productB = relatedProductForTest(['comparison_product_ids' => [], 'features' => ['Cloud edits', 'Shared jobs'], 'best_for_text' => 'Teams'], collect(), collect());
     $productB->id = 2;
 
     $match = [

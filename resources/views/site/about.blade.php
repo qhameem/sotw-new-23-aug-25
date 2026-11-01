@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('meta_description', 'Learn how Software on the Web curates software, helps users compare tools, and gives makers a place to launch their products.')
+
 @section('title', 'About Us | Software on the Web')
 @section('content')
 <div class="p-4">

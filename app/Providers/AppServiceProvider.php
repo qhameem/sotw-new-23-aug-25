@@ -2,28 +2,28 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use App\Services\CategoryClassifier;
-use App\Services\TechStackDetectorService;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\View;
+use App\Http\View\Composers\ScheduledProductsStatsComposer;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\PageMetaTag;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth; // Add this line
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
-use App\Http\View\Composers\ScheduledProductsStatsComposer;
 use App\Models\ProductMedia;
-use App\Services\CategoryNavigationService;
 use App\Observers\ArticleObserver;
-use App\Observers\ProductObserver;
 use App\Observers\ProductMediaObserver;
-use App\Services\OutboundLinkPolicyService;
+use App\Observers\ProductObserver;
+use App\Services\CategoryClassifier; // Add this line
+use App\Services\CategoryNavigationService;
 use App\Services\GlobalSearchService;
 use App\Services\HeaderStatsService;
+use App\Services\OutboundLinkPolicyService;
+use App\Services\TechStackDetectorService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,24 +33,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(\App\Services\ProductEditorialContentService::class);
+        $this->app->scoped(\App\Services\RelatedProductService::class);
+
         $this->app->singleton(CategoryClassifier::class, function ($app) {
-            return new CategoryClassifier();
+            return new CategoryClassifier;
         });
 
         $this->app->singleton(TechStackDetectorService::class, function ($app) {
-            return new TechStackDetectorService();
+            return new TechStackDetectorService;
         });
 
         $this->app->singleton(CategoryNavigationService::class, function ($app) {
-            return new CategoryNavigationService();
+            return new CategoryNavigationService;
         });
 
         $this->app->singleton(OutboundLinkPolicyService::class, function ($app) {
-            return new OutboundLinkPolicyService();
+            return new OutboundLinkPolicyService;
         });
 
         $this->app->singleton(GlobalSearchService::class, function ($app) {
-            return new GlobalSearchService();
+            return new GlobalSearchService;
         });
     }
 
@@ -66,7 +69,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\TechStack::class, \App\Models\PremiumProduct::class,
             \App\Models\Badge::class, ProductMedia::class] as $model) {
             $invalidate = function ($record) {
-                if ($record instanceof Product && !$record->wasRecentlyCreated && array_diff(array_keys($record->getChanges()), ['updated_at', 'impressions']) === []) {
+                if ($record instanceof Product && ! $record->wasRecentlyCreated && array_diff(array_keys($record->getChanges()), ['updated_at', 'impressions']) === []) {
                     return;
                 }
                 app(\App\Services\Markdown\CacheVersion::class)->invalidate();
@@ -158,7 +161,7 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['body_text_color'])) {
                     Config::set('theme.body_text_color', $settings['body_text_color']);
                 }
-                if (!empty($settings['primary_color'])) {
+                if (! empty($settings['primary_color'])) {
                     $rawPrimaryColor = $settings['primary_color'];
                 }
                 // Add logo and favicon settings
@@ -217,7 +220,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function absoluteUrl(?string $value): ?string
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -270,14 +273,14 @@ class AppServiceProvider extends ServiceProvider
                 return $unquotedSegment;
             }
 
-            return "'" . str_replace("'", "\\'", $unquotedSegment) . "'";
+            return "'".str_replace("'", "\\'", $unquotedSegment)."'";
         }, $segments);
 
         $hasGenericFallback = collect($segments)->contains(function (string $segment) use ($genericFamilies) {
             return in_array(trim($segment, "\"'"), $genericFamilies, true);
         });
 
-        if (!$hasGenericFallback) {
+        if (! $hasGenericFallback) {
             $normalizedSegments[] = 'sans-serif';
         }
 
@@ -295,7 +298,7 @@ class AppServiceProvider extends ServiceProvider
         return Cache::rememberForever("tailwind_color_hex_{$colorValue}", function () use ($colorValue) {
             try {
                 $tailwindColors = config('tailwindcolors');
-                list($colorName, $shade) = explode('-', $colorValue);
+                [$colorName, $shade] = explode('-', $colorValue);
 
                 if (isset($tailwindColors[$colorName][$shade])) {
                     return $tailwindColors[$colorName][$shade];
@@ -341,14 +344,14 @@ class AppServiceProvider extends ServiceProvider
 
     private function normalizeHexColor(string $hexColor): string
     {
-        if (!preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $hexColor)) {
+        if (! preg_match('/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/', $hexColor)) {
             return '#3b82f6';
         }
 
         if (strlen($hexColor) === 4) {
-            return '#' . $hexColor[1] . $hexColor[1]
-                . $hexColor[2] . $hexColor[2]
-                . $hexColor[3] . $hexColor[3];
+            return '#'.$hexColor[1].$hexColor[1]
+                .$hexColor[2].$hexColor[2]
+                .$hexColor[3].$hexColor[3];
         }
 
         return strtoupper($hexColor);

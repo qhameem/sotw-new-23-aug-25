@@ -8,10 +8,7 @@ class ProductDetailData
 {
     public function rows(Product $product, $bestForCategories, $platformCategories, $useCaseCategories): array
     {
-        $knownPrice = $product->facts_json['price_amount'] ?? $product->price;
-        $knownCurrency = $product->facts_json['currency'] ?? $product->currency;
-        $priceLabel = is_numeric($knownPrice) && (float) $knownPrice > 0 && filled($knownCurrency)
-            ? strtoupper($knownCurrency).' '.number_format((float) $knownPrice, 2) : null;
+        $priceLabel = app(ProductOffer::class)->label($product);
         $pricingCategories = $product->categories->filter(fn ($category) => $category->types->contains('name', 'Pricing'));
         $rows = [
             'Pricing' => $pricingCategories->map(fn ($category) => ['label' => $category->name, 'url' => $category->publicUrl()])->values()

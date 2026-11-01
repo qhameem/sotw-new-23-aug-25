@@ -155,6 +155,12 @@ class PseoController extends Controller
             ->with(['categories.types', 'techStacks', 'user'])
             ->firstOrFail();
 
+        abort_if($productA->is($productB), 404);
+        $canonicalUrl = \App\Support\ComparisonUrl::forSlugs($productA->slug, $productB->slug);
+        if ($canonicalUrl !== route('pseo.compare', ['params' => $params])) {
+            return redirect()->to($canonicalUrl, 301);
+        }
+
         $pairMatch = $this->relatedProductService->scorePair($productA, $productB);
         $isCuratedPair = $this->relatedProductService->isCuratedComparisonPair($productA, $productB);
         $pairMatchSummary = $isCuratedPair
@@ -162,10 +168,15 @@ class PseoController extends Controller
             : $pairMatch['summary'];
         $shouldNoindex = $this->relatedProductService->shouldNoindexComparison($productA, $productB, $pairMatch);
 
-        $title = "{$productA->name} vs {$productB->name}: Which is Better?";
+        $title = "{$productA->name} vs {$productB->name}: Features, Pricing and Fit";
         $metaDescription = "Compare {$productA->name} and {$productB->name} side-by-side — features, pricing, tech stack, and community votes.";
 
-        return view('pseo.compare', compact('productA', 'productB', 'title', 'metaDescription', 'pairMatchSummary', 'shouldNoindex'));
+        $comparisonProfiles = [
+            app(\App\Services\ProductComparisonData::class)->profile($productA),
+            app(\App\Services\ProductComparisonData::class)->profile($productB),
+        ];
+
+        return view('pseo.compare', compact('productA', 'productB', 'title', 'metaDescription', 'pairMatchSummary', 'shouldNoindex', 'comparisonProfiles'));
     }
 
     /**
@@ -211,14 +222,14 @@ class PseoController extends Controller
         $alternative->setAttribute('best_for_label', ! empty($bestForCategories) ? implode(', ', array_slice($bestForCategories, 0, 2)) : null);
         $alternative->setAttribute('pricing_label', ! empty($pricingCategories) ? implode(', ', array_slice($pricingCategories, 0, 2)) : 'Pricing not listed');
         $alternative->setAttribute('editorial_headline', $editorial['headline'] ?? null);
-        $alternative->setAttribute('feature_highlights', array_slice($editorial['key_features'] ?? [], 0, 3));
+        $alternative->setAttribute('feature_highlights', array_slice($alternative->features ?: ($editorial['key_features'] ?? []), 0, 3));
         $alternative->setAttribute('pros_points', array_slice($editorial['pros'] ?? [], 0, 2));
         $alternative->setAttribute('limitations_points', array_slice($editorial['limitations'] ?? [], 0, 2));
         $alternative->setAttribute('ideal_for_points', array_slice($editorial['ideal_for'] ?? [], 0, 2));
         $alternative->setAttribute('top_use_case_points', array_slice($editorial['top_use_cases'] ?? [], 0, 2));
         $alternative->setAttribute('editorial_take', $this->buildEditorialTake($source, $alternative, $editorial));
         $alternative->setAttribute('better_for_text', $this->buildBetterForText($editorial, $softwareCategories, $bestForCategories));
-        $alternative->setAttribute('watch_out_text', $this->buildWatchOutText($source, $alternative, $sourceEditorial, $editorial));
+        $alternative->setAttribute('watch_out_text', $alternative->not_for_text ?: $this->buildWatchOutText($source, $alternative, $sourceEditorial, $editorial));
         $alternative->setAttribute('decision_summary', $this->buildDecisionSummary(
             $source,
             $alternative,

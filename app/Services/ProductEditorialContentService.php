@@ -10,9 +10,13 @@ use DOMXPath;
 
 class ProductEditorialContentService
 {
+    private array $parsedDescriptions = [];
+
     public function extract(Product $product): array
     {
-        return $this->parseHtml($product->description);
+        $key = hash('sha256', $product->description ?? '');
+
+        return $this->parsedDescriptions[$key] ??= $this->parseHtml($product->description);
     }
 
     public function hasStructuredEditorialSignals(?string $html): bool
@@ -21,11 +25,11 @@ class ProductEditorialContentService
 
         $signalScore = 0;
 
-        if (!empty($parsed['headline'])) {
+        if (! empty($parsed['headline'])) {
             $signalScore++;
         }
 
-        if (!empty($parsed['summary'])) {
+        if (! empty($parsed['summary'])) {
             $signalScore++;
         }
 
@@ -33,15 +37,15 @@ class ProductEditorialContentService
             $signalScore++;
         }
 
-        if (!empty($parsed['ideal_for'])) {
+        if (! empty($parsed['ideal_for'])) {
             $signalScore++;
         }
 
-        if (!empty($parsed['top_use_cases'])) {
+        if (! empty($parsed['top_use_cases'])) {
             $signalScore++;
         }
 
-        if (!empty($parsed['pros']) || !empty($parsed['limitations'])) {
+        if (! empty($parsed['pros']) || ! empty($parsed['limitations'])) {
             $signalScore++;
         }
 
@@ -63,32 +67,32 @@ class ProductEditorialContentService
             'faq' => [],
         ];
 
-        if (!is_string($html) || trim($html) === '') {
+        if (! is_string($html) || trim($html) === '') {
             return $result;
         }
 
         $document = new DOMDocument('1.0', 'UTF-8');
-        $wrappedHtml = '<!DOCTYPE html><html><body><div id="editorial-root">' . $html . '</div></body></html>';
+        $wrappedHtml = '<!DOCTYPE html><html><body><div id="editorial-root">'.$html.'</div></body></html>';
 
         libxml_use_internal_errors(true);
-        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?>' . $wrappedHtml, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $loaded = $document->loadHTML('<?xml encoding="utf-8" ?>'.$wrappedHtml, LIBXML_NOERROR | LIBXML_NOWARNING);
         libxml_clear_errors();
 
-        if (!$loaded) {
+        if (! $loaded) {
             return $result;
         }
 
         $xpath = new DOMXPath($document);
         $root = $xpath->query("//*[@id='editorial-root']")->item(0);
 
-        if (!$root instanceof DOMElement) {
+        if (! $root instanceof DOMElement) {
             return $result;
         }
 
         $currentSection = null;
 
         foreach ($root->childNodes as $node) {
-            if (!$node instanceof DOMElement) {
+            if (! $node instanceof DOMElement) {
                 continue;
             }
 
@@ -96,6 +100,7 @@ class ProductEditorialContentService
 
             if (in_array($tagName, ['h2', 'h3'], true)) {
                 $currentSection = $this->mapSectionName($node->textContent);
+
                 continue;
             }
 
@@ -108,6 +113,7 @@ class ProductEditorialContentService
 
                 if ($result['headline'] === null) {
                     $result['headline'] = $text;
+
                     continue;
                 }
 
@@ -136,11 +142,13 @@ class ProductEditorialContentService
 
                     if (str_starts_with($normalized, 'pros:')) {
                         $result['pros'] = array_merge($result['pros'], $this->splitInlinePoints(substr($item, 5)));
+
                         continue;
                     }
 
                     if (str_starts_with($normalized, 'limitations:')) {
                         $result['limitations'] = array_merge($result['limitations'], $this->splitInlinePoints(substr($item, 12)));
+
                         continue;
                     }
 
@@ -160,7 +168,7 @@ class ProductEditorialContentService
         foreach (['key_features', 'ideal_for', 'top_use_cases', 'known_alternatives', 'integrations', 'pros', 'limitations'] as $key) {
             $result[$key] = array_values(array_unique(array_filter(
                 array_map([$this, 'cleanText'], $result[$key]),
-                fn (string $item): bool => $key !== 'limitations' || !$this->isPlaceholderLimitation($item)
+                fn (string $item): bool => $key !== 'limitations' || ! $this->isPlaceholderLimitation($item)
             )));
         }
 
@@ -217,7 +225,7 @@ class ProductEditorialContentService
         $items = [];
 
         foreach ($listNode->childNodes as $child) {
-            if (!$child instanceof DOMElement || strtolower($child->tagName) !== 'li') {
+            if (! $child instanceof DOMElement || strtolower($child->tagName) !== 'li') {
                 continue;
             }
 
@@ -237,7 +245,7 @@ class ProductEditorialContentService
         $question = null;
 
         foreach ($listNode->childNodes as $child) {
-            if (!$child instanceof DOMElement) {
+            if (! $child instanceof DOMElement) {
                 continue;
             }
 
@@ -250,6 +258,7 @@ class ProductEditorialContentService
 
             if ($tagName === 'dt') {
                 $question = $text;
+
                 continue;
             }
 
@@ -276,11 +285,11 @@ class ProductEditorialContentService
         $parts = preg_split('/\s*(?:;|•|\|)\s*/u', $value) ?: [];
         $parts = array_values(array_filter(array_map([$this, 'cleanText'], $parts)));
 
-        if (!empty($parts)) {
+        if (! empty($parts)) {
             return $parts;
         }
 
-        if (substr_count($value, ',') > 0 && substr_count($value, ',') <= 3 && !str_contains($value, '.')) {
+        if (substr_count($value, ',') > 0 && substr_count($value, ',') <= 3 && ! str_contains($value, '.')) {
             return array_values(array_filter(array_map([$this, 'cleanText'], explode(',', $value))));
         }
 

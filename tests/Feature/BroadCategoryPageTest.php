@@ -75,6 +75,22 @@ class BroadCategoryPageTest extends TestCase
         $this->get('/software/not-a-real-group')->assertNotFound();
     }
 
+    public function test_numbered_pagination_and_legacy_urls_use_path_pages(): void
+    {
+        $category = Category::where('slug', 'ai-tools')->firstOrFail();
+        Product::factory()->count(50)->create([
+            'approved' => true, 'is_published' => true, 'published_at' => now()->subDay(),
+        ])->each(fn (Product $product) => $product->categories()->attach($category));
+
+        $base = route('software-groups.show', ['group' => 'ai-automation']);
+        $pageTwo = route('software-groups.page', ['group' => 'ai-automation', 'page' => 2]);
+        $this->get($base)->assertOk()->assertSee('href="'.$pageTwo.'"', false)->assertDontSee('?page=', false);
+        $this->get($base.'?page=2')->assertStatus(301)->assertRedirect($pageTwo);
+        $this->get($base.'?page=1')->assertStatus(301)->assertRedirect($base);
+        $this->get($pageTwo)->assertOk()->assertDontSee('Broad Category Product');
+        $this->get($base.'?page[]=2')->assertNotFound();
+    }
+
     public function test_pricing_pages_are_not_shadowed_by_broad_category_routes(): void
     {
         $type = Type::create(['name' => 'Pricing']);

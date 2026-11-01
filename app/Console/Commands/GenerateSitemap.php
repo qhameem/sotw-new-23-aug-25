@@ -116,26 +116,7 @@ class GenerateSitemap extends Command
         }
 
         $archiveSitemap = Sitemap::create();
-        $currentWeekYear = now()->year;
-        $currentWeekNumber = now()->weekOfYear;
-
-        // Add Archive URLs (Weeks)
         $dateExpressions = $this->productDateExpressions();
-
-        $activeWeeks = Product::approvedAndPublished()
-            ->selectRaw($dateExpressions['year'].' as year, '.$dateExpressions['week'].' as week')
-            ->groupBy('year', 'week')
-            ->get();
-
-        foreach ($activeWeeks as $activeWeek) {
-            if ((int) $activeWeek->year === (int) $currentWeekYear && (int) $activeWeek->week === (int) $currentWeekNumber) {
-                continue;
-            }
-
-            $archiveSitemap->add(Url::create(route('products.byWeek', ['year' => $activeWeek->year, 'week' => $activeWeek->week]))
-                ->setPriority(0.4)
-                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY));
-        }
 
         // Add Archive URLs (Months)
         $activeMonths = Product::approvedAndPublished()
@@ -221,9 +202,13 @@ class GenerateSitemap extends Command
                 $similarProducts = $relatedProductService->getComparisons($product, 3);
 
                 foreach ($similarProducts as $similar) {
+                    if ($relatedProductService->shouldNoindexComparison($product, $similar)) {
+                        continue;
+                    }
+
                     // Ensure alphabetical order so A-vs-B is the same as B-vs-A
                     $slugs = [$product->slug, $similar->slug];
-                    sort($slugs);
+                    sort($slugs, SORT_STRING);
                     $compareKey = $slugs[0].'-vs-'.$slugs[1];
 
                     if (! isset($addedComparisons[$compareKey])) {

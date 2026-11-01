@@ -350,6 +350,15 @@
         <link rel="canonical" href="{{ route('categories.show', ['category' => $canonicalCategorySlug]) }}" />
     @elseif(request()->routeIs('use-cases.show', 'best-for.show', 'platforms.show') && isset($category))
         <link rel="canonical" href="{{ $category->publicUrl() }}" />
+    @else
+        @php
+            $fallbackCanonical = url()->current();
+            $queryPage = request()->query('page');
+            if (is_scalar($queryPage) && preg_match('/^[1-9][0-9]*$/D', (string) $queryPage) && (int) $queryPage > 1) {
+                $fallbackCanonical .= '?page='.(int) $queryPage;
+            }
+        @endphp
+        <link rel="canonical" href="{{ $fallbackCanonical }}" />
     @endif
 
     @yield('preloads')

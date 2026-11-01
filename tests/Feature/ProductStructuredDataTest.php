@@ -74,4 +74,16 @@ class ProductStructuredDataTest extends TestCase
         $this->assertSame($hostile, $graph['FAQPage']['mainEntity'][0]['name']);
         $this->assertSame('Answer & details', $graph['FAQPage']['mainEntity'][0]['acceptedAnswer']['text']);
     }
+
+    public function test_explicit_zero_price_matches_visible_price_without_inventing_reviews(): void
+    {
+        $product = Product::factory()->create(['facts_json' => ['price_amount' => 0, 'currency' => 'USD']]);
+        $application = collect(app(ProductStructuredData::class)->graph($product)['@graph'])->firstWhere('@type', 'SoftwareApplication');
+        $this->assertSame('0.00', $application['offers']['price']);
+        $this->assertArrayNotHasKey('aggregateRating', $application);
+        $this->get(route('products.show', $product))->assertOk()->assertSee('USD 0.00');
+
+        $product->update(['facts_json' => ['price_amount' => null], 'price' => 0]);
+        $this->assertNull(app(\App\Services\ProductOffer::class)->forProduct($product));
+    }
 }

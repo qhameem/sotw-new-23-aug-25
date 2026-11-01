@@ -50,15 +50,8 @@ class ProductStructuredData
         if ($this->webUrl($product->link)) {
             $application['sameAs'] = [$product->link];
         }
-        $price = $product->facts_json['price_amount'] ?? $product->price;
-        $currency = $product->facts_json['currency'] ?? $product->currency;
-        if (is_numeric($price) && (float) $price > 0 && is_string($currency) && preg_match('/^[a-z]{3}$/i', $currency)) {
-            $application['offers'] = array_filter([
-                '@type' => 'Offer',
-                'price' => number_format((float) $price, 2, '.', ''),
-                'priceCurrency' => strtoupper($currency),
-                'url' => $this->webUrl($product->pricing_page_url) ?: $this->webUrl($product->link),
-            ], fn ($value) => filled($value));
+        if ($offer = app(ProductOffer::class)->forProduct($product)) {
+            $application['offers'] = $offer;
         }
         if ($product->published_at) {
             $page['datePublished'] = $application['datePublished'] = $product->published_at->toAtomString();

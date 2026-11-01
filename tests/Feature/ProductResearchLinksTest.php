@@ -18,7 +18,9 @@ class ProductResearchLinksTest extends TestCase
 
     private function researchProducts(): array
     {
-        $products = Product::factory()->count(3)->create();
+        $products = Product::factory()->count(3)->create([
+            'features' => ['Batch exports', 'Shared projects'], 'best_for_text' => 'Editing teams',
+        ]);
         $source = $products[0];
         $source->update([
             'name' => 'Research Alpha',
@@ -38,7 +40,7 @@ class ProductResearchLinksTest extends TestCase
             ->assertSee('<h1', false)
             ->assertSee('Software alternatives and comparisons')
             ->assertSee('href="'.route('pseo.alternatives', $source->slug).'"', false)
-            ->assertSee('href="'.route('pseo.compare', ['params' => $source->slug.'-vs-'.$comparison->slug]).'"', false)
+            ->assertSee('href="'.\App\Support\ComparisonUrl::forSlugs($source->slug, $comparison->slug).'"', false)
             ->assertSee('<link rel="canonical" href="'.route('alternatives.index').'">', false)
             ->assertSee('Software alternatives</a>', false);
     }
@@ -126,7 +128,7 @@ class ProductResearchLinksTest extends TestCase
         [$source, $comparison] = $this->researchProducts();
 
         $this->get(route('products.show', $source->slug))->assertOk()
-            ->assertSee('href="'.route('pseo.compare', ['params' => $source->slug.'-vs-'.$comparison->slug]).'"', false);
+            ->assertSee('href="'.\App\Support\ComparisonUrl::forSlugs($source->slug, $comparison->slug).'"', false);
     }
 
     public function test_article_page_renders_contextual_research_links(): void

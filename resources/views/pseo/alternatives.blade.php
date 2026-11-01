@@ -57,12 +57,7 @@
                             'name' => $alt->name,
                             'url' => route('products.show', ['product' => $alt->slug]),
                             'applicationCategory' => $alt->primary_category_label,
-                            'offers' => !empty($alt->pricing_label) && $alt->pricing_label !== 'Pricing not listed'
-                                ? [
-                                    '@type' => 'Offer',
-                                    'category' => $alt->pricing_label,
-                                  ]
-                                : null,
+                            'offers' => app(\App\Services\ProductOffer::class)->forProduct($alt),
                             'additionalProperty' => [
                                 [
                                     '@type' => 'PropertyValue',
@@ -239,10 +234,14 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 text-sm text-gray-600">{{ $alt->best_for_label ?: ($alt->primary_category_label ?: 'General use') }}</td>
-                                    <td class="px-4 py-4 text-sm text-gray-600">{{ $alt->pricing_label }}</td>
+                                    <td class="px-4 py-4 text-sm text-gray-600">{{ $alt->pricing_label }}
+                                        @if($knownPrice = app(\App\Services\ProductOffer::class)->label($alt))
+                                            <span class="block">{{ $knownPrice }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-4 text-sm text-gray-600">{{ \Illuminate\Support\Str::limit($alt->decision_summary ?: $alt->match_summary, 120) }}</td>
                                     <td class="px-4 py-4 text-sm">
-                                        <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $alt->slug]) }}" class="font-medium text-primary-600 hover:underline">
+                                        <a href="{{ \App\Support\ComparisonUrl::forSlugs($product->slug, $alt->slug) }}" class="font-medium text-primary-600 hover:underline">
                                             {{ $product->name }} vs {{ $alt->name }}
                                         </a>
                                     </td>
@@ -368,16 +367,18 @@
                                                     @endforeach
                                                 </ul>
                                             @else
-                                                <p class="mt-2 text-sm leading-5 text-gray-700">{{ $alt->primary_category_label ?: 'Similar product' }} option with overlapping category fit.</p>
+                                                <p class="mt-2 text-sm leading-5 text-gray-700">Specific features have not been listed for {{ $alt->name }}.</p>
                                             @endif
                                         </div>
 
+                                        @if($alt->watch_out_text)
                                         <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Watch Out If</p>
                                             <p class="mt-2 text-sm leading-5 text-gray-700">
-                                                {{ $alt->watch_out_text ?: 'You need a near-identical replacement with no workflow changes.' }}
+                                                {{ $alt->watch_out_text }}
                                             </p>
                                         </div>
+                                        @endif
                                     </div>
 
                                     @if(!empty($alt->match_summary) && $alt->match_summary !== $alt->decision_summary)
@@ -400,7 +401,7 @@
                                         <a href="{{ route('products.show', ['product' => $alt->slug]) }}" wire:navigate.hover class="inline-flex items-center rounded-lg bg-gray-900 px-4 py-2 text-white hover:bg-gray-700">
                                             View {{ $alt->name }}
                                         </a>
-                                        <a href="{{ route('pseo.compare', ['params' => $product->slug . '-vs-' . $alt->slug]) }}" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-700 hover:border-primary-200 hover:text-primary-700">
+                                        <a href="{{ \App\Support\ComparisonUrl::forSlugs($product->slug, $alt->slug) }}" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-700 hover:border-primary-200 hover:text-primary-700">
                                             Compare {{ $product->name }} vs {{ $alt->name }}
                                         </a>
                                     </div>

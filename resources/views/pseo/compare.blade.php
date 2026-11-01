@@ -10,7 +10,7 @@
 @section('header-title', '')
 
 @section('canonical')
-    <link rel="canonical" href="{{ route('pseo.compare', ['params' => $productA->slug . '-vs-' . $productB->slug]) }}" />
+    <link rel="canonical" href="{{ \App\Support\ComparisonUrl::forSlugs($productA->slug, $productB->slug) }}" />
 @endsection
 
 @section('content')
@@ -35,7 +35,7 @@
                     '@type' => 'ListItem',
                     'position' => 3,
                     'name' => 'vs ' . $productB->name,
-                    'item' => route('pseo.compare', ['params' => $productA->slug . '-vs-' . $productB->slug]),
+                    'item' => \App\Support\ComparisonUrl::forSlugs($productA->slug, $productB->slug),
                 ],
             ],
         ];
@@ -61,6 +61,41 @@
                 <p class="text-xs text-gray-500">{{ $pairMatchSummary }}</p>
             </div>
         @endif
+
+        <section class="mb-8" aria-labelledby="comparison-details">
+            <h2 id="comparison-details" class="text-lg font-semibold mb-3">Compare features, pricing and fit</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                    <caption class="sr-only">Listed product details for {{ $productA->name }} and {{ $productB->name }}</caption>
+                    <thead><tr>
+                        <th scope="col" class="p-3 text-left border-b">Detail</th>
+                        <th scope="col" class="p-3 text-left border-b">{{ $productA->name }}</th>
+                        <th scope="col" class="p-3 text-left border-b">{{ $productB->name }}</th>
+                    </tr></thead>
+                    <tbody>
+                        @foreach(['summary' => 'Overview', 'features' => 'Listed features', 'audience' => 'Best suited to', 'limitations' => 'Limitations and fit', 'pricing_model' => 'Pricing model', 'price' => 'Listed price', 'platforms' => 'Platforms'] as $key => $label)
+                            <tr>
+                                <th scope="row" class="p-3 text-left align-top border-b">{{ $label }}</th>
+                                @foreach($comparisonProfiles as $profile)
+                                    <td class="p-3 align-top border-b">
+                                        @if(is_array($profile[$key]) && $profile[$key] !== [])
+                                            <ul class="list-disc pl-4 space-y-1">
+                                                @foreach($profile[$key] as $item)<li>{{ $item }}</li>@endforeach
+                                            </ul>
+                                        @else
+                                            {{ is_string($profile[$key]) && $profile[$key] !== '' ? $profile[$key] : 'Not listed' }}
+                                        @endif
+                                        @if($key === 'price' && $profile['pricing_url'])
+                                            <a href="{{ $profile['pricing_url'] }}" rel="nofollow noopener" class="block mt-1 text-primary-600 underline">Check current pricing</a>
+                                        @endif
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach([$productA, $productB] as $p)

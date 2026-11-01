@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Services\CategoryNavigationService;
 use App\Services\ProductFilterNavigationService;
+use App\Support\PathPaginator;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class BroadCategoryController extends Controller
@@ -19,11 +19,25 @@ class BroadCategoryController extends Controller
         ProductFilterNavigationService $filterNavigation,
         string $group,
         ?int $page = null
-    )
-    {
+    ) {
         $broadCategory = $navigation->getBroadGroup($group);
 
         abort_unless($broadCategory, 404);
+
+        if ($request->query->has('page')) {
+            $legacyPage = $request->query('page');
+            abort_unless(is_scalar($legacyPage) && preg_match('/^[1-9][0-9]*$/D', (string) $legacyPage), 404);
+            $targetPage = (int) $legacyPage;
+
+            return redirect()->route($targetPage === 1 ? 'software-groups.show' : 'software-groups.page', [
+                'group' => $group,
+                ...($targetPage > 1 ? ['page' => $targetPage] : []),
+            ], 301);
+        }
+
+        if ($page === 1) {
+            return redirect()->route('software-groups.show', ['group' => $group], 301);
+        }
 
         $currentPage = max(1, $page ?? 1);
         $categorySlugs = collect($broadCategory['items'])->pluck('slug')->all();
@@ -50,7 +64,7 @@ class BroadCategoryController extends Controller
             ->forPage($currentPage, self::PER_PAGE)
             ->get();
 
-        $regularProducts = new LengthAwarePaginator(
+        $regularProducts = new PathPaginator(
             $products,
             $total,
             self::PER_PAGE,

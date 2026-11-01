@@ -49,7 +49,7 @@
     @if (Route::currentRouteName() == 'home')
         <link rel="canonical" href="{{ url('/') }}" />
     @elseif (Route::currentRouteName() == 'products.byWeek')
-        <link rel="canonical" href="{{ route('home') }}" />
+        <link rel="canonical" href="{{ url()->current() }}" />
     @elseif (Route::currentRouteName() == 'products.byDate')
         <link rel="canonical" href="{{ url()->current() }}" />
     @elseif (Route::currentRouteName() == 'products.byMonth')
