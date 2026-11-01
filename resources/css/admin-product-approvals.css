@@ -93,3 +93,10 @@
 
 .approval-detail > [data-detail-content] > * { flex-shrink:0; }
 .approval-detail-identity > .approval-external-link { min-width:0; overflow-wrap:anywhere; }
+.approval-badge-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.approval-badge-heading h3 { margin:0; }
+.approval-badge-status { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; padding:4px 7px; border-radius:6px; font-size:10px; line-height:1.4; text-decoration:none; }
+.approval-badge-status.is-verified { background:#ecfdf5; color:#047857; }
+.approval-badge-status.is-failed { background:#fef2f2; color:#b91c1c; }
+.approval-badge-status.is-pending { background:#fffbeb; color:#92400e; }
+.approval-badge-status:hover { text-decoration:underline; }

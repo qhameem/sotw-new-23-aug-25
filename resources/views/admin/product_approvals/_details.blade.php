@@ -24,8 +24,11 @@
     </section>
     <section class="approval-detail-section"><h3>Categories</h3><div class="approval-detail-categories">@forelse($product->categories as $category)<span>{{ $category->name }}</span>@empty<p>No categories assigned.</p>@endforelse</div></section>
     @if($product->submission_type === 'badge')
-        <section class="approval-detail-section"><h3>Badge verification</h3><p class="approval-badge-result">{{ $product->badge_verified ? 'Verified' : ($product->badge_consecutive_failures > 0 ? 'Failed' : 'Pending') }}</p>
-            <a href="{{ $product->badge_placement_url ?: $product->link }}" target="_blank" rel="noopener nofollow" class="approval-external-link">Badge page <x-admin.approval-icon name="arrow" width="15" height="15" /></a>
+        <section class="approval-detail-section">
+            <div class="approval-badge-heading">
+                <h3>Badge verification</h3>
+                <a href="{{ $product->badge_placement_url ?: $product->link }}" target="_blank" rel="noopener nofollow" class="approval-badge-status {{ $product->badge_verified ? 'is-verified' : ($product->badge_consecutive_failures > 0 ? 'is-failed' : 'is-pending') }}" aria-label="{{ $product->badge_verified ? 'Verified' : ($product->badge_consecutive_failures > 0 ? 'Failed' : 'Pending') }}: open badge page">{{ $product->badge_verified ? 'Verified' : ($product->badge_consecutive_failures > 0 ? 'Failed' : 'Pending') }} <x-admin.approval-icon name="arrow" width="13" height="13" /></a>
+            </div>
             <form method="POST" action="{{ route('admin.products.verify-badge', $product) }}">@csrf<button class="approval-text-button" type="submit">Check badge now</button></form>
         </section>
     @endif
