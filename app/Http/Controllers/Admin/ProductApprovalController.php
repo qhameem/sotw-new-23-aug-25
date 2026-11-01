@@ -51,16 +51,16 @@ class ProductApprovalController extends Controller
             $perPage = 20;
         }
         $search = trim((string) $request->input('search', ''));
-        $submitterType = $request->string('submitter_type')->toString();
-        if (! in_array($submitterType, ['admin', 'non_admin'], true)) {
-            $submitterType = '';
+        $submitterType = $request->string('submitter_type', 'non_admin')->toString();
+        if (! in_array($submitterType, ['', 'admin', 'non_admin'], true)) {
+            $submitterType = 'non_admin';
         }
-        $sortBy = $request->input('sort_by', 'published_at'); // Default sort by published_at
+        $sortBy = $request->input('sort_by', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc'); // Default sort direction
 
         $validSortColumns = ['name', 'published_at', 'created_at', 'id'];
         if (! in_array($sortBy, $validSortColumns)) {
-            $sortBy = 'published_at';
+            $sortBy = 'created_at';
         }
         if (! in_array($sortDirection, ['asc', 'desc'])) {
             $sortDirection = 'desc';

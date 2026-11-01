@@ -91,6 +91,22 @@ class AdminProductApprovalTableTest extends TestCase
             ->assertOk()->assertSee('Member Product')->assertDontSee('Admin Product');
     }
 
+    public function test_catalog_defaults_to_non_admin_products_sorted_by_newest_created_date(): void
+    {
+        $member = User::factory()->create();
+        $older = Product::factory()->create(['user_id' => $member->id, 'approved' => true, 'is_published' => true, 'created_at' => now()->subDay(), 'published_at' => now()]);
+        $newer = Product::factory()->create(['user_id' => $member->id, 'approved' => true, 'is_published' => true, 'created_at' => now(), 'published_at' => now()->subDay()]);
+        Product::factory()->create(['user_id' => User::role('admin')->firstOrFail()->id, 'approved' => true, 'is_published' => true]);
+
+        $response = $this->get(route('admin.product-approvals.index'));
+        $response->assertOk()->assertViewHas('submitterType', 'non_admin')->assertViewHas('sortBy', 'created_at')->assertViewHas('sortDirection', 'desc');
+        $this->assertSame([$newer->id, $older->id], $response->viewData('approvedProducts')->pluck('id')->all());
+
+        $this->get(route('admin.product-approvals.index', ['submitter_type' => '']))
+            ->assertOk()->assertViewHas('submitterType', '')
+            ->assertViewHas('approvedProducts', fn ($products) => $products->total() === 3);
+    }
+
     public function test_table_sorting_preserves_submitter_filter(): void
     {
         $member = User::factory()->create();
