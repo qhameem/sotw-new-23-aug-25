@@ -12,7 +12,10 @@
         <img src="{{ $product->logo_url }}" alt="" class="approval-detail-logo" width="76" height="76">
         <h3>{{ $product->name }}</h3>
         <p>{{ $product->tagline }}</p>
-        <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="approval-external-link">{{ parse_url($product->link, PHP_URL_HOST) ?: 'Visit website' }} <x-admin.approval-icon name="arrow" width="15" height="15" /></a>
+        <div class="approval-detail-links">
+            <a href="{{ $product->link }}" target="_blank" rel="noopener nofollow" class="approval-external-link">{{ parse_url($product->link, PHP_URL_HOST) ?: 'Visit website' }} <x-admin.approval-icon name="arrow" width="15" height="15" /></a>
+            <a href="{{ $detailUrl }}" target="_blank" rel="noopener" class="approval-detail-preview"><svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true"><path d="M2 1 7 4 2 7Z" /></svg>Preview</a>
+        </div>
     </div>
     <section class="approval-detail-section"><h3>Submission details</h3>
         <dl class="approval-detail-facts">
