@@ -77,6 +77,19 @@ class AdminThemeFaviconBundleTest extends TestCase
         $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
         Storage::disk('public')->assertExists($settings['favicon_url']);
 
+        $icoPath = dirname($settings['favicon_url']).'/favicon.ico';
+        Storage::disk('public')->assertExists($icoPath);
+        $ico = Storage::disk('public')->get($icoPath);
+        $this->assertSame($ico, File::get($this->publicFaviconPath));
+        $this->assertSame(['reserved' => 0, 'type' => 1, 'count' => 3], unpack('vreserved/vtype/vcount', substr($ico, 0, 6)));
+        foreach ([16, 32, 48] as $index => $size) {
+            $entry = unpack('Cwidth/Cheight/Ccolors/Creserved/vplanes/vbits/Vlength/Voffset', substr($ico, 6 + $index * 16, 16));
+            $image = imagecreatefromstring(substr($ico, $entry['offset'], $entry['length']));
+            $this->assertSame($size, imagesx($image));
+            $this->assertSame($size, imagesy($image));
+            imagedestroy($image);
+        }
+
         foreach ([16, 32, 180, 192, 512] as $size) {
             $filename = match ($size) {
                 180 => 'apple-touch-icon.png',

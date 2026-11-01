@@ -312,6 +312,11 @@ class ThemeController extends Controller
             if (strtolower($uploadedFaviconFile->getClientOriginalExtension()) === 'png') {
                 try {
                     $this->generateFaviconVersions($originalFaviconPath);
+                    $icoPath = dirname($originalFaviconPath).'/favicon.ico';
+                    Storage::disk('public')->put($icoPath, app(\App\Services\FaviconIcoGenerator::class)->generate(
+                        Storage::disk('public')->path($originalFaviconPath)
+                    ));
+                    $this->syncPublicRootFavicon($icoPath);
                 } catch (\Exception $e) {
                     Log::error('Failed to generate favicon versions: ' . $e->getMessage());
                 }
