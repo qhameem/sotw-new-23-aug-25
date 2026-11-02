@@ -94,9 +94,11 @@
 @endif
 
 @section('content')
+    {{-- Homepage hero disabled. Restore this block to reinstate it.
     @if(request()->routeIs('home'))
         <x-home-hero />
     @endif
+    --}}
 
     @if(request()->routeIs('home', 'products.byWeek', ...$taxonomyRoutes))
     <div class="xl:hidden border-b border-gray-100 px-4 py-3" x-data="{ filtersOpen: false }">
