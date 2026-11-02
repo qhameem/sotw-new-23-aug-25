@@ -52,7 +52,7 @@
                 <ol class="space-y-2 text-sm text-gray-700 list-decimal list-inside">
                     <li>Your placement is automatically approved for scheduling. Our team still manually reviews every tool and may withhold or remove unsuitable products.</li>
                     <li>Your badge was verified successfully and your launch week is reserved.</li>
-                    <li>Keep the badge live. If you remove it, the system automatically removes your listing from public view.</li>
+                    <li>Keep the badge live. Failed verification is reported to administrators for review.</li>
                     <li>Your listing goes live on <strong>{{ $launchDateFormatted }}</strong>.</li>
                 </ol>
             </div>

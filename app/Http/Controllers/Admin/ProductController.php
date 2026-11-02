@@ -25,8 +25,8 @@ use Intervention\Image\ImageManager;
 
 class ProductController extends Controller
 {
-    use AuthorizesRequests;
     use \App\Http\Controllers\Concerns\SavesAdditionalProductImage;
+    use AuthorizesRequests;
 
     private function loadProductCategoryGroups(): array
     {
@@ -246,7 +246,7 @@ class ProductController extends Controller
             $result['verified'] ? 'success' : 'error',
             $result['verified']
                 ? 'Badge verification passed for '.$product->name.'.'
-                : 'Badge verification failed for '.$product->name.'. Publication is blocked.'
+                : 'Badge verification failed for '.$product->name.'. '.$result['message']
         );
     }
 

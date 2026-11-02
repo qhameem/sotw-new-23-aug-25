@@ -44,7 +44,7 @@
         <section class="mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">A Lasting Collection</h2>
             <p class="text-gray-700 leading-relaxed">
-                Listings are permanent, subject to suitability review and our Terms of Use. For badge listings, the badge must remain live on your website. If it is removed, our system automatically removes the listing from public view. Paid listings have no badge requirement.
+                Listings are permanent, subject to suitability review and our Terms of Use. For badge listings, the badge must remain live on your website. Failed badge verification is reported to administrators for review. Paid listings have no badge requirement.
             </p>
         </section>
 

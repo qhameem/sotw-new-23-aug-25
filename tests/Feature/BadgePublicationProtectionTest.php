@@ -6,11 +6,13 @@ use App\Mail\BadgeWarningMail;
 use App\Models\BadgeVerificationAttempt;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\BadgeVerificationFailed;
 use App\Services\BadgeService;
 use App\Services\BadgeVerificationManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -46,7 +48,7 @@ class BadgePublicationProtectionTest extends TestCase
         Mail::assertSent(BadgeWarningMail::class, fn (BadgeWarningMail $mail) => $mail->product->is($product) && ! $mail->wasPublished);
     }
 
-    public function test_manual_failed_check_unpublishes_badge_product(): void
+    public function test_manual_failed_check_keeps_published_badge_product_live(): void
     {
         Mail::fake();
         Http::fake(['*' => Http::response('<html>No badge</html>')]);
@@ -65,9 +67,74 @@ class BadgePublicationProtectionTest extends TestCase
         $this->actingAs($admin)->post(route('admin.products.verify-badge', $product))->assertRedirect();
 
         $product->refresh();
-        $this->assertFalse($product->is_published);
+        $this->assertTrue($product->is_published);
         $this->assertFalse($product->badge_verified);
-        Mail::assertSent(BadgeWarningMail::class, fn (BadgeWarningMail $mail) => $mail->wasPublished);
+        Mail::assertNothingSent();
+    }
+
+    public function test_admin_can_publish_despite_failed_badge_and_regular_checks_alert_admins(): void
+    {
+        Mail::fake();
+        Notification::fake();
+        Http::fake(['*' => Http::response('Forbidden', 403)]);
+        Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $otherAdmin = User::factory()->create();
+        $otherAdmin->assignRole('admin');
+        $product = Product::factory()->create([
+            'link' => 'https://93.184.216.34/product',
+            'submission_type' => 'badge',
+            'approved' => true,
+            'is_published' => false,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.product-approvals.publish-scheduled-now'), [
+            'products' => [$product->id],
+        ])->assertSessionHas('success');
+        $this->assertTrue($product->refresh()->is_published);
+        $this->assertFalse($product->badge_verified);
+        Mail::assertNothingSent();
+
+        (new \App\Jobs\VerifyBadgePlacement($product))->handle(app(BadgeVerificationManager::class));
+
+        $this->assertTrue($product->refresh()->is_published);
+        foreach ([$admin, $otherAdmin] as $recipient) {
+            Notification::assertSentTo($recipient, BadgeVerificationFailed::class, function ($notification, $channels) use ($recipient, $product) {
+                $this->assertSame(['database', 'mail'], $channels);
+                $this->assertSame($product->id, $notification->productId);
+                $this->assertSame('http_error', $notification->reason);
+                $this->assertStringContainsString('HTTP 403', $notification->failureMessage);
+                $this->assertStringContainsString('HTTP 403', $notification->toArray($recipient)['message']);
+                $this->assertStringContainsString('HTTP 403', implode(' ', $notification->toMail($recipient)->introLines));
+
+                return true;
+            });
+        }
+        Notification::assertNotSentTo($product->user, BadgeVerificationFailed::class);
+    }
+
+    public function test_admin_can_publish_failed_badge_by_changing_publish_date(): void
+    {
+        Mail::fake();
+        Http::fake(['*' => Http::response('<html>No badge</html>')]);
+        Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $product = Product::factory()->create([
+            'link' => 'https://93.184.216.34/product',
+            'submission_type' => 'badge',
+            'approved' => true,
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.product-approvals.publish-date.update', $product), [
+            'published_at' => now()->subDay()->format('Y-m-d'),
+        ])->assertSessionHas('success');
+
+        $this->assertTrue($product->refresh()->is_published);
+        $this->assertFalse($product->badge_verified);
     }
 
     public function test_successful_check_records_evidence(): void
@@ -128,7 +195,7 @@ class BadgePublicationProtectionTest extends TestCase
             $product = Product::factory()->create([
                 'link' => 'https://93.184.216.34/product',
                 'submission_type' => 'badge',
-                'is_published' => true,
+                'is_published' => false,
                 'badge_verified' => true,
             ]);
 
@@ -140,7 +207,7 @@ class BadgePublicationProtectionTest extends TestCase
                 $this->assertStringContainsString($wording, $mail->render());
                 $this->assertStringNotContainsString('badge is missing from your website', $mail->render());
 
-                return $mail->wasPublished;
+                return ! $mail->wasPublished;
             });
             $this->assertDatabaseHas('badge_verification_attempts', [
                 'product_id' => $product->id,
@@ -153,7 +220,7 @@ class BadgePublicationProtectionTest extends TestCase
     {
         Mail::fake();
         Http::fake();
-        $product = Product::factory()->create(['link' => 'http://localhost', 'submission_type' => 'badge']);
+        $product = Product::factory()->create(['link' => 'http://localhost', 'submission_type' => 'badge', 'is_published' => false]);
 
         $result = app(BadgeVerificationManager::class)->verify($product, 'test');
 
@@ -171,7 +238,7 @@ class BadgePublicationProtectionTest extends TestCase
         Mail::fake();
         $service = app(BadgeService::class);
         $manager = app(BadgeVerificationManager::class);
-        $product = Product::factory()->create(['link' => 'https://93.184.216.34/product', 'submission_type' => 'badge']);
+        $product = Product::factory()->create(['link' => 'https://93.184.216.34/product', 'submission_type' => 'badge', 'is_published' => false]);
         Http::swap(new \Illuminate\Http\Client\Factory);
         Http::fake(['*' => Http::response('<html>No badge</html>')]);
         $manager->verify($product, 'test');

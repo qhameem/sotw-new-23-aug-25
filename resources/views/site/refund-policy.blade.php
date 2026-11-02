@@ -24,7 +24,7 @@
         </ul>
 
         <h2>Listing conditions</h2>
-        <p>Listings are permanent subject to suitability review and our Terms of Use. Removing a badge automatically removes a badge listing from public view. Paid listings do not require a badge. Withholding or removing a paid listing before benefits are delivered is covered by the rejection provision above.</p>
+        <p>Listings are permanent subject to suitability review and our Terms of Use. Failed badge verification is reported to administrators for review. Paid listings do not require a badge. Withholding or removing a paid listing before benefits are delivered is covered by the rejection provision above.</p>
         <p>Removal after delivery for deceptive information, unlawful products, fraudulent payments, or manipulated engagement does not normally qualify for a refund.</p>
 
         <h2>Requesting help</h2>

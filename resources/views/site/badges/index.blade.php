@@ -228,7 +228,7 @@
                     <li>The badge must remain on the public page you verified. Homepage placement is encouraged.</li>
                     <li>Do not change the badge image URL to another image.</li>
                     <li>Do not add <code class="rounded bg-white px-1.5 py-0.5 text-gray-700">nofollow</code> to the link.</li>
-                    <li>Keep the badge live after launch. If you remove it, the system automatically removes your listing from public view.</li>
+                    <li>Keep the badge live after launch. Failed verification is reported to administrators for review.</li>
                 </ul>
             </section>
         </aside>

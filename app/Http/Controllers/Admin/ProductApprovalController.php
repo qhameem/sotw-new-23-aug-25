@@ -360,8 +360,6 @@ class ProductApprovalController extends Controller
                 $verification = $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
                 if (! $verification['verified']) {
                     $badgeFailures++;
-
-                    continue;
                 }
             }
 
@@ -375,7 +373,7 @@ class ProductApprovalController extends Controller
 
         $message = sprintf('%d scheduled product(s) published immediately.', $publishedProducts->count());
         if ($badgeFailures > 0) {
-            $message .= sprintf(' %d badge product(s) were blocked after failed verification.', $badgeFailures);
+            $message .= sprintf(' %d badge product(s) published despite failed verification.', $badgeFailures);
         }
 
         return back()->with($publishedProducts->isNotEmpty() ? 'success' : 'error', $message);
@@ -433,10 +431,7 @@ class ProductApprovalController extends Controller
         $publishNow = $publishDate->lte(now()->utc());
 
         if ($publishNow && ! $product->is_published && $product->submission_type === 'badge') {
-            $verification = $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
-            if (! $verification['verified']) {
-                return false;
-            }
+            $badgeVerification->verify($product, 'pre_publish_manual', $request->user(), $request->ip());
         }
 
         $oldWeekKeys = $product->published_at
