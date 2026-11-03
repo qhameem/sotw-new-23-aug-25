@@ -160,6 +160,18 @@ public function articles()
         return $this->hasRole('admin');
     }
 
+    public function bellNotifications(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        $notifications = $this->notifications();
+
+        if ($this->is_admin()) {
+            $notifications->where('type', \App\Notifications\ProductSubmitted::class)
+                ->whereIn('data->product_id', Product::query()->submittedByRole('non_admin')->select('id'));
+        }
+
+        return $notifications;
+    }
+
     public function todoLists()
     {
         return $this->hasMany(TodoList::class);

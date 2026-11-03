@@ -19,6 +19,12 @@ class ProductApprovalController extends Controller
 {
     public function index(Request $request)
     {
+        $badgeNotifications = $request->user()->notifications()
+            ->where('type', \App\Notifications\BadgeVerificationFailed::class)
+            ->paginate(10, ['*'], 'badge_page')
+            ->withQueryString()
+            ->fragment('badge-notifications');
+
         $status = $request->string('status')->toString();
         if (! in_array($status, ['pending', 'scheduled', 'shown', 'failed_badge'], true)) {
             $status = null;
@@ -123,6 +129,7 @@ class ProductApprovalController extends Controller
         }
 
         return view('admin.product_approvals.index', compact(
+            'badgeNotifications',
             'pendingProducts',
             'approvedProducts',
             'perPage',

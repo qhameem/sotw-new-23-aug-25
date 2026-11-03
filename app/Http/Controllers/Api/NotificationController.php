@@ -18,8 +18,8 @@ class NotificationController extends Controller
         $user = Auth::user();
         $perPage = $request->query('per_page', 15); // Default to 15 per page
 
-        $notifications = $user->notifications()->paginate($perPage);
-        $unreadCount = $user->unreadNotifications()->count();
+        $notifications = $user->bellNotifications()->paginate($perPage);
+        $unreadCount = $user->bellNotifications()->whereNull('read_at')->count();
 
         return response()->json([
             'notifications' => $notifications,
@@ -50,7 +50,7 @@ class NotificationController extends Controller
     public function markAllAsRead(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $user->unreadNotifications->markAsRead();
+        $user->bellNotifications()->whereNull('read_at')->update(['read_at' => now()]);
 
         return response()->json(['message' => 'All notifications marked as read.']);
     }

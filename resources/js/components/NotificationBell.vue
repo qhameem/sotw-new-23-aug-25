@@ -129,9 +129,9 @@ export default {
 
             if (window.Echo) {
                 window.Echo.private(`App.Models.User.${props.userId}`)
-                    .notification((notificationEvent) => {
-                        notifications.value.unshift(notificationEvent);
-                        unreadCount.value++;
+                    .notification(() => {
+                        page.value = 1;
+                        fetchNotifications();
                     });
             }
             

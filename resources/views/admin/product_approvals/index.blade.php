@@ -107,6 +107,20 @@
     .custom-category-modal textarea { font-size: 13px !important; line-height: 1.4 !important; }
 </style>
 <div class="approval-page-content">
+    <section id="badge-notifications" aria-labelledby="badge-notifications-title" class="mb-6 rounded-xl border border-amber-200 bg-white p-4 dark:border-amber-900 dark:bg-slate-900">
+        <h2 id="badge-notifications-title" class="text-base font-semibold text-gray-900 dark:text-gray-100">Badge verification notifications</h2>
+        <ul class="mt-3 divide-y divide-gray-200 dark:divide-slate-700">
+            @forelse($badgeNotifications as $notification)
+                <li class="py-3 text-sm">
+                    <a href="{{ route('admin.products.show', $notification->data['product_id']) }}" class="text-indigo-600 hover:underline dark:text-indigo-400">{{ $notification->data['message'] }}</a>
+                    <time datetime="{{ $notification->created_at->toIso8601String() }}" class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ $notification->created_at->format('d/m/Y H:i:s') }}</time>
+                </li>
+            @empty
+                <li class="py-3 text-sm text-gray-500 dark:text-gray-400">No badge verification notifications.</li>
+            @endforelse
+        </ul>
+        {{ $badgeNotifications->links() }}
+    </section>
     @if(session('success'))
         <div class="mb-6 flex items-center gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 shadow-sm">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">

@@ -17,7 +17,7 @@ class NotificationBell extends Component
     public function __construct()
     {
         if (Auth::check()) {
-            $this->unreadCount = Auth::user()->unreadNotifications()->count();
+            $this->unreadCount = Auth::user()->bellNotifications()->whereNull('read_at')->count();
         } else {
             $this->unreadCount = 0;
         }

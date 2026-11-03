@@ -12,6 +12,62 @@ class NotificationApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_bell_only_lists_non_admin_submissions(): void
+    {
+        \Spatie\Permission\Models\Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $submitter = User::factory()->create();
+        $product = \App\Models\Product::factory()->create(['user_id' => $submitter->id]);
+        $adminProduct = \App\Models\Product::factory()->create(['user_id' => $admin->id]);
+
+        foreach ([
+            [\App\Notifications\ProductSubmitted::class, $product->id, 'User submission'],
+            [\App\Notifications\ProductSubmitted::class, $adminProduct->id, 'Admin submission'],
+            [\App\Notifications\BadgeVerificationFailed::class, $product->id, 'Badge verification failed test'],
+            [\App\Notifications\TestNotification::class, $product->id, 'Other alert'],
+        ] as [$type, $productId, $message]) {
+            $admin->notifications()->create([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'type' => $type,
+                'data' => ['product_id' => $productId, 'message' => $message],
+            ]);
+        }
+
+        $this->actingAs($admin)->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonCount(1, 'notifications.data')
+            ->assertJsonPath('notifications.data.0.data.message', 'User submission')
+            ->assertJsonPath('unread_count', 1);
+
+        $this->assertSame(1, (new \App\View\Components\NotificationBell())->unreadCount);
+
+        $this->get(route('admin.product-approvals.index'))
+            ->assertOk()
+            ->assertSee('Badge verification notifications')
+            ->assertSee('Badge verification failed test')
+            ->assertSee(route('admin.products.show', $product), false);
+
+        $this->putJson('/api/notifications/read-all')->assertOk();
+        $this->assertSame(3, $admin->unreadNotifications()->count());
+        $this->getJson('/api/notifications')->assertJsonPath('unread_count', 0);
+    }
+
+    public function test_non_admin_bell_retains_other_notification_types(): void
+    {
+        $user = User::factory()->create();
+        $user->notifications()->create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'type' => \App\Notifications\ProductApprovedInApp::class,
+            'data' => ['message' => 'Product approved'],
+        ]);
+
+        $this->actingAs($user)->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonCount(1, 'notifications.data')
+            ->assertJsonPath('unread_count', 1);
+    }
+
     /** @test */
     public function an_authenticated_user_can_fetch_their_notifications()
     {
