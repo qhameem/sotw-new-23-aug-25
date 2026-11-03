@@ -1,6 +1,7 @@
 @inject('launchReadinessBranding', 'App\Support\LaunchReadinessBranding')
 
 <a href="https://softwareontheweb.com/tools/launch-readiness-checker"
+    target="_blank" rel="noopener noreferrer"
     class="mb-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2">
     <img src="{{ $launchReadinessBranding->publicLogoUrl() }}" alt="" width="40" height="40"
         class="h-10 w-10 flex-shrink-0 object-contain">
