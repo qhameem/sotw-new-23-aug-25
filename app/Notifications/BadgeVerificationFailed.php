@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class BadgeVerificationFailed extends Notification implements ShouldQueue
@@ -22,7 +21,12 @@ class BadgeVerificationFailed extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database'];
+    }
+
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        return $channel === 'database';
     }
 
     public function toArray(object $notifiable): array
@@ -37,14 +41,4 @@ class BadgeVerificationFailed extends Notification implements ShouldQueue
         ];
     }
 
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject("Badge verification failed: {$this->productName} (#{$this->productId})")
-            ->line("Regular badge verification failed for {$this->productName} (#{$this->productId}).")
-            ->line('Checked URL: '.$this->placementUrl)
-            ->line('Reason: '.$this->failureMessage)
-            ->line('Published products remain live pending admin review.')
-            ->action('Review product', route('admin.products.show', $this->productId));
-    }
 }

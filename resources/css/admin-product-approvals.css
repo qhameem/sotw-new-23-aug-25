@@ -20,6 +20,19 @@
 .approval-account strong,.approval-account small { display:block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .approval-account strong { font-size:12px; font-weight:500; }.approval-account small { font-size:10px; margin-top:3px; }
 .approval-summary { display:flex; flex-wrap:wrap; gap:6px; margin:0 338px 22px 0; }
+.approval-badge-notifications { margin-bottom:20px; border:1px solid var(--approval-line); border-radius:8px; color:var(--approval-ink); }
+.approval-badge-notifications > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; cursor:pointer; list-style:none; font-size:13px; font-weight:500; }
+.approval-badge-notifications > summary::-webkit-details-marker { display:none; }
+.approval-badge-notifications > summary:focus-visible { outline:2px solid var(--approval-muted); outline-offset:3px; }
+.approval-badge-count { margin-left:6px; color:var(--approval-muted); font-size:11px; font-weight:400; }
+.approval-badge-chevron { flex-shrink:0; color:var(--approval-muted); }
+.approval-badge-notifications[open] .approval-badge-chevron { transform:rotate(180deg); }
+.approval-badge-list { margin:0; padding:0 14px; list-style:none; }
+.approval-badge-list > li { padding:12px 0; border-top:1px solid var(--approval-line); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.approval-badge-list a { color:var(--approval-ink); text-decoration:none; }
+.approval-badge-list a:hover { text-decoration:underline; }
+.approval-badge-list time { display:block; margin-top:4px; color:var(--approval-muted); font-size:11px; }
+.approval-badge-pagination { padding:12px 14px; border-top:1px solid var(--approval-line); }
 .approval-summary > a { display:flex; align-items:center; gap:7px; min-width:0; padding:7px 9px; border:0; border-radius:8px; background:transparent; box-shadow:none; transform:none; }
 .approval-summary > a:hover { background:#e8e7df; transform:none; }
 .approval-summary > a > span:first-child { font-size:11px; font-weight:500; text-transform:none; letter-spacing:0; color:#666c68; }

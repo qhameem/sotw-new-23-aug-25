@@ -102,12 +102,13 @@ class BadgePublicationProtectionTest extends TestCase
         $this->assertTrue($product->refresh()->is_published);
         foreach ([$admin, $otherAdmin] as $recipient) {
             Notification::assertSentTo($recipient, BadgeVerificationFailed::class, function ($notification, $channels) use ($recipient, $product) {
-                $this->assertSame(['database', 'mail'], $channels);
+                $this->assertSame(['database'], $channels);
+                $this->assertTrue($notification->shouldSend($recipient, 'database'));
+                $this->assertFalse($notification->shouldSend($recipient, 'mail'));
                 $this->assertSame($product->id, $notification->productId);
                 $this->assertSame('http_error', $notification->reason);
                 $this->assertStringContainsString('HTTP 403', $notification->failureMessage);
                 $this->assertStringContainsString('HTTP 403', $notification->toArray($recipient)['message']);
-                $this->assertStringContainsString('HTTP 403', implode(' ', $notification->toMail($recipient)->introLines));
 
                 return true;
             });
