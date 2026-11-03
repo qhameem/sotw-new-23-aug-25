@@ -10,6 +10,7 @@ class LaunchReadinessPageData
     public function __construct(
         private readonly ToolSettings $toolSettings,
         private readonly LaunchReadinessBranding $branding,
+        private readonly LaunchReadinessBadges $badges,
     ) {}
 
     public function merge(array $data = [], ?ToolUser $toolUser = null, ?string $currentHost = null): array
@@ -26,6 +27,7 @@ class LaunchReadinessPageData
             'toolGoogleAuthEnabled' => ToolGoogleAuth::isAvailableForCurrentHost($currentHost ?? request()->getHost()),
             'toolGoogleAuthUnavailableReason' => ToolGoogleAuth::unavailableReason(),
             'toolBranding' => $this->branding->get(),
+            'toolFooterBadges' => $this->badges->all(),
             'toolBrandingSiteName' => $this->branding->siteName(),
             'toolBrandingLogoUrl' => $this->branding->publicLogoUrl(),
             'toolBrandingFaviconUrl' => $this->branding->publicFaviconUrl(),

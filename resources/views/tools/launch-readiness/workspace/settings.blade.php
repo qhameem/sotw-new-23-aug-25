@@ -18,6 +18,7 @@
                         <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'password']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'password' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Password</a>
                         <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'two-factor']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'two-factor' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Two-Factor Auth</a>
                         @if($toolUserIsAdmin ?? false)
+                            <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'badges']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'badges' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Footer badges</a>
                             <a href="{{ route('launch-readiness.settings', ['toolSlug' => $toolSlug, 'tab' => 'branding']) }}" class="block rounded-xl px-4 py-3 text-sm font-medium transition" style="{{ $activeTab === 'branding' ? 'background: var(--lr-panel-strong); color: var(--lr-text);' : 'color: var(--lr-muted);' }}">Branding</a>
                         @endif
                     </nav>
@@ -79,6 +80,8 @@
                                 <p class="mt-3 text-base leading-7 text-[var(--lr-muted)]">For now, access is verified either through Google OAuth or the 6-digit email sign-in code flow. This keeps sign-in simple while leaving room for stronger 2FA later.</p>
                             </div>
                         </div>
+                    @elseif($activeTab === 'badges' && ($toolUserIsAdmin ?? false))
+                        @include('tools.launch-readiness.workspace.partials.footer-badges-settings')
                     @elseif($activeTab === 'branding' && ($toolUserIsAdmin ?? false))
                         <div class="space-y-10">
                             <div>

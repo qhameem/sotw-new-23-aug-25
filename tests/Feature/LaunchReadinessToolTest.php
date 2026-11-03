@@ -18,6 +18,49 @@ class LaunchReadinessToolTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_manage_footer_badges_and_public_embeds_are_isolated(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        $admin = ToolUser::query()->create(['name' => 'Admin', 'email' => 'qhameemb@gmail.com']);
+        $endpoint = route('launch-readiness.settings.badges.update', ['toolSlug' => $slug]);
+        $badges = [['name' => 'Example badge', 'code' => '<a href="https://example.com"><img src="https://example.com/badge.png" width="600" height="300"></a>']];
+
+        $this->actingAs($admin, 'tool_user')->patch($endpoint, ['badges' => $badges])->assertRedirect();
+        $this->assertSame($badges, app(\App\Support\LaunchReadinessBadges::class)->all());
+        $this->get(route('launch-readiness.settings', ['toolSlug' => $slug, 'tab' => 'badges']))
+            ->assertOk()->assertSee('Save badges');
+        $this->get(route('launch-readiness.index', ['toolSlug' => $slug]))->assertOk()
+            ->assertSee('aria-label="Site badges"', false)
+            ->assertSee('sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"', false)
+            ->assertDontSee($badges[0]['code'], false);
+
+        $badges[0]['code'] = '<svg width="100" height="50"></svg>';
+        $this->patch($endpoint, ['badges' => $badges])->assertRedirect();
+        $this->assertSame($badges, app(\App\Support\LaunchReadinessBadges::class)->all());
+        $this->patch($endpoint, [])->assertRedirect();
+        $this->assertSame([], app(\App\Support\LaunchReadinessBadges::class)->all());
+        $this->get(route('launch-readiness.index', ['toolSlug' => $slug]))
+            ->assertDontSee('aria-label="Site badges"', false);
+    }
+
+    public function test_footer_badges_require_admin_and_valid_embed_codes(): void
+    {
+        Storage::fake('local');
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        $endpoint = route('launch-readiness.settings.badges.update', ['toolSlug' => $slug]);
+        $user = ToolUser::query()->create(['name' => 'Member', 'email' => 'member@example.com']);
+        $this->actingAs($user, 'tool_user')->patch($endpoint, [])->assertForbidden();
+        $this->get(route('launch-readiness.settings', ['toolSlug' => $slug, 'tab' => 'badges']))
+            ->assertOk()->assertDontSee('Save badges');
+
+        $user->forceFill(['email' => 'qhameemb@gmail.com'])->save();
+        $this->patch($endpoint, ['badges' => [['name' => 'Missing code', 'code' => '']]])
+            ->assertSessionHasErrors('badges.0.code');
+        $this->assertSame([], app(\App\Support\LaunchReadinessBadges::class)->all());
+    }
+
     public function test_launch_readiness_homepage_renders_pending_checks(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);

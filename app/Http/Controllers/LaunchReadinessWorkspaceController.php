@@ -7,6 +7,7 @@ use App\Models\ToolScan;
 use App\Models\ToolUser;
 use App\Services\LaunchReadinessAuditService;
 use App\Support\LaunchReadinessBranding;
+use App\Support\LaunchReadinessBadges;
 use App\Support\LaunchReadinessPageData;
 use App\Support\ToolSettings;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class LaunchReadinessWorkspaceController extends Controller
         private readonly ToolSettings $toolSettings,
         private readonly LaunchReadinessPageData $pageData,
         private readonly LaunchReadinessBranding $branding,
+        private readonly LaunchReadinessBadges $badges,
     ) {}
 
     public function dashboard(Request $request): View
@@ -170,6 +172,7 @@ class LaunchReadinessWorkspaceController extends Controller
 
         if ($toolUser->isAdmin()) {
             $allowedTabs[] = 'branding';
+            $allowedTabs[] = 'badges';
         }
 
         if (! in_array($activeTab, $allowedTabs, true)) {
@@ -179,6 +182,24 @@ class LaunchReadinessWorkspaceController extends Controller
         return view('tools.launch-readiness.workspace.settings', $this->workspaceData($toolUser, [
             'activeTab' => $activeTab,
         ]));
+    }
+
+    public function updateBadges(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($this->toolUser());
+        $validated = $request->validate([
+            'badges' => ['sometimes', 'array', 'max:30'],
+            'badges.*' => ['array:name,code'],
+            'badges.*.name' => ['required', 'string', 'max:120'],
+            'badges.*.code' => ['required', 'string', 'max:20000'],
+        ]);
+
+        $this->badges->save($validated['badges'] ?? []);
+
+        return redirect()->route('launch-readiness.settings', [
+            'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
+            'tab' => 'badges',
+        ])->with('status', 'Footer badges updated.');
     }
 
     public function updateBranding(Request $request): RedirectResponse

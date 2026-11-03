@@ -151,6 +151,7 @@
                 </div>
             </div>
         </footer>
+        @include('tools.launch-readiness.partials.footer-badges')
 
         @unless($toolUser || request()->routeIs('launch-readiness.auth.login'))
             <div

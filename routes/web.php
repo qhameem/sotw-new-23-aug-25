@@ -498,6 +498,7 @@ Route::prefix('tools/{toolSlug}')
             Route::post('/dashboard/scans/bulk', [LaunchReadinessWorkspaceController::class, 'bulkScans'])->name('dashboard.scans.bulk');
             Route::post('/dashboard/scans/{toolScan:result_token}/recheck', [LaunchReadinessWorkspaceController::class, 'recheck'])->name('dashboard.scans.recheck');
             Route::get('/settings', [LaunchReadinessWorkspaceController::class, 'settings'])->name('settings');
+            Route::patch('/settings/badges', [LaunchReadinessWorkspaceController::class, 'updateBadges'])->name('settings.badges.update');
             Route::patch('/settings/profile', [LaunchReadinessWorkspaceController::class, 'updateProfile'])->name('settings.profile.update');
             Route::delete('/settings/account', [LaunchReadinessWorkspaceController::class, 'destroyAccount'])->name('settings.account.destroy');
             Route::post('/logout', [ToolAuthController::class, 'destroy'])->name('auth.logout');
