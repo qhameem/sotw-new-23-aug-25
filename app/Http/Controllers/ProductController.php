@@ -1980,7 +1980,9 @@ class ProductController extends Controller
     public function showProductPage(Product $product)
     {
         $view = $this->publicPageView($product);
-        $response = response()->view($view->name(), $view->getData());
+        $response = response()->view($view->name(), array_merge($view->getData(), [
+            'isAdminView' => request()->routeIs('admin.products.show'),
+        ]));
         if ($view->getData()['isUnpublishedProduct']) {
             $response->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
         }
@@ -1990,7 +1992,7 @@ class ProductController extends Controller
 
     public function publicPageView(Product $product): \Illuminate\View\View
     {
-        $isAdminPreview = request()->routeIs('admin.product-approvals.preview');
+        $isAdminPreview = request()->routeIs('admin.product-approvals.preview', 'admin.products.show');
 
         if (! $product->approved && ! $isAdminPreview) {
             abort(404);

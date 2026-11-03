@@ -367,9 +367,7 @@ class ProductController extends Controller
     {
         $productController = app(\App\Http\Controllers\ProductController::class);
 
-        $view = $productController->showProductPage($product);
-
-        return $view->with('isAdminView', true);
+        return $productController->showProductPage($product);
     }
 
     /**

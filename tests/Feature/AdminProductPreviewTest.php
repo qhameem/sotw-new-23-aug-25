@@ -12,6 +12,30 @@ class AdminProductPreviewTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_badge_notification_links_open_admin_product_pages(): void
+    {
+        Role::create(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        foreach ([true, false] as $approved) {
+            $product = Product::factory()->create([
+                'approved' => $approved,
+                'is_published' => $approved,
+            ]);
+            $notification = new \App\Notifications\BadgeVerificationFailed(
+                $product->id, $product->name, 'https://example.com', 'Badge missing'
+            );
+
+            $this->actingAs($admin)
+                ->get($notification->toArray($admin)['link'])
+                ->assertOk()
+                ->assertViewHas('isAdminView', true)
+                ->assertSee($product->name)
+                ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
+    }
+
     public function test_admin_can_preview_an_unapproved_product_with_noindex_protection(): void
     {
         Role::create(['name' => 'admin']);
