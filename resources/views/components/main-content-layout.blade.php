@@ -101,6 +101,7 @@
                     ])>
                         <div @class([
                         ])>
+                            <x-launch-readiness-sidebar-link />
                             <div class="mb-1">
                                 <x-header-stats :stats="$headerStats" />
                             </div>
