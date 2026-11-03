@@ -6,6 +6,60 @@ use Illuminate\Support\Facades\Storage;
 
 class LaunchReadinessBadges
 {
+    public function inlineHtml(string $code): ?string
+    {
+        $document = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $document->loadHTML('<?xml encoding="UTF-8"><div id="badge-root">'.$code.'</div>', LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        $root = $document->getElementById('badge-root');
+        if (! $root || $root->getElementsByTagName('img')->length === 0) {
+            return null;
+        }
+
+        $allowed = [
+            'a' => ['href', 'target', 'rel', 'title'],
+            'img' => ['src', 'alt', 'width', 'height', 'title', 'loading'],
+        ];
+
+        foreach ($document->getElementsByTagName('*') as $element) {
+            if (in_array($element->tagName, ['html', 'body'], true) || $element === $root) {
+                continue;
+            }
+            if (! isset($allowed[$element->tagName])) {
+                return null;
+            }
+            foreach (iterator_to_array($element->attributes) as $attribute) {
+                if (! in_array($attribute->name, $allowed[$element->tagName], true)) {
+                    $element->removeAttribute($attribute->name);
+                }
+            }
+            foreach (['href', 'src'] as $attribute) {
+                if ($element->hasAttribute($attribute)
+                    && ! preg_match('~^https?://~i', $element->getAttribute($attribute))) {
+                    return null;
+                }
+            }
+            if ($element->tagName === 'a' && $element->getAttribute('target') === '_blank') {
+                $tokens = preg_split('/\s+/', trim($element->getAttribute('rel'))) ?: [];
+                $element->setAttribute('rel', trim(implode(' ', array_unique([...$tokens, 'noopener']))));
+            }
+        }
+
+        $html = '';
+        foreach ($root->childNodes as $node) {
+            $html .= $document->saveHTML($node);
+        }
+
+        return $html;
+    }
+
     public function all(): array
     {
         $settings = $this->settings();

@@ -14,8 +14,18 @@
             destroy() { this.observer?.disconnect(); }
         }"
         :style="{ height: stripHeight + 'px' }">
+        <style>
+            .lr-footer-badge-static a { display: inline-flex; align-items: center; height: 100%; }
+            .lr-footer-badge-static img { display: block; height: var(--badge-height) !important; width: auto !important; max-width: none !important; max-height: none !important; }
+        </style>
         <div class="mx-auto flex h-full max-w-6xl items-center gap-6 overflow-x-auto px-4 py-2 sm:px-6">
             @foreach($toolFooterBadges as $badge)
+                @php($inlineBadge = app(\App\Support\LaunchReadinessBadges::class)->inlineHtml($badge['code']))
+                @if($inlineBadge !== null)
+                    <div class="lr-footer-badge-static flex-shrink-0" :style="{ height: badgeDisplayHeight + 'px', '--badge-height': badgeDisplayHeight + 'px' }">
+                        {!! $inlineBadge !!}
+                    </div>
+                @else
                 <div class="relative flex-shrink-0 overflow-hidden"
                     x-data="{ badgeWidth: 150, badgeHeight: 150 }"
                     x-init="$nextTick(() => $refs.frame.contentWindow.postMessage({ type: 'launch-readiness-badge-measure' }, '*'))"
@@ -27,6 +37,7 @@
                         :style="{ width: badgeWidth + 'px', height: badgeHeight + 'px', transform: 'scale(' + (badgeDisplayHeight / badgeHeight) + ')' }"
                         srcdoc="{{ view('tools.launch-readiness.partials.badge-document', ['code' => $badge['code']])->render() }}"></iframe>
                 </div>
+                @endif
             @endforeach
         </div>
     </section>

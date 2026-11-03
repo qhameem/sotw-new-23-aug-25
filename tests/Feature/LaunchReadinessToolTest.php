@@ -18,7 +18,7 @@ class LaunchReadinessToolTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_manage_footer_badges_and_public_embeds_are_isolated(): void
+    public function test_admin_can_manage_footer_badges_and_image_links_are_in_page_html(): void
     {
         Storage::fake('local');
         Storage::fake('public');
@@ -33,12 +33,15 @@ class LaunchReadinessToolTest extends TestCase
             ->assertOk()->assertSee('Save badges');
         $this->get(route('launch-readiness.index', ['toolSlug' => $slug]))->assertOk()
             ->assertSee('aria-label="Site badges"', false)
-            ->assertSee('sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"', false)
-            ->assertDontSee($badges[0]['code'], false);
+            ->assertSee('href="https://example.com"', false)
+            ->assertSee('src="https://example.com/badge.png"', false)
+            ->assertDontSee('<iframe', false);
 
         $badges[0]['code'] = '<svg width="100" height="50"></svg>';
         $this->patch($endpoint, ['badges' => $badges])->assertRedirect();
         $this->assertSame($badges, app(\App\Support\LaunchReadinessBadges::class)->all());
+        $this->get(route('launch-readiness.index', ['toolSlug' => $slug]))->assertOk()
+            ->assertSee('sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"', false);
         $this->patch($endpoint, [])->assertRedirect();
         $this->assertSame([], app(\App\Support\LaunchReadinessBadges::class)->all());
         $this->get(route('launch-readiness.index', ['toolSlug' => $slug]))
