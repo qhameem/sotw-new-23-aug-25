@@ -92,8 +92,13 @@
         })"
     >
         <header class="sticky top-0 z-20 bg-white/90 backdrop-blur dark:bg-slate-900/95">
-            <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-                <div class="flex items-center gap-6">
+            <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                <div class="flex flex-wrap items-center gap-3 sm:gap-6">
+                    <a href="{{ url('/') }}" title="Back to Software on the Web" aria-label="Back to Software on the Web"
+                        class="flex flex-shrink-0 items-center border-r border-slate-200 pr-3 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 sm:pr-6">
+                        <img src="{{ config('theme.logo_url') ? \Illuminate\Support\Facades\Storage::url(config('theme.logo_url')) : asset('images/branding/site-logo.png') }}"
+                            alt="Software on the Web" class="h-8 w-auto max-w-24 object-contain">
+                    </a>
                     <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-3 text-sm font-semibold text-slate-900">
                         <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-9 w-9 object-contain">
                         <span>{{ $toolBrandingSiteName }}</span>
