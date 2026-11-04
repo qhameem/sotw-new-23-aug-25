@@ -24,7 +24,8 @@ class AdminWorkspaceTest extends TestCase
 
         foreach (config('admin-navigation.primary') as $item) {
             $response = $this->get(route($item['route']));
-            $response->assertOk()->assertSee('approval-shell', false)->assertSee('Admin navigation');
+            $response->assertOk()->assertSee('approval-shell', false)->assertSee('Admin navigation')
+                ->assertDontSee('data-category-navigation-row', false);
             $document = new \DOMDocument;
             @$document->loadHTML($response->getContent());
             $links = (new \DOMXPath($document))->query('//nav[contains(@class,"approval-navigation")]/a[@aria-current="page"]');

@@ -93,3 +93,6 @@
     .admin-site-header-space { display:block; height:3.5rem; }
     .admin-workspace .approval-shell { min-height:calc(100dvh - 3.5rem); }
 }
+
+.admin-workspace [data-site-top-bar] { height:3.5rem; }
+.admin-workspace [data-category-navigation-row] { display:none; }
