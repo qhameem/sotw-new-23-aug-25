@@ -620,6 +620,7 @@
         </div>
     </div>
     @include('partials._global-search-modal')
+    <x-feedback-modal />
 
     @livewireScripts
     @stack('scripts')

@@ -41,6 +41,10 @@ class ProductApprovalController extends Controller
             ->where('approved', false)
             ->orderByDesc('id')
             ->get();
+        if (! $request->has('status') && $pendingProducts->isNotEmpty()) {
+            $status = 'pending';
+        }
+
         $scheduledProductsCount = Product::readyForScheduledPublication()->count();
         $shownProductsCount = Product::where('approved', true)
             ->where('is_published', true)

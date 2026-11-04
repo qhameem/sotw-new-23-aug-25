@@ -77,6 +77,8 @@ Route::get('/{key}.txt', IndexNowKeyController::class)
 Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key.legacy');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
+Route::post('/feedback', \App\Http\Controllers\FeedbackController::class)
+    ->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
 Route::post('/newsletter', [NewsletterController::class, 'store'])
     ->middleware('throttle:5,1')

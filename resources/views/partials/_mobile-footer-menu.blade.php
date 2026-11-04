@@ -49,11 +49,12 @@ $navItems = [
     style="padding-bottom: env(safe-area-inset-bottom, 0px); background-color: var(--color-navbar-bg, #ffffff);"
     aria-label="Mobile navigation"
 >
-    <div class="mx-auto grid h-[4.5rem] max-w-md grid-cols-3 items-center px-3">
+    <div class="mx-auto grid h-[4.5rem] max-w-md grid-cols-4 items-center px-3">
         @foreach ($navItems as $item)
             <x-mobile-nav-item :href="$item['href']" :text="$item['text']" :active-routes="$item['activeRoutes']">
                 {!! $item['icon'] !!}
             </x-mobile-nav-item>
         @endforeach
+        <x-feedback-button mobile />
     </div>
 </nav>
