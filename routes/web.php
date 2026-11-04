@@ -152,6 +152,7 @@ Route::post('/stripe/product-review-checkout', [StripeController::class, 'produc
 Route::get('/stripe/product-review/success', [StripeController::class, 'productReviewSuccess'])->name('stripe.product-review.success');
 
 Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::resource('categories', CategoryController::class);
     Route::get('errors', [SystemErrorController::class, 'index'])->name('errors.index');

@@ -11,6 +11,7 @@ return [
         ['route' => 'admin.settings.index', 'label' => 'Settings', 'icon' => 'settings', 'patterns' => ['admin.settings.*', 'admin.product-description-templates.*']],
     ],
     'additional' => [
+        ['route' => 'admin.feedback.index', 'label' => 'Feedback', 'icon' => 'mail'],
         ['route' => 'admin.product-submission-drafts.index', 'label' => 'Unsubmitted products', 'icon' => 'file'],
         ['route' => 'admin.product-discovery.index', 'label' => 'Product discovery', 'icon' => 'search'],
         ['route' => 'admin.tech-stacks.index', 'label' => 'Tech stacks', 'icon' => 'grid'],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\SiteFeedback;
+use App\Models\Feedback;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -18,9 +19,23 @@ class FeedbackController extends Controller
             'website' => ['nullable', 'max:0'],
         ]);
 
-        Mail::to(config('agent_access.contact'))->send(new SiteFeedback(
-            $data['type'], $data['message'], $data['email'] ?? null,
-        ));
+        $user = $request->user();
+        Feedback::create([
+            'user_id' => $user?->id,
+            'user_name' => $user?->name,
+            'user_email' => $user?->email,
+            'contact_email' => $data['email'] ?? null,
+            'type' => $data['type'],
+            'message' => $data['message'],
+        ]);
+
+        try {
+            Mail::to(config('agent_access.contact'))->send(new SiteFeedback(
+                $data['type'], $data['message'], $data['email'] ?? $user?->email,
+            ));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
 
         return response()->json(['message' => 'Your feedback has been sent.']);
     }
