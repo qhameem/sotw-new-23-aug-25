@@ -20,7 +20,11 @@
     $adminHeading = trim(strip_tags($__env->yieldContent('header-title')));
 @endphp
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+    @include('partials.site-search-state')
+    @keydown.window="handleSearchShortcut($event)"
+    @open-search-modal.window="openSearchModal()"
+    @close-search-modal-from-js.window="closeSearchModal()">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,6 +38,10 @@
 </head>
 <body class="approval-workspace admin-workspace admin-variant-{{ $adminVariant }} {{ $adminVariant === 'approvals' && ($status ?? null) === 'pending' ? 'is-pending-view' : '' }}"
     data-is-authenticated="{{ auth()->check() ? '1' : '0' }}" data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
+    @persist('site-top-bar')
+        <x-top-bar />
+    @endpersist
+    <div class="admin-site-header-space" aria-hidden="true"></div>
     <div class="approval-shell">
         @include('admin.partials.navigation')
         <main class="approval-main">
@@ -54,6 +62,8 @@
             <div class="admin-content">@yield('content')</div>
         </main>
     </div>
+    @include('partials._global-search-modal')
+    <x-feedback-modal />
     @livewireScripts
     @stack('scripts')
     @stack('form-scripts')

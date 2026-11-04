@@ -33,6 +33,20 @@ class AdminWorkspaceTest extends TestCase
         }
     }
 
+    public function test_admin_dashboard_includes_the_shared_site_header_and_dialogs(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-site-top-bar', false)
+            ->assertSee(route('articles.index'), false)
+            ->assertSee('globalSearchInput')
+            ->assertSee('feedback-title')
+            ->assertSee('admin-site-header-space');
+    }
+
     public function test_unverified_admin_can_open_the_sidebar_dashboard(): void
     {
         $admin = User::factory()->unverified()->create();

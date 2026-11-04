@@ -87,3 +87,9 @@
 .admin-variant-standard .admin-content .dashboard-badge.bg-slate-900 { border-color:#11191d; background:#11191d; color:#fff; }
 @media(max-width:900px) { .admin-products-search-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:640px) { .admin-products-toolbar-heading { align-items:flex-start; }.admin-products-search-filters { grid-template-columns:minmax(0,1fr); }.admin-products-bulk-toolbar { justify-content:flex-start; } }
+
+.admin-site-header-space { display:none; }
+@media (min-width:768px) {
+    .admin-site-header-space { display:block; height:7rem; }
+    .admin-workspace .approval-shell { min-height:calc(100dvh - 7rem); }
+}
