@@ -1084,7 +1084,10 @@ class ProductController extends Controller
             ->first();
 
         if ($liveMedia) {
-            $this->deleteMediaFiles($liveMedia->path, $liveMedia->path_thumb, $liveMedia->path_medium);
+            $this->deleteMediaFiles(...array_diff(
+                [$liveMedia->path, $liveMedia->path_thumb, $liveMedia->path_medium],
+                array_values($storedMedia)
+            ));
             $liveMedia->path = $storedMedia['path'];
             $liveMedia->path_thumb = $storedMedia['path_thumb'];
             $liveMedia->path_medium = $storedMedia['path_medium'];
@@ -1124,11 +1127,10 @@ class ProductController extends Controller
             return;
         }
 
-        $this->deleteMediaFiles(
-            $product->proposed_screenshot_path,
-            $product->proposed_screenshot_thumb_path,
-            $product->proposed_screenshot_medium_path
-        );
+        $this->deleteMediaFiles(...array_diff(
+            [$product->proposed_screenshot_path, $product->proposed_screenshot_thumb_path, $product->proposed_screenshot_medium_path],
+            array_values($storedMedia)
+        ));
 
         $product->proposed_screenshot_path = $storedMedia['path'];
         $product->proposed_screenshot_thumb_path = $storedMedia['path_thumb'];

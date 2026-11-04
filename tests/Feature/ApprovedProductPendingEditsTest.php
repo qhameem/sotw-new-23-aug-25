@@ -289,6 +289,43 @@ class ApprovedProductPendingEditsTest extends TestCase
         $this->assertDatabaseCount('product_media', 1);
     }
 
+    public function test_repeated_admin_edits_preserve_screenshot_files(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'admin']));
+        [$softwareCategory, $pricingCategory] = $this->createRequiredCategories();
+        $this->actingAs($admin);
+
+        foreach ([false, true] as $approved) {
+            $product = Product::factory()->create(['approved' => $approved, 'is_published' => $approved]);
+            $payload = [
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'link' => $product->link,
+                'tagline' => $product->tagline,
+                'product_page_tagline' => $product->product_page_tagline,
+                'categories' => [$softwareCategory->id, $pricingCategory->id],
+            ];
+            $this->put(route('admin.products.update', $product), $payload + [
+                'media' => [UploadedFile::fake()->image('screenshot.png', 1200, 630)],
+            ])->assertSessionHasNoErrors()->assertRedirect();
+
+            $media = $product->media()->firstOrFail();
+            Storage::disk('public')->assertExists([$media->path, $media->path_thumb, $media->path_medium]);
+
+            $this->put(route('admin.products.update', $product), array_merge($payload, [
+                'tagline' => 'Edited tagline',
+                'logo' => UploadedFile::fake()->image('logo.png'),
+                'media_urls' => ['/storage/'.$media->path],
+            ]))->assertSessionHasNoErrors()->assertRedirect();
+
+            $media->refresh();
+            Storage::disk('public')->assertExists([$media->path, $media->path_thumb, $media->path_medium]);
+            $this->assertSame(1, $product->media()->count());
+        }
+    }
+
     public function test_admin_inline_edit_of_an_approved_product_updates_it_immediately(): void
     {
         $adminRole = Role::create(['name' => 'admin']);
