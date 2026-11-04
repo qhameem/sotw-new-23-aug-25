@@ -38,8 +38,8 @@
 </head>
 <body class="approval-workspace admin-workspace admin-variant-{{ $adminVariant }} {{ $adminVariant === 'approvals' && ($status ?? null) === 'pending' ? 'is-pending-view' : '' }}"
     data-is-authenticated="{{ auth()->check() ? '1' : '0' }}" data-login-url="{{ route('login') }}" data-csrf-token="{{ csrf_token() }}">
-    @persist('site-top-bar')
-        <x-top-bar />
+    @persist('admin-site-top-bar')
+        <x-top-bar :show-category-navigation="false" />
     @endpersist
     <div class="admin-site-header-space" aria-hidden="true"></div>
     <div class="approval-shell">

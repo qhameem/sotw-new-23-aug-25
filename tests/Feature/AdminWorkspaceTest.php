@@ -44,7 +44,8 @@ class AdminWorkspaceTest extends TestCase
             ->assertSee(route('articles.index'), false)
             ->assertSee('globalSearchInput')
             ->assertSee('feedback-title')
-            ->assertSee('admin-site-header-space');
+            ->assertSee('admin-site-header-space')
+            ->assertDontSee('data-category-navigation-row', false);
     }
 
     public function test_unverified_admin_can_open_the_sidebar_dashboard(): void

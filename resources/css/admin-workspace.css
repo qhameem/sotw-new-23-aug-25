@@ -90,6 +90,6 @@
 
 .admin-site-header-space { display:none; }
 @media (min-width:768px) {
-    .admin-site-header-space { display:block; height:7rem; }
-    .admin-workspace .approval-shell { min-height:calc(100dvh - 7rem); }
+    .admin-site-header-space { display:block; height:3.5rem; }
+    .admin-workspace .approval-shell { min-height:calc(100dvh - 3.5rem); }
 }

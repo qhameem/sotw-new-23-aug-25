@@ -1,4 +1,6 @@
-<div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden h-[7rem] w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
+@props(['showCategoryNavigation' => true])
+
+<div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden {{ $showCategoryNavigation ? 'h-[7rem]' : 'h-14' }} w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
     @php
         $isCategoriesRoute = request()->routeIs('categories.*');
     @endphp
@@ -424,5 +426,7 @@
         </div>
     </div>
 
-    <x-category-navigation-row :category-navigation-summaries="$categoryNavigationSummaries ?? []" />
+    @if ($showCategoryNavigation)
+        <x-category-navigation-row :category-navigation-summaries="$categoryNavigationSummaries ?? []" />
+    @endif
 </div>
