@@ -109,7 +109,8 @@
           <p v-else-if="urlMatchesDraft" class="text-amber-700">This URL matches an unfinished submission.</p>
           <p v-else-if="clipboardFeedbackType === 'error' && clipboardFeedback" class="text-red-600">{{ clipboardFeedback }}</p>
           <p v-else-if="isSandboxMode" class="text-amber-700">Sandbox mode: autofill uses simulated product data.</p>
-          <p v-if="!hasUrlFeedback" class="text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
+          <p v-else-if="!isAutoFillDisabled" class="text-slate-600">Click <strong>Fill with AI</strong> to draft your listing, then review it before submitting.</p>
+          <p v-else-if="!isLoading && !clipboardFeedback" class="text-slate-600">Paste your site. AI fills in the name, tagline, description, logo, screenshot, and the rest. Review and tweak before submitting.</p>
         </div>
         <p v-if="clipboardFeedbackType !== 'error' && clipboardFeedback" class="text-xs text-slate-500" role="status">{{ clipboardFeedback }}</p>
       </div>
@@ -190,14 +191,6 @@ const displayUrl = computed(() => props.isUrlUnique && !props.isUrlChecking
   : props.modelValue);
 watch(displayUrl, refreshCaret, { flush: 'post' });
 const inlineError = computed(() => props.fieldError || (props.isUrlInvalid && String(props.modelValue || '').trim() ? 'Enter a valid website URL.' : props.urlCheckFailed ? 'Unable to check this URL. Please try again.' : ''));
-const hasUrlFeedback = computed(() => Boolean(
-  props.isUrlChecking
-  || props.urlExistsError
-  || inlineError.value
-  || props.urlMatchesDraft
-  || clipboardFeedback.value
-  || props.isSandboxMode
-));
 const showDisabledTooltip = ref(false);
 let disabledTooltipTimeout = null;
 const isAutoFillDisabled = computed(() => props.isLoading || (
