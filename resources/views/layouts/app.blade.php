@@ -339,6 +339,7 @@
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-3xl')"
         :sidebar-sticky="!$isArticleEditorRoute"
         :sidebar-sections="$pageSidebarSections ?? null"
+        :sidebar-edit-page="isset($pageSidebarSections) && auth()->user()?->hasRole('admin') ? $page : null"
         :lock-height="$lockHeight ?? false"
         :container-max-width="$containerMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-7xl')"
         :hide-sidebar="$hideSidebar ?? $isArticleEditorRoute"

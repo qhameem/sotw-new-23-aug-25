@@ -42,6 +42,24 @@ class CustomPageController extends Controller
         return redirect()->route('admin.pages.edit', $page)->with('success', 'Page saved.');
     }
 
+    public function updateSidebarSection(Request $request, CustomPage $page)
+    {
+        $data = $request->validate([
+            'section' => ['required', Rule::in(array_keys(CustomPage::SIDEBAR_SECTIONS))],
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($page, $data) {
+            $lockedPage = CustomPage::whereKey($page->id)->lockForUpdate()->firstOrFail();
+            $sections = $lockedPage->sidebarSections();
+            $sections[$data['section']] = (bool) $data['enabled'];
+            $lockedPage->update(['sidebar_sections' => $sections]);
+        });
+
+        return redirect()->route('custom-pages.show', ['product_name' => $page->slug])
+            ->with('success', 'Sidebar section updated.');
+    }
+
     private function validatePage(Request $request, ?CustomPage $page = null): array
     {
         $uniqueSlug = Rule::unique('custom_pages', 'slug');
