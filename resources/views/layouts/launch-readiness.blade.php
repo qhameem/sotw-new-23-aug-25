@@ -104,18 +104,6 @@
                         <span>{{ $toolBrandingSiteName }}</span>
                     </a>
                     <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="text-sm text-slate-600 transition hover:text-slate-900">History</a>
-                    <div class="group relative hidden sm:block">
-                        <button type="button" class="inline-flex items-center gap-1 text-sm text-slate-600 transition group-hover:text-slate-900">
-                            Tools
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.937a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0l-4.25-4.51a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div class="invisible absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-200/60 transition group-hover:visible group-hover:opacity-100">
-                            <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900">{{ $toolBrandingSiteName }}</a>
-                            <a href="{{ app(\App\Support\ToolSettings::class)->url(\App\Support\ToolSettings::TODO_LIST_KEY) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900">To-Do List</a>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
