@@ -30,7 +30,7 @@ class CustomPage extends Model
         ], array_intersect_key($this->sidebar_sections ?? [], self::SIDEBAR_SECTIONS));
     }
 
-    protected $fillable = ['slug', 'title', 'body', 'is_published', 'sidebar_sections', 'template'];
+    protected $fillable = ['slug', 'title', 'body', 'is_published', 'sidebar_sections', 'template', 'text_styles'];
 
-    protected $casts = ['is_published' => 'boolean', 'sidebar_sections' => 'array'];
+    protected $casts = ['is_published' => 'boolean', 'sidebar_sections' => 'array', 'text_styles' => 'array'];
 }

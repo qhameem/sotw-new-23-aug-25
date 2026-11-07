@@ -154,6 +154,7 @@ Route::get('/stripe/product-review/success', [StripeController::class, 'productR
 Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::patch('pages/{page}/text-style', [\App\Http\Controllers\Admin\CustomPageController::class, 'updateTextStyle'])->name('pages.text-style');
     Route::resource('pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show', 'destroy']);
     Route::resource('categories', CategoryController::class);
     Route::get('errors', [SystemErrorController::class, 'index'])->name('errors.index');

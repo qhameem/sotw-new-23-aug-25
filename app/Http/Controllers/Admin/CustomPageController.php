@@ -42,6 +42,30 @@ class CustomPageController extends Controller
         return redirect()->route('admin.pages.edit', $page)->with('success', 'Page saved.');
     }
 
+    public function updateTextStyle(Request $request, CustomPage $page)
+    {
+        $data = $request->validate([
+            'key' => ['required', 'regex:/\A(?:title|[a-f0-9]{64})\z/'],
+            'size' => ['required', 'integer', 'between:10,96'],
+            'weight' => ['required', Rule::in(['300', '400', '500', '600', '700', '800', '900'])],
+            'color' => ['required', 'regex:/\A#[a-fA-F0-9]{6}\z/'],
+            'align' => ['required', Rule::in(['left', 'center', 'right', 'justify'])],
+            'leading' => ['required', 'numeric', 'between:1,3'],
+            'reset' => ['nullable', 'boolean'],
+        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($page, $data) {
+            $locked = CustomPage::whereKey($page->id)->lockForUpdate()->firstOrFail();
+            $styles = $locked->text_styles ?? [];
+            if (!empty($data['reset'])) {
+                unset($styles[$data['key']]);
+            } else {
+                $styles[$data['key']] = \Illuminate\Support\Arr::only($data, ['size', 'weight', 'color', 'align', 'leading']);
+            }
+            $locked->update(['text_styles' => $styles]);
+        });
+        return redirect()->route('custom-pages.show', ['product_name' => $page->slug])->with('success', 'Text formatting saved.');
+    }
+
     private function validatePage(Request $request, ?CustomPage $page = null): array
     {
         $uniqueSlug = Rule::unique('custom_pages', 'slug');
