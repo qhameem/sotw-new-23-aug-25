@@ -19,6 +19,11 @@ class CustomPage extends Model
         'newsletter' => 'Newsletter signup',
     ];
 
+    public function renderedTitle(): string
+    {
+        return \App\Services\CustomPageContent::expandShortcodes($this->title ?? '');
+    }
+
     public function sidebarSections(): array
     {
         return array_replace([

@@ -6,6 +6,11 @@ use Illuminate\Support\Str;
 
 class CustomPageContent
 {
+    public static function expandShortcodes(string $text): string
+    {
+        return str_replace('[year]', now(config('app.timezone'))->format('Y'), $text);
+    }
+
     public static function style(array $style): string
     {
         $css = [];
@@ -36,7 +41,7 @@ class CustomPageContent
             $root = $dom->getElementById('custom-page-content');
             $result = '';
             foreach ($root->childNodes as $child) $result .= $dom->saveHTML($child);
-            return $result;
+            return self::expandShortcodes($result);
         } finally {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);

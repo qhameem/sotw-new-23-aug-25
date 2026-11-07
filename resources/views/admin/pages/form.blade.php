@@ -25,6 +25,7 @@
             <div>
                 <label class="block font-medium" for="title">Title</label>
                 <input class="w-full rounded border" id="title" name="title" value="{{ old('title', $page->title) }}" maxlength="255" required>
+                <p class="text-sm text-gray-600">Use [year] for the current year, for example: Best SaaS Directories ([year]). Works in content too.</p>
                 @error('title') <p class="text-red-700">{{ $message }}</p> @enderror
             </div>
 
