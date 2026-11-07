@@ -101,10 +101,14 @@
                     ])>
                         <div @class([
                         ])>
-                            <x-launch-readiness-sidebar-link />
+                            @if($sidebarSections === null || ($sidebarSections['launch_readiness'] ?? false))
+                                <x-launch-readiness-sidebar-link />
+                            @endif
+                            @if($sidebarSections === null || ($sidebarSections['statistics'] ?? false))
                             <div class="mb-1">
                                 <x-header-stats :stats="$headerStats" />
                             </div>
+                            @endif
                             @if (isset($right_sidebar_content) && trim($right_sidebar_content))
                                 {!! $right_sidebar_content !!}
                             @else

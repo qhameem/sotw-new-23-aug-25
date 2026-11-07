@@ -17,6 +17,10 @@ class RootPageController extends Controller
 
         $page = CustomPage::where('slug', $product_name)->where('is_published', true)->firstOrFail();
 
-        return view('site.custom-page', compact('page'));
+        return view('site.custom-page', [
+            'page' => $page,
+            'pageSidebarSections' => $page->sidebarSections(),
+            'hideSidebar' => ! in_array(true, $page->sidebarSections(), true),
+        ]);
     }
 }

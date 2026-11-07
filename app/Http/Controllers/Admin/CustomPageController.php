@@ -55,7 +55,13 @@ class CustomPageController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body' => ['nullable', 'string', 'max:100000'],
             'is_published' => ['required', 'boolean'],
+            'sidebar_sections' => ['required', 'array:'.implode(',', array_keys(CustomPage::SIDEBAR_SECTIONS))],
+            'sidebar_sections.*' => ['required', 'boolean'],
         ]);
+
+        foreach (CustomPage::SIDEBAR_SECTIONS as $key => $label) {
+            $data['sidebar_sections'][$key] = (bool) ($data['sidebar_sections'][$key] ?? false);
+        }
 
         $slug = $data['slug'];
         $routes = Route::getRoutes();

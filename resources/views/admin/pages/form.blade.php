@@ -51,6 +51,21 @@
                 @error('is_published') <p class="text-red-700">{{ $message }}</p> @enderror
             </div>
 
+            <fieldset class="space-y-2 rounded border p-4">
+                <legend class="font-medium">Sidebar sections</legend>
+                <p class="text-sm text-gray-600">Choose sections for this page. Unchecked sections are removed from the public HTML. Uncheck all to use the full content width.</p>
+                @foreach(\App\Models\CustomPage::SIDEBAR_SECTIONS as $key => $label)
+                    <label class="flex items-center gap-2">
+                        <input type="hidden" name="sidebar_sections[{{ $key }}]" value="0">
+                        <input type="checkbox" name="sidebar_sections[{{ $key }}]" value="1"
+                            @checked(old("sidebar_sections.$key", $page->sidebarSections()[$key]))>
+                        <span>{{ $label }}</span>
+                    </label>
+                    @error("sidebar_sections.$key") <p class="text-red-700">{{ $message }}</p> @enderror
+                @endforeach
+                @error('sidebar_sections') <p class="text-red-700">{{ $message }}</p> @enderror
+            </fieldset>
+
             <button class="rounded bg-gray-900 px-4 py-2 text-white" type="submit">Save page</button>
         </form>
     </div>

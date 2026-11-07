@@ -338,6 +338,7 @@
 
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-3xl')"
         :sidebar-sticky="!$isArticleEditorRoute"
+        :sidebar-sections="$pageSidebarSections ?? null"
         :lock-height="$lockHeight ?? false"
         :container-max-width="$containerMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-7xl')"
         :hide-sidebar="$hideSidebar ?? $isArticleEditorRoute"
@@ -369,7 +370,9 @@
 
 
         <x-slot:right_sidebar_content>
-            @hasSection('right_sidebar_content')
+            @if(isset($pageSidebarSections))
+                @include('site.partials.custom-page-sidebar')
+            @elseif(View::hasSection('right_sidebar_content'))
                 @yield('right_sidebar_content')
             @else
                 <div class="space-y-6">
