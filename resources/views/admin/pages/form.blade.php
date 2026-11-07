@@ -37,6 +37,17 @@
             </div>
 
             <div>
+                <label class="block font-medium" for="template">Template</label>
+                <select class="rounded border" id="template" name="template" required>
+                    @foreach(\App\Models\CustomPage::TEMPLATES as $value => $label)
+                        <option value="{{ $value }}" @selected(old('template', $page->template ?? 'default') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="text-sm text-gray-600">Standard keeps the existing layout. Blank uses a wide content column with only the top menubar and footer. Sidebar settings apply to Standard only.</p>
+                @error('template') <p class="text-red-700">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label class="block font-medium" for="body">Content (optional, Markdown)</label>
                 <textarea class="w-full rounded border" id="body" name="body" rows="16" maxlength="100000">{{ old('body', $page->body) }}</textarea>
                 @error('body') <p class="text-red-700">{{ $message }}</p> @enderror

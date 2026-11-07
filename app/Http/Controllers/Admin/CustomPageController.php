@@ -53,6 +53,7 @@ class CustomPageController extends Controller
         $data = $request->validate([
             'slug' => ['bail', 'required', 'string', 'max:120', 'regex:/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/', $uniqueSlug],
             'title' => ['required', 'string', 'max:255'],
+            'template' => ['required', Rule::in(array_keys(CustomPage::TEMPLATES))],
             'body' => ['nullable', 'string', 'max:100000'],
             'is_published' => ['required', 'boolean'],
             'sidebar_sections' => ['required', 'array:'.implode(',', array_keys(CustomPage::SIDEBAR_SECTIONS))],

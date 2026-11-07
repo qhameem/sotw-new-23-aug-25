@@ -1,11 +1,11 @@
-@props(['showCategoryNavigation' => true])
+@props(['showCategoryNavigation' => true, 'showOnMobile' => false])
 
 @php
         $showCategoryNavigation = $showCategoryNavigation && !request()->is('admin', 'admin/*');
         $isCategoriesRoute = request()->routeIs('categories.*');
     @endphp
 
-<div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 hidden {{ $showCategoryNavigation ? 'h-[7rem]' : 'h-14' }} w-full flex-shrink-0 border-b border-gray-200 md:block" style="background-color: var(--color-navbar-bg, #ffffff);">
+<div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 {{ $showOnMobile ? 'block' : 'hidden md:block' }} {{ $showCategoryNavigation ? 'h-[7rem]' : 'h-14' }} w-full flex-shrink-0 border-b border-gray-200" style="background-color: var(--color-navbar-bg, #ffffff);">
 
 
     <div class="mx-auto max-w-[96rem] px-5">

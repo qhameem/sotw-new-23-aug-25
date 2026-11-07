@@ -285,6 +285,16 @@
             --site-header-offset: 3.5rem;
         }
 
+        .custom-page-blank {
+            --site-header-offset: 3.5rem;
+        }
+
+        @media (max-width: 767px) {
+            .custom-page-blank [data-site-top-bar-controls] {
+                display: none;
+            }
+        }
+
         @media (min-width: 768px) {
             .site-header-padding {
                 padding-top: var(--site-content-offset, var(--site-header-offset));
@@ -336,6 +346,15 @@
         $defaultPseoPagePadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
     @endphp
 
+    @if($blankPageTemplate ?? false)
+        <div class="custom-page-blank flex min-h-screen flex-col">
+            <x-top-bar :show-category-navigation="false" :show-on-mobile="true" />
+            <main class="mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 pb-12 pt-20 sm:px-8">
+                @yield('content')
+            </main>
+            <x-footer />
+        </div>
+    @else
     <x-main-content-layout :main-content-max-width="$mainContentMaxWidth ?? ($isArticleEditorRoute ? 'max-w-none' : 'max-w-3xl')"
         :sidebar-sticky="!$isArticleEditorRoute"
         :sidebar-sections="$pageSidebarSections ?? null"
@@ -399,6 +418,7 @@
             @yield('content')
         @endif
     </x-main-content-layout>
+    @endif
 
     <div x-show="searchModalOpen && searchModalLoading && !searchModalLoaded" x-cloak
         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 px-4 py-6 sm:px-6 md:py-16"

@@ -19,6 +19,7 @@ class RootPageController extends Controller
 
         return view('site.custom-page', [
             'page' => $page,
+            'blankPageTemplate' => $page->template === 'blank',
             'pageSidebarSections' => $page->sidebarSections(),
             'hideSidebar' => ! in_array(true, $page->sidebarSections(), true),
         ]);
