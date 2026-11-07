@@ -102,12 +102,10 @@
                         <div @class([
                         ])>
                             @if($sidebarSections === null || ($sidebarSections['launch_readiness'] ?? false))
-                                @include('site.partials.sidebar-section-control', ['sidebarPage' => $sidebarEditPage, 'sectionKey' => 'launch_readiness', 'sectionEnabled' => true])
                                 <x-launch-readiness-sidebar-link />
                             @endif
                             @if($sidebarSections === null || ($sidebarSections['statistics'] ?? false))
                             <div class="mb-1">
-                                @include('site.partials.sidebar-section-control', ['sidebarPage' => $sidebarEditPage, 'sectionKey' => 'statistics', 'sectionEnabled' => true])
                                 <x-header-stats :stats="$headerStats" />
                             </div>
                             @endif
