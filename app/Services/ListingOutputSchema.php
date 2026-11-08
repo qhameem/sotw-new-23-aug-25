@@ -18,7 +18,7 @@ class ListingOutputSchema
             ]),
             str_contains($prompt, 'Write three tagline candidates') => $this->object(['candidates' => $strings]),
             str_contains($prompt, 'Write SEO fields') => $this->object(['seo_title' => $string, 'meta_descriptions' => $strings]),
-            str_contains($prompt, 'Choose the most relevant categories') => $this->classification($string, $strings),
+            str_contains($prompt, 'You classify software products for a directory.') => $this->classification($string, $strings),
             str_contains($prompt, 'You extract facts from a software product website') => $this->facts($strings),
             default => null,
         };
@@ -34,6 +34,7 @@ class ListingOutputSchema
         $picks = ['type' => 'array', 'items' => $this->object(['name' => $string, 'quote' => $string])];
 
         return $this->object([
+            'summary' => $string,
             'categories' => $picks, 'use_cases' => $picks, 'best_for' => $picks, 'pricing' => $picks, 'platforms' => $picks,
             'suggestions' => $this->object(['categories' => $strings, 'use_cases' => $strings]),
         ]);
