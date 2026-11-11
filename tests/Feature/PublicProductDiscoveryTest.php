@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Services\ProductMetricsService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,6 +60,31 @@ class PublicProductDiscoveryTest extends TestCase
             'year' => $olderWeekStart->year,
             'week' => $olderWeekStart->weekOfYear,
         ]), false);
+    }
+
+    /** @test */
+    public function week_archive_pages_show_clicks_recorded_during_the_selected_week()
+    {
+        $weekStart = now()->subWeeks(2)->startOfWeek(Carbon::MONDAY);
+        $product = Product::factory()->create([
+            'published_at' => $weekStart,
+            'outbound_clicks_count' => 12,
+            'impressions' => 100,
+        ]);
+        $metrics = app(ProductMetricsService::class);
+        $metrics->recordOutboundClick($product, $weekStart->copy()->addDays(6));
+        $metrics->recordOutboundClick($product, $weekStart->copy()->addWeek());
+
+        $this->get(route('products.byWeek', [
+            'year' => $weekStart->isoWeekYear(),
+            'week' => $weekStart->isoWeek(),
+        ]))
+            ->assertOk()
+            ->assertSee('1 click</span>', false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('1 click</span>', false);
     }
 
     /** @test */

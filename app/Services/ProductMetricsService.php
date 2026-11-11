@@ -62,10 +62,17 @@ class ProductMetricsService
         $at = ($occurredAt ?? now())->copy();
 
         DB::transaction(function () use ($product, $deltas, $at) {
-            $weekStat = $this->resolveWeekStat($product);
-            $this->applyDeltas($weekStat, $deltas);
-            $weekStat->ranking_score = ProductRankingService::calculateWeeklyScore($weekStat);
-            $weekStat->save();
+            $weekDeltas = $deltas;
+            if (! $at->copy()->startOfWeek(Carbon::MONDAY)->isSameDay($product->rankingWeekStart())) {
+                unset($weekDeltas['outbound_clicks']);
+            }
+
+            if ($weekDeltas !== []) {
+                $weekStat = $this->resolveWeekStat($product);
+                $this->applyDeltas($weekStat, $weekDeltas);
+                $weekStat->ranking_score = ProductRankingService::calculateWeeklyScore($weekStat);
+                $weekStat->save();
+            }
 
             if ($product->isInLaunchWindow($at)) {
                 $launchStat = $this->resolveLaunchStat($product);
@@ -82,10 +89,12 @@ class ProductMetricsService
 
     protected function resolveWeekStat(Product $product): ProductWeekStat
     {
-        return ProductWeekStat::firstOrNew([
-            'product_id' => $product->getKey(),
-            'week_start' => $product->rankingWeekStart()->toDateString(),
-        ]);
+        $weekStart = $product->rankingWeekStart();
+
+        return ProductWeekStat::query()
+            ->where('week_start', '>=', $weekStart->toDateString())
+            ->where('week_start', '<', $weekStart->copy()->addDay()->toDateString())
+            ->firstOrNew(['product_id' => $product->getKey()], ['week_start' => $weekStart]);
     }
 
     protected function resolveLaunchStat(Product $product): ProductLaunchStat

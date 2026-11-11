@@ -155,6 +155,9 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::patch('pages/{page}/text-style', [\App\Http\Controllers\Admin\CustomPageController::class, 'updateTextStyle'])->name('pages.text-style');
+    Route::post('startup-directories', [\App\Http\Controllers\Admin\StartupDirectoryController::class, 'store'])->name('startup-directories.store');
+    Route::patch('startup-directories/{directory}', [\App\Http\Controllers\Admin\StartupDirectoryController::class, 'update'])->name('startup-directories.update');
+    Route::patch('pages/{page}/directory-content', [\App\Http\Controllers\Admin\StartupDirectoryController::class, 'updateContent'])->name('pages.directory-content');
     Route::resource('pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show', 'destroy']);
     Route::resource('categories', CategoryController::class);
     Route::get('errors', [SystemErrorController::class, 'index'])->name('errors.index');

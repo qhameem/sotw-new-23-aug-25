@@ -1774,6 +1774,9 @@ class ProductController extends Controller
 
         $regularProductsOnPageQuery = Product::with([
             'categories.types',
+            'weekStats' => fn ($query) => $query
+                ->where('week_start', '>=', $startOfWeek->toDateString())
+                ->where('week_start', '<', $startOfWeek->copy()->addDay()->toDateString()),
             'user',
             'userUpvotes' => function ($query) {
                 if (Auth::check()) {
