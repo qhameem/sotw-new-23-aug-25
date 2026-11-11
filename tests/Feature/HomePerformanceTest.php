@@ -61,3 +61,23 @@ test('effective publication range uses created time when publication time is abs
 
     expect($products->modelKeys())->toBe([$fallbackProduct->id]);
 });
+
+test('homepage query profiling is opt-in and limited to loopback requests', function () {
+    Product::factory()->create(['published_at' => now()->subDay()]);
+
+    $this->get(route('home'))->assertHeaderMissing('X-Homepage-Query-Profile');
+
+    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])
+        ->get(route('home'), ['X-Homepage-Query-Profile' => '1'])
+        ->assertHeaderMissing('X-Homepage-Query-Profile');
+
+    $response = $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+        ->get(route('home'), ['X-Homepage-Query-Profile' => '1'])
+        ->assertOk()
+        ->assertHeader('X-Homepage-Query-Profile');
+
+    $groups = json_decode($response->headers->get('X-Homepage-Query-Profile'), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($groups)->not->toBeEmpty();
+    expect(array_sum(array_column($groups, 'count')))->toBeGreaterThan(0);
+});

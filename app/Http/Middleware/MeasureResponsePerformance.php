@@ -14,7 +14,11 @@ class MeasureResponsePerformance
     public function handle(Request $request, Closure $next): Response
     {
         $startedAt = hrtime(true);
-        $metrics = new ResponsePerformanceMetrics;
+        $profileQueries = $request->isMethod('GET')
+            && $request->routeIs('home')
+            && in_array($request->server->get('REMOTE_ADDR'), ['127.0.0.1', '::1'], true)
+            && $request->headers->get('X-Homepage-Query-Profile') === '1';
+        $metrics = new ResponsePerformanceMetrics($profileQueries);
         $request->attributes->set(self::ATTRIBUTE, $metrics);
 
         try {
@@ -27,6 +31,10 @@ class MeasureResponsePerformance
                 $metrics->queryDuration,
                 $metrics->queryCount
             ));
+
+            if ($profileQueries && $response->isSuccessful()) {
+                $response->headers->set('X-Homepage-Query-Profile', json_encode($metrics->queryProfile(), JSON_THROW_ON_ERROR));
+            }
 
             return $response;
         } finally {

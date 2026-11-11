@@ -20,8 +20,7 @@ class PerformanceServiceProvider extends ServiceProvider
             $metrics = app('request')->attributes->get(MeasureResponsePerformance::ATTRIBUTE);
 
             if ($metrics instanceof ResponsePerformanceMetrics) {
-                $metrics->queryCount++;
-                $metrics->queryDuration += $query->time;
+                $metrics->recordQuery((float) $query->time);
             }
         });
     }
