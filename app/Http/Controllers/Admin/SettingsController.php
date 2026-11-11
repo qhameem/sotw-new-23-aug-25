@@ -567,7 +567,7 @@ class SettingsController extends Controller
             $envVars = [];
 
             if ($dbDriver === 'mysql') {
-                $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
+                $mysqldumpPath = config('backup.binaries.mysqldump');
                 $command = [
                     $mysqldumpPath,
                     "--host={$dbHost}",
@@ -588,7 +588,7 @@ class SettingsController extends Controller
                 ];
                 $envVars['PGPASSWORD'] = $dbPassword;
             } elseif ($dbDriver === 'sqlite') {
-                $sqlite3Path = env('SQLITE3_PATH', 'sqlite3');
+                $sqlite3Path = config('backup.binaries.sqlite3');
                 $command = [$sqlite3Path, $dbName, '.dump'];
             } else {
                 Log::error("Database export failed: Unsupported database driver '{$dbDriver}'.");
@@ -612,7 +612,7 @@ class SettingsController extends Controller
 
             // Let's use Process and get output, then write to file.
             if ($dbDriver === 'mysql') {
-                $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
+                $mysqldumpPath = config('backup.binaries.mysqldump');
                 $processCommand = [
                     $mysqldumpPath,
                     "--host={$dbHost}",
@@ -627,7 +627,7 @@ class SettingsController extends Controller
                 $processCommand[] = $dbName;
 
             } elseif ($dbDriver === 'pgsql') {
-                $pgdumpPath = env('PGDUMP_PATH', 'pg_dump');
+                $pgdumpPath = config('backup.binaries.pg_dump');
                 $processCommand = [
                     $pgdumpPath,
                     "--host={$dbHost}",
@@ -637,7 +637,7 @@ class SettingsController extends Controller
                 ];
                 // PGPASSWORD is set via environment variable for pg_dump
             } elseif ($dbDriver === 'sqlite') {
-                $sqlite3Path = env('SQLITE3_PATH', 'sqlite3');
+                $sqlite3Path = config('backup.binaries.sqlite3');
                 $processCommand = [$sqlite3Path, $dbName, '.dump'];
             } else {
                 // This case was already handled above, but as a safeguard for $processCommand
