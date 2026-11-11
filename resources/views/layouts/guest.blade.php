@@ -2,7 +2,6 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    @include('partials.theme.boot')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -153,7 +152,7 @@
     --}}
     <div class="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-gray-100 "> {{-- Added --}}
         <div>
-            <a href="/" class="theme-logo-contrast inline-block" aria-label="{{ config('app.name', 'Software on the Web') }} home">
+            <a href="/" class="inline-block" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                 <x-application-logo class="w-40 h-auto max-h-24 object-contain fill-current text-gray-500" />
                 <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
             </a>
@@ -165,7 +164,6 @@
         <footer class="auth-footer mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs text-gray-700">
             <a href="{{ url('/') }}" class="underline underline-offset-4">Back to site</a>
             <a href="mailto:hello@softwareontheweb.com" class="underline underline-offset-4">Need help?</a>
-            @include('partials.theme.switcher', ['floating' => false])
         </footer>
     </div>
     <template id="delayed-livewire-scripts">@livewireScripts</template>

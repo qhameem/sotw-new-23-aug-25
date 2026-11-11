@@ -68,14 +68,6 @@
 .admin-notice.is-error { background:#f4e1d8; color:#7e493b; }
 .admin-variant-standard .settings-menu a[aria-current="page"] { background:#efeee1; border-left-color:#11191d; color:#11191d; font-weight:500; }
 .admin-variant-standard .settings-section { scroll-margin-top:24px; }
-.dark .admin-workspace { --color-primary-500:#d6dfc9; --color-primary-600:#b8c5ac; --color-site-text:var(--approval-ink); --color-site-body-text:var(--approval-ink); }
-.dark .admin-variant-standard .admin-content :is(.dashboard-panel,.bg-white),.dark .admin-shortcut { background:#2a332e; border-color:#414a43; }
-.dark .admin-variant-standard .admin-content .dashboard-subpanel,.dark .admin-variant-standard .admin-content .dashboard-metric { background:#252e28; }
-.dark .admin-variant-standard .admin-content :where(div:has(> table)) { background:transparent; }
-.dark .admin-variant-standard .admin-content tbody tr:hover,.dark .admin-shortcut:hover { background:#303b33; }
-.dark .admin-variant-standard .admin-content .dashboard-pagination-link-active { background:#fff08b; color:#232a20; }
-.dark .admin-shortcut-icon { background:#3b463c; }
-.dark .admin-variant-standard .settings-menu a[aria-current="page"] { background:#3b463c; border-left-color:#fff08b; color:#fff08b; }
 @media(max-width:1250px) { .admin-shortcut-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:1199px) { .admin-variant-standard .settings-layout { grid-template-columns:minmax(0,1fr); }.admin-variant-standard .settings-sidebar { position:static; }.admin-variant-standard .settings-menu { max-height:none; }.admin-variant-standard .settings-menu ul { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:640px) { .admin-variant-standard .approval-page-header { margin-bottom:24px; }.admin-page-actions { margin-bottom:20px; }.admin-page-actions > a { flex:1; font-size:11px; }.admin-shortcut-grid { grid-template-columns:minmax(0,1fr); gap:10px; }.admin-shortcut { padding:17px 14px; }.admin-section-heading { margin-bottom:18px; }.admin-variant-standard .settings-menu ul { grid-template-columns:minmax(0,1fr); } }

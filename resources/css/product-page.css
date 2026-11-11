@@ -46,7 +46,3 @@
   .product-page .product-cover { padding: 16px; }
   .product-page .product-gallery img { height: 180px; }
 }
-.dark .product-page .product-sheet { background: #0f172a; border-color: #334155; }
-.dark .product-page .product-section, .dark .product-page .product-rows > * { border-color: #1e293b; }
-.dark .product-page .product-chip, .dark .product-page .product-row-icon { background: #1e293b; border-color: #334155; color: #cbd5e1; }
-.dark .product-page .product-similar-row:hover { background: #1e293b; }

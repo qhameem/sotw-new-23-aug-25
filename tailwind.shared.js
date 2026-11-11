@@ -14,7 +14,6 @@ if (theme.fontFamilies) {
 }
 
 export const sharedTailwindConfig = {
-    darkMode: 'class',
     safelist: [
         {
             pattern: /bg-(rose-500|amber-600|emerald-500|gray-400)/,

@@ -20,7 +20,7 @@
 @endphp
 
 <footer class="w-full p-4 border-t md:flex md:items-center md:justify-center md:p-6">
-    <div class="w-full text-xs text-gray-500 dark:text-gray-400 text-center">
+    <div class="w-full text-xs text-gray-500 text-center">
         @unless(request()->routeIs('admin.*', 'newsletter.*', 'profile.*', 'dashboard', 'stripe.*', 'todolists.*', 'tools.*'))
             <div class="mx-auto mb-5 max-w-md text-left md:hidden">
                 @include('partials._newsletter-signup-form', ['placement' => 'mobile_footer'])

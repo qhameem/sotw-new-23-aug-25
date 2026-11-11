@@ -4,7 +4,6 @@
     }">
 
 <head>
-    @include('partials.theme.boot')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -106,7 +105,6 @@
         window.loginUrl = document.body.dataset.loginUrl;
         window.csrfToken = document.body.dataset.csrfToken;
     </script>
-    @include('partials.theme.switcher')
 </body>
 
 </html>

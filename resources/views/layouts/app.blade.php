@@ -24,7 +24,6 @@
     ">
 
 <head>
-    @include('partials.theme.boot')
     <script>
         function handlePopState(event) {
             // This is a placeholder function to prevent the "handlePopState is not defined" error.
@@ -308,7 +307,7 @@
 
     @include('partials.theme.favicon-links')
 
-    @vite(['resources/css/public.css', 'resources/js/app.js'])
+    @include('partials.public-styles')
     @livewireStyles
 
     @stack('styles')
@@ -506,7 +505,6 @@
         window.csrfToken = document.body.dataset.csrfToken;
         window.primaryColorCssVar = 'var(--color-primary-500)';
     </script>
-    @include('partials.theme.switcher', ['class' => 'md:hidden'])
 </body>
 
 </html>

@@ -1,9 +1,8 @@
-@import "dark-mode.css";
-
 @tailwind base;
 
 @layer base {
   :root {
+    color-scheme: light;
     --color-site-text: #080c13;
     --color-site-body-text: #2f2f2f;
   }

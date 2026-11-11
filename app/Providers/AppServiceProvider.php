@@ -192,20 +192,6 @@ class AppServiceProvider extends ServiceProvider
                 if (isset($settings['product_hover_color'])) {
                     Config::set('theme.product_hover_color', $settings['product_hover_color']);
                 }
-                foreach ([
-                    'dark_navbar_bg_color',
-                    'dark_body_bg_color',
-                    'dark_surface_color',
-                    'dark_muted_surface_color',
-                    'dark_border_color',
-                    'dark_font_color',
-                    'dark_body_text_color',
-                    'dark_product_hover_color',
-                ] as $darkThemeKey) {
-                    if (isset($settings[$darkThemeKey])) {
-                        Config::set("theme.{$darkThemeKey}", $settings[$darkThemeKey]);
-                    }
-                }
             }
         }
 

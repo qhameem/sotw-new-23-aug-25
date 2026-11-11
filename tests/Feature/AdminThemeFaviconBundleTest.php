@@ -224,7 +224,7 @@ class AdminThemeFaviconBundleTest extends TestCase
             ->assertSee('#fff4e6');
     }
 
-    public function test_admin_can_configure_dark_mode_colors(): void
+    public function test_admin_appearance_ignores_obsolete_dark_mode_fields(): void
     {
         $adminRole = Role::create(['name' => 'admin']);
         $admin = User::factory()->create();
@@ -250,15 +250,16 @@ class AdminThemeFaviconBundleTest extends TestCase
         $response->assertSessionHas('success');
 
         $settings = json_decode(File::get($this->settingsPath), true, 512, JSON_THROW_ON_ERROR);
-        foreach ($darkColors as $key => $value) {
-            $this->assertSame($value, $settings[$key]);
-        }
+        $originalSettings = json_decode($this->originalSettingsContent ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(
+            array_intersect_key($originalSettings, $darkColors),
+            array_intersect_key($settings, $darkColors)
+        );
 
         $this->actingAs($admin)
             ->get(route('admin.settings.index'))
             ->assertOk()
-            ->assertSee('Dark Mode Colors')
-            ->assertSee('#07101f');
+            ->assertDontSee('Dark Mode Colors');
     }
 
     public function test_favicon_urls_change_when_contents_change_with_the_same_timestamp(): void

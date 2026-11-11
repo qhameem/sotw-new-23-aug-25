@@ -1,4 +1,7 @@
-@import "dark-mode.css";
+@import "./public-foundation.css";
+
+@config "../../tailwind.public.config.js";
+
 @font-face {
   font-family: 'Google Sans';
   font-style: normal;
@@ -6,80 +9,6 @@
   font-display: swap;
   src: url('../fonts/google-sans/google-sans-button.ttf') format('truetype');
 }
-@config "../../tailwind.public.config.js";
-
-@tailwind base;
-
-@layer base {
-  :root {
-    --color-site-text: #080c13;
-    --color-site-body-text: #2f2f2f;
-  }
-}
-
-@tailwind components;
-@tailwind utilities;
-
-@layer utilities {
-  .no-scrollbar {
-    scrollbar-width: none;
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  html,
-  body {
-    color: var(--color-site-body-text);
-  }
-
-  input,
-  textarea,
-  select,
-  button {
-    color: inherit;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  .site-heading-text,
-  .site-heading-text :is(span, strong, em, small) {
-    color: var(--color-site-text) !important;
-  }
-
-  :is(h1, h2, h3, h4, h5, h6) :is(span, strong, em, small) {
-    color: inherit !important;
-  }
-
-  p,
-  li,
-  dd,
-  dt,
-  td,
-  figcaption,
-  blockquote,
-  label,
-  small,
-  time,
-  .site-body-text,
-  .site-body-text :is(p, li, dd, dt, td, figcaption, blockquote, span, div, strong, em, small),
-  p.text-gray-400,
-  p.text-gray-500,
-  p.text-gray-600,
-  p.text-gray-700,
-  p.text-gray-800,
-  p.text-gray-900,
-  div.site-body-text,
-  span.site-body-text {
-    color: var(--color-site-body-text) !important;
-  }
-}
-
 /* Keep authentication contrast independent of configurable site text colors. */
 .login-page {
   --color-site-text: #111827;
@@ -103,15 +32,6 @@
   outline: 2px solid #2563eb;
   outline-offset: 3px;
 }
-html.dark .login-page {
-  --color-site-text: #f9fafb;
-  --color-site-body-text: #d1d5db;
-  color: #d1d5db;
-}
-html.dark .login-page .login-method { background: #1f2937; color: #f9fafb; }
-html.dark .login-page .login-method:hover { background: #374151; }
-html.dark .login-page .login-method--primary { background: #1e40af !important; color: #ffffff !important; }
-html.dark .login-page .login-method--primary:hover { background: #1e3a8a; }
 
 .login-page .login-divider { color: #1f2937 !important; }
 .login-page .login-last-used {
@@ -130,20 +50,8 @@ html.dark .login-page .login-method--primary:hover { background: #1e3a8a; }
   background: transparent !important;
 }
 .login-page .login-google-icon img { width: 20px; height: 20px; }
-.auth-footer .theme-switcher { display: flex; align-items: center; }
-.auth-footer .theme-switcher__button {
-  width: 1rem;
-  height: 1rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.auth-footer .theme-switcher__icon { width: 1rem; height: 1rem; stroke-width: 2; }
-html.dark .login-page .login-divider { color: #e5e7eb !important; }
 
-.login-page .login-method.login-method--google,
-html.dark .login-page .login-method.login-method--google {
+.login-page .login-method.login-method--google {
   background: #ffffff !important;
   border: 1px solid #747775 !important;
   border-radius: 9999px;
@@ -157,12 +65,8 @@ html.dark .login-page .login-method.login-method--google {
   box-sizing: border-box;
   box-shadow: none;
 }
-.login-page .login-method.login-method--google:hover,
-html.dark .login-page .login-method.login-method--google:hover {
+.login-page .login-method.login-method--google:hover {
   @apply bg-gray-50 !important;
 }
 
 .login-page .login-email-link { color: #4b5563; }
-html.dark .login-page .login-email-link { color: #d1d5db !important; }
-
-html.dark .login-page .login-method.login-method--google span { color: #1f1f1f !important; }

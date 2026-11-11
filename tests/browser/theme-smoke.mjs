@@ -14,30 +14,23 @@ try {
     await page.setViewport({ width: 1280, height: 800 });
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
     await page.goto(url, { waitUntil: 'networkidle2' });
-    await page.evaluate(() => localStorage.removeItem('sotw-theme'));
+    await page.evaluate(() => localStorage.setItem('sotw-theme', 'dark'));
     await page.reload({ waitUntil: 'networkidle2' });
 
-    assert.equal(await page.$eval('html', (element) => element.dataset.theme), 'light');
-    assert.equal(await page.$eval('html', (element) => element.dataset.themePreference), 'light');
-    assert.equal(await page.$eval('[data-theme-toggle]', (element) => Boolean(element)), true);
+    async function assertLightTheme() {
+        const scheme = await page.$eval('html', (element) => getComputedStyle(element).colorScheme);
+        assert.equal(scheme, 'light');
+        assert.equal(await page.$('html.dark'), null);
+        assert.equal(await page.$('[data-theme-toggle]'), null);
+    }
 
-    await page.click('[data-theme-toggle]');
-    assert.equal(await page.$eval('html', (element) => element.dataset.theme), 'dark');
-    assert.equal(await page.$eval('html', (element) => element.dataset.themePreference), 'dark');
-
-    await page.reload({ waitUntil: 'networkidle2' });
-    assert.equal(await page.$eval('html', (element) => element.dataset.themePreference), 'dark');
-
-    const persisted = await page.evaluate(() => localStorage.getItem('sotw-theme'));
-    assert.equal(persisted, 'dark');
+    await assertLightTheme();
 
     const weekLink = await page.$('a[href*="/week/"]');
     assert.ok(weekLink, 'Expected a week navigation link on the homepage.');
     await weekLink.click();
     await page.waitForFunction(() => window.location.pathname.includes('/week/'));
-    assert.equal(await page.$eval('html', (element) => element.dataset.theme), 'dark');
-    assert.equal(await page.$eval('html', (element) => element.dataset.themePreference), 'dark');
-    assert.equal(await page.$eval('[data-theme-toggle]', (element) => Boolean(element)), true);
+    await assertLightTheme();
 
     console.log(`Theme smoke test passed: ${url}`);
 } finally {

@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    @include('partials.theme.boot')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -91,7 +90,7 @@
             intendedUrl: @js(url()->current()),
         })"
     >
-        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur dark:bg-slate-900/95">
+        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur">
             <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
                 <div class="flex flex-wrap items-center gap-3 sm:gap-6">
                     <a href="{{ url('/') }}" title="Back to Software on the Web" aria-label="Back to Software on the Web"
@@ -181,6 +180,5 @@
             </div>
         @endunless
     </div>
-    @include('partials.theme.switcher')
 </body>
 </html>

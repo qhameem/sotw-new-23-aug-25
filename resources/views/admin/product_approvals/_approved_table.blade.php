@@ -57,15 +57,15 @@
         </aside>
     @endif
     <form method="POST" action="{{ route('admin.product-approvals.bulk-manage') }}" data-bulk-form
-        class="approval-bulk fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-2xl shadow-slate-900/15 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/50 transition-all duration-300 ease-out translate-y-24 opacity-0 pointer-events-none"
+        class="approval-bulk fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-2xl shadow-slate-900/15 backdrop-blur-md transition-all duration-300 ease-out translate-y-24 opacity-0 pointer-events-none"
         aria-hidden="true" inert>
         @csrf
         <div class="flex items-center gap-2">
             <span class="inline-flex h-2 w-2 rounded-full bg-sky-500 animate-pulse"></span>
-            <span data-selection-count class="text-xs font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap" aria-live="polite">0 selected</span>
+            <span data-selection-count class="text-xs font-semibold text-slate-800 whitespace-nowrap" aria-live="polite">0 selected</span>
         </div>
 
-        <span class="h-4 w-px bg-slate-200 dark:bg-slate-700"></span>
+        <span class="h-4 w-px bg-slate-200"></span>
 
         <div data-selected-inputs></div>
 
@@ -78,15 +78,15 @@
         </button>
 
         <button type="button" data-bulk-reschedule
-            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 whitespace-nowrap">
-            <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition whitespace-nowrap">
+            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>Reschedule</span>
         </button>
 
         <button type="button" data-bulk-disapprove
-            class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition focus:outline-none dark:text-rose-400 dark:hover:bg-rose-950/50 whitespace-nowrap">
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition focus:outline-none whitespace-nowrap">
             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
@@ -95,7 +95,7 @@
 
         <button type="button" data-clear-selection
             title="Clear selection" aria-label="Clear selection"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-lg p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition dark:hover:bg-slate-800 dark:hover:text-slate-200">
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -104,18 +104,18 @@
     </form>
     <form method="POST" action="{{ route('admin.product-approvals.publish-scheduled-now') }}" class="approval-publish-all">
         @csrf
-        <button name="publish_scope" value="all" class="text-xs font-medium text-slate-600 hover:underline dark:text-slate-300" onclick="return confirm('Publish all scheduled products immediately?')">Publish all scheduled now</button>
+        <button name="publish_scope" value="all" class="text-xs font-medium text-slate-600 hover:underline" onclick="return confirm('Publish all scheduled products immediately?')">Publish all scheduled now</button>
     </form>
-    <dialog aria-labelledby="approval-confirm-title" aria-describedby="approval-confirm-description" data-confirm-dialog class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+    <dialog aria-labelledby="approval-confirm-title" aria-describedby="approval-confirm-description" data-confirm-dialog class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/60">
         <h2 id="approval-confirm-title" class="text-lg font-semibold">Disapprove products?</h2>
-        <p id="approval-confirm-description" data-confirm-description class="mt-2 text-sm text-slate-600 dark:text-slate-300"></p>
-        <div class="mt-6 flex justify-end gap-3"><button type="button" data-dialog-cancel class="rounded-lg border border-slate-300 px-4 py-2 dark:border-slate-600">Cancel</button><button type="button" data-dialog-confirm class="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">Disapprove</button></div>
+        <p id="approval-confirm-description" data-confirm-description class="mt-2 text-sm text-slate-600"></p>
+        <div class="mt-6 flex justify-end gap-3"><button type="button" data-dialog-cancel class="rounded-lg border border-slate-300 px-4 py-2">Cancel</button><button type="button" data-dialog-confirm class="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">Disapprove</button></div>
     </dialog>
-    <dialog aria-labelledby="approval-reschedule-title" data-reschedule-dialog class="w-full max-w-md rounded-xl bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/60 dark:bg-slate-900 dark:text-slate-100">
+    <dialog aria-labelledby="approval-reschedule-title" data-reschedule-dialog class="w-full max-w-md rounded-xl bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/60">
         <form data-reschedule-dialog-form>
             <h2 id="approval-reschedule-title" class="text-lg font-semibold">Reschedule selected products</h2>
-            <label class="mt-4 block text-sm">Publish date (UTC)<input name="date" type="date" required class="mt-2 w-full rounded-lg border-slate-300 bg-transparent dark:border-slate-600"></label>
-            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Uses the configured launch time. Due dates publish immediately.</p>
+            <label class="mt-4 block text-sm">Publish date (UTC)<input name="date" type="date" required class="mt-2 w-full rounded-lg border-slate-300 bg-transparent"></label>
+            <p class="mt-2 text-sm text-slate-600">Uses the configured launch time. Due dates publish immediately.</p>
             <div class="mt-6 flex justify-end gap-3"><button type="button" data-reschedule-cancel class="rounded-lg border px-4 py-2">Cancel</button><button class="rounded-lg bg-indigo-600 px-4 py-2 text-white">Reschedule</button></div>
         </form>
     </dialog>

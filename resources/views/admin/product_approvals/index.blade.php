@@ -141,7 +141,7 @@
     @endif
 
     @if($errors->any())
-        <div role="alert" class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{{ $errors->first() }}</div>
+        <div role="alert" class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ $errors->first() }}</div>
     @endif
 
     @if(session('error'))
@@ -168,14 +168,14 @@
             <a href="{{ route('admin.product-approvals.index', array_merge(request()->except(['page', 'status']), ['status' => $summary['status']])) }}#{{ $summary['status'] === 'pending' ? 'pending-approval' : 'approved-products' }}"
                 @if($status === $summary['status']) aria-current="page" @endif
                 @class([
-                    'rounded-xl border bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:bg-slate-900',
-                    'border-amber-200 dark:border-amber-900' => $summary['tone'] === 'amber',
-                    'border-sky-200 dark:border-sky-900' => $summary['tone'] === 'sky',
-                    'border-emerald-200 dark:border-emerald-900' => $summary['tone'] === 'emerald',
-                    'border-red-200 dark:border-red-900' => $summary['tone'] === 'red',
+                    'rounded-xl border bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow',
+                    'border-amber-200' => $summary['tone'] === 'amber',
+                    'border-sky-200' => $summary['tone'] === 'sky',
+                    'border-emerald-200' => $summary['tone'] === 'emerald',
+                    'border-red-200' => $summary['tone'] === 'red',
                 ])>
-                <span class="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $summary['label'] }}</span>
-                <span class="mt-1 block text-2xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['count']) }}</span>
+                <span class="block text-xs font-medium uppercase tracking-wide text-slate-500">{{ $summary['label'] }}</span>
+                <span class="mt-1 block text-2xl font-semibold text-slate-900">{{ number_format($summary['count']) }}</span>
             </a>
         @endforeach
     </nav>
@@ -219,7 +219,7 @@
                 @endforeach
             </div>
         @else
-            <p class="text-sm text-slate-600 dark:text-slate-300">No products pending.</p>
+            <p class="text-sm text-slate-600">No products pending.</p>
         @endif
     </div>
     @endif

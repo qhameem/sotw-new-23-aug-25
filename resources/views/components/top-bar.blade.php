@@ -11,7 +11,7 @@
     <div class="mx-auto max-w-[96rem] px-5">
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
-                <a href="{{ route('home') }}" wire:navigate.hover class="theme-logo-contrast shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
+                <a href="{{ route('home') }}" wire:navigate.hover class="shrink-0" aria-label="{{ config('app.name', 'Software on the Web') }} home">
                     <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
                     <span class="sr-only">{{ config('app.name', 'Software on the Web') }} home</span>
                 </a>
@@ -386,7 +386,6 @@
             <div data-site-top-bar-controls class="flex shrink-0 items-center gap-4">
                 @guest
                     <div class="flex items-center gap-2">
-                        @include('partials.theme.switcher', ['floating' => false])
                         <a href="{{ route('login') }}" class="inline-flex min-h-8 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-gray-300 bg-white px-4 py-1 text-sm font-semibold text-gray-700 transition duration-300 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M17 4.25A2.25 2.25 0 0 0 14.75 2h-5.5A2.25 2.25 0 0 0 7 4.25v2a.75.75 0 0 0 1.5 0v-2a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 .75.75v11.5a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1-.75-.75v-2a.75.75 0 0 0-1.5 0v2A2.25 2.25 0 0 0 9.25 18h5.5A2.25 2.25 0 0 0 17 15.75V4.25Z" clip-rule="evenodd" />
@@ -420,7 +419,6 @@
                             </a>
                         @endif
                     @endauth
-                    @include('partials.theme.switcher', ['floating' => false])
                     <x-user-dropdown />
                 </div>
                 @endguest

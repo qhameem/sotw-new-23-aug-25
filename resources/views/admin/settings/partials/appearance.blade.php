@@ -1,19 +1,6 @@
 @php
         $productHuntSystemStack =
             'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
-        $darkThemeFields = [
-            'dark_navbar_bg_color' => ['label' => 'Top Menubar', 'variable' => '--theme-dark-navbar', 'default' => '#111827'],
-            'dark_body_bg_color' => ['label' => 'Page Background', 'variable' => '--theme-dark-canvas', 'default' => '#0b1120'],
-            'dark_surface_color' => ['label' => 'Cards and Panels', 'variable' => '--theme-dark-surface', 'default' => '#111827'],
-            'dark_muted_surface_color' => ['label' => 'Muted Surfaces', 'variable' => '--theme-dark-surface-muted', 'default' => '#1e293b'],
-            'dark_border_color' => ['label' => 'Borders', 'variable' => '--theme-dark-border', 'default' => '#334155'],
-            'dark_font_color' => ['label' => 'Headings and Strong Text', 'variable' => '--theme-dark-text', 'default' => '#f8fafc'],
-            'dark_body_text_color' => ['label' => 'Body and Muted Text', 'variable' => '--theme-dark-text-muted', 'default' => '#cbd5e1'],
-            'dark_product_hover_color' => ['label' => 'Product Card Hover', 'variable' => '--theme-dark-product-hover', 'default' => '#1e293b'],
-        ];
-        $darkThemeValues = collect($darkThemeFields)->mapWithKeys(fn ($field, $key) => [
-            $key => old($key, $currentDarkThemeColors[$key] ?? $field['default']),
-        ])->all();
     @endphp
     <div class="w-full">
         <div class="w-full">
@@ -618,69 +605,6 @@
                                 </p>
                             </div>
                         </div>
-
-                        {{-- Dark Mode Colors --}}
-                        <section class="mt-8 border-t border-gray-200 pt-6" x-data="{
-                            colors: {{ Js::from($darkThemeValues) }},
-                            defaults: {{ Js::from(collect($darkThemeFields)->mapWithKeys(fn ($field, $key) => [$key => $field['default']])->all()) }},
-                            variables: {{ Js::from(collect($darkThemeFields)->mapWithKeys(fn ($field, $key) => [$key => $field['variable']])->all()) }},
-                            isValidHex(value) {
-                                return /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(value);
-                            },
-                            normalize(value) {
-                                value = String(value || '').trim();
-                                return value.startsWith('#') ? value : `#${value}`;
-                            },
-                            apply(key, value) {
-                                value = this.normalize(value);
-                                if (!this.isValidHex(value)) return;
-                                this.colors[key] = value;
-                                document.documentElement.style.setProperty(this.variables[key], value);
-                            },
-                            reset() {
-                                Object.entries(this.defaults).forEach(([key, value]) => this.apply(key, value));
-                            },
-                            init() {
-                                Object.entries(this.colors).forEach(([key, value]) => this.apply(key, value));
-                            },
-                        }" x-init="init()">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                    <h3 class="mb-1 text-lg font-medium text-gray-900">Dark Mode Colors</h3>
-                                    <p class="text-sm text-gray-500">Controls the shared dark palette. Changes preview immediately while dark mode is active.</p>
-                                </div>
-                                <button type="button" class="shrink-0 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100" @click="reset()">
-                                    Restore dark defaults
-                                </button>
-                            </div>
-
-                            <div class="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2">
-                                @foreach ($darkThemeFields as $fieldName => $field)
-                                    <div>
-                                        <x-input-label :for="$fieldName" :value="$field['label']" />
-                                        <div class="mt-2 flex items-center gap-3">
-                                            <input type="color"
-                                                id="{{ $fieldName }}_picker"
-                                                class="h-10 w-12 cursor-pointer rounded-md border border-gray-300 p-0.5 shadow-sm"
-                                                :value="colors.{{ $fieldName }}"
-                                                @input="apply('{{ $fieldName }}', $event.target.value)">
-                                            <input type="text"
-                                                id="{{ $fieldName }}"
-                                                name="{{ $fieldName }}"
-                                                class="block w-36 rounded-md border-gray-300 bg-white font-mono text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                                                x-model="colors.{{ $fieldName }}"
-                                                @input="apply('{{ $fieldName }}', $event.target.value)"
-                                                @paste="$nextTick(() => apply('{{ $fieldName }}', $event.target.value))"
-                                                required>
-                                            <span class="inline-block h-6 w-6 shrink-0 rounded border border-gray-300" :style="{ backgroundColor: colors.{{ $fieldName }} }"></span>
-                                        </div>
-                                        @error($fieldName)
-                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
 
                         {{-- Submission Page Background Section --}}
                         <div class="mt-8 pt-6 border-t border-gray-200 ">
