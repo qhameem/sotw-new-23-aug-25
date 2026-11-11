@@ -131,7 +131,7 @@
     @endguest
 
     @if($isWeeklyListing)
-        <h1 class="flex items-center gap-2 px-4 pb-4 text-[24px] font-semibold text-gray-900">
+        <h1 class="flex items-center gap-2 px-4 pb-4 pt-2 text-[24px] font-semibold text-gray-900">
             <svg class="h-6 w-6 shrink-0" style="color: var(--color-primary-500);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M7 14h2m6 0h2M7 18h2m6 0h2" />
             </svg>
