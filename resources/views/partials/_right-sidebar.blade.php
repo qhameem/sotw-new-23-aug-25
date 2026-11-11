@@ -8,9 +8,11 @@
                 <x-top-categories />
 
                 @guest
-                    <div class="p-4">
-                        @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*')])
-                    </div>
+                    @unless(request()->routeIs('home'))
+                        <div class="p-4">
+                            @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*')])
+                        </div>
+                    @endunless
                 @endguest
             @elseif(request()->is('articles*'))
                 <div class="p-4">

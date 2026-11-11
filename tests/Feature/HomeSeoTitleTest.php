@@ -22,6 +22,15 @@ test('home route uses configured seo meta title', function () {
     $response->assertSee('<title>Software on the Web | Discover and Launch SaaS Tools</title>', false);
 });
 
+test('the signed-out homepage renders the about card once after the stats', function () {
+    $response = $this->get(route('home'));
+
+    $response->assertOk()
+        ->assertSeeInOrder(['times by', 'What is Software on the Web?', 'AI crawler requests in the past 30 days']);
+
+    expect(substr_count($response->getContent(), 'What is Software on the Web?'))->toBe(1);
+});
+
 test('social image partial renders complete metadata for a generated image', function () {
     $imageUrl = 'https://softwareontheweb.com/storage/og_images/social-preview.jpg';
     $html = view('partials.social-image-meta', [

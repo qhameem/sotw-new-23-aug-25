@@ -96,7 +96,9 @@
                 ])>
                     <div @class([
                         'p-6 min-h-0',
-                        'md:flex-1 md:overflow-hidden' => $lockHeight,
+                        'md:flex-1' => $lockHeight,
+                        'md:overflow-hidden' => $lockHeight && !(request()->routeIs('home') && auth()->guest()),
+                        'md:overflow-y-auto' => $lockHeight && request()->routeIs('home') && auth()->guest(),
                         'site-header-sticky md:sticky' => $sidebarSticky && !$lockHeight,
                     ])>
                         <div @class([
@@ -109,6 +111,11 @@
                                 <x-header-stats :stats="$headerStats" />
                             </div>
                             @endif
+                            @guest
+                                @if(request()->routeIs('home'))
+                                    @include('partials._homepage-about-card')
+                                @endif
+                            @endguest
                             @if (isset($right_sidebar_content) && trim($right_sidebar_content))
                                 {!! $right_sidebar_content !!}
                             @else

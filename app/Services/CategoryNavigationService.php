@@ -245,6 +245,11 @@ class CategoryNavigationService
             ->all();
     }
 
+    public function getDirectoryCategoryCount(): int
+    {
+        return $this->categories()->count();
+    }
+
     public function getDefaultGroupKey(): string
     {
         return 'ai-automation';

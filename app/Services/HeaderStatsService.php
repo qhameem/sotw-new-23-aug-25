@@ -9,13 +9,14 @@ use Illuminate\Support\Facades\Schema;
 
 class HeaderStatsService
 {
-    public const CACHE_KEY = 'site.header_stats.v2';
+    public const CACHE_KEY = 'site.header_stats.v3';
 
     public function get(): array
     {
         return Cache::remember(self::CACHE_KEY, config('ai_crawlers.header_cache_seconds', 900), function () {
             $productStats = Product::query()
                 ->selectRaw('COUNT(*) as submitted_products, COALESCE(SUM(outbound_clicks_count), 0) as product_clicks')
+                ->selectSub(Product::query()->approvedAndPublished()->selectRaw('COUNT(*)'), 'public_products')
                 ->first();
 
             $aiStats = Schema::hasTable('ai_crawler_daily_stats')
@@ -27,6 +28,7 @@ class HeaderStatsService
 
             return [
                 'submitted_products' => (int) ($productStats->submitted_products ?? 0),
+                'public_products' => (int) ($productStats->public_products ?? 0),
                 'product_clicks' => (int) ($productStats->product_clicks ?? 0),
                 'ai_bot_requests' => (int) ($aiStats->requests ?? 0),
                 'ai_systems' => (int) ($aiStats->systems ?? 0),
