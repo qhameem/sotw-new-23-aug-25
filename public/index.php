@@ -35,6 +35,17 @@ if (! $profileStartup) {
 
 $createdAt = hrtime(true);
 $bootedAt = null;
+$stageStartedAt = [];
+$stageDurations = [];
+$app['events']->listen('bootstrapping: *', static function (string $event) use (&$stageStartedAt): void {
+    $stageStartedAt[substr($event, strlen('bootstrapping: '))] = hrtime(true);
+});
+$app['events']->listen('bootstrapped: *', static function (string $event) use (&$stageStartedAt, &$stageDurations): void {
+    $class = substr($event, strlen('bootstrapped: '));
+    if (isset($stageStartedAt[$class])) {
+        $stageDurations[class_basename($class)] = sprintf('%.1fms', (hrtime(true) - $stageStartedAt[$class]) / 1_000_000);
+    }
+});
 $app->afterBootstrapping(BootProviders::class, static function () use (&$bootedAt): void {
     $bootedAt = hrtime(true);
 });
@@ -55,6 +66,11 @@ if ($bootedAt !== null && $response->isSuccessful()) {
         ($handledAt - $bootedAt) / 1_000_000,
         ($handledAt - $entryTime) / 1_000_000,
     ));
+    $stages = [];
+    foreach ($stageDurations as $stage => $duration) {
+        $stages[] = $stage.'='.$duration;
+    }
+    $response->headers->set('X-Bootstrap-Profile', implode('; ', $stages));
 }
 
 $response->send();
