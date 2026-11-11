@@ -7,6 +7,7 @@
         @foreach($images as $media)
             @php
                 $imageUrl = $media->medium_url ?: $media->url;
+                $dimensions = \App\Support\PublicImageDimensions::forPath($media->medium_url ? $media->path_medium : $media->path);
                 $imageFullUrl = $media->url;
                 $imageAlt = $media->alt_text ?: $product->name.' screenshot '.($loop->index + 1);
             @endphp
@@ -15,7 +16,9 @@
                     @click="image = {{ Js::from(['src' => $imageFullUrl, 'alt' => $imageAlt]) }}"
                     aria-label="Enlarge {{ $imageAlt }}">
                     <img src="{{ $imageUrl }}" alt="{{ $imageAlt }}" loading="{{ $isCover ? 'eager' : 'lazy' }}"
-                        @if($isCover) fetchpriority="high" @endif>
+                        @if($dimensions) width="{{ $dimensions[0] }}" height="{{ $dimensions[1] }}" @endif
+                        @if($isCover) fetchpriority="high" @else decoding="async" @endif
+                        @if($isCover && !$dimensions) class="aspect-video" @endif>
                 </button>
                 @if($isCover)<figcaption>{{ $product->name }} — {{ $product->product_page_tagline ?: $product->tagline }}</figcaption>@endif
             </figure>

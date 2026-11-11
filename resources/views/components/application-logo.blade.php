@@ -1,5 +1,6 @@
 @php
     $customLogoUrl = config('theme.logo_url');
+    $logoDimensions = \App\Support\PublicImageDimensions::forPath($customLogoUrl);
     $customLogoAltText = trim((string) config('theme.logo_alt_text', config('app.name', 'Logo')));
 
     if ($customLogoAltText === '') {
@@ -10,7 +11,7 @@
 @endphp
 
 @if ($customLogoUrl)
-    <img src="{{ Storage::url($customLogoUrl) }}" alt="{{ $customLogoAltText }}" onerror="this.onerror = null; this.src = @js(asset('images/branding/site-logo.png'))" {{ $attributes }}>
+    <img src="{{ Storage::url($customLogoUrl) }}" alt="{{ $customLogoAltText }}" @if($logoDimensions) width="{{ $logoDimensions[0] }}" height="{{ $logoDimensions[1] }}" @endif onerror="this.onerror = null; this.src = @js(asset('images/branding/site-logo.png'))" {{ $attributes }}>
 @else
     <svg viewBox="0 0 316 316" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $customLogoAltText }}" {{ $attributes }}>
         <title>{{ $customLogoAltText }}</title>

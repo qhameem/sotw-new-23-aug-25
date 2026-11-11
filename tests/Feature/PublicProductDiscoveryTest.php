@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Services\ProductMetricsService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PublicProductDiscoveryTest extends TestCase
@@ -392,9 +393,17 @@ class PublicProductDiscoveryTest extends TestCase
             'votes_count' => 0,
         ]);
 
+        $disk = Storage::fake('public');
+        $source = public_path('images/branding/site-logo.png');
+        $disk->put('product_media/cover.png', file_get_contents($source));
+        $product->media()->create(['path' => 'product_media/cover.png', 'type' => 'image', 'alt_text' => 'Product screenshot']);
+        [$width, $height] = getimagesize($source);
+
         $response = $this->get(route('products.show', $product->slug));
 
         $response->assertOk();
+        $this->assertStringStartsWith('<!DOCTYPE html>', ltrim($response->getContent()));
+        $response->assertSee('width="'.$width.'" height="'.$height.'"', false);
         $response->assertSee('<h1 class="site-heading-text', false);
         $response->assertSee('Trustworthy Product');
         $response->assertDontSee('AggregateRating', false);
