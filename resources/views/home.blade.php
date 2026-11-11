@@ -1,6 +1,7 @@
 @extends('layouts.app', ['mainContentMaxWidth' => 'max-w-4xl', 'containerMaxWidth' => 'max-w-[96rem]', 'headerPadding' => 'px-4 md:pt-4'])
 
 @php
+    $isWeeklyListing = request()->routeIs('home', 'products.byWeek');
     $taxonomyRoutes = [
         'categories.show', 'categories.show.page',
         'use-cases.show', 'use-cases.show.page',
@@ -25,13 +26,13 @@
     {{ request()->routeIs('home') ? 'Software on the Web' : ($title ?? '') }}
 @endsection
 
-@if(request()->routeIs('home'))
+@if($isWeeklyListing)
     @section('hide_desktop_page_header', '1')
 @endif
 
 @section('before_header_title')
     @guest
-        @if(request()->routeIs('products.byWeek', 'products.byMonth', 'products.byYear'))
+        @if(request()->routeIs('products.byMonth', 'products.byYear'))
             <x-site-intro-card class="hidden md:block" />
         @endif
     @endguest
@@ -124,17 +125,17 @@
 
     <div class="flex-shrink-0 z-10 relative" style="background-color: var(--color-body-bg, #ffffff);">
     @guest
-        @if(request()->routeIs('products.byWeek', 'products.byMonth', 'products.byYear'))
+        @if(request()->routeIs('products.byMonth', 'products.byYear'))
             <x-site-intro-card class="md:hidden" />
         @endif
     @endguest
 
-    @if(request()->routeIs('home'))
+    @if($isWeeklyListing)
         <h1 class="flex items-center gap-2 px-4 pb-4 text-[24px] font-semibold text-gray-900">
             <svg class="h-6 w-6 shrink-0" style="color: var(--color-primary-500);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M7 14h2m6 0h2M7 18h2m6 0h2" />
             </svg>
-            {{ $title ?? 'Top products of the week' }}
+            Top products of the week
         </h1>
     @endif
 

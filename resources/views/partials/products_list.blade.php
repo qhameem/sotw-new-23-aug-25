@@ -43,13 +43,14 @@
             $isPromoted = $product->is_promoted ?? false; // Ensure $isPromoted is defined
             $isHomePage = request()->routeIs('home');
             $isWeeklyPage = request()->routeIs('products.byWeek');
+            $isWeeklyListing = $isHomePage || $isWeeklyPage;
             $isCategoryPage = request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page', 'pseo.builtWith');
             $showMomentumMeta = $isHomePage || $isCategoryPage;
-            $logoSize = $isHomePage ? 40 : 48;
+            $logoSize = $isWeeklyListing ? 40 : 48;
             $votesCount = max(1, (int) ($product->votes_count ?? 0));
             $outboundClicksCount = max(0, (int) ($product->outbound_clicks_count ?? 0));
             $impressionsCount = max(0, (int) ($product->impressions ?? 0));
-            $clicksCount = $isHomePage || $isWeeklyPage
+            $clicksCount = $isWeeklyListing
                 ? (int) ($product->weekStats->first()?->outbound_clicks ?? 0)
                 : $outboundClicksCount + $impressionsCount;
             $momentumLabel = $votesCount >= 4
@@ -103,8 +104,8 @@
                     <img src="{{ $productLogo }}" alt="{{ $product->name }} logo"
                         @class([
                             'rounded-xl object-contain flex-shrink-0 bg-gray-100 md:w-12 md:h-12',
-                            'w-10 h-10' => $isHomePage,
-                            'w-12 h-12' => !$isHomePage,
+                            'w-10 h-10' => $isWeeklyListing,
+                            'w-12 h-12' => !$isWeeklyListing,
                         ])
                         width="{{ $logoSize }}" height="{{ $logoSize }}"
                         loading="{{ ProductLogo::loading($loopIndex) }}"
@@ -114,8 +115,8 @@
                 @else
                     <div @class([
                         'flex rounded-xl bg-gray-100 text-gray-500 items-center justify-center flex-shrink-0 text-sm font-semibold md:w-12 md:h-12',
-                        'w-10 h-10' => $isHomePage,
-                        'w-12 h-12' => !$isHomePage,
+                        'w-10 h-10' => $isWeeklyListing,
+                        'w-12 h-12' => !$isWeeklyListing,
                     ])
                         aria-label="{{ $product->name }} logo placeholder">
                         {{ ProductLogo::initial($product) }}
@@ -147,8 +148,8 @@
                 <a href="{{ $productShowUrl }}" wire:navigate.hover @click.stop class="block">
                     <p @class([
                         'site-body-text mb-0 line-clamp-2',
-                        'text-xs md:text-base' => $isHomePage,
-                        'text-base' => !$isHomePage,
+                        'text-xs md:text-base' => $isWeeklyListing,
+                        'text-base' => !$isWeeklyListing,
                     ]) itemprop="description">
                         {{ $product->tagline }}
                     </p>
