@@ -4,6 +4,7 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Http\Request;
+use Illuminate\Support\ServiceProvider;
 
 define('LARAVEL_START', microtime(true));
 
@@ -46,6 +47,21 @@ $app['events']->listen('bootstrapped: *', static function (string $event) use (&
         $stageDurations[class_basename($class)] = sprintf('%.1fms', (hrtime(true) - $stageStartedAt[$class]) / 1_000_000);
     }
 });
+$providerDurations = [];
+$app->beforeBootstrapping(BootProviders::class, static function (Application $app) use (&$providerDurations): void {
+    foreach ($app->getProviders(ServiceProvider::class) as $provider) {
+        $startedAt = null;
+        $provider->booting(static function () use (&$startedAt): void {
+            $startedAt = hrtime(true);
+        });
+        $provider->booted(static function () use (&$startedAt, &$providerDurations, $provider): void {
+            if ($startedAt !== null) {
+                $providerDurations[$provider::class] = (hrtime(true) - $startedAt) / 1_000_000;
+            }
+        });
+        unset($startedAt);
+    }
+});
 $app->afterBootstrapping(BootProviders::class, static function () use (&$bootedAt): void {
     $bootedAt = hrtime(true);
 });
@@ -71,6 +87,14 @@ if ($bootedAt !== null && $response->isSuccessful()) {
         $stages[] = $stage.'='.$duration;
     }
     $response->headers->set('X-Bootstrap-Profile', implode('; ', $stages));
+
+    arsort($providerDurations, SORT_NUMERIC);
+    $providers = [];
+    foreach (array_slice($providerDurations, 0, 8, true) as $provider => $duration) {
+        $providers[] = sprintf('%s=%.1fms', class_basename($provider), $duration);
+    }
+    $providers[] = sprintf('measured_total=%.1fms', array_sum($providerDurations));
+    $response->headers->set('X-Provider-Profile', implode('; ', $providers));
 }
 
 $response->send();
