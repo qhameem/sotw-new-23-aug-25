@@ -87,7 +87,7 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": ["spatie/laravel-feed"]
         }
     },
     "config": {

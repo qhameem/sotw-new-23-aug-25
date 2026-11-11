@@ -154,7 +154,6 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\ViewServiceProvider::class,
         Spatie\Permission\PermissionServiceProvider::class, // Added for Spatie Permissions
-        Spatie\Feed\FeedServiceProvider::class, // Added for Spatie Feed
         Spatie\Sitemap\SitemapServiceProvider::class, // Added for Spatie Sitemap
 
 
