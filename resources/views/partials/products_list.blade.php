@@ -1,6 +1,7 @@
 @php use App\Support\ProductLogo; @endphp
 <div class="md:space-y-2">
     @php
+        $productHeadingTag = request()->routeIs('home', 'products.byWeek') ? 'h3' : 'h2';
         $finalProductList = ProductLogo::productListItems($regularProducts ?? collect(), $promotedProducts ?? collect());
         $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
         $adDisplayed = false;
@@ -124,7 +125,7 @@
                 @endif
             </a>
             <div class="flex-1">
-                <h2 class="site-heading-text text-base font-semibold leading-tight flex items-center">
+                <{{ $productHeadingTag }} class="site-heading-text text-base font-semibold leading-tight flex items-center">
                     <a href="{{ $productShowUrl }}" wire:navigate.hover @click.stop
                         class="site-heading-text text-left hover:underline flex items-center gap-1">
                         @if(!$isPromoted && $itemNumber)
@@ -144,7 +145,7 @@
                             </svg>
                         </a>
                     @endif
-                </h2>
+                </{{ $productHeadingTag }}>
                 <a href="{{ $productShowUrl }}" wire:navigate.hover @click.stop class="block">
                     <p @class([
                         'site-body-text mb-0 line-clamp-2',

@@ -279,7 +279,7 @@
                                                 <template x-if="!isSearching">
                                                     <div>
                                                         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="activeGroupData.eyebrow"></p>
-                                                        <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label"></h3>
+                                                        <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="activeGroupData.label">Software categories</h3>
                                                         <p class="mt-2 max-w-2xl text-xs leading-5 text-gray-600" x-text="activeGroupData.description"></p>
                                                     </div>
                                                 </template>

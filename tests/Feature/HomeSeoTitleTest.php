@@ -5,6 +5,7 @@ use App\Models\Product;
 
 test('home route uses configured seo meta title', function () {
     Product::factory()->create([
+        'name' => 'Weekly heading fixture',
         'published_at' => now()->subDay(),
         'votes_count' => 5,
         'impressions' => 10,
@@ -19,6 +20,13 @@ test('home route uses configured seo meta title', function () {
     $response = $this->get(route('home'));
 
     $response->assertOk();
+    $response->assertSeeInOrder(['Top products of the week', 'Weekly heading fixture']);
+    $html = $response->getContent();
+
+    expect(preg_match_all('/<h1\b/i', $html))->toBe(1)
+        ->and($html)->toMatch('/<h2[^>]*>Week \d+<\/h2>/')
+        ->toMatch('/<h3[^>]*>[^<]*(?:(?!<\/h3>).)*Weekly heading fixture(?:(?!<\/h3>).)*<\/h3>/s')
+        ->not->toMatch('/<h[1-6]\b[^>]*>\s*<\/h[1-6]>/i');
     $response->assertSee('<title>Software on the Web | Discover and Launch SaaS Tools</title>', false);
 });
 

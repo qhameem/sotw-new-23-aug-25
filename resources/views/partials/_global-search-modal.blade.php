@@ -43,7 +43,7 @@
                 <div class="border-b border-gray-100 bg-slate-50/70 p-4 dark:bg-slate-800/80 lg:border-b-0 lg:border-r lg:p-5">
                     <div class="mb-4">
                         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="showDefaultSearchContent() ? 'Popular Categories' : 'Matching Categories'"></p>
-                        <h3 class="mt-1 text-sm font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Browse leading spaces' : 'Category results'"></h3>
+                        <h3 class="mt-1 text-sm font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Browse leading spaces' : 'Category results'">Browse leading spaces</h3>
                     </div>
 
                     <div x-show="showDefaultSearchContent() && popularSearchLoading"
@@ -91,7 +91,7 @@
                     <div class="mb-5 flex items-start justify-between gap-4">
                         <div>
                             <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gray-400" x-text="showDefaultSearchContent() ? 'Popular Products' : 'Matching Products'"></p>
-                            <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Explore what is trending' : 'Relevant product results'"></h3>
+                            <h3 class="mt-1 text-lg font-semibold text-gray-900" x-text="showDefaultSearchContent() ? 'Explore what is trending' : 'Relevant product results'">Explore what is trending</h3>
                             <p class="mt-2 text-xs leading-5 text-gray-600" x-show="showDefaultSearchContent()">These picks are surfaced from the most active approved products on the site.</p>
                         </div>
                         <div x-show="searchLoading" class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500">
