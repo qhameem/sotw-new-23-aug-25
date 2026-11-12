@@ -10,7 +10,6 @@
             'All-time product clicks' => $siteStats['product_clicks'],
             'Live products' => $siteStats['public_products'],
             'Total AI reads' => $siteStats['total_ai_reads'],
-            'Visitors (last 30 days)' => \Illuminate\Support\Facades\Cache::get(\App\Services\AnalyticsService::MONTHLY_VISITORS_CACHE_KEY),
         ];
         $premiumPrice = \App\Support\PremiumLaunchPricing::display();
         $plans = [
@@ -35,7 +34,7 @@
         </div>
     </header>
 
-    <dl aria-label="Platform statistics" class="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 md:grid-cols-4">
+    <dl aria-label="Platform statistics" class="mb-10 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 sm:grid-cols-3">
         @foreach($stats as $label => $value)
             <div class="bg-white p-4 sm:p-5">
                 <dt class="text-sm font-medium text-gray-600">{{ $label }}</dt>
