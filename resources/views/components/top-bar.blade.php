@@ -375,6 +375,7 @@
                         </div>
                     </div>
                     <a href="{{ route('articles.index') }}" wire:navigate.hover class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Read</a>
+                    <a href="{{ route('pricing') }}" wire:navigate.hover class="text-sm font-semibold text-gray-900 transition-colors hover:text-primary-500">Pricing</a>
                     <x-feedback-button />
                     <a href="{{ \App\Support\SocialLinks::xProfileUrl() }}" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X (opens in a new tab)" title="Follow us on X" class="inline-flex shrink-0 items-center text-gray-900 transition-colors hover:text-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">

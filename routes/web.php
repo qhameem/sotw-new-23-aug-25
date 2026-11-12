@@ -377,6 +377,8 @@ Route::get('/about', function () {
 })->name('about');
 // Legal Page
 Route::view('/refund-policy', 'site.refund-policy')->name('refund-policy');
+Route::view('/pricing', 'site.pricing')->name('pricing');
+
 
 Route::get('/legal', function () {
     return view('site.legal');

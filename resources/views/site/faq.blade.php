@@ -86,7 +86,9 @@
             </div>
         </section>
 
-        <x-submission-policy />
+        <div id="launch-pricing" class="scroll-mt-[calc(var(--site-header-offset,7rem)+1rem)]">
+            <x-submission-policy />
+        </div>
 
         <section>
             <h2 class="text-2xl font-semibold text-gray-800 mb-3">Contact & Support</h2>
