@@ -6,7 +6,7 @@
     <div @class(['product-cover' => $isCover, 'product-gallery' => !$isCover]) @if(!$isCover) tabindex="0" role="region" aria-label="Product gallery" @endif>
         @foreach($images as $media)
             @php
-                $imageUrl = $media->medium_url ?: $media->url;
+                $imageUrl = $isCover ? $coverImageUrl : ($media->medium_url ?: $media->url);
                 $dimensions = \App\Support\PublicImageDimensions::forPath($media->medium_url ? $media->path_medium : $media->path);
                 $imageFullUrl = $media->url;
                 $imageAlt = $media->alt_text ?: $product->name.' screenshot '.($loop->index + 1);

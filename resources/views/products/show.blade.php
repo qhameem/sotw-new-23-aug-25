@@ -1,6 +1,8 @@
 @php
     $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
+    $cover = $product->media->first();
+    $coverImageUrl = $cover?->medium_url ?: $cover?->url;
     $mainPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
     $headerPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';
 @endphp
@@ -8,6 +10,11 @@
 
 @section('title', $pageTitle)
 @section('meta_description', $metaDescription)
+@if(filled($coverImageUrl))
+    @section('preloads')
+        <link rel="preload" as="image" href="{{ $coverImageUrl }}" fetchpriority="high">
+    @endsection
+@endif
 @if($product->approved && $product->is_published && !$product->generation_noindex)
     @push('alternate-formats')
         <link rel="alternate" type="application/json" href="{{ route('products.document', ['slug' => $product->slug, 'format' => 'json']) }}">
