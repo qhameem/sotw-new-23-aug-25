@@ -5,6 +5,13 @@
 
 @section('content')
     @php
+        $siteStats = app(\App\Services\HeaderStatsService::class)->get();
+        $stats = [
+            'All-time product clicks' => $siteStats['product_clicks'],
+            'Live products' => $siteStats['public_products'],
+            'Total AI reads' => $siteStats['total_ai_reads'],
+            'Visitors (last 30 days)' => \Illuminate\Support\Facades\Cache::get(\App\Services\AnalyticsService::MONTHLY_VISITORS_CACHE_KEY),
+        ];
         $premiumPrice = \App\Support\PremiumLaunchPricing::display();
         $plans = [
             ['name' => 'Free Launch', 'price' => '$0', 'term' => 'with a verified badge',
@@ -27,6 +34,21 @@
             <a href="#launch-plans" class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 font-semibold text-gray-900 hover:bg-gray-50">Compare plans</a>
         </div>
     </header>
+
+    <dl aria-label="Platform statistics" class="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 md:grid-cols-4">
+        @foreach($stats as $label => $value)
+            <div class="bg-white p-4 sm:p-5">
+                <dt class="text-sm font-medium text-gray-600">{{ $label }}</dt>
+                <dd class="mt-2 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
+                    @if($value === null)
+                        <span aria-label="Unavailable">—</span>
+                    @else
+                        {{ number_format($value) }}
+                    @endif
+                </dd>
+            </div>
+        @endforeach
+    </dl>
 
     <section id="launch-plans" aria-labelledby="launch-plans-title" class="scroll-mt-28">
         <h2 id="launch-plans-title" class="text-2xl font-bold text-gray-900">Choose your launch plan</h2>

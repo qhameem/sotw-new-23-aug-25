@@ -8,6 +8,22 @@ use Carbon\Carbon;
 
 class AnalyticsService
 {
+    public const MONTHLY_VISITORS_CACHE_KEY = 'site.pricing.monthly_visitors';
+
+    public function fetchMonthlyVisitors(): ?int
+    {
+        $credentialsPath = config('analytics.service_account_credentials_json');
+        if (!config('analytics.property_id') || !is_string($credentialsPath) || !is_file($credentialsPath)) {
+            return null;
+        }
+
+        $end = Carbon::yesterday();
+        $period = Period::create($end->copy()->subDays(29), $end);
+        $row = Analytics::get($period, ['activeUsers'])->first();
+
+        return isset($row['activeUsers']) ? (int) $row['activeUsers'] : null;
+    }
+
     public function getStatsForCurrentYear()
     {
         $credentialsPath = config('analytics.service_account_credentials_json');

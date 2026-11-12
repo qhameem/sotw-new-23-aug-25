@@ -1,8 +1,10 @@
 <?php
 
+use App\Services\AnalyticsService;
 use App\Support\ProductPublishSchedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -36,3 +38,17 @@ Schedule::command('products:discover')
     ->onOneServer();
 
 Schedule::command('agent:refresh')->dailyAt('05:00')->withoutOverlapping();
+
+Artisan::command('pricing:refresh-visitors', function (AnalyticsService $analytics) {
+    $visitors = $analytics->fetchMonthlyVisitors();
+
+    if ($visitors === null) {
+        $this->warn('Google Analytics visitor data is unavailable.');
+
+        return;
+    }
+
+    Cache::put(AnalyticsService::MONTHLY_VISITORS_CACHE_KEY, $visitors, now()->addDays(7));
+})->purpose('Refresh the cached 30-day visitor count for Pricing');
+
+Schedule::command('pricing:refresh-visitors')->daily()->withoutOverlapping();

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class HeaderStatsService
 {
-    public const CACHE_KEY = 'site.header_stats.v3';
+    public const CACHE_KEY = 'site.header_stats.v4';
 
     public function get(): array
     {
@@ -21,8 +21,9 @@ class HeaderStatsService
 
             $aiStats = Schema::hasTable('ai_crawler_daily_stats')
                 ? AiCrawlerDailyStat::query()
-                    ->whereDate('visited_on', '>=', today()->subDays(29))
-                    ->selectRaw('COALESCE(SUM(requests), 0) as requests, COUNT(DISTINCT bot) as systems')
+                    ->selectRaw('COALESCE(SUM(requests), 0) as total_requests')
+                    ->selectRaw('COALESCE(SUM(CASE WHEN visited_on >= ? THEN requests ELSE 0 END), 0) as requests', [today()->subDays(29)->toDateString()])
+                    ->selectRaw('COUNT(DISTINCT CASE WHEN visited_on >= ? THEN bot END) as systems', [today()->subDays(29)->toDateString()])
                     ->first()
                 : null;
 
@@ -30,6 +31,7 @@ class HeaderStatsService
                 'submitted_products' => (int) ($productStats->submitted_products ?? 0),
                 'public_products' => (int) ($productStats->public_products ?? 0),
                 'product_clicks' => (int) ($productStats->product_clicks ?? 0),
+                'total_ai_reads' => $aiStats === null ? null : (int) $aiStats->total_requests,
                 'ai_bot_requests' => (int) ($aiStats->requests ?? 0),
                 'ai_systems' => (int) ($aiStats->systems ?? 0),
             ];
