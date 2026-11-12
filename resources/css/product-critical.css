@@ -1,0 +1,5 @@
+@import "./public-foundation.css";
+@import "./rich-content.css";
+@import "./product-page.css";
+
+@config "../../tailwind.product-critical.config.js";

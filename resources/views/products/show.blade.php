@@ -17,10 +17,6 @@
     @section('robots', 'noindex, nofollow, noarchive')
 @endif
 
-@push('styles')
-    @vite(['resources/css/rich-content.css', 'resources/css/product-page.css'])
-@endpush
-
 @section('content')
     @php
         $appendQueryParam = function (?string $url, string $key, string $value): ?string {

@@ -114,7 +114,13 @@
 
         };
 
-        ['mouseover', 'keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'].forEach(event => {
+        const delayedScriptEvents = ['keydown', 'touchmove', 'touchstart', 'wheel', 'scroll'];
+        @if(request()->routeIs('products.show'))
+            delayedScriptEvents.push('pointerdown');
+        @else
+            delayedScriptEvents.push('mouseover');
+        @endif
+        delayedScriptEvents.forEach(event => {
             window.addEventListener(event, window.loadDelayedScripts, { once: true, passive: true });
         });
     </script>

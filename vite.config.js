@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/public.css',
                 'resources/css/home-critical.css',
+                'resources/css/product-critical.css',
                 'resources/css/rich-content.css',
                 'resources/css/product-page.css',
                 'resources/css/todo-vendor.css',
