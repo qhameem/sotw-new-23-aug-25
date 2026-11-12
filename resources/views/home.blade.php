@@ -136,8 +136,13 @@
         </h1>
     @endif
 
+    </div>
+
     @if(!isset($isCategoryPage) || !$isCategoryPage)
-        <div class="px-4 py-2">
+        <div @class([
+            'z-10 flex-shrink-0 border-b border-gray-100 px-4 py-2 shadow-sm',
+            'xl:sticky xl:top-[var(--site-header-offset,0px)]' => $isWeeklyListing,
+        ]) style="background-color: var(--color-body-bg, #ffffff);">
             <div class="flex justify-between items-center text-xs" x-data="weekNavigationScroller()" x-init="init()">
                 <button @click="scroll('left')" class="px-2 text-sm cursor-pointer text-gray-600 hover:text-rose-500">
                     &larr;
@@ -146,6 +151,7 @@
                     @foreach(($weekNavigationItems ?? []) as $weekItem)
                         <a href="{{ $weekItem['url'] }}" wire:navigate.hover
                            id="week-{{ $weekItem['year'] }}-{{ $weekItem['week'] }}"
+                           @if($weekItem['isSelected']) aria-current="page" @endif
                            @class([
                                'flex-shrink-0 w-[25%] md:w-[14.2857%] py-1 rounded text-center',
                                'bg-gray-200 text-gray-700 font-bold' => $weekItem['isSelected'],
@@ -161,8 +167,9 @@
                 </button>
             </div>
         </div>
-        <div class="shadow-sm border-t border-gray-100"></div>
     @endif
+
+    <div class="flex-shrink-0" style="background-color: var(--color-body-bg, #ffffff);">
 
     @if(isset($weekOfYear) && isset($year))
         <x-week-header :week="$weekOfYear" :year="$year" :start-date="$startOfWeek" :end-date="$endOfWeek" />
@@ -260,9 +267,11 @@
         return {
             init() {
                 this.$nextTick(() => {
-                    const targetElement = this.$refs.container.querySelector('.bg-gray-200');
+                    const targetElement = this.$refs.container.querySelector('[aria-current="page"]');
                     if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+                        const container = this.$refs.container;
+                        const offset = targetElement.getBoundingClientRect().left - container.getBoundingClientRect().left;
+                        container.scrollLeft += offset - (container.clientWidth - targetElement.offsetWidth) / 2;
                     }
                 });
             },
