@@ -274,7 +274,8 @@
         }
 
         :root {
-            --site-header-offset: 7rem;
+            --site-header-height: 7rem;
+            --site-header-offset: calc(var(--site-header-height) + var(--startupbar-top, 0px));
         }
 
         body[data-route-name="login"] [data-site-top-bar-controls],
@@ -287,11 +288,35 @@
         }
 
         body[data-route-name="login"] {
-            --site-header-offset: 3.5rem;
+            --site-header-height: 3.5rem;
+            --site-header-offset: calc(var(--site-header-height) + var(--startupbar-top, 0px));
         }
 
         .custom-page-blank {
-            --site-header-offset: 3.5rem;
+            --site-header-height: 3.5rem;
+            --site-header-offset: calc(var(--site-header-height) + var(--startupbar-top, 0px));
+        }
+
+        html[data-reserve-startupbar] {
+            /* The vendor uses a 36px base bar on desktop and mobile. */
+            --startupbar-top: 36px;
+        }
+
+        html[data-reserve-startupbar] body {
+            /* Replace the loader's inline body padding with the first-paint reservation. */
+            padding-top: var(--startupbar-top) !important;
+        }
+
+        html[data-reserve-startupbar] [data-site-top-bar] {
+            top: var(--startupbar-top);
+        }
+
+        html[data-reserve-startupbar] iframe[data-startupbar-frame="1"][style*="position: static"] {
+            /* Keep the vendor's in-flow iPhone frame inside the reserved band. */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 2147483647;
         }
 
         @media (max-width: 767px) {
@@ -302,7 +327,7 @@
 
         @media (min-width: 768px) {
             .site-header-padding {
-                padding-top: var(--site-content-offset, var(--site-header-offset));
+                padding-top: var(--site-content-offset, var(--site-header-height));
             }
 
             .site-header-sticky {
@@ -330,7 +355,7 @@
     @endphp
     <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 
-    @include('partials.header-code-injection')
+    @include('partials.header-code-injection', ['reserveStartupBarSpace' => true])
 
     @include('partials.agent-head')
 </head>
