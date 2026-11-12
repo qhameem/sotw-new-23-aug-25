@@ -13,9 +13,9 @@
         ];
         $premiumPrice = \App\Support\PremiumLaunchPricing::display();
         $plans = [
-            ['name' => 'Free Launch', 'price' => '$0', 'term' => 'with a verified badge',
+            ['name' => 'Free Launch', 'price' => '$0', 'button_label' => 'Launch for free', 'term' => 'with a verified badge',
                 'features' => ['Public product listing', 'Choose an available launch date after badge verification', 'Keep the Software on the Web badge live on your website']],
-            ['name' => 'Premium Launch', 'price' => $premiumPrice, 'term' => 'USD per product, one time',
+            ['name' => 'Premium Launch', 'price' => $premiumPrice, 'button_label' => 'Get Premium - '.$premiumPrice, 'term' => 'USD per product, one time',
                 'features' => ['Scheduled permanent listing, subject to review', 'Dofollow link to your product', 'No badge required']],
         ];
         $questions = [
@@ -61,9 +61,9 @@
                             <li>{{ $feature }}</li>
                         @endforeach
                     </ul>
-                    <a href="{{ route('products.create') }}" aria-label="Submit a product for {{ $plan['name'] }}"
+                    <a href="{{ route('products.create') }}"
                         @class(['rounded-lg border px-4 py-2 text-center text-sm font-semibold', 'border-primary-600 bg-primary-600 text-white hover:bg-primary-700' => $loop->last, 'border-gray-200 text-gray-900 hover:bg-gray-50' => $loop->first])>
-                        Submit product
+                        {{ $plan['button_label'] }} <span aria-hidden="true">→</span>
                     </a>
                 </article>
             @endforeach
