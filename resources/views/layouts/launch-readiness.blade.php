@@ -112,9 +112,6 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    @if(request()->routeIs('launch-readiness.index'))
-                        <a href="#url" class="rounded-lg bg-[var(--lr-brand)] px-4 py-2 text-sm font-semibold text-[color:var(--lr-button-label)]">Check your site</a>
-                    @endif
                     @if($toolUser)
                         @include('tools.launch-readiness.partials.user-menu')
                     @elseif(request()->routeIs('launch-readiness.auth.login'))
