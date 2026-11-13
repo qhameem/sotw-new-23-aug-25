@@ -31,7 +31,7 @@
                     <path d="M23.0551 14.2115 29.9971 7.2694c2.6788-2.6788 7.5386-2.1623 10.2172.5164s3.1951 7.5384.5163 10.2172L30.4481 28.2856c-2.6788 2.6788-7.5386 2.1623-10.2172-.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     <path d="M24.9449 33.7885 18.0029 40.7306c-2.6788 2.6788-7.5386 2.1623-10.2172-.5164S4.5906 32.6758 7.2694 29.997L17.5519 19.7144c2.6788-2.6788 7.5386-2.1623 10.2172.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                 </svg>
-                <input id="url" name="url" type="text" inputmode="url" x-model="websiteUrl" required value="{{ $submittedUrl }}" placeholder="https://your-site.com" autofocus class="h-9 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-600 focus:outline-none focus:ring-0">
+                <input id="url" name="url" type="text" inputmode="url" x-model="websiteUrl" required value="{{ $submittedUrl }}" placeholder="https://your-site.com" autofocus class="h-9 min-w-24 flex-1 border-0 bg-transparent p-0 text-base text-black placeholder:text-sm placeholder:text-slate-600 focus:outline-none focus:ring-0">
 
             </div>
         </div>
