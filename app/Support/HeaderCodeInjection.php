@@ -24,7 +24,8 @@ class HeaderCodeInjection
 
         $code = (string) ($settings['google_analytics_code'] ?? '');
 
-        if ($request->routeIs('launch-readiness.index', 'launch-readiness.results.show', 'launch-readiness.history')) {
+        if ($request->routeIs('launch-readiness.*')
+            || $request->is('tools/launch-readiness-checker', 'tools/launch-readiness-checker/*')) {
             $code = preg_replace(
                 '~<script\b[^>]*\s+src\s*=\s*(["\x27])https://(?:www\.)?startupbar\.co/widget/loader\.js(?:[?#][^"\x27]*)?\1[^>]*>\s*</script\s*>~i',
                 '',
