@@ -27,14 +27,14 @@
         class="mx-auto max-w-4xl space-y-8"
         x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', toolName: @js($toolBrandingSiteName) })"
     >
-        <section class="pt-4 text-center">
-            <div class="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center sm:gap-3">
+        <section class="pt-4">
+            <div class="flex items-center gap-3">
                 <div class="inline-flex h-16 w-16 items-center justify-center rounded-xl">
                     <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-12 w-12 object-contain">
                 </div>
                 <h1 class="text-[28.7px] font-semibold tracking-tight text-slate-900 sm:text-[34.7px]">{{ $toolHomepageH1 }}</h1>
             </div>
-            <p class="mx-auto mt-3 max-w-2xl text-xs leading-6 text-slate-500 sm:text-sm">
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-sm">
                 Is your site ready for launch? Audit your homepage for SEO, accessibility, trust, and AI visibility signals. Get passed checks, warnings, errors, and suggested fixes.
             </p>
         </section>
@@ -56,7 +56,16 @@
 
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url')])
 
-        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600">Running launch readiness checks…</p>
+        @if(($recentHistory ?? collect())->isNotEmpty())
+            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="font-semibold underline underline-offset-2">Recent public scans</a>
+                @foreach($recentHistory->take(3) as $scan)
+                    <span class="max-w-full truncate rounded-full border border-slate-200 bg-white px-3 py-1">{{ parse_url($scan->final_url ?: $scan->submitted_url, PHP_URL_HOST) }} · {{ $scan->launch_score }}/100</span>
+                @endforeach
+            </div>
+        @endif
+
+        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600">Fetching the page and checking metadata, technical settings, and AI visibility signals…</p>
 
         <div x-ref="reportContainer" aria-live="polite">
             @if(!empty($report['summary']['final_url']))

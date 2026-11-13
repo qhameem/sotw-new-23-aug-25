@@ -98,14 +98,13 @@
                         <img src="{{ config('theme.logo_url') ? \Illuminate\Support\Facades\Storage::url(config('theme.logo_url')) : asset('images/branding/site-logo.png') }}"
                             alt="Software on the Web" class="h-8 w-auto max-w-24 object-contain">
                     </a>
-                    <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-3 text-sm font-semibold text-slate-900">
-                        <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-9 w-9 object-contain">
-                        <span>{{ $toolBrandingSiteName }}</span>
-                    </a>
                     <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="text-sm text-slate-600 transition hover:text-slate-900">History</a>
                 </div>
 
                 <div class="flex items-center gap-3">
+                    @if(request()->routeIs('launch-readiness.index'))
+                        <a href="#url" class="rounded-lg bg-[#eb9e2b] px-4 py-2 text-sm font-semibold text-slate-950">Check your site</a>
+                    @endif
                     @if($toolUser)
                         @include('tools.launch-readiness.partials.user-menu')
                     @elseif(request()->routeIs('launch-readiness.auth.login'))
@@ -137,8 +136,8 @@
                     <a href="https://softwareontheweb.com" class="transition hover:text-slate-700">Software on the Web</a>
                 </div>
             </div>
+            @include('tools.launch-readiness.partials.footer-badges')
         </footer>
-        @include('tools.launch-readiness.partials.footer-badges')
 
         @unless($toolUser || request()->routeIs('launch-readiness.auth.login'))
             <div

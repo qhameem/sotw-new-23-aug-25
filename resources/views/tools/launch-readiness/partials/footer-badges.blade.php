@@ -1,24 +1,10 @@
 @if(!empty($toolFooterBadges))
-    <section aria-label="Site badges" class="flex-shrink-0 border-t border-slate-200/80 bg-white"
-        x-data="{
-            footerHeight: 57,
-            get stripHeight() { return Math.max(40, Math.round(this.footerHeight * 0.8)); },
-            get badgeDisplayHeight() { return this.stripHeight - 17; },
-            observer: null,
-            init() {
-                const footer = this.$el.previousElementSibling;
-                this.observer = new ResizeObserver(() => { this.footerHeight = footer.getBoundingClientRect().height; });
-                this.observer.observe(footer);
-                this.footerHeight = footer.getBoundingClientRect().height;
-            },
-            destroy() { this.observer?.disconnect(); }
-        }"
-        :style="{ height: stripHeight + 'px' }">
+    <section aria-label="Site badges" x-data="{ badgeDisplayHeight: 32 }">
         <style>
             .lr-footer-badge-static a { display: inline-flex; align-items: center; height: 100%; }
             .lr-footer-badge-static img { display: block; height: var(--badge-height) !important; width: auto !important; max-width: none !important; max-height: none !important; }
         </style>
-        <div class="mx-auto flex h-full max-w-6xl items-center gap-6 overflow-x-auto px-4 py-2 sm:px-6">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 pb-5 sm:px-6">
             @foreach($toolFooterBadges as $badge)
                 @php($inlineBadge = app(\App\Support\LaunchReadinessBadges::class)->inlineHtml($badge['code']))
                 @if($inlineBadge !== null)
