@@ -56,9 +56,23 @@
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url')])
 
         @if(($recentHistory ?? collect())->isNotEmpty())
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600" x-data
+                x-init="
+                    const row = $el;
+                    const fifth = $refs.fifthScan;
+                    if (fifth) {
+                        const update = () => {
+                            fifth.hidden = false;
+                            fifth.hidden = fifth.offsetTop !== row.firstElementChild.offsetTop
+                                && fifth.getBoundingClientRect().top >= row.firstElementChild.getBoundingClientRect().bottom;
+                        };
+                        const observer = new ResizeObserver(update);
+                        observer.observe(row);
+                        document.fonts.ready.then(update);
+                    }
+                ">
                 <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="font-semibold underline underline-offset-2">Recent public scans</a>
-                @foreach($recentHistory->take(3) as $scan)
+                @foreach($recentHistory->take(5) as $scan)
                     @php
                         $host = parse_url($scan->final_url ?: $scan->submitted_url, PHP_URL_HOST);
                         $label = preg_replace('/^www\./i', '', $host ?: $scan->submitted_url);
@@ -68,7 +82,8 @@
                         $iconUrl = ($favicon['status'] ?? null) === 'pass' ? ($favicon['meta']['preview_url'] ?? '') : '';
                         $hasIcon = parse_url($iconUrl, PHP_URL_SCHEME) === 'https';
                     @endphp
-                    <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1">
+                    <span @if($loop->iteration === 5) x-ref="fifthScan" hidden @endif
+                        class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 [&[hidden]]:hidden">
                         <span x-data="{ iconLoaded: false }" class="relative h-3.5 w-3.5 shrink-0" aria-hidden="true">
                             <span x-show="!iconLoaded">@svg('carbon-globe', 'h-3.5 w-3.5')</span>
                             @if($hasIcon)
