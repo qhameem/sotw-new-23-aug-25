@@ -59,26 +59,37 @@
                     <span x-text="submitting ? 'Checking...' : 'Check Website Readiness'"></span>
                 </button>
             </div>
-            <div class="inline-flex ml-auto w-fit shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3">
-                <label for="save-public-history" class="inline-flex h-9 items-center gap-2 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
-                    <span>Save to public history</span>
-                </label>
-                <span class="group relative inline-flex">
-                    <button type="button" aria-label="Public history information" aria-describedby="public-history-hint"
-                        class="rounded-full text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                        @svg('carbon-information', 'h-4 w-4')
-                    </button>
-                    <span id="public-history-hint" role="tooltip"
-                        class="invisible absolute right-0 top-full z-10 mt-1 w-52 rounded-lg bg-slate-900 p-2 text-xs text-white group-hover:visible group-focus-within:visible">
-                        When enabled, your scan appears in public history. The report URL is public either way.
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                @isset($completedScanCount)
+                    <p class="flex items-center gap-2 text-sm text-slate-600">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-[color:var(--lr-brand)]" aria-hidden="true">
+                            <path d="m3 17 6-6 4 4 8-8m-6 0h6v6"/>
+                        </svg>
+                        <span><strong class="font-semibold tabular-nums text-slate-900">{{ number_format($completedScanCount) }}</strong> Website scans completed</span>
+                    </p>
+                @endisset
+                <div class="inline-flex ml-auto w-fit shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3">
+                    <label for="save-public-history" class="inline-flex h-9 items-center gap-2 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
+                        <span>Save to public history</span>
+                    </label>
+                    <span class="group relative inline-flex">
+                        <button type="button" aria-label="Public history information" aria-describedby="public-history-hint"
+                            class="rounded-full text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                            @svg('carbon-information', 'h-4 w-4')
+                        </button>
+                        <span id="public-history-hint" role="tooltip"
+                            class="invisible absolute right-0 top-full z-10 mt-1 w-52 rounded-lg bg-slate-900 p-2 text-xs text-white group-hover:visible group-focus-within:visible">
+                            When enabled, your scan appears in public history. The report URL is public either way.
+                        </span>
                     </span>
-                </span>
-                    <span class="relative inline-flex items-center">
-                        <input type="hidden" name="save_to_history" value="0">
-                        <input id="save-public-history" type="checkbox" name="save_to_history" value="1" aria-describedby="public-history-hint" @checked(old('save_to_history', true)) class="peer absolute inset-0 z-10 m-0 h-full w-full cursor-pointer opacity-0">
-                        <span class="h-6 w-12 rounded-md bg-slate-200 transition peer-checked:bg-slate-500 peer-focus-visible:ring-2 peer-focus-visible:ring-slate-700"></span>
-                        <span class="absolute left-1 top-1 h-4 w-4 rounded-md bg-white shadow-lg transition peer-checked:translate-x-6"></span>
-                    </span>
+                        <span class="relative inline-flex items-center">
+                            <input type="hidden" name="save_to_history" value="0">
+                            <input id="save-public-history" type="checkbox" name="save_to_history" value="1" aria-describedby="public-history-hint" @checked(old('save_to_history', true)) class="peer absolute inset-0 z-10 m-0 h-full w-full cursor-pointer opacity-0">
+                            <span class="h-6 w-12 rounded-md bg-slate-200 transition peer-checked:bg-slate-500 peer-focus-visible:ring-2 peer-focus-visible:ring-slate-700"></span>
+                            <span class="absolute left-1 top-1 h-4 w-4 rounded-md bg-white shadow-lg transition peer-checked:translate-x-6"></span>
+                        </span>
+                </div>
             </div>
         </div>
     </form>

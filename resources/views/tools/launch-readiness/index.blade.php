@@ -57,13 +57,6 @@
 
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url')])
 
-        @isset($completedScanCount)
-            <p class="text-center text-sm text-slate-600">
-                <strong class="font-semibold tabular-nums text-slate-900">{{ number_format($completedScanCount) }}</strong>
-                Website scans completed
-            </p>
-        @endisset
-
         @if(($recentHistory ?? collect())->isNotEmpty())
             <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600" x-data
                 x-init="
