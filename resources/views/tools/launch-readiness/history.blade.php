@@ -6,14 +6,6 @@
 
 @section('content')
     @php
-        $statusRingClasses = static function (int $score): string {
-            return match (true) {
-                $score >= 90 => 'border-emerald-500 bg-emerald-50 text-emerald-700',
-                $score >= 75 => 'border-amber-400 bg-amber-50 text-amber-700',
-                default => 'border-rose-400 bg-rose-50 text-rose-600',
-            };
-        };
-
         $lastPage = $history->lastPage();
         $currentPage = $history->currentPage();
         $paginationPages = collect();
@@ -113,9 +105,7 @@
                                 </div>
                             </div>
 
-                            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold {{ $statusRingClasses((int) $item->launch_score) }}">
-                                {{ $item->launch_score }}
-                            </span>
+                            @include('tools.launch-readiness.partials.score-ring', ['score' => $item->launch_score])
                         </div>
 
                         <div class="mt-6 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">

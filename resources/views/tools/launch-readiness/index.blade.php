@@ -93,7 +93,8 @@
                                     class="absolute inset-0 h-full w-full object-contain">
                             @endif
                         </span>
-                        <span class="truncate">{{ $label }} · {{ $scan->launch_score }}/100</span>
+                        <span class="truncate">{{ $label }}</span>
+                        @include('tools.launch-readiness.partials.score-ring', ['score' => $scan->launch_score, 'compact' => true])
                     </span>
                 @endforeach
             </div>
