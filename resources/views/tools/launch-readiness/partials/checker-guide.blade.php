@@ -47,7 +47,7 @@
 
     <section>
         <h2 class="mb-2 text-xl font-semibold text-slate-900">How it works</h2>
-        <p>Enter a public homepage URL and select Analyze. Review errors first, then warnings. Follow the suggested fixes and scan again after making changes.</p>
+        <p>Enter a public homepage URL and select Check Website Readiness. Review errors first, then warnings. Follow the suggested fixes and scan again after making changes.</p>
     </section>
 
     <section class="space-y-4">
