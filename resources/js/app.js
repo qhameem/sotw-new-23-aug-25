@@ -356,6 +356,7 @@ function registerAlpineComponents(Alpine) {
         toolName: config.toolName ?? 'Website Launch Checker',
         submitting: false,
         scanProgress: '',
+        hasScanResult: config.hasScanResult ?? false,
         errorMessage: '',
         noticeMessage: config.initialNotice ?? '',
         shareModalOpen: false,
@@ -403,6 +404,7 @@ function registerAlpineComponents(Alpine) {
                 if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
                     this.$refs.reportContainer.innerHTML = payload.report_html;
                     Alpine.initTree(this.$refs.reportContainer);
+                    this.hasScanResult = true;
                 }
 
                 if (typeof payload.notice_message === 'string') {

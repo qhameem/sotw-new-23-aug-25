@@ -25,7 +25,7 @@
 @section('content')
     <div
         class="mx-auto max-w-4xl space-y-8"
-        x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', toolName: @js($toolBrandingSiteName) })"
+        x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', hasScanResult: @js(!empty($report['summary']['final_url'])), toolName: @js($toolBrandingSiteName) })"
     >
         <section class="pt-4 text-center">
             <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Website Launch Readiness Checker</h1>
@@ -110,8 +110,11 @@
             @endif
         </div>
 
-        @include('tools.launch-readiness.partials.checker-guide')
+        <div x-show="!hasScanResult" @if(!empty($report['summary']['final_url'])) x-cloak @endif>
+            @include('tools.launch-readiness.partials.checker-guide')
+        </div>
 
         @include('tools.launch-readiness.partials.share-modal')
+        @include('tools.launch-readiness.partials.fix-prompt-modal')
     </div>
 @endsection
