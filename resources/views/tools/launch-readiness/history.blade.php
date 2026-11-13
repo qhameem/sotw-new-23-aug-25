@@ -36,7 +36,7 @@
     <div class="mx-auto max-w-7xl space-y-8">
         <section class="flex flex-col gap-5 pt-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-                <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Is your site ready for launch?</h1>
+                <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Scan History</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-500">
                     View all previously completed site checks.
                 </p>
@@ -46,11 +46,11 @@
                 <div class="flex shrink-0 rounded-xl border border-slate-200 bg-white p-1 shadow-sm shadow-slate-200/30" aria-label="Sort history">
                     <a
                         href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'latest'])) }}"
-                        class="inline-flex h-9 items-center rounded-lg px-3 text-xs font-medium transition {{ $sort === 'latest' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                        class="inline-flex h-9 items-center rounded-lg px-3 text-xs font-medium transition {{ $sort === 'latest' ? 'bg-[var(--lr-brand)] text-[color:var(--lr-button-label)] shadow-[0_2px_0_var(--lr-brand-edge)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                     >Latest</a>
                     <a
                         href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'score'])) }}"
-                        class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition {{ $sort === 'score' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                        class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition {{ $sort === 'score' ? 'bg-[var(--lr-brand)] text-[color:var(--lr-button-label)] shadow-[0_2px_0_var(--lr-brand-edge)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                     >
                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.75 4a.75.75 0 0 1 .75.75v8.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06L3 13.44V4.75A.75.75 0 0 1 3.75 4ZM11 5.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" /></svg>
                         Highest score
