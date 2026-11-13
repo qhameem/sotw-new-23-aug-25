@@ -76,7 +76,7 @@
                     <span class="relative inline-flex items-center">
                         <input type="hidden" name="save_to_history" value="0">
                         <input id="save-public-history" type="checkbox" name="save_to_history" value="1" aria-describedby="public-history-hint" @checked(old('save_to_history', true)) class="peer sr-only">
-                        <span class="h-6 w-12 rounded-md bg-slate-200 transition peer-checked:bg-[var(--lr-brand)] peer-focus-visible:ring-2 peer-focus-visible:ring-slate-700"></span>
+                        <span class="h-6 w-12 rounded-md bg-slate-200 transition peer-checked:bg-slate-500 peer-focus-visible:ring-2 peer-focus-visible:ring-slate-700"></span>
                         <span class="absolute left-1 top-1 h-4 w-4 rounded-md bg-white shadow-lg transition peer-checked:translate-x-6"></span>
                     </span>
             </div>
