@@ -74,7 +74,7 @@
                             @if($hasIcon)
                                 <img src="{{ $iconUrl }}" alt="" referrerpolicy="no-referrer" x-cloak
                                     x-show="iconLoaded" x-init="iconLoaded = $el.complete && $el.naturalWidth > 0"
-                                    @load="iconLoaded = true" @error="iconLoaded = false"
+                                    x-on:load="iconLoaded = true" x-on:error="iconLoaded = false"
                                     class="absolute inset-0 h-full w-full object-contain">
                             @endif
                         </span>
