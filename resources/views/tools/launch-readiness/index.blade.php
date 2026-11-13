@@ -56,10 +56,30 @@
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url')])
 
         @if(($recentHistory ?? collect())->isNotEmpty())
-            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                 <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="font-semibold underline underline-offset-2">Recent public scans</a>
                 @foreach($recentHistory->take(3) as $scan)
-                    <span class="max-w-full truncate rounded-full border border-slate-200 bg-white px-3 py-1">{{ parse_url($scan->final_url ?: $scan->submitted_url, PHP_URL_HOST) }} · {{ $scan->launch_score }}/100</span>
+                    @php
+                        $host = parse_url($scan->final_url ?: $scan->submitted_url, PHP_URL_HOST);
+                        $label = preg_replace('/^www\./i', '', $host ?: $scan->submitted_url);
+                        $favicon = collect($scan->audit_payload['categories'] ?? [])
+                            ->flatMap(fn (array $category) => $category['checks'] ?? [])
+                            ->firstWhere('key', 'favicon');
+                        $iconUrl = ($favicon['status'] ?? null) === 'pass' ? ($favicon['meta']['preview_url'] ?? '') : '';
+                        $hasIcon = parse_url($iconUrl, PHP_URL_SCHEME) === 'https';
+                    @endphp
+                    <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1">
+                        <span x-data="{ iconLoaded: false }" class="relative h-3.5 w-3.5 shrink-0" aria-hidden="true">
+                            <span x-show="!iconLoaded">@svg('carbon-globe', 'h-3.5 w-3.5')</span>
+                            @if($hasIcon)
+                                <img src="{{ $iconUrl }}" alt="" referrerpolicy="no-referrer" x-cloak
+                                    x-show="iconLoaded" x-init="iconLoaded = $el.complete && $el.naturalWidth > 0"
+                                    @load="iconLoaded = true" @error="iconLoaded = false"
+                                    class="absolute inset-0 h-full w-full object-contain">
+                            @endif
+                        </span>
+                        <span class="truncate">{{ $label }} · {{ $scan->launch_score }}/100</span>
+                    </span>
                 @endforeach
             </div>
         @endif
