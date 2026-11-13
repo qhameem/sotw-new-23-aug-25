@@ -104,29 +104,41 @@
     ]);
 @endphp
 
+@if($summary['incomplete_reason'] ?? $summary['fatal_error'] ?? (parse_url($summary['final_url'] ?? '', PHP_URL_HOST) === 'consent.google.com' ? 'Google returned a consent page.' : null))
+    <section class="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-5">
+        <h2 class="text-lg font-semibold text-slate-900">Scan incomplete</h2>
+        <p>{{ $summary['incomplete_reason'] ?? $summary['fatal_error'] ?? 'Google returned a consent page.' }} Unable to verify page-level checks.</p>
+        <p class="break-all text-xs">Submitted: {{ $summary['submitted_url'] ?? $summary['normalized_url'] ?? '' }}</p>
+        <p class="break-all text-xs">Final: {{ $summary['final_url'] ?? '' }}</p>
+    </section>
+@else
 <div class="space-y-6">
     <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-4">
-                <div class="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full {{ $topScoreClasses($launchScore, $awaitingScan) }} text-xl font-semibold">
+            <div class="flex min-w-0 flex-1 items-center gap-4">
+                <div class="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-full {{ $topScoreClasses($launchScore, $awaitingScan) }} text-xl font-semibold">
                     {{ $launchScore ?? 0 }}
                 </div>
-                <div>
+                <div class="min-w-0">
                     <p x-cloak x-show="submitting" class="text-lg font-semibold text-slate-900">Running tests...</p>
                     <p x-show="!submitting" class="text-lg font-semibold text-slate-900">{{ $report['status_label'] ?? 'Awaiting scan' }}</p>
                     <p x-cloak x-show="submitting" class="mt-0.5 text-xs leading-5 text-slate-400">
-                        Running parallel tests...
+                        Fetching the page and running checks…
                     </p>
                     <p x-show="!submitting" class="mt-0.5 text-xs leading-5 text-slate-400">
                         {{ $summary['fatal_error'] ?: ($postScanSummary !== '' ? $postScanSummary : 'Enter a URL and run an audit.') }}
                     </p>
                     @if(!empty($summary['final_url']))
-                        <p x-show="!submitting" class="mt-1 text-xs text-slate-500">{{ $summary['final_url'] }}</p>
+                        @isset($summary['html_bytes'], $summary['page_fetch_seconds'])
+                            <p class="mt-1 text-xs text-slate-600">Page fetch {{ $summary['page_fetch_seconds'] }}s · HTML {{ number_format($summary['html_bytes'] / 1024, 1) }} KiB</p>
+                        @endisset
+                        <p class="mt-1 break-all text-xs text-slate-600">Submitted: {{ $summary['submitted_url'] ?? $summary['normalized_url'] ?? $summary['final_url'] }}</p>
+                        <p class="mt-1 break-all text-xs text-slate-600">Final: {{ $summary['final_url'] }}</p>
                     @endif
                 </div>
             </div>
 
-            <div class="flex items-center justify-between gap-4 sm:gap-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 lg:shrink-0">
                 <div class="flex-1 text-center">
                     <div class="text-2xl font-semibold text-slate-900">{{ $report['passed_checks'] ?? 0 }}</div>
                     <div class="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">Passed</div>
@@ -173,6 +185,22 @@
             @endif
         @endif
     </section>
+
+    @php
+        $priority = collect($report['categories'] ?? [])->pluck('checks')->collapse()
+            ->filter(fn ($check) => in_array($check['status'], ['fail', 'warning'], true) && !empty($check['fix']))
+            ->sortBy(fn ($check) => $check['status'] === 'fail' ? 0 : 1)->take(3);
+    @endphp
+    @if($priority->isNotEmpty())
+        <section class="rounded-xl border border-slate-200 bg-white p-5">
+            <h2 class="font-semibold text-slate-900">Fix these first</h2>
+            <ul class="mt-2 list-disc space-y-2 pl-5 text-sm">
+                @foreach($priority as $issue)
+                    <li><strong>{{ $issue['label'] }}</strong> · {{ $issue['fix'] }}</li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
 
     @foreach(($report['categories'] ?? []) as $category)
         <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
@@ -326,3 +354,4 @@
         </section>
     @endforeach
 </div>
+@endif

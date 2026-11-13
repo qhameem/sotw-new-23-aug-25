@@ -156,6 +156,23 @@ class LaunchReadinessToolTest extends TestCase
         $resultResponse->assertSee('Act as a senior web engineer specializing in technical SEO', false);
     }
 
+    public function test_incomplete_scan_does_not_publish_a_scored_report(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        Http::fake(['https://example.com/consent' => Http::response('<html>Consent required</html>')]);
+
+        $response = $this->postJson(route('launch-readiness.analyze', ['toolSlug' => $slug]), [
+            'url' => 'https://example.com/consent',
+            'save_to_history' => true,
+        ]);
+
+        $response->assertOk()->assertJsonPath('scan_complete', false);
+        $scan = ToolScan::query()->sole();
+        $this->assertFalse($scan->save_to_history);
+        $this->get(route('launch-readiness.results.show', ['toolSlug' => $slug, 'toolScan' => $scan]))
+            ->assertOk()->assertSee('Scan incomplete')->assertDontSee('Generate fix prompt');
+    }
+
     public function test_launch_readiness_meta_description_check_warns_when_description_is_too_short(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
@@ -583,7 +600,7 @@ class LaunchReadinessToolTest extends TestCase
 
         $homepageResponse = $this->get(route('launch-readiness.index', ['toolSlug' => 'website-launch-checker']));
         $homepageResponse->assertOk();
-        $homepageResponse->assertSee('Check if your website is ready to launch');
+        $homepageResponse->assertSee('Website Launch Readiness Checker');
         $homepageResponse->assertSee('Free Website Launch Checker | Audit Your Site Before You Launch', false);
         $homepageResponse->assertSee('Use this free Website Launch Checker to audit your site before launch. Check SEO, trust, technical issues, and AI visibility in minutes.', false);
         $homepageResponse->assertSee(Storage::url($branding['og_image_path']), false);

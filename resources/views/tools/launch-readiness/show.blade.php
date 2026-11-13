@@ -42,7 +42,9 @@
 
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url', $scan?->submitted_url)])
 
-        <div x-ref="reportContainer">
+        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600" x-text="scanProgress"></p>
+
+        <div x-ref="reportContainer" aria-live="polite">
             @include('tools.launch-readiness.partials.report', ['report' => $report])
         </div>
 

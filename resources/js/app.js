@@ -355,6 +355,7 @@ function registerAlpineComponents(Alpine) {
         csrfToken: config.csrfToken ?? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
         toolName: config.toolName ?? 'Website Launch Checker',
         submitting: false,
+        scanProgress: '',
         errorMessage: '',
         noticeMessage: config.initialNotice ?? '',
         shareModalOpen: false,
@@ -374,6 +375,7 @@ function registerAlpineComponents(Alpine) {
         async submitAnalyze(event) {
             const form = event.target;
             this.submitting = true;
+            this.scanProgress = 'Fetching the page and running checks…';
             this.errorMessage = '';
             this.closeShareModal();
 
@@ -396,6 +398,8 @@ function registerAlpineComponents(Alpine) {
                     return;
                 }
 
+                this.scanProgress = 'Preparing the report…';
+
                 if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
                     this.$refs.reportContainer.innerHTML = payload.report_html;
                     Alpine.initTree(this.$refs.reportContainer);
@@ -411,7 +415,9 @@ function registerAlpineComponents(Alpine) {
 
                 if (typeof payload.result_url === 'string' && payload.result_url !== '') {
                     window.history.pushState({ launchReadiness: true }, '', payload.result_url);
-                    this.openShareModal(payload.result_url, payload.share_target ?? '', payload.share_summary ?? {});
+                    if (payload.scan_complete !== false) {
+                        this.openShareModal(payload.result_url, payload.share_target ?? '', payload.share_summary ?? {});
+                    }
                 }
             } catch (error) {
                 console.error('Launch readiness analyze error:', error);

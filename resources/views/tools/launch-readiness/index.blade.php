@@ -102,7 +102,7 @@
             </div>
         @endif
 
-        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600">Fetching the page and checking metadata, technical settings, and AI visibility signals…</p>
+        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600" x-text="scanProgress"></p>
 
         <div x-ref="reportContainer" aria-live="polite">
             @if(!empty($report['summary']['final_url']))

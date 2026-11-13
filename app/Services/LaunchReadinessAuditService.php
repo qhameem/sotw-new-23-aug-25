@@ -77,12 +77,25 @@ class LaunchReadinessAuditService
         try {
             $response = $this->fetch($normalizedUrl);
             $finalUrl = $response->effectiveUri()?->__toString() ?: $normalizedUrl;
+            $pageFetchSeconds = microtime(true) - $startedAt;
+            $finalHost = parse_url($finalUrl, PHP_URL_HOST);
+            $finalPath = parse_url($finalUrl, PHP_URL_PATH) ?: '/';
+            $incompleteReason = match (true) {
+                $finalHost === 'consent.google.com' || preg_match('~^/(?:consent|captcha|challenge)(?:/|$)~i', $finalPath) => 'The request reached a consent or verification page.',
+                ! $response->successful() => 'The page returned HTTP '.$response->status().'.',
+                trim($response->body()) === '' => 'The page returned an empty response.',
+                ! preg_match('~(?:text/html|application/xhtml\+xml)~i', $response->header('Content-Type') ?: 'text/html') => 'The destination did not return HTML.',
+                default => null,
+            };
+            if ($incompleteReason !== null) {
+                return $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl, $incompleteReason);
+            }
+
             $siteRoot = $this->siteRoot($finalUrl);
             $robotsResponse = $this->fetchOptional($siteRoot.'/robots.txt');
             $sitemapResponse = $this->fetchOptional($siteRoot.'/sitemap.xml');
         } catch (\Throwable $exception) {
-            $fatalError = $exception->getMessage();
-            $finalUrl = $normalizedUrl;
+            return $this->incompleteReport($inputUrl, $normalizedUrl, $normalizedUrl, 'The requested page could not be fetched.');
         }
 
         $finalHost = parse_url($finalUrl, PHP_URL_HOST);
@@ -191,11 +204,30 @@ class LaunchReadinessAuditService
                 'final_host' => $finalHost,
                 'scanned_at' => now()->toIso8601String(),
                 'page_title' => $content['title'],
+                'page_fetch_seconds' => round($pageFetchSeconds, 2),
+                'html_bytes' => strlen($html),
                 'fatal_error' => $fatalError,
                 'total_test_time_seconds' => $totalTestTimeSeconds,
             ],
             'categories' => $categories,
         ];
+    }
+
+    private function incompleteReport(string $submittedUrl, string $normalizedUrl, string $finalUrl, string $reason): array
+    {
+        $report = $this->pendingReport();
+        $report['status_label'] = 'Scan incomplete';
+        $report['categories'] = [];
+        $report['summary'] = array_replace($report['summary'], [
+            'submitted_url' => $submittedUrl,
+            'normalized_url' => $normalizedUrl,
+            'final_url' => $finalUrl,
+            'final_host' => parse_url($finalUrl, PHP_URL_HOST),
+            'scanned_at' => now()->toIso8601String(),
+            'incomplete_reason' => $reason,
+        ]);
+
+        return $report;
     }
 
     public function normalizeUrl(string $inputUrl): string
@@ -345,8 +377,7 @@ class LaunchReadinessAuditService
 
         foreach ($nodes ?: [] as $node) {
             $imagesCount++;
-            $alt = trim((string) $node->attributes?->getNamedItem('alt')?->nodeValue);
-            if ($alt !== '') {
+            if ($node->attributes?->getNamedItem('alt') !== null) {
                 $imagesWithAlt++;
             }
         }
@@ -598,17 +629,19 @@ class LaunchReadinessAuditService
             return $this->warning('No images were found, so there is no visual support to evaluate.');
         }
 
-        $ratio = $imagesWithAlt / max(1, $imagesCount);
+        $missing = $imagesCount - $imagesWithAlt;
+        $finding = "{$missing} of {$imagesCount} images have no alt attribute.";
+        $ratio = $imagesWithAlt / $imagesCount;
 
         if ($ratio >= 0.8) {
-            return $this->pass('Most images include alt text.');
+            return $this->pass($finding);
         }
 
         if ($imagesWithAlt > 0) {
-            return $this->warning('Some images are missing alt text.');
+            return $this->warning($finding);
         }
 
-        return $this->fail('Image alt text is missing across the page.');
+        return $this->fail($finding);
     }
 
     private function httpsRedirectResult(string $normalizedUrl, string $finalUrl): array
@@ -757,11 +790,11 @@ class LaunchReadinessAuditService
     private function internalLinksResult(int $count): array
     {
         if ($count >= 3) {
-            return $this->pass('The page includes multiple internal links.');
+            return $this->pass("Detected {$count} internal links.");
         }
 
         if ($count >= 1) {
-            return $this->warning('The page includes only a small number of internal links.');
+            return $this->warning("Detected {$count} internal links.");
         }
 
         return $this->warning('No internal links were detected.');
