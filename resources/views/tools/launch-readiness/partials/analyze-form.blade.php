@@ -7,7 +7,21 @@
         method="POST"
         action="{{ route('launch-readiness.analyze', ['toolSlug' => $toolSlug]) }}"
         class="flex flex-col gap-3"
-        @submit.prevent="submitAnalyze($event)"
+        x-data="{
+            websiteUrl: @js($submittedUrl ?? ''),
+            get hasValidWebsiteUrl() {
+                const candidate = this.websiteUrl.trim();
+                if (!candidate || /\s/.test(candidate)) return false;
+
+                try {
+                    const url = new URL(candidate.includes('://') ? candidate : 'https://' + candidate);
+                    return ['http:', 'https:'].includes(url.protocol) && (url.hostname.includes('.') || url.hostname.startsWith('['));
+                } catch {
+                    return false;
+                }
+            }
+        }"
+        @submit.prevent="if (hasValidWebsiteUrl && !submitting) submitAnalyze($event)"
     >
         @csrf
         <div class="min-w-0 flex-1">
@@ -17,7 +31,7 @@
                     <path d="M23.0551 14.2115 29.9971 7.2694c2.6788-2.6788 7.5386-2.1623 10.2172.5164s3.1951 7.5384.5163 10.2172L30.4481 28.2856c-2.6788 2.6788-7.5386 2.1623-10.2172-.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     <path d="M24.9449 33.7885 18.0029 40.7306c-2.6788 2.6788-7.5386 2.1623-10.2172-.5164S4.5906 32.6758 7.2694 29.997L17.5519 19.7144c2.6788-2.6788 7.5386-2.1623 10.2172.5163" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                 </svg>
-                <input id="url" name="url" type="text" value="{{ $submittedUrl }}" placeholder="https://your-site.com" autofocus class="h-9 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-600 focus:outline-none focus:ring-0">
+                <input id="url" name="url" type="text" inputmode="url" x-model="websiteUrl" required value="{{ $submittedUrl }}" placeholder="https://your-site.com" autofocus class="h-9 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-600 focus:outline-none focus:ring-0">
 
             </div>
         </div>
@@ -26,9 +40,10 @@
             <div class="flex w-full items-center">
                 <button
                     type="submit"
-                    :disabled="submitting"
-                    :class="submitting ? 'cursor-wait' : 'hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none'"
-                    class="inline-flex h-12 w-full whitespace-nowrap items-center justify-center gap-2 rounded-xl border-2 border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-5 text-sm font-bold text-[color:var(--lr-button-label)] shadow-[0_4px_0_var(--lr-brand-edge),0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 disabled:opacity-100"
+                    disabled
+                    :disabled="submitting || !hasValidWebsiteUrl"
+                    :class="submitting ? 'cursor-wait' : !hasValidWebsiteUrl ? 'cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none'"
+                    class="inline-flex h-12 w-full whitespace-nowrap items-center justify-center gap-2 rounded-xl border-2 border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-5 text-sm font-bold text-[color:var(--lr-button-label)] shadow-[0_4px_0_var(--lr-brand-edge),0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 disabled:opacity-60"
                 >
                     <svg
                         x-cloak
