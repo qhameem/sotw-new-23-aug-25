@@ -188,9 +188,23 @@
 
     @php
         $priority = collect($report['categories'] ?? [])->pluck('checks')->collapse()
-            ->filter(fn ($check) => in_array($check['status'], ['fail', 'warning'], true) && !empty($check['fix']))
+            ->filter(fn ($check) => in_array($check['status'], ['fail', 'warning'], true) && !empty($check['fix']) && empty($check['meta']['launch_blocker']))
             ->sortBy(fn ($check) => $check['status'] === 'fail' ? 0 : 1)->take(3);
     @endphp
+    @php
+        $blockers = collect($report['categories'] ?? [])->pluck('checks')->collapse()->filter(fn ($check) => !empty($check['meta']['launch_blocker']));
+    @endphp
+    @if($blockers->isNotEmpty())
+        <section class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <h2 class="font-semibold text-rose-900">Launch blockers</h2>
+            <ul class="mt-2 list-disc space-y-2 pl-5 text-sm">
+                @foreach($blockers as $issue)
+                    <li><strong>{{ $issue['label'] }}</strong> · {{ $issue['fix'] }}</li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     @if($priority->isNotEmpty())
         <section class="rounded-xl border border-slate-200 bg-white p-5">
             <h2 class="font-semibold text-slate-900">Fix these first</h2>
@@ -300,6 +314,16 @@
                                     @endif
                                 </div>
                                 <p class="mt-1 text-xs text-slate-500">{{ $check['summary'] }}</p>
+                                @if(!empty($check['meta']['evidence']))
+                                    <details class="mt-2 text-xs text-slate-600">
+                                        <summary class="cursor-pointer font-medium">Affected resources</summary>
+                                        <ul class="mt-1 list-disc space-y-1 pl-4">
+                                            @foreach($check['meta']['evidence'] as $evidence)
+                                                <li class="break-all">{{ $evidence }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </details>
+                                @endif
                                 @if(!empty($check['meta']['preview_url']))
                                     @if(($check['key'] ?? null) === 'open_graph_image')
                                         <div class="mt-3 w-full overflow-hidden rounded-xl">

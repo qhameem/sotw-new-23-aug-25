@@ -119,6 +119,9 @@ class LaunchReadinessToolTest extends TestCase
                 'X-Content-Type-Options' => 'nosniff',
                 'X-Frame-Options' => 'SAMEORIGIN',
             ]),
+            'https://example.com/og.png' => Http::response('', 200, ['Content-Type' => 'image/png']),
+            'https://example.com/pricing' => Http::response('', 404),
+            'https://example.com/privacy' => Http::response('', 403),
             'https://example.com/favicon.ico' => Http::response('ico', 200, [
                 'Content-Type' => 'image/x-icon',
             ]),
@@ -154,6 +157,26 @@ class LaunchReadinessToolTest extends TestCase
         $resultResponse->assertSee('Generate fix prompt');
         $resultResponse->assertSee('Fix issues with an LLM');
         $resultResponse->assertSee('Act as a senior web engineer specializing in technical SEO', false);
+    }
+
+    public function test_audit_distinguishes_fallbacks_and_unverified_resources(): void
+    {
+        Http::fake([
+            'https://example.com' => Http::response('<meta name="robots" content="noindex"><meta property="og:image" content="/preview"><img src="/missing.png"><img src="/decorative.png" alt=""><a href="/gone">Gone</a><a href="/blocked">Blocked</a>'),
+            'https://example.com/gone' => Http::response('', 410),
+            'https://example.com/blocked' => Http::response('', 403),
+            'https://example.com/*' => Http::response('<html>Fallback</html>', 200, ['Content-Type' => 'text/html']),
+        ]);
+
+        $report = app(\App\Services\LaunchReadinessAuditService::class)->run('https://example.com');
+        $checks = collect($report['categories'])->pluck('checks')->collapse()->keyBy('key');
+
+        foreach (['robots_txt', 'sitemap_xml', 'open_graph_image'] as $key) {
+            $this->assertSame('warning', $checks[$key]['status']);
+        }
+        $this->assertTrue($checks['indexability']['meta']['launch_blocker']);
+        $this->assertSame(['Missing alt attribute · /missing.png', 'Empty alt text · /decorative.png'], $checks['image_alt_text']['meta']['evidence']);
+        $this->assertSame(['HTTP 410 · https://example.com/gone', 'Unable to verify (HTTP 403) · https://example.com/blocked'], $checks['internal_links']['meta']['evidence']);
     }
 
     public function test_incomplete_scan_does_not_publish_a_scored_report(): void

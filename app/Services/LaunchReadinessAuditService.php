@@ -4,6 +4,8 @@ namespace App\Services;
 
 use DOMDocument;
 use DOMXPath;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -125,7 +127,7 @@ class LaunchReadinessAuditService
             'html_lang' => $this->htmlLangResult($content['html_lang']),
             'h1_tag' => $this->h1Result($content['h1_count']),
             'heading_hierarchy' => $this->headingHierarchyResult($content['h1_count'], $content['h2_count']),
-            'image_alt_text' => $this->imageAltResult($content['images_count'], $content['images_with_alt']),
+            'image_alt_text' => $this->imageAltResult($content['images_count'], $content['images_with_alt'], $content['images_with_empty_alt'], $content['image_evidence']),
             'https_redirects' => $this->httpsRedirectResult($normalizedUrl, $finalUrl),
             'indexability' => $this->indexabilityResult($content['robots_meta'], $headers['X-Robots-Tag'][0] ?? null),
             'security_headers' => $this->securityHeadersResult($headers),
@@ -138,7 +140,7 @@ class LaunchReadinessAuditService
             'open_graph_image' => $this->openGraphImageResult($content['og']['image'] ?? null),
             'twitter_card' => $this->twitterCardResult($content['twitter_card']),
             'structured_data' => $this->structuredDataResult($content['structured_data_count']),
-            'internal_links' => $this->internalLinksResult($content['internal_links']),
+            'internal_links' => $this->internalLinksResult($content['internal_links'], $content['link_targets']),
             'external_links' => $this->externalLinksResult($content['external_links']),
             'privacy_contact' => $this->privacyContactResult($content['trust_links']),
             'primary_cta' => $this->primaryCtaResult($content['cta_texts']),
@@ -366,6 +368,9 @@ class LaunchReadinessAuditService
 
         $imagesCount = 0;
         $imagesWithAlt = 0;
+        $imagesWithEmptyAlt = 0;
+        $imageEvidence = [];
+        $linkTargets = [];
         $inputsCount = 0;
         $labeledInputs = 0;
         $internalLinks = 0;
@@ -377,8 +382,14 @@ class LaunchReadinessAuditService
 
         foreach ($nodes ?: [] as $node) {
             $imagesCount++;
-            if ($node->attributes?->getNamedItem('alt') !== null) {
+            $alt = $node->attributes?->getNamedItem('alt');
+            if (($alt === null || trim($alt->nodeValue) === '') && count($imageEvidence) < 8) {
+                $imageEvidence[] = ($alt === null ? 'Missing alt attribute' : 'Empty alt text')
+                    .' · '.Str::limit($node->getAttribute('src') ?: 'Image without src', 240);
+            }
+            if ($alt !== null) {
                 $imagesWithAlt++;
+                $imagesWithEmptyAlt += (int) (trim($alt->nodeValue) === '');
             }
         }
 
@@ -421,6 +432,19 @@ class LaunchReadinessAuditService
 
             if (Str::startsWith($href, '#')) {
                 continue;
+            }
+
+            if (count($linkTargets) < 5) {
+                try {
+                    $base = new Uri($finalUrl);
+                    $target = UriResolver::resolve($base, new Uri($href))->withFragment('');
+                    if ($target->getScheme() === $base->getScheme() && $target->getAuthority() === $base->getAuthority()
+                        && $target->getUserInfo() === '' && (string) $target !== $finalUrl) {
+                        $linkTargets[(string) $target] = true;
+                    }
+                } catch (\InvalidArgumentException) {
+                    // Ignore malformed link destinations.
+                }
             }
 
             if (Str::startsWith($href, '/')) {
@@ -468,6 +492,9 @@ class LaunchReadinessAuditService
             'landmarks' => $landmarks,
             'images_count' => $imagesCount,
             'images_with_alt' => $imagesWithAlt,
+            'images_with_empty_alt' => $imagesWithEmptyAlt,
+            'image_evidence' => $imageEvidence,
+            'link_targets' => array_keys($linkTargets),
             'internal_links' => $internalLinks,
             'external_links' => $externalLinks,
             'trust_links' => $trustLinks,
@@ -623,7 +650,7 @@ class LaunchReadinessAuditService
         return $this->pass('The page uses multiple heading levels.');
     }
 
-    private function imageAltResult(int $imagesCount, int $imagesWithAlt): array
+    private function imageAltResult(int $imagesCount, int $imagesWithAlt, int $imagesWithEmptyAlt, array $evidence): array
     {
         if ($imagesCount === 0) {
             return $this->warning('No images were found, so there is no visual support to evaluate.');
@@ -631,17 +658,20 @@ class LaunchReadinessAuditService
 
         $missing = $imagesCount - $imagesWithAlt;
         $finding = "{$missing} of {$imagesCount} images have no alt attribute.";
-        $ratio = $imagesWithAlt / $imagesCount;
+        $finding .= " {$imagesWithEmptyAlt} have empty alt text.";
+        if ($imagesWithEmptyAlt > 0) {
+            $finding .= ' Check that images with empty alt text are decorative.';
+        }
 
-        if ($ratio >= 0.8) {
+        if ($missing === 0 && $imagesWithEmptyAlt === 0) {
             return $this->pass($finding);
         }
 
         if ($imagesWithAlt > 0) {
-            return $this->warning($finding);
+            return $this->warning($finding, ['evidence' => $evidence]);
         }
 
-        return $this->fail($finding);
+        return $this->fail($finding, ['evidence' => $evidence]);
     }
 
     private function httpsRedirectResult(string $normalizedUrl, string $finalUrl): array
@@ -662,7 +692,7 @@ class LaunchReadinessAuditService
         $value = Str::lower(trim($robotsMeta.' '.$xRobots));
 
         if (Str::contains($value, 'noindex')) {
-            return $this->fail('The page signals noindex, which blocks search visibility.');
+            return $this->fail('The page signals noindex, which blocks search visibility.', ['launch_blocker' => true]);
         }
 
         return $this->pass('No noindex directive was detected.');
@@ -700,11 +730,24 @@ class LaunchReadinessAuditService
 
     private function simpleFileResult(?Response $response, string $label): array
     {
-        if ($response && $response->successful()) {
-            return $this->pass("{$label} is available.");
+        if ($response === null) {
+            return $this->warning("Unable to verify {$label}. No HTTP response was received.");
         }
 
-        return $this->warning("{$label} was not found at the standard path.");
+        $status = $response->status();
+
+        if (! $response->successful()) {
+            return $this->warning("{$label} returned HTTP {$status}.");
+        }
+
+        $body = ltrim($response->body(), "\xEF\xBB\xBF \t\r\n");
+        $valid = $label === 'robots.txt'
+            ? ! str_contains($body, '<') && preg_match('/^\s*(?:user-agent|allow|disallow|sitemap)\s*:/im', $body)
+            : in_array((@simplexml_load_string($body, options: LIBXML_NONET) ?: null)?->getName(), ['urlset', 'sitemapindex'], true);
+
+        return $valid
+            ? $this->pass("{$label} returned HTTP {$status} with the expected format.")
+            : $this->warning("{$label} returned HTTP {$status}, but its content did not match the expected format.");
     }
 
     private function formLabelsResult(int $formsCount, int $labeledInputs, int $inputsCount): array
@@ -735,49 +778,61 @@ class LaunchReadinessAuditService
 
     private function openGraphBasicsResult(array $og): array
     {
-        $present = collect([$og['title'] ?? null, $og['description'] ?? null, $og['type'] ?? null])
-            ->filter(fn (?string $value) => filled($value))
-            ->count();
-
-        if ($present > 0) {
-            if ($present < 3) {
-                return $this->warning('Some Open Graph fields are present, but the set is incomplete.');
+        $missing = [];
+        foreach (['title', 'description', 'type'] as $field) {
+            if (blank($og[$field] ?? null)) {
+                $missing[] = "og:{$field}";
             }
-
-            $lengthWarnings = [];
-            $ogTitleLength = Str::length((string) ($og['title'] ?? ''));
-            $ogDescriptionLength = Str::length((string) ($og['description'] ?? ''));
-
-            if ($ogTitleLength > 0 && ($ogTitleLength < self::TITLE_RECOMMENDED_MIN || $ogTitleLength > self::TITLE_RECOMMENDED_MAX)) {
-                $lengthWarnings[] = "og:title ({$ogTitleLength} chars, recommended " . self::TITLE_RECOMMENDED_MIN . '-' . self::TITLE_RECOMMENDED_MAX . ')';
-            }
-
-            if ($ogDescriptionLength > 0 && ($ogDescriptionLength < self::META_DESCRIPTION_RECOMMENDED_MIN || $ogDescriptionLength > self::META_DESCRIPTION_RECOMMENDED_MAX)) {
-                $lengthWarnings[] = "og:description ({$ogDescriptionLength} chars, recommended " . self::META_DESCRIPTION_RECOMMENDED_MIN . '-' . self::META_DESCRIPTION_RECOMMENDED_MAX . ')';
-            }
-
-            if ($lengthWarnings !== []) {
-                return $this->warning('Core Open Graph fields are present, but recommended lengths could be improved for ' . implode(' and ', $lengthWarnings) . '.');
-            }
-
-            return $this->pass('Core Open Graph fields are present.');
         }
 
-        return $this->warning('Open Graph basics were not detected.');
+        if ($missing !== []) {
+            return $this->warning('Missing or empty tags: '.implode(', ', $missing).'.');
+        }
+
+        $lengthWarnings = [];
+        $ogTitleLength = Str::length((string) ($og['title'] ?? ''));
+        $ogDescriptionLength = Str::length((string) ($og['description'] ?? ''));
+
+        if ($ogTitleLength > 0 && ($ogTitleLength < self::TITLE_RECOMMENDED_MIN || $ogTitleLength > self::TITLE_RECOMMENDED_MAX)) {
+            $lengthWarnings[] = "og:title ({$ogTitleLength} chars, recommended " . self::TITLE_RECOMMENDED_MIN . '-' . self::TITLE_RECOMMENDED_MAX . ')';
+        }
+
+        if ($ogDescriptionLength > 0 && ($ogDescriptionLength < self::META_DESCRIPTION_RECOMMENDED_MIN || $ogDescriptionLength > self::META_DESCRIPTION_RECOMMENDED_MAX)) {
+            $lengthWarnings[] = "og:description ({$ogDescriptionLength} chars, recommended " . self::META_DESCRIPTION_RECOMMENDED_MIN . '-' . self::META_DESCRIPTION_RECOMMENDED_MAX . ')';
+        }
+
+        if ($lengthWarnings !== []) {
+            return $this->warning('Core Open Graph fields are present, but recommended lengths could be improved for ' . implode(' and ', $lengthWarnings) . '.');
+        }
+
+        return $this->pass('Core Open Graph fields are present.');
     }
 
     private function openGraphImageResult(?string $image): array
     {
-        return filled($image)
-            ? $this->pass('An Open Graph image is present.', ['preview_url' => $image])
-            : $this->warning('No Open Graph image was detected.');
+        if (blank($image)) {
+            return $this->warning('Missing or empty tag: og:image.');
+        }
+
+        $response = $this->probePublicAsset($image);
+        if ($response === null) {
+            return $this->warning('Unable to verify the Open Graph image.');
+        }
+
+        $status = $response->status();
+        $type = $response->header('Content-Type');
+        if ($response->successful() && Str::startsWith(Str::lower($type), 'image/')) {
+            return $this->pass("og:image returned HTTP {$status} with an image content type.", ['preview_url' => $image]);
+        }
+
+        return $this->warning("Unable to verify og:image as an image. HTTP {$status} · ".($type ?: 'no content type').'.');
     }
 
     private function twitterCardResult(string $twitterCard): array
     {
         return $twitterCard !== ''
             ? $this->pass('A Twitter card tag is present.')
-            : $this->warning('No Twitter card tag was detected.');
+            : $this->warning('Missing or empty tag: twitter:card.');
     }
 
     private function structuredDataResult(int $count): array
@@ -787,17 +842,43 @@ class LaunchReadinessAuditService
             : $this->warning('No JSON-LD structured data was detected.');
     }
 
-    private function internalLinksResult(int $count): array
+    private function probePublicAsset(string $url): ?Response
     {
-        if ($count >= 3) {
-            return $this->pass("Detected {$count} internal links.");
+        if (! in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            return null;
         }
 
-        if ($count >= 1) {
-            return $this->warning("Detected {$count} internal links.");
+        try {
+            $this->assertSafeHost($url);
+
+            return Http::timeout(2)->connectTimeout(1)->withoutRedirecting()->head($url);
+        } catch (RuntimeException|ConnectionException) {
+            return null;
+        }
+    }
+
+    private function internalLinksResult(int $count, array $targets): array
+    {
+        $broken = [];
+        $unverified = [];
+        foreach ($targets as $url) {
+            $response = $this->probePublicAsset($url);
+            $status = $response?->status();
+            if (in_array($status, [404, 410], true)) {
+                $broken[] = "HTTP {$status} · ".$url;
+            } elseif (! $response?->successful()) {
+                $unverified[] = ($status ? "Unable to verify (HTTP {$status})" : 'Unable to verify (no response)').' · '.$url;
+            }
         }
 
-        return $this->warning('No internal links were detected.');
+        $summary = "Detected {$count} internal links. Probed ".count($targets).' unique same-origin destinations.';
+        $summary .= ' '.count($broken).' returned HTTP 404 or 410. '.count($unverified).' could not be verified.';
+        $meta = ['evidence' => array_merge($broken, $unverified)];
+        if ($broken !== [] || $unverified !== [] || $count < 3) {
+            return $this->warning($summary, $meta);
+        }
+
+        return $this->pass($summary);
     }
 
     private function externalLinksResult(int $count): array
