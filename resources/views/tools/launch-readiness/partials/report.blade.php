@@ -165,7 +165,7 @@
                     <button
                         type="button"
                         @click="openFixPrompt(@js($remediationPrompt))"
-                        class="inline-flex h-8 items-center rounded-lg border border-[#b17915] bg-[#eb9e2b] px-3 text-xs font-bold text-black shadow-[0_2px_0_#c77f12,0_4px_8px_rgba(15,23,42,0.12)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none focus:outline-none focus:ring-2 focus:ring-[#eb9e2b]/30 focus:ring-offset-2"
+                        class="inline-flex h-8 items-center rounded-lg border border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-3 text-xs font-bold text-[var(--lr-brand-text)] shadow-[0_2px_0_var(--lr-brand-edge),0_4px_8px_rgba(15,23,42,0.12)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none focus:outline-none focus:ring-2 focus:ring-[var(--lr-brand)] focus:ring-offset-2"
                     >
                         Generate fix prompt
                     </button>

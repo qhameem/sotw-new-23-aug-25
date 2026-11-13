@@ -41,7 +41,30 @@ class LaunchReadinessBranding
             'font_size' => 16,
             'font_color' => '#161616',
             'background_color' => '#f5f5f4',
+            'brand_color' => '#eb9e2b',
         ];
+    }
+
+    public function brandColor(): string
+    {
+        $color = $this->get()['brand_color'] ?? null;
+
+        return is_string($color) && preg_match('/^#[a-f0-9]{6}$/iD', $color)
+            ? $color
+            : $this->defaults()['brand_color'];
+    }
+
+    public function brandTextColor(string $color): string
+    {
+        $channels = array_map(static function (string $hex): float {
+            $channel = hexdec($hex) / 255;
+
+            return $channel <= 0.04045 ? $channel / 12.92 : (($channel + 0.055) / 1.055) ** 2.4;
+        }, str_split(substr($color, 1), 2));
+
+        $luminance = 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+
+        return $luminance >= 0.179 ? '#000000' : '#ffffff';
     }
 
     public function get(): array

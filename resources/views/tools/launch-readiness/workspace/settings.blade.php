@@ -222,6 +222,13 @@
                                             </div>
 
                                             <div>
+                                                <label for="branding_brand_color" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Branding color</label>
+                                                <input id="branding_brand_color" name="brand_color" type="color"
+                                                    value="{{ old('brand_color', app(\App\Support\LaunchReadinessBranding::class)->brandColor()) }}"
+                                                    class="block h-[52px] w-16 rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2">
+                                            </div>
+
+                                            <div>
                                                 <label for="branding_background_color" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Background color</label>
                                                 <div class="flex items-center gap-3">
                                                     <input
