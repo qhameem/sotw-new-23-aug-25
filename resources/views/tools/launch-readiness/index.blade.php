@@ -32,6 +32,13 @@
             <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-sm">
                 Is your site ready for launch? Audit your homepage for SEO, accessibility, trust, and AI visibility signals. Get passed checks, warnings, errors, and suggested fixes.
             </p>
+            <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+                <span class="relative flex h-2 w-2" aria-hidden="true">
+                    <span class="absolute inset-0 rounded-full bg-green-500 opacity-60 motion-safe:animate-ping"></span>
+                    <span class="relative h-2 w-2 rounded-full bg-green-500"></span>
+                </span>
+                <span>Free • No signup required</span>
+            </div>
         </section>
 
         @if($errors->any())
