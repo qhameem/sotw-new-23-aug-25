@@ -42,6 +42,7 @@ class LaunchReadinessBranding
             'font_color' => '#161616',
             'background_color' => '#f5f5f4',
             'brand_color' => '#eb9e2b',
+            'brand_text_color' => null,
         ];
     }
 
@@ -56,6 +57,11 @@ class LaunchReadinessBranding
 
     public function brandTextColor(string $color): string
     {
+        $custom = $this->get()['brand_text_color'] ?? null;
+        if (is_string($custom) && preg_match('/^#[a-f0-9]{6}$/iD', $custom)) {
+            return $custom;
+        }
+
         $channels = array_map(static function (string $hex): float {
             $channel = hexdec($hex) / 255;
 

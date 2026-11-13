@@ -238,6 +238,16 @@
                                             </div>
 
                                             <div>
+                                                <label for="branding_brand_text_color" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Button label color</label>
+                                                <input id="branding_brand_text_color" name="brand_text_color" type="text"
+                                                    value="{{ old('brand_text_color', $toolBranding['brand_text_color'] ?? '') }}"
+                                                    pattern="#[a-fA-F0-9]{6}" maxlength="7" placeholder="Automatic"
+                                                    aria-describedby="branding_brand_text_color_hint" spellcheck="false" autocapitalize="off"
+                                                    class="block h-12 w-full rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-4 text-sm text-[var(--lr-text)]">
+                                                <p id="branding_brand_text_color_hint" class="mt-1 text-xs text-[var(--lr-subtle)]">Enter a hex color like #ffffff or leave blank for automatic contrast.</p>
+                                            </div>
+
+                                            <div>
                                                 <label for="branding_background_color" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Background color</label>
                                                 <div class="flex items-center gap-3">
                                                     <input
