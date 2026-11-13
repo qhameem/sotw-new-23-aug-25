@@ -103,10 +103,10 @@
         <header class="sticky top-0 z-20 bg-white/90 backdrop-blur">
             <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
                 <div class="flex flex-wrap items-center gap-3 sm:gap-6">
-                    <a href="{{ url('/') }}" title="Back to Software on the Web" aria-label="Back to Software on the Web"
-                        class="flex flex-shrink-0 items-center border-r border-slate-200 pr-3 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 sm:pr-6">
-                        <img src="{{ config('theme.logo_url') ? \Illuminate\Support\Facades\Storage::url(config('theme.logo_url')) : asset('images/branding/site-logo.png') }}"
-                            alt="Software on the Web" class="h-8 w-auto max-w-24 object-contain">
+                    <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
+                        aria-label="{{ $toolBrandingSiteName }}"
+                        class="flex shrink-0 items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                        <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-8 w-8 object-contain">
                     </a>
                     <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="text-sm text-slate-600 transition hover:text-slate-900">History</a>
                 </div>
