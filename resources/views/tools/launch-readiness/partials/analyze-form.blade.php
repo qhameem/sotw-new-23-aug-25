@@ -44,8 +44,8 @@
                     <span x-text="submitting ? 'Checking...' : 'Check Website Readiness'"></span>
                 </button>
             </div>
-            <div class="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3">
-                <label for="save-public-history" class="inline-flex h-12 items-center gap-2 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
+            <div class="inline-flex ml-auto w-fit shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3">
+                <label for="save-public-history" class="inline-flex h-9 items-center gap-2 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
                     <span>Save to public history</span>
                 </label>
                 <span class="group relative inline-flex">
@@ -54,7 +54,7 @@
                         @svg('carbon-information', 'h-4 w-4')
                     </button>
                     <span id="public-history-hint" role="tooltip"
-                        class="invisible absolute left-0 top-full z-10 mt-1 w-52 rounded-lg bg-slate-900 p-2 text-xs text-white group-hover:visible group-focus-within:visible">
+                        class="invisible absolute right-0 top-full z-10 mt-1 w-52 rounded-lg bg-slate-900 p-2 text-xs text-white group-hover:visible group-focus-within:visible">
                         When enabled, your scan appears in public history. The report URL is public either way.
                     </span>
                 </span>
