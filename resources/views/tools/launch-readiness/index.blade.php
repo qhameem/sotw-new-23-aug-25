@@ -33,7 +33,9 @@
                 Check your site’s SEO, accessibility, trust, and AI visibility before launch. Paste your URL to find issues and get clear steps to fix them.
             </p>
             <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
-                <span class="h-2 w-2 rounded-full bg-green-500 motion-safe:animate-pulse" aria-hidden="true"></span>
+                <span class="relative h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true">
+                    <span class="absolute inset-0 rounded-full bg-green-500 opacity-60 motion-safe:animate-ping motion-reduce:hidden"></span>
+                </span>
                 <span>Free • No signup required</span>
             </div>
         </section>
