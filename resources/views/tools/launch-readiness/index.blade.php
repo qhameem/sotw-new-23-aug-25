@@ -27,9 +27,9 @@
         class="mx-auto max-w-4xl space-y-8"
         x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', toolName: @js($toolBrandingSiteName) })"
     >
-        <section class="pt-4">
+        <section class="pt-4 text-center">
             <h1 class="text-[28.7px] font-semibold tracking-tight text-slate-900 sm:text-[34.7px]">{{ $toolHomepageH1 }}</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-sm">
+            <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-sm">
                 Is your site ready for launch? Audit your homepage for SEO, accessibility, trust, and AI visibility signals. Get passed checks, warnings, errors, and suggested fixes.
             </p>
         </section>
