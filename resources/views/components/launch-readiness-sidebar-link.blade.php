@@ -7,7 +7,7 @@
         <span class="block text-sm font-semibold leading-5 text-gray-900">Is your site ready to launch?</span>
         <span class="block text-sm leading-5 text-gray-600">Get a free audit</span>
     </span>
-    <svg class="h-4 w-4 flex-shrink-0 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+    <svg class="ml-auto h-4 w-4 flex-shrink-0 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M7 7h10v10" />
     </svg>
