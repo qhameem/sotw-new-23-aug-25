@@ -47,7 +47,7 @@
     <style>
         :root {
             --lr-brand: {{ $brandColor }};
-            --lr-brand-text: {{ $branding->brandTextColor($brandColor) }};
+            --lr-button-label: {{ $branding->brandTextColor($brandColor) }};
             --lr-brand-edge: color-mix(in srgb, var(--lr-brand) 72%, black);
         }
 
@@ -113,7 +113,7 @@
 
                 <div class="flex items-center gap-3">
                     @if(request()->routeIs('launch-readiness.index'))
-                        <a href="#url" class="rounded-lg bg-[var(--lr-brand)] px-4 py-2 text-sm font-semibold text-[var(--lr-brand-text)]">Check your site</a>
+                        <a href="#url" class="rounded-lg bg-[var(--lr-brand)] px-4 py-2 text-sm font-semibold text-[color:var(--lr-button-label)]">Check your site</a>
                     @endif
                     @if($toolUser)
                         @include('tools.launch-readiness.partials.user-menu')
