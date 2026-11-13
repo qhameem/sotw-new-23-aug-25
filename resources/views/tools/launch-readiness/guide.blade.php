@@ -103,7 +103,7 @@
                     href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
                     class="mt-4 inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:bg-white"
                 >
-                    Back to checker
+                    Run the Launch Readiness Checker
                 </a>
             </div>
         </div>

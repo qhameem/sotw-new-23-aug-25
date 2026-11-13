@@ -64,7 +64,7 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertSame([], app(\App\Support\LaunchReadinessBadges::class)->all());
     }
 
-    public function test_launch_readiness_homepage_renders_pending_checks(): void
+    public function test_launch_readiness_homepage_renders_check_overview(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
         $homepageH1 = app(LaunchReadinessBranding::class)->homepageH1();
@@ -73,7 +73,7 @@ class LaunchReadinessToolTest extends TestCase
 
         $response->assertOk();
         $response->assertSee($homepageH1);
-        $response->assertSee('Awaiting scan');
+        $response->assertSee('What this tool checks');        $response->assertDontSee('This check will run when analysis starts.');
         $response->assertSee('Meta Information');
     }
 

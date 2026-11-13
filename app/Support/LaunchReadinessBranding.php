@@ -33,7 +33,7 @@ class LaunchReadinessBranding
             'favicon_path' => null,
             'og_image_path' => null,
             'generated_icons' => [],
-            'homepage_h1' => 'Is your site ready for launch?',
+            'homepage_h1' => 'Free Launch Readiness Checker',
             'homepage_title_tag' => 'Free Launch Readiness Checker | Audit Your Site Before You Launch',
             'homepage_meta_description' => 'Use this free launch readiness checker to audit your site before launch. Check SEO, trust, technical issues, and AI visibility in minutes.',
             'font_url' => null,

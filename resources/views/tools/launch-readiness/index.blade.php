@@ -35,7 +35,7 @@
                 <h1 class="text-[28.7px] font-semibold tracking-tight text-slate-900 sm:text-[34.7px]">{{ $toolHomepageH1 }}</h1>
             </div>
             <p class="mx-auto mt-3 max-w-2xl text-xs leading-6 text-slate-500 sm:text-sm">
-                Run a lightweight homepage audit for technical, SEO, trust, and AI visibility signals before launch day.
+                Is your site ready for launch? Audit your homepage for SEO, accessibility, trust, and AI visibility signals. Get passed checks, warnings, errors, and suggested fixes.
             </p>
         </section>
 
@@ -56,9 +56,15 @@
 
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url')])
 
-        <div x-ref="reportContainer">
-            @include('tools.launch-readiness.partials.report', ['report' => $report])
+        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600">Running launch readiness checks…</p>
+
+        <div x-ref="reportContainer" aria-live="polite">
+            @if(!empty($report['summary']['final_url']))
+                @include('tools.launch-readiness.partials.report', ['report' => $report])
+            @endif
         </div>
+
+        @include('tools.launch-readiness.partials.checker-guide')
 
         @include('tools.launch-readiness.partials.share-modal')
     </div>
