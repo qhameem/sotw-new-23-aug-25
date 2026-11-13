@@ -80,10 +80,6 @@
         <section class="space-y-6">
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 @forelse($history as $item)
-                    @php
-                        $host = parse_url($item->final_url ?: $item->submitted_url, PHP_URL_HOST) ?: parse_url($item->submitted_url, PHP_URL_HOST);
-                        $favicon = $host ? 'https://www.google.com/s2/favicons?domain=' . $host . '&sz=64' : null;
-                    @endphp
                     <a
                         href="{{ route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $item]) }}"
                         class="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
@@ -92,11 +88,7 @@
                             <div class="min-w-0">
                                 <div class="flex items-start gap-3">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
-                                        @if($favicon)
-                                            <img src="{{ $favicon }}" alt="" class="h-full w-full object-cover">
-                                        @else
-                                            <span class="text-xs font-semibold text-slate-500">{{ strtoupper(substr(parse_url($item->submitted_url, PHP_URL_HOST) ?: 'S', 0, 1)) }}</span>
-                                        @endif
+                                        @include('tools.launch-readiness.partials.scan-favicon', ['iconScan' => $item])
                                     </span>
                                     <div class="min-w-0">
                                         <p class="truncate text-[15px] font-semibold text-slate-900 group-hover:text-slate-950">{{ $item->final_url ?: $item->submitted_url }}</p>
