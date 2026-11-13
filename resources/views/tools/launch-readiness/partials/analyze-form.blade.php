@@ -43,7 +43,7 @@
                     disabled
                     :disabled="submitting || !hasValidWebsiteUrl"
                     :class="submitting ? 'cursor-wait' : !hasValidWebsiteUrl ? 'cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none'"
-                    class="inline-flex h-12 w-full whitespace-nowrap items-center justify-center gap-2 rounded-xl border-2 border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-5 text-sm font-bold text-[color:var(--lr-button-label)] shadow-[0_4px_0_var(--lr-brand-edge),0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 disabled:opacity-60"
+                    class="inline-flex h-12 w-full whitespace-nowrap items-center justify-center gap-2 rounded-xl border-2 border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-5 text-base font-bold text-[color:var(--lr-button-label)] shadow-[0_4px_0_var(--lr-brand-edge),0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 disabled:opacity-60"
                 >
                     <svg
                         x-cloak
