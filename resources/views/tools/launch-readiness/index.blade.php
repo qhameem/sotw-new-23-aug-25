@@ -28,8 +28,8 @@
         x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', toolName: @js($toolBrandingSiteName) })"
     >
         <section class="pt-4 text-center">
-            <h1 class="text-[28.7px] font-semibold tracking-tight text-slate-900 sm:text-[52px]">Website Launch Readiness Checker</h1>
-            <p class="mx-auto mt-3 max-w-2xl text-[18px] leading-7 text-slate-500">
+            <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Website Launch Readiness Checker</h1>
+            <p class="mx-auto mt-3 max-w-2xl text-[18px] leading-7 text-[#4b5563]">
                 Check your site’s SEO, accessibility, trust, and AI visibility before launch. Paste your URL to find issues and get clear steps to fix them.
             </p>
             <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
