@@ -221,11 +221,20 @@
                                                 </div>
                                             </div>
 
-                                            <div>
+                                            <div x-data="{ brandColor: @js(old('brand_color', app(\App\Support\LaunchReadinessBranding::class)->brandColor())) }">
                                                 <label for="branding_brand_color" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Branding color</label>
-                                                <input id="branding_brand_color" name="brand_color" type="color"
-                                                    value="{{ old('brand_color', app(\App\Support\LaunchReadinessBranding::class)->brandColor()) }}"
-                                                    class="block h-[52px] w-16 rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2">
+                                                <div class="flex items-center gap-3">
+                                                    <input type="color" aria-label="Pick branding color"
+                                                        :value="/^#[a-f0-9]{6}$/i.test(brandColor) ? brandColor : '#eb9e2b'"
+                                                        @input="brandColor = $event.target.value"
+                                                        class="block h-[52px] w-16 rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-2">
+                                                    <input id="branding_brand_color" name="brand_color" type="text"
+                                                        value="{{ old('brand_color', app(\App\Support\LaunchReadinessBranding::class)->brandColor()) }}"
+                                                        x-model="brandColor" required pattern="#[a-fA-F0-9]{6}" maxlength="7"
+                                                        placeholder="#eb9e2b" title="Enter a six-digit hex color, such as #eb9e2b."
+                                                        spellcheck="false" autocapitalize="off"
+                                                        class="block h-12 w-full rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-4 text-sm text-[var(--lr-text)]">
+                                                </div>
                                             </div>
 
                                             <div>
