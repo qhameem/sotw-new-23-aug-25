@@ -43,17 +43,26 @@
             </div>
         </div>
 
-        <div class="flex shrink-0 flex-col gap-1">
-            <label class="inline-flex h-12 items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
+        <div class="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3">
+            <label for="save-public-history" class="inline-flex h-12 items-center gap-2 text-xs text-slate-700" :class="submitting ? 'opacity-60 pointer-events-none' : ''">
                 <span>Save to public history</span>
+            </label>
+            <span class="group relative inline-flex">
+                <button type="button" aria-label="Public history information" aria-describedby="public-history-hint"
+                    class="rounded-full text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                    @svg('carbon-information', 'h-4 w-4')
+                </button>
+                <span id="public-history-hint" role="tooltip"
+                    class="invisible absolute left-0 top-full z-10 mt-1 w-52 rounded-lg bg-slate-900 p-2 text-xs text-white group-hover:visible group-focus-within:visible">
+                    On lists the scan publicly. Anyone with the report link can view it.
+                </span>
+            </span>
                 <span class="relative inline-flex items-center">
                     <input type="hidden" name="save_to_history" value="0">
-                    <input type="checkbox" name="save_to_history" value="1" aria-describedby="public-history-hint" @checked(old('save_to_history', false)) class="peer sr-only">
+                    <input id="save-public-history" type="checkbox" name="save_to_history" value="1" aria-describedby="public-history-hint" @checked(old('save_to_history', true)) class="peer sr-only">
                     <span class="h-6 w-12 rounded-md bg-slate-200 transition peer-checked:bg-[#eb9e2b] peer-focus-visible:ring-2 peer-focus-visible:ring-slate-700"></span>
                     <span class="absolute left-1 top-1 h-4 w-4 rounded-md bg-white shadow-lg transition peer-checked:translate-x-6"></span>
                 </span>
-            </label>
-            <p id="public-history-hint" class="text-xs text-slate-600">On lists the scan publicly. Anyone with the report link can view it.</p>
         </div>
     </form>
 </section>
