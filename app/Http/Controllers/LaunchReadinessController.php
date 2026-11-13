@@ -32,11 +32,16 @@ class LaunchReadinessController extends Controller
 
     public function index(): View
     {
+        $tablesReady = $this->toolTablesReady();
+
         return view('tools.launch-readiness.index', $this->pageData->merge([
             'report' => $this->auditService->pendingReport(),
             'scan' => null,
             'recentHistory' => $this->recentHistory(),
-            'toolTablesReady' => $this->toolTablesReady(),
+            'toolTablesReady' => $tablesReady,
+            'completedScanCount' => $tablesReady
+                ? ToolScan::query()->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)->count()
+                : null,
         ]));
     }
 
