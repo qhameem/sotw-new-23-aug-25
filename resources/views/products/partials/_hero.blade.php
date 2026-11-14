@@ -76,32 +76,11 @@
                 </p>
             </div>
 
-            @include('products.partials._launch-metadata')
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-gray-500">
+                @include('products.partials._launch-metadata')
+                @include('products.partials._hero-categories')
+            </div>
         </div>
-    </div>
-
-    <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 empty:hidden">
-        @php
-            $generalCategories = $product->categories->filter(function ($cat) {
-                return !$cat->types->contains('name', 'Pricing')
-                    && !$cat->types->contains('name', 'Best for')
-                    && !$cat->types->contains('name', 'Use Case')
-                    && !$cat->types->contains('name', 'Use Cases')
-                    && !$cat->types->contains('name', 'Platform');
-            });
-        @endphp
-        @if($generalCategories->isNotEmpty())
-            <svg class="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path d="M17 10H19C21 10 22 9 22 7V5C22 3 21 2 19 2H17C15 2 14 3 14 5V7C14 9 15 10 17 10Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M5 22H7C9 22 10 21 10 19V17C10 15 9 14 7 14H5C3 14 2 15 2 17V19C2 21 3 22 5 22Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M6 10C8.20914 10 10 8.20914 10 6C10 3.79086 8.20914 2 6 2C3.79086 2 2 3.79086 2 6C2 8.20914 3.79086 10 6 10Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M18 22C20.2091 22 22 20.2091 22 18C22 15.7909 20.2091 14 18 14C15.7909 14 14 15.7909 14 18C14 20.2091 15.7909 22 18 22Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-        @endif
-        @foreach($generalCategories as $category)
-            <a href="{{ $category->publicUrl() }}" wire:navigate.hover
-                class="text-[0.65rem] font-medium leading-5 text-gray-500 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-gray-800 hover:decoration-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 md:text-xs">{{ $category->name }}</a>
-        @endforeach
     </div>
 
     <div class="flex items-center gap-3 border-t border-gray-200 pt-4">
