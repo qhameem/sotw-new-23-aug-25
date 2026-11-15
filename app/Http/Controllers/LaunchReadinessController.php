@@ -110,12 +110,14 @@ class LaunchReadinessController extends Controller
     {
         $report = $scan->audit_payload;
 
+        $resultUrl = route('launch-readiness.results.show', [
+            'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
+            'toolScan' => $scan,
+        ]);
+
         return response()->json([
                 'waiting_to_render' => $scan->status_label === 'Waiting to render',
-                'result_url' => route('launch-readiness.results.show', [
-                    'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
-                    'toolScan' => $scan,
-                ]),
+                'result_url' => $resultUrl,
                 'share_target' => $report['summary']['final_host']
                     ?: (parse_url($report['summary']['final_url'] ?? '', PHP_URL_HOST) ?: parse_url($scan->submitted_url, PHP_URL_HOST) ?: 'your site'),
                 'scan_complete' => empty($report['summary']['incomplete_reason']),
@@ -126,11 +128,12 @@ class LaunchReadinessController extends Controller
                     'failed_checks' => $report['failed_checks'],
                 ],
                 'page_title' => (($report['summary']['page_title'] ?? null) ?: 'Launch Readiness Result').' - Software on the Web',
-                'notice_message' => $scan->save_to_history
+                'notice_message' => $scan->save_to_history || $scan->status_label === 'Waiting to render'
                     ? ''
                     : 'This result was not saved to the public history feed. Anyone with this result URL can still open it.',
                 'report_html' => view('tools.launch-readiness.partials.report', [
                     'report' => $report,
+                    'pendingResultUrl' => $resultUrl,
                 ])->render(),
             ])->header('Cache-Control', 'no-store');
     }
