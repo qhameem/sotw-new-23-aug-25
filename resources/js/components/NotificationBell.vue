@@ -16,7 +16,7 @@
             class="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
             style="max-height: 400px; overflow-y: auto;" @scroll="handleScroll">
             <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-sm font-medium text-gray-700">Notifications</h3>
+                <p class="text-sm font-medium text-gray-700">Notifications</p>
                 <button @click="markAllAsRead" class="text-xs text-indigo-600 hover:text-indigo-500"
                     :disabled="unreadCount === 0">
                     Mark all as read

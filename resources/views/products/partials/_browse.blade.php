@@ -21,7 +21,7 @@
                 <path d="M12 3.5C5.5 3.5 3.5 5.5 3.5 12C3.5 18.5 5.5 20.5 12 20.5C18.5 20.5 20.5 18.5 20.5 12C20.5 5.5 18.5 3.5 12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </span>
-        <h2 class="text-sm font-semibold text-gray-900">Browse</h2>
+        <p class="text-sm font-semibold text-gray-900">Browse</p>
     </div>
 
     @foreach(($types ?? collect()) as $type)
@@ -30,9 +30,9 @@
         @if($options->isNotEmpty())
             <section>
                 <div class="mb-2 flex items-center justify-between border-l-2 border-purple-200 pl-3">
-                    <h3 class="text-[11px] font-semibold uppercase tracking-wide text-purple-600">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-purple-600">
                         {{ $groupLabels[$type->name] ?? $type->name }}
-                    </h3>
+                    </p>
                     <a href="{{ route('categories.index') }}" wire:navigate.hover class="text-[11px] font-medium text-gray-400 hover:text-purple-600">
                         See all <span aria-hidden="true">›</span>
                     </a>
