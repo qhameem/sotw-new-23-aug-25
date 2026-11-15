@@ -65,7 +65,7 @@ class LaunchReadinessAuditService
         ];
     }
 
-    public function run(string $inputUrl): array
+    public function run(string $inputUrl, bool $deferRendering = false): array
     {
         $startedAt = microtime(true);
         $normalizedUrl = $this->normalizeUrl($inputUrl);
@@ -114,11 +114,20 @@ class LaunchReadinessAuditService
         $needsRendering = $content['script_count'] > 0;
 
         if ($needsRendering) {
+            if ($deferRendering) {
+                $report = $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl, 'Waiting to render.');
+                $report['status_label'] = 'Waiting to render';
+
+                return $report;
+            }
+
             $renderedHtml = $this->renderHtml($finalUrl);
 
             if ($renderedHtml === null) {
                 return $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl,
-                    'The browser could not render this page. Please try again later.');
+                    filled(config('services.launch_readiness.renderer_url')) || filled(config('services.launch_readiness.browserless_token'))
+                        ? 'The browser renderer did not return a usable page. Please try again later.'
+                        : 'Browser rendering is not configured. Contact the site administrator.');
             }
 
             $renderedPage = $this->parseHtml($renderedHtml);
@@ -1016,6 +1025,17 @@ class LaunchReadinessAuditService
     {
         $endpoint = config('services.launch_readiness.renderer_url');
 
+        $token = config('services.launch_readiness.browserless_token');
+        $payload = ['url' => $url];
+        $query = [];
+
+        if (blank($endpoint) && filled($token)) {
+            $endpoint = 'https://production-sfo.browserless.io/content';
+            $query = ['token' => $token, 'timeout' => 10000];
+            $payload['gotoOptions'] = ['waitUntil' => 'domcontentloaded', 'timeout' => 6500];
+            $payload['waitForTimeout'] = 2500;
+        }
+
         if (! is_string($endpoint) || ! str_starts_with($endpoint, 'https://')) {
             return null;
         }
@@ -1024,7 +1044,8 @@ class LaunchReadinessAuditService
             $response = Http::withOptions(['allow_redirects' => false])
                 ->connectTimeout(3)
                 ->timeout(12)
-                ->post($endpoint, ['url' => $url]);
+                ->withQueryParameters($query)
+                ->post($endpoint, $payload);
 
             $html = $response->body();
 

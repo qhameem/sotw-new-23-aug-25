@@ -392,11 +392,32 @@ function registerAlpineComponents(Alpine) {
                     credentials: 'same-origin',
                 });
 
-                const payload = await response.json().catch(() => ({}));
+                let payload = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
                     this.errorMessage = firstValidationError(payload) || 'We could not analyze this site right now.';
                     return;
+                }
+
+                if (payload.waiting_to_render) {
+                    this.scanProgress = 'Waiting to render…';
+                    const resultUrl = payload.result_url;
+                    window.history.replaceState({ launchReadiness: true }, '', resultUrl);
+
+                    for (let attempt = 0; attempt < 90 && payload.waiting_to_render; attempt++) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        const status = await fetch(resultUrl, {
+                            headers: { Accept: 'application/json' },
+                            cache: 'no-store',
+                        });
+                        if (!status.ok) continue;
+                        payload = await status.json();
+                    }
+
+                    if (payload.waiting_to_render) {
+                        this.errorMessage = 'The scan is still queued. Reload this result page to check again.';
+                        return;
+                    }
                 }
 
                 this.scanProgress = 'Preparing the report…';

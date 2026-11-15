@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RenderReadinessScan;
 use App\Models\ToolScan;
 use App\Models\ToolUser;
 use App\Services\LaunchReadinessAuditService;
@@ -40,7 +41,7 @@ class LaunchReadinessController extends Controller
             'recentHistory' => $this->recentHistory(),
             'toolTablesReady' => $tablesReady,
             'completedScanCount' => $tablesReady
-                ? ToolScan::query()->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)->where('status_label', '!=', 'Scan incomplete')->count()
+                ? ToolScan::query()->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)->whereNotIn('status_label', ['Scan incomplete', 'Waiting to render'])->count()
                 : null,
         ]));
     }
@@ -68,7 +69,7 @@ class LaunchReadinessController extends Controller
 
         $this->ensureDailyLimit($toolUser, $guestHash);
 
-        $report = $this->auditService->run($validated['url']);
+        $report = $this->auditService->run($validated['url'], deferRendering: config('queue.default') !== 'sync');
         $scan = ToolScan::create([
             'tool_user_id' => $toolUser?->id,
             'tool_key' => ToolSettings::LAUNCH_READINESS_KEY,
@@ -91,14 +92,32 @@ class LaunchReadinessController extends Controller
             'scanned_at' => now(),
         ]);
 
+        if ($scan->status_label === 'Waiting to render') {
+            RenderReadinessScan::dispatch($scan, $request->boolean('save_to_history'));
+        }
+
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
+            return $this->scanResponse($scan);
+        }
+
+        return redirect()->route('launch-readiness.results.show', [
+            'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
+            'toolScan' => $scan,
+        ]);
+    }
+
+    private function scanResponse(ToolScan $scan): JsonResponse
+    {
+        $report = $scan->audit_payload;
+
+        return response()->json([
+                'waiting_to_render' => $scan->status_label === 'Waiting to render',
                 'result_url' => route('launch-readiness.results.show', [
                     'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
                     'toolScan' => $scan,
                 ]),
                 'share_target' => $report['summary']['final_host']
-                    ?: (parse_url($report['summary']['final_url'] ?? '', PHP_URL_HOST) ?: parse_url($validated['url'], PHP_URL_HOST) ?: 'your site'),
+                    ?: (parse_url($report['summary']['final_url'] ?? '', PHP_URL_HOST) ?: parse_url($scan->submitted_url, PHP_URL_HOST) ?: 'your site'),
                 'scan_complete' => empty($report['summary']['incomplete_reason']),
                 'share_summary' => [
                     'launch_score' => $report['launch_score'],
@@ -113,17 +132,17 @@ class LaunchReadinessController extends Controller
                 'report_html' => view('tools.launch-readiness.partials.report', [
                     'report' => $report,
                 ])->render(),
-            ]);
-        }
-
-        return redirect()->route('launch-readiness.results.show', [
-            'toolSlug' => $this->toolSettings->slug(ToolSettings::LAUNCH_READINESS_KEY),
-            'toolScan' => $scan,
-        ]);
+            ])->header('Cache-Control', 'no-store');
     }
 
-    public function show(string $toolSlug, ToolScan $toolScan): View
+    public function show(Request $request, string $toolSlug, ToolScan $toolScan): View|JsonResponse
     {
+        abort_unless($toolScan->tool_key === ToolSettings::LAUNCH_READINESS_KEY, 404);
+
+        if ($request->expectsJson()) {
+            return $this->scanResponse($toolScan);
+        }
+
         return view('tools.launch-readiness.show', $this->pageData->merge([
             'report' => $toolScan->audit_payload,
             'scan' => $toolScan,
