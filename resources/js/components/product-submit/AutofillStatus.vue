@@ -2,9 +2,34 @@
   <div class="mt-4">
     <div class="overflow-hidden rounded-lg border border-[#cbd5e1] bg-[#fff]">
       <div class="border-b border-[#e2e8f0] px-3 py-2 font-mono text-[10px] uppercase tracking-wider !text-[#64748b]" aria-hidden="false">
-        <div class="flex items-center justify-between gap-3">
-          <span>AI fill</span>
+        <div class="flex items-center gap-2">
+          <span class="shrink-0">AI fill</span>
           <button v-if="isLoading && canStop" type="button" class="rounded border border-rose-500/50 px-2 py-1 text-xs normal-case tracking-normal !text-rose-700 hover:bg-rose-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="$emit('stop')">Stop fetching</button>
+          <div
+            class="ml-auto flex shrink-0 items-center gap-2 normal-case tracking-normal sm:text-xs"
+            role="progressbar"
+            :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'"
+            :aria-valuenow="terminalProgress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-valuetext="`${terminalProgress}% complete`"
+          >
+            <span class="inline-flex min-w-0 whitespace-nowrap !text-[#64748b]" aria-hidden="true">
+              <span>[</span>
+              <span
+                v-for="segment in 20"
+                :key="segment"
+                :class="[segment <= filledCount ? '!text-emerald-700' : '!text-[#64748b]', { 'terminal-segment-active': isLoading }]"
+                :style="{ animationDelay: `${(segment - 1) * 75}ms` }"
+              >{{ segment <= filledCount ? '=' : '-' }}</span>
+              <span>]</span>
+            </span>
+            <span v-if="isLoading" class="hidden items-center gap-2 !text-emerald-700 sm:inline-flex" aria-hidden="true">
+              <span class="h-3 w-3 rounded-full border-2 border-emerald-600/30 border-t-emerald-700 motion-safe:animate-spin"></span>
+              Working
+            </span>
+            <span class="tabular-nums !text-emerald-700" aria-hidden="true">{{ terminalProgress }}%</span>
+          </div>
         </div>
       </div>
       <div v-if="isLoading" class="space-y-2 px-3 py-3 font-mono text-xs leading-5" role="status" aria-live="polite" aria-atomic="true">
@@ -43,31 +68,6 @@
         <div class="max-h-[640px] min-h-[240px] overflow-y-auto px-3 pb-3 font-mono text-xs leading-5" role="log" aria-live="polite" aria-label="Admin extraction report">
           <div v-for="(entry, index) in report" :key="index" class="break-words whitespace-pre-wrap" :class="entry.level === 'error' ? 'text-rose-700' : entry.level === 'warning' ? 'text-amber-700' : 'text-slate-700'">{{ formatEntry(entry) }}</div>
         </div>
-      </div>
-      <div
-        class="flex items-center gap-3 border-t border-[#e2e8f0] bg-[#fff] px-3 py-2 font-mono text-[10px] sm:text-xs"
-        role="progressbar"
-        :aria-label="isLoading ? 'AI autofill progress' : 'Required input progress'"
-        :aria-valuenow="terminalProgress"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        :aria-valuetext="`${terminalProgress}% complete`"
-      >
-        <span class="inline-flex min-w-0 whitespace-nowrap !text-[#64748b]" aria-hidden="true">
-          <span>[</span>
-          <span
-            v-for="segment in 20"
-            :key="segment"
-            :class="[segment <= filledCount ? '!text-emerald-700' : '!text-[#64748b]', { 'terminal-segment-active': isLoading }]"
-            :style="{ animationDelay: `${(segment - 1) * 75}ms` }"
-          >{{ segment <= filledCount ? '=' : '-' }}</span>
-          <span>]</span>
-        </span>
-        <span v-if="isLoading" class="hidden items-center gap-2 !text-emerald-700 sm:inline-flex" aria-hidden="true">
-          <span class="h-3 w-3 rounded-full border-2 border-emerald-600/30 border-t-emerald-700 motion-safe:animate-spin"></span>
-          Working
-        </span>
-        <span class="ml-auto shrink-0 tabular-nums !text-emerald-700" aria-hidden="true">{{ terminalProgress }}%</span>
       </div>
     </div>
 
