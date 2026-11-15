@@ -111,18 +111,22 @@ class LaunchReadinessAuditService
             isset($siteRoot) ? $siteRoot : $this->siteRoot($finalUrl)
         );
         $initialContent = $content;
-        $needsRendering = $content['script_count'] > 0
-            && ($content['h1_count'] === 0 || Str::length($content['page_text']) < 250);
-        $rendered = false;
+        $needsRendering = $content['script_count'] > 0;
 
-        if ($needsRendering && ($renderedHtml = $this->renderHtml($finalUrl)) !== null) {
+        if ($needsRendering) {
+            $renderedHtml = $this->renderHtml($finalUrl);
+
+            if ($renderedHtml === null) {
+                return $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl,
+                    'The browser could not render this page. Please try again later.');
+            }
+
             $renderedPage = $this->parseHtml($renderedHtml);
             $content = $this->extractContentState($renderedPage['xpath'], $finalHost, $finalUrl, $siteRoot);
-            $rendered = true;
         }
 
         $faviconState = $this->faviconState(
-            $initialContent['favicon'],
+            $content['favicon'],
             $finalUrl,
             isset($siteRoot) ? $siteRoot : $this->siteRoot($finalUrl)
         );
@@ -130,12 +134,12 @@ class LaunchReadinessAuditService
         $resultsByKey = [
             'page_status' => $this->pageStatusResult($response, $fatalError),
             'https' => $this->httpsResult($finalUrl),
-            'title_tag' => $this->titleResult($initialContent['title']),
-            'meta_description' => $this->metaDescriptionResult($initialContent['meta_description']),
-            'canonical_url' => $this->canonicalResult($initialContent['canonical'], $finalUrl),
+            'title_tag' => $this->titleResult($content['title']),
+            'meta_description' => $this->metaDescriptionResult($content['meta_description']),
+            'canonical_url' => $this->canonicalResult($content['canonical'], $finalUrl),
             'favicon' => $this->faviconResult($faviconState),
-            'viewport_meta' => $this->viewportResult($initialContent['viewport']),
-            'html_lang' => $this->htmlLangResult($initialContent['html_lang']),
+            'viewport_meta' => $this->viewportResult($content['viewport']),
+            'html_lang' => $this->htmlLangResult($content['html_lang']),
             'h1_tag' => $this->h1Result($content['h1_count']),
             'heading_hierarchy' => $this->headingHierarchyResult($content['h1_count'], $content['h2_count']),
             'image_alt_text' => $this->imageAltResult($content['images_count'], $content['images_with_alt'], $content['images_with_empty_alt'], $content['image_evidence']),
@@ -147,10 +151,10 @@ class LaunchReadinessAuditService
             'sitemap_xml' => $this->simpleFileResult($sitemapResponse, 'sitemap.xml'),
             'form_labels' => $this->formLabelsResult($content['forms_count'], $content['labeled_inputs'], $content['inputs_count']),
             'landmarks' => $this->landmarksResult($content['landmarks']),
-            'open_graph_basics' => $this->openGraphBasicsResult($initialContent['og']),
-            'open_graph_image' => $this->openGraphImageResult($initialContent['og']['image'] ?? null),
-            'twitter_card' => $this->twitterCardResult($initialContent['twitter_card']),
-            'structured_data' => $this->structuredDataResult($initialContent['structured_data_count']),
+            'open_graph_basics' => $this->openGraphBasicsResult($content['og']),
+            'open_graph_image' => $this->openGraphImageResult($content['og']['image'] ?? null),
+            'twitter_card' => $this->twitterCardResult($content['twitter_card']),
+            'structured_data' => $this->structuredDataResult($content['structured_data_count']),
             'internal_links' => $this->internalLinksResult($content['internal_links'], $content['link_targets']),
             'external_links' => $this->externalLinksResult($content['external_links']),
             'privacy_contact' => $this->privacyContactResult($content['trust_links']),
@@ -172,28 +176,19 @@ class LaunchReadinessAuditService
                     continue;
                 }
 
-                if ($rendered) {
-                    $resultsByKey[$key]['summary'] .= ' Checked after JavaScript rendered.';
-                } else {
-                    $resultsByKey[$key] = [
-                        'status' => 'unverified',
-                        'summary' => 'The initial HTML appears incomplete. The rendered page could not be verified.',
-                    ];
-                }
+                $resultsByKey[$key]['summary'] .= ' Checked after JavaScript rendered.';
             }
 
-            if ($rendered && $initialContent['h1_count'] === 0 && $content['h1_count'] > 0) {
+            if ($initialContent['h1_count'] === 0 && $content['h1_count'] > 0) {
                 $resultsByKey['h1_tag']['summary'] .= ' No H1 was present in the initial HTML.';
             }
 
             $dependsOnJavascript = ($initialContent['h1_count'] === 0 && $content['h1_count'] > 0)
                 || Str::length($content['page_text']) - Str::length($initialContent['page_text']) >= 250;
 
-            $resultsByKey['javascript_dependency'] = $rendered && $dependsOnJavascript
+            $resultsByKey['javascript_dependency'] = $dependsOnJavascript
                 ? $this->warning('JavaScript adds key content that is missing from the initial HTML.')
-                : $this->warning($rendered
-                    ? 'The initial HTML was sparse and rendering did not reveal substantial additional content.'
-                    : 'The page may depend on JavaScript. The rendered page could not be verified.');
+                : $this->pass('The browser check did not detect substantial content added by JavaScript.');
         }
 
         $categories = [];
@@ -250,7 +245,7 @@ class LaunchReadinessAuditService
                 'final_url' => $finalUrl,
                 'final_host' => $finalHost,
                 'scanned_at' => now()->toIso8601String(),
-                'page_title' => $initialContent['title'],
+                'page_title' => $content['title'],
                 'page_fetch_seconds' => round($pageFetchSeconds, 2),
                 'html_bytes' => strlen($html),
                 'fatal_error' => $fatalError,
@@ -1221,12 +1216,6 @@ class LaunchReadinessAuditService
 
         foreach ($weights as $key => $weight) {
             $status = $resultsByKey[$key]['status'] ?? 'warning';
-            if ($status === 'unverified') {
-                $totalWeight -= $weight;
-
-                continue;
-            }
-
             $multiplier = match ($status) {
                 'pass' => 1.0,
                 'warning' => 0.55,
