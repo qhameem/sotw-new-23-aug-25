@@ -91,10 +91,7 @@
             </div>
         @endif
 
-        <p x-cloak x-show="submitting" role="status" class="flex items-center gap-2 text-sm text-slate-600">
-            <span aria-hidden="true" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
-            Analyzing…
-        </p>
+        <p x-cloak x-show="submitting" role="status" class="sr-only">Analyzing...</p>
 
         <div x-ref="reportContainer" x-show="!submitting" aria-live="polite">
             @if(!empty($report['summary']['final_url']))

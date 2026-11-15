@@ -105,10 +105,12 @@
 @endphp
 
 @if(($report['status_label'] ?? null) === 'Waiting to render')
-    <div role="status" class="flex items-center gap-2 text-sm text-slate-600"
+    <div hidden
         x-data
         x-init="
             if (typeof waitForScan !== 'function') {
+                submitting = true;
+                $nextTick(() => { if ($el.isConnected) submitting = true; });
                 const poll = async () => {
                     try {
                         const response = await fetch(@js($pendingResultUrl ?? request()->url()), {
@@ -128,8 +130,6 @@
                 setTimeout(poll, 2000);
             }
         ">
-        <span aria-hidden="true" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
-        Analyzing…
     </div>
 @elseif($summary['incomplete_reason'] ?? $summary['fatal_error'] ?? (parse_url($summary['final_url'] ?? '', PHP_URL_HOST) === 'consent.google.com' ? 'Google returned a consent page.' : null))
     <section class="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-5">

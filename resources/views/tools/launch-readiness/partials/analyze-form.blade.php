@@ -41,6 +41,7 @@
                 <button
                     type="submit"
                     disabled
+                    :aria-busy="submitting"
                     :disabled="submitting || !hasValidWebsiteUrl"
                     :class="submitting ? 'cursor-wait' : !hasValidWebsiteUrl ? 'cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none'"
                     class="inline-flex h-12 w-full whitespace-nowrap items-center justify-center gap-2 rounded-xl border-2 border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-5 text-base font-bold text-[color:var(--lr-button-label)] shadow-[0_4px_0_var(--lr-brand-edge),0_8px_14px_rgba(15,23,42,0.14)] transition duration-150 disabled:opacity-60"
@@ -56,7 +57,7 @@
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
                         <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
                     </svg>
-                    <span x-text="submitting ? 'Checking...' : 'Check Website Readiness'"></span>
+                    <span x-text="submitting ? 'Analyzing...' : 'Check Website Readiness'"></span>
                 </button>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3">
