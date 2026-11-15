@@ -140,6 +140,15 @@
     </section>
 @else
 <div class="space-y-6">
+    @if(!empty($summary['partial']))
+        <section class="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <h2 class="text-lg font-semibold text-slate-900">Partial report</h2>
+            <p>Initial HTML checked. Browser rendering didn’t finish. Scores are available after a full scan.</p>
+            <button type="button" @click="$refs.readinessForm.requestSubmit()" class="font-semibold underline">
+                Retry full scan
+            </button>
+        </section>
+    @else
     <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 flex-1 items-center gap-4">
@@ -212,6 +221,7 @@
             @endif
         @endif
     </section>
+    @endif
 
     @php
         $priority = collect($report['categories'] ?? [])->pluck('checks')->collapse()
@@ -374,7 +384,7 @@
                                 @endif
                             </div>
                             <span class="inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-medium {{ $statusClasses[$check['status']] ?? $statusClasses['pending'] }}">
-                                {{ ucfirst($check['status']) }}
+                                {{ $check['status'] === 'initial_html_only' ? 'Initial HTML only' : ucfirst($check['status']) }}
                             </span>
                         </div>
 

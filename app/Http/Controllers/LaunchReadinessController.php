@@ -41,7 +41,7 @@ class LaunchReadinessController extends Controller
             'recentHistory' => $this->recentHistory(),
             'toolTablesReady' => $tablesReady,
             'completedScanCount' => $tablesReady
-                ? ToolScan::query()->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)->whereNotIn('status_label', ['Scan incomplete', 'Waiting to render'])->count()
+                ? ToolScan::query()->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)->whereNotIn('status_label', ['Scan incomplete', 'Waiting to render', 'Partial report'])->count()
                 : null,
         ]));
     }
@@ -87,7 +87,7 @@ class LaunchReadinessController extends Controller
             'warning_checks' => $report['warning_checks'],
             'failed_checks' => $report['failed_checks'],
             'status_label' => $report['status_label'],
-            'save_to_history' => empty($report['summary']['incomplete_reason']) && $request->boolean('save_to_history'),
+            'save_to_history' => empty($report['summary']['incomplete_reason']) && empty($report['summary']['partial']) && $request->boolean('save_to_history'),
             'audit_payload' => $report,
             'scanned_at' => now(),
         ]);
@@ -121,7 +121,7 @@ class LaunchReadinessController extends Controller
                 'result_url' => $resultUrl,
                 'share_target' => $report['summary']['final_host']
                     ?: (parse_url($report['summary']['final_url'] ?? '', PHP_URL_HOST) ?: parse_url($scan->submitted_url, PHP_URL_HOST) ?: 'your site'),
-                'scan_complete' => empty($report['summary']['incomplete_reason']),
+                'scan_complete' => empty($report['summary']['incomplete_reason']) && empty($report['summary']['partial']),
                 'share_summary' => [
                     'launch_score' => $report['launch_score'],
                     'passed_checks' => $report['passed_checks'],

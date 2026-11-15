@@ -139,15 +139,10 @@ class LaunchReadinessAuditService
             }
             $renderedHtml = $this->resolveRenderedHtml($renderRequest);
 
-            if ($renderedHtml === null) {
-                return $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl,
-                    filled(config('services.launch_readiness.renderer_url')) || filled(config('services.launch_readiness.browserless_token'))
-                        ? 'The browser renderer did not return a usable page. Please try again later.'
-                        : 'Browser rendering is not configured. Contact the site administrator.');
+            if ($renderedHtml !== null) {
+                $renderedPage = $this->parseHtml($renderedHtml);
+                $content = $this->extractContentState($renderedPage['xpath'], $finalHost, $finalUrl, $siteRoot);
             }
-
-            $renderedPage = $this->parseHtml($renderedHtml);
-            $content = $this->extractContentState($renderedPage['xpath'], $finalHost, $finalUrl, $siteRoot);
         }
 
         if ($progress !== null) {
@@ -234,7 +229,26 @@ class LaunchReadinessAuditService
             'internal_links', 'external_links', 'privacy_contact', 'primary_cta', 'unique_viewpoint',
             'content_clarity', 'media_support'];
 
-        if ($needsRendering) {
+        $partial = $needsRendering && $renderedHtml === null;
+
+        if ($partial) {
+            foreach ([...$renderedChecks, 'title_tag', 'meta_description', 'canonical_url', 'viewport_meta',
+                'html_lang', 'open_graph_basics', 'open_graph_image', 'twitter_card', 'structured_data',
+                'javascript_dependency'] as $key) {
+                if ($resultsByKey[$key]['status'] === 'pass'
+                    && ! in_array($key, ['form_labels', 'javascript_dependency'], true)) {
+                    $resultsByKey[$key]['summary'] .= ' Checked in the initial HTML.';
+
+                    continue;
+                }
+
+                $resultsByKey[$key] = [
+                    'status' => 'initial_html_only',
+                    'summary' => ($key === 'javascript_dependency' ? '' : $resultsByKey[$key]['summary'].' ')
+                        .'Browser rendering couldn’t finish. Only the initial HTML was checked.',
+                ];
+            }
+        } elseif ($needsRendering) {
             foreach ($renderedChecks as $key) {
                 if (! isset($resultsByKey[$key])) {
                     continue;
@@ -295,6 +309,10 @@ class LaunchReadinessAuditService
             $progress('calculating your scores');
         }
         [$seoScore, $aiScore, $trustScore, $launchScore] = $this->scoresFromResults($resultsByKey);
+        if ($partial) {
+            $seoScore = $aiScore = $trustScore = $launchScore = 0;
+        }
+
         $totalTestTimeSeconds = round(max(microtime(true) - $startedAt, 0), 2);
 
         return [
@@ -305,7 +323,7 @@ class LaunchReadinessAuditService
             'passed_checks' => $passed,
             'warning_checks' => $warnings,
             'failed_checks' => $failed,
-            'status_label' => $this->statusLabel($launchScore),
+            'status_label' => $partial ? 'Partial report' : $this->statusLabel($launchScore),
             'summary' => [
                 'submitted_url' => $inputUrl,
                 'normalized_url' => $normalizedUrl,
@@ -313,6 +331,7 @@ class LaunchReadinessAuditService
                 'final_host' => $finalHost,
                 'scanned_at' => now()->toIso8601String(),
                 'page_title' => $content['title'],
+                'partial' => $partial,
                 'page_fetch_seconds' => round($pageFetchSeconds, 2),
                 'html_bytes' => strlen($html),
                 'fatal_error' => $fatalError,

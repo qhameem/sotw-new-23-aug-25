@@ -52,7 +52,7 @@ class RenderReadinessScan implements ShouldQueue
             'final_url' => $report['summary']['final_url'],
             'final_host' => $report['summary']['final_host'] ?? null,
             'audit_payload' => $report,
-            'save_to_history' => $this->saveToHistory && empty($report['summary']['incomplete_reason']),
+            'save_to_history' => $this->saveToHistory && empty($report['summary']['incomplete_reason']) && empty($report['summary']['partial']),
             'scanned_at' => now(),
         ]);
     }

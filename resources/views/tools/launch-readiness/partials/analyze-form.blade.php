@@ -21,6 +21,7 @@
                 }
             }
         }"
+        x-ref="readinessForm"
         @submit.prevent="if (hasValidWebsiteUrl && !submitting) submitAnalyze($event)"
     >
         @csrf
