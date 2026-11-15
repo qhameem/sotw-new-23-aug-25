@@ -2,6 +2,12 @@
 
 return [
 
+    // Trusted renderer that isolates browser requests from private networks.
+    'launch_readiness' => [
+        'renderer_url' => env('LAUNCH_READINESS_RENDERER_URL'),
+    ],
+
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
