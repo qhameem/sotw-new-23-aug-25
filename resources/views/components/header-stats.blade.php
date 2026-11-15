@@ -28,10 +28,10 @@
             <strong class="font-semibold text-gray-900">{{ number_format($stats['ai_systems']) }}</strong> AI systems including
         </p>
         <div class="mt-1 flex flex-wrap items-center justify-start gap-x-2 gap-y-1 font-semibold text-gray-800">
-            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/chatgpt.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">ChatGPT,</span>
-            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/claude.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Claude,</span>
-            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/perplexity.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Perplexity,</span>
-            <span class="inline-flex items-center gap-1"><span class="font-normal text-gray-500">and</span> <img src="{{ asset('images/ai/gemini.svg') }}" alt="" class="h-4 w-4" aria-hidden="true">Gemini</span>
+            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/chatgpt.svg') }}" alt="ChatGPT logo" class="h-4 w-4" aria-hidden="true">ChatGPT,</span>
+            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/claude.svg') }}" alt="Claude logo" class="h-4 w-4" aria-hidden="true">Claude,</span>
+            <span class="inline-flex items-center gap-1"><img src="{{ asset('images/ai/perplexity.svg') }}" alt="Perplexity logo" class="h-4 w-4" aria-hidden="true">Perplexity,</span>
+            <span class="inline-flex items-center gap-1"><span class="font-normal text-gray-500">and</span> <img src="{{ asset('images/ai/gemini.svg') }}" alt="Gemini logo" class="h-4 w-4" aria-hidden="true">Gemini</span>
         </div>
     </div>
 </div>
