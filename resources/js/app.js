@@ -376,7 +376,7 @@ function registerAlpineComponents(Alpine) {
         async submitAnalyze(event) {
             const form = event.target;
             this.submitting = true;
-            this.scanProgress = 'Fetching the page';
+            this.scanProgress = 'loading the website';
             this.errorMessage = '';
             this.closeShareModal();
 
@@ -401,7 +401,7 @@ function registerAlpineComponents(Alpine) {
 
                 if (payload.waiting_to_render) {
                     window.history.replaceState({ launchReadiness: true }, '', payload.result_url);
-                    this.scanProgress = payload.progress_step || 'Waiting for a browser slot';
+                    this.scanProgress = payload.progress_step || 'waiting for a browser slot';
                     payload = await this.waitForScan(payload.result_url);
                 }
 
@@ -444,14 +444,12 @@ function registerAlpineComponents(Alpine) {
                 } catch {
                     // Retry temporary network failures without resubmitting the scan.
                 }
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 750));
             }
             throw new Error('Scan result is unavailable');
         },
 
         displayScan(payload, share) {
-            this.scanProgress = 'Preparing the report…';
-
             if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
                 this.$refs.reportContainer.innerHTML = payload.report_html;
                 Alpine.initTree(this.$refs.reportContainer);

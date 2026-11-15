@@ -79,7 +79,7 @@ class LaunchReadinessAuditService
 
         try {
             if ($progress !== null) {
-                $progress('Fetching the page');
+                $progress('loading the website');
             }
             $response = $this->fetch($normalizedUrl);
             $finalUrl = $response->effectiveUri()?->__toString() ?: $normalizedUrl;
@@ -128,14 +128,14 @@ class LaunchReadinessAuditService
         }
 
         if ($progress !== null) {
-            $progress('Checking robots.txt and sitemap');
+            $progress('checking how search engines find the site');
         }
         $robotsResponse = $this->fetchOptional($siteRoot.'/robots.txt');
         $sitemapResponse = $this->fetchOptional($siteRoot.'/sitemap.xml');
 
         if ($needsRendering) {
             if ($progress !== null) {
-                $progress('Waiting for browser rendering');
+                $progress('loading the page in a browser');
             }
             $renderedHtml = $this->resolveRenderedHtml($renderRequest);
 
@@ -151,7 +151,7 @@ class LaunchReadinessAuditService
         }
 
         if ($progress !== null) {
-            $progress('Checking page content and assets');
+            $progress('checking the site icon');
         }
         $faviconState = $this->faviconState(
             $content['favicon'],
@@ -168,24 +168,60 @@ class LaunchReadinessAuditService
             'favicon' => $this->faviconResult($faviconState),
             'viewport_meta' => $this->viewportResult($content['viewport']),
             'html_lang' => $this->htmlLangResult($content['html_lang']),
+        ];
+
+        if ($progress !== null) {
+            $progress('checking headings and image descriptions');
+        }
+        $resultsByKey += [
             'h1_tag' => $this->h1Result($content['h1_count']),
             'heading_hierarchy' => $this->headingHierarchyResult($content['h1_count'], $content['h2_count']),
             'image_alt_text' => $this->imageAltResult($content['images_count'], $content['images_with_alt'], $content['images_with_empty_alt'], $content['image_evidence']),
+        ];
+
+        if ($progress !== null) {
+            $progress('checking security and search settings');
+        }
+        $resultsByKey += [
             'https_redirects' => $this->httpsRedirectResult($normalizedUrl, $finalUrl),
             'indexability' => $this->indexabilityResult($initialContent['robots_meta'], $headers['X-Robots-Tag'][0] ?? null),
             'security_headers' => $this->securityHeadersResult($headers),
             'compression' => $this->compressionResult($headers),
             'robots_txt' => $this->simpleFileResult($robotsResponse, 'robots.txt'),
             'sitemap_xml' => $this->simpleFileResult($sitemapResponse, 'sitemap.xml'),
+        ];
+
+        if ($progress !== null) {
+            $progress('checking accessibility');
+        }
+        $resultsByKey += [
             'form_labels' => $this->formLabelsResult($content['forms_count'], $content['labeled_inputs'], $content['inputs_count']),
             'landmarks' => $this->landmarksResult($content['landmarks']),
+        ];
+
+        if ($progress !== null) {
+            $progress('checking social media previews');
+        }
+        $resultsByKey += [
             'open_graph_basics' => $this->openGraphBasicsResult($content['og']),
             'open_graph_image' => $this->openGraphImageResult($content['og']['image'] ?? null),
             'twitter_card' => $this->twitterCardResult($content['twitter_card']),
             'structured_data' => $this->structuredDataResult($content['structured_data_count']),
+        ];
+
+        if ($progress !== null) {
+            $progress('checking links');
+        }
+        $resultsByKey += [
             'internal_links' => $this->internalLinksResult($content['internal_links'], $content['link_targets']),
             'external_links' => $this->externalLinksResult($content['external_links']),
             'privacy_contact' => $this->privacyContactResult($content['trust_links']),
+        ];
+
+        if ($progress !== null) {
+            $progress('reviewing page content');
+        }
+        $resultsByKey += [
             'primary_cta' => $this->primaryCtaResult($content['cta_texts']),
             'unique_viewpoint' => $this->uniqueViewpointResult($content['page_text']),
             'content_clarity' => $this->contentClarityResult($content['page_text'], $content['headings_count'], $content['paragraph_count']),
@@ -256,7 +292,7 @@ class LaunchReadinessAuditService
         }
 
         if ($progress !== null) {
-            $progress('Calculating scores');
+            $progress('calculating your scores');
         }
         [$seoScore, $aiScore, $trustScore, $launchScore] = $this->scoresFromResults($resultsByKey);
         $totalTestTimeSeconds = round(max(microtime(true) - $startedAt, 0), 2);
