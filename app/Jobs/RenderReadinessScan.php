@@ -27,7 +27,11 @@ class RenderReadinessScan implements ShouldQueue
             return;
         }
 
-        $this->finish($audit->run($this->scan->submitted_url));
+        $this->finish($audit->run($this->scan->submitted_url, progress: function (string $step): void {
+            $report = $this->scan->audit_payload;
+            $report['progress_step'] = $step;
+            $this->scan->update(['audit_payload' => $report]);
+        }));
     }
 
     public function failed(Throwable $exception): void

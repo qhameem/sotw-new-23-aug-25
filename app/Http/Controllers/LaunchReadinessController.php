@@ -116,6 +116,7 @@ class LaunchReadinessController extends Controller
         ]);
 
         return response()->json([
+                'progress_step' => $report['progress_step'] ?? 'Waiting for a browser slot',
                 'waiting_to_render' => $scan->status_label === 'Waiting to render',
                 'result_url' => $resultUrl,
                 'share_target' => $report['summary']['final_host']

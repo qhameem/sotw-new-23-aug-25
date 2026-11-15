@@ -57,7 +57,7 @@
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
                         <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
                     </svg>
-                    <span x-text="submitting ? 'Analyzing...' : 'Check Website Readiness'"></span>
+                    <span class="whitespace-normal" x-text="submitting ? (scanProgress ? 'Analyzing... · ' + scanProgress : 'Analyzing...') : 'Check Website Readiness'"></span>
                 </button>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3">

@@ -376,7 +376,7 @@ function registerAlpineComponents(Alpine) {
         async submitAnalyze(event) {
             const form = event.target;
             this.submitting = true;
-            this.scanProgress = 'Fetching the page and running checks…';
+            this.scanProgress = 'Fetching the page';
             this.errorMessage = '';
             this.closeShareModal();
 
@@ -401,6 +401,7 @@ function registerAlpineComponents(Alpine) {
 
                 if (payload.waiting_to_render) {
                     window.history.replaceState({ launchReadiness: true }, '', payload.result_url);
+                    this.scanProgress = payload.progress_step || 'Waiting for a browser slot';
                     payload = await this.waitForScan(payload.result_url);
                 }
 
@@ -436,6 +437,7 @@ function registerAlpineComponents(Alpine) {
                     if (response.ok) {
                         const result = await response.json();
                         if (result.waiting_to_render === false) return result;
+                        if (result.progress_step) this.scanProgress = result.progress_step;
                     } else if ([401, 403, 404, 410].includes(response.status)) {
                         break;
                     }

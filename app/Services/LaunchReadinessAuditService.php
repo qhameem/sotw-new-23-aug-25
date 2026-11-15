@@ -66,7 +66,7 @@ class LaunchReadinessAuditService
         ];
     }
 
-    public function run(string $inputUrl, bool $deferRendering = false): array
+    public function run(string $inputUrl, bool $deferRendering = false, ?callable $progress = null): array
     {
         $startedAt = microtime(true);
         $normalizedUrl = $this->normalizeUrl($inputUrl);
@@ -78,6 +78,9 @@ class LaunchReadinessAuditService
         $sitemapResponse = null;
 
         try {
+            if ($progress !== null) {
+                $progress('Fetching the page');
+            }
             $response = $this->fetch($normalizedUrl);
             $finalUrl = $response->effectiveUri()?->__toString() ?: $normalizedUrl;
             $pageFetchSeconds = microtime(true) - $startedAt;
@@ -124,10 +127,16 @@ class LaunchReadinessAuditService
             $renderRequest = $this->requestRenderedHtml($finalUrl);
         }
 
+        if ($progress !== null) {
+            $progress('Checking robots.txt and sitemap');
+        }
         $robotsResponse = $this->fetchOptional($siteRoot.'/robots.txt');
         $sitemapResponse = $this->fetchOptional($siteRoot.'/sitemap.xml');
 
         if ($needsRendering) {
+            if ($progress !== null) {
+                $progress('Waiting for browser rendering');
+            }
             $renderedHtml = $this->resolveRenderedHtml($renderRequest);
 
             if ($renderedHtml === null) {
@@ -141,6 +150,9 @@ class LaunchReadinessAuditService
             $content = $this->extractContentState($renderedPage['xpath'], $finalHost, $finalUrl, $siteRoot);
         }
 
+        if ($progress !== null) {
+            $progress('Checking page content and assets');
+        }
         $faviconState = $this->faviconState(
             $content['favicon'],
             $finalUrl,
@@ -243,6 +255,9 @@ class LaunchReadinessAuditService
             ];
         }
 
+        if ($progress !== null) {
+            $progress('Calculating scores');
+        }
         [$seoScore, $aiScore, $trustScore, $launchScore] = $this->scoresFromResults($resultsByKey);
         $totalTestTimeSeconds = round(max(microtime(true) - $startedAt, 0), 2);
 

@@ -22,10 +22,7 @@
         x-data="launchReadinessAnalyzer({ pendingResultUrl: @js($scan?->status_label === 'Waiting to render' ? request()->url() : null), csrfToken: @js(csrf_token()), initialNotice: @js(! $scan?->save_to_history ? 'This result was not saved to the public history feed. Anyone with this result URL can still open it.' : ''), toolName: @js($toolBrandingSiteName) })"
     >
         <section class="pt-4 text-center">
-            <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
-                <img src="{{ $toolBrandingLogoUrl }}" alt="{{ $toolBrandingSiteName }} logo" class="h-12 w-12 object-contain">
-                <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Launch Readiness Report</h1>
-            </div>
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Launch Readiness Report</h1>
             <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
                 Review the current result, then run another scan or browse public history.
             </p>
