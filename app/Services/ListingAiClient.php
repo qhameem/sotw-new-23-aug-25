@@ -53,7 +53,7 @@ class ListingAiClient
                         'generationConfig' => [
                             'temperature' => 0.2, 'maxOutputTokens' => $maxTokens, 'responseMimeType' => 'application/json',
                             ...($schema !== null ? ['responseJsonSchema' => $schema] : []),
-                            ...($task === 'seo' ? ['thinkingConfig' => ['thinkingBudget' => 0]] : []),
+                            ...(in_array($task, ['copy', 'seo'], true) ? ['thinkingConfig' => ['thinkingBudget' => 0]] : []),
                         ],
                     ]);
                     $content = $response->json('candidates.0.content.parts.0.text');
