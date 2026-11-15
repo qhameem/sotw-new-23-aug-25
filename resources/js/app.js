@@ -400,53 +400,77 @@ function registerAlpineComponents(Alpine) {
                 }
 
                 if (payload.waiting_to_render) {
-                    this.scanProgress = 'Waiting to render…';
-                    const resultUrl = payload.result_url;
-                    window.history.replaceState({ launchReadiness: true }, '', resultUrl);
-
-                    for (let attempt = 0; attempt < 90 && payload.waiting_to_render; attempt++) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        const status = await fetch(resultUrl, {
-                            headers: { Accept: 'application/json' },
-                            cache: 'no-store',
-                        });
-                        if (!status.ok) continue;
-                        payload = await status.json();
-                    }
-
-                    if (payload.waiting_to_render) {
-                        this.errorMessage = 'The scan is still queued. Reload this result page to check again.';
-                        return;
-                    }
+                    window.history.replaceState({ launchReadiness: true }, '', payload.result_url);
+                    payload = await this.waitForScan(payload.result_url);
                 }
 
-                this.scanProgress = 'Preparing the report…';
-
-                if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
-                    this.$refs.reportContainer.innerHTML = payload.report_html;
-                    Alpine.initTree(this.$refs.reportContainer);
-                    this.hasScanResult = true;
-                }
-
-                if (typeof payload.notice_message === 'string') {
-                    this.noticeMessage = payload.notice_message;
-                }
-
-                if (typeof payload.page_title === 'string' && payload.page_title !== '') {
-                    document.title = payload.page_title;
-                }
-
-                if (typeof payload.result_url === 'string' && payload.result_url !== '') {
-                    window.history.pushState({ launchReadiness: true }, '', payload.result_url);
-                    if (payload.scan_complete !== false) {
-                        this.openShareModal(payload.result_url, payload.share_target ?? '', payload.share_summary ?? {});
-                    }
-                }
+                this.displayScan(payload, true);
             } catch (error) {
                 console.error('Launch readiness analyze error:', error);
-                this.errorMessage = 'Network error occurred. Please try again.';
+                this.errorMessage = 'Could not retrieve the scan result. Please try again.';
             } finally {
                 this.submitting = false;
+            }
+        },
+
+        async init() {
+            if (!config.pendingResultUrl) return;
+            this.submitting = true;
+            try {
+                this.displayScan(await this.waitForScan(config.pendingResultUrl), false);
+            } catch (error) {
+                this.errorMessage = 'Could not retrieve the scan result. Please try again.';
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async waitForScan(url) {
+            for (;;) {
+                try {
+                    const response = await fetch(url, {
+                        headers: { Accept: 'application/json' },
+                        cache: 'no-store',
+                        signal: AbortSignal.timeout(10000),
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.waiting_to_render === false) return result;
+                    } else if ([401, 403, 404, 410].includes(response.status)) {
+                        break;
+                    }
+                } catch {
+                    // Retry temporary network failures without resubmitting the scan.
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            throw new Error('Scan result is unavailable');
+        },
+
+        displayScan(payload, share) {
+            this.scanProgress = 'Preparing the report…';
+
+            if (this.$refs.reportContainer && typeof payload.report_html === 'string') {
+                this.$refs.reportContainer.innerHTML = payload.report_html;
+                Alpine.initTree(this.$refs.reportContainer);
+                this.hasScanResult = true;
+            }
+
+            if (typeof payload.notice_message === 'string') {
+                this.noticeMessage = payload.notice_message;
+            }
+
+            if (typeof payload.page_title === 'string' && payload.page_title !== '') {
+                document.title = payload.page_title;
+            }
+
+            if (typeof payload.result_url === 'string' && payload.result_url !== '') {
+                if (share && window.location.href !== payload.result_url) {
+                    window.history.pushState({ launchReadiness: true }, '', payload.result_url);
+                }
+                if (share && payload.scan_complete !== false) {
+                    this.openShareModal(payload.result_url, payload.share_target ?? '', payload.share_summary ?? {});
+                }
             }
         },
 

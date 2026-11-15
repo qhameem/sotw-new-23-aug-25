@@ -4,6 +4,7 @@ namespace App\Services;
 
 use DOMDocument;
 use DOMXPath;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Http\Client\ConnectionException;
@@ -94,8 +95,6 @@ class LaunchReadinessAuditService
             }
 
             $siteRoot = $this->siteRoot($finalUrl);
-            $robotsResponse = $this->fetchOptional($siteRoot.'/robots.txt');
-            $sitemapResponse = $this->fetchOptional($siteRoot.'/sitemap.xml');
         } catch (\Throwable $exception) {
             return $this->incompleteReport($inputUrl, $normalizedUrl, $normalizedUrl, 'The requested page could not be fetched.');
         }
@@ -113,6 +112,7 @@ class LaunchReadinessAuditService
         $initialContent = $content;
         $needsRendering = $content['script_count'] > 0;
 
+        $renderRequest = null;
         if ($needsRendering) {
             if ($deferRendering) {
                 $report = $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl, 'Waiting to render.');
@@ -121,7 +121,14 @@ class LaunchReadinessAuditService
                 return $report;
             }
 
-            $renderedHtml = $this->renderHtml($finalUrl);
+            $renderRequest = $this->requestRenderedHtml($finalUrl);
+        }
+
+        $robotsResponse = $this->fetchOptional($siteRoot.'/robots.txt');
+        $sitemapResponse = $this->fetchOptional($siteRoot.'/sitemap.xml');
+
+        if ($needsRendering) {
+            $renderedHtml = $this->resolveRenderedHtml($renderRequest);
 
             if ($renderedHtml === null) {
                 return $this->incompleteReport($inputUrl, $normalizedUrl, $finalUrl,
@@ -1021,7 +1028,7 @@ class LaunchReadinessAuditService
         return $this->fail('Very little crawlable text content was found in the HTML response.');
     }
 
-    private function renderHtml(string $url): ?string
+    private function requestRenderedHtml(string $url): ?PromiseInterface
     {
         $endpoint = config('services.launch_readiness.renderer_url');
 
@@ -1040,12 +1047,26 @@ class LaunchReadinessAuditService
             return null;
         }
 
+        return Http::withOptions(['allow_redirects' => false])
+            ->connectTimeout(3)
+            ->timeout(12)
+            ->withQueryParameters($query)
+            ->async()
+            ->post($endpoint, $payload);
+    }
+
+    private function resolveRenderedHtml(?PromiseInterface $request): ?string
+    {
+        if ($request === null) {
+            return null;
+        }
+
         try {
-            $response = Http::withOptions(['allow_redirects' => false])
-                ->connectTimeout(3)
-                ->timeout(12)
-                ->withQueryParameters($query)
-                ->post($endpoint, $payload);
+            $response = $request->wait();
+
+            if (! $response instanceof Response) {
+                return null;
+            }
 
             $html = $response->body();
 

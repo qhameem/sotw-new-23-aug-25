@@ -19,7 +19,7 @@
 @section('content')
     <div
         class="mx-auto max-w-4xl space-y-8"
-        x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: @js(! $scan?->save_to_history ? 'This result was not saved to the public history feed. Anyone with this result URL can still open it.' : ''), toolName: @js($toolBrandingSiteName) })"
+        x-data="launchReadinessAnalyzer({ pendingResultUrl: @js($scan?->status_label === 'Waiting to render' ? request()->url() : null), csrfToken: @js(csrf_token()), initialNotice: @js(! $scan?->save_to_history ? 'This result was not saved to the public history feed. Anyone with this result URL can still open it.' : ''), toolName: @js($toolBrandingSiteName) })"
     >
         <section class="pt-4 text-center">
             <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
@@ -42,10 +42,15 @@
 
         @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url', $scan?->submitted_url)])
 
-        <p x-cloak x-show="submitting" role="status" class="text-sm text-slate-600" x-text="scanProgress"></p>
+        <p x-cloak x-show="submitting" role="status" class="flex items-center gap-2 text-sm text-slate-600">
+            <span aria-hidden="true" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
+            Analyzing…
+        </p>
 
-        <div x-ref="reportContainer" aria-live="polite">
-            @include('tools.launch-readiness.partials.report', ['report' => $report])
+        <div x-ref="reportContainer" x-show="!submitting" aria-live="polite">
+            @unless($scan?->status_label === 'Waiting to render')
+                @include('tools.launch-readiness.partials.report', ['report' => $report])
+            @endunless
         </div>
 
         @include('tools.launch-readiness.partials.share-modal')
