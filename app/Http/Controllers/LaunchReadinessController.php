@@ -228,10 +228,30 @@ class LaunchReadinessController extends Controller
             return collect();
         }
 
+        $siteKey = static fn (string $table): string => "CASE
+            WHEN LOWER({$table}.final_host) LIKE 'www.%' THEN SUBSTR(LOWER({$table}.final_host), 5)
+            ELSE COALESCE(NULLIF(LOWER({$table}.final_host), ''), LOWER({$table}.normalized_url))
+        END";
+
         return ToolScan::query()
             ->where('tool_key', ToolSettings::LAUNCH_READINESS_KEY)
             ->where('save_to_history', true)
+            ->whereNotExists(function ($query) use ($siteKey) {
+                $query->selectRaw('1')
+                    ->from('tool_scans as newer')
+                    ->whereColumn('newer.tool_key', 'tool_scans.tool_key')
+                    ->where('newer.save_to_history', true)
+                    ->whereRaw($siteKey('newer').' = '.$siteKey('tool_scans'))
+                    ->where(function ($query) {
+                        $query->whereColumn('newer.scanned_at', '>', 'tool_scans.scanned_at')
+                            ->orWhere(function ($query) {
+                                $query->whereColumn('newer.scanned_at', 'tool_scans.scanned_at')
+                                    ->whereColumn('newer.id', '>', 'tool_scans.id');
+                            });
+                    });
+            })
             ->latest('scanned_at')
+            ->latest('id')
             ->limit(8)
             ->get();
     }
