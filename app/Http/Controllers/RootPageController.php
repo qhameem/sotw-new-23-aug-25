@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomPage;
 use App\Models\Product;
+use App\Models\StartupDirectory;
 use App\Services\StartupDirectoryCatalog;
 use Illuminate\Http\Request;
 
@@ -18,6 +19,23 @@ class RootPageController extends Controller
         }
 
         $page = CustomPage::where('slug', $product_name)->where('is_published', true)->firstOrFail();
+
+        if ($page->slug === 'directories' && $request->query('_directory_snapshot') === '1') {
+            $rows = StartupDirectory::query()->orderBy('name')->orderBy('id')->limit(1501)->get();
+            abort_if($rows->count() > 1500, 413);
+
+            return response()->json($rows->map(fn ($row) => [
+                'id' => $row->id,
+                'name' => $row->name,
+                'domain' => $row->domain(),
+                'url' => $row->website_url,
+                'dr' => $row->dr,
+                'category' => $row->category,
+                'pricing' => $row->pricing,
+                'link_type' => $row->link_type,
+                'html' => view('site.directories.row', ['directory' => $row, 'editable' => false])->render(),
+            ]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'private, max-age=60');
+        }
 
         $directoryData = $page->slug === 'directories' ? $catalog->forRequest($request) : [];
 

@@ -120,9 +120,7 @@
                     @endif
                 @endforeach
             </div>
-            @if($directoryFilters)
-                <a href="{{ $catalogUrl }}#directory-catalog" data-directory-navigation class="underline">Clear all</a>
-            @endif
+            <a href="{{ $catalogUrl }}#directory-catalog" data-directory-navigation data-directory-clear-all class="underline" @if(!$directoryFilters) hidden @endif>Clear all</a>
             @if($editable)
                 <span id="directory-save-status" role="status"></span>
                 <span class="text-gray-500">Click a value to edit it. Open Row details for more fields.</span>
@@ -132,10 +130,8 @@
     </div>
 
     <div data-directory-fragment class="space-y-4">
-        @if($directories->isEmpty())
-            <p class="rounded-lg border p-4 text-sm">No directories match these filters.</p>
-        @else
-            <div class="directory-grid">
+        <p class="rounded-lg border p-4 text-sm" data-directory-empty @if($directories->isNotEmpty()) hidden @endif>No directories match these filters.</p>
+            <div class="directory-grid" @if($directories->isEmpty()) hidden @endif>
                 <table class="directory-table">
                     <colgroup>
                         <col class="directory-col-name">
@@ -168,7 +164,6 @@
             <div data-directory-pagination>
                 {{ $directories->onEachSide(1)->links('site.directories.pagination') }}
             </div>
-        @endif
     </div>
 
     @if($editable)
@@ -182,12 +177,29 @@
     const catalog = document.getElementById('directory-catalog');
     if (!catalog) return;
 
+    let snapshot;
+    @unless($editable)
+        const snapshotUrl = new URL(catalog.querySelector('#directory-filters').action);
+        snapshotUrl.searchParams.set('_directory_snapshot', '1');
+        fetch(snapshotUrl)
+            .then(response => response.ok ? response.json() : null)
+            .then(rows => { snapshot = rows; })
+            .catch(() => {});
+    @endunless
+
+    @include('site.directories.local-results')
+
     let pending;
     let searchTimer;
     const searchField = () => catalog.querySelector('#directory-filters [name="q"]');
     async function navigate(url, push = true, badge = null) {
         clearTimeout(searchTimer);
         pending?.abort();
+        if (snapshot && renderLocalResults(url)) {
+            catalog.removeAttribute('aria-busy');
+            if (push && url.href !== location.href) history.pushState(null, '', url);
+            return;
+        }
         const request = new AbortController();
         pending = request;
         catalog.setAttribute('aria-busy', 'true');
