@@ -7,14 +7,9 @@
     $headingTag = ($useDirectoryBreadcrumb ?? false) ? 'h1' : 'h2';
     $directoryIntro = $page->directory_intro ?? 'Compare submission options. Pricing and link policies can change, so check the directory before submitting.';
     $catalogUrl = route('custom-pages.show', ['product_name' => $page->slug]);
-    $activeSort = $directoryFilters['sort'] ?? 'recommended';
+    $activeSort = $directoryFilters['sort'] ?? 'dr';
     $catalogLink = fn (array $filters) => $filters ? $catalogUrl.'?'.http_build_query($filters) : $catalogUrl;
     $sortUrl = fn ($sort) => $catalogLink(array_replace($directoryFilters, ['sort' => $sort]));
-    $freeDofollow = ['pricing' => 'free', 'link_type' => 'dofollow'];
-    $freeDofollowActive = array_intersect_assoc($freeDofollow, $directoryFilters) === $freeDofollow;
-    $freeDofollowUrl = $catalogLink($freeDofollowActive
-        ? \Illuminate\Support\Arr::except($directoryFilters, array_keys($freeDofollow))
-        : array_replace($directoryFilters, $freeDofollow));
 @endphp
 
 @include('site.directories.styles')
@@ -43,94 +38,138 @@
         </details>
     @endif
 
-    <form method="GET" action="{{ $catalogUrl }}#directory-catalog" class="directory-toolbar" id="directory-filters">
-        <label class="directory-search">
-            Search
-            <input type="search" name="q" value="{{ $directoryFilters['q'] ?? '' }}" maxlength="100"
-                placeholder="Name, domain, or description" class="directory-control">
-        </label>
-        @foreach([
-            'category' => ['Category', $categories],
-            'pricing' => ['Pricing', $pricing + ['unknown' => 'Unknown']],
-            'link_type' => ['Link type', $linkTypes + ['unknown' => 'Unknown']],
-            'sort' => ['Sort by', $sorts],
-        ] as $name => [$label, $options])
-            <label class="directory-filter">
-                {{ $label }}
-                <select name="{{ $name }}" class="directory-control">
-                    @if($name !== 'sort') <option value="">All</option> @endif
-                    @foreach($options as $value => $text)
-                        <option value="{{ $value }}" @selected(($directoryFilters[$name] ?? '') === $value)>{{ $text }}</option>
-                    @endforeach
-                </select>
-            </label>
-        @endforeach
-        <noscript>
-            <button type="submit" class="directory-control directory-primary">Filter results</button>
-        </noscript>
-    </form>
+    <span class="sr-only" data-directory-announcement role="status"></span>
+    <div class="directory-filter-panel" data-directory-fragment>
+        <form method="GET" action="{{ $catalogUrl }}#directory-catalog" class="directory-toolbar" id="directory-filters">
+            <div class="directory-toolbar-row">
+                <div class="directory-search">
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/>
+                    </svg>
+                    <input type="search" name="q" aria-label="Search directories by name or domain"
+                        value="{{ $directoryFilters['q'] ?? '' }}" maxlength="100"
+                        placeholder="Search {{ number_format($directoryCount) }} directories by name or domain." class="directory-control">
+                    <kbd aria-hidden="true">/</kbd>
+                    <button type="button" data-directory-clear-search aria-label="Clear search">×</button>
+                </div>
+            </div>
+            <div class="directory-toolbar-row">
+                @foreach(['pricing' => ['Pricing', ['' => 'All'] + $pricing + ['unknown' => 'Unknown']], 'link_type' => ['Link type', ['' => 'All'] + $linkTypes + ['unknown' => 'Unknown']]] as $name => [$label, $options])
+                    <fieldset class="directory-filter">
+                        <legend>{{ $label }}</legend>
+                        <div class="directory-segments">
+                            @foreach($options as $value => $text)
+                                <label>
+                                    <input class="sr-only" type="radio" name="{{ $name }}" value="{{ $value }}" @checked(($directoryFilters[$name] ?? '') === $value)>
+                                    <span>{{ $text }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                @endforeach
+                <div class="directory-pickers">
+                    <div class="directory-picker">
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                            <path d="M2 2h4v4H2zM10 2h4v4h-4zM2 10h4v4H2zM10 10h4v4h-4z"/>
+                        </svg>
+                        <select name="category" aria-label="Category">
+                            <option value="">All categories</option>
+                            @foreach($categories as $value => $text)
+                                <option value="{{ $value }}" @selected(($directoryFilters['category'] ?? '') === $value)>{{ $text }}</option>
+                            @endforeach
+                        </select>
+                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <path d="m2 5 4-4 4 4zm0 2 4 4 4-4z"/>
+                        </svg>
+                    </div>
+                    <div class="directory-picker">
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                            <path d="M2 4h12M4 8h8M6 12h4"/>
+                        </svg>
+                        <select name="sort" aria-label="Sort by">
+                            @foreach($sorts as $value => $text)
+                                <option value="{{ $value }}" @selected($activeSort === $value)>{{ $text }}</option>
+                            @endforeach
+                        </select>
+                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <path d="m2 5 4-4 4 4zm0 2 4 4 4-4z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <noscript>
+                <button type="submit" class="directory-control directory-primary">Filter results</button>
+            </noscript>
+        </form>
 
-    <div class="directory-result-bar">
-        <span class="text-gray-600">
-            @if($directories->isNotEmpty())
-                {{ number_format($directories->firstItem()) }}–{{ number_format($directories->lastItem()) }} of
-            @endif
-            {{ number_format($directories->total()) }} {{ $directories->total() === 1 ? 'directory' : 'directories' }}
-        </span>
-        <div class="directory-filter-chips">
-            <span>Filters:</span>
-            <a href="{{ $freeDofollowUrl }}" @class(['directory-control', 'directory-chip', 'directory-chip-active' => $freeDofollowActive])
-                aria-label="{{ $freeDofollowActive ? 'Remove Free + Dofollow filter' : 'Apply Free + Dofollow filter' }}">
-                Free + Dofollow
-                @if($freeDofollowActive)
-                    <span class="directory-chip-remove" aria-hidden="true">×</span>
+        <div class="directory-result-bar">
+            <span class="text-gray-600" data-directory-count>
+                @if($directories->isNotEmpty())
+                    {{ number_format($directories->firstItem()) }}–{{ number_format($directories->lastItem()) }} of
                 @endif
-            </a>
+                {{ number_format($directories->total()) }} {{ isset($directoryFilters['q']) ? ($directories->total() === 1 ? 'match' : 'matches') : ($directories->total() === 1 ? 'directory' : 'directories') }}
+            </span>
+            <div class="directory-filter-chips">
+                @foreach(['category' => $categories, 'pricing' => $pricing, 'link_type' => $linkTypes] as $name => $options)
+                    @if(isset($directoryFilters[$name]))
+                        @php($filterLabel = $options[$directoryFilters[$name]] ?? 'Unknown')
+                        <a href="{{ $catalogLink(\Illuminate\Support\Arr::except($directoryFilters, [$name])) }}#directory-catalog"
+                            data-directory-navigation class="directory-control directory-chip directory-chip-active" aria-label="Remove {{ str_replace('_', ' ', $name) }} filter: {{ $filterLabel }}">
+                            {{ $filterLabel }} <span class="directory-chip-remove" aria-hidden="true">×</span>
+                        </a>
+                    @endif
+                @endforeach
+            </div>
+            @if($directoryFilters)
+                <a href="{{ $catalogUrl }}#directory-catalog" data-directory-navigation class="underline">Clear all</a>
+            @endif
+            @if($editable)
+                <span id="directory-save-status" role="status"></span>
+                <span class="text-gray-500">Click a value to edit it. Open Row details for more fields.</span>
+            @endif
         </div>
-        @if($directoryFilters)
-            <a href="{{ $catalogUrl }}" class="underline">Clear filters</a>
-        @endif
-        @if($editable)
-            <span id="directory-save-status" role="status"></span>
-            <span class="text-gray-500">Click a value to edit it. Open Row details for more fields.</span>
-        @endif
+
     </div>
 
-    @if($directories->isEmpty())
-        <p class="rounded-lg border p-4 text-sm">No directories match these filters.</p>
-    @else
-        <div class="directory-grid">
-            <table class="directory-table">
-                <colgroup>
-                    <col class="directory-col-name">
-                    <col class="directory-col-dr">
-                    <col class="directory-col-category">
-                    <col class="directory-col-pricing">
-                    <col class="directory-col-link">
-                    <col class="directory-col-action">
-                </colgroup>
-                <thead><tr>
-                    <th scope="col" @if($activeSort === 'name') aria-sort="ascending" @endif>
-                        <a href="{{ $sortUrl('name') }}">Directory <span aria-hidden="true">{{ $activeSort === 'name' ? '↑' : '↕' }}</span></a>
-                    </th>
-                    <th scope="col" class="directory-dr" @if($activeSort === 'dr') aria-sort="descending" @endif>
-                        <a href="{{ $sortUrl('dr') }}"><abbr title="Ahrefs Domain Rating">DR</abbr> <span aria-hidden="true">{{ $activeSort === 'dr' ? '↓' : '↕' }}</span></a>
-                    </th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Pricing</th>
-                    <th scope="col">Link type</th>
-                    <th scope="col">Visit</th>
-                </tr></thead>
-                <tbody>
-                    @foreach($directories as $directory)
-                        @include('site.directories.row', ['directory' => $directory, 'editable' => $editable])
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    <div data-directory-fragment class="space-y-4">
+        @if($directories->isEmpty())
+            <p class="rounded-lg border p-4 text-sm">No directories match these filters.</p>
+        @else
+            <div class="directory-grid">
+                <table class="directory-table">
+                    <colgroup>
+                        <col class="directory-col-name">
+                        <col class="directory-col-dr">
+                        <col class="directory-col-category">
+                        <col class="directory-col-pricing">
+                        <col class="directory-col-link">
+                        <col class="directory-col-action">
+                    </colgroup>
+                    <thead><tr>
+                        <th scope="col" @if(in_array($activeSort, ['name', 'name_desc'], true)) aria-sort="{{ $activeSort === 'name' ? 'ascending' : 'descending' }}" @endif>
+                            <a href="{{ $sortUrl($activeSort === 'name' ? 'name_desc' : 'name') }}">Directory <span aria-hidden="true">{{ $activeSort === 'name' ? '↑' : ($activeSort === 'name_desc' ? '↓' : '↕') }}</span></a>
+                        </th>
+                        <th scope="col" class="directory-dr" @if(in_array($activeSort, ['dr', 'dr_asc'], true)) aria-sort="{{ $activeSort === 'dr' ? 'descending' : 'ascending' }}" @endif>
+                            <a href="{{ $sortUrl($activeSort === 'dr' ? 'dr_asc' : 'dr') }}"><abbr title="Ahrefs Domain Rating">DR</abbr> <span aria-hidden="true">{{ $activeSort === 'dr' ? '↓' : ($activeSort === 'dr_asc' ? '↑' : '↕') }}</span></a>
+                        </th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Pricing</th>
+                        <th scope="col">Link type</th>
+                        <th scope="col">Visit</th>
+                    </tr></thead>
+                    <tbody>
+                        @foreach($directories as $directory)
+                            @include('site.directories.row', ['directory' => $directory, 'editable' => $editable])
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        {{ $directories->onEachSide(1)->links('site.directories.pagination') }}
-    @endif
+            <div data-directory-pagination>
+                {{ $directories->onEachSide(1)->links('site.directories.pagination') }}
+            </div>
+        @endif
+    </div>
 
     @if($editable)
         @include('site.directories.inline-editor')
@@ -139,8 +178,129 @@
 
 @push('scripts')
 <script>
-    document.getElementById('directory-filters')?.addEventListener('change', event => {
-        event.currentTarget.requestSubmit();
+(() => {
+    const catalog = document.getElementById('directory-catalog');
+    if (!catalog) return;
+
+    let pending;
+    let searchTimer;
+    const searchField = () => catalog.querySelector('#directory-filters [name="q"]');
+    async function navigate(url, push = true, badge = null) {
+        clearTimeout(searchTimer);
+        pending?.abort();
+        const request = new AbortController();
+        pending = request;
+        catalog.setAttribute('aria-busy', 'true');
+
+        const showSpinner = badge && setTimeout(() => badge.classList.add('directory-chip-loading'), 150);
+        const clearSpinner = () => {
+            clearTimeout(showSpinner);
+            badge?.classList.remove('directory-chip-loading');
+        };
+        request.signal.addEventListener('abort', clearSpinner, { once: true });
+
+        try {
+            const response = await fetch(url, { signal: request.signal });
+            if (!response.ok) throw new Error('Could not load directories');
+
+            const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            if (request.signal.aborted) return;
+            const fragments = catalog.querySelectorAll('[data-directory-fragment]');
+            const replacements = page.querySelectorAll('#directory-catalog [data-directory-fragment]');
+            if (fragments.length !== replacements.length) throw new Error('Directory results missing');
+
+            const focused = document.activeElement;
+            const field = focused?.form?.id === 'directory-filters' ? focused.name : null;
+            const search = searchField();
+            const nextSearch = replacements[0].querySelector('.directory-search');
+            if (search.value.trim() !== (url.searchParams.get('q') ?? '')) {
+                search.value = nextSearch.querySelector('input').value;
+            }
+            const selection = [search.selectionStart, search.selectionEnd];
+            const searchWrapper = search.closest('.directory-search');
+            fragments.forEach((fragment, index) => fragment.replaceWith(replacements[index]));
+            nextSearch.replaceWith(searchWrapper);
+            if (focused === search) {
+                search.focus({ preventScroll: true });
+                search.setSelectionRange(...selection);
+            }
+            if (field && field !== 'q') {
+                const controls = catalog.querySelectorAll('#directory-filters [name]');
+                Array.from(controls).find(control =>
+                    control.name === field && (control.type !== 'radio' || control.checked)
+                )?.focus({ preventScroll: true });
+            }
+            catalog.removeAttribute('aria-busy');
+            catalog.querySelector('[data-directory-announcement]').textContent =
+                catalog.querySelector('[data-directory-count]').textContent.trim().replace(/\s+/g, ' ');
+            if (push && url.href !== location.href) history.pushState(null, '', url);
+        } catch (error) {
+            if (!request.signal.aborted) location.assign(url);
+        } finally {
+            clearSpinner();
+            if (pending === request) catalog.removeAttribute('aria-busy');
+        }
+    }
+
+    catalog.addEventListener('change', event => {
+        if (event.target !== searchField() && event.target.form?.id === 'directory-filters') event.target.form.requestSubmit();
     });
+
+    function queueSearch(search) {
+        clearTimeout(searchTimer);
+        pending?.abort();
+        searchTimer = setTimeout(() => search.form.requestSubmit(), 250);
+    }
+
+    catalog.addEventListener('input', event => {
+        if (event.target === searchField() && !event.isComposing) queueSearch(event.target);
+    });
+    catalog.addEventListener('compositionend', event => {
+        if (event.target === searchField()) queueSearch(event.target);
+    });
+
+    function clearSearch(search) {
+        search.value = '';
+        search.focus({ preventScroll: true });
+        search.form.requestSubmit();
+    }
+
+    document.addEventListener('keydown', event => {
+        if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+        const search = searchField();
+        if (event.key === 'Escape' && event.target === search && search.value) {
+            event.preventDefault();
+            clearSearch(search);
+        } else if (event.key === '/' && !event.target.closest?.('input, textarea, select, [contenteditable]')) {
+            event.preventDefault();
+            search.focus();
+        }
+    });
+
+    catalog.addEventListener('submit', event => {
+        const form = event.target;
+        if (form.id !== 'directory-filters') return;
+        event.preventDefault();
+        const url = new URL(form.action);
+        for (const [name, value] of new FormData(form)) {
+            if (value !== '' && !(name === 'sort' && value === 'dr')) url.searchParams.set(name, value);
+        }
+        navigate(url);
+    });
+
+    catalog.addEventListener('click', event => {
+        if (event.target.closest('[data-directory-clear-search]')) {
+            clearSearch(searchField());
+            return;
+        }
+        const link = event.target.closest('a[data-directory-navigation], .directory-table th a, [data-directory-pagination] a');
+        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey ||
+            event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        navigate(new URL(link.href), true, link.matches('.directory-chip-active') ? link : null);
+    });
+
+    window.addEventListener('popstate', () => navigate(new URL(location.href), false));
+})();
 </script>
 @endpush

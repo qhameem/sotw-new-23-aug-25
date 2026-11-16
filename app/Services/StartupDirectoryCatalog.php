@@ -9,15 +9,16 @@ use Illuminate\Support\Str;
 class StartupDirectoryCatalog
 {
     public const SORTS = [
-        'recommended' => 'Recommended',
         'dr' => 'Highest DR',
-        'name' => 'Name A–Z',
-        'verified' => 'Recently verified',
+        'dr_asc' => 'Lowest DR',
+        'name' => 'A–Z',
+        'name_desc' => 'Z–A',
     ];
 
     public function forRequest(Request $request): array
     {
         $query = StartupDirectory::query();
+        $directoryCount = $query->count();
         $search = $request->query('q');
         $search = is_string($search) ? Str::limit(trim($search), 100, '') : '';
         $filters = $search !== '' ? ['q' => $search] : [];
@@ -25,8 +26,7 @@ class StartupDirectoryCatalog
         if ($search !== '') {
             $pattern = '%'.$search.'%';
             $query->where(fn ($nested) => $nested->whereLike('name', $pattern)
-                ->orWhereLike('website_url', $pattern)
-                ->orWhereLike('best_for', $pattern));
+                ->orWhereLike('website_url', $pattern));
         }
 
         foreach ([
@@ -44,21 +44,22 @@ class StartupDirectoryCatalog
         }
 
         $sort = $request->query('sort');
-        $sort = is_string($sort) && isset(self::SORTS[$sort]) ? $sort : 'recommended';
-        if ($sort !== 'recommended') {
+        $sort = is_string($sort) && isset(self::SORTS[$sort]) ? $sort : 'dr';
+        if ($sort !== 'dr') {
             $filters['sort'] = $sort;
         }
 
         match ($sort) {
             'dr' => $query->orderByRaw('dr IS NULL')->orderByDesc('dr'),
-            'verified' => $query->orderByRaw('verified_on IS NULL')->orderByDesc('verified_on'),
+            'dr_asc' => $query->orderByRaw('dr IS NULL')->orderBy('dr'),
+            'name_desc' => $query->orderByDesc('name'),
             'name' => $query,
-            default => $query->orderByRaw('category IS NULL')->orderByDesc('priority'),
         };
 
         return [
             'directories' => $query->orderBy('name')->orderBy('id')->paginate(50)->appends($filters),
             'directoryFilters' => $filters,
+            'directoryCount' => $directoryCount,
         ];
     }
 }
