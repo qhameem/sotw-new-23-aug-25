@@ -598,6 +598,8 @@
         @endif
     </x-modal>
 
+    <x-feedback-modal />
+
     <script>
         window.isAuthenticated = document.body.dataset.isAuthenticated === '1';
         window.loginUrl = document.body.dataset.loginUrl;
