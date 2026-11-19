@@ -1,8 +1,13 @@
 @php
-    $topCategories = cache()->remember('top_categories_sidebar:v2', config('performance.top_categories_cache_ttl', 3600), function () {
-        return \App\Models\Category::whereDoesntHave('types', function ($query) {
-            $query->where('types.id', 2);
+    $topCategories = cache()->remember('top_software_categories_sidebar', config('performance.top_categories_cache_ttl', 3600), function () {
+        $softwareTypes = \App\Support\CategoryTypeRegistry::namesFor(\App\Support\CategoryTypeRegistry::SOFTWARE);
+
+        return \App\Models\Category::whereHas('types', function ($query) use ($softwareTypes) {
+            $query->whereIn('types.name', $softwareTypes);
         })
+            ->whereDoesntHave('types', function ($query) use ($softwareTypes) {
+                $query->whereNotIn('types.name', $softwareTypes);
+            })
             ->with('types:id,name')
             ->withCount([
                 'products' => function ($query) {
@@ -19,7 +24,7 @@
 
 <div class="p-4">
     <div class="flex justify-between items-center mb-4">
-        <h3 class="text-sm font-semibold text-gray-800">Top Categories</h3>
+        <h3 class="text-sm font-semibold text-gray-800">Top software categories</h3>
         <a href="{{ route('categories.index') }}" wire:navigate.hover class="text-xs text-gray-600 hover:text-gray-900 hover:underline">
             View all
         </a>
