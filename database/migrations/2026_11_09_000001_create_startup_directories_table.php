@@ -90,7 +90,7 @@ return new class extends Migration
                     },
                     'pricing' => match (true) {
                         in_array(strtolower($price), ['free', 'free*'], true) => 'free',
-                        Str::startsWith(strtolower($price), ['free*;', 'freemium']) => 'freemium',
+                        Str::startsWith(strtolower($price), ['free*;', 'free + paid', 'freemium']) => 'freemium',
                         Str::startsWith(strtolower($price), 'paid') => 'paid',
                         default => null,
                     },

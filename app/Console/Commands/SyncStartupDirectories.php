@@ -49,7 +49,8 @@ class SyncStartupDirectories extends Command
                 [$name, $url, $dr, $linkType, $price] = $csvRow;
                 $domain = $this->domain($url);
 
-                if ($name === '' || $domain === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+                if ($name === '' || $domain === '' || !filter_var($url, FILTER_VALIDATE_URL)
+                    || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
                     throw new RuntimeException("Invalid directory archive row: {$name}");
                 }
 
@@ -72,7 +73,9 @@ class SyncStartupDirectories extends Command
                         default => null,
                     },
                     'dr' => $dr !== '' && is_numeric($dr) ? (int) $dr : null,
-                    'source_url' => 'https://submitsaas.com/',
+                    'source_url' => isset($this->types[$name])
+                        ? 'https://submitsaas.com/'
+                        : 'https://ideaproof.io/launch-directories',
                     'priority' => 0,
                     'created_at' => $timestamp,
                     'updated_at' => $timestamp,
@@ -128,7 +131,7 @@ class SyncStartupDirectories extends Command
 
         return match (true) {
             $price === 'free' => 'free',
-            str_contains($price, 'conditional'), str_starts_with($price, 'freemium') => 'freemium',
+            str_contains($price, 'conditional'), Str::startsWith($price, ['freemium', 'free + paid']) => 'freemium',
             str_starts_with($price, 'paid') => 'paid',
             default => null,
         };
