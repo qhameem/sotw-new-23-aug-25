@@ -159,6 +159,7 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::patch('startup-directories/{directory}', [\App\Http\Controllers\Admin\StartupDirectoryController::class, 'update'])->name('startup-directories.update');
     Route::patch('pages/{page}/directory-content', [\App\Http\Controllers\Admin\StartupDirectoryController::class, 'updateContent'])->name('pages.directory-content');
     Route::resource('pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show', 'destroy']);
+    Route::get('categories/export', [CategoryController::class, 'export'])->name('categories.export');
     Route::resource('categories', CategoryController::class);
     Route::get('errors', [SystemErrorController::class, 'index'])->name('errors.index');
     Route::patch('errors/{systemErrorReport}/resolve', [SystemErrorController::class, 'resolve'])->name('errors.resolve');

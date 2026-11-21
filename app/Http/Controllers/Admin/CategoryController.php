@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Type; // Added for Category Types
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends Controller
 {
@@ -49,6 +50,36 @@ class CategoryController extends Controller
         $sortByType = $request->sort_by_type ?? '';
 
         return view('admin.categories.index', compact('categories', 'categoryTypes', 'selectedType', 'sortByType'));
+    }
+
+    public function export(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Name', 'Slug', 'Description', 'Types'], escape: '');
+
+            $categories = Category::with('types')->orderBy('name')->orderBy('id')->lazy();
+
+            foreach ($categories as $category) {
+                $fields = [
+                    $category->name,
+                    $category->slug,
+                    $category->description ?? '',
+                    $category->types->pluck('name')->sort()->join(', '),
+                ];
+
+                // Prevent spreadsheet apps from interpreting category data as formulas.
+                $fields = array_map(
+                    fn (string $field) => preg_match('/^(?:\s*[=+@-]|[\t\r\n])/u', $field) ? "'".$field : $field,
+                    $fields,
+                );
+
+                fputcsv($output, $fields, escape: '');
+            }
+
+            fclose($output);
+        }, 'categories.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /**

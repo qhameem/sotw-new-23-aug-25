@@ -71,9 +71,9 @@
             <h2 class="text-xl font-bold mb-4">Categories</h2>
 
             <!-- Filter and Sort Controls -->
-            <div class="flex flex-wrap gap-4 mb-4">
+            <div class="flex flex-col gap-4 mb-4 sm:flex-row sm:items-end">
                 <!-- Type Filter -->
-                <div class="flex-1 min-w-[200px]">
+                <div class="flex-1 min-w-0">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Type</label>
                     <select x-model="selectedType"
                             class="w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
@@ -86,7 +86,7 @@
                 </div>
 
                 <!-- Sort by Type -->
-                <div class="flex-1 min-w-[200px]">
+                <div class="flex-1 min-w-0">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sort by Type</label>
                     <select x-model="sortByType"
                             class="w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
@@ -96,6 +96,15 @@
                         <option value="desc">Type Z-A</option>
                     </select>
                 </div>
+
+                <a href="{{ route('admin.categories.export') }}"
+                   class="inline-flex shrink-0 self-start items-center gap-2 px-4 py-2 bg-primary-500 border border-transparent rounded-md text-sm font-semibold leading-5 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-end"
+                   style="color: var(--color-primary-button-text);">
+                    <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" />
+                    </svg>
+                    Export All Categories (CSV)
+                </a>
             </div>
 
             <!-- Search Bar -->
