@@ -5,7 +5,7 @@
 
     if (request()->routeIs('home')) {
         $criticalEntry = 'home-critical';
-    } elseif (request()->routeIs('products.show')) {
+    } elseif (($publicStyleProfile ?? null) === 'product') {
         $criticalEntry = 'product-critical';
         $stylesheets[] = 'resources/css/rich-content.css';
         $stylesheets[] = 'resources/css/product-page.css';

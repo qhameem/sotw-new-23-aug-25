@@ -1,6 +1,7 @@
 @php
     $mainContentMaxWidth = 'max-w-7xl';
     $title = '';
+    $publicStyleProfile = 'product';
     $cover = $product->media->first();
     $coverImageUrl = $cover?->medium_url ?: $cover?->url;
     $mainPadding = 'px-4 sm:px-6 lg:px-10 xl:px-12';

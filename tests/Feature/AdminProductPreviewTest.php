@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Vite;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -52,6 +53,8 @@ class AdminProductPreviewTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Pending Preview Product');
+        $response->assertSee(Vite::asset('resources/css/product-page.css'));
+        $response->assertSee(Vite::asset('resources/css/rich-content.css'));
         $response->assertSee('<meta name="robots" content="noindex, nofollow, noarchive">', false);
         $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
