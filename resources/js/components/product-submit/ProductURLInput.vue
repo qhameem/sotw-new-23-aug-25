@@ -38,7 +38,7 @@
                    shadow-none focus:outline-none focus:ring-0 focus:shadow-none transition-colors"
             :class="urlExistsError || urlMatchesDraft
               ? 'border-amber-500 focus:border-amber-600'
-              : 'border-slate-400 focus:border-primary-500'"
+              : 'border-slate-500 focus:border-primary-500'"
             placeholder="https://your-website.com"
           >
           <span v-if="caretStyle" aria-hidden="true" class="url-caret" :style="caretStyle" />

@@ -1,63 +1,10 @@
 <template>
   <div class="space-y-8 mt-4">
-    <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm" aria-label="Homepage preview">
-      <h2 class="mb-4 text-sm font-semibold text-slate-900">Homepage preview <span class="text-red-500">*</span></h2>
-      <div class="grid items-start gap-4 sm:grid-cols-2">
-        <div
-          v-for="index in [0, 1]"
-          :key="index"
-          class="image-drop-zone group relative aspect-video min-h-48 overflow-hidden rounded-xl border border-dashed bg-white transition-colors duration-200"
-          :class="[
-            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'border-slate-300 hover:border-blue-700 focus-within:border-blue-700',
-            { 'opacity-50': isUploadingImage || isLoading }
-          ]"
-          @dragenter.prevent="enterImageDrop(index, $event)"
-          @dragover.prevent="allowImageDrop($event)"
-          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
-          @drop.prevent="dropImage(index, $event)"
-        >
-          <img v-if="imagePreviews[index]" :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="h-full w-full object-contain" draggable="false">
-          <div v-else class="image-drop-hint pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 py-5 text-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
-            <svg class="h-16 w-16 shrink-0" viewBox="0 0 80 80" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient :id="`upload-back-${index}`" x1="10" y1="8" x2="63" y2="62" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#99BCFF" />
-                  <stop offset="1" stop-color="#315BA8" />
-                </linearGradient>
-                <linearGradient :id="`upload-front-${index}`" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6592DA" stop-opacity="0.95" />
-                  <stop offset="1" stop-color="#DCE7FA" />
-                </linearGradient>
-              </defs>
-              <rect x="9" y="9" width="52" height="52" rx="14" :fill="`url(#upload-back-${index})`" transform="rotate(-7 35 35)" />
-              <rect x="22" y="24" width="51" height="49" rx="12" :fill="`url(#upload-front-${index})`" stroke="#DCE8FC" />
-              <circle cx="57" cy="39" r="6" fill="#EDF4FF" />
-              <path d="M28 65L40 47L51 60L58 53L68 67H30C28 67 27 66 28 65Z" fill="#F2F6FF" />
-            </svg>
-            <p class="text-xs leading-5 text-slate-800">
-              <template v-if="imageDragDepth[index] > 0">Drop your image here</template>
-              <template v-else>Drop your image here, or <span class="font-semibold text-blue-800">browse</span></template>
-            </p>
-            <p class="text-[10px] leading-4 text-slate-400">JPG, PNG, WebP, AVIF, GIF · Up to 20 MB</p>
-          </div>
-          <label class="image-upload-overlay absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-white/40 focus-within:bg-white/40" :class="{ 'pointer-events-none': isUploadingImage || isLoading }">
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" class="peer sr-only" :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'homepage image' : 'additional image')" :disabled="isUploadingImage || isLoading" @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''">
-            <span class="image-upload-action rounded-lg border border-blue-800 bg-blue-800 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-focus-visible:ring-offset-2">
-              {{ imagePreviews[index] ? 'Replace image' : 'Upload image' }}
-            </span>
-          </label>
-        </div>
-      </div>
-      <p class="mt-2 text-xs text-slate-500">At least one image required. Up to two images. JPG, PNG, WebP, AVIF, or GIF. Maximum 20 MB each.</p>
-      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
-      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
-    </aside>
     <!-- Project Name -->
     <div id="field-name" :class="[autofillLockClass('name'), reviewTint('name')]">
       <div class="mb-1 flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
-          <label for="name" class="block text-xs font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
-          <span class="text-xs text-gray-400">{{ (modelValue.name || '').length }}/40</span>
+          <label for="name" class="block text-sm font-bold text-gray-900">Project Name <span class="text-red-500">*</span></label>
         </div>
         <div class="ml-auto flex items-center justify-end gap-3">
           <p v-if="validationErrors.name" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.name }}</p>
@@ -69,7 +16,7 @@
         <button
           id="field-logo"
           type="button"
-          class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-medium text-slate-500 transition hover:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-400 bg-slate-50 text-[10px] font-medium text-slate-500 transition hover:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
           :class="{ '!border-red-400': showLogoError }"
           :aria-label="logoPreview ? 'Change logo' : 'Upload logo'"
           @click="$emit('open-logo-picker')"
@@ -77,20 +24,24 @@
           <img v-if="logoPreview" :src="logoPreview" alt="" class="h-full w-full object-contain">
           <span v-else>Upload logo</span>
         </button>
-        <input
-          ref="nameInput"
-          type="text"
-          id="name"
-          :value="modelValue.name"
-          @input="updateProductName($event.target.value)"
-          maxlength="40"
-          placeholder="e.g. Smooth Capture"
-          class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-          :class="{
-            'opacity-50 pointer-events-none': loadingStates.name,
-            '!border-red-400 !ring-red-100': validationErrors.name
-          }"
-        >
+        <div class="relative min-w-0 flex-1">
+          <input
+            ref="nameInput"
+            type="text"
+            id="name"
+            aria-describedby="name-character-count"
+            :value="modelValue.name"
+            @input="updateProductName($event.target.value)"
+            maxlength="40"
+            placeholder="e.g. Smooth Capture"
+            class="block w-full pl-4 pr-20 py-3 bg-white border border-gray-400 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+            :class="{
+              'opacity-50 pointer-events-none': loadingStates.name,
+              '!border-red-400 !ring-red-100': validationErrors.name
+            }"
+          >
+          <span id="name-character-count" class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs tabular-nums text-gray-600">{{ (modelValue.name || '').length }}/40</span>
+        </div>
       </div>
       <p v-if="showLogoError" class="mt-1 text-xs text-red-600">{{ validationErrors.logo }}</p>
       <!-- Slug preview -->
@@ -105,8 +56,7 @@
      <div id="field-tagline" :class="[autofillLockClass('tagline'), reviewTint('tagline')]">
         <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
-            <label for="tagline" class="block text-xs font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
-            <span class="text-xs text-gray-400">{{ (modelValue.tagline || '').length }}/140</span>
+            <label for="tagline" class="block text-sm font-bold text-gray-900">Tagline <span class="text-red-500">*</span></label>
           </div>
           <div class="ml-auto flex items-center justify-end gap-3">
             <p v-if="validationErrors.tagline" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.tagline }}</p>
@@ -129,16 +79,20 @@
           </div>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">Use one clear 140-character tagline. It will appear on both the list page and the product page.</div>
-        <input
-          type="text"
-          id="tagline" 
-          :value="modelValue.tagline" 
-          @input="updateField('tagline', $event.target.value)" 
-          maxlength="140" 
-          placeholder="Short Product Hunt-style one-liner"
-          class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
-          :class="{ '!border-red-400 !ring-red-100': validationErrors.tagline }"
-        >
+        <div class="relative">
+          <input
+            type="text"
+            id="tagline"
+            aria-describedby="tagline-character-count"
+            :value="modelValue.tagline"
+            @input="updateField('tagline', $event.target.value)"
+            maxlength="140"
+            placeholder="Short Product Hunt-style one-liner"
+            class="block w-full pl-4 pr-20 py-3 bg-white border border-gray-400 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+            :class="{ '!border-red-400 !ring-red-100': validationErrors.tagline }"
+          >
+          <span id="tagline-character-count" class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs tabular-nums text-gray-600">{{ (modelValue.tagline || '').length }}/140</span>
+        </div>
         <p v-if="extractionErrors.tagline" class="mt-1 text-xs text-red-500">{{ extractionErrors.tagline }}</p>
      </div>
 
@@ -146,8 +100,7 @@
     <div id="field-description" class="relative" :class="[autofillLockClass('description'), reviewTint('description'), {'opacity-50 pointer-events-none': loadingStates.description}]">
         <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-center gap-3">
-            <label class="block text-xs font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
-            <span class="text-xs text-gray-400">{{ descriptionCharacterCount }} characters</span>
+            <label class="block text-sm font-bold text-gray-900">Description <span class="text-red-500">*</span></label>
           </div>
           <div class="ml-auto flex items-center justify-end gap-3">
             <p v-if="validationErrors.description" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.description }}</p>
@@ -178,29 +131,75 @@
         </div>
         <div class="mb-2 text-[11px] text-gray-500">What does your product do, who is it for, and why would someone choose it?</div>
         <div
-          class="prose-editor-wrapper border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all"
+          class="prose-editor-wrapper border border-gray-400 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 focus-within:border-transparent transition-all"
           :class="{ '!border-red-400 !ring-red-100': validationErrors.description }"
         >
            <WysiwygEditor :modelValue="modelValue.description" :showCharacterCount="false" @update:modelValue="updateField('description', $event)" />
+           <div class="px-4 pb-3 pt-1 text-right text-xs tabular-nums text-gray-600">{{ descriptionCharacterCount }} characters</div>
         </div>
         <p v-if="extractionErrors.description" class="mt-1 text-xs text-red-500">{{ extractionErrors.description }}</p>
     </div>
 
+    <section aria-labelledby="homepage-preview-heading">
+      <h2 id="homepage-preview-heading" class="mb-2 text-sm font-bold text-[#191a1e]">Homepage preview <span class="!text-red-500" aria-hidden="true">*</span></h2>
+      <div class="grid gap-4 sm:grid-cols-[2fr_1fr]">
+        <label
+          v-for="index in [0, 1]"
+          :key="index"
+          class="group relative flex min-h-40 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#0b5b3e] sm:min-h-44"
+          :class="[
+            index === 0 ? 'border-[#777986] bg-[#f7f7f8]' : 'border-[#9395a0] bg-white',
+            imageDragDepth[index] > 0 ? 'image-drop-zone-active' : 'hover:border-[#0b5b3e]',
+            { 'cursor-not-allowed opacity-50': isUploadingImage || isLoading }
+          ]"
+          @dragenter.prevent="enterImageDrop(index, $event)"
+          @dragover.prevent="allowImageDrop($event)"
+          @dragleave.prevent="imageDragDepth[index] = Math.max(0, imageDragDepth[index] - 1)"
+          @drop.prevent="dropImage(index, $event)"
+        >
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            class="sr-only"
+            :aria-label="(imagePreviews[index] ? 'Replace ' : 'Upload ') + (index === 0 ? 'primary image' : 'secondary image')"
+            aria-describedby="homepage-preview-help"
+            :disabled="isUploadingImage || isLoading"
+            @change="$emit('upload-image', { index, file: $event.target.files[0] }); $event.target.value = ''"
+          >
+          <template v-if="imagePreviews[index]">
+            <img :src="imagePreviews[index]" :alt="index === 0 ? 'Homepage preview' : 'Additional product image'" class="absolute inset-0 h-full w-full object-contain" draggable="false">
+            <span class="image-replace-action absolute bottom-2 right-2 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#0b5b3e] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">Replace image</span>
+          </template>
+          <span v-else class="pointer-events-none flex flex-col gap-1 px-3 text-center text-sm leading-5">
+            <span class="font-bold" :class="index === 0 ? 'text-[#191a1e]' : 'text-[#3d3e47]'">{{ index === 0 ? 'Primary image' : 'Secondary' }}</span>
+            <span class="text-[#4e505b]">
+              <template v-if="imageDragDepth[index] > 0">Drop here</template>
+              <template v-else-if="index === 0">Drop here or <span class="text-[#0b5b3e] underline underline-offset-2">browse</span></template>
+              <template v-else>Optional</template>
+            </span>
+          </span>
+        </label>
+      </div>
+      <p id="homepage-preview-help" class="mt-2 text-sm text-[#4e505b]"><span class="sr-only">At least one image required. </span>16:9 works best, 1600 × 900 px. JPG, PNG, WebP, AVIF or GIF, 20 MB max.</p>
+      <p v-if="imageUploadError" role="alert" class="mt-2 text-xs text-red-600">{{ imageUploadError }}</p>
+      <p v-if="sourceSnippet" class="mt-3 text-sm leading-6 text-slate-700">{{ sourceSnippet }}</p>
+    </section>
+
     <!-- Categories (Chip Selection) -->
-    <div id="field-categories" :class="[autofillLockClass('taxonomy'), reviewTint('categories')]">
+    <div id="field-categories"
+         :class="[autofillLockClass('taxonomy'), reviewTint('categories', 'rounded-xl bg-sky-50/60')]"
+         @focusin="taxonomyOpen.categories = true"
+         @focusout="taxonomyOpen.categories = $event.currentTarget.contains($event.relatedTarget)">
        <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
-            <label class="block text-xs font-bold text-gray-900">Software <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
+            <label class="block text-sm font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
             <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 rounded bg-gray-200"></div>
           </div>
-          <p v-if="validationErrors.categories" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.categories }}</p>
+          <p :class="{ invisible: !validationErrors.categories }" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.categories || 'At least one category is required' }}</p>
        </div>
-       <div v-if="modelValue.categories.length === 0 && (!modelValue.categories_custom || modelValue.categories_custom.length === 0)" class="mb-2 text-xs text-gray-500">What categories best describe your product? If you can't find a good match, add a custom category.</div>
+       <div class="mb-2 text-xs text-gray-500">What categories best describe your product? If you can't find a good match, add a custom category.</div>
 
        <!-- Category Search -->
-       <div v-if="selectedCategories.length" class="mb-2 flex flex-wrap gap-2">
-         <button v-for="item in selectedCategories" :key="item.id" type="button" class="review-chip" @click="toggleCategory(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button>
-       </div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -210,10 +209,8 @@
          <input 
            type="text" 
            v-model="categorySearch" 
-           @focus="taxonomyOpen.categories = true"
-           @blur="closeTaxonomy('categories')"
            placeholder="Search categories..." 
-           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-400 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddCategoryButton, 'pr-8': !showAddCategoryButton && categorySearch.length >= 2}"
          >
          <button
@@ -234,21 +231,29 @@
          </button>
        </div>
        
-       <div v-show="taxonomyOpen.categories || categorySearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+       <div v-show="expandCategoryBadges || taxonomyOpen.categories || categorySearch"
+            class="flex flex-wrap gap-2 p-1"
+            :class="{ 'max-h-48 overflow-y-auto custom-scrollbar': !expandCategoryBadges }">
           <button 
             v-for="category in filteredCategories" 
             :key="category.id"
             type="button"
+            :aria-pressed="modelValue.categories.includes(category.id)"
             @click="toggleCategory(category.id)"
-            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+            class="group relative inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors duration-200"
             :class="modelValue.categories.includes(category.id) 
-              ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm' 
-              : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'"
+              ? 'bg-sky-50 border-sky-600 text-sky-700 shadow-sm'
+              : 'bg-white border-gray-400 text-gray-600 hover:border-gray-500 hover:bg-gray-50'"
           >
             {{ category.name }}
-            <svg v-if="modelValue.categories.includes(category.id)" class="ml-1.5 h-3 w-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+            <span v-if="modelValue.categories.includes(category.id)" aria-hidden="true" class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs font-medium !text-white shadow group-hover:block group-focus-visible:block">
+              Click to deselect
+            </span>
+            <span v-if="modelValue.categories.includes(category.id)" aria-hidden="true" class="pointer-events-none absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-sky-900/80 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </span>
           </button>
           <div v-if="filteredCategories.length === 0 && !showAddCategoryButton" class="w-full py-4 text-center text-xs text-gray-400 italic">
              No categories found matching "{{ categorySearch }}"
@@ -277,7 +282,7 @@
     <!-- Use Cases (Chip Selection) -->
     <div v-if="!curatedSubmission" id="field-use-cases" :class="[autofillLockClass('taxonomy'), reviewTint('useCases')]">
        <div class="mb-1 flex items-start justify-between gap-4">
-          <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
+          <label class="block text-sm font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
           <p v-if="validationErrors.useCases" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases }}</p>
        </div>
        <div v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
@@ -295,7 +300,7 @@
            @focus="taxonomyOpen.useCases = true"
            @blur="closeTaxonomy('useCases')"
            placeholder="Search use cases..."
-           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-400 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddUseCaseButton, 'pr-8': !showAddUseCaseButton && useCaseSearch.length >= 2}"
          >
          <button
@@ -357,7 +362,7 @@
     <!-- Pricing -->
     <div v-if="!curatedSubmission" id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+         <label class="block text-sm font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
          <p :class="{ invisible: !validationErrors.pricing }" :aria-hidden="!validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing || 'At least one pricing model is required' }}</p>
        </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
@@ -370,10 +375,10 @@
             <input
               type="checkbox"
               :checked="modelValue.pricing.includes(price.id)"
-              class="h-5 w-5 shrink-0 cursor-pointer rounded-md border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-2"
+              class="h-5 w-5 shrink-0 cursor-pointer rounded-md border-gray-400 text-primary-500 focus:ring-primary-500 focus:ring-offset-2"
               @change="togglePricing(price.id)"
             >
-            <span class="text-xs font-medium leading-4" :class="modelValue.pricing.includes(price.id) ? 'text-gray-900' : 'text-gray-700'">{{ price.name }}</span>
+            <span class="text-sm font-medium leading-5" :class="modelValue.pricing.includes(price.id) ? 'text-gray-900' : 'text-gray-700'">{{ price.name }}</span>
           </label>
        </div>
     </div>
@@ -394,11 +399,11 @@
 
 
     <div v-if="isAdmin" class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
-      <label class="block text-xs font-bold text-gray-900">Description cohort <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+      <label class="block text-sm font-bold text-gray-900">Description cohort <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
       <select
         :value="modelValue.description_format || 'full'"
         @change="updateField('description_format', $event.target.value)"
-        class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+        class="mt-2 block w-full rounded-lg border-gray-400 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
       >
         <option value="full">Cohort A — Full description</option>
         <option value="facts">Cohort B — Product facts</option>
@@ -406,13 +411,13 @@
       <p class="mt-2 text-[11px] text-gray-500">One stable format is shown to every visitor and crawler for this product.</p>
 
       <template v-if="modelValue.description_format === 'facts'">
-        <label class="mt-4 block text-xs font-bold text-gray-900">Product facts <span class="product-field-hint font-normal text-gray-400">(one per line, max 7)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+        <label class="mt-4 block text-sm font-bold text-gray-900">Product facts <span class="product-field-hint font-normal text-gray-400">(one per line, max 7)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         <textarea
           :value="(modelValue.product_facts || []).join('\n')"
           @input="updateProductFacts($event.target.value)"
           rows="7"
           placeholder="Leave empty to generate facts from the full description when saved."
-          class="mt-2 block w-full rounded-lg border-gray-200 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
+          class="mt-2 block w-full rounded-lg border-gray-400 bg-white text-xs focus:border-indigo-500 focus:ring-indigo-500"
         ></textarea>
       </template>
     </div>
@@ -420,7 +425,7 @@
     <!-- Platform (Chip Selection) -->
     <div :class="[autofillLockClass('taxonomy'), reviewTint('platforms')]">
        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-bold text-gray-900">Platform <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+          <label class="block text-sm font-bold text-gray-900">Platform <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
        </div>
        <div class="mb-2 text-xs text-gray-500">Where does your product run? Choose the platform your product is built for, or add a custom one if needed.</div>
 
@@ -437,7 +442,7 @@
            @focus="taxonomyOpen.platforms = true"
            @blur="closeTaxonomy('platforms')"
            placeholder="Search platforms..."
-           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-400 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddPlatformButton, 'pr-8': !showAddPlatformButton && platformSearch.length >= 2}"
          >
          <button
@@ -559,7 +564,7 @@
     <!-- Best For / Tags (Chip Selection) -->
     <div v-if="!curatedSubmission" id="field-best-for" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Max 5)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+          <label class="block text-sm font-bold text-gray-900">Tags / Best For <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Max 5)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
        </div>
        <div class="mb-2 text-xs text-gray-500">Who is your product best for? Add tags that describe the audience, role, or situation it fits best.</div>
 
@@ -577,7 +582,7 @@
            @focus="taxonomyOpen.tags = true"
            @blur="closeTaxonomy('tags')"
            placeholder="Search tags..."
-           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+           class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-400 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddTagButton, 'pr-8': !showAddTagButton && tagSearch.length >= 2}"
          >
          <button
@@ -639,7 +644,7 @@
     <!-- Pricing Page URL -->
     <div id="field-pricing-page-url" :class="[autofillLockClass('links'), reviewTint('pricing_page_url')]">
       <div class="mb-1 flex items-start justify-between gap-4">
-        <label for="pricing_page_url" class="block text-xs font-bold text-gray-900">Pricing page URL <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+        <label for="pricing_page_url" class="block text-sm font-bold text-gray-900">Pricing page URL <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
         <p v-if="validationErrors.pricing_page_url" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing_page_url }}</p>
       </div>
       <div class="mb-2 text-[11px] text-gray-500">Do you have a pricing page? Add the direct link so visitors can compare plans faster.</div>
@@ -649,7 +654,7 @@
         :value="modelValue.pricing_page_url || ''" 
         @input="updateField('pricing_page_url', $event.target.value)" 
         placeholder="https://example.com/pricing"
-        class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+        class="block w-full px-4 py-3 bg-white border border-gray-400 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
         :class="{ '!border-red-400 !ring-red-100': validationErrors.pricing_page_url }"
       >
     </div>
@@ -667,7 +672,7 @@
             id="sell-product"
             type="checkbox"
             :checked="modelValue.sell_product || false"
-            class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-sky-400"
+            class="h-4 w-4 rounded border-gray-400 text-rose-600 focus:ring-sky-400"
             @change="updateField('sell_product', $event.target.checked)"
           >
           <label for="sell-product" class="ml-2 block text-sm text-gray-900">I am looking to sell this product <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
@@ -682,30 +687,30 @@
             min="0"
             step="0.01"
             placeholder="Enter price in USD"
-            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
+            class="mt-1 block w-full rounded-md border border-gray-400 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
             @input="updateField('asking_price', $event.target.value)"
           >
         </div>
       </div>
       <div class="mt-4">
-        <label for="video-url" class="block text-xs font-bold text-gray-900">Video URL <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
-        <input id="video-url" type="url" :value="modelValue.video_url || ''" placeholder="https://youtube.com/watch?v=..." class="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500" @input="updateField('video_url', $event.target.value)">
+        <label for="video-url" class="block text-sm font-bold text-gray-900">Video URL <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+        <input id="video-url" type="url" :value="modelValue.video_url || ''" placeholder="https://youtube.com/watch?v=..." class="mt-2 block w-full rounded-lg border border-gray-400 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500" @input="updateField('video_url', $event.target.value)">
       </div>
       <WebsiteProviderFields :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" />
 
     <!-- Social Links -->
     <div class="pt-4 border-t border-gray-100" :class="autofillLockClass('links')">
-        <label class="block text-xs font-bold text-gray-900 mb-4">Social Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+        <label class="block text-sm font-bold text-gray-900 mb-4">Social Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
         <div class="grid grid-cols-1 gap-6">
             <div>
-                 <label class="block text-xs font-bold text-gray-900 mb-1">Twitter / X <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+                 <label class="block text-sm font-bold text-gray-900 mb-1">Twitter / X <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
                  <div class="mb-2 text-[11px] text-gray-500">Add your main product or founder profile so people can find updates and reach out.</div>
                  <input 
                     type="url" 
                     :value="modelValue.x_account || ''"
                     @input="updateField('x_account', $event.target.value)"
                     placeholder="https://x.com/username"
-                    class="block w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+                    class="block w-full px-4 py-2 bg-white border border-gray-400 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
                  >
             </div>
             <!-- Maker Links / GitHub etc could go here if we expand the model -->
@@ -714,7 +719,7 @@
          <!-- Dynamic Maker Links (Existing functionality preserved but styled) -->
          <div id="field-maker-links" class="mt-4">
              <div class="mb-1 flex items-start justify-between gap-4">
-                 <label class="block text-xs font-bold text-gray-900">Other Profile / Store Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
+                 <label class="block text-sm font-bold text-gray-900">Other Profile / Store Links <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
                  <div class="flex items-center gap-3">
                    <p v-if="validationErrors.maker_links" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.maker_links }}</p>
                    <button type="button" @click="addMoreLink" class="flex items-center text-xs font-bold text-sky-600 hover:text-sky-700">
@@ -731,7 +736,7 @@
                       :value="link"
                       @input="updateMakerLink(index, $event.target.value)"
                       placeholder="https://github.com/username"
-                      class="block flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
+                      class="block flex-1 px-4 py-2 bg-white border border-gray-400 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-xs"
                     >
                     <button type="button" @click="removeLink(index)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1 -1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" /></svg>
@@ -779,6 +784,7 @@ const props = defineProps({
   },
   allTechStacks: { type: Array, default: () => [] },
   curatedSubmission: Boolean,
+  expandCategoryBadges: Boolean,
   allCategories: { type: Array, default: () => [] },
   allUseCases: { type: Array, default: () => [] },
   allPlatforms: { type: Array, default: () => [] },
@@ -871,7 +877,6 @@ const techStackSearch = ref(''); // For tech stack search
 const taxonomyOpen = ref({ categories: false, useCases: false, platforms: false, tags: false });
 const closeTaxonomy = (key) => window.setTimeout(() => { taxonomyOpen.value[key] = false; }, 150);
 const selectedFrom = (items, selected) => (items || []).filter((item) => (selected || []).some((id) => String(id) === String(item.id)));
-const selectedCategories = computed(() => selectedFrom(props.allCategories, props.modelValue.categories));
 const selectedUseCases = computed(() => selectedFrom(props.allUseCases, props.modelValue.useCases));
 const selectedPlatforms = computed(() => selectedFrom(props.allPlatforms, props.modelValue.platforms));
 const selectedTags = computed(() => selectedFrom(props.allBestFor, props.modelValue.bestFor));
@@ -885,9 +890,9 @@ const reviewedFields = ref(new Set());
 const confirmField = (field) => {
   reviewedFields.value = new Set([...reviewedFields.value, field]);
 };
-const reviewTint = (field) => (
+const reviewTint = (field, classes = 'rounded-xl border border-sky-100 bg-sky-50/60 p-4') => (
   props.reviewMode && (Array.isArray(props.modelValue[field]) ? props.modelValue[field].length > 0 : Boolean(props.modelValue[field])) && !reviewedFields.value.has(field)
-    ? 'rounded-xl border border-sky-100 bg-sky-50/60 p-4'
+    ? classes
     : ''
 );
 
@@ -945,16 +950,9 @@ const filteredCategories = computed(() => {
   // Filter out already selected custom categories
   const existingCustomCategories = props.modelValue.categories_custom.map(c => c.name.toLowerCase());
   
-  // Sort and filter: Selected items should be boosted but also match search
   return props.allCategories
     .filter(cat => cat.name.toLowerCase().includes(search) && !existingCustomCategories.includes(cat.name.toLowerCase()))
-    .sort((a, b) => {
-      const aSelected = props.modelValue.categories.includes(a.id);
-      const bSelected = props.modelValue.categories.includes(b.id);
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // Computed filtered tags
@@ -1096,7 +1094,6 @@ function toggleCategory(id) {
         current.splice(index, 1);
     }
     updateField('categories', current);
-    categorySearch.value = ''; // Clear search after selection
 }
 
 // Checkbox/Chip Logic for Best For (Tags)
@@ -1341,27 +1338,12 @@ function removeCustomTechStack(customTechStackId) {
 
 <style scoped>
 .image-drop-zone-active {
-  border-color: #284b91;
-  background-color: #ebf2ff;
-}
-.image-drop-zone-active .image-drop-hint {
-  opacity: 1;
-}
-.image-drop-zone-active .image-upload-action {
-  opacity: 0;
-}
-.image-drop-zone-active .image-upload-overlay {
-  background-color: transparent;
+  border-color: #0b5b3e;
+  background-color: #edf6f1;
 }
 @media (hover: none) {
-  .image-drop-hint {
-    opacity: 0;
-  }
-  .image-upload-action {
+  .image-replace-action {
     opacity: 1;
-  }
-  .image-upload-overlay {
-    background-color: rgb(255 255 255 / 40%);
   }
 }
 </style>

@@ -9,14 +9,14 @@
     <p class="text-[11px] text-gray-500">Auto-detected from public records. Review or edit.</p>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div v-for="field in fields" :key="field.key">
-        <label :for="field.key" class="mb-1 block text-xs font-bold text-gray-900">{{ field.label }} <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span>
+        <label :for="field.key" class="mb-1 block text-sm font-bold text-gray-900">{{ field.label }} <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span>
           <span v-if="field.key === 'hosting_provider'" class="ml-2 rounded bg-slate-100 px-2 py-1 font-normal text-slate-600">{{ hostingStatus }}</span>
           <span v-if="field.key === 'hosting_provider' && hostingConfidence !== null" class="ml-2 font-normal text-gray-500" title="Heuristic evidence score, not a probability of correctness.">
             Confidence: {{ hostingConfidence }}/100
           </span>
         </label>
         <input :id="field.key" :value="modelValue[field.key] || ''" @input="edit(field.key, $event.target.value)" type="text" maxlength="255"
-          class="block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500"
+          class="block w-full rounded-lg border border-gray-400 bg-white px-4 py-3 text-xs text-gray-900 focus:border-sky-500 focus:ring-sky-500"
           placeholder="Unknown / optional">
       </div>
     </div>

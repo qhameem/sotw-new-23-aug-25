@@ -265,6 +265,7 @@
                 <div id="details-section" class="scroll-mt-6">
                   <ProductDetailsForm
                     :modelValue="form"
+                    :expand-category-badges="!isEditMode"
                     @update:modelValue="handleFormDetailUpdate"
                     @rewrite-description="handleDescriptionRewrite"
                     @regenerate-tagline="handleTaglineRegeneration"

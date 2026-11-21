@@ -3,7 +3,7 @@
     <div class="space-y-6">
       <div>
         <div class="mb-1 flex items-center justify-between">
-          <h4 class="text-xs font-bold text-gray-900">Tech stack <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Max 5)</span> <span v-if="modelValue.tech_stack?.length" class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-[10px] font-semibold text-sky-700">From your homepage</span></h4>
+          <h4 class="text-sm font-bold text-gray-900">Tech stack <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Max 5)</span> <span v-if="modelValue.tech_stack?.length" class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-[10px] font-semibold text-sky-700">From your homepage</span></h4>
         </div>
         <div class="mb-2 text-[11px] text-gray-500">Which technologies were used to build your product?</div>
 
@@ -17,7 +17,7 @@
             v-model="techSearch"
             type="text"
             placeholder="Search technologies..."
-            class="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-xs placeholder-gray-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            class="block w-full rounded-lg border border-gray-400 bg-gray-50 py-2 pl-9 pr-3 text-xs placeholder-gray-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             :class="{ 'pr-36': showAddTechStackButton }"
           >
           <button

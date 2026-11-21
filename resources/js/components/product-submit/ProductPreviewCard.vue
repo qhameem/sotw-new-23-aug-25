@@ -112,7 +112,7 @@
     </div>
 
     <div class="mb-4 border-t border-gray-100 pt-4">
-      <label for="sidebar-video-url" class="block text-xs font-bold text-gray-900">Video URL</label>
+      <label for="sidebar-video-url" class="block text-sm font-bold text-gray-900">Video URL</label>
       <p class="mt-1 text-xs text-gray-500">Add a YouTube video link to showcase your product</p>
       <input
         id="sidebar-video-url"

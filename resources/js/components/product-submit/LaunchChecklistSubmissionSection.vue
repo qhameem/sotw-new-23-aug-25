@@ -50,9 +50,9 @@
               <p class="text-xs text-gray-500">Place it on a public page of your site, then verify. Homepage placement is encouraged. Keep it live; removing it automatically removes your listing from public view.</p>
               <FreeLaunchBadgePreview :snippet="badgeSnippet">
                 <div id="field-badge-placement-url" class="space-y-2 pt-1">
-                  <label for="inline-badge-placement-url" class="flex items-center gap-2 text-xs font-medium text-gray-600"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-700">2</span> Verify placement</label>
+                  <label for="inline-badge-placement-url" class="flex items-center gap-2 text-sm font-medium text-gray-600"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-700">2</span> Verify placement</label>
                   <div class="flex gap-2">
-                    <input id="inline-badge-placement-url" type="url" :value="modelValue.badge_placement_url || ''" placeholder="https://yoursite.com/page" class="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :aria-invalid="Boolean(validationErrors.badge_placement_url)" aria-describedby="field-badge-verified" :disabled="isVerifyingBadge || isLoading" @input="$emit('update-badge-url', $event.target.value)">
+                    <input id="inline-badge-placement-url" type="url" :value="modelValue.badge_placement_url || ''" placeholder="https://yoursite.com/page" class="min-w-0 flex-1 rounded-lg border border-gray-400 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :aria-invalid="Boolean(validationErrors.badge_placement_url)" aria-describedby="field-badge-verified" :disabled="isVerifyingBadge || isLoading" @input="$emit('update-badge-url', $event.target.value)">
                     <button type="button" :disabled="isVerifyingBadge || isLoading || !badgePlacementUrlReady" :aria-busy="isVerifyingBadge" class="shrink-0 rounded-lg border border-primary-300 bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50" @click="$emit('verify-badge')">
                       {{ isVerifyingBadge ? 'Checking…' : modelValue.badge_verified ? 'Verified' : badgeVerificationMessage ? 'Check again' : 'Verify' }}
                     </button>
@@ -69,8 +69,8 @@
                 </div>
               </FreeLaunchBadgePreview>
               <div v-if="modelValue.badge_verified" id="field-badge-week-start" class="space-y-2">
-                <label for="inline-badge-launch-date" class="block text-xs font-medium text-gray-600">Pick your launch date</label>
-                <select id="inline-badge-launch-date" :value="modelValue.badge_week_start || ''" class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :disabled="isLoading" @change="$emit('update-badge-week-start', $event.target.value)">
+                <label for="inline-badge-launch-date" class="block text-sm font-medium text-gray-600">Pick your launch date</label>
+                <select id="inline-badge-launch-date" :value="modelValue.badge_week_start || ''" class="block w-full rounded-lg border border-gray-400 bg-white px-3 py-2 !text-xs focus:border-primary-500 focus:ring-primary-500" :disabled="isLoading" @change="$emit('update-badge-week-start', $event.target.value)">
                   <option value="" disabled>Choose a launch date</option>
                   <option v-for="option in launchWeekOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                 </select>
@@ -161,7 +161,7 @@
             :value="modelValue.comparison_overrides_input || ''"
             rows="3"
             placeholder="Comma or newline separated product IDs or slugs (e.g. 12, ai-agent-flow, another-product)"
-            class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
+            class="w-full rounded-md border border-gray-400 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
             @input="emitFieldUpdate('comparison_overrides_input', $event.target.value)"
           ></textarea>
           <p class="mt-1 text-xs text-gray-500">These are shown first in the sidebar "Compare with" section.</p>
@@ -174,7 +174,7 @@
             :value="modelValue.alternative_overrides_input || ''"
             rows="3"
             placeholder="Comma or newline separated product IDs or slugs"
-            class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
+            class="w-full rounded-md border border-gray-400 bg-white px-3 py-2 text-gray-600 shadow-sm placeholder-gray-400 focus:border-sky-400 focus:outline-none focus:ring-sky-400 sm:text-sm"
             @input="emitFieldUpdate('alternative_overrides_input', $event.target.value)"
           ></textarea>
           <p class="mt-1 text-xs text-gray-500">These are shown first on the alternatives page.</p>
