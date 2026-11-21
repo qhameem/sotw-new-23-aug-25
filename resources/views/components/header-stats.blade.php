@@ -13,13 +13,14 @@
 @endphp
 
 <div class="hidden w-full overflow-hidden rounded-xl border border-gray-200 bg-white md:block" aria-label="Site statistics">
-    <p class="px-4 py-3 text-sm leading-relaxed text-gray-600">
+    <p class="px-4 py-3 text-xs leading-relaxed text-gray-600">
         Read <strong class="font-semibold text-gray-900">{{ $compactNumber($stats['ai_bot_requests']) }}</strong> times by
         <strong class="font-semibold text-gray-900">{{ number_format($stats['ai_systems']) }}</strong> AI systems including,
-        <strong class="inline-flex items-center gap-1 align-middle font-semibold text-gray-900"><img src="{{ asset('images/ai/chatgpt.svg') }}" alt="" class="h-4 w-4">ChatGPT,</strong>
-        <strong class="inline-flex items-center gap-1 align-middle font-semibold text-gray-900"><img src="{{ asset('images/ai/claude.svg') }}" alt="" class="h-4 w-4">Claude,</strong>
-        <strong class="inline-flex items-center gap-1 align-middle font-semibold text-gray-900"><img src="{{ asset('images/ai/perplexity.svg') }}" alt="" class="h-4 w-4">Perplexity,</strong>
-        and <strong class="inline-flex items-center gap-1 align-middle font-semibold text-gray-900"><img src="{{ asset('images/ai/gemini.svg') }}" alt="" class="h-4 w-4">Gemini</strong>
+        <strong class="whitespace-nowrap font-semibold text-gray-900"><img src="{{ asset('images/ai/chatgpt.svg') }}" alt="" class="mr-1 inline-block h-3.5 w-3.5 align-text-bottom">ChatGPT,</strong>
+        <strong class="whitespace-nowrap font-semibold text-gray-900"><img src="{{ asset('images/ai/claude.svg') }}" alt="" class="mr-1 inline-block h-3.5 w-3.5 align-text-bottom">Claude,</strong>
+        <strong class="whitespace-nowrap font-semibold text-gray-900"><img src="{{ asset('images/ai/perplexity.svg') }}" alt="" class="mr-1 inline-block h-3.5 w-3.5 align-text-bottom">Perplexity,</strong>
+        <strong class="whitespace-nowrap font-semibold text-gray-900"><img src="{{ asset('images/ai/gemini.svg') }}" alt="" class="mr-1 inline-block h-3.5 w-3.5 align-text-bottom">Gemini,</strong>
+        <span class="whitespace-nowrap">and <strong class="font-semibold text-gray-900"><img src="{{ asset('images/ai/grok.svg') }}" alt="" class="mr-1 inline-block h-3.5 w-3.5 align-text-bottom">Grok</strong></span>
     </p>
 
     <div @class([
