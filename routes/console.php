@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\AnalyticsService;
+use App\Services\DomainRatingService;
 use App\Support\ProductPublishSchedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -52,3 +53,21 @@ Artisan::command('pricing:refresh-visitors', function (AnalyticsService $analyti
 })->purpose('Refresh the cached 30-day visitor count for Pricing');
 
 Schedule::command('pricing:refresh-visitors')->daily()->withoutOverlapping();
+
+Artisan::command('seo:refresh-domain-rating', function (DomainRatingService $domainRating) {
+    if (! $domainRating->refresh()) {
+        $this->error('Unable to refresh the Ahrefs Domain Rating. Check AHREFS_API_KEY, APP_URL, and API availability.');
+
+        return 1;
+    }
+
+    $this->info('Ahrefs Domain Rating refreshed.');
+
+    return 0;
+})->purpose('Refresh the cached Ahrefs Domain Rating for the site');
+
+Schedule::command('seo:refresh-domain-rating')
+    ->dailyAt('05:15')
+    ->when(fn () => filled(config('services.ahrefs.api_key')))
+    ->withoutOverlapping()
+    ->onOneServer();

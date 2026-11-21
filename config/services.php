@@ -21,6 +21,10 @@ return [
     |
     */
 
+    'ahrefs' => [
+        'api_key' => env('AHREFS_API_KEY'),
+    ],
+
     'firecrawl' => [
         'enabled' => env('FIRECRAWL_ENABLED', false),
         'api_key' => env('FIRECRAWL_API_KEY'),
