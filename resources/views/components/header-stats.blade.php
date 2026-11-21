@@ -16,9 +16,9 @@
     <div class="flex w-full items-center divide-x divide-gray-200 py-3 text-xs text-gray-500">
         @if($rating !== null)
             <div class="flex items-center gap-1.5 px-2.5">
-                <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white">
+                <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 text-xs font-bold text-gray-900">
                     <svg viewBox="0 0 36 36" class="absolute inset-0 h-full w-full" aria-hidden="true">
-                        <circle cx="18" cy="18" r="14" fill="none" stroke="#555" stroke-width="4" />
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#e5e7eb" stroke-width="4" />
                         @if($rating > 0)
                             <circle cx="18" cy="18" r="14" fill="none" stroke="#ff450d" stroke-width="4"
                                 pathLength="100" stroke-dasharray="{{ $rating }} 100" stroke-linecap="round"
