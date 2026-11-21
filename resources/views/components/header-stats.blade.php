@@ -27,7 +27,7 @@
                     </svg>
                     <span class="relative">{{ round($rating) }}<span class="sr-only"> out of 100</span></span>
                 </span>
-                <span class="text-left leading-tight">Domain Rating<br>by <a href="https://ahrefs.com/" rel="nofollow" class="font-semibold text-gray-700 underline">Ahrefs</a></span>
+                <span class="text-left leading-tight">Domain Rating<br>by <a href="https://ahrefs.com/" target="_blank" rel="nofollow noopener" class="font-semibold text-gray-700 underline">Ahrefs</a></span>
             </div>
         @endif
         <span @class(['flex-1 text-left', 'px-2.5' => $rating !== null, 'px-4' => $rating === null]) title="{{ number_format($stats['submitted_products']) }} products submitted">
