@@ -279,7 +279,7 @@
         const minute = 60;
         const hour = 60 * minute;
         const day = 24 * hour;
-        const dayMilliseconds = day * second;
+        const weekMilliseconds = 7 * day * second;
         const pad = value => String(value).padStart(2, '0');
 
         return {
@@ -293,9 +293,9 @@
                 const now = Date.now();
                 const launchTime = this.$refs.launchTime;
 
-                // The configured launch repeats daily in UTC, including across cached page loads.
+                // Roll forward by whole UTC weeks, including when the page was cached.
                 if (now >= this.launchAt) {
-                    this.launchAt += (Math.floor((now - this.launchAt) / dayMilliseconds) + 1) * dayMilliseconds;
+                    this.launchAt += (Math.floor((now - this.launchAt) / weekMilliseconds) + 1) * weekMilliseconds;
                     launchTime.dateTime = new Date(this.launchAt).toISOString();
                 }
 

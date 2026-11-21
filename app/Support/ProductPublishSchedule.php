@@ -57,4 +57,16 @@ class ProductPublishSchedule
 
         return $nextLaunch;
     }
+
+    public static function nextWeeklyLaunchTime(?Carbon $from = null): Carbon
+    {
+        $now = ($from ?? Carbon::now('UTC'))->copy()->utc();
+        $nextLaunch = self::forDate($now->copy()->startOfWeek(Carbon::MONDAY));
+
+        if ($now->gte($nextLaunch)) {
+            $nextLaunch->addWeek();
+        }
+
+        return $nextLaunch;
+    }
 }

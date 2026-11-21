@@ -1834,7 +1834,7 @@ class ProductController extends Controller
 
         $allProducts = $combinedProducts; // Use the combined and ordered list for Alpine
 
-        $nextLaunchTime = $this->getNextLaunchTimeIso();
+        $nextLaunchTime = ProductPublishSchedule::nextWeeklyLaunchTime()->toIso8601String();
 
         $weekOfYear = $week;
 
