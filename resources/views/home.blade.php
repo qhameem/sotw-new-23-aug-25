@@ -131,9 +131,20 @@
     @endguest
 
     @if($isWeeklyListing)
-        <h1 class="px-4 pb-4 pt-2 text-[24px] font-semibold text-gray-900">
-            Top products of the week
-        </h1>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pb-4 pt-2">
+            <h1 class="text-[24px] font-semibold text-gray-900">Top products of the week</h1>
+            @if(!empty($nextLaunchTime))
+                @php
+                    $remainingSeconds = max(0, strtotime($nextLaunchTime) - time());
+                    $remainingDays = intdiv($remainingSeconds, 86400);
+                    $remainingTime = sprintf('%02dh %02dm %02ds', intdiv($remainingSeconds, 3600) % 24, intdiv($remainingSeconds, 60) % 60, $remainingSeconds % 60);
+                @endphp
+                <p class="whitespace-nowrap text-sm tabular-nums text-gray-600" x-data="nextLaunchCountdown()">
+                    Next launch in
+                    <time x-ref="launchTime" datetime="{{ $nextLaunchTime }}" class="font-mono font-semibold text-gray-900">{{ $remainingDays > 0 ? $remainingDays.'d '.$remainingTime : $remainingTime }}</time>
+                </p>
+            @endif
+        </div>
     @endif
 
     </div>
@@ -263,6 +274,46 @@
 
 @push('scripts')
 <script>
+    function nextLaunchCountdown() {
+        const second = 1000;
+        const minute = 60;
+        const hour = 60 * minute;
+        const day = 24 * hour;
+        const dayMilliseconds = day * second;
+        const pad = value => String(value).padStart(2, '0');
+
+        return {
+            timeout: null,
+            launchAt: null,
+            init() {
+                this.launchAt = Date.parse(this.$refs.launchTime.dateTime);
+                this.update();
+            },
+            update() {
+                const now = Date.now();
+                const launchTime = this.$refs.launchTime;
+
+                // The configured launch repeats daily in UTC, including across cached page loads.
+                if (now >= this.launchAt) {
+                    this.launchAt += (Math.floor((now - this.launchAt) / dayMilliseconds) + 1) * dayMilliseconds;
+                    launchTime.dateTime = new Date(this.launchAt).toISOString();
+                }
+
+                const remaining = this.launchAt - now;
+                const seconds = Math.ceil(remaining / second);
+                const days = Math.floor(seconds / day);
+                const hours = Math.floor(seconds / hour) % 24;
+                const minutes = Math.floor(seconds / minute) % 60;
+                const daysPrefix = days > 0 ? `${days}d ` : '';
+                launchTime.textContent = `${daysPrefix}${pad(hours)}h ${pad(minutes)}m ${pad(seconds % minute)}s`;
+                this.timeout = setTimeout(() => this.update(), remaining % second || second);
+            },
+            destroy() {
+                clearTimeout(this.timeout);
+            },
+        };
+    }
+
     function weekNavigationScroller() {
         return {
             init() {
