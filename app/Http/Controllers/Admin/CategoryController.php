@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Models\Type; // Added for Category Types
+use App\Models\Type;
+use App\Support\CategoryTypeRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends Controller
@@ -26,7 +28,7 @@ class CategoryController extends Controller
         // Handle filtering by type
         if ($request->has('type') && !empty($request->type)) {
             $query->whereHas('types', function ($q) use ($request) {
-                $q->where('types.id', $request->type);
+                $q->whereIn('types.id', Type::softwareFilterIds($request->type));
             });
         }
 
@@ -45,7 +47,7 @@ class CategoryController extends Controller
         }
 
         $categories = $query->get();
-        $categoryTypes = Type::orderBy('name')->get(); // Fetch all category types
+        $categoryTypes = Type::visibleInPickers()->orderBy('name')->get(); // Fetch all category types
         $selectedType = $request->type ?? '';
         $sortByType = $request->sort_by_type ?? '';
 
@@ -87,7 +89,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        $categoryTypes = Type::orderBy('name')->get();
+        $categoryTypes = Type::visibleInPickers()->orderBy('name')->get();
         return view('admin.categories.create', compact('categoryTypes'));
     }
 
@@ -101,7 +103,7 @@ class CategoryController extends Controller
             'slug' => 'required|string|max:255|unique:categories,slug',
             'description' => 'nullable|string',
             'category_types' => 'nullable|array',
-            'category_types.*' => 'exists:types,id', // Ensure selected types exist
+            'category_types.*' => Rule::exists('types', 'id')->whereNot('name', CategoryTypeRegistry::LEGACY_SOFTWARE_NAME),
         ]);
         $category = Category::create($validated);
         $category->types()->sync($validated['category_types'] ?? []);
@@ -132,7 +134,7 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
-        $categoryTypes = Type::orderBy('name')->get();
+        $categoryTypes = Type::visibleInPickers()->orderBy('name')->get();
         $assignedTypeIds = $category->types->pluck('id')->toArray();
         return view('admin.categories.edit', compact('category', 'categoryTypes', 'assignedTypeIds'));
     }
@@ -148,7 +150,7 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'meta_description' => 'nullable|string|max:255',
             'category_types' => 'nullable|array',
-            'category_types.*' => 'exists:types,id', // Ensure selected types exist
+            'category_types.*' => Rule::exists('types', 'id')->whereNot('name', CategoryTypeRegistry::LEGACY_SOFTWARE_NAME),
         ]);
         $category->update($validated);
         $category->types()->sync($validated['category_types'] ?? []); // Sync types, pass empty array if none selected

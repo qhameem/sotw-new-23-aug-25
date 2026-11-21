@@ -74,7 +74,7 @@ export function useLaunchChecklistSubmission(props, emit) {
       tagline,
       description,
       (categories && Array.isArray(categories) && categories.length > 0) || categoriesCustom.length > 0,
-      actualPricingCategories.length > 0,
+      props.curatedSubmission || actualPricingCategories.length > 0,
       logo || (logos && Array.isArray(logos) && logos.length > 0) || props.logoPreview,
     ];
 

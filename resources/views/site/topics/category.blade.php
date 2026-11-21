@@ -2,6 +2,12 @@
 
 @section('title', $meta_title ?? 'Software on the Web')
 
+@if($categoryCanonicalUrl)
+    @section('canonical')
+        <link rel="canonical" href="{{ $categoryCanonicalUrl }}" />
+    @endsection
+@endif
+
 @section('meta_description', !empty(trim((string) $category->meta_description)) ? $category->meta_description : Str::limit(strip_tags((string) $category->description), 160))
 
 @section('header-title')

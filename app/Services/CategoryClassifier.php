@@ -24,11 +24,11 @@ class CategoryClassifier
     public function classify(string $text): array
     {
         try {
-            $categories = Category::whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE)))->pluck('name')->implode(', ');
-            $useCases = Category::whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE)))->pluck('name')->implode(', ');
-            $bestFor = Category::whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR)))->pluck('name')->implode(', ');
-            $pricing = Category::whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING)))->pluck('name')->implode(', ');
-            $platforms = Category::whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM)))->pluck('name')->implode(', ');
+            $categories = Category::submittable()->whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE)))->pluck('name')->implode(', ');
+            $useCases = Category::submittable()->whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE)))->pluck('name')->implode(', ');
+            $bestFor = Category::submittable()->whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR)))->pluck('name')->implode(', ');
+            $pricing = Category::submittable()->whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING)))->pluck('name')->implode(', ');
+            $platforms = Category::submittable()->whereHas('types', fn ($q) => $q->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM)))->pluck('name')->implode(', ');
             $preparedContent = $this->prepareWebsiteContent($text);
 
             $promptTemplate = file_get_contents(resource_path('prompts/category_classification_prompt.txt'));

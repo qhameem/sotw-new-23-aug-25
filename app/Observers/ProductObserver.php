@@ -146,7 +146,7 @@ class ProductObserver
     {
         Cache::forget(ProductFilterNavigationService::CACHE_KEY);
         Cache::forget(CategoryNavigationService::CACHE_KEY);
-        Cache::forget('homepage.categories:v1');
+        Cache::forget('homepage.categories:v2');
 
         // Versioning avoids cache-store-specific wildcard deletion.
         Cache::forever('homepage.latest_week_version', (string) hrtime(true));

@@ -88,6 +88,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  curatedSubmission: Boolean,
   logoPreview: {
     type: String,
     default: null,

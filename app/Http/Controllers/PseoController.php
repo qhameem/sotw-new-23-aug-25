@@ -24,7 +24,7 @@ class PseoController extends Controller
         $category->loadMissing('types');
         abort_unless($this->hasSoftwareType($category), 404);
 
-        $products = $category->products()
+        $products = $category->pageProducts()
             ->where('approved', true)
             ->where('is_published', true)
             ->with(['categories.types', 'user', 'techStacks'])
@@ -204,11 +204,9 @@ class PseoController extends Controller
 
     private function hasSoftwareType(Category $category): bool
     {
-        $typeNames = $category->types->pluck('name')->map(fn ($name) => strtolower((string) $name));
-
-        return $typeNames->contains('software')
-            || $typeNames->contains('software categories')
-            || $typeNames->contains('category');
+        return Category::whereKey($category->id)
+            ->withSoftwarePage(\App\Support\CategoryTypeRegistry::namesFor(\App\Support\CategoryTypeRegistry::SOFTWARE))
+            ->exists();
     }
 
     private function decorateAlternative(Product $source, array $sourceEditorial, Product $alternative): Product

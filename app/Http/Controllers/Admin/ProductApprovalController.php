@@ -536,7 +536,10 @@ class ProductApprovalController extends Controller
         }
 
         // Sync categories and tech stacks
-        $product->categories()->sync($product->proposedCategories()->pluck('categories.id')->toArray());
+        $product->categories()->sync(
+            $product->proposedCategories()->pluck('categories.id')
+                ->merge($product->nonSubmittableCategoryIds())->unique()->all()
+        );
         $product->techStacks()->sync($product->proposedTechStacks()->pluck('tech_stacks.id')->toArray());
         $this->applyProposedScreenshot($product);
 
@@ -740,7 +743,7 @@ class ProductApprovalController extends Controller
                 'use_case' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE),
                 'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
                 'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
-                default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),
+                default => [CategoryTypeRegistry::SOFTWARE_NAME],
             };
 
             $typeIds = \App\Models\Type::whereIn('name', $typeNames)->pluck('id');

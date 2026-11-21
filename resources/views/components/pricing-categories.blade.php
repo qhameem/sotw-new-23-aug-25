@@ -1,6 +1,6 @@
 @php
-    $pricingCategories = cache()->remember('pricing_categories_sidebar', config('performance.pricing_categories_cache_ttl', 3600), function () {
-        return \App\Models\Category::whereHas('types', function ($query) {
+    $pricingCategories = cache()->remember('pricing_categories_sidebar:v2', config('performance.pricing_categories_cache_ttl', 3600), function () {
+        return \App\Models\Category::submittable()->whereHas('types', function ($query) {
             $query->where('types.id', 2);
         })
             ->withCount([

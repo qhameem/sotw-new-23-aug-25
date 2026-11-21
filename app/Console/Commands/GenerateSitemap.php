@@ -156,9 +156,8 @@ class GenerateSitemap extends Command
             $softwareCats = Category::whereHas('products', function ($q) {
                 $q->where('approved', true);
             })
-                ->whereHas('types', function ($q) {
-                    $q->whereIn('name', ['Software', 'Software Categories']);
-                })->get();
+                ->withSoftwarePage(['Software', 'Software Categories'])
+                ->get();
 
             foreach ($softwareCats as $category) {
                 $pseoSitemap->add(Url::create(route('pseo.best', $category->slug))

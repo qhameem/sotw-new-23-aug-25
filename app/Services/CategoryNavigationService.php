@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Support\CategoryPageType;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class CategoryNavigationService
 {
-    public const CACHE_KEY = 'navigation.categories:v2';
+    public const CACHE_KEY = 'navigation.categories:v4';
 
     private const GROUPS = [
         'ai-automation' => [
@@ -201,7 +202,7 @@ class CategoryNavigationService
     public function getMenuGroups(): array
     {
         $softwareGroups = $this->buildSoftwareGroups();
-        $allCategories = $this->mapCategories($this->categories(), true);
+        $allCategories = $this->mapCategories($this->submittableCategories(), true);
 
         return collect(self::GROUPS)
             ->map(function (array $group, string $key) use ($softwareGroups, $allCategories) {
@@ -224,7 +225,7 @@ class CategoryNavigationService
     public function getMenuGroupSummaries(): array
     {
         $softwareGroups = $this->buildSoftwareGroups();
-        $allCategoriesCount = $this->categories()->count();
+        $allCategoriesCount = $this->submittableCategories()->count();
 
         return collect(self::GROUPS)
             ->map(function (array $group, string $key) use ($softwareGroups, $allCategoriesCount) {
@@ -247,7 +248,7 @@ class CategoryNavigationService
 
     public function getDirectoryCategoryCount(): int
     {
-        return $this->categories()->count();
+        return $this->submittableCategories()->count();
     }
 
     public function getDefaultGroupKey(): string
@@ -281,9 +282,11 @@ class CategoryNavigationService
 
         $menuGroup = collect($this->getMenuGroups())->firstWhere('key', $key);
 
-        return $menuGroup
-            ? [...$menuGroup, 'url' => route('software-groups.show', ['group' => $key])]
-            : null;
+        return [
+            ...$menuGroup,
+            'url' => route('software-groups.show', ['group' => $key]),
+            'category_slugs' => $this->buildSoftwareGroups(submittableOnly: false)[$key]->pluck('slug')->all(),
+        ];
     }
 
     private function categories(): Collection
@@ -311,13 +314,18 @@ class CategoryNavigationService
         });
     }
 
-    private function buildSoftwareGroups(): Collection
+    private function submittableCategories(): Collection
+    {
+        return $this->categories()->where('submittable', true);
+    }
+
+    private function buildSoftwareGroups(bool $submittableOnly = true): Collection
     {
         $grouped = collect(array_keys(self::GROUPS))
             ->reject(fn (string $key) => $key === 'view-all')
             ->mapWithKeys(fn (string $key) => [$key => collect()]);
 
-        foreach ($this->softwareCategories() as $category) {
+        foreach ($this->softwareCategories($submittableOnly) as $category) {
             $key = $this->resolveGroupKey($category->name);
             $grouped[$key]->push($this->mapCategory($category));
         }
@@ -325,10 +333,16 @@ class CategoryNavigationService
         return $grouped->map(fn (Collection $items) => $items->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values());
     }
 
-    private function softwareCategories(): Collection
+    private function softwareCategories(bool $submittableOnly): Collection
     {
-        return $this->categories()
-            ->filter(function (Category $category) {
+        $categories = $submittableOnly ? $this->submittableCategories() : $this->categories();
+
+        return $categories
+            ->filter(function (Category $category) use ($submittableOnly) {
+                if (! $submittableOnly && $category->legacy_page_type === CategoryPageType::CATEGORY) {
+                    return true;
+                }
+
                 $typeNames = $category->types
                     ->pluck('name')
                     ->map(fn ($name) => strtolower((string) $name));

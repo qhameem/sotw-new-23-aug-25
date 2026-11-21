@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Type;
 use App\Models\Category;
+use App\Support\CategoryTypeRegistry;
 
 class CategoryTypeController extends Controller
 {
@@ -44,7 +45,7 @@ class CategoryTypeController extends Controller
             'description' => $validated['description'] ?? null
         ]);
         if (!empty($validated['categories'])) {
-            $type->categories()->sync($validated['categories']);
+            $type->assignedCategories()->sync($validated['categories']);
         }
         return redirect()->route('admin.category-types.index')->with('success', 'Type created successfully.');
     }
@@ -79,11 +80,14 @@ class CategoryTypeController extends Controller
             'categories' => 'array',
             'categories.*' => 'exists:categories,id',
         ]);
+        $isLegacySoftware = $category_type->name === CategoryTypeRegistry::LEGACY_SOFTWARE_NAME;
         $category_type->update([
-            'name' => $validated['name'],
+            'name' => $isLegacySoftware ? $category_type->name : $validated['name'],
             'description' => $validated['description'] ?? null
         ]);
-        $category_type->categories()->sync($validated['categories'] ?? []);
+        if (! $isLegacySoftware) {
+            $category_type->assignedCategories()->sync($validated['categories'] ?? []);
+        }
         return redirect()->route('admin.category-types.index')->with('success', 'Type updated successfully.');
     }
 
@@ -92,7 +96,10 @@ class CategoryTypeController extends Controller
      */
     public function destroy(Type $category_type)
     {
-        $category_type->categories()->detach();
+        if ($category_type->name === CategoryTypeRegistry::LEGACY_SOFTWARE_NAME) {
+            return back()->with('error', 'This type is retained for existing Software filters.');
+        }
+
         $category_type->delete();
         return redirect()->route('admin.category-types.index')->with('success', 'Type deleted successfully.');
     }

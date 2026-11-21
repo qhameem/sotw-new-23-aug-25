@@ -5,6 +5,7 @@ import { useExtractionTimer } from './useExtractionTimer';
 
 // Create a global state for the product form
 const globalFormState = createProductFormState();
+const curatedSubmission = ref(false);
 const urlMatchesDraft = ref(false);
 const autofillNextMessage = ref('');
 const extractionReport = ref([]);
@@ -468,11 +469,11 @@ export function useProductForm() {
           ? 'At least one category is required'
           : '';
       case 'useCases':
-        return (validUseCases.length === 0 && customUseCases.length === 0)
+        return (!curatedSubmission.value && validUseCases.length === 0 && customUseCases.length === 0)
           ? 'At least one use case is required'
           : '';
       case 'pricing':
-        return actualPricingCategories.length === 0 ? 'At least one pricing model is required' : '';
+        return !curatedSubmission.value && actualPricingCategories.length === 0 ? 'At least one pricing model is required' : '';
       case 'logo':
         return hasLogo ? '' : 'A logo is required';
       case 'pricing_page_url':
@@ -540,7 +541,8 @@ export function useProductForm() {
   };
 
   const requiredInputFields = computed(() => [
-    'link', 'name', 'tagline', 'description', 'categories', 'useCases', 'pricing', 'logo',
+    'link', 'name', 'tagline', 'description', 'categories', 'logo',
+    ...(curatedSubmission.value ? [] : ['useCases', 'pricing']),
     ...(form.badge_opt_in ? ['badge_placement_url', 'badge_verified'] : []),
     ...(form.badge_opt_in && form.badge_verified ? ['badge_week_start'] : []),
     ...(form.submission_type === 'paid' ? ['paid_schedule_date'] : []),
@@ -549,7 +551,8 @@ export function useProductForm() {
     .filter((field) => getFieldValidationMessage(field))
     .map((field) => ({ field, label: validationFieldMeta[field]?.label || field, message: getFieldValidationMessage(field) })));
   const extractionIssues = computed(() => Object.entries(extractionErrors)
-    .filter(([, message]) => String(message || '').trim())
+    .filter(([field, message]) => String(message || '').trim()
+      && (!curatedSubmission.value || !['pricing', 'useCases', 'bestFor'].includes(field)))
     .map(([field, message]) => ({ field, label: validationFieldMeta[field]?.label || ({ logos: 'Logo options', bestFor: 'Audience tags' }[field]) || field, message })));
 
   const validateField = (fieldKey, options = {}) => {
@@ -1213,7 +1216,23 @@ export function useProductForm() {
     }
   };
 
+  const availableCategoryIds = (ids, options) => {
+    const available = new Set(options.map(({ id }) => String(id)));
+    return (ids || []).filter((id) => available.has(String(id)));
+  };
+
   const applyTaxonomyAutofill = (data) => {
+    if (curatedSubmission.value) {
+      data = {
+        ...data,
+        categories: availableCategoryIds(data.categories, globalFormState.allCategories.value),
+        platforms: availableCategoryIds(data.platforms, globalFormState.allPlatforms.value),
+        useCases: [],
+        bestFor: [],
+        pricing: [],
+        suggestedUseCases: [],
+      };
+    }
     if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
       form.categories = data.categories;
       console.log('Applied autofill categories:', data.categories);
@@ -1459,8 +1478,10 @@ export function useProductForm() {
       form.tagline_detailed,
       form.description,
       form.categories && form.categories.length > 0,
-      form.bestFor && form.bestFor.length > 0,
-      actualPricingCategories.length > 0, // Only count actual pricing categories, not submission options
+      ...(curatedSubmission.value ? [] : [
+        form.bestFor && form.bestFor.length > 0,
+        actualPricingCategories.length > 0,
+      ]),
       globalFormState.logoPreview.value || (form.logos && form.logos.length > 0)
     ];
 
@@ -1649,7 +1670,7 @@ export function useProductForm() {
         allCategories.push(...validCategories);
       }
 
-      if (form.useCases && form.useCases.length > 0) {
+      if (!curatedSubmission.value && form.useCases && form.useCases.length > 0) {
         const validUseCases = form.useCases.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validUseCases);
       }
@@ -1660,13 +1681,13 @@ export function useProductForm() {
       }
 
       // Add bestFor categories
-      if (form.bestFor && form.bestFor.length > 0) {
+      if (!curatedSubmission.value && form.bestFor && form.bestFor.length > 0) {
         const validBestFor = form.bestFor.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validBestFor);
       }
 
       // Add pricing categories - these should be valid category IDs (not submission options like 'free' or 'paid')
-      if (form.pricing && form.pricing.length > 0) {
+      if (!curatedSubmission.value && form.pricing && form.pricing.length > 0) {
         // Filter out non-numeric values like 'free' or 'paid' which are submission options, not category IDs
         const validPricing = form.pricing.filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
         allCategories.push(...validPricing);
@@ -1686,14 +1707,14 @@ export function useProductForm() {
       }
 
       // Add custom bestFor if any
-      if (form.bestFor_custom && form.bestFor_custom.length > 0) {
+      if (!curatedSubmission.value && form.bestFor_custom && form.bestFor_custom.length > 0) {
         form.bestFor_custom.forEach((customTag, index) => {
           formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][name]`, customTag.name);
           formData.append(`custom_categories[${index + (form.categories_custom ? form.categories_custom.length : 0)}][type]`, 'best_for');
         });
       }
 
-      if (form.useCases_custom && form.useCases_custom.length > 0) {
+      if (!curatedSubmission.value && form.useCases_custom && form.useCases_custom.length > 0) {
         const offset = (form.categories_custom ? form.categories_custom.length : 0) + (form.bestFor_custom ? form.bestFor_custom.length : 0);
         form.useCases_custom.forEach((customUseCase, index) => {
           formData.append(`custom_categories[${index + offset}][name]`, customUseCase.name);
@@ -1703,8 +1724,7 @@ export function useProductForm() {
 
       if (form.platforms_custom && form.platforms_custom.length > 0) {
         const offset = (form.categories_custom ? form.categories_custom.length : 0)
-          + (form.bestFor_custom ? form.bestFor_custom.length : 0)
-          + (form.useCases_custom ? form.useCases_custom.length : 0);
+          + (curatedSubmission.value ? 0 : (form.bestFor_custom?.length || 0) + (form.useCases_custom?.length || 0));
         form.platforms_custom.forEach((customPlatform, index) => {
           formData.append(`custom_categories[${index + offset}][name]`, customPlatform.name);
           formData.append(`custom_categories[${index + offset}][type]`, 'platform');
@@ -1989,6 +2009,10 @@ export function useProductForm() {
   };
 
   const validateForm = (submissionMode = null) => {
+    if (curatedSubmission.value) {
+      form.categories = availableCategoryIds(form.categories, globalFormState.allCategories.value);
+      form.platforms = availableCategoryIds(form.platforms, globalFormState.allPlatforms.value);
+    }
     if (submissionMode === 'paid') {
       form.submission_type = 'paid';
       form.submissionOption = 'paid';
@@ -2793,15 +2817,22 @@ export function useProductForm() {
         axios.get('/api/tech-stacks')
       ]);
 
-      globalFormState.allCategories.value = categoriesResponse.data.categories;
-      globalFormState.allUseCases.value = categoriesResponse.data.useCases || [];
-      globalFormState.allPlatforms.value = categoriesResponse.data.platforms || [];
-      globalFormState.allBestFor.value = categoriesResponse.data.bestFor;
-      globalFormState.allPricing.value = categoriesResponse.data.pricing;
+      const element = document.getElementById('product-submit-app');
+      const displayData = JSON.parse(element?.getAttribute('data-display-data') || '{}') || {};
+      curatedSubmission.value = Boolean(categoriesResponse.data.curated) && !displayData.id;
+      const categoryOptions = (group, attribute) => {
+        const editOptions = displayData.id ? element?.getAttribute(attribute) : null;
+
+        return editOptions ? JSON.parse(editOptions) : (categoriesResponse.data[group] || []);
+      };
+
+      globalFormState.allCategories.value = categoryOptions('categories', 'data-regular-categories');
+      globalFormState.allUseCases.value = categoryOptions('useCases', 'data-use-case-categories');
+      globalFormState.allPlatforms.value = categoryOptions('platforms', 'data-platform-categories');
+      globalFormState.allBestFor.value = categoryOptions('bestFor', 'data-best-for-categories');
+      globalFormState.allPricing.value = categoryOptions('pricing', 'data-pricing-categories');
       globalFormState.allTechStacks.value = techStackResponse.data;
 
-      // Initialize isAdmin state
-      const element = document.getElementById('product-submit-app');
       if (element) {
         globalFormState.isAdmin.value = element.getAttribute('data-is-admin') === 'true';
         globalFormState.adminSandboxEnabled.value = element.getAttribute('data-admin-sandbox-enabled') !== 'false';
@@ -3356,6 +3387,7 @@ export function useProductForm() {
     autofillReveal,
     logoPreview: globalFormState.logoPreview,
     galleryPreviews: globalFormState.galleryPreviews,
+    curatedSubmission,
     allCategories: globalFormState.allCategories,
     allUseCases: globalFormState.allUseCases,
     allPlatforms: globalFormState.allPlatforms,

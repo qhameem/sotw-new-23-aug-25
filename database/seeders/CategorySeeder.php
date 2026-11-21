@@ -16,7 +16,7 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $pricingType = Type::where('name', 'Pricing')->first();
-        $softwareType = Type::where('name', 'Software Categories')->first();
+        $softwareType = Type::where('name', 'Software')->first();
 
         $categories = [
             // Software Categories

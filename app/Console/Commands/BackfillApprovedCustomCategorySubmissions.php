@@ -140,7 +140,7 @@ class BackfillApprovedCustomCategorySubmissions extends Command
             'use_case' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE),
             'best_for' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR),
             'platform' => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PLATFORM),
-            default => CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE),
+            default => [CategoryTypeRegistry::SOFTWARE_NAME],
         };
     }
 }

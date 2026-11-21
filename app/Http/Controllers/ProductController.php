@@ -10,7 +10,6 @@ use App\Models\ProductClaim;
 use App\Models\ProductCollection;
 use App\Models\ProductSubmissionDraft;
 use App\Models\TechStack;
-use App\Models\Type;
 use App\Models\User; // Added for upvote checking
 use App\Models\UserProductUpvote;
 use App\Notifications\ProductSubmitted;
@@ -131,7 +130,7 @@ class ProductController extends Controller
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
-        ] = $this->loadProductCategoryGroups();
+        ] = $this->loadProductCategoryGroups(curated: Category::hasSubmissionPlan());
 
         $oldInput = session()->getOldInput();
         $displayData = [
@@ -156,7 +155,7 @@ class ProductController extends Controller
             'current_tech_stacks' => $oldInput['tech_stacks'] ?? [],
         ];
 
-        $types = Type::with('categories')->get();
+        $types = $this->productFilterTypes();
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
@@ -189,7 +188,7 @@ class ProductController extends Controller
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
-        ] = $this->loadProductCategoryGroups();
+        ] = $this->loadProductCategoryGroups(curated: Category::hasSubmissionPlan());
 
         $oldInput = session()->getOldInput();
         $activeDraft = $this->resolveRequestedSubmissionDraft($request);
@@ -225,7 +224,7 @@ class ProductController extends Controller
             'draft_uuid' => $draftDisplayData['draft_uuid'] ?? null,
         ];
 
-        $types = Type::with('categories')->get();
+        $types = $this->productFilterTypes();
         $submissionBgUrl = config('theme.submission_bg_url') ? Storage::url(config('theme.submission_bg_url')) : asset('images/submission-pattern.png');
         $premiumLaunchPriceCents = PremiumLaunchPricing::cents();
         $freeLaunchQueueMonths = FreeLaunchQueueSettings::months();
@@ -286,6 +285,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $curated = Category::hasSubmissionPlan();
         /** @var \App\Models\User|null $user */
         $user = $request->user();
         $isAdmin = $user && $user->hasRole('admin');
@@ -362,10 +362,10 @@ class ProductController extends Controller
                     }
                 },
             ],
-            'categories.*' => 'nullable|exists:categories,id',
+            'categories.*' => ['nullable', Category::submissionOptionRule($curated)],
             'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
+            'custom_categories.*.type' => $curated ? 'required|in:category,platform' : 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'logo_url' => 'nullable|string', // Relaxed for base64 support
             'video_url' => 'nullable|string|max:2048',
@@ -430,14 +430,11 @@ class ProductController extends Controller
 
         $validated['slug'] = $this->slugService->generateUniqueSlug($validated['name'], $existsCheck);
 
-        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
-        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
-        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn ($id) => (int) $id);
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
-        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+        $pricingIds = Category::submissionTypeIds(CategoryTypeRegistry::PRICING, curated: $curated);
+        $softwareIds = Category::submissionTypeIds(CategoryTypeRegistry::SOFTWARE, curated: $curated);
+        $useCaseIds = $curated ? collect() : Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE);
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing'); // Note: Assuming users don't submit custom pricing types, but theoretically could
@@ -450,7 +447,7 @@ class ProductController extends Controller
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && ! $hasCustomSoftware) {
-            return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
+            return back()->withErrors(['categories' => 'Please select at least one category from the Software group.'])->withInput();
         }
         if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && ! $hasCustomUseCase) {
             return back()->withErrors(['categories' => 'Please select at least one use case.'])->withInput();
@@ -818,7 +815,7 @@ class ProductController extends Controller
             'pricingCategories' => $pricingCategories,
             'bestForCategories' => $bestForCategories,
             'platformCategories' => $platformCategories,
-        ] = $this->loadProductCategoryGroups();
+        ] = $this->loadProductCategoryGroups(preservedIds: $product->nonSubmittableCategoryIds());
 
         $product->load(['categories', 'proposedCategories', 'techStacks', 'media', 'customCategorySubmissions']);
 
@@ -957,7 +954,14 @@ class ProductController extends Controller
             ];
         }
 
-        $types = Type::with('categories')->get();
+        $displayData['current_categories'] = collect($displayData['current_categories'] ?? [])
+            ->merge($product->nonSubmittableCategoryIds())
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $types = $this->productFilterTypes();
 
         // Get the selected bestFor categories to pass to the JavaScript component
         $useProposedCategories = $product->approved && $product->has_pending_edits;
@@ -1077,6 +1081,8 @@ class ProductController extends Controller
             ->all();
         $newCategories = collect($validated['categories'] ?? [])
             ->map(fn ($id) => (int) $id)
+            ->merge($product->nonSubmittableCategoryIds())
+            ->unique()
             ->sort()
             ->values()
             ->all();
@@ -1115,14 +1121,10 @@ class ProductController extends Controller
         // Category validation (ensure at least one from each required type is selected)
         // This logic can be kept or adjusted based on whether proposed edits should also adhere to it.
         // For simplicity, we'll assume it applies.
-        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
-        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
-        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
-        $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
-        $selected = collect($submittedCategories)->map(fn ($id) => (int) $id);
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
-        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+        $selected = collect($newCategories);
+        $pricingIds = Category::submissionTypeIds(CategoryTypeRegistry::PRICING, $newCategories);
+        $softwareIds = Category::submissionTypeIds(CategoryTypeRegistry::SOFTWARE, $newCategories);
+        $useCaseIds = Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE, $newCategories);
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');
@@ -1148,12 +1150,12 @@ class ProductController extends Controller
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Please select at least one category from the Software Categories group.',
-                    'errors' => ['categories' => ['Please select at least one category from the Software Categories group.']],
+                    'message' => 'Please select at least one category from the Software group.',
+                    'errors' => ['categories' => ['Please select at least one category from the Software group.']],
                 ], 422);
             }
 
-            return back()->withErrors(['categories' => 'Please select at least one category from the Software Categories group.'])->withInput();
+            return back()->withErrors(['categories' => 'Please select at least one category from the Software group.'])->withInput();
         }
         if ($useCaseIds->count() && $selected->intersect($useCaseIds)->isEmpty() && ! $hasCustomUseCase) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -1504,7 +1506,7 @@ class ProductController extends Controller
 
         abort_unless($request->routeIs($expectedRoute), 404);
 
-        $productQuery = $category->products()
+        $productQuery = $category->pageProducts()
             ->approvedAndPublished()
             ->with([
                 'categories.types',
@@ -1543,7 +1545,7 @@ class ProductController extends Controller
 
         // Separate types into Software, Pricing, and Others
         $softwareTypes = $allTypesCollection->filter(function ($type) {
-            return $type->name === 'Software Categories'; // Assuming 'Software Categories' is the name
+            return $type->name === CategoryTypeRegistry::SOFTWARE_NAME;
         });
 
         $pricingTypes = $allTypesCollection->filter(function ($type) {
@@ -1551,7 +1553,7 @@ class ProductController extends Controller
         });
 
         $otherTypes = $allTypesCollection->filter(function ($type) {
-            return ! in_array($type->name, ['Software Categories', 'Pricing']);
+            return ! in_array($type->name, [CategoryTypeRegistry::SOFTWARE_NAME, 'Pricing']);
         });
 
         $types = $softwareTypes->concat($otherTypes)->concat($pricingTypes);
@@ -1566,7 +1568,7 @@ class ProductController extends Controller
         $belowProductListingAd = $belowProductListingPlacement['ads']->first();
         $belowProductListingAdPosition = $belowProductListingPlacement['position'];
 
-        $categories = Category::withCount([
+        $categories = Category::submittable()->withCount([
             'products' => function ($query) {
                 $query->where('approved', true)
                     ->where('is_published', true);
@@ -1584,11 +1586,11 @@ class ProductController extends Controller
         $pageIntro = CategoryPageType::intro($pageType, $category);
         $meta_description = ($metaDescriptionBase !== '' ? $metaDescriptionBase : $pageIntro)
             .($currentPage > 1 ? " Page {$currentPage}." : '');
-        $categoryCanonicalUrl = $currentPage > 1
-            ? $category->publicUrl(['page' => $currentPage])
-            : $category->publicUrl();
+        $categoryCanonicalUrl = $category->canonicalTargetUrl() ?? $category->publicUrl($currentPage > 1 ? ['page' => $currentPage] : []);
         $taxonomyLabel = CategoryPageType::label($pageType);
-        $shouldNoindexTaxonomy = $publishedProductCount < 3;
+        $shouldNoindexTaxonomy = ($category->merge_target_slug === null
+            ? $publishedProductCount
+            : $category->products()->approvedAndPublished()->count()) < 3;
         $categoryPagination = [
             'current_page' => $currentPage,
             'last_page' => $lastPage,
@@ -1813,9 +1815,9 @@ class ProductController extends Controller
         $regularProducts = $combinedProducts;
 
         $categories = Cache::remember(
-            'homepage.categories:v1',
+            'homepage.categories:v2',
             now()->addMinutes(10),
-            fn () => Category::query()->orderBy('name')->get()
+            fn () => Category::submittable()->orderBy('name')->get()
         );
         $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
@@ -1861,8 +1863,8 @@ class ProductController extends Controller
 
         [$regularProducts, $combinedProducts] = $this->buildPeriodPaginator($rankedRegularProductIds, $promotedProducts);
 
-        $categories = Category::all();
-        $types = Type::with('categories')->get();
+        $categories = Category::submittable()->get();
+        $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfMonth->toDateString();
         $title = 'on '.$startOfMonth->format('F Y'); // For potential in-page display
@@ -1895,8 +1897,8 @@ class ProductController extends Controller
 
         [$regularProducts, $combinedProducts] = $this->buildPeriodPaginator($rankedRegularProductIds, $promotedProducts);
 
-        $categories = Category::all();
-        $types = Type::with('categories')->get();
+        $categories = Category::submittable()->get();
+        $types = $this->productFilterTypes();
         $serverTodayDateString = Carbon::today()->toDateString();
         $displayDateString = $startOfYear->toDateString();
         $title = 'in '.$year; // For potential in-page display
@@ -1975,7 +1977,9 @@ class ProductController extends Controller
             'products' => $myProducts,
             'perPage' => $perPage,
             'allowedPerPages' => $allowedPerPages,
-            'allCategories' => Category::orderBy('name')->get(),
+            'allCategories' => Category::with('types')->where(fn ($query) => $query->submittable()->orWhereIn(
+                'categories.id', $myProducts->getCollection()->flatMap(fn (Product $product) => $product->categories->modelKeys())->unique()
+            ))->orderBy('name')->get(),
             'allTechStacks' => TechStack::orderBy('name')->get(),
         ]);
     }
@@ -3426,15 +3430,17 @@ class ProductController extends Controller
     public function getCategories()
     {
         try {
+            $curated = Category::hasSubmissionPlan();
             [
                 'regularCategories' => $regularCategories,
                 'useCaseCategories' => $useCaseCategories,
                 'pricingCategories' => $pricingCategories,
                 'bestForCategories' => $bestForCategories,
                 'platformCategories' => $platformCategories,
-            ] = $this->loadProductCategoryGroups(['id', 'name']);
+            ] = $this->loadProductCategoryGroups(curated: $curated);
 
             return response()->json([
+                'curated' => $curated,
                 'categories' => $regularCategories,
                 'useCases' => $useCaseCategories,
                 'bestFor' => $bestForCategories,
@@ -4917,11 +4923,17 @@ class ProductController extends Controller
         ];
     }
 
-    private function loadProductCategoryGroups(array $columns = ['*']): array
+    private function loadProductCategoryGroups(array $preservedIds = [], bool $curated = false): array
     {
         return collect($this->productCategoryGroupQueries())
-            ->map(function ($query, $group) use ($columns) {
-                $categories = $query->get($columns);
+            ->map(function ($query, $group) use ($preservedIds, $curated) {
+                if ($curated && ! in_array($group, ['regularCategories', 'platformCategories'], true)) {
+                    return collect();
+                }
+
+                $categories = $query->where(function ($options) use ($preservedIds, $curated) {
+                    $options->availableForSubmission($curated)->orWhereIn('categories.id', $preservedIds);
+                })->get();
                 if ($group === 'pricingCategories') {
                     $categories->loadCount('products');
                     $categories = $categories->sort(function ($a, $b) {
@@ -4931,7 +4943,10 @@ class ProductController extends Controller
                     })->values();
                 }
 
-                return $categories;
+                return $categories->map(fn (Category $category) => [
+                    'id' => $category->id,
+                    'name' => $category->submission_name,
+                ]);
             })
             ->all();
     }

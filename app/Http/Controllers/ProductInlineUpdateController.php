@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\Category;
 use App\Models\TechStack;
-use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +89,7 @@ class ProductInlineUpdateController extends Controller
 
         // Category validation if updating categories
         if ($field === 'categories') {
+            $value = array_values(array_unique(array_merge($value, $product->nonSubmittableCategoryIds())));
             $response = $this->validateCategories($value);
             if ($response)
                 return $response;
@@ -186,17 +186,15 @@ class ProductInlineUpdateController extends Controller
     {
         $selected = collect($selectedIds)->map(fn($id) => (int) $id);
 
-        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
-        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
 
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id')->map(fn($id) => (int) $id) : collect();
+        $pricingIds = Category::submissionTypeIds(CategoryTypeRegistry::PRICING, $selected->all());
+        $softwareIds = Category::submissionTypeIds(CategoryTypeRegistry::SOFTWARE, $selected->all());
 
         if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Please select at least one category from the Pricing group.'], 422);
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Please select at least one category from the Software Categories group.'], 422);
+            return response()->json(['success' => false, 'message' => 'Please select at least one category from the Software group.'], 422);
         }
         return null;
     }

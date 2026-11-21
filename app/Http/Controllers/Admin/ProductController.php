@@ -420,7 +420,7 @@ class ProductController extends Controller
         ];
 
         $allCategories = Category::with('types')->orderBy('name')->get();
-        $types = \App\Models\Type::with('categories')->get();
+        $types = \App\Models\Type::visibleInPickers()->with('categories')->get();
         $selectedBestForCategories = $product->categories()
             ->whereHas('types', function ($query) {
                 $query->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::BEST_FOR));
@@ -573,6 +573,8 @@ class ProductController extends Controller
             ->all();
         $newCategories = collect($validated['categories'] ?? [])
             ->map(fn ($id) => (int) $id)
+            ->merge($product->nonSubmittableCategoryIds())
+            ->unique()
             ->sort()
             ->values()
             ->all();

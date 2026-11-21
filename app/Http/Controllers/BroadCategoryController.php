@@ -40,7 +40,7 @@ class BroadCategoryController extends Controller
         }
 
         $currentPage = max(1, $page ?? 1);
-        $categorySlugs = collect($broadCategory['items'])->pluck('slug')->all();
+        $categorySlugs = $broadCategory['category_slugs'];
 
         $query = Product::query()
             ->approvedAndPublished()

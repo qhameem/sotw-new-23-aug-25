@@ -270,6 +270,7 @@
                     @regenerate-tagline="handleTaglineRegeneration"
                     @regenerate-description="handleDescriptionRewrite"
                     :allTechStacks="allTechStacks"
+                    :curatedSubmission="curatedSubmission"
                     :allCategories="allCategories"
                     :allUseCases="allUseCases"
                     :allPlatforms="allPlatforms"
@@ -302,6 +303,7 @@
                     :class="{ 'autofill-locked-section': autofillReveal.active && !autofillReveal.unlocked.launch }"
                   >
                     <LaunchChecklistForm
+                      :curatedSubmission="curatedSubmission"
                       :modelValue="form"
                       @update:modelValue="handleFormDetailUpdate"
                       :logoPreview="logoPreview"
@@ -402,6 +404,7 @@ const {
   extractLogos,
   rewriteProductDescription,
   regenerateProductTagline,
+  curatedSubmission,
   allCategories,
   allUseCases,
   allPlatforms,

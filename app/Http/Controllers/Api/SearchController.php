@@ -143,7 +143,7 @@ class SearchController extends Controller
         $likeQuery = '%'.$query.'%';
 
         return Category::query()
-            ->select(['id', 'name', 'slug'])
+            ->select(['id', 'name', 'slug', 'legacy_page_type'])
             ->with('types:id,name')
             ->selectRaw(
                 'CASE

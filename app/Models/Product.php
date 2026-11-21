@@ -367,6 +367,17 @@ class Product extends Model implements Sitemapable
         return $this->belongsTo(User::class, 'last_edited_by_id');
     }
 
+    public function nonSubmittableCategoryIds(): array
+    {
+        $ids = $this->categories()->where('categories.submittable', false)->pluck('categories.id');
+
+        if ($this->has_pending_edits) {
+            $ids = $ids->merge($this->proposedCategories()->where('categories.submittable', false)->pluck('categories.id'));
+        }
+
+        return $ids->unique()->values()->all();
+    }
+
     public function categories()
     {
         return $this->belongsToMany(Category::class);

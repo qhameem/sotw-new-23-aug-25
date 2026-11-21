@@ -190,7 +190,7 @@
     <div id="field-categories" :class="[autofillLockClass('taxonomy'), reviewTint('categories')]">
        <div class="mb-1 flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
-            <label class="block text-xs font-bold text-gray-900">Categories <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
+            <label class="block text-xs font-bold text-gray-900">Software <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Max 3, Open Source excluded)</span></label>
             <div v-if="loadingStates.categories" class="animate-pulse h-2 w-20 rounded bg-gray-200"></div>
           </div>
           <p v-if="validationErrors.categories" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.categories }}</p>
@@ -275,7 +275,7 @@
     </div>
 
     <!-- Use Cases (Chip Selection) -->
-    <div id="field-use-cases" :class="[autofillLockClass('taxonomy'), reviewTint('useCases')]">
+    <div v-if="!curatedSubmission" id="field-use-cases" :class="[autofillLockClass('taxonomy'), reviewTint('useCases')]">
        <div class="mb-1 flex items-start justify-between gap-4">
           <label class="block text-xs font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
           <p v-if="validationErrors.useCases" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases }}</p>
@@ -355,7 +355,7 @@
     </div>
 
     <!-- Pricing -->
-    <div id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
+    <div v-if="!curatedSubmission" id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
          <label class="block text-xs font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
          <p :class="{ invisible: !validationErrors.pricing }" :aria-hidden="!validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing || 'At least one pricing model is required' }}</p>
@@ -557,7 +557,7 @@
 
 
     <!-- Best For / Tags (Chip Selection) -->
-    <div id="field-best-for" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
+    <div v-if="!curatedSubmission" id="field-best-for" :class="[autofillLockClass('taxonomy'), reviewTint('bestFor')]">
        <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-gray-900">Tags / Best For <span class="product-field-hint text-gray-400 font-normal text-xs ml-1">(Max 5)</span> <span class="product-field-hint ml-1 text-xs font-normal text-gray-400">(Optional)</span></label>
        </div>
@@ -778,6 +778,7 @@ const props = defineProps({
     })
   },
   allTechStacks: { type: Array, default: () => [] },
+  curatedSubmission: Boolean,
   allCategories: { type: Array, default: () => [] },
   allUseCases: { type: Array, default: () => [] },
   allPlatforms: { type: Array, default: () => [] },

@@ -16,6 +16,10 @@ final class CategoryPageType
 
     public static function resolve(Category $category): string
     {
+        if ($category->legacy_page_type !== null) {
+            return $category->legacy_page_type;
+        }
+
         $typeNames = $category->loadMissing('types')->types->pluck('name');
 
         if ($typeNames->intersect(CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->isNotEmpty()) {

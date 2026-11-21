@@ -9,7 +9,7 @@ use App\Mail\PaymentConfirmation;
 use App\Models\CustomCategorySubmission;
 use App\Models\PaidSubmissionCheckout;
 use App\Models\Product;
-use App\Models\Type;
+use App\Models\Category;
 use App\Models\User;
 use App\Notifications\ProductSubmitted;
 use App\Support\CategoryTypeRegistry;
@@ -244,6 +244,8 @@ class PaidSubmissionService
 
     protected function validateRequest(Request $request): array
     {
+        $curated = Category::hasSubmissionPlan();
+
         return Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'tagline' => 'required|string|max:255',
@@ -288,10 +290,10 @@ class PaidSubmissionService
                     }
                 },
             ],
-            'categories.*' => 'nullable|exists:categories,id',
+            'categories.*' => ['nullable', Category::submissionOptionRule($curated)],
             'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => 'required|in:category,use_case,best_for,platform',
+            'custom_categories.*.type' => $curated ? 'required|in:category,platform' : 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'logo_url' => 'nullable|string',
             'video_url' => 'nullable|string|max:2048',
@@ -308,14 +310,12 @@ class PaidSubmissionService
 
     protected function assertRequiredCategoryGroups(Request $request): void
     {
-        $pricingType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING))->with('categories')->first();
-        $softwareType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::SOFTWARE))->with('categories')->first();
-        $useCaseType = Type::whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::USE_CASE))->with('categories')->first();
         $submittedCategories = is_array($request->input('categories')) ? $request->input('categories') : [];
         $selected = collect($submittedCategories)->map(fn ($id) => (int) $id);
-        $pricingIds = $pricingType ? $pricingType->categories->pluck('id') : collect();
-        $softwareIds = $softwareType ? $softwareType->categories->pluck('id') : collect();
-        $useCaseIds = $useCaseType ? $useCaseType->categories->pluck('id') : collect();
+        $curated = Category::hasSubmissionPlan();
+        $pricingIds = Category::submissionTypeIds(CategoryTypeRegistry::PRICING, curated: $curated);
+        $softwareIds = Category::submissionTypeIds(CategoryTypeRegistry::SOFTWARE, curated: $curated);
+        $useCaseIds = $curated ? collect() : Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE);
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');
@@ -332,7 +332,7 @@ class PaidSubmissionService
 
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && !$hasCustomSoftware) {
             throw ValidationException::withMessages([
-                'categories' => 'Please select at least one category from the Software Categories group.',
+                'categories' => 'Please select at least one category from the Software group.',
             ]);
         }
 

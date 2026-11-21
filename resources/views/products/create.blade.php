@@ -85,6 +85,8 @@
                     data-product-publish-time="{{ \App\Support\ProductPublishSchedule::getPublishTime() }}"
                     data-is-admin="{{ (Auth::check() && Auth::user()->hasRole('admin')) ? 'true' : 'false' }}"
                     data-admin-sandbox-enabled="{{ ($adminSandboxEnabled ?? true) ? 'true' : 'false' }}"
+                    data-regular-categories="{{ json_encode($regularCategories ?? []) }}"
+                    data-best-for-categories="{{ json_encode($bestForCategories ?? []) }}"
                     data-use-case-categories="{{ json_encode(($useCaseCategories ?? collect())->toArray()) }}"
                     data-pricing-categories="{{ json_encode($pricingCategories->toArray() ?? []) }}"
                     data-platform-categories="{{ json_encode($platformCategories->toArray() ?? []) }}"

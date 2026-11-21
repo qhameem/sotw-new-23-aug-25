@@ -1,0 +1,262 @@
+﻿Current Name,Current Slug,Current Types,Action,Target Slug,Target Name
+AI Agents,ai-agents,"Software, Software Categories",KEEP (rename),ai-agents,AI Agents & Automation
+AI & Automation,ai-automation,Software,MERGE,ai-agents,AI Agents & Automation
+AI Agent,ai-agent,Software,MERGE,ai-agents,AI Agents & Automation
+Automation,automation,Software,MERGE,ai-agents,AI Agents & Automation
+AI Coding Agents,ai-coding-agents,Software,KEEP (rename),ai-coding-agents,AI Coding
+Vibe Coding,vibe-coding,Software,MERGE,ai-coding-agents,AI Coding
+AI Image Generation,ai-image-generation,Software,KEEP,ai-image-generation,AI Image Generation
+AI Infrastructure & MLOps,ai-infrastructure-mlops,"Software, Software Categories",KEEP (rename),ai-infrastructure-mlops,AI Models & Infrastructure
+AI Gateways,ai-gateways,"Software, Software Categories",MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+AI Models,ai-models,Software,MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+GPU,gpu,"Software, Software Categories",MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+LLM,llm,Software,MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+LLM Query Caching,llm-query-caching,"Software, Software Categories",MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+Machine Learning Infrastructure,machine-learning-infrastructure,Software,MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+Token Optimization,token-optimization,"Software, Software Categories",MERGE,ai-infrastructure-mlops,AI Models & Infrastructure
+AI Search Visibility,ai-search-visibility,Software,KEEP (rename),ai-search-visibility,AI Search & Visibility
+AI Search,ai-search,Software,MERGE,ai-search-visibility,AI Search & Visibility
+LLM SEO,llm-seo,Software,MERGE,ai-search-visibility,AI Search & Visibility
+AI Video Creation,ai-video-creation,Software,KEEP,ai-video-creation,AI Video Creation
+Analytics,analytics,Software,KEEP,analytics,Analytics
+Business Intelligence,business-intelligence,"Software, Software Categories",MERGE,analytics,Analytics
+Data,data,Software,MERGE,analytics,Analytics
+Enterprise Data Analytics,enterprise-data-analytics,Software,MERGE,analytics,Analytics
+Market Research,market-research,"Software, Use Case",MERGE,analytics,Analytics
+API,api,Software,KEEP,api,API
+API Management,api-management,Software,MERGE,api,API
+Apple,apple,Software,RETYPE to Platform,apple,Apple
+AI,artificial-intelligence,Software,KEEP,artificial-intelligence,AI
+AI & Development Services,ai-development-services,"Software, Software Categories",MERGE,artificial-intelligence,AI
+AI & Machine Learning,ai-machine-learning,Software,MERGE,artificial-intelligence,AI
+AI Tools,ai-tools,Software,MERGE,artificial-intelligence,AI
+Data Science,data-science,Software,MERGE,artificial-intelligence,AI
+Generative AI,generative-ai,Software,MERGE,artificial-intelligence,AI
+Prompt Engineering,prompt-engineering,Software,MERGE,artificial-intelligence,AI
+Audio,audio,Software,KEEP (rename),audio,Audio & Transcription
+Audio Editing,audio-editing,"Software, Software Categories",MERGE,audio,Audio & Transcription
+Music,music,Software,MERGE,audio,Audio & Transcription
+Speech-to-Text,speech-to-text,"Software, Software Categories",MERGE,audio,Audio & Transcription
+Transcription Tools,transcription-tools,"Software, Software Categories",MERGE,audio,Audio & Transcription
+Blockchain,blockchain,Software,KEEP (rename),blockchain,Crypto & Blockchain
+Crypto,crypto,Software,MERGE,blockchain,Crypto & Blockchain
+Browser Extensions,browser-extensions,Software,KEEP,browser-extensions,Browser Extensions
+Business,business,Software,KEEP,business,Business
+B2B,b2b,Software,MERGE,business,Business
+Enterprise,enterprise,Software,MERGE,business,Business
+Entrepreneurship,entrepreneurship,"Software, Software Categories",MERGE,business,Business
+Freelancing,freelancing,Software,MERGE,business,Business
+SaaS,saas,Software,MERGE,business,Business
+Cloud Infrastructure,cloud-infrastructure,Software,KEEP (rename),cloud-infrastructure,Cloud & Hosting
+Backend as a Service (BaaS),backend-as-a-service-baas,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Cloud,cloud,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Container Management,container-management,"Software, Software Categories",MERGE,cloud-infrastructure,Cloud & Hosting
+Cost Optimization,cost-optimization,"Software, Software Categories",MERGE,cloud-infrastructure,Cloud & Hosting
+Domain,domain,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Domain Management,domain-management,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Domain Tools,domain-tools,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Hosting,hosting,Software,MERGE,cloud-infrastructure,Cloud & Hosting
+Hosting Automation,hosting-automation,"Software, Software Categories",MERGE,cloud-infrastructure,Cloud & Hosting
+Storage,storage,"Software, Software Categories",MERGE,cloud-infrastructure,Cloud & Hosting
+Web Hosting Management,web-hosting-management,"Software, Software Categories",MERGE,cloud-infrastructure,Cloud & Hosting
+CMS,cms,Software,KEEP,cms,CMS
+Headless CMS,headless-cms,"Software, Software Categories",MERGE,cms,CMS
+WP Plugin,wp-plugin,Software,MERGE,cms,CMS
+Collaboration Tools,collaboration-tools,Software,KEEP (rename),collaboration-tools,Collaboration
+Communication & Messaging,communication-messaging,Software,MERGE,collaboration-tools,Collaboration
+Community,community,Software,MERGE,collaboration-tools,Collaboration
+Community Building,community-building,"Software, Software Categories",MERGE,collaboration-tools,Collaboration
+Notification Tools,notification-tools,"Software, Software Categories",MERGE,collaboration-tools,Collaboration
+Content Creation,content-creation,"Software, Use Case",KEEP,content-creation,Content Creation
+Blogging,blogging,Software,MERGE,content-creation,Content Creation
+Content Marketing,content-marketing,Software,MERGE,content-creation,Content Creation
+Content Scheduling,content-scheduling,Software,MERGE,content-creation,Content Creation
+Creativity,creativity,Software,MERGE,content-creation,Content Creation
+CRM,crm,Software,KEEP (rename),crm,Sales & CRM
+Sales,sales,Software,MERGE,crm,Sales & CRM
+Sales & CRM,sales-crm,Software,MERGE,crm,Sales & CRM
+Sales Automation,sales-automation,Software,MERGE,crm,Sales & CRM
+Sales Management,sales-management,Software,MERGE,crm,Sales & CRM
+Database,database,"Software, Software Categories",KEEP,database,Database
+Design,design,Software,KEEP (rename),design,Design & Accessibility
+Accessibility Tools,accessibility-tools,Software,MERGE,design,Design & Accessibility
+Animation,animation,"Software, Software Categories",MERGE,design,Design & Accessibility
+Design Tools,design-tools,Software,MERGE,design,Design & Accessibility
+Graphic Design,graphic-design,Software,MERGE,design,Design & Accessibility
+Typefaces,typefaces,Software,MERGE,design,Design & Accessibility
+Typography,typography,Software,MERGE,design,Design & Accessibility
+User Experience,user-experience,Software,MERGE,design,Design & Accessibility
+Developer Tools,developer-tools,Software,KEEP,developer-tools,Developer Tools
+Boilerplate,boilerplate,Software,MERGE,developer-tools,Developer Tools
+CI/CD,cicd,"Software, Software Categories",MERGE,developer-tools,Developer Tools
+Code Editing,code-editing,"Software, Software Categories, Use Case",MERGE,developer-tools,Developer Tools
+Code Review,code-review,"Software, Software Categories",MERGE,developer-tools,Developer Tools
+Developer Tools & APIs,developer-tools-apis,Software,MERGE,developer-tools,Developer Tools
+Documentation Tools,documentation-tools,"Software, Software Categories",MERGE,developer-tools,Developer Tools
+Framework,framework,Software,MERGE,developer-tools,Developer Tools
+Open-Source,open-source,Software,MERGE,developer-tools,Developer Tools
+Programming,programming,Software,MERGE,developer-tools,Developer Tools
+Quality Assurance,quality-assurance,"Software, Software Categories",MERGE,developer-tools,Developer Tools
+Software Engineering,software-engineering,Software,MERGE,developer-tools,Developer Tools
+Solo Developer,solo-developer,Software,MERGE,developer-tools,Developer Tools
+Starter Kit,starter-kit,Software,MERGE,developer-tools,Developer Tools
+Testing & QA,testing-qa,Software,MERGE,developer-tools,Developer Tools
+Web Development,web-development,Software,MERGE,developer-tools,Developer Tools
+Ecommerce,ecommerce,Software,KEEP (rename),ecommerce,E-commerce & Supply Chain
+Creator Marketplace,creator-marketplace,"Software, Software Categories",MERGE,ecommerce,E-commerce & Supply Chain
+Directory,directory,Software,MERGE,ecommerce,E-commerce & Supply Chain
+Inventory Management,inventory-management,"Software, Software Categories",MERGE,ecommerce,E-commerce & Supply Chain
+Logistics,logistics,Software,MERGE,ecommerce,E-commerce & Supply Chain
+Marketplace,marketplace,Software,MERGE,ecommerce,E-commerce & Supply Chain
+Procurement,procurement,Software,MERGE,ecommerce,E-commerce & Supply Chain
+Supply Chain Management,supply-chain-management,Software,MERGE,ecommerce,E-commerce & Supply Chain
+Education,education,"Software, Use Case",KEEP (rename),education,Education & Learning
+Language Learning,language-learning,"Software, Software Categories",MERGE,education,Education & Learning
+Online Learning,online-learning,Software,MERGE,education,Education & Learning
+Email Marketing,email-marketing,Software,KEEP (rename),email-marketing,Email
+Email,email,Software,MERGE,email-marketing,Email
+Newsletter,newsletter,Software,MERGE,email-marketing,Email
+Finance,finance,Software,KEEP (rename),finance,Finance & Accounting
+Accounting,accounting,Software,MERGE,finance,Finance & Accounting
+Billing & Invoicing,billing-invoicing,Software,MERGE,finance,Finance & Accounting
+Budget management,budget-management,"Software, Software Categories",MERGE,finance,Finance & Accounting
+Crowdfunding,crowdfunding,Software,MERGE,finance,Finance & Accounting
+Expense Tracker,expense-tracker,Software,MERGE,finance,Finance & Accounting
+Financial Services,financial-services,Software,MERGE,finance,Finance & Accounting
+Fintech,fintech,Software,MERGE,finance,Finance & Accounting
+Games,games,"Software, Software Categories",KEEP,games,Games
+Browser Games,browser-games,"Software, Software Categories",MERGE,games,Games
+Casual Games,casual-games,"Software, Software Categories",MERGE,games,Games
+Fun,fun,Software,MERGE,games,Games
+Gaming,gaming,"Software, Use Case",MERGE,games,Games
+Puzzle,puzzle,"Software, Software Categories",MERGE,games,Games
+Github,github,Software,RETYPE to Platform,github,Github
+Hardware,hardware,Software,KEEP (rename),hardware,"Hardware, IoT & Energy"
+Climate,climate,Software,MERGE,hardware,"Hardware, IoT & Energy"
+Home Automation,home-automation,Software,MERGE,hardware,"Hardware, IoT & Energy"
+Robotics,robotics,Software,MERGE,hardware,"Hardware, IoT & Energy"
+Solar,solar,Software,MERGE,hardware,"Hardware, IoT & Energy"
+Wearables,wearables,Software,MERGE,hardware,"Hardware, IoT & Energy"
+Health & Fitness,health-fitness,Software,KEEP,health-fitness,Health & Fitness
+Fitness & Health,fitness-health,Software,MERGE,health-fitness,Health & Fitness
+Mental Health,mental-health,Software,MERGE,health-fitness,Health & Fitness
+Sports & Outdoors,sports-outdoors,Software,MERGE,health-fitness,Health & Fitness
+Sports Technology,sports-technology,"Software, Software Categories",MERGE,health-fitness,Health & Fitness
+Wellbeing,wellbeing,"Software, Use Case",MERGE,health-fitness,Health & Fitness
+Human Resources,human-resources,Software,KEEP (rename),human-resources,HR & Hiring
+AI Resume Builders,ai-resume-builders,"Software, Software Categories",MERGE,human-resources,HR & Hiring
+Hiring,hiring,Software,MERGE,human-resources,HR & Hiring
+HR Tech,hr-tech,Software,MERGE,human-resources,HR & Hiring
+Job Application Trackers,job-application-trackers,"Software, Software Categories",MERGE,human-resources,HR & Hiring
+Technical Assessment Platform,technical-assessment-platform,Software,MERGE,human-resources,HR & Hiring
+Legal,legal,Software,KEEP,legal,Legal
+E-signature Apps,e-signature-apps,Software,MERGE,legal,Legal
+Lifestyle,lifestyle,Software,KEEP,lifestyle,Lifestyle
+Automotive,automotive,"Software, Software Categories",MERGE,lifestyle,Lifestyle
+Dating & Relationships,dating-relationships,Software,MERGE,lifestyle,Lifestyle
+Dealer Management System,dealer-management-system,"Software, Software Categories",MERGE,lifestyle,Lifestyle
+Fashion & Style,fashion-style,Software,MERGE,lifestyle,Lifestyle
+food,food,Software,MERGE,lifestyle,Lifestyle
+News,news,Software,MERGE,lifestyle,Lifestyle
+recipe,recipe,Software,MERGE,lifestyle,Lifestyle
+Vehicle Management,vehicle-management,"Software, Software Categories",MERGE,lifestyle,Lifestyle
+Weather,weather,Software,MERGE,lifestyle,Lifestyle
+Marketing,marketing,Software,KEEP,marketing,Marketing
+Affiliate Marketing,affiliate-marketing,"Software, Software Categories",MERGE,marketing,Marketing
+AI Ads,ai-ads,"Software, Software Categories",MERGE,marketing,Marketing
+Branding,branding,Software,MERGE,marketing,Marketing
+Business Development,business-development,Software,MERGE,marketing,Marketing
+Lead Generation,lead-generation,"Software, Use Case",MERGE,marketing,Marketing
+Marketing & Sales,marketing-sales,Software,MERGE,marketing,Marketing
+Marketing Tools,marketing-tools,Software,MERGE,marketing,Marketing
+Social Proof Software,social-proof-software,Software,MERGE,marketing,Marketing
+Waitlists,waitlists,"Software, Software Categories",MERGE,marketing,Marketing
+Marketing Automation,marketing-automation,Software,KEEP,marketing-automation,Marketing Automation
+Sales & Marketing Automation,sales-marketing-automation,Software,MERGE,marketing-automation,Marketing Automation
+MCP,mcp,Software,KEEP,mcp,MCP
+Note Taking,note-taking,Software,KEEP (rename),note-taking,Notes & Knowledge
+Bookmarks & Reading List,bookmarks-reading-list,Software,MERGE,note-taking,Notes & Knowledge
+Journaling,journaling,Software,MERGE,note-taking,Notes & Knowledge
+Knowledge Management,knowledge-management,Software,MERGE,note-taking,Notes & Knowledge
+Notion,notion,Software,RETYPE to Platform,notion,Notion
+Observability & Monitoring,observability-monitoring,Software,KEEP (rename),observability-monitoring,Monitoring & Observability
+IT Operations Management,it-operations-management,Software,MERGE,observability-monitoring,Monitoring & Observability
+Monitoring,monitoring,Software,MERGE,observability-monitoring,Monitoring & Observability
+Observability Platform,observability-platform,Software,MERGE,observability-monitoring,Monitoring & Observability
+Performance Optimization,performance-optimization,"Software, Software Categories",MERGE,observability-monitoring,Monitoring & Observability
+Uptime Monitoring,uptime-monitoring,Software,MERGE,observability-monitoring,Monitoring & Observability
+Website Performance,website-performance,Software,MERGE,observability-monitoring,Monitoring & Observability
+Payment Processing,payment-processing,Software,KEEP (rename),payment-processing,Payments
+E-commerce & Payments,e-commerce-payments,Software,MERGE,payment-processing,Payments
+PDF,pdf,"Software, Software Categories",KEEP,pdf,PDF
+Productivity,productivity,"Software, Use Case",KEEP,productivity,Productivity
+Focus & Concentration,focus-concentration,Software,MERGE,productivity,Productivity
+Form Management,form-management,"Software, Software Categories",MERGE,productivity,Productivity
+Habit Tracker,habit-tracker,Software,MERGE,productivity,Productivity
+Optimization,optimization,"Software, Software Categories",MERGE,productivity,Productivity
+Personal Development,personal-development,Software,MERGE,productivity,Productivity
+Time Management,time-management,"Software, Use Case",MERGE,productivity,Productivity
+Project Management,project-management,Software,KEEP,project-management,Project Management
+Employee Scheduling,employee-scheduling,"Software, Software Categories",MERGE,project-management,Project Management
+Operations Management,operations-management,"Software, Software Categories",MERGE,project-management,Project Management
+Product development,product-development,"Software, Software Categories",MERGE,project-management,Project Management
+Task Management,task-management,Software,MERGE,project-management,Project Management
+Time Tracking,time-tracking,Software,MERGE,project-management,Project Management
+Security,security,Software,KEEP (rename),security,Security & Compliance
+Authentication,authentication,Software,MERGE,security,Security & Compliance
+Compliance,compliance,Software,MERGE,security,Security & Compliance
+Cybersecurity,cybersecurity,Software,MERGE,security,Security & Compliance
+Cybersecurity Platform,cybersecurity-platform,Software,MERGE,security,Security & Compliance
+Digital Watermarking,digital-watermarking,"Software, Software Categories",MERGE,security,Security & Compliance
+Password Manager,password-manager,"Software, Software Categories",MERGE,security,Security & Compliance
+Privacy,privacy,"Software, Software Categories, Use Case",MERGE,security,Security & Compliance
+SEO,seo,Software,KEEP,seo,SEO
+App Store Optimization,app-store-optimization,"Software, Software Categories",MERGE,seo,SEO
+SEO Tools,seo-tools,Software,MERGE,seo,SEO
+Social Media,social-media,"Software, Software Categories",KEEP,social-media,Social Media
+Reddit Marketing,reddit-marketing,"Software, Software Categories",MERGE,social-media,Social Media
+Social Media Analytics,social-media-analytics,Software,MERGE,social-media,Social Media
+Social Media Management,social-media-management,Software,MERGE,social-media,Social Media
+Social Media Marketing,social-media-marketing,Software,MERGE,social-media,Social Media
+Travel,travel,Software,KEEP (rename),travel,Travel & Events
+Event Management,event-management,Software,MERGE,travel,Travel & Events
+Event Management Software,event-management-software,Software,MERGE,travel,Travel & Events
+Event Planner,event-planner,Software,MERGE,travel,Travel & Events
+Geographic Information Systems,geographic-information-systems,"Software, Software Categories",MERGE,travel,Travel & Events
+Navigation,navigation,Software,MERGE,travel,Travel & Events
+Ticketing & Booking,ticketing-booking,Software,MERGE,travel,Travel & Events
+Travel & Booking,travel-booking,Software,MERGE,travel,Travel & Events
+UI Library,ui-library,Software,KEEP (rename),ui-library,UI Kits & Templates
+Icon Library,icon-library,"Software, Software Categories",MERGE,ui-library,UI Kits & Templates
+Tailwind CSS,tailwind-css,Software,MERGE,ui-library,UI Kits & Templates
+Themes & Templates,themes-templates,Software,MERGE,ui-library,UI Kits & Templates
+UI,ui,Software,MERGE,ui-library,UI Kits & Templates
+Utilities,utility,Software,KEEP,utility,Utilities
+App Switcher,app-switcher,"Software, Software Categories",MERGE,utility,Utilities
+Compression,compression,Software,MERGE,utility,Utilities
+Download Managers,download-managers,"Software, Software Categories",MERGE,utility,Utilities
+Menu Bar Apps,menu-bar-apps,Software,MERGE,utility,Utilities
+Other,other,Software,MERGE,utility,Utilities
+Remote Desktop,remote-desktop,Software,MERGE,utility,Utilities
+System Maintenance,system-maintenance,"Software, Software Categories",MERGE,utility,Utilities
+Video Editing,video-editing,"Software, Use Case",KEEP (rename),video-editing,Photo & Video
+AI Video Analysis,ai-video-analysis,"Software, Software Categories",MERGE,video-editing,Photo & Video
+Image,image,Software,MERGE,video-editing,Photo & Video
+Photo & Video,photo-video,Software,MERGE,video-editing,Photo & Video
+Photography,photography,Software,MERGE,video-editing,Photo & Video
+Screen Recording,screen-recording,Software,MERGE,video-editing,Photo & Video
+Screenshot Tools,screenshot-tools,Software,MERGE,video-editing,Photo & Video
+Video,video,Software,MERGE,video-editing,Photo & Video
+Video Production,video-production,Software,MERGE,video-editing,Photo & Video
+visionOS,visionos,Software,RETYPE to Platform,visionos,visionOS
+watchOS,watchos,"Platform, Software",RETYPE to Platform,watchos,watchOS
+Web Scraping,web-scraping,"Software, Use Case",KEEP,web-scraping,Web Scraping
+Data Extraction,data-extraction,Software,MERGE,web-scraping,Web Scraping
+Website Builder,website-builder,Software,KEEP (rename),website-builder,Website Builders & No-Code
+Low-Code/No-Code Development,low-codeno-code-development,Software,MERGE,website-builder,Website Builders & No-Code
+No-Code,no-code,Software,MERGE,website-builder,Website Builders & No-Code
+Website Builders,website-builders,Software,MERGE,website-builder,Website Builders & No-Code
+Writing Tools,writing-tools,Software,KEEP (rename),writing-tools,Writing & Translation
+AI Storytelling,ai-storytelling,"Software, Software Categories",MERGE,writing-tools,Writing & Translation
+Translation Tools,translation-tools,"Software, Software Categories",MERGE,writing-tools,Writing & Translation
+Writing,writing,Software,MERGE,writing-tools,Writing & Translation

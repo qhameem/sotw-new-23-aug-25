@@ -470,15 +470,16 @@
                                         </div>
 
                                         <div x-show="editingField === 'categories'" class="mt-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4" @click.stop>
-                                            @foreach (['Software Categories' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for', 'Platform' => 'Platform'] as $title => $typeName)
+                                            @foreach (['Software' => 'Software', 'Pricing' => 'Pricing', 'Best for' => 'Best for', 'Platform' => 'Platform'] as $title => $typeName)
                                                 <div>
                                                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ $title }}</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @foreach ($allCategories as $cat)
+                                                            @continue(!$cat->submittable && !$product->categories->contains($cat))
                                                             @if (($typeName === 'Software' && ($cat->types->contains('name', 'Software') || $cat->types->contains('name', 'Software Categories') || $cat->types->contains('name', 'Category') || $cat->types->isEmpty())) || ($cat->types->contains('name', $typeName)))
                                                                 <label class="flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">
                                                                     <input type="checkbox" :value="{{ $cat->id }}" x-model="tempValue" class="rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                                                    <span>{{ $cat->name }}</span>
+                                                                    <span>{{ $cat->submission_name }}</span>
                                                                 </label>
                                                             @endif
                                                         @endforeach

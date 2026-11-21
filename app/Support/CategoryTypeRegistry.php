@@ -5,6 +5,8 @@ namespace App\Support;
 class CategoryTypeRegistry
 {
     public const SOFTWARE = 'software';
+    public const SOFTWARE_NAME = 'Software';
+    public const LEGACY_SOFTWARE_NAME = 'Software Categories';
     public const PRICING = 'pricing';
     public const BEST_FOR = 'best_for';
     public const USE_CASE = 'use_case';
@@ -13,7 +15,7 @@ class CategoryTypeRegistry
     public static function namesFor(string $bucket): array
     {
         return match ($bucket) {
-            self::SOFTWARE => ['Software Categories', 'Software', 'Category'],
+            self::SOFTWARE => [self::SOFTWARE_NAME, self::LEGACY_SOFTWARE_NAME, 'Category'],
             self::PRICING => ['Pricing'],
             self::BEST_FOR => ['Best for'],
             self::USE_CASE => ['Use Case', 'Use Cases'],

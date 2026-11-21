@@ -1,8 +1,8 @@
 @php
-    $topCategories = cache()->remember('top_software_categories_sidebar', config('performance.top_categories_cache_ttl', 3600), function () {
+    $topCategories = cache()->remember('top_software_categories_sidebar:v2', config('performance.top_categories_cache_ttl', 3600), function () {
         $softwareTypes = \App\Support\CategoryTypeRegistry::namesFor(\App\Support\CategoryTypeRegistry::SOFTWARE);
 
-        return \App\Models\Category::whereHas('types', function ($query) use ($softwareTypes) {
+        return \App\Models\Category::submittable()->whereHas('types', function ($query) use ($softwareTypes) {
             $query->whereIn('types.name', $softwareTypes);
         })
             ->whereDoesntHave('types', function ($query) use ($softwareTypes) {
