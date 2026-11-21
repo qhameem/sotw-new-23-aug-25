@@ -37,7 +37,7 @@
                     @endif
                     <span>{{ round($rating) }}<span class="sr-only"> out of 100</span></span>
                 </span>
-                <span class="leading-tight">Domain Rating<br>by <a href="https://ahrefs.com/" target="_blank" rel="nofollow noopener" class="text-gray-900 underline">Ahrefs</a></span>
+                <span class="whitespace-nowrap text-[10px] leading-tight">Domain Rating<br>by <a href="https://ahrefs.com/" target="_blank" rel="nofollow noopener" class="text-gray-900 underline">Ahrefs</a></span>
             </div>
         @endif
         <div class="px-3 py-3" title="{{ number_format($stats['submitted_products']) }} products submitted">
