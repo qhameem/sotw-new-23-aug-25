@@ -197,3 +197,44 @@ it('removes a Software type created solely by the migration when rolling back', 
     expect($category->types()->pluck('name')->all())->toBe(['Software Categories'])
         ->and(Type::where('name', 'Software')->exists())->toBeFalse();
 });
+
+it('offers the broader use cases on new submissions and keeps legacy use case URLs and tags', function () {
+    $software = Type::create(['name' => 'Software']);
+    $useCase = Type::create(['name' => 'Use Case']);
+    $category = Category::factory()->create();
+    $category->forceFill(['in_submission_plan' => true])->save();
+    $category->types()->attach($software);
+    $legacy = Category::create(['name' => 'Blog Writing', 'slug' => 'blog-writing']);
+    $desktop = Category::create(['name' => 'Desktop Customization', 'slug' => 'desktop-customization']);
+    $legacy->types()->attach($useCase);
+    $desktop->types()->attach($useCase);
+    $product = Product::factory()->create(['approved' => true, 'is_published' => true]);
+    $product->categories()->attach($legacy);
+    $originalUrl = $legacy->publicUrl();
+
+    $migration = require database_path('migrations/2026_11_22_000001_add_broad_use_cases.php');
+    $migration->up();
+    $migration->up();
+
+    $broad = Category::where('slug', 'writing-editing')->firstOrFail();
+    $product->categories()->attach($broad);
+
+    $this->getJson('/api/categories')->assertOk()
+        ->assertJsonCount(1, 'categories')
+        ->assertJsonCount(13, 'useCases')
+        ->assertJsonFragment(['id' => $desktop->id, 'name' => $desktop->name])
+        ->assertJsonMissing(['name' => 'Blog Writing']);
+    $this->get(route('products.create'))->assertOk()
+        ->assertViewHas('useCaseCategories', fn ($options) => $options->count() === 13);
+
+    $rule = Category::submissionOptionRule(true);
+    expect(validator(['id' => $broad->id], ['id' => [$rule]])->passes())->toBeTrue()
+        ->and(validator(['id' => $legacy->id], ['id' => [$rule]])->fails())->toBeTrue();
+    expect(Category::submissionTypeIds(\App\Support\CategoryTypeRegistry::USE_CASE, curated: true))
+        ->toHaveCount(13);
+
+    expect($legacy->fresh()->publicUrl())->toBe($originalUrl);
+    $this->get($originalUrl)->assertOk()->assertViewHas('publishedProductCount', 1);
+    $this->get($broad->publicUrl())->assertOk()->assertViewHas('publishedProductCount', 1);
+    expect($product->categories()->where('categories.id', $legacy->id)->exists())->toBeTrue();
+});

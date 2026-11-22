@@ -293,7 +293,7 @@ class PaidSubmissionService
             'categories.*' => ['nullable', Category::submissionOptionRule($curated)],
             'custom_categories' => 'nullable|array|max:14',
             'custom_categories.*.name' => 'required|string|max:100',
-            'custom_categories.*.type' => $curated ? 'required|in:category,platform' : 'required|in:category,use_case,best_for,platform',
+            'custom_categories.*.type' => $curated ? 'required|in:category,use_case,platform' : 'required|in:category,use_case,best_for,platform',
             'logo' => 'nullable|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:5120',
             'logo_url' => 'nullable|string',
             'video_url' => 'nullable|string|max:2048',
@@ -315,7 +315,7 @@ class PaidSubmissionService
         $curated = Category::hasSubmissionPlan();
         $pricingIds = Category::submissionTypeIds(CategoryTypeRegistry::PRICING, curated: $curated);
         $softwareIds = Category::submissionTypeIds(CategoryTypeRegistry::SOFTWARE, curated: $curated);
-        $useCaseIds = $curated ? collect() : Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE);
+        $useCaseIds = Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE, curated: $curated);
 
         $customCategories = $request->input('custom_categories', []);
         $hasCustomPricing = collect($customCategories)->contains('type', 'pricing');

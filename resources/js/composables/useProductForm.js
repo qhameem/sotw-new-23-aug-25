@@ -469,7 +469,7 @@ export function useProductForm() {
           ? 'At least one category is required'
           : '';
       case 'useCases':
-        return (!curatedSubmission.value && validUseCases.length === 0 && customUseCases.length === 0)
+        return ((!curatedSubmission.value || globalFormState.allUseCases.value.length > 0) && validUseCases.length === 0 && customUseCases.length === 0)
           ? 'At least one use case is required'
           : '';
       case 'pricing':
@@ -542,7 +542,8 @@ export function useProductForm() {
 
   const requiredInputFields = computed(() => [
     'link', 'name', 'tagline', 'description', 'categories', 'logo',
-    ...(curatedSubmission.value ? [] : ['useCases', 'pricing']),
+    ...(!curatedSubmission.value || globalFormState.allUseCases.value.length ? ['useCases'] : []),
+    ...(curatedSubmission.value ? [] : ['pricing']),
     ...(form.badge_opt_in ? ['badge_placement_url', 'badge_verified'] : []),
     ...(form.badge_opt_in && form.badge_verified ? ['badge_week_start'] : []),
     ...(form.submission_type === 'paid' ? ['paid_schedule_date'] : []),
@@ -552,7 +553,7 @@ export function useProductForm() {
     .map((field) => ({ field, label: validationFieldMeta[field]?.label || field, message: getFieldValidationMessage(field) })));
   const extractionIssues = computed(() => Object.entries(extractionErrors)
     .filter(([field, message]) => String(message || '').trim()
-      && (!curatedSubmission.value || !['pricing', 'useCases', 'bestFor'].includes(field)))
+      && (!curatedSubmission.value || !['pricing', 'bestFor'].includes(field)))
     .map(([field, message]) => ({ field, label: validationFieldMeta[field]?.label || ({ logos: 'Logo options', bestFor: 'Audience tags' }[field]) || field, message })));
 
   const validateField = (fieldKey, options = {}) => {
@@ -1227,10 +1228,9 @@ export function useProductForm() {
         ...data,
         categories: availableCategoryIds(data.categories, globalFormState.allCategories.value),
         platforms: availableCategoryIds(data.platforms, globalFormState.allPlatforms.value),
-        useCases: [],
+        useCases: availableCategoryIds(data.useCases, globalFormState.allUseCases.value),
         bestFor: [],
         pricing: [],
-        suggestedUseCases: [],
       };
     }
     if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
@@ -1670,7 +1670,7 @@ export function useProductForm() {
         allCategories.push(...validCategories);
       }
 
-      if (!curatedSubmission.value && form.useCases && form.useCases.length > 0) {
+      if (form.useCases && form.useCases.length > 0) {
         const validUseCases = form.useCases.filter(id => id !== null && id !== undefined && id !== '');
         allCategories.push(...validUseCases);
       }
@@ -1714,8 +1714,8 @@ export function useProductForm() {
         });
       }
 
-      if (!curatedSubmission.value && form.useCases_custom && form.useCases_custom.length > 0) {
-        const offset = (form.categories_custom ? form.categories_custom.length : 0) + (form.bestFor_custom ? form.bestFor_custom.length : 0);
+      if (form.useCases_custom && form.useCases_custom.length > 0) {
+        const offset = (form.categories_custom?.length || 0) + (curatedSubmission.value ? 0 : (form.bestFor_custom?.length || 0));
         form.useCases_custom.forEach((customUseCase, index) => {
           formData.append(`custom_categories[${index + offset}][name]`, customUseCase.name);
           formData.append(`custom_categories[${index + offset}][type]`, 'use_case');
@@ -1724,7 +1724,8 @@ export function useProductForm() {
 
       if (form.platforms_custom && form.platforms_custom.length > 0) {
         const offset = (form.categories_custom ? form.categories_custom.length : 0)
-          + (curatedSubmission.value ? 0 : (form.bestFor_custom?.length || 0) + (form.useCases_custom?.length || 0));
+          + (curatedSubmission.value ? 0 : (form.bestFor_custom?.length || 0))
+          + (form.useCases_custom?.length || 0);
         form.platforms_custom.forEach((customPlatform, index) => {
           formData.append(`custom_categories[${index + offset}][name]`, customPlatform.name);
           formData.append(`custom_categories[${index + offset}][type]`, 'platform');
@@ -2011,6 +2012,7 @@ export function useProductForm() {
   const validateForm = (submissionMode = null) => {
     if (curatedSubmission.value) {
       form.categories = availableCategoryIds(form.categories, globalFormState.allCategories.value);
+      form.useCases = availableCategoryIds(form.useCases, globalFormState.allUseCases.value);
       form.platforms = availableCategoryIds(form.platforms, globalFormState.allPlatforms.value);
     }
     if (submissionMode === 'paid') {

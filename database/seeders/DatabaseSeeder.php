@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             TypeSeeder::class,
             CategorySeeder::class,
             UseCaseSeeder::class,
+            BroadUseCaseSeeder::class,
             TechStackSeeder::class,
             UserSeeder::class,
             ProductSeeder::class,

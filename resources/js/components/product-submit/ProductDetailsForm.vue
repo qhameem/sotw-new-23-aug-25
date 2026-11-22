@@ -234,27 +234,13 @@
        <div v-show="expandCategoryBadges || taxonomyOpen.categories || categorySearch"
             class="flex flex-wrap gap-2 p-1"
             :class="{ 'max-h-48 overflow-y-auto custom-scrollbar': !expandCategoryBadges }">
-          <button 
-            v-for="category in filteredCategories" 
+          <CategoryChoiceChip
+            v-for="category in filteredCategories"
             :key="category.id"
-            type="button"
-            :aria-pressed="modelValue.categories.includes(category.id)"
-            @click="toggleCategory(category.id)"
-            class="group relative inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors duration-200"
-            :class="modelValue.categories.includes(category.id) 
-              ? 'bg-sky-50 border-sky-600 text-sky-700 shadow-sm'
-              : 'bg-white border-gray-400 text-gray-600 hover:border-gray-500 hover:bg-gray-50'"
-          >
-            {{ category.name }}
-            <span v-if="modelValue.categories.includes(category.id)" aria-hidden="true" class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs font-medium !text-white shadow group-hover:block group-focus-visible:block">
-              Click to deselect
-            </span>
-            <span v-if="modelValue.categories.includes(category.id)" aria-hidden="true" class="pointer-events-none absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-sky-900/80 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </span>
-          </button>
+            :name="category.name"
+            :selected="modelValue.categories.some(id => String(id) === String(category.id))"
+            @toggle="toggleCategory(category.id)"
+          />
           <div v-if="filteredCategories.length === 0 && !showAddCategoryButton" class="w-full py-4 text-center text-xs text-gray-400 italic">
              No categories found matching "{{ categorySearch }}"
           </div>
@@ -280,14 +266,16 @@
     </div>
 
     <!-- Use Cases (Chip Selection) -->
-    <div v-if="!curatedSubmission" id="field-use-cases" :class="[autofillLockClass('taxonomy'), reviewTint('useCases')]">
+    <div v-if="allUseCases.length || !curatedSubmission" id="field-use-cases"
+         :class="[autofillLockClass('taxonomy'), reviewTint('useCases', 'rounded-xl bg-sky-50/60')]"
+         @focusin="taxonomyOpen.useCases = true"
+         @focusout="taxonomyOpen.useCases = $event.currentTarget.contains($event.relatedTarget)">
        <div class="mb-1 flex items-start justify-between gap-4">
           <label class="block text-sm font-bold text-gray-900">Use Cases <span class="text-red-500">*</span> <span class="text-gray-400 font-normal text-xs ml-1">(Min 1, max 3)</span></label>
-          <p v-if="validationErrors.useCases" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases }}</p>
+          <p :class="{ invisible: !validationErrors.useCases }" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.useCases || 'At least one use case is required' }}</p>
        </div>
-       <div v-if="modelValue.useCases.length === 0 && (!modelValue.useCases_custom || modelValue.useCases_custom.length === 0)" class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
+       <div class="mb-2 text-xs text-gray-500">What do people use your product for? If you can't find a good match, add a custom use case.</div>
 
-       <div v-if="selectedUseCases.length" class="mb-2 flex flex-wrap gap-2"><button v-for="item in selectedUseCases" :key="item.id" type="button" class="review-chip" @click="toggleUseCase(item.id)">{{ item.name }} <span aria-hidden="true">&times;</span></button></div>
        <div class="relative mb-3">
          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -297,8 +285,6 @@
          <input
            type="text"
            v-model="useCaseSearch"
-           @focus="taxonomyOpen.useCases = true"
-           @blur="closeTaxonomy('useCases')"
            placeholder="Search use cases..."
            class="block w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-400 rounded-lg text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
            :class="{'pr-32': showAddUseCaseButton, 'pr-8': !showAddUseCaseButton && useCaseSearch.length >= 2}"
@@ -321,20 +307,16 @@
          </button>
        </div>
 
-       <div v-show="taxonomyOpen.useCases || useCaseSearch" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
-          <button
+       <div v-show="expandCategoryBadges || taxonomyOpen.useCases || useCaseSearch"
+            class="flex flex-wrap gap-2 p-1"
+            :class="{ 'max-h-48 overflow-y-auto custom-scrollbar': !expandCategoryBadges }">
+          <CategoryChoiceChip
             v-for="item in filteredUseCases"
             :key="item.id"
-            type="button"
-            @click="toggleUseCase(item.id)"
-            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
-            :class="modelValue.useCases.includes(item.id)
-              ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
-              : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'"
-          >
-            {{ item.name }}
-             <span v-if="modelValue.useCases.includes(item.id)" class="ml-1.5 text-sky-600 font-bold">&times;</span>
-          </button>
+            :name="item.name"
+            :selected="modelValue.useCases.some(id => String(id) === String(item.id))"
+            @toggle="toggleUseCase(item.id)"
+          />
           <div v-if="filteredUseCases.length === 0 && !showAddUseCaseButton" class="w-full py-4 text-center text-xs text-gray-400 italic">
              {{ useCaseSearch.trim() ? `No use cases found matching "${useCaseSearch}"` : 'No approved use cases available yet.' }}
           </div>
@@ -756,6 +738,7 @@ import WebsiteProviderFields from './WebsiteProviderFields.vue';
 import LaunchChecklistExtrasSection from './LaunchChecklistExtrasSection.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import WysiwygEditor from '../WysiwygEditor.vue';
+import CategoryChoiceChip from './CategoryChoiceChip.vue';
 import { getTabProgress } from '../../services/productFormService';
 
 const props = defineProps({
@@ -877,7 +860,6 @@ const techStackSearch = ref(''); // For tech stack search
 const taxonomyOpen = ref({ categories: false, useCases: false, platforms: false, tags: false });
 const closeTaxonomy = (key) => window.setTimeout(() => { taxonomyOpen.value[key] = false; }, 150);
 const selectedFrom = (items, selected) => (items || []).filter((item) => (selected || []).some((id) => String(id) === String(item.id)));
-const selectedUseCases = computed(() => selectedFrom(props.allUseCases, props.modelValue.useCases));
 const selectedPlatforms = computed(() => selectedFrom(props.allPlatforms, props.modelValue.platforms));
 const selectedTags = computed(() => selectedFrom(props.allBestFor, props.modelValue.bestFor));
 const hasPricing = computed(() => Array.isArray(props.modelValue.pricing) && props.modelValue.pricing.length > 0);
@@ -984,13 +966,7 @@ const filteredUseCases = computed(() => {
 
   return props.allUseCases
     .filter(item => item.name.toLowerCase().includes(search) && !existingCustomUseCases.includes(item.name.toLowerCase()))
-    .sort((a, b) => {
-      const aSelected = props.modelValue.useCases.includes(a.id);
-      const bSelected = props.modelValue.useCases.includes(b.id);
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
 
 const filteredPlatforms = computed(() => {
@@ -1112,7 +1088,7 @@ function toggleBestFor(id) {
 
 function toggleUseCase(id) {
     const current = [...props.modelValue.useCases];
-    const index = current.indexOf(id);
+    const index = current.findIndex(useCaseId => String(useCaseId) === String(id));
     if (index === -1) {
         if (current.length >= 3) return;
         current.push(id);
@@ -1120,7 +1096,6 @@ function toggleUseCase(id) {
         current.splice(index, 1);
     }
     updateField('useCases', current);
-    useCaseSearch.value = '';
 }
 
 function togglePlatform(id) {

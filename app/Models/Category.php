@@ -37,14 +37,16 @@ class Category extends Model implements Sitemapable
 
     public function scopeAvailableForSubmission(Builder $query, bool $curated): Builder
     {
-        return $query->submittable()->when($curated, fn (Builder $options) => $options->where('categories.in_submission_plan', true));
+        return $query->submittable()->when($curated, fn (Builder $options) => $options->where(fn (Builder $allowed) => $allowed
+            ->where('categories.in_submission_plan', true)
+            ->orWhereIn('categories.slug', array_keys(config('use-case-groups')))));
     }
 
     public static function submissionOptionRule(bool $curated): Exists
     {
-        return Rule::exists('categories', 'id')->where(function ($query) use ($curated) {
-            $query->where('submittable', true)->when($curated, fn ($options) => $options->where('in_submission_plan', true));
-        });
+        return Rule::exists('categories', 'id')->where(fn ($query) => $query->whereIn(
+            'id', self::availableForSubmission($curated)->select('categories.id')->toBase()
+        ));
     }
 
     public function scopeWithSoftwarePage(Builder $query, array $typeNames): Builder
@@ -70,6 +72,7 @@ class Category extends Model implements Sitemapable
     {
         return static::whereHas('types', fn (Builder $types) => $types->whereIn('name', CategoryTypeRegistry::namesFor($bucket)))
             ->where(fn (Builder $options) => $options->availableForSubmission($curated)->orWhereIn('categories.id', $preservedIds))
+            ->when($curated && $bucket === CategoryTypeRegistry::USE_CASE, fn (Builder $options) => $options->whereIn('categories.slug', array_keys(config('use-case-groups'))))
             ->pluck('categories.id');
     }
 
@@ -84,9 +87,12 @@ class Category extends Model implements Sitemapable
             $query->where(function (Builder $categories) {
                 $categories->whereKey($this->getKey());
 
+                $relatedSlugs = config('use-case-groups')[$this->slug][1] ?? [];
                 if ($this->merge_target_slug !== null) {
-                    $categories->orWhere('categories.slug', $this->merge_target_slug);
+                    $relatedSlugs[] = $this->merge_target_slug;
                 }
+
+                $categories->orWhereIn('categories.slug', $relatedSlugs);
             });
         });
     }
