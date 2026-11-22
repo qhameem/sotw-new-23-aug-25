@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         if (Category::submissionTypeIds(CategoryTypeRegistry::USE_CASE)->isNotEmpty()) {
-            app(BroadUseCaseSeeder::class)->run();
+            Category::withoutEvents(fn () => app(BroadUseCaseSeeder::class)->run());
         }
     }
 

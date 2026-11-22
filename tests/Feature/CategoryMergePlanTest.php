@@ -213,8 +213,12 @@ it('offers the broader use cases on new submissions and keeps legacy use case UR
     $originalUrl = $legacy->publicUrl();
 
     $migration = require database_path('migrations/2026_11_22_000001_add_broad_use_cases.php');
-    $migration->up();
-    $migration->up();
+    $events = ['eloquent.saved: '.Category::class];
+    \Illuminate\Support\Facades\Event::fakeFor(function () use ($migration, $events) {
+        $migration->up();
+        $migration->up();
+        \Illuminate\Support\Facades\Event::assertNotDispatched($events[0]);
+    }, $events);
 
     $broad = Category::where('slug', 'writing-editing')->firstOrFail();
     $product->categories()->attach($broad);
