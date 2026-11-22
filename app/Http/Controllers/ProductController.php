@@ -29,6 +29,7 @@ use App\Services\SlugService;
 use App\Services\SystemErrorReporter;
 use App\Services\TechStackDetectorService;
 use App\Support\CategoryPageType;
+use App\Support\BroadUseCases;
 use App\Support\CategoryTypeRegistry;
 use App\Support\FreeLaunchQueueSettings;
 use App\Support\PremiumLaunchPricing;
@@ -4942,7 +4943,7 @@ class ProductController extends Controller
                 $categories = $query->where(function ($options) use ($preservedIds, $curated) {
                     $options->availableForSubmission($curated)->orWhereIn('categories.id', $preservedIds);
                 })->when($curated && $group === 'useCaseCategories', fn ($options) => $options
-                    ->whereIn('categories.slug', array_keys(config('use-case-groups'))))->get();
+                    ->whereIn('categories.slug', array_keys(BroadUseCases::GROUPS)))->get();
                 if ($group === 'pricingCategories') {
                     $categories->loadCount('products');
                     $categories = $categories->sort(function ($a, $b) {

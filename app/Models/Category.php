@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\CategoryPageType;
+use App\Support\BroadUseCases;
 use App\Support\CategoryTypeRegistry;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,7 +40,7 @@ class Category extends Model implements Sitemapable
     {
         return $query->submittable()->when($curated, fn (Builder $options) => $options->where(fn (Builder $allowed) => $allowed
             ->where('categories.in_submission_plan', true)
-            ->orWhereIn('categories.slug', array_keys(config('use-case-groups')))));
+            ->orWhereIn('categories.slug', array_keys(BroadUseCases::GROUPS))));
     }
 
     public static function submissionOptionRule(bool $curated): Exists
@@ -72,7 +73,7 @@ class Category extends Model implements Sitemapable
     {
         return static::whereHas('types', fn (Builder $types) => $types->whereIn('name', CategoryTypeRegistry::namesFor($bucket)))
             ->where(fn (Builder $options) => $options->availableForSubmission($curated)->orWhereIn('categories.id', $preservedIds))
-            ->when($curated && $bucket === CategoryTypeRegistry::USE_CASE, fn (Builder $options) => $options->whereIn('categories.slug', array_keys(config('use-case-groups'))))
+            ->when($curated && $bucket === CategoryTypeRegistry::USE_CASE, fn (Builder $options) => $options->whereIn('categories.slug', array_keys(BroadUseCases::GROUPS)))
             ->pluck('categories.id');
     }
 
@@ -87,7 +88,7 @@ class Category extends Model implements Sitemapable
             $query->where(function (Builder $categories) {
                 $categories->whereKey($this->getKey());
 
-                $relatedSlugs = config('use-case-groups')[$this->slug][1] ?? [];
+                $relatedSlugs = BroadUseCases::GROUPS[$this->slug][1] ?? [];
                 if ($this->merge_target_slug !== null) {
                     $relatedSlugs[] = $this->merge_target_slug;
                 }
