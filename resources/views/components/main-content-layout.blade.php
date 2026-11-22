@@ -112,7 +112,7 @@
                             </div>
                             @endif
                             @guest
-                                @if(request()->routeIs('home'))
+                                @if(request()->routeIs('home', 'stats', 'products.catalog'))
                                     @include('partials._homepage-about-card')
                                 @endif
                             @endguest

@@ -77,6 +77,7 @@ Route::get('/{key}.txt', IndexNowKeyController::class)
 Route::get('/indexnow/{key}.txt', IndexNowKeyController::class)->name('indexnow.key.legacy');
 
 Route::get('/', [ProductController::class, 'home'])->name('home');
+Route::get('/stats', \App\Http\Controllers\PlatformStatsController::class)->name('stats');
 Route::post('/feedback', \App\Http\Controllers\FeedbackController::class)
     ->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
@@ -328,6 +329,7 @@ Route::get('/category/{category:slug}/page/{page}', [ProductController::class, '
     ->whereNumber('page')
     ->name('categories.show.page');
 Route::get('/category/{category:slug}', [ProductController::class, 'legacyCategoryProducts'])->name('categories.show');
+Route::get('/products', \App\Http\Controllers\ProductCatalogController::class)->name('products.catalog');
 Route::get('/products/dates', [ProductController::class, 'getProductDates']);
 Route::get('/date/{date}', [ProductController::class, 'productsByDate'])->where('date', '\d{4}-\d{2}-\d{2}')->name('products.byDate');
 

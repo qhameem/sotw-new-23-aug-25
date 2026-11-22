@@ -73,6 +73,7 @@
                 request()->routeIs('pseo.builtWith') => 'built_with_list',
                 default => 'product_list',
             };
+            $publicationDate = ($showPublicationDate ?? false) ? ($product->published_at ?? $product->created_at) : null;
             $publishedGroup = null;
             if ($groupProductsByPublication) {
                 $publishedDate = ($product->published_at ?? $product->created_at)->copy();
@@ -182,6 +183,10 @@
                         </div>
                     @endif
 
+                    @if ($publicationDate)
+                        <time datetime="{{ $publicationDate->toDateString() }}" class="text-xs text-gray-600">{{ $publicationDate->format('M j, Y') }}</time>
+                    @endif
+
                     <x-product-category-tags :categories="$product->categories" :withCounts="true" :hideOnMobile="true" />
                 </div>
 
@@ -264,7 +269,7 @@
         </nav>
     @elseif ($regularProductsList instanceof \Illuminate\Pagination\LengthAwarePaginator)
         <div class="mt-4">
-            {{ $regularProductsList->links() }}
+            {{ $regularProductsList->links($paginationView ?? null) }}
         </div>
     @endif
 </div>

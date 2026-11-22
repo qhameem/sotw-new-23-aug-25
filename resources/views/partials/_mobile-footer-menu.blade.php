@@ -3,7 +3,7 @@ $navItems = [
     [
         'href' => route('home'),
         'text' => 'Products',
-        'activeRoutes' => ['home', 'products.byDate', 'products.byWeek', 'products.byMonth', 'products.byYear', 'products.search', 'products.show'],
+        'activeRoutes' => ['home', 'products.catalog', 'products.byDate', 'products.byWeek', 'products.byMonth', 'products.byYear', 'products.search', 'products.show'],
         'icon' => <<<'HTML'
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 6.75A2.25 2.25 0 0 1 7 4.5h10A2.25 2.25 0 0 1 19.25 6.75v10.5A2.25 2.25 0 0 1 17 19.5H7a2.25 2.25 0 0 1-2.25-2.25V6.75Z" />
@@ -23,6 +23,16 @@ $navItems = [
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 5H19v5.5h-5.5z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13.5h5.5V19H5z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 13.5H19V19h-5.5z" />
+            </svg>
+        HTML,
+    ],
+    [
+        'href' => route('stats'),
+        'text' => 'Stats',
+        'activeRoutes' => ['stats'],
+        'icon' => <<<'HTML'
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 19h14M8 16v-4m4 4V8m4 8V5" />
             </svg>
         HTML,
     ],
@@ -49,7 +59,7 @@ $navItems = [
     style="padding-bottom: env(safe-area-inset-bottom, 0px); background-color: var(--color-navbar-bg, #ffffff);"
     aria-label="Mobile navigation"
 >
-    <div class="mx-auto grid h-[4.5rem] max-w-md grid-cols-4 items-center px-3">
+    <div class="mx-auto grid h-[4.5rem] max-w-md grid-cols-5 items-center px-3">
         @foreach ($navItems as $item)
             <x-mobile-nav-item :href="$item['href']" :text="$item['text']" :active-routes="$item['activeRoutes']">
                 {!! $item['icon'] !!}

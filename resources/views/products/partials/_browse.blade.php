@@ -10,6 +10,7 @@
         'Pricing' => 'Pricing',
     ];
     $hiddenGroupTypes = ['Software Categories', 'Software', 'Category'];
+    $isCatalog = request()->routeIs('products.catalog');
     $activeCategoryId = isset($category) ? (int) $category->id : null;
 @endphp
 
@@ -23,6 +24,17 @@
         </span>
         <p class="text-sm font-semibold text-gray-900">Browse</p>
     </div>
+
+    <a href="{{ route('stats') }}" wire:navigate.hover @if(request()->routeIs('stats')) aria-current="page" @endif
+        @class(['block rounded-xl px-4 py-1.5 text-sm', 'bg-purple-50 font-semibold text-purple-600' => request()->routeIs('stats'), 'text-gray-600 hover:bg-gray-50 hover:text-purple-600' => !request()->routeIs('stats')])>
+        Stats
+    </a>
+
+    <a href="{{ route('products.catalog') }}" wire:navigate.hover
+        @if(request()->routeIs('products.catalog') && empty($filters)) aria-current="page" @endif
+        @class(['block rounded-xl px-4 py-1.5 text-sm', 'bg-purple-50 font-semibold text-purple-600' => request()->routeIs('products.catalog') && empty($filters), 'text-gray-600 hover:bg-gray-50 hover:text-purple-600' => !request()->routeIs('products.catalog') || !empty($filters)])>
+        All products
+    </a>
 
     @foreach(($types ?? collect()) as $type)
         @continue(in_array($type->name, $hiddenGroupTypes, true))
@@ -39,12 +51,20 @@
                 </div>
 
                 <div class="space-y-0.5">
+                    @php
+                        $filterKey = collect($taxonomies ?? [])->search(fn ($names) => in_array($type->name, $names, true)) ?: 'category';
+                    @endphp
                     @foreach($options->take(5) as $item)
-                        <a href="{{ $item->publicUrl() }}" wire:navigate.hover
+                        @php
+                            $isActive = $isCatalog
+                                ? ($filters[$filterKey] ?? null) === $item->slug
+                                : $activeCategoryId === (int) $item->id;
+                        @endphp
+                        <a href="{{ $isCatalog ? route('products.catalog', [$filterKey => $item->slug] + $catalogParameters) : $item->publicUrl() }}" wire:navigate.hover
                             @class([
                                 'block rounded-xl px-4 py-1.5 text-xs transition',
-                                'bg-purple-50 font-semibold text-purple-600' => $activeCategoryId === (int) $item->id,
-                                'text-gray-600 hover:bg-gray-50 hover:text-purple-600' => $activeCategoryId !== (int) $item->id,
+                                'bg-purple-50 font-semibold text-purple-600' => $isActive,
+                                'text-gray-600 hover:bg-gray-50 hover:text-purple-600' => !$isActive,
                             ])>
                             {{ $item->name }}
                         </a>

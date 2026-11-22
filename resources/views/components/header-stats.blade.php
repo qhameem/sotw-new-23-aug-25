@@ -13,6 +13,10 @@
 @endphp
 
 <div class="hidden w-full overflow-hidden rounded-xl border border-gray-200 bg-white md:block" aria-label="Site statistics">
+    <div class="px-4 pt-3 text-xs">
+        <a href="{{ route('stats') }}" wire:navigate.hover @if(request()->routeIs('stats')) aria-current="page" @endif
+            class="font-semibold text-primary-600 hover:underline">Stats</a>
+    </div>
     <p class="px-4 py-3 text-xs leading-relaxed text-gray-600">
         Read <strong class="font-semibold text-gray-900">{{ $compactNumber($stats['ai_bot_requests']) }}</strong> times by
         <strong class="font-semibold text-gray-900">{{ number_format($stats['ai_systems']) }}</strong> AI systems including,

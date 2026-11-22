@@ -1,0 +1,89 @@
+<div id="sotw-stats">
+<style>
+#sotw-stats{color-scheme:light dark;--ink:light-dark(#19241f,#edf4ef);--sub:light-dark(#52655b,#aabbaf);--wall:light-dark(#f4f7f4,#16201a);--paper:light-dark(#fff,#202c24);--line:light-dark(#dce5de,#38483d);--mint:light-dark(#e4f2e7,#2a4333);--green:light-dark(#216043,#a5e5bc);font:14px/1.5 system-ui;color:var(--ink);background:var(--wall);display:grid;grid-template-columns:165px minmax(0,1fr) 205px;border-radius:14px;overflow:hidden}
+#sotw-stats *{box-sizing:border-box}
+#sotw-stats aside{background:var(--paper);padding:24px 14px;border-right:1px solid var(--line)}
+#sotw-stats .brand{display:block;font-weight:750;margin:0 8px 26px}
+#sotw-stats nav{display:grid;gap:4px}
+#sotw-stats nav span{padding:8px;border-radius:7px;color:var(--sub);display:flex;gap:8px;align-items:center}
+#sotw-stats nav [aria-current]{background:var(--mint);color:var(--green);font-weight:700}
+#sotw-stats main{padding:26px;min-width:0}
+#sotw-stats header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+#sotw-stats h1,#sotw-stats h2,#sotw-stats p{margin:0}
+#sotw-stats h1{font-size:32px;letter-spacing:-.045em}
+#sotw-stats h2{font-size:16px;margin-bottom:10px}
+#sotw-stats small,#sotw-stats .muted{color:var(--sub)}
+#sotw-stats .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#sotw-stats .panel,#sotw-stats .metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+#sotw-stats .metric:first-child{background:var(--mint)}
+#sotw-stats .metric strong{display:block;font-size:26px;line-height:1.2;margin:5px 0}
+#sotw-stats .columns{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;margin:12px 0}
+#sotw-stats .bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:end;gap:5px;height:94px;border-bottom:1px solid var(--line);margin-top:12px}
+#sotw-stats .bars span{background:var(--green);border-radius:3px 3px 0 0;opacity:.65}
+#sotw-stats .bars span:last-child{opacity:1}
+#sotw-stats select{background:var(--wall);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px}
+#sotw-stats .ends,#sotw-stats .row{display:flex;justify-content:space-between;gap:8px}
+#sotw-stats .row{padding:7px 0;border-bottom:1px solid var(--line)}
+#sotw-stats .row:last-child{border-bottom:0}
+#sotw-stats table{width:100%;border-collapse:collapse;text-align:left}
+#sotw-stats th,#sotw-stats td{border-bottom:1px solid var(--line);padding:7px 4px}
+#sotw-stats th{color:var(--sub);font-weight:500}
+#sotw-stats .right{border-right:0;border-left:1px solid var(--line);display:grid;align-content:start;gap:12px}
+#sotw-stats .right section{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#sotw-stats .right h2{font-size:14px;margin-bottom:5px}
+#sotw-stats nav small{padding:8px 8px 0}
+@media(max-width:900px){#sotw-stats{grid-template-columns:150px minmax(0,1fr)}#sotw-stats .right{display:none}}
+@media(max-width:760px){#sotw-stats .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#sotw-stats .columns{grid-template-columns:1fr}}
+@media(max-width:530px){#sotw-stats{grid-template-columns:1fr}#sotw-stats aside{padding:10px;border:0}#sotw-stats .brand{margin:0 8px 4px}#sotw-stats nav{display:flex;flex-wrap:wrap}#sotw-stats main{padding:14px}}
+</style>
+<aside><strong class="brand">Software on the Web</strong><nav aria-label="Sidebar preview"><span><i data-lucide="house" aria-hidden="true"></i>Home</span><span><i data-lucide="folder" aria-hidden="true"></i>Directories</span><span aria-current="page"><i data-lucide="chart-no-axes-column" aria-hidden="true"></i>Stats</span><small>Browse software</small><span>Productivity</span><span>Developer tools</span><span>AI tools</span><small>Platforms</small><span>Web</span><span>macOS</span></nav></aside>
+<main>
+<header><div><h1>Platform stats</h1><p class="muted">Launches, product discovery, and directory coverage.</p></div><small>Sample data · Updated Nov 22, 2026</small></header>
+<div class="metrics">
+<div class="metric">Published products<strong>842</strong><small>All time</small></div>
+<div class="metric">Launches this week<strong>24</strong><small>Nov 16–22</small></div>
+<div class="metric">Website clicks<strong>31,408</strong><small>All time</small></div>
+<div class="metric">AI crawler requests<strong>8,219</strong><small>Last 30 days</small></div>
+</div>
+<div class="columns">
+<section class="panel"><h2>Weekly activity</h2><div class="ends"><label>Metric <select><option>Launches</option><option>Upvotes</option><option>Website clicks</option></select></label><small aria-live="polite" class="latest">24 launches this week</small></div><div class="bars" role="img" aria-label="Launches by week"></div><div class="ends"><small>Aug 31</small><small>Nov 22</small></div></section>
+<section class="panel"><h2>Last week’s top products</h2><small>Nov 9–15 · Ranked by the weekly board</small><div class="row"><span>1. DraftNest</span><small>62 upvotes</small></div><div class="row"><span>2. TaskHarbor</span><small>48 upvotes</small></div><div class="row"><span>3. ClipGarden</span><small>39 upvotes</small></div></section>
+<section class="panel"><h2>Catalog breakdown</h2><div class="row"><span>Productivity</span><strong>156</strong></div><div class="row"><span>Developer tools</span><strong>118</strong></div><div class="row"><span>Laravel products</span><strong>74</strong></div></section>
+<section class="panel"><h2>Startup directories</h2><div class="row"><span>Total listings</span><strong>184</strong></div><div class="row"><span>Free or freemium</span><strong>126</strong></div><div class="row"><span>Dofollow</span><strong>71</strong></div><div class="row"><span>Median Domain Rating</span><strong>38</strong></div></section>
+</div>
+<section class="panel"><h2>Stats snapshot</h2><table><thead><tr><th>Metric</th><th>Value</th><th>Period</th><th>Source</th></tr></thead><tbody><tr><td>Published products</td><td>842</td><td>All time</td><td>Product catalog</td></tr><tr><td>Launches</td><td>24</td><td>Nov 16–22</td><td>Weekly board</td></tr><tr><td>Directory listings</td><td>184</td><td>As of Nov 22</td><td>Startup directories</td></tr></tbody></table></section>
+</main>
+<aside class="right" aria-label="Homepage sidebar preview">
+<section><h2>Is your site ready to launch?</h2><small>Get a free audit ↗</small></section>
+<section><h2>Top software categories</h2><div class="row"><span>Productivity</span><small>156</small></div><div class="row"><span>Developer tools</span><small>118</small></div><div class="row"><span>AI tools</span><small>96</small></div></section>
+<section><h2>Newsletter</h2><p class="muted">Get new software launches in your inbox.</p></section>
+</aside>
+<script>
+{
+const root = document.getElementById('sotw-stats');
+const select = root.querySelector('select');
+const bars = root.querySelector('.bars');
+const latest = root.querySelector('.latest');
+const series = {
+  Launches: [11,15,12,18,14,19,17,22,19,24,21,24],
+  Upvotes: [65,82,78,104,96,122,97,145,132,155,176,164],
+  'Website clicks': [312,386,365,440,417,491,459,578,533,622,589,648]
+};
+function render() {
+  const values = series[select.value];
+  const peak = Math.max(...values);
+  const metric = select.value.toLowerCase();
+  latest.textContent = values[11].toLocaleString() + ' ' + metric + ' this week';
+  bars.setAttribute('aria-label', select.value + ' for the past 12 weeks: ' + values.join(', '));
+  bars.replaceChildren(...values.map((value, index) => {
+    const bar = document.createElement('span');
+    bar.style.height = (value / peak * 100) + '%';
+    bar.dataset.tooltip = 'Week of ' + new Date(Date.UTC(2026, 7, 31 + index * 7)).toLocaleDateString('en', {month:'short', day:'numeric', timeZone:'UTC'}) + ' · ' + value + ' ' + metric;
+    return bar;
+  }));
+}
+select.addEventListener('change', render);
+render();
+}
+</script>
+</div>

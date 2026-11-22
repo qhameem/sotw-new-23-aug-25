@@ -2,13 +2,13 @@
     @search-focus-changed.window="searchFocused = $event.detail">
     @if(!request()->routeIs('todolists.*'))
         <div x-show="!searchFocused">
-            @if(request()->routeIs('home', 'products.byDate', 'products.byWeek', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search'))
+            @if(request()->routeIs('home', 'stats', 'products.catalog', 'products.byDate', 'products.byWeek', 'categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'products.search'))
                 @include('partials._sidebar-ads')
 
                 <x-top-categories />
 
                 @guest
-                    @unless(request()->routeIs('home'))
+                    @unless(request()->routeIs('home', 'stats', 'products.catalog'))
                         <div class="p-4">
                             @include('partials._what-is-sotw-card', ['compact' => request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*')])
                         </div>
