@@ -68,6 +68,16 @@ class BroadCategoryPageTest extends TestCase
             ->assertDontSee('>Rising</span>', false)
             ->assertDontSee('>Popular</span>', false)
             ->assertSee($group['items'][0]['url'], false);
+
+        $document = new \DOMDocument;
+        $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new \DOMXPath($document);
+
+        $this->assertSame(0, $xpath->query('//*[@data-category-navigation-row]/ancestor::*[@x-persist]')->length);
+        $themedLinks = $xpath->query('//*[@data-category-navigation-row]//a[contains(concat(" ", normalize-space(@class), " "), " text-primary-500 ")]');
+        $this->assertSame(1, $themedLinks->length);
+        $this->assertSame($group['url'], $themedLinks->item(0)->getAttribute('href'));
+        $this->assertSame('page', $themedLinks->item(0)->getAttribute('aria-current'));
     }
 
     public function test_unknown_broad_category_returns_not_found(): void

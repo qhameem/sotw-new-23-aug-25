@@ -24,24 +24,34 @@ function syncSiteHeaderOffset() {
     }
 }
 
+let observedHeader;
+const headerResizeObserver = new ResizeObserver(syncSiteHeaderOffset);
+const headerMutationObserver = new MutationObserver(syncSiteHeaderOffset);
+
 function initializeSiteHeaderOffset() {
     const header = document.querySelector('[data-site-top-bar]');
 
     syncSiteHeaderOffset();
 
-    if (!header || header.dataset.offsetObserverInitialized === 'true') {
+    if (header === observedHeader) {
         return;
     }
 
-    header.dataset.offsetObserverInitialized = 'true';
-    new ResizeObserver(syncSiteHeaderOffset).observe(header);
-    new MutationObserver(syncSiteHeaderOffset).observe(header, {
+    observedHeader = header;
+    headerResizeObserver.disconnect();
+    headerMutationObserver.disconnect();
+
+    if (!header) {
+        return;
+    }
+
+    headerResizeObserver.observe(header);
+    headerMutationObserver.observe(header, {
         attributes: true,
         attributeFilter: ['class', 'style'],
     });
-    const pageOffsetObserver = new MutationObserver(syncSiteHeaderOffset);
     for (const element of [document.body, document.documentElement]) {
-        pageOffsetObserver.observe(element, { attributes: true, attributeFilter: ['class', 'style'] });
+        headerMutationObserver.observe(element, { attributes: true, attributeFilter: ['class', 'style'] });
     }
 }
 

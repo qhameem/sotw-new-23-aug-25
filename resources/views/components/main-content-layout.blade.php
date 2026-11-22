@@ -1,7 +1,5 @@
 @unless($distractionFree)
-    @persist('site-top-bar')
-        <x-top-bar />
-    @endpersist
+    <x-top-bar :persist-controls="true" />
 @endunless
 
 <div data-site-content-layout @class(['flex flex-col min-h-screen', 'md:h-screen' => $lockHeight])>

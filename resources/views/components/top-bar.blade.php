@@ -1,4 +1,4 @@
-@props(['showCategoryNavigation' => true, 'showOnMobile' => false])
+@props(['showCategoryNavigation' => true, 'showOnMobile' => false, 'persistControls' => false])
 
 @php
         $showCategoryNavigation = $showCategoryNavigation && !request()->is('admin', 'admin/*');
@@ -8,6 +8,9 @@
 <div data-site-top-bar data-modal-scroll-lock-fixed class="fixed top-0 z-50 {{ $showOnMobile ? 'block' : 'hidden md:block' }} {{ $showCategoryNavigation ? 'h-[7rem]' : 'h-14' }} w-full flex-shrink-0 border-b border-gray-200" style="background-color: var(--color-navbar-bg, #ffffff);">
 
 
+    @if ($persistControls)
+        @persist('site-top-bar-controls')
+    @endif
     <div class="mx-auto max-w-[96rem] px-5">
         <div class="flex items-center gap-4 lg:gap-6 h-14">
             <div class="flex min-w-0 shrink-0 items-center gap-4 lg:gap-5">
@@ -426,6 +429,10 @@
             </div>
         </div>
     </div>
+
+    @if ($persistControls)
+        @endpersist
+    @endif
 
     @if ($showCategoryNavigation)
         <x-category-navigation-row :category-navigation-summaries="$categoryNavigationSummaries ?? []" />
