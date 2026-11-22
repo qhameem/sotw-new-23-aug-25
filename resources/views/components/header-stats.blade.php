@@ -13,10 +13,6 @@
 @endphp
 
 <div class="hidden w-full overflow-hidden rounded-xl border border-gray-200 bg-white md:block" aria-label="Site statistics">
-    <div class="px-4 pt-3 text-xs">
-        <a href="{{ route('stats') }}" wire:navigate.hover @if(request()->routeIs('stats')) aria-current="page" @endif
-            class="font-semibold text-primary-600 hover:underline">Stats</a>
-    </div>
     <p class="px-4 py-3 text-xs leading-relaxed text-gray-600">
         Read <strong class="font-semibold text-gray-900">{{ $compactNumber($stats['ai_bot_requests']) }}</strong> times by
         <strong class="font-semibold text-gray-900">{{ number_format($stats['ai_systems']) }}</strong> AI systems including,
@@ -47,13 +43,15 @@
                 <span class="whitespace-nowrap text-[10px] leading-tight">Domain Rating<br>by <a href="https://ahrefs.com/" target="_blank" rel="nofollow noopener" class="text-gray-900 underline">Ahrefs</a></span>
             </div>
         @endif
-        <div class="px-3 py-3" title="{{ number_format($stats['submitted_products']) }} products submitted">
+        <a href="{{ route('stats') }}" wire:navigate.hover class="block px-3 py-3 hover:underline focus-visible:underline"
+            title="{{ number_format($stats['submitted_products']) }} products submitted">
             <strong class="block text-xl font-semibold leading-tight text-gray-900">{{ $compactNumber($stats['submitted_products']) }}</strong>
             <span>products</span>
-        </div>
-        <div class="px-3 py-3" title="{{ number_format($stats['product_clicks']) }} combined product clicks">
+        </a>
+        <a href="{{ route('stats') }}" wire:navigate.hover class="block px-3 py-3 hover:underline focus-visible:underline"
+            title="{{ number_format($stats['product_clicks']) }} combined product clicks">
             <strong class="block text-xl font-semibold leading-tight text-gray-900">{{ $compactNumber($stats['product_clicks']) }}</strong>
             <span>clicks</span>
-        </div>
+        </a>
     </div>
 </div>
