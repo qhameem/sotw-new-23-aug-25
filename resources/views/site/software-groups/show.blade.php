@@ -48,15 +48,24 @@
         <h1 class="mt-2 text-2xl font-bold text-gray-950">{{ $broadCategory['label'] }} Software &amp; Tools</h1>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600">{{ $broadCategory['description'] }} Compare curated products below or choose a specific subcategory.</p>
 
-        <nav class="mt-5 flex gap-2 overflow-x-auto pb-1 scrollbar-hide" aria-label="{{ $broadCategory['label'] }} subcategories">
+        <nav class="mt-5 flex flex-wrap gap-x-5 gap-y-1" aria-label="{{ $broadCategory['label'] }} subcategories">
+            <a
+                href="{{ route('software-groups.show', ['group' => $broadCategory['key']]) }}"
+                wire:navigate.hover
+                aria-current="{{ $currentPage === 1 ? 'page' : 'true' }}"
+                class="inline-flex items-center gap-1 border-b border-current py-1 text-xs font-medium leading-[1.05rem] text-green-800"
+            >
+                <span>All</span>
+                <span>{{ $regularProducts->total() }}</span>
+            </a>
             @foreach($broadCategory['items'] as $subcategory)
                 <a
                     href="{{ $subcategory['url'] }}"
                     wire:navigate.hover
-                    class="inline-flex shrink-0 items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+                    class="inline-flex max-w-full items-center gap-1 border-b border-transparent py-1 text-xs font-medium leading-[1.05rem] text-gray-700 transition-colors hover:text-green-800"
                 >
-                    {{ $subcategory['name'] }}
-                    <span class="ml-1.5 text-[10px] font-medium text-gray-400">{{ $subcategory['count'] }}</span>
+                    <span class="min-w-0 break-words">{{ $subcategory['name'] }}</span>
+                    <span class="shrink-0 text-gray-400">{{ $subcategory['count'] }}</span>
                 </a>
             @endforeach
         </nav>
