@@ -53,7 +53,7 @@
                 href="{{ route('software-groups.show', ['group' => $broadCategory['key']]) }}"
                 wire:navigate.hover
                 aria-current="{{ $currentPage === 1 ? 'page' : 'true' }}"
-                class="inline-flex items-center gap-1 border-b border-current py-1 text-xs font-medium leading-[1.05rem] text-green-800"
+                class="inline-flex items-center gap-1 border-b border-current py-1 text-xs font-medium leading-[1.05rem] text-primary-500"
             >
                 <span>All</span>
                 <span>{{ $regularProducts->total() }}</span>
@@ -62,7 +62,7 @@
                 <a
                     href="{{ $subcategory['url'] }}"
                     wire:navigate.hover
-                    class="inline-flex max-w-full items-center gap-1 border-b border-transparent py-1 text-xs font-medium leading-[1.05rem] text-gray-700 transition-colors hover:text-green-800"
+                    class="inline-flex max-w-full items-center gap-1 border-b border-transparent py-1 text-xs font-medium leading-[1.05rem] text-gray-700 transition-colors hover:text-primary-600"
                 >
                     <span class="min-w-0 break-words">{{ $subcategory['name'] }}</span>
                     <span class="shrink-0 text-gray-400">{{ $subcategory['count'] }}</span>
