@@ -41,7 +41,7 @@
         <p class="text-sm text-gray-600">{{ number_format($products->total()) }} published {{ Str::plural('product', $products->total()) }}</p>
 
         @if ($products->isNotEmpty())
-            @include('partials.products_list', ['regularProducts' => $products, 'showPublicationDate' => true, 'paginationView' => 'products.catalog-pagination'])
+            @include('partials.products_list', ['regularProducts' => $products, 'showPublicationDate' => true, 'showProductEngagement' => false, 'paginationView' => 'products.catalog-pagination'])
         @else
             <p class="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">No products found.</p>
         @endif
