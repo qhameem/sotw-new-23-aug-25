@@ -22,9 +22,11 @@
 
 @section('meta_description', request()->routeIs('home') ? 'Find new SaaS tools every week. Browse curated picks across AI, productivity, developer tools, and design software on Software on the Web.' : ($metaDescription ?? $meta_description ?? ''))
 
-@section('header-title')
-    {{ request()->routeIs('home') ? 'Software on the Web' : ($title ?? '') }}
-@endsection
+@if (empty($isCategoryPage))
+    @section('header-title')
+        {{ request()->routeIs('home') ? 'Software on the Web' : ($title ?? '') }}
+    @endsection
+@endif
 
 @if($isWeeklyListing)
     @section('hide_desktop_page_header', '1')
@@ -187,23 +189,25 @@
     @endif
 
     @if(isset($isCategoryPage) && $isCategoryPage && isset($category))
-        <div class="px-4 pb-4 pt-4 md:pt-2 lg:pt-0">
-            <x-breadcrumbs :items="[
-                ['label' => $taxonomyLabel, 'link' => route('categories.index')],
-                ['label' => $category->name],
-            ]" />
+        @php
+            $breadcrumbItems = [['label' => 'Home', 'link' => route('home')], ...$categoryBreadcrumbs];
+        @endphp
+        <header class="px-4 pb-4 pt-6">
+            <x-category-breadcrumbs :items="$categoryBreadcrumbs" />
+            <h1 class="text-xl font-semibold text-gray-950">{{ $title }}</h1>
             <p class="mt-3 text-sm text-gray-800">{{ $pageIntro }}</p>
-        </div>
+        </header>
 
         @push('structured-data')
             <script type="application/ld+json">{!! json_encode([
                 '@context' => 'https://schema.org',
                 '@type' => 'BreadcrumbList',
-                'itemListElement' => [
-                    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
-                    ['@type' => 'ListItem', 'position' => 2, 'name' => $taxonomyLabel, 'item' => route('categories.index')],
-                    ['@type' => 'ListItem', 'position' => 3, 'name' => $category->name, 'item' => $categoryCanonicalUrl],
-                ],
+                'itemListElement' => array_map(fn (array $item, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $item['label'],
+                    'item' => $item['link'] ?? $categoryCanonicalUrl,
+                ], $breadcrumbItems, array_keys($breadcrumbItems)),
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
         @endpush
     @endif

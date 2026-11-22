@@ -73,6 +73,9 @@ class BroadCategoryPageTest extends TestCase
         $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
         $xpath = new \DOMXPath($document);
 
+        $this->assertSame(1, $xpath->query('//main//h1')->length);
+        $this->assertSame(1, $xpath->query('//main//h2[normalize-space(.)="Published this week"]')->length);
+        $this->assertSame(1, $xpath->query('//main//article//h3//span[@itemprop="name" and normalize-space(.)="Broad Category Product"]')->length);
         $this->assertSame(0, $xpath->query('//*[@data-category-navigation-row]/ancestor::*[@x-persist]')->length);
         $themedLinks = $xpath->query('//*[@data-category-navigation-row]//a[contains(concat(" ", normalize-space(@class), " "), " text-primary-500 ")]');
         $this->assertSame(1, $themedLinks->length);

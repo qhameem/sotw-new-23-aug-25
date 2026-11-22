@@ -29,20 +29,17 @@
     '@type' => 'BreadcrumbList',
     'itemListElement' => [
         ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
-        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Software', 'item' => route('categories.index')],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Categories', 'item' => route('categories.index')],
         ['@type' => 'ListItem', 'position' => 3, 'name' => $broadCategory['label'], 'item' => route('software-groups.show', ['group' => $broadCategory['key']])],
     ],
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
     </script>
 
     <header class="border-b border-gray-100 px-4 pb-5 pt-6">
-        <nav class="mb-4 flex items-center gap-2 text-xs text-gray-500" aria-label="Breadcrumb">
-            <a href="{{ route('home') }}" wire:navigate.hover class="hover:text-primary-600">Home</a>
-            <span aria-hidden="true">/</span>
-            <a href="{{ route('categories.index') }}" wire:navigate.hover class="hover:text-primary-600">Software</a>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page" class="text-gray-800">{{ $broadCategory['label'] }}</span>
-        </nav>
+        <x-category-breadcrumbs :items="[
+            ['label' => 'Categories', 'link' => route('categories.index')],
+            ['label' => $broadCategory['label']],
+        ]" />
 
         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-500">{{ $broadCategory['eyebrow'] }}</p>
         <h1 class="mt-2 text-2xl font-bold text-gray-950">{{ $broadCategory['label'] }} Software &amp; Tools</h1>

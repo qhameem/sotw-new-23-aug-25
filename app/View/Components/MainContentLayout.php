@@ -32,7 +32,8 @@ class MainContentLayout extends Component
         $hideSidebar = false,
         $hideDesktopPageHeader = false,
         $distractionFree = false,
-        $sidebarSections = null
+        $sidebarSections = null,
+        public bool $mobilePageHeaderOnly = false
     ) {
         $this->mainContentMaxWidth = $mainContentMaxWidth;
         $this->sidebarSticky = $sidebarSticky;

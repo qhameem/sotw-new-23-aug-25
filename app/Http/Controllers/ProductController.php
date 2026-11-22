@@ -15,6 +15,7 @@ use App\Models\UserProductUpvote;
 use App\Notifications\ProductSubmitted;
 use App\Services\AdDeliveryService;
 use App\Services\BadgeService;
+use App\Services\CategoryNavigationService;
 use App\Services\FaviconExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\NameExtractorService;
@@ -1587,7 +1588,14 @@ class ProductController extends Controller
         $meta_description = ($metaDescriptionBase !== '' ? $metaDescriptionBase : $pageIntro)
             .($currentPage > 1 ? " Page {$currentPage}." : '');
         $categoryCanonicalUrl = $category->canonicalTargetUrl() ?? $category->publicUrl($currentPage > 1 ? ['page' => $currentPage] : []);
-        $taxonomyLabel = CategoryPageType::label($pageType);
+        $categoryBreadcrumbs = [
+            ['label' => CategoryPageType::label($pageType), 'link' => route('categories.index')],
+        ];
+        $parentGroup = app(CategoryNavigationService::class)->getParentSoftwareGroup($category);
+        if ($parentGroup !== null) {
+            $categoryBreadcrumbs[] = $parentGroup;
+        }
+        $categoryBreadcrumbs[] = ['label' => $category->name];
         $shouldNoindexTaxonomy = ($category->merge_target_slug === null
             ? $publishedProductCount
             : $category->products()->approvedAndPublished()->count()) < 3;
@@ -1627,7 +1635,7 @@ class ProductController extends Controller
             'meta_title',
             'pageType',
             'pageIntro',
-            'taxonomyLabel',
+            'categoryBreadcrumbs',
             'publishedProductCount',
             'shouldNoindexTaxonomy',
             'categoryCanonicalUrl',

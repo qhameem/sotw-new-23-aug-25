@@ -52,9 +52,12 @@ it('renders type-specific copy, canonical, breadcrumbs, and structured data', fu
     string $type,
     string $routeName,
     string $heading,
-    string $section
+    string $section,
+    bool $hasSoftwareParent = false
 ) {
-    $category = taxonomyCategory('Remote Teams', 'remote-teams', [$type]);
+    $category = $hasSoftwareParent
+        ? taxonomyCategory('API', 'api', [$type])
+        : taxonomyCategory('Remote Teams', 'remote-teams', [$type]);
     $url = route($routeName, $category->slug);
 
     $response = $this->get($url)
@@ -72,11 +75,26 @@ it('renders type-specific copy, canonical, breadcrumbs, and structured data', fu
     expect($breadcrumbSchemas)->toHaveCount(1);
 
     $items = $breadcrumbSchemas->first()['itemListElement'];
-    expect(array_column($items, 'position'))->toBe([1, 2, 3]);
-    expect(array_column($items, 'item'))->toBe([route('home'), route('categories.index'), $url]);
-    expect(array_column($items, 'name'))->toBe(['Home', $section, $category->name]);
+    if ($hasSoftwareParent) {
+        $parentUrl = route('software-groups.show', ['group' => 'developer-tools']);
+        expect(array_column($items, 'position'))->toBe([1, 2, 3, 4]);
+        expect(array_column($items, 'item'))->toBe([route('home'), route('categories.index'), $parentUrl, $url]);
+        expect(array_column($items, 'name'))->toBe(['Home', 'Categories', 'Developer Tools', 'API']);
+
+        $document = new \DOMDocument;
+        $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new \DOMXPath($document);
+        $parentLink = $xpath->query('//nav[@aria-label="Breadcrumb"]//a[normalize-space(.)="Developer Tools"]');
+        expect($parentLink->item(0)?->getAttribute('href'))->toBe($parentUrl);
+        expect($xpath->query('//main//nav[@aria-label="Breadcrumb"]/following-sibling::h1[normalize-space(.)="API Software"]')->length)->toBe(1);
+        expect($xpath->query('//main//h1')->length)->toBe(1);
+    } else {
+        expect(array_column($items, 'position'))->toBe([1, 2, 3]);
+        expect(array_column($items, 'item'))->toBe([route('home'), route('categories.index'), $url]);
+        expect(array_column($items, 'name'))->toBe(['Home', $section, $category->name]);
+    }
 })->with([
-    ['Software', 'categories.show', 'Remote Teams Software', 'Categories'],
+    ['Software', 'categories.show', 'API Software', 'Categories', true],
     ['Use Case', 'use-cases.show', 'Tools for Remote Teams', 'Use cases'],
     ['Best for', 'best-for.show', 'Software for Remote Teams', 'Best for'],
     ['Platform', 'platforms.show', 'Remote Teams Apps and Software', 'Platforms'],

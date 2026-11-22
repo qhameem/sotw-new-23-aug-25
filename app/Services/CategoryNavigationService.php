@@ -289,6 +289,21 @@ class CategoryNavigationService
         ];
     }
 
+    public function getParentSoftwareGroup(Category $category): ?array
+    {
+        if ($category->pageType() !== CategoryPageType::CATEGORY
+            || ($category->legacy_page_type !== CategoryPageType::CATEGORY && ! $this->hasSoftwareType($category))) {
+            return null;
+        }
+
+        $key = $this->resolveGroupKey($category->name);
+
+        return [
+            'label' => self::GROUPS[$key]['label'],
+            'link' => route('software-groups.show', ['group' => $key]),
+        ];
+    }
+
     private function categories(): Collection
     {
         if ($this->categories !== null) {
@@ -343,13 +358,15 @@ class CategoryNavigationService
                     return true;
                 }
 
-                $typeNames = $category->types
-                    ->pluck('name')
-                    ->map(fn ($name) => strtolower((string) $name));
-
-                return $typeNames->contains(fn (string $name) => str_contains($name, 'software'));
+                return $this->hasSoftwareType($category);
             })
             ->values();
+    }
+
+    private function hasSoftwareType(Category $category): bool
+    {
+        return $category->loadMissing('types')->types->pluck('name')
+            ->contains(fn ($name) => str_contains(strtolower((string) $name), 'software'));
     }
 
     private function mapCategories(Collection $categories, bool $includeTypeLabel = false): Collection

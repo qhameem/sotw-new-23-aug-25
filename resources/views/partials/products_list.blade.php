@@ -1,7 +1,8 @@
 @php use App\Support\ProductLogo; @endphp
 <div class="md:space-y-2">
     @php
-        $productHeadingTag = request()->routeIs('home', 'products.byWeek') ? 'h3' : 'h2';
+        $groupProductsByPublication = request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page');
+        $productHeadingTag = $groupProductsByPublication || request()->routeIs('home', 'products.byWeek') ? 'h3' : 'h2';
         $finalProductList = ProductLogo::productListItems($regularProducts ?? collect(), $promotedProducts ?? collect());
         $shouldDisplayAd = isset($belowProductListingAd) && $belowProductListingAd && isset($belowProductListingAdPosition);
         $adDisplayed = false;
@@ -73,7 +74,7 @@
                 default => 'product_list',
             };
             $publishedGroup = null;
-            if (request()->routeIs('categories.show*', 'use-cases.show*', 'best-for.show*', 'platforms.show*', 'software-groups.show', 'software-groups.page')) {
+            if ($groupProductsByPublication) {
                 $publishedDate = ($product->published_at ?? $product->created_at)->copy();
                 $publishedGroup = match (true) {
                     $publishedDate->gte(now()->startOfWeek()) => 'Published this week',

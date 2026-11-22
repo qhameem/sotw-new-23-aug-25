@@ -46,14 +46,16 @@
                 <div class="flex-shrink-0">
                     @unless($hideDesktopPageHeader ?? false)
                         <div class="h-[75px] md:hidden w-full"></div>
-                        <x-page-header :padding="$headerPadding">
+                        <x-page-header :padding="$headerPadding" :hide-desktop="$mobilePageHeaderOnly">
                             @if (isset($before_title))
                                 <x-slot:before_title>
                                     {!! $before_title !!}
                                 </x-slot:before_title>
                             @endif
                             <x-slot:title>
-                                {!! $title !!}
+                                @unless($mobilePageHeaderOnly)
+                                    {!! $title !!}
+                                @endunless
                             </x-slot:title>
                             @if (isset($actions))
                                 <x-slot:actions>
