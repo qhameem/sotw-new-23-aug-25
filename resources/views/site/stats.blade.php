@@ -6,7 +6,7 @@
 
 @section('title', 'Platform stats | '.config('app.name'))
 @section('header-title', 'Platform stats')
-@section('meta_description', 'Live products, weekly launch activity, and startup directory statistics.')
+@section('meta_description', 'Track software launches, upvotes, website clicks, and AI crawler activity on Software on the Web. Explore live product counts and startup directory stats.')
 
 @section('before_header_title')
     <x-breadcrumbs :items="[['label' => 'Stats']]" />
