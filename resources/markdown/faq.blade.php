@@ -26,9 +26,9 @@ Use [Add Product]({!! route('products.create') !!}), sign in, complete your prod
 
 Being featured on Software on the Web provides exposure to a dedicated audience of tech enthusiasts, early adopters, and professionals looking for quality software. It's an opportunity to showcase your product in a trusted, curated environment.
 
-### Do you charge for featuring products?
+### Can I submit my product for free without a badge?
 
-Free Launch has no monetary fee and requires a verified badge on your website. Premium Launch is a one-time paid option without a badge requirement. Browsing is free. See the current price and conditions below.
+Free Launch costs $0 and requires you to add and verify our badge on your website. Premium Launch has a one-time fee and requires no website badge. Our team also discovers products independently through editorial curation. To submit a product for consideration, choose a launch plan. Both plans are subject to suitability review.
 
 ## Using the Platform
 

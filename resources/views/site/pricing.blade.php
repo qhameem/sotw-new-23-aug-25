@@ -13,10 +13,10 @@
         ];
         $premiumPrice = \App\Support\PremiumLaunchPricing::display();
         $plans = [
-            ['name' => 'Free Launch', 'price' => '$0', 'button_label' => 'Launch for free', 'term' => 'with a verified badge',
+            ['name' => 'Free Launch', 'price' => '$0', 'button_label' => 'Launch for free', 'term' => '· Website badge required',
                 'features' => ['Public product listing', 'Choose an available launch date after badge verification', 'Keep the Software on the Web badge live on your website']],
             ['name' => 'Premium Launch', 'price' => $premiumPrice, 'button_label' => 'Get Premium - '.$premiumPrice, 'term' => 'USD per product, one time',
-                'features' => ['Scheduled permanent listing, subject to review', 'Dofollow link to your product', 'No badge required']],
+                'features' => ['Scheduled permanent listing, subject to review', 'Dofollow link to your product', 'No website badge required']],
         ];
         $questions = [
             'What does Free Launch require?' => 'Add our badge and a link back to Software on the Web on a public page of your website. Verify that page in the submission form and keep the badge live after launch.',
@@ -27,7 +27,7 @@
 
     <header class="mx-auto max-w-3xl px-2 py-12 text-center sm:py-16">
         <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Launch your product</h1>
-        <p class="mt-4 text-lg text-gray-600">List your software for free with a verified badge, or pay once for a Premium Launch.</p>
+        <p class="mt-4 text-lg text-gray-600">Choose Free Launch with a badge on your website, or pay once for Premium Launch without a badge.</p>
         <div class="mt-7 flex flex-wrap justify-center gap-3">
             <a href="{{ route('products.create') }}" class="rounded-lg bg-primary-600 px-5 py-2.5 font-semibold text-white hover:bg-primary-700">Submit product</a>
             <a href="#launch-plans" class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 font-semibold text-gray-900 hover:bg-gray-50">Compare plans</a>

@@ -54,9 +54,9 @@
                     </p>
                 </div>
                 <div>
-                    <h3 class="text-xl font-medium text-gray-700">Do you charge for featuring products?</h3>
+                    <h3 class="text-xl font-medium text-gray-700">Can I submit my product for free without a badge?</h3>
                     <p class="text-gray-600 mt-1 leading-relaxed">
-                        Free Launch has no monetary fee and requires a verified badge on your website. Premium Launch is a one-time paid option without a badge requirement. Browsing is free. See the current price and conditions below.
+                        Free Launch costs $0 and requires you to add and verify our badge on your website. Premium Launch has a one-time fee and requires no website badge. Our team also discovers products independently through editorial curation. To submit a product for consideration, choose a launch plan. Both plans are subject to suitability review.
                     </p>
                 </div>
             </div>
