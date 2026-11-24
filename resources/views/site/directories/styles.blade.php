@@ -132,30 +132,41 @@
         background: var(--color-body-bg, white);
     }
     .directory-rating-unknown { color: light-dark(#737373, #92928d); font-size: 1rem; }
-    .directory-badge {
-        display: inline-block;
-        padding: .1rem .45rem;
-        border: 1px solid transparent;
-        border-radius: 999px;
-        background: light-dark(#eef0f2, #343940);
-        color: light-dark(#424850, #e0e4e9);
-        font-size: .75rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-    .directory-badge-free { background: light-dark(#e0f2e6, #193a2b); color: light-dark(#165135, #b7ebcd); }
-    .directory-badge-freemium { background: light-dark(#e8ebef, #303946); color: light-dark(#465260, #cbd5e1); }
-    .directory-badge-paid { background: light-dark(#e7effc, #203551); color: light-dark(#244f84, #c5dcff); }
-    .directory-link-type {
-        --link-muted: light-dark(#616970, #a5abb0);
+    .directory-pricing, .directory-link-type {
         display: inline-flex;
         align-items: center;
         gap: .375rem;
         white-space: nowrap;
     }
-    .directory-link-check { flex: 0 0 1em; text-align: center; color: light-dark(#327322, #8bc76e); }
-    .directory-link-dash { color: var(--link-muted); }
-    .directory-link-type-unknown { color: var(--link-muted); }
+    .directory-pricing { color: light-dark(#424240, #e0e4e9); }
+    .directory-pricing-dot {
+        width: .4375rem;
+        height: .4375rem;
+        border-radius: 50%;
+        background: var(--pricing-dot);
+    }
+    .directory-pricing-free { --pricing-dot: light-dark(#199875, #58cfaa); }
+    .directory-pricing-freemium { --pricing-dot: light-dark(#3386d8, #78b7f2); }
+    .directory-pricing-paid { --pricing-dot: light-dark(#9a5ab6, #d6a3ee); }
+    .directory-badge {
+        justify-content: center;
+        min-width: 5.75rem;
+        min-height: 1.5rem;
+        padding: .08rem .5rem;
+        border: 1px solid transparent;
+        border-radius: .375rem;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+    .directory-link-type-dofollow {
+        background: light-dark(#e7f1dc, #293d20);
+        color: light-dark(#284e0c, #d1edb6);
+    }
+    .directory-link-type-nofollow {
+        border-color: light-dark(#b3b0a6, #77766f);
+        color: light-dark(#5d5d58, #d0d0c8);
+    }
+    .directory-link-type-unknown { color: light-dark(#616970, #a5abb0); }
     .directory-table .directory-visit {
         display: inline-flex;
         align-items: center;

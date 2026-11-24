@@ -46,7 +46,10 @@
     <td data-label="Pricing">
         <x-directory-cell :editable="$editable" field="pricing" :value="$directory->pricing" :label="'pricing for '.$label">
             @if($pricingType !== null)
-                <span class="directory-badge directory-badge-{{ $directory->pricing }}">{{ $pricingType }}</span>
+                <span class="directory-pricing directory-pricing-{{ $directory->pricing }}">
+                    <span class="directory-pricing-dot" aria-hidden="true"></span>
+                    {{ $pricingType }}
+                </span>
             @elseif($editable)
                 &nbsp;
             @endif
@@ -54,10 +57,17 @@
     </td>
     <td data-label="Link type">
         <x-directory-cell :editable="$editable" field="link_type" :value="$directory->link_type" :label="'link type for '.$label">
-            <span @class(['directory-link-type', 'directory-link-type-unknown' => $linkLabel === 'Unknown'])><span @class(['directory-link-check', 'directory-link-dash' => $directory->link_type === 'nofollow']) aria-hidden="true">@switch($directory->link_type)
-                    @case('dofollow') ✓ @break
-                    @case('nofollow') – @break
-                @endswitch</span>{{ $linkLabel }}</span>
+            <span @class([
+                'directory-link-type',
+                'directory-badge directory-link-type-dofollow' => $directory->link_type === 'dofollow',
+                'directory-badge directory-link-type-nofollow' => $directory->link_type === 'nofollow',
+                'directory-link-type-unknown' => $linkLabel === 'Unknown',
+            ])>
+                @if($directory->link_type === 'dofollow')
+                    <span aria-hidden="true">✓</span>
+                @endif
+                {{ $linkLabel }}
+            </span>
         </x-directory-cell>
     </td>
     <td data-label="Visit">
