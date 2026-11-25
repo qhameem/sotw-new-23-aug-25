@@ -131,7 +131,8 @@
 
     <div data-directory-fragment class="space-y-4">
         <p class="rounded-lg border p-4 text-sm" data-directory-empty @if($directories->isNotEmpty()) hidden @endif>No directories match these filters.</p>
-            <div class="directory-grid" @if($directories->isEmpty()) hidden @endif>
+        <div data-directory-table @if($directories->isEmpty()) hidden @endif>
+            <div class="directory-grid">
                 <table class="directory-table">
                     <colgroup>
                         <col class="directory-col-name">
@@ -160,6 +161,13 @@
                     </tbody>
                 </table>
             </div>
+            <p class="mt-2 flex flex-wrap gap-x-3 text-xs">
+                <a class="underline" href="https://ahrefs.com/" target="_blank" rel="nofollow noopener noreferrer">Domain Rating by Ahrefs</a>
+                @if($directoryDrUpdatedAt)
+                    <time datetime="{{ $directoryDrUpdatedAt->toIso8601String() }}">Updated {{ $directoryDrUpdatedAt->diffForHumans() }}</time>
+                @endif
+            </p>
+        </div>
 
             <div data-directory-pagination>
                 {{ $directories->onEachSide(1)->links('site.directories.pagination') }}

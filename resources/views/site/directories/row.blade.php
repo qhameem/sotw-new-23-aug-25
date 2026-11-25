@@ -59,12 +59,15 @@
         <x-directory-cell :editable="$editable" field="link_type" :value="$directory->link_type" :label="'link type for '.$label">
             <span @class([
                 'directory-link-type',
-                'directory-badge directory-link-type-dofollow' => $directory->link_type === 'dofollow',
-                'directory-badge directory-link-type-nofollow' => $directory->link_type === 'nofollow',
                 'directory-link-type-unknown' => $linkLabel === 'Unknown',
             ])>
                 @if($directory->link_type === 'dofollow')
-                    <span aria-hidden="true">✓</span>
+                    <svg class="directory-link-type-check" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                        <circle cx="8" cy="8" r="8" fill="currentColor" />
+                        <path d="m4.5 8 2.25 2.25 4.75-4.75" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                @elseif($directory->link_type === 'nofollow')
+                    <span class="directory-link-type-dot" aria-hidden="true"></span>
                 @endif
                 {{ $linkLabel }}
             </span>

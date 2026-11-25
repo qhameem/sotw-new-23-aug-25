@@ -136,35 +136,45 @@
         display: inline-flex;
         align-items: center;
         gap: .375rem;
+        font-weight: 400;
         white-space: nowrap;
     }
-    .directory-pricing { color: light-dark(#424240, #e0e4e9); }
+    .directory-pricing {
+        min-height: 1.5rem;
+        padding: .08rem .5rem;
+        border-radius: .375rem;
+        background: var(--pricing-fill);
+        color: var(--pricing-text);
+        font-size: .75rem;
+    }
     .directory-pricing-dot {
         width: .4375rem;
         height: .4375rem;
         border-radius: 50%;
         background: var(--pricing-dot);
     }
-    .directory-pricing-free { --pricing-dot: light-dark(#199875, #58cfaa); }
-    .directory-pricing-freemium { --pricing-dot: light-dark(#3386d8, #78b7f2); }
-    .directory-pricing-paid { --pricing-dot: light-dark(#9a5ab6, #d6a3ee); }
-    .directory-badge {
-        justify-content: center;
-        min-width: 5.75rem;
-        min-height: 1.5rem;
-        padding: .08rem .5rem;
-        border: 1px solid transparent;
-        border-radius: .375rem;
-        font-size: .75rem;
-        font-weight: 600;
+    .directory-pricing-free {
+        --pricing-dot: light-dark(#4f8a70, #86ad98);
+        --pricing-fill: light-dark(#e5f1e9, #26382e);
+        --pricing-text: light-dark(#365f4b, #b9d2c2);
     }
-    .directory-link-type-dofollow {
-        background: light-dark(#e7f1dc, #293d20);
-        color: light-dark(#284e0c, #d1edb6);
+    .directory-pricing-freemium {
+        --pricing-dot: light-dark(#557fab, #8fa9c8);
+        --pricing-fill: light-dark(#e6eef8, #283649);
+        --pricing-text: light-dark(#3b5b80, #bdcfe5);
     }
-    .directory-link-type-nofollow {
-        border-color: light-dark(#b3b0a6, #77766f);
-        color: light-dark(#5d5d58, #d0d0c8);
+    .directory-pricing-paid {
+        --pricing-dot: light-dark(#9171a5, #b39ac1);
+        --pricing-fill: light-dark(#f2eaf6, #3b3045);
+        --pricing-text: light-dark(#6b4e7b, #d8c4e2);
+    }
+    .directory-link-type-check { color: #00bc7d; }
+    .directory-link-type-dot {
+        width: .5rem;
+        height: .5rem;
+        margin-inline: .125rem;
+        border-radius: 50%;
+        background: #ff6467;
     }
     .directory-link-type-unknown { color: light-dark(#616970, #a5abb0); }
     .directory-table .directory-visit {

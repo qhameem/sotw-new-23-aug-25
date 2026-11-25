@@ -71,3 +71,9 @@ Schedule::command('seo:refresh-domain-rating')
     ->when(fn () => filled(config('services.ahrefs.api_key')))
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('directories:refresh-dr')
+    ->weeklyOn(1, '05:30')
+    ->when(fn () => filled(config('services.ahrefs.api_key')))
+    ->withoutOverlapping()
+    ->onOneServer();

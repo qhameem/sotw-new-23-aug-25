@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\StartupDirectory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class StartupDirectoryCatalog
@@ -19,6 +20,7 @@ class StartupDirectoryCatalog
     {
         $query = StartupDirectory::query();
         $directoryCount = $query->count();
+        $drUpdatedAt = $query->max('dr_updated_at');
         $search = $request->query('q');
         $search = is_string($search) ? Str::limit(trim($search), 100, '') : '';
         $filters = $search !== '' ? ['q' => $search] : [];
@@ -60,6 +62,7 @@ class StartupDirectoryCatalog
             'directories' => $query->orderBy('name')->orderBy('id')->paginate(50)->appends($filters),
             'directoryFilters' => $filters,
             'directoryCount' => $directoryCount,
+            'directoryDrUpdatedAt' => $drUpdatedAt === null ? null : Carbon::parse($drUpdatedAt),
         ];
     }
 }

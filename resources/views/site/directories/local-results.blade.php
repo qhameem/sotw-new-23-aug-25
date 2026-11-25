@@ -49,7 +49,7 @@
                 }
             });
         }
-        catalog.querySelector('.directory-grid').hidden = !rows.length;
+        catalog.querySelector('[data-directory-table]').hidden = !rows.length;
         catalog.querySelector('[data-directory-empty]').hidden = !!rows.length;
         const total = rows.length.toLocaleString();
         const noun = needle ? (rows.length === 1 ? 'match' : 'matches') : (rows.length === 1 ? 'directory' : 'directories');

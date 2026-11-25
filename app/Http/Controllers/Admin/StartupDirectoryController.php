@@ -43,7 +43,11 @@ class StartupDirectoryController extends Controller
         $rules = $this->directoryRules();
         $field = $request->validate(['field' => ['required', 'string', Rule::in(array_keys($rules))]])['field'];
         $data = $request->validate(['value' => $rules[$field]]);
-        $directory->update([$field => $data['value'] ?? null]);
+        $directory->fill([$field => $data['value'] ?? null]);
+        if ($directory->isDirty(['dr', 'website_url'])) {
+            $directory->dr_updated_at = null;
+        }
+        $directory->save();
 
         return response()->json([
             'row' => view('site.directories.row', ['directory' => $directory, 'editable' => true])->render(),
