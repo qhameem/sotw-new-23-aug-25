@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiCrawlerDailyStat;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductWeekStat;
@@ -21,18 +22,29 @@ class PlatformStatsService
     {
         $week = now()->startOfWeek(Carbon::MONDAY);
 
-        return Cache::remember('site.platform_stats.v1:'.$week->toDateString(), now()->addMinutes(15), function () use ($week) {
+        return Cache::remember('site.platform_stats.v3:'.$week->toDateString(), now()->addMinutes(15), function () use ($week) {
             $previousWeek = $week->copy()->subWeek();
             $firstWeek = $week->copy()->subWeeks(11);
             $activity = ProductWeekStat::query()
                 ->whereBetween('week_start', [$firstWeek->toDateString(), $week->toDateString()])
                 ->whereHas('product', fn ($query) => $query->approvedAndPublished())
-                ->selectRaw('week_start, SUM(manual_upvotes) as upvotes, SUM(outbound_clicks) as clicks')
+                ->selectRaw('week_start, SUM(outbound_clicks) as clicks')
                 ->groupBy('week_start')
                 ->get()
                 ->keyBy(fn (ProductWeekStat $stat) => $stat->week_start->toDateString());
 
-            $weekly = collect(range(0, 11))->map(function (int $offset) use ($firstWeek, $activity) {
+            $totals = $this->header->get();
+            $aiRequests = $totals['total_ai_reads'] === null
+                ? collect()
+                : AiCrawlerDailyStat::query()
+                    ->whereBetween('visited_on', [$firstWeek->toDateString(), today()->toDateString()])
+                    ->selectRaw('visited_on, SUM(requests) as requests')
+                    ->groupBy('visited_on')
+                    ->get()
+                    ->groupBy(fn (AiCrawlerDailyStat $stat) => $stat->visited_on->startOfWeek(Carbon::MONDAY)->toDateString())
+                    ->map(fn ($days) => (int) $days->sum('requests'));
+
+            $weekly = collect(range(0, 11))->map(function (int $offset) use ($firstWeek, $activity, $aiRequests) {
                 $start = $firstWeek->copy()->addWeeks($offset);
                 $totals = $activity->get($start->toDateString());
 
@@ -41,8 +53,8 @@ class PlatformStatsService
                     'launches' => Product::approvedAndPublished()
                         ->effectivePublishedBetween($start, $start->copy()->endOfWeek(Carbon::SUNDAY))
                         ->count(),
-                    'upvotes' => (int) ($totals?->upvotes ?? 0),
                     'clicks' => (int) ($totals?->clicks ?? 0),
+                    'ai_requests' => $aiRequests->get($start->toDateString(), 0),
                 ];
             });
 
@@ -54,7 +66,7 @@ class PlatformStatsService
                 ->first();
 
             return [
-                'totals' => $this->header->get(),
+                'totals' => $totals,
                 'weekly' => $weekly,
                 'leaders' => $rankedIds->map(fn ($id) => $products->get($id))->filter()->values(),
                 'week' => $week,

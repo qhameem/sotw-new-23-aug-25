@@ -6,7 +6,7 @@
 
 @section('title', 'Platform stats | '.config('app.name'))
 @section('header-title', 'Platform stats')
-@section('meta_description', 'Track software launches, upvotes, website clicks, and AI crawler activity on Software on the Web. Explore live product counts and startup directory stats.')
+@section('meta_description', 'Track software launches, website clicks, and AI crawler activity on Software on the Web. Explore live product counts and startup directory stats.')
 
 @section('before_header_title')
     <x-breadcrumbs :items="[['label' => 'Stats']]" />
@@ -24,7 +24,10 @@
             ['Website clicks', $totals['product_clicks'], 'All time', null, 'Outbound product clicks'],
             ['AI crawler requests', $totals['total_ai_reads'] === null ? null : $totals['ai_bot_requests'], 'Last 30 days', null, 'Crawler logs'],
         ];
-        $activityMetrics = ['launches' => 'Launches', 'upvotes' => 'Upvotes', 'clicks' => 'Website clicks'];
+        $activityMetrics = ['launches' => 'Launches', 'clicks' => 'Website clicks'];
+        if ($totals['total_ai_reads'] !== null) {
+            $activityMetrics['ai_requests'] = 'AI requests';
+        }
         $activityPeaks = collect(array_keys($activityMetrics))->mapWithKeys(fn ($key) => [$key => max(1, $weekly->max($key))]);
         $previousWeekUrl = route('products.byWeek', ['year' => $previousWeek->isoWeekYear(), 'week' => $previousWeek->isoWeek()]);
     @endphp
