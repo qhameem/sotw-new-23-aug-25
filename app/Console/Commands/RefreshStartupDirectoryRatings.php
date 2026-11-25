@@ -26,7 +26,10 @@ class RefreshStartupDirectoryRatings extends Command
         try {
             foreach ($directories->keys()->chunk(DomainRatingService::BATCH_SIZE) as $batch) {
                 $domains = $batch->values()->all();
-                $ratings += array_intersect_key($ahrefs->fetchBatch($domains), array_flip($domains));
+                $returned = $ahrefs->fetchBatch($domains);
+                $matched = array_intersect_key($returned, array_flip($domains));
+                $this->line(sprintf('Requested %d URLs, received %d usable scores, matched %d domains.', count($domains), count($returned), count($matched)), null, 'v');
+                $ratings += $matched;
             }
         } catch (RuntimeException $exception) {
             $this->error($exception->getMessage());

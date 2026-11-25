@@ -7,6 +7,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DomainRatingService
@@ -55,7 +56,10 @@ class DomainRatingService
             $response = $this->client($key)->timeout(30)
                 ->retry([1000, 3000], when: static fn ($exception) => $exception instanceof ConnectionException
                     || ($exception instanceof RequestException && ($exception->response->tooManyRequests() || $exception->response->serverError())), throw: false)
-                ->post(self::ENDPOINT, ['targets' => $domains, 'version' => 'dr3']);
+                ->post(self::ENDPOINT, [
+                    'targets' => array_map(fn (string $domain) => 'https://'.$domain, $domains),
+                    'version' => 'dr3',
+                ]);
         } catch (ConnectionException) {
             throw new RuntimeException('Unable to connect to Ahrefs.');
         }
@@ -69,11 +73,23 @@ class DomainRatingService
             throw new RuntimeException('Ahrefs returned an unexpected batch response.');
         }
 
-        return collect($targets)->filter(function ($entry) {
+        $ratings = [];
+        foreach ($targets as $entry) {
+            $target = $entry['target'] ?? null;
             $rating = $entry['domain_rating'] ?? null;
+            if (! is_string($target) || ! is_numeric($rating) || $rating < 0 || $rating > 100) {
+                continue;
+            }
 
-            return is_string($entry['target'] ?? null) && is_numeric($rating) && $rating >= 0 && $rating <= 100;
-        })->mapWithKeys(fn ($entry) => [$entry['target'] => (float) $entry['domain_rating']])->all();
+            $target = trim($target);
+            $host = parse_url(str_contains($target, '://') ? $target : 'https://'.$target, PHP_URL_HOST);
+            if ($host) {
+                $domain = Str::replaceStart('www.', '', strtolower(rtrim($host, '.')));
+                $ratings[$domain] = (float) $rating;
+            }
+        }
+
+        return $ratings;
     }
 
     private function client(string $key): PendingRequest
