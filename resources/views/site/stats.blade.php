@@ -45,7 +45,7 @@
 
         <dl class="grid grid-cols-2 gap-3 xl:grid-cols-4">
             @foreach ($metrics as [$label, $value, $period])
-                <div @class(['relative rounded-xl border p-4', 'border-primary-100 bg-primary-50' => $loop->first, 'border-gray-200 bg-white' => !$loop->first])>
+                <div @class(['relative rounded-xl border bg-white p-4', 'border-primary-500' => $loop->first, 'border-gray-200' => !$loop->first])>
                     <dt class="text-sm font-medium text-gray-700">
                         @if ($loop->first)
                             <a href="{{ route('products.catalog') }}" class="block hover:underline after:absolute after:inset-0 after:rounded-xl">{{ $label }} <span aria-hidden="true">↗</span></a>
