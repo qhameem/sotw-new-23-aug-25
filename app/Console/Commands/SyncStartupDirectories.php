@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\StartupDirectory;
+use App\Services\StartupDirectoryArchiveCategories;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -115,7 +116,7 @@ class SyncStartupDirectories extends Command
     {
         $type = $this->types[$name] ?? null;
 
-        return match ($type) {
+        return StartupDirectoryArchiveCategories::BY_NAME[$name] ?? match ($type) {
             'AI Directory' => 'ai',
             'Launchpad', 'Startup Directory' => 'launch',
             'Software Directory' => 'discovery',

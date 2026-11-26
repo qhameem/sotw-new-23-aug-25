@@ -17,6 +17,11 @@ class StartupDirectory extends Model
         'marketplace' => 'Marketplaces',
         'community' => 'Communities',
         'general' => 'General directories',
+        'business_listings' => 'Business listings',
+        'product_alternatives' => 'Product alternatives',
+        'newsletter_directories' => 'Newsletter directories',
+        'app_stores' => 'App stores & integrations',
+        'startup_databases' => 'Startup databases',
     ];
 
     protected $fillable = [
