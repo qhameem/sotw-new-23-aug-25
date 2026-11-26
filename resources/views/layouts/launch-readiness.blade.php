@@ -104,14 +104,18 @@
             <div class="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
                 <div @class([
                     'mx-auto flex flex-wrap items-center justify-between gap-3',
-                    'max-w-4xl' => request()->routeIs('launch-readiness.index', 'launch-readiness.results.show'),
+                    'max-w-4xl' => request()->routeIs('launch-readiness.index'),
+                    'max-w-5xl' => request()->routeIs('launch-readiness.results.show'),
                     'max-w-3xl' => request()->routeIs('launch-readiness.guides.show'),
                 ])>
                     <div class="flex flex-wrap items-center gap-3 sm:gap-6">
                         <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
                             aria-label="{{ $toolBrandingSiteName }}"
-                            class="flex shrink-0 items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                            class="flex shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
                             <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-8 w-8 object-contain">
+                            @if(request()->routeIs('launch-readiness.results.show'))
+                                <span class="text-sm font-bold text-slate-900">{{ $toolBrandingSiteName }}</span>
+                            @endif
                         </a>
                         <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="text-sm text-slate-600 transition hover:text-slate-900">History</a>
                     </div>

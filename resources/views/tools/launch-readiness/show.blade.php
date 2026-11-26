@@ -18,14 +18,11 @@
 
 @section('content')
     <div
-        class="mx-auto max-w-4xl space-y-8"
+        class="mx-auto max-w-5xl space-y-5"
         x-data="launchReadinessAnalyzer({ pendingResultUrl: @js($scan?->status_label === 'Waiting to render' ? request()->url() : null), csrfToken: @js(csrf_token()), initialNotice: @js(! $scan?->save_to_history ? 'This result was not saved to the public history feed. Anyone with this result URL can still open it.' : ''), toolName: @js($toolBrandingSiteName) })"
     >
-        <section class="pt-4 text-center">
-            <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Launch Readiness Report</h1>
-            <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-                Review the current result, then run another scan or browse public history.
-            </p>
+        <section class="pt-4">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Launch Readiness Report</h1>
         </section>
 
         <div x-cloak x-show="errorMessage" x-text="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
@@ -37,7 +34,7 @@
             </div>
         @endunless
 
-        @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url', $scan?->submitted_url)])
+        @include('tools.launch-readiness.partials.analyze-form', ['submittedUrl' => old('url', $scan?->submitted_url), 'reportForm' => true])
 
         <p x-cloak x-show="submitting" role="status" class="sr-only">Analyzing...</p>
 
