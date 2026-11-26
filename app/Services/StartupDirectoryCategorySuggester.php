@@ -78,7 +78,9 @@ PROMPT;
             return [null, 'AI provider returned HTTP '.$response->status()];
         }
 
-        $answer = json_decode((string) $response->json('choices.0.message.content'), true);
+        $contentJson = trim((string) $response->json('choices.0.message.content'));
+        $contentJson = preg_replace('/\A```(?:json)?\s*(.*?)\s*```\z/is', '$1', $contentJson) ?? $contentJson;
+        $answer = json_decode($contentJson, true);
         $category = $answer['category'] ?? null;
         $evidence = $answer['evidence'] ?? null;
 
