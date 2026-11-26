@@ -85,7 +85,6 @@
                                             'bg-rose-100 text-rose-800' => $highImpact,
                                             'bg-amber-100 text-amber-900' => !$highImpact,
                                         ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
-                                        <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ $effort }}</span>
                                     </div>
                                 @endif
                                 <p class="min-w-0 basis-full break-words text-sm text-slate-600 lg:flex-1">
@@ -96,6 +95,9 @@
                                         Review {{ $issue['empty_alt'] }} images with empty alt text.
                                     @else
                                         {{ $showBadges ? ($issue['summary'] ?? $issue['fix'] ?? '') : ($issue['fix'] ?? $issue['summary'] ?? '') }}
+                                    @endif
+                                    @if($showBadges)
+                                        <span class="ml-1 inline-block whitespace-nowrap rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ $effort }}</span>
                                     @endif
                                 </p>
                             </div>
