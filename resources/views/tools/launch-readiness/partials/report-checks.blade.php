@@ -63,17 +63,43 @@
                 <h2 class="border-b border-slate-200 px-5 py-3 text-lg font-bold text-slate-900">{{ $heading }}</h2>
                 <ul class="divide-y divide-slate-100">
                     @foreach($items as $issue)
-                        <li>
-                            <a href="#{{ $issue['id'] }}" @click.prevent="jumpToCheck(@js($issue['id']))"
-                                class="flex items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 hover:underline">
-                                @if($issue['broken_links'])
-                                    <span>Review {{ $issue['broken_links'] }} broken internal {{ \Illuminate\Support\Str::plural('link', $issue['broken_links']) }}</span>
-                                @elseif($issue['empty_alt'])
-                                    <span>Review {{ $issue['empty_alt'] }} images with empty alt text</span>
-                                @else
-                                    <span>{{ $issue['label'] }}</span>
+                        @php
+                            $showBadges = $heading === 'Fix these first';
+                            $key = $issue['key'] ?? null;
+                            $highImpact = $issue['status'] === 'fail' || $issue['broken_links'] > 0;
+                            $effort = match ($key) {
+                                'meta_description', 'title_tag', 'open_graph_basics', 'viewport_meta', 'html_lang' => 'Low effort',
+                                'image_alt_text' => 'Medium effort',
+                                default => $issue['broken_links'] ? 'Medium effort' : 'Effort varies',
+                            };
+                        @endphp
+                        <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
+                            <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-2">
+                                @if($showBadges)
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span @class([
+                                            'rounded-md px-2 py-1 text-xs font-semibold',
+                                            'bg-rose-100 text-rose-800' => $highImpact,
+                                            'bg-amber-100 text-amber-900' => !$highImpact,
+                                        ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
+                                        <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ $effort }}</span>
+                                    </div>
                                 @endif
-                                <span class="shrink-0 text-[color:var(--lr-brand)]">View check</span>
+                                <p class="min-w-0 basis-full break-words text-sm text-slate-600 lg:flex-1">
+                                    <strong class="font-bold text-slate-900">{{ $issue['label'] }}.</strong>
+                                    @if($issue['broken_links'])
+                                        {{ $issue['broken_links'] }} internal {{ \Illuminate\Support\Str::plural('link', $issue['broken_links']) }} returned HTTP 404 or 410.
+                                    @elseif($issue['empty_alt'])
+                                        Review {{ $issue['empty_alt'] }} images with empty alt text.
+                                    @else
+                                        {{ $showBadges ? ($issue['summary'] ?? $issue['fix'] ?? '') : ($issue['fix'] ?? $issue['summary'] ?? '') }}
+                                    @endif
+                                </p>
+                            </div>
+                            <a href="#{{ $issue['id'] }}" @click.prevent="jumpToCheck(@js($issue['id']))"
+                                aria-label="View check for {{ $issue['label'] }}"
+                                class="shrink-0 text-sm font-semibold text-[color:var(--lr-brand)] underline underline-offset-2">
+                                View check
                             </a>
                         </li>
                     @endforeach
