@@ -52,8 +52,11 @@
             const check = document.getElementById(id);
             if (!check) return;
             check.open = true;
-            check.querySelector('summary')?.focus();
-            check.scrollIntoView({ block: 'nearest' });
+            check.querySelector('summary')?.focus({ preventScroll: true });
+            check.scrollIntoView({
+                block: 'start',
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+            });
         });
     }
 }">
@@ -98,7 +101,7 @@
                             </div>
                             <a href="#{{ $issue['id'] }}" @click.prevent="jumpToCheck(@js($issue['id']))"
                                 aria-label="View check for {{ $issue['label'] }}"
-                                class="shrink-0 text-sm font-semibold text-[color:var(--lr-brand)] underline underline-offset-2">
+                                class="shrink-0 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900">
                                 View check
                             </a>
                         </li>
