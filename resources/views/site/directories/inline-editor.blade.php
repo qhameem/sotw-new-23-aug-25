@@ -21,6 +21,11 @@
     const template = document.getElementById('directory-inline-form');
     let closeEditor;
 
+    function setDetailsOpen(button, panel, open) {
+        button.setAttribute('aria-expanded', String(open));
+        panel.hidden = !open;
+    }
+
     catalog.addEventListener('submit', event => {
         if (event.target.matches('[data-directory-delete]')
             && !window.confirm('Delete this listing from the directory and CSV archive?')) {
@@ -54,11 +59,19 @@
     }
 
     catalog.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-directory-toggle]');
+        if (toggle) {
+            const panel = document.getElementById(toggle.getAttribute('aria-controls'));
+            setDetailsOpen(toggle, panel, panel.hidden);
+            return;
+        }
+
         const button = event.target.closest('[data-directory-field]');
         if (!button) return;
         if (closeEditor && !closeEditor(false)) return;
 
-        const row = button.closest('tr');
+        const fieldRow = button.closest('tr');
+        const row = fieldRow.hasAttribute('data-directory-details') ? fieldRow.previousElementSibling : fieldRow;
         const field = button.dataset.directoryField;
         const form = template.content.firstElementChild.cloneNode(true);
         const input = makeInput(field, button.dataset.value, button.getAttribute('aria-label'));
@@ -124,12 +137,16 @@
                     return;
                 }
 
-                const detailsOpen = row.querySelector('details')?.open;
+                const panel = row.nextElementSibling;
+                const detailsOpen = !panel.hidden;
+                panel.remove();
                 row.outerHTML = result.row;
                 closeEditor = null;
                 const updatedRow = document.getElementById(row.id);
-                if (detailsOpen) updatedRow.querySelector('details').open = true;
-                updatedRow.querySelector('[data-directory-field="' + field + '"]')?.focus();
+                const updatedPanel = updatedRow.nextElementSibling;
+                if (detailsOpen) setDetailsOpen(updatedRow.querySelector('[data-directory-toggle]'), updatedPanel, true);
+                const updatedFieldRow = fieldRow === row ? updatedRow : updatedPanel;
+                updatedFieldRow.querySelector('[data-directory-field="' + field + '"]')?.focus();
                 document.getElementById('directory-save-status').textContent = 'Saved.';
             } catch {
                 error.textContent = 'Could not save. Check your connection and try again.';

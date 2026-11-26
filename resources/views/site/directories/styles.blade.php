@@ -189,7 +189,32 @@
         white-space: nowrap;
     }
     .directory-visit:focus-visible { outline: 2px solid var(--grid-accent); outline-offset: 2px; }
-    .directory-row-details { cursor: pointer; opacity: .8; }
+    .directory-row-details {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        min-height: 28px;
+        cursor: pointer;
+        color: light-dark(#515a61, #b5bdc5);
+    }
+    .directory-row-details:hover { text-decoration: underline; text-underline-offset: .15em; }
+    .directory-row-details:focus-visible { outline: 2px solid var(--grid-accent); outline-offset: 2px; }
+    .directory-row-details[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .directory-table .directory-details-row[hidden] { display: none; }
+    .directory-table .directory-details-row > td { padding: .75rem; background: var(--grid-header); }
+    .directory-details-panel { border: 1px solid var(--grid-border); border-radius: .5rem; padding: .875rem; background: var(--color-body-bg, white); }
+    .directory-details-panel .directory-details-title { margin: 0 0 .75rem; font-size: .95rem; font-weight: 650; line-height: 1.3; }
+    .directory-details-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem 1.25rem; margin: 0; }
+    .directory-details-wide { grid-column: 1 / -1; }
+    .directory-details-field dt { margin: 0 0 .25rem; font-size: .75rem; font-weight: 650; }
+    .directory-details-field dd { margin: 0; }
+    .directory-details-field .directory-edit-cell { min-height: 34px; padding: .35rem .45rem; }
+    .directory-details-field :is(.directory-edit-cell, .directory-edit-input) { background: #f6f6f6; border: 1px solid #909090; color: #242424; }
+    .directory-details-field .directory-pencil { opacity: .65; }
+    .directory-details-empty { color: light-dark(#515a61, #b5bdc5); }
+    .directory-details-actions { display: flex; justify-content: flex-end; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--grid-border); }
+    .directory-details-delete { color: light-dark(#a2262c, #ffadb0); }
+    .directory-details-delete:hover { background: light-dark(#fcebec, #4e282b); }
     .directory-edit-cell {
         display: flex;
         width: 100%;
@@ -226,6 +251,9 @@
         .directory-dr .directory-edit-cell { justify-content: space-between; }
         .directory-table td:first-child { grid-column: 1 / -1; }
         .directory-table td:nth-child(n+2)::before { content: attr(data-label); display: block; font-size: .75rem; opacity: .75; }
+        .directory-table .directory-details-row { display: block; padding: 0; }
+        .directory-table .directory-details-row > td { padding: .5rem; }
+        .directory-details-grid { grid-template-columns: minmax(0, 1fr); }
     }
 </style>
 @endpush

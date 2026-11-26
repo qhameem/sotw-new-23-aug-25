@@ -80,33 +80,52 @@
             Visit <span aria-hidden="true">↗</span>
         </a>
         @if($editable)
-            <details class="mt-1 text-xs">
-                <summary class="directory-row-details">Row details</summary>
-                <dl class="space-y-2 py-2">
+            <button type="button" class="directory-row-details" data-directory-toggle aria-expanded="false"
+                aria-controls="directory-details-{{ $directory->id }}" aria-label="Row details for {{ $label }}">
+                Row details
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="m4 6 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </button>
+        @endif
+    </td>
+</tr>
+@if($editable)
+    <tr id="directory-details-{{ $directory->id }}" class="directory-details-row" data-directory-details hidden>
+        <td colspan="6">
+            <section class="directory-details-panel" aria-labelledby="directory-details-title-{{ $directory->id }}">
+                <h3 id="directory-details-title-{{ $directory->id }}" class="directory-details-title">{{ $label }}</h3>
+                <dl class="directory-details-grid">
                     @foreach([
-                        'best_for' => 'Best for',
                         'website_url' => 'Website URL',
                         'submission_url' => 'Submission URL',
                         'source_url' => 'Source URL',
-                        'requirements' => 'Submission requirements',
+                        'best_for' => 'Best for',
                         'verified_on' => 'Last verified',
                         'priority' => 'Recommended priority',
+                        'requirements' => 'Submission requirements',
                     ] as $field => $detailLabel)
                         @php($value = $field === 'verified_on' ? $directory->verified_on?->toDateString() : $directory->{$field})
-                        <div>
-                            <dt class="font-medium">{{ $detailLabel }}</dt>
-                            <dd class="break-all">
-                                <x-directory-cell :editable="true" :field="$field" :value="$value" :label="$detailLabel.' for '.$label">{{ $value ?? 'Add value' }}</x-directory-cell>
+                        <div @class(['directory-details-field', 'directory-details-wide' => $field === 'requirements'])>
+                            <dt>{{ $detailLabel }}</dt>
+                            <dd>
+                                <x-directory-cell :editable="true" :field="$field" :value="$value" :label="$detailLabel.' for '.$label">
+                                    @if($value === null || $value === '')
+                                        <span class="directory-details-empty">Add value</span>
+                                    @else
+                                        {{ $value }}
+                                    @endif
+                                </x-directory-cell>
                             </dd>
                         </div>
                     @endforeach
                 </dl>
-                <form method="POST" action="{{ route('admin.startup-directories.destroy', $directory) }}" data-directory-delete>
+                <form class="directory-details-actions" method="POST" action="{{ route('admin.startup-directories.destroy', $directory) }}" data-directory-delete>
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="directory-control text-red-700" aria-label="Delete {{ $label }}">Delete listing</button>
+                    <button type="submit" class="directory-control directory-details-delete" aria-label="Delete {{ $label }}">Delete listing</button>
                 </form>
-            </details>
-        @endif
-    </td>
-</tr>
+            </section>
+        </td>
+    </tr>
+@endif
