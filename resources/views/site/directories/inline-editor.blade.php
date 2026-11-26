@@ -21,6 +21,13 @@
     const template = document.getElementById('directory-inline-form');
     let closeEditor;
 
+    catalog.addEventListener('submit', event => {
+        if (event.target.matches('[data-directory-delete]')
+            && !window.confirm('Delete this listing from the directory and CSV archive?')) {
+            event.preventDefault();
+        }
+    });
+
     function makeInput(field, value, label) {
         const input = document.createElement(options[field] ? 'select' : field === 'requirements' ? 'textarea' : 'input');
 

@@ -101,6 +101,11 @@
                         </div>
                     @endforeach
                 </dl>
+                <form method="POST" action="{{ route('admin.startup-directories.destroy', $directory) }}" data-directory-delete>
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="directory-control text-red-700" aria-label="Delete {{ $label }}">Delete listing</button>
+                </form>
             </details>
         @endif
     </td>

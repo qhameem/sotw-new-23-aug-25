@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\StartupDirectory;
+use App\Services\StartupDirectoryArchive;
 use App\Services\StartupDirectoryArchiveCategories;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -15,10 +16,20 @@ class SyncStartupDirectories extends Command
 
     protected $description = 'Import missing startup directories from the CSV archive';
 
-    public function handle(): int
+    public function handle(StartupDirectoryArchive $archive): int
     {
-        $path = base_path('launchpanda-best-startup-directories.csv');
-        $file = fopen($path, 'r');
+        try {
+            return $archive->withLock(fn () => $this->sync($archive->path()));
+        } catch (RuntimeException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+    }
+
+    private function sync(string $path): int
+    {
+        $file = @fopen($path, 'r');
 
         if ($file === false) {
             $this->error("Unable to open directory archive: {$path}");
@@ -27,7 +38,7 @@ class SyncStartupDirectories extends Command
         }
 
         try {
-            if (fgetcsv($file, escape: '') !== ['Directory name', 'URL', 'DR', 'Link type', 'Price']) {
+            if (fgetcsv($file, escape: '') !== StartupDirectoryArchive::HEADER) {
                 throw new RuntimeException('The directory archive has an unexpected header.');
             }
 
@@ -35,6 +46,11 @@ class SyncStartupDirectories extends Command
                 ->pluck('website_url')
                 ->map(fn (string $url) => $this->domain($url))
                 ->filter()
+                ->flip()
+                ->all();
+            $deletedUrls = StartupDirectory::onlyTrashed()
+                ->get(['original_website_url', 'website_url'])
+                ->map(fn (StartupDirectory $directory) => StartupDirectoryArchive::urlKey($directory->original_website_url ?? $directory->website_url))
                 ->flip()
                 ->all();
 
@@ -55,7 +71,7 @@ class SyncStartupDirectories extends Command
                     throw new RuntimeException("Invalid directory archive row: {$name}");
                 }
 
-                if (isset($knownDomains[$domain])) {
+                if (isset($knownDomains[$domain]) || isset($deletedUrls[StartupDirectoryArchive::urlKey($url)])) {
                     $duplicates++;
                     continue;
                 }
@@ -82,10 +98,6 @@ class SyncStartupDirectories extends Command
                     'updated_at' => $timestamp,
                 ];
             }
-        } catch (RuntimeException $exception) {
-            $this->error($exception->getMessage());
-
-            return self::FAILURE;
         } finally {
             fclose($file);
         }

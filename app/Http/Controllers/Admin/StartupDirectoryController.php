@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CustomPage;
 use App\Models\StartupDirectory;
+use App\Services\StartupDirectoryArchive;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 
 class StartupDirectoryController extends Controller
 {
@@ -43,15 +47,40 @@ class StartupDirectoryController extends Controller
         $rules = $this->directoryRules();
         $field = $request->validate(['field' => ['required', 'string', Rule::in(array_keys($rules))]])['field'];
         $data = $request->validate(['value' => $rules[$field]]);
-        $directory->fill([$field => $data['value'] ?? null]);
-        if ($directory->isDirty(['dr', 'website_url'])) {
-            $directory->dr_updated_at = null;
-        }
-        $directory->save();
+        $directory = DB::transaction(function () use ($directory, $field, $data): StartupDirectory {
+            $current = StartupDirectory::query()->lockForUpdate()->findOrFail($directory->getKey());
+            $current->fill([$field => $data['value'] ?? null]);
+            if ($current->isDirty('website_url')) {
+                $current->original_website_url ??= $current->getOriginal('website_url');
+            }
+            if ($current->isDirty(['dr', 'website_url'])) {
+                $current->dr_updated_at = null;
+            }
+            $current->save();
+
+            return $current;
+        });
 
         return response()->json([
             'row' => view('site.directories.row', ['directory' => $directory, 'editable' => true])->render(),
         ]);
+    }
+
+    public function destroy(StartupDirectory $directory, StartupDirectoryArchive $archive)
+    {
+        $redirect = redirect()->route('custom-pages.show', ['product_name' => 'directories']);
+
+        try {
+            $archive->delete($directory);
+        } catch (ModelNotFoundException $exception) {
+            throw $exception;
+        } catch (RuntimeException $exception) {
+            report($exception);
+
+            return $redirect->with('directory_error', 'Could not delete the directory and update the CSV archive.');
+        }
+
+        return $redirect->with('directory_status', 'Directory deleted.');
     }
 
     public function updateContent(Request $request, CustomPage $page)

@@ -14,6 +14,9 @@
     @if($canEditDirectories && session('directory_status'))
         <p role="status" class="mb-3 text-sm">{{ session('directory_status') }}</p>
     @endif
+    @if($canEditDirectories && session('directory_error'))
+        <p role="alert" class="mb-3 text-sm text-red-700">{{ session('directory_error') }}</p>
+    @endif
     @if($canEditDirectories && $errors->any())
         <p role="alert" class="mb-3 text-sm text-red-700">{{ $errors->first() }}</p>
     @endif

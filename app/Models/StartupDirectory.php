@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class StartupDirectory extends Model
 {
+    use SoftDeletes;
+
     public const PRICING = ['free' => 'Free', 'freemium' => 'Freemium', 'paid' => 'Paid'];
     public const LINK_TYPES = ['dofollow' => 'Dofollow', 'nofollow' => 'Nofollow', 'conditional' => 'Conditional'];
     public const CATEGORIES = [
