@@ -181,6 +181,72 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertSame(['HTTP 410 · https://example.com/gone', 'Unable to verify (HTTP 403) · https://example.com/blocked'], $checks['internal_links']['meta']['evidence']);
     }
 
+    public function test_audit_checks_headers_search_directives_and_markup_evidence(): void
+    {
+        $html = <<<'HTML'
+        <html><head>
+            <meta name="robots" content="index, follow">
+            <meta name="Googlebot" content="none">
+            <script type="application/ld+json">{broken json}</script>
+        </head><body>
+            <h1>Example</h1><h4>Skipped heading</h4>
+            <form>
+                <label>Search <input name="q"></label>
+                <span id="email-label">Email</span>
+                <input type="email" aria-labelledby="email-label">
+                <input type="submit" value="Go">
+                <input type="HIDDEN" name="token">
+            </form>
+            <img src="/decorative.svg" alt="">
+        </body></html>
+        HTML;
+
+        Http::fake([
+            'https://example.com' => Http::response($html, 200, [
+                'content-encoding' => 'gzip',
+                'strict-transport-security' => 'max-age=3600',
+                'x-content-type-options' => 'nosniff',
+                'x-frame-options' => 'DENY',
+            ]),
+            'https://example.com/*' => Http::response('', 404),
+        ]);
+
+        $report = app(\App\Services\LaunchReadinessAuditService::class)->run('https://example.com');
+        $checks = collect($report['categories'])->pluck('checks')->collapse()->keyBy('key');
+
+        foreach (['compression', 'security_headers', 'form_labels', 'image_alt_text'] as $key) {
+            $this->assertSame('pass', $checks[$key]['status'], $key);
+        }
+        foreach (['heading_hierarchy', 'structured_data'] as $key) {
+            $this->assertSame('warning', $checks[$key]['status'], $key);
+        }
+        $this->assertSame('fail', $checks['indexability']['status']);
+        $this->assertSame('Launch blocker detected', $report['status_label']);
+        $this->assertLessThan(55, $report['launch_score']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://example.com'
+            && $request->hasHeader('Accept-Encoding', 'gzip, deflate'));
+    }
+
+    public function test_audit_excludes_inline_script_text_and_other_bot_indexing_rules(): void
+    {
+        $html = '<html><body><h1>Example</h1><script>'.str_repeat('/* Invisible script text */', 40).'</script></body></html>';
+
+        Http::fake([
+            'https://example.com' => Http::response($html, 200, [
+                'x-robots-tag' => ['otherbot: noindex, nofollow', 'max-snippet: 50'],
+                'x-encoded-content-encoding' => 'gzip',
+            ]),
+            'https://example.com/*' => Http::response('', 404),
+        ]);
+
+        $report = app(\App\Services\LaunchReadinessAuditService::class)->run('https://example.com');
+        $checks = collect($report['categories'])->pluck('checks')->collapse()->keyBy('key');
+
+        $this->assertSame('pass', $checks['indexability']['status']);
+        $this->assertSame('fail', $checks['crawlable_content']['status']);
+        $this->assertSame('pass', $checks['compression']['status']);
+    }
+
     public function test_incomplete_scan_does_not_publish_a_scored_report(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);

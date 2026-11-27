@@ -58,7 +58,7 @@
                     <span class="grid h-16 w-16 place-items-center rounded-full bg-white font-bold text-slate-900">82/100</span>
                 </div>
                 <div class="grid flex-1 grid-cols-3 gap-2 text-center">
-                    @foreach([['SEO', 90, 40], ['AI visibility', 75, 35], ['Trust', 80, 25]] as [$label, $score, $weight])
+                    @foreach([['SEO', 90, 40], ['AI content signals', 75, 35], ['Trust', 80, 25]] as [$label, $score, $weight])
                         <div class="rounded-lg bg-slate-100 p-2">
                             <p class="text-xs">{{ $label }}</p>
                             <p class="font-bold text-slate-900">{{ $score }}/100</p>

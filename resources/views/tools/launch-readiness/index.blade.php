@@ -12,7 +12,7 @@
             'applicationCategory' => 'BusinessApplication',
             'operatingSystem' => 'Web',
             'url' => url()->current(),
-            'description' => 'Free homepage audit for launch readiness, SEO basics, and AI visibility signals.',
+            'description' => 'Free homepage audit for launch readiness, SEO basics, and AI-related content signals.',
             'publisher' => [
                 '@type' => 'Organization',
                 'name' => config('app.name', 'Software on the Web'),
@@ -30,7 +30,7 @@
         <section class="pt-4 text-center">
             <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Website Launch Readiness Checker</h1>
             <p class="mx-auto mt-1 max-w-2xl text-[18px] leading-7 text-[#4b5563]">
-                Check your site’s SEO, accessibility, trust, and AI visibility before launch. Paste your URL to find issues and get clear steps to fix them.
+                Check your site’s SEO, accessibility, trust, and AI content signals before launch. Paste your URL to find issues and get clear steps to fix them.
             </p>
             <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
                 <span class="relative h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true">

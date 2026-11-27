@@ -187,7 +187,7 @@
                     <p class="mt-1.5 text-xl font-semibold">{{ $seoScore }}</p>
                 </div>
                 <div class="rounded-xl border px-3 py-2.5 {{ $scoreClasses($aiScore) }}">
-                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">AI Visibility</p>
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">AI content signals</p>
                     <p class="mt-1.5 text-xl font-semibold">{{ $aiScore }}</p>
                 </div>
             </div>

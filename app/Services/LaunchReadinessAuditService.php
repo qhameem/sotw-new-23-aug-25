@@ -103,7 +103,7 @@ class LaunchReadinessAuditService
         }
 
         $finalHost = parse_url($finalUrl, PHP_URL_HOST);
-        $headers = $response?->headers() ?? [];
+        $headers = array_change_key_case($response->headers(), CASE_LOWER);
         $html = $response?->body() ?? '';
         $domState = $this->parseHtml($html);
         $content = $this->extractContentState(
@@ -170,7 +170,7 @@ class LaunchReadinessAuditService
         }
         $resultsByKey += [
             'h1_tag' => $this->h1Result($content['h1_count']),
-            'heading_hierarchy' => $this->headingHierarchyResult($content['h1_count'], $content['h2_count']),
+            'heading_hierarchy' => $this->headingHierarchyResult($content['h1_count'], $content['heading_levels']),
             'image_alt_text' => $this->imageAltResult($content['images_count'], $content['images_with_alt'], $content['images_with_empty_alt'], $content['image_evidence']),
         ];
 
@@ -179,7 +179,7 @@ class LaunchReadinessAuditService
         }
         $resultsByKey += [
             'https_redirects' => $this->httpsRedirectResult($normalizedUrl, $finalUrl),
-            'indexability' => $this->indexabilityResult($initialContent['robots_meta'], $headers['X-Robots-Tag'][0] ?? null),
+            'indexability' => $this->indexabilityResult(array_merge($initialContent['robots_meta'], $content['robots_meta']), $headers['x-robots-tag'] ?? []),
             'security_headers' => $this->securityHeadersResult($headers),
             'compression' => $this->compressionResult($headers),
             'robots_txt' => $this->simpleFileResult($robotsResponse, 'robots.txt'),
@@ -190,7 +190,7 @@ class LaunchReadinessAuditService
             $progress('checking accessibility');
         }
         $resultsByKey += [
-            'form_labels' => $this->formLabelsResult($content['forms_count'], $content['labeled_inputs'], $content['inputs_count']),
+            'form_labels' => $this->formLabelsResult($content['labeled_inputs'], $content['inputs_count']),
             'landmarks' => $this->landmarksResult($content['landmarks']),
         ];
 
@@ -201,7 +201,7 @@ class LaunchReadinessAuditService
             'open_graph_basics' => $this->openGraphBasicsResult($content['og']),
             'open_graph_image' => $this->openGraphImageResult($content['og']['image'] ?? null),
             'twitter_card' => $this->twitterCardResult($content['twitter_card']),
-            'structured_data' => $this->structuredDataResult($content['structured_data_count']),
+            'structured_data' => $this->structuredDataResult($content['structured_data_count'], $content['invalid_structured_data_count']),
         ];
 
         if ($progress !== null) {
@@ -309,6 +309,10 @@ class LaunchReadinessAuditService
             $progress('calculating your scores');
         }
         [$seoScore, $aiScore, $trustScore, $launchScore] = $this->scoresFromResults($resultsByKey);
+        $hasLaunchBlocker = ! empty($resultsByKey['indexability']['meta']['launch_blocker']);
+        if ($hasLaunchBlocker) {
+            $launchScore = min($launchScore, 54);
+        }
         if ($partial) {
             $seoScore = $aiScore = $trustScore = $launchScore = 0;
         }
@@ -323,7 +327,7 @@ class LaunchReadinessAuditService
             'passed_checks' => $passed,
             'warning_checks' => $warnings,
             'failed_checks' => $failed,
-            'status_label' => $partial ? 'Partial report' : $this->statusLabel($launchScore),
+            'status_label' => $partial ? 'Partial report' : ($hasLaunchBlocker ? 'Launch blocker detected' : $this->statusLabel($launchScore)),
             'summary' => [
                 'submitted_url' => $inputUrl,
                 'normalized_url' => $normalizedUrl,
@@ -407,6 +411,7 @@ class LaunchReadinessAuditService
     private function fetch(string $url): Response
     {
         return Http::accept('text/html,application/xhtml+xml')
+            ->withHeaders(['Accept-Encoding' => 'gzip, deflate'])
             ->timeout(12)
             ->connectTimeout(6)
             ->withOptions([
@@ -463,7 +468,12 @@ class LaunchReadinessAuditService
         $favicon = trim((string) $xpath->evaluate('string((//link[contains(translate(@rel,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"icon")]/@href)[1])'));
         $viewport = trim((string) $xpath->evaluate('string((//meta[translate(@name,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="viewport"]/@content)[1])'));
         $htmlLang = trim((string) $xpath->evaluate('string(/html/@lang)'));
-        $robotsMeta = trim((string) $xpath->evaluate('string((//meta[translate(@name,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="robots"]/@content)[1])'));
+        $robotsMeta = [];
+        foreach ($xpath->query('//meta[@name and @content]') as $node) {
+            if (in_array(Str::lower(trim($node->getAttribute('name'))), ['robots', 'googlebot', 'bingbot'], true)) {
+                $robotsMeta[] = $node->getAttribute('content');
+            }
+        }
 
         $og = [
             'title' => trim((string) $xpath->evaluate('string((//meta[@property="og:title"]/@content)[1])')),
@@ -477,14 +487,24 @@ class LaunchReadinessAuditService
         }
 
         $twitterCard = trim((string) $xpath->evaluate('string((//meta[@name="twitter:card"]/@content)[1])'));
-        $structuredDataCount = (int) $xpath->evaluate('count(//script[contains(@type, "ld+json")])');
+        $structuredDataCount = 0;
+        $invalidStructuredDataCount = 0;
+        foreach ($xpath->query('//script[@type="application/ld+json"]') as $node) {
+            $structuredDataCount++;
+            $decoded = json_decode($node->textContent);
+            if (! is_object($decoded) && (! is_array($decoded) || $decoded === [] || count(array_filter($decoded, 'is_object')) !== count($decoded))) {
+                $invalidStructuredDataCount++;
+            }
+        }
         $h1Count = (int) $xpath->evaluate('count(//h1)');
-        $h2Count = (int) $xpath->evaluate('count(//h2)');
+        $headingLevels = [];
+        foreach ($xpath->query('//h1|//h2|//h3|//h4|//h5|//h6') as $heading) {
+            $headingLevels[] = (int) substr($heading->nodeName, 1);
+        }
         $headingsCount = (int) $xpath->evaluate('count(//h1|//h2|//h3)');
         $paragraphCount = (int) $xpath->evaluate('count(//p[string-length(normalize-space(.)) > 0])');
         $scriptCount = (int) $xpath->evaluate('count(//script[not(@type) or @type="module" or @type="text/javascript" or @type="application/javascript"])');
         $videoCount = (int) $xpath->evaluate('count(//video|//iframe[contains(@src, "youtube") or contains(@src, "vimeo")])');
-        $formsCount = (int) $xpath->evaluate('count(//form)');
         $landmarks = [
             'header' => (int) $xpath->evaluate('count(//header)'),
             'main' => (int) $xpath->evaluate('count(//main)'),
@@ -509,7 +529,7 @@ class LaunchReadinessAuditService
         foreach ($nodes ?: [] as $node) {
             $imagesCount++;
             $alt = $node->attributes?->getNamedItem('alt');
-            if (($alt === null || trim($alt->nodeValue) === '') && count($imageEvidence) < 8) {
+            if ($alt === null || trim($alt->nodeValue) === '') {
                 $imageEvidence[] = ($alt === null ? 'Missing alt attribute' : 'Empty alt text')
                     .' · '.Str::limit($node->getAttribute('src') ?: 'Image without src', 240);
             }
@@ -521,24 +541,42 @@ class LaunchReadinessAuditService
 
         $host = Str::lower((string) $host);
 
-        foreach ($xpath->query('//input[not(@type="hidden")]|//textarea|//select') ?: [] as $node) {
-            $inputsCount++;
-            $id = trim((string) $node->attributes?->getNamedItem('id')?->nodeValue);
-            $ariaLabel = trim((string) $node->attributes?->getNamedItem('aria-label')?->nodeValue);
-            $ariaLabelledby = trim((string) $node->attributes?->getNamedItem('aria-labelledby')?->nodeValue);
+        $elementsById = [];
+        foreach ($xpath->query('//*[@id]') as $element) {
+            $elementsById[$element->getAttribute('id')] ??= $element;
+        }
 
-            if ($ariaLabel !== '' || $ariaLabelledby !== '') {
-                $labeledInputs++;
+        $labelsByTarget = [];
+        foreach ($xpath->query('//label[@for]') as $label) {
+            if (trim($label->textContent) !== '') {
+                $labelsByTarget[$label->getAttribute('for')] = true;
+            }
+        }
 
+        foreach ($xpath->query('//input|//textarea|//select') as $node) {
+            $type = $node->nodeName === 'input' ? Str::lower(trim($node->getAttribute('type'))) : '';
+            if (in_array($type, ['hidden', 'submit', 'reset', 'button', 'image'], true)
+                || $xpath->evaluate('boolean(ancestor-or-self::*[@hidden] | ancestor::template)', $node)) {
                 continue;
             }
 
-            if ($id !== '') {
-                $escapedId = addslashes($id);
-                $hasLabel = (int) $xpath->evaluate('count(//label[@for="'.$escapedId.'"])') > 0;
-                if ($hasLabel) {
-                    $labeledInputs++;
+            $inputsCount++;
+            $id = $node->getAttribute('id');
+            $wrappingLabel = $xpath->query('ancestor::label[1]', $node)->item(0);
+            $hasWrappingLabel = $wrappingLabel && trim($wrappingLabel->textContent) !== ''
+                && (! $wrappingLabel->hasAttribute('for') || ($id !== '' && $wrappingLabel->getAttribute('for') === $id));
+            $hasLabelledBy = false;
+            foreach (preg_split('/\s+/', trim($node->getAttribute('aria-labelledby')), -1, PREG_SPLIT_NO_EMPTY) as $labelId) {
+                $reference = $elementsById[$labelId] ?? null;
+                if ($reference && trim($reference->getAttribute('aria-label').' '.$reference->textContent) !== '') {
+                    $hasLabelledBy = true;
+                    break;
                 }
+            }
+
+            if ($hasLabelledBy || $hasWrappingLabel || ($id !== '' && isset($labelsByTarget[$id]))
+                || trim($node->getAttribute('aria-label')) !== '' || trim($node->getAttribute('title')) !== '') {
+                $labeledInputs++;
             }
         }
 
@@ -593,7 +631,12 @@ class LaunchReadinessAuditService
             }
         }
 
-        $pageText = trim(preg_replace('/\s+/', ' ', $xpath->evaluate('string(//body)')));
+        $textNodes = $xpath->query('//body//text()[not(ancestor::script or ancestor::style or ancestor::template or ancestor::noscript or ancestor::*[@hidden])]');
+        $text = [];
+        foreach ($textNodes as $node) {
+            $text[] = $node->nodeValue;
+        }
+        $pageText = trim(preg_replace('/\s+/', ' ', implode(' ', $text)));
 
         return [
             'title' => $title,
@@ -607,19 +650,22 @@ class LaunchReadinessAuditService
             'twitter_card' => $twitterCard,
             'structured_data_count' => $structuredDataCount,
             'h1_count' => $h1Count,
-            'h2_count' => $h2Count,
+            'heading_levels' => $headingLevels,
+            'invalid_structured_data_count' => $invalidStructuredDataCount,
             'headings_count' => $headingsCount,
             'paragraph_count' => $paragraphCount,
             'script_count' => $scriptCount,
             'video_count' => $videoCount,
-            'forms_count' => $formsCount,
             'inputs_count' => $inputsCount,
             'labeled_inputs' => $labeledInputs,
             'landmarks' => $landmarks,
             'images_count' => $imagesCount,
             'images_with_alt' => $imagesWithAlt,
             'images_with_empty_alt' => $imagesWithEmptyAlt,
-            'image_evidence' => $imageEvidence,
+            'image_evidence' => array_slice(array_merge(
+                array_filter($imageEvidence, fn ($item) => Str::startsWith($item, 'Missing')),
+                array_filter($imageEvidence, fn ($item) => Str::startsWith($item, 'Empty')),
+            ), 0, 8),
             'link_targets' => array_keys($linkTargets),
             'internal_links' => $internalLinks,
             'external_links' => $externalLinks,
@@ -763,23 +809,30 @@ class LaunchReadinessAuditService
         return $this->pass('The page has a single H1 heading.');
     }
 
-    private function headingHierarchyResult(int $h1Count, int $h2Count): array
+    private function headingHierarchyResult(int $h1Count, array $levels): array
     {
         if ($h1Count === 0) {
             return $this->fail('Heading hierarchy is weak because the page is missing an H1.');
         }
 
-        if ($h2Count === 0) {
-            return $this->warning('An H1 exists, but no H2 sections were found.');
+        $previous = 0;
+        foreach ($levels as $level) {
+            if ($previous === 0 && $level !== 1) {
+                return $this->warning("The first heading is H{$level}.");
+            }
+            if ($level > $previous + 1) {
+                return $this->warning("The heading order skips from H{$previous} to H{$level}.");
+            }
+            $previous = $level;
         }
 
-        return $this->pass('The page uses multiple heading levels.');
+        return $this->pass('The heading order does not skip levels.');
     }
 
     private function imageAltResult(int $imagesCount, int $imagesWithAlt, int $imagesWithEmptyAlt, array $evidence): array
     {
         if ($imagesCount === 0) {
-            return $this->warning('No images were found, so there is no visual support to evaluate.');
+            return $this->pass('No images require an alt text check.');
         }
 
         $missing = $imagesCount - $imagesWithAlt;
@@ -789,8 +842,8 @@ class LaunchReadinessAuditService
             $finding .= ' Check that images with empty alt text are decorative.';
         }
 
-        if ($missing === 0 && $imagesWithEmptyAlt === 0) {
-            return $this->pass($finding);
+        if ($missing === 0) {
+            return $this->pass($finding, ['evidence' => $evidence]);
         }
 
         if ($imagesWithAlt > 0) {
@@ -803,35 +856,55 @@ class LaunchReadinessAuditService
     private function httpsRedirectResult(string $normalizedUrl, string $finalUrl): array
     {
         if (Str::startsWith($normalizedUrl, 'https://') && Str::startsWith($finalUrl, 'https://')) {
-            return $this->pass('The page resolves to an HTTPS destination.');
+            return $this->pass('The submitted HTTPS URL ends on HTTPS. No HTTP redirect was tested.');
         }
 
         if (Str::startsWith($finalUrl, 'https://')) {
-            return $this->warning('The URL reaches HTTPS, but the submitted URL did not start there.');
+            return $this->pass('The submitted HTTP URL redirected to HTTPS.');
         }
 
         return $this->fail('The page does not end on an HTTPS destination.');
     }
 
-    private function indexabilityResult(string $robotsMeta, ?string $xRobots): array
+    private function indexabilityResult(array $robotsMeta, array $headerValues): array
     {
-        $value = Str::lower(trim($robotsMeta.' '.$xRobots));
-
-        if (Str::contains($value, 'noindex')) {
-            return $this->fail('The page signals noindex, which blocks search visibility.', ['launch_blocker' => true]);
+        $directives = [];
+        foreach ($robotsMeta as $value) {
+            $directives = [...$directives, ...preg_split('/[\s,]+/', Str::lower(trim($value)))];
         }
 
-        return $this->pass('No noindex directive was detected.');
+        foreach ($headerValues as $header) {
+            $applies = true;
+            foreach (explode(',', Str::lower($header)) as $value) {
+                $value = trim($value);
+                if (preg_match('/^([a-z0-9_*+-]+):\s*(.*)$/', $value, $match)) {
+                    if (in_array($match[1], ['max-snippet', 'max-image-preview', 'max-video-preview', 'unavailable_after'], true)) {
+                        continue;
+                    }
+                    $applies = in_array($match[1], ['robots', 'googlebot', 'bingbot', '*'], true);
+                    $value = $match[2];
+                }
+                if ($applies) {
+                    $directives = [...$directives, ...preg_split('/\s+/', $value)];
+                }
+            }
+        }
+
+        if (array_intersect(['noindex', 'none'], $directives)) {
+            return $this->fail('The page sends a noindex or none directive for search crawlers.', ['launch_blocker' => true]);
+        }
+
+        return $this->pass('No noindex directive was found for the search crawlers checked.');
     }
 
     private function securityHeadersResult(array $headers): array
     {
         $present = collect([
-            'Strict-Transport-Security',
-            'Content-Security-Policy',
-            'X-Content-Type-Options',
-            'X-Frame-Options',
-            'Referrer-Policy',
+            'strict-transport-security',
+            'content-security-policy',
+            'x-content-type-options',
+            'x-frame-options',
+            'referrer-policy',
         ])->filter(fn (string $header) => ! empty($headers[$header]))->count();
 
         if ($present >= 3) {
@@ -847,11 +920,12 @@ class LaunchReadinessAuditService
 
     private function compressionResult(array $headers): array
     {
-        $encoding = Str::lower((string) ($headers['Content-Encoding'][0] ?? ''));
+        $values = $headers['content-encoding'] ?? $headers['x-encoded-content-encoding'] ?? [];
+        $encoding = preg_split('/[\s,]+/', Str::lower(implode(',', $values)));
 
-        return preg_match('/br|gzip|deflate|zstd/', $encoding)
+        return array_intersect(['br', 'gzip', 'deflate', 'zstd'], $encoding)
             ? $this->pass('Response compression is enabled.')
-            : $this->warning('Compression was not detected on the page response.');
+            : $this->warning('The page response used no recognized compression after gzip and deflate were requested.');
     }
 
     private function simpleFileResult(?Response $response, string $label): array
@@ -876,14 +950,14 @@ class LaunchReadinessAuditService
             : $this->warning("{$label} returned HTTP {$status}, but its content did not match the expected format.");
     }
 
-    private function formLabelsResult(int $formsCount, int $labeledInputs, int $inputsCount): array
+    private function formLabelsResult(int $labeledInputs, int $inputsCount): array
     {
-        if ($formsCount === 0 || $inputsCount === 0) {
+        if ($inputsCount === 0) {
             return $this->pass('No form fields were found that need label coverage.');
         }
 
         if ($labeledInputs === $inputsCount) {
-            return $this->pass('Visible form controls appear to be labeled.');
+            return $this->pass('The form fields checked appear to have labels.');
         }
 
         if ($labeledInputs > 0) {
@@ -961,10 +1035,14 @@ class LaunchReadinessAuditService
             : $this->warning('Missing or empty tag: twitter:card.');
     }
 
-    private function structuredDataResult(int $count): array
+    private function structuredDataResult(int $count, int $invalid): array
     {
+        if ($invalid > 0) {
+            return $this->warning("{$invalid} of {$count} JSON-LD blocks contain invalid JSON or lack a JSON-LD object.");
+        }
+
         return $count > 0
-            ? $this->pass('Structured data was detected.')
+            ? $this->pass("{$count} JSON-LD blocks parsed. Rich-result eligibility requires separate validation.")
             : $this->warning('No JSON-LD structured data was detected.');
     }
 
@@ -1052,7 +1130,7 @@ class LaunchReadinessAuditService
             return $this->warning('The page hints at a unique viewpoint, but it could be clearer.');
         }
 
-        return $this->warning('The copy looks generic and could use more first-hand perspective.');
+        return $this->warning('No first-hand perspective phrases matched the automated check.');
     }
 
     private function contentClarityResult(string $pageText, int $headingsCount, int $paragraphCount): array
@@ -1060,14 +1138,14 @@ class LaunchReadinessAuditService
         $length = Str::length($pageText);
 
         if ($length >= 500 && $headingsCount >= 3 && $paragraphCount >= 2) {
-            return $this->pass('The page content is structured and reasonably detailed.');
+            return $this->pass('The page meets the text, heading, and paragraph thresholds.');
         }
 
         if ($length >= 250 && ($headingsCount >= 2 || $paragraphCount >= 1)) {
-            return $this->warning('The content is understandable, but structure or depth could improve.');
+            return $this->warning('The page meets some text and structure thresholds.');
         }
 
-        return $this->fail('The page content looks thin or poorly structured.');
+        return $this->fail('The page falls below the text and structure thresholds.');
     }
 
     private function mediaSupportResult(int $imagesCount, int $videoCount): array
@@ -1399,7 +1477,7 @@ class LaunchReadinessAuditService
                     'open_graph_basics' => ['label' => 'Open Graph Basics', 'description' => 'Checks for core social-sharing metadata, including recommended title and description lengths.', 'fix' => 'Add og:title, og:description, and og:type tags, and keep og:title around 30-60 characters and og:description around 120-160 characters.'],
                     'open_graph_image' => ['label' => 'Open Graph Image', 'description' => 'Checks whether a social preview image is present.', 'fix' => 'Add a branded og:image that looks good when the page is shared on social platforms or chat apps.'],
                     'twitter_card' => ['label' => 'Twitter Card', 'description' => 'Checks whether a Twitter card tag is present.', 'fix' => 'Add a twitter:card tag, ideally summary_large_image if you have a preview image.'],
-                    'structured_data' => ['label' => 'Structured Data', 'description' => 'Checks whether JSON-LD markup is present.', 'fix' => 'Add relevant JSON-LD schema markup that matches the page content, such as Organization, WebSite, Product, or FAQPage when appropriate.'],
+                    'structured_data' => ['label' => 'Structured Data', 'description' => 'Checks for JSON-LD that parses as an object or array of objects.', 'fix' => 'Fix malformed JSON-LD or add relevant schema markup that matches the page content.'],
                 ],
             ],
             'links_analysis' => [

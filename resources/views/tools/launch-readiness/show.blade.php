@@ -2,7 +2,7 @@
 
 @section('title', (($report['summary']['page_title'] ?? null) ?: 'Launch Readiness Result').' - '.$toolBrandingSiteName)
 @section('og_title', 'Launch Readiness Report')
-@section('meta_description', 'Detailed launch-readiness report with SEO, AI visibility, and technical audit results.')
+@section('meta_description', 'Detailed launch-readiness report with SEO, AI content signals, and technical audit results.')
 @section('schema')
     @php
         $schema = [
@@ -10,7 +10,7 @@
             '@type' => 'WebPage',
             'name' => 'Launch Readiness Report',
             'url' => url()->current(),
-            'description' => 'Detailed launch-readiness report with SEO, AI visibility, and technical audit results.',
+            'description' => 'Detailed launch-readiness report with SEO, AI content signals, and technical audit results.',
         ];
     @endphp
     <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
