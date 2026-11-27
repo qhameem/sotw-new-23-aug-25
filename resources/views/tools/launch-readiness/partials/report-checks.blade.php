@@ -77,7 +77,7 @@
                         <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
                             <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                                 @if($showBadges)
-                                    <span class="inline-flex w-28 max-w-full shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-none {{ $impactColor }}">
+                                    <span class="inline-flex w-32 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-none {{ $impactColor }}">
                                         <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $dotColor }}"></span>
                                         {{ $impactLabel }}
                                     </span>
