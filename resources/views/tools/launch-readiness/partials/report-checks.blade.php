@@ -79,12 +79,13 @@
                         <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
                             <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-2">
                                 @if($showBadges)
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div class="inline-grid w-56 max-w-full shrink-0 grid-cols-2 self-start overflow-hidden rounded-md bg-slate-100 text-center text-xs font-semibold">
                                         <span @class([
-                                            'rounded-md px-2 py-1 text-xs font-semibold',
+                                            'px-2 py-1',
                                             'bg-rose-100 text-rose-800' => $highImpact,
                                             'bg-amber-100 text-amber-900' => !$highImpact,
                                         ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
+                                        <span class="px-2 py-1 text-slate-700">{{ $effort }}</span>
                                     </div>
                                 @endif
                                 <p class="min-w-0 basis-full break-words text-sm text-slate-600 lg:flex-1">
@@ -95,9 +96,6 @@
                                         Review {{ $issue['empty_alt'] }} images with empty alt text.
                                     @else
                                         {{ $showBadges ? ($issue['summary'] ?? $issue['fix'] ?? '') : ($issue['fix'] ?? $issue['summary'] ?? '') }}
-                                    @endif
-                                    @if($showBadges)
-                                        <span class="ml-1 inline-block whitespace-nowrap rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ $effort }}</span>
                                     @endif
                                 </p>
                             </div>
