@@ -68,25 +68,16 @@
                     @foreach($items as $issue)
                         @php
                             $showBadges = $heading === 'Fix these first';
-                            $key = $issue['key'] ?? null;
                             $highImpact = $issue['status'] === 'fail' || $issue['broken_links'] > 0;
-                            $effort = match ($key) {
-                                'meta_description', 'title_tag', 'open_graph_basics', 'viewport_meta', 'html_lang' => 'Low effort',
-                                'image_alt_text' => 'Medium effort',
-                                default => $issue['broken_links'] ? 'Medium effort' : 'Effort varies',
-                            };
                         @endphp
                         <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
                             <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-2">
                                 @if($showBadges)
-                                    <div class="inline-grid w-56 max-w-full shrink-0 grid-cols-2 self-start overflow-hidden rounded-md bg-slate-100 text-left text-[11px] font-semibold">
-                                        <span @class([
-                                            'px-2 py-1',
-                                            'bg-rose-100 text-rose-800' => $highImpact,
-                                            'bg-amber-100 text-amber-900' => !$highImpact,
-                                        ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
-                                        <span class="px-2 py-1 text-slate-700">{{ $effort }}</span>
-                                    </div>
+                                    <span @class([
+                                        'w-28 max-w-full shrink-0 self-start rounded-md px-2 py-1 text-left text-[11px] font-semibold',
+                                        'bg-rose-100 text-rose-800' => $highImpact,
+                                        'bg-amber-100 text-amber-900' => !$highImpact,
+                                    ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
                                 @endif
                                 <p class="min-w-0 basis-full break-words text-sm text-slate-600 lg:flex-1">
                                     <strong class="font-bold text-slate-900">{{ $issue['label'] }}.</strong>
