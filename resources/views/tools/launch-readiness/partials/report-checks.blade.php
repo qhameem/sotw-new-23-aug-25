@@ -68,18 +68,21 @@
                     @foreach($items as $issue)
                         @php
                             $showBadges = $heading === 'Fix these first';
-                            $highImpact = $issue['status'] === 'fail' || $issue['broken_links'] > 0;
+                            [$impactLabel, $impactColor, $dotColor] = match (true) {
+                                $issue['status'] === 'fail' || $issue['broken_links'] > 0 => ['High impact', 'border-red-200 bg-red-50 text-red-800', 'bg-red-600'],
+                                ($issue['key'] ?? null) === 'compression' => ['Low impact', 'border-slate-300 bg-slate-100 text-slate-700', 'bg-slate-400'],
+                                default => ['Medium impact', 'border-amber-200 bg-amber-50 text-amber-900', 'bg-amber-500'],
+                            };
                         @endphp
                         <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
-                            <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-2">
+                            <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                                 @if($showBadges)
-                                    <span @class([
-                                        'w-28 max-w-full shrink-0 self-start rounded-md px-2 py-1 text-left text-[11px] font-semibold',
-                                        'bg-rose-100 text-rose-800' => $highImpact,
-                                        'bg-amber-100 text-amber-900' => !$highImpact,
-                                    ])>{{ $highImpact ? 'High impact' : 'Medium impact' }}</span>
+                                    <span class="inline-flex w-28 max-w-full shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-none {{ $impactColor }}">
+                                        <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $dotColor }}"></span>
+                                        {{ $impactLabel }}
+                                    </span>
                                 @endif
-                                <p class="min-w-0 basis-full break-words text-sm text-slate-600 lg:flex-1">
+                                <p class="min-w-0 break-words text-sm text-slate-600 sm:flex-1">
                                     <strong class="font-bold text-slate-900">{{ $issue['label'] }}.</strong>
                                     @if($issue['broken_links'])
                                         {{ $issue['broken_links'] }} internal {{ \Illuminate\Support\Str::plural('link', $issue['broken_links']) }} returned HTTP 404 or 410.
