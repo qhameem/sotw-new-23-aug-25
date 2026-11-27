@@ -156,7 +156,7 @@ class LaunchReadinessToolTest extends TestCase
         $resultResponse->assertOk();
         $resultResponse->assertSeeInOrder(['Warnings (', 'Passed checks (', 'Example social preview']);
         $resultResponse->assertSee('Filter by category');
-        $resultResponse->assertSee('Copy fix prompt for AI');
+        $resultResponse->assertSee('Copy fix prompt');
         $resultResponse->assertSee('Fix issues with an LLM');
         $resultResponse->assertSee('Act as a senior web engineer specializing in technical SEO', false);
     }
@@ -261,7 +261,7 @@ class LaunchReadinessToolTest extends TestCase
         $scan = ToolScan::query()->sole();
         $this->assertFalse($scan->save_to_history);
         $this->get(route('launch-readiness.results.show', ['toolSlug' => $slug, 'toolScan' => $scan]))
-            ->assertOk()->assertSee('Scan incomplete')->assertDontSee('Copy fix prompt for AI');
+            ->assertOk()->assertSee('Scan incomplete')->assertDontSee('Copy fix prompt');
     }
 
     public function test_launch_readiness_meta_description_check_warns_when_description_is_too_short(): void

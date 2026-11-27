@@ -34,6 +34,7 @@
             $check['status'] === 'fail' => 0,
             $check['broken_links'] > 0 => 1,
             ($check['key'] ?? null) === 'image_alt_text' => 2,
+            ($check['key'] ?? null) === 'compression' => 4,
             default => 3,
         })->take(3);
     $socialImage = $checks->first(fn ($check) => ($check['key'] ?? null) === 'open_graph_image' && !empty($check['meta']['preview_url']));
@@ -63,40 +64,106 @@
     @foreach(['Launch blockers' => $blockers, 'Fix these first' => $priority] as $heading => $items)
         @if($items->isNotEmpty())
             <section class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <h2 class="border-b border-slate-200 px-5 py-3 text-lg font-bold text-slate-900">{{ $heading }}</h2>
+                @php
+                    $isPriority = $heading === 'Fix these first';
+                @endphp
+                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-200 px-5 py-4">
+                    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <h2 class="text-lg font-bold text-slate-900">{{ $heading }}</h2>
+                        <span class="text-sm text-slate-500">
+                            {{ $items->count() }} {{ \Illuminate\Support\Str::plural('issue', $items->count()) }}{{ $isPriority ? ', sorted by impact' : '' }}
+                        </span>
+                    </div>
+                    @if(($isPriority || $priority->isEmpty()) && !empty($remediationPrompt))
+                        <button type="button" x-data="{ copied: false }"
+                            @click="
+                                try {
+                                    await navigator.clipboard.writeText(@js($remediationPrompt));
+                                    copied = true;
+                                    setTimeout(() => copied = false, 1800);
+                                } catch {
+                                    openFixPrompt(@js($remediationPrompt));
+                                }
+                            "
+                            class="text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline">
+                            <span x-show="!copied">Copy fix prompt</span>
+                            <span x-cloak x-show="copied" role="status">Copied</span>
+                        </button>
+                    @endif
+                </div>
                 <ul class="divide-y divide-slate-100">
                     @foreach($items as $issue)
                         @php
-                            $showBadges = $heading === 'Fix these first';
+                            $key = $issue['key'] ?? null;
                             [$impactLabel, $impactColor, $dotColor] = match (true) {
                                 $issue['status'] === 'fail' || $issue['broken_links'] > 0 => ['High impact', 'border-red-200 bg-red-50 text-red-800', 'bg-red-600'],
-                                ($issue['key'] ?? null) === 'compression' => ['Low impact', 'border-slate-300 bg-slate-100 text-slate-700', 'bg-slate-400'],
+                                $key === 'compression' => ['Low impact', 'border-slate-300 bg-slate-100 text-slate-700', 'bg-slate-400'],
                                 default => ['Medium impact', 'border-amber-200 bg-amber-50 text-amber-900', 'bg-amber-500'],
                             };
+                            $category = match ($issue['category_label']) {
+                                'Meta Information' => 'Meta',
+                                'Content Structure' => 'Content',
+                                'Technical Optimization' => 'Technical',
+                                'Accessibility Basics' => 'Accessibility',
+                                'Social & Rich Results' => 'Social',
+                                'Links Analysis' => 'Links',
+                                'AI & Launch Signals' => 'AI & launch',
+                                default => $issue['category_label'],
+                            };
+                            $title = match ($key) {
+                                'canonical_url' => 'Canonical URL',
+                                'html_lang' => 'HTML language',
+                                'h1_tag' => 'H1 heading',
+                                'https', 'https_redirects' => $key === 'https' ? 'HTTPS' : 'HTTPS redirect',
+                                'primary_cta' => 'Primary CTA',
+                                'robots_txt', 'sitemap_xml' => strtolower($issue['label']),
+                                'open_graph_basics' => 'Open Graph basics',
+                                'open_graph_image' => 'Open Graph image',
+                                'twitter_card' => 'Twitter card',
+                                'javascript_dependency' => 'JavaScript dependency',
+                                default => ucfirst(strtolower($issue['label'])),
+                            };
+                            $summary = preg_replace('/\s*Checked (?:after JavaScript rendered|in the initial HTML)\./', '', $issue['summary'] ?? '');
+                            if ($issue['broken_links']) {
+                                $summary = $issue['broken_links'].' internal '.\Illuminate\Support\Str::plural('link', $issue['broken_links']).' returned HTTP 404 or 410.';
+                            } elseif ($issue['empty_alt']) {
+                                $summary = 'Review '.$issue['empty_alt'].' '.\Illuminate\Support\Str::plural('image', $issue['empty_alt']).' with empty alt text.';
+                            } elseif (preg_match('/length \((\d+) chars\).*?(\d+)-(\d+) character range/', $summary, $length)) {
+                                $summary = "{$length[1]} characters. Aim for {$length[2]} to {$length[3]}.";
+                            } elseif ($key === 'open_graph_basics' && preg_match_all('/og:(title|description) \((\d+) chars, recommended (\d+)-(\d+)\)/', $summary, $lengths, PREG_SET_ORDER)) {
+                                $title = count($lengths) === 1 ? 'Open Graph '.$lengths[0][1] : $title;
+                                $summary = implode(' ', array_map(fn ($length) => count($lengths) === 1
+                                    ? "{$length[2]} characters. Aim for {$length[3]} to {$length[4]}."
+                                    : ucfirst($length[1])." has {$length[2]} characters. Aim for {$length[3]} to {$length[4]}.", $lengths));
+                            } elseif ($key === 'form_labels') {
+                                $summary = $issue['status'] === 'fail' ? 'Form controls are missing labels.' : 'Some form controls may be missing labels.';
+                            } elseif ($key === 'compression') {
+                                $summary = 'Compression was not detected.';
+                            }
                         @endphp
-                        <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
-                            <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                                @if($showBadges)
-                                    <span class="inline-flex w-32 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-none {{ $impactColor }}">
-                                        <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $dotColor }}"></span>
-                                        {{ $impactLabel }}
-                                    </span>
-                                @endif
-                                <p class="min-w-0 break-words text-sm text-slate-600 sm:flex-1">
-                                    <strong class="font-bold text-slate-900">{{ $issue['label'] }}.</strong>
-                                    @if($issue['broken_links'])
-                                        {{ $issue['broken_links'] }} internal {{ \Illuminate\Support\Str::plural('link', $issue['broken_links']) }} returned HTTP 404 or 410.
-                                    @elseif($issue['empty_alt'])
-                                        Review {{ $issue['empty_alt'] }} images with empty alt text.
-                                    @else
-                                        {{ $showBadges ? ($issue['summary'] ?? $issue['fix'] ?? '') : ($issue['fix'] ?? $issue['summary'] ?? '') }}
-                                    @endif
-                                </p>
+                        <li @class([
+                            'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 bg-white px-5 py-3 sm:min-h-[4.25rem]',
+                            'sm:grid-cols-[8rem_minmax(0,1fr)_6.5rem_auto]' => $isPriority,
+                            'sm:grid-cols-[minmax(0,1fr)_6.5rem_auto]' => !$isPriority,
+                        ])>
+                            @if($isPriority)
+                                <span class="inline-flex w-32 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-none {{ $impactColor }}">
+                                    <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $dotColor }}"></span>
+                                    {{ $impactLabel }}
+                                </span>
+                            @endif
+                            <div @class(['min-w-0', 'col-span-2 row-start-2 sm:col-auto sm:row-auto' => $isPriority])>
+                                <p class="truncate text-sm font-semibold text-slate-900">{{ $title }}</p>
+                                <p class="truncate text-sm text-slate-600">{{ $summary ?: ($issue['fix'] ?? '') }}</p>
                             </div>
+                            <span @class(['text-xs text-slate-500 sm:text-right', 'col-start-1 row-start-3 sm:col-auto sm:row-auto' => $isPriority])>{{ $category }}</span>
                             <a href="#{{ $issue['id'] }}" @click.prevent="jumpToCheck(@js($issue['id']))"
-                                aria-label="View check for {{ $issue['label'] }}"
-                                class="shrink-0 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900">
-                                View check
+                                aria-label="Review {{ $title }}"
+                                @class([
+                                    'inline-flex items-center justify-self-end gap-1 whitespace-nowrap text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline',
+                                    'col-start-2 row-start-1 sm:col-auto sm:row-auto' => $isPriority,
+                                ])>
+                                Review <span aria-hidden="true">→</span>
                             </a>
                         </li>
                     @endforeach

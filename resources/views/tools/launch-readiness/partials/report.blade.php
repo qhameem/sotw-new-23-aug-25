@@ -154,26 +154,6 @@
                 </div>
             </div>
 
-            @if($remediationPrompt !== '')
-                <div class="shrink-0" x-data="{ copied: false }">
-                    <button
-                        type="button"
-                        @click="
-                            try {
-                                await navigator.clipboard.writeText(@js($remediationPrompt));
-                                copied = true;
-                                setTimeout(() => copied = false, 1800);
-                            } catch {
-                                openFixPrompt(@js($remediationPrompt));
-                            }
-                        "
-                        class="inline-flex min-h-10 items-center rounded-lg border border-[var(--lr-brand-edge)] bg-[var(--lr-brand)] px-4 text-sm font-bold text-[color:var(--lr-button-label)] shadow-[0_2px_0_var(--lr-brand-edge),0_4px_8px_rgba(15,23,42,0.12)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none focus:outline-none focus:ring-2 focus:ring-[var(--lr-brand)] focus:ring-offset-2"
-                    >
-                        <span x-show="!copied">Copy fix prompt for AI</span>
-                        <span x-cloak x-show="copied" role="status">Copied</span>
-                    </button>
-                </div>
-            @endif
         </div>
 
         @if(!empty($summary['final_url']))
