@@ -122,7 +122,7 @@
 
 
                         {{-- Primary Color Picker --}}
-                        <div class="mt-6" x-data="{
+                        <div x-data="{
                                 primaryBgColor: {{ Js::from(old('primary_color', $currentPrimaryColor ?? '#3b82f6')) }},
                                 primaryTextColor: {{ Js::from(old('primary_button_text_color', $currentPrimaryButtonTextColor ?? '')) }},
                                 suggestedTextColor: '#ffffff',
@@ -282,90 +282,92 @@
                                     }
                                 }
                             }" x-init="initColors()">
-                            <x-input-label for="primary_color_picker" :value="__('Primary Button Background Color')" />
-                            <div class="mt-2 flex items-center space-x-3">
-                                <input type="color" id="primary_color_picker"
-                                    class="w-16 h-10 p-0 border-gray-300  rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500    "
-                                    :value="primaryBgColor" @input="updateBgColorFromPicker($event)">
-                                <x-text-input id="primary_color_text" type="text" class="block w-48"
-                                    x-model="primaryBgColor" @change="updateBgColorFromText($event)"
-                                    placeholder="#RRGGBB or blue-500" />
-                                <span id="current_color_display" class="px-3 py-1.5 rounded text-sm font-medium">
-                                    <span id="current_color_display_text" x-text="primaryBgColor"></span>
-                                </span>
-                            </div>
-                            <input type="hidden" name="primary_color" :value="primaryBgColor">
-
-                            <p class="mt-3 text-sm text-gray-500 ">
-                                Select the primary button background color.
-                            </p>
-                            <p class="mt-1 text-sm text-gray-500 ">
-                                Current active primary background:
-                                <span class="font-semibold">{{ $currentPrimaryColor ?? '#3b82f6' }}</span>
-                            </p>
-                        </div>
-
-                        {{-- Primary Button Text Color --}}
-                        <div class="mt-6 pt-6 border-t border-gray-200 ">
-                            <x-input-label for="primary_text_color_picker" :value="__('Primary Button Text Color')" />
-                            <div class="mt-2 flex items-center space-x-3">
-                                <input type="color" id="primary_text_color_picker"
-                                    class="w-16 h-10 p-0 border-gray-300  rounded-md shadow-sm" :value="primaryTextColor"
-                                    @input="updateTextColorFromPicker($event)">
-                                <x-text-input id="primary_text_color_text" type="text" class="block w-28"
-                                    x-model="primaryTextColor" @change="updateTextColorFromText($event)"
-                                    placeholder="#RRGGBB" />
-                                <button type="button" @click="applySuggestedTextColor()"
-                                    class="px-3 py-1.5 text-xs bg-gray-200  rounded hover:bg-gray-300 ">
-                                    Apply Suggested: <span x-text="suggestedTextColor" class="font-mono"></span>
-                                </button>
-                            </div>
-                            <input type="hidden" name="primary_button_text_color" :value="primaryTextColor">
-
-                            <div class="mt-3 p-3 rounded-md" :class="{
-                                    'bg-green-50  border-green-300 ': parseFloat(contrastRatio) >= 4.5,
-                                    'bg-yellow-50  border-yellow-300 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
-                                    'bg-red-50  border-red-300 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
-                                }" style="border-width: 1px;">
-                                <p class="text-sm font-medium" :class="{
-                                        'text-green-700 ': parseFloat(contrastRatio) >= 4.5,
-                                        'text-yellow-700 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
-                                        'text-red-700 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
-                                    }">
-                                    Contrast Ratio: <strong x-text="contrastRatio"></strong>
-                                    (<span x-text="contrastLevel"></span>)
-                                </p>
-                                <p class="text-xs mt-1" :class="{
-                                        'text-green-600 ': parseFloat(contrastRatio) >= 4.5,
-                                        'text-yellow-600 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
-                                        'text-red-600 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
-                                    }">
-                                    WCAG AA requires 4.5:1 for normal text, 3:1 for large text. AAA requires 7:1 and 4.5:1
-                                    respectively.
-                                </p>
-                                <div class="mt-2 text-xs">
-                                    Preview:
-                                    <span class="px-2 py-1 rounded"
-                                        :style="{ backgroundColor: primaryBgColor, color: (primaryTextColor && isValidHex(primaryTextColor)) ? primaryTextColor : suggestedTextColor }">Button
-                                        Text</span>
+                            <div class="mt-6">
+                                <x-input-label for="primary_color_picker" :value="__('Primary Button Background Color')" />
+                                <div class="mt-2 flex items-center space-x-3">
+                                    <input type="color" id="primary_color_picker"
+                                        class="w-16 h-10 p-0 border-gray-300  rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500    "
+                                        :value="primaryBgColor" @input="updateBgColorFromPicker($event)">
+                                    <x-text-input id="primary_color_text" type="text" class="block w-48"
+                                        x-model="primaryBgColor" @change="updateBgColorFromText($event)"
+                                        placeholder="#RRGGBB or blue-500" />
+                                    <span id="current_color_display" class="px-3 py-1.5 rounded text-sm font-medium">
+                                        <span id="current_color_display_text" x-text="primaryBgColor"></span>
+                                    </span>
                                 </div>
+                                <input type="hidden" name="primary_color" :value="primaryBgColor">
+
+                                <p class="mt-3 text-sm text-gray-500 ">
+                                    Select the primary button background color.
+                                </p>
+                                <p class="mt-1 text-sm text-gray-500 ">
+                                    Current active primary background:
+                                    <span class="font-semibold">{{ $currentPrimaryColor ?? '#3b82f6' }}</span>
+                                </p>
                             </div>
 
-                            {{-- Live Preview Button --}}
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium text-gray-700 ">Live Preview:</label>
-                                <button type="button"
-                                    class="mt-1 px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                    :style="{ backgroundColor: primaryBgColor, color: (primaryTextColor && isValidHex(primaryTextColor)) ? primaryTextColor : suggestedTextColor }">
-                                    Sample Button
-                                </button>
-                            </div>
+                            {{-- Primary Button Text Color --}}
+                            <div class="mt-6 pt-6 border-t border-gray-200 ">
+                                <x-input-label for="primary_text_color_picker" :value="__('Primary Button Text Color')" />
+                                <div class="mt-2 flex items-center space-x-3">
+                                    <input type="color" id="primary_text_color_picker"
+                                        class="w-16 h-10 p-0 border-gray-300  rounded-md shadow-sm" :value="primaryTextColor"
+                                        @input="updateTextColorFromPicker($event)">
+                                    <x-text-input id="primary_text_color_text" type="text" class="block w-28"
+                                        x-model="primaryTextColor" @change="updateTextColorFromText($event)"
+                                        placeholder="#RRGGBB" />
+                                    <button type="button" @click="applySuggestedTextColor()"
+                                        class="px-3 py-1.5 text-xs bg-gray-200  rounded hover:bg-gray-300 ">
+                                        Apply Suggested: <span x-text="suggestedTextColor" class="font-mono"></span>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="primary_button_text_color" :value="primaryTextColor">
 
-                            <p class="mt-1 text-sm text-gray-500 ">
-                                Current active primary button text color:
-                                <span
-                                    class="font-semibold">{{ $currentPrimaryButtonTextColor ?: '(auto - defaults to black or white based on background)' }}</span>
-                            </p>
+                                <div class="mt-3 p-3 rounded-md" :class="{
+                                        'bg-green-50  border-green-300 ': parseFloat(contrastRatio) >= 4.5,
+                                        'bg-yellow-50  border-yellow-300 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
+                                        'bg-red-50  border-red-300 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
+                                    }" style="border-width: 1px;">
+                                    <p class="text-sm font-medium" :class="{
+                                            'text-green-700 ': parseFloat(contrastRatio) >= 4.5,
+                                            'text-yellow-700 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
+                                            'text-red-700 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
+                                        }">
+                                        Contrast Ratio: <strong x-text="contrastRatio"></strong>
+                                        (<span x-text="contrastLevel"></span>)
+                                    </p>
+                                    <p class="text-xs mt-1" :class="{
+                                            'text-green-600 ': parseFloat(contrastRatio) >= 4.5,
+                                            'text-yellow-600 ': parseFloat(contrastRatio) >= 3 && parseFloat(contrastRatio) < 4.5,
+                                            'text-red-600 ': parseFloat(contrastRatio) < 3 || contrastLevel === 'Invalid',
+                                        }">
+                                        WCAG AA requires 4.5:1 for normal text, 3:1 for large text. AAA requires 7:1 and 4.5:1
+                                        respectively.
+                                    </p>
+                                    <div class="mt-2 text-xs">
+                                        Preview:
+                                        <span class="px-2 py-1 rounded"
+                                            :style="{ backgroundColor: primaryBgColor, color: (primaryTextColor && isValidHex(primaryTextColor)) ? primaryTextColor : suggestedTextColor }">Button
+                                            Text</span>
+                                    </div>
+                                </div>
+
+                                {{-- Live Preview Button --}}
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 ">Live Preview:</label>
+                                    <button type="button"
+                                        class="mt-1 px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                        :style="{ backgroundColor: primaryBgColor, color: (primaryTextColor && isValidHex(primaryTextColor)) ? primaryTextColor : suggestedTextColor }">
+                                        Sample Button
+                                    </button>
+                                </div>
+
+                                <p class="mt-1 text-sm text-gray-500 ">
+                                    Current active primary button text color:
+                                    <span
+                                        class="font-semibold">{{ $currentPrimaryButtonTextColor ?: '(auto - defaults to black or white based on background)' }}</span>
+                                </p>
+                            </div>
                         </div>
 
                         {{-- Global Font Color --}}

@@ -10,6 +10,10 @@
     <style>
         .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
         .settings-sidebar, .settings-panels { min-width: 0; }
+        .approval-shell.settings-admin-nav-collapsed,
+        .settings-layout.settings-menu-collapsed { grid-template-columns: minmax(0, 1fr); }
+        #admin-navigation-sidebar[hidden], #settings-sections-sidebar[hidden],
+        #settings-sidebar-controls[hidden] { display: none; }
         .settings-menu ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; }
         .settings-menu a { overflow-wrap: anywhere; }
         .settings-menu [hidden] { display: none; }
@@ -52,7 +56,7 @@
                 'settings-premium-product-spots' => 'Premium Product Spots',
                 'settings-product-publishing-time' => 'Product Publishing Time',
                 'settings-add-product-sandbox-mode' => 'Add Product Sandbox Mode',
-                'settings-submission-success-preview' => 'Submission Success Preview',
+                'settings-submission-success-preview' => 'Submission Success Modal & Preview',
                 'settings-free-launch-queue' => 'Free Launch Queue',
                 'settings-tool-url-settings' => 'Tool URL Settings',
                 'settings-header-code-injection' => 'Header Code Injection',
@@ -66,8 +70,21 @@
             ];
         @endphp
 
+        <div id="settings-sidebar-controls" class="mb-4 flex flex-wrap gap-2" hidden>
+            @foreach([
+                'admin-navigation-sidebar' => 'Admin navigation',
+                'settings-sections-sidebar' => 'Settings sections',
+            ] as $sidebarId => $label)
+                <button type="button" aria-controls="{{ $sidebarId }}" aria-expanded="true"
+                    data-sidebar-label="{{ $label }}"
+                    class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Hide {{ $label }}
+                </button>
+            @endforeach
+        </div>
+
         <div class="settings-layout">
-            <aside class="settings-sidebar">
+            <aside id="settings-sections-sidebar" class="settings-sidebar">
                 <nav aria-label="Settings sections" class="settings-menu rounded-lg border border-gray-200 bg-white py-4 shadow-sm">
                     <h2 class="mb-3 px-5 text-xs font-semibold uppercase tracking-wide text-gray-500">Settings sections</h2>
                     <div class="px-4 mb-3">
@@ -269,8 +286,9 @@
 
         <div id="settings-submission-success-preview" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Submission Success Preview</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Submission Success</h3>
                 <p class="mt-2 text-sm text-gray-500">View the confirmation page users see after submitting a product.</p>
+                @include('admin.settings.partials.submission-success-modal')
                 <div class="mt-4 flex flex-wrap gap-3">
                     @foreach(['free' => 'Preview Free Submission', 'badge' => 'Preview Badge Submission'] as $type => $label)
                         <a href="{{ route('admin.settings.submission-success-preview', $type) }}"
@@ -729,6 +747,40 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const sidebarControls = document.getElementById('settings-sidebar-controls');
+            for (const button of sidebarControls.querySelectorAll('[aria-controls]')) {
+                const sidebarId = button.getAttribute('aria-controls');
+                const sidebar = document.getElementById(sidebarId);
+                const isAdminNavigation = sidebarId === 'admin-navigation-sidebar';
+                const layout = sidebar.parentElement;
+                const collapsedClass = isAdminNavigation ? 'settings-admin-nav-collapsed' : 'settings-menu-collapsed';
+                const storageKey = 'admin.settings.collapsed.' + sidebarId;
+
+                function setCollapsed(collapsed) {
+                    sidebar.hidden = collapsed;
+                    layout.classList.toggle(collapsedClass, collapsed);
+                    button.setAttribute('aria-expanded', String(!collapsed));
+                    button.textContent = (collapsed ? 'Show ' : 'Hide ') + button.dataset.sidebarLabel;
+                }
+
+                try {
+                    setCollapsed(localStorage.getItem(storageKey) === 'true');
+                } catch {
+                    setCollapsed(false);
+                }
+
+                button.addEventListener('click', () => {
+                    const collapsed = !sidebar.hidden;
+                    setCollapsed(collapsed);
+                    try {
+                        localStorage.setItem(storageKey, String(collapsed));
+                    } catch {
+                        // The control still works when browser storage is unavailable.
+                    }
+                });
+            }
+            sidebarControls.hidden = false;
+
             const settingsPanels = document.querySelector('.settings-panels');
             const settingsSections = Array.from(settingsPanels.querySelectorAll(':scope > .settings-section'));
             const settingsLinks = Array.from(document.querySelectorAll('.settings-menu a'));

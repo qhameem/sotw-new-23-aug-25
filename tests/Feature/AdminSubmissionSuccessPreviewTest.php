@@ -25,8 +25,11 @@ class AdminSubmissionSuccessPreviewTest extends TestCase
 
         $this->get(route('admin.settings.index'))->assertOk()->assertSee($freeUrl)->assertSee($badgeUrl);
         $this->get($freeUrl)->assertOk()
-            ->assertSee('Admin preview with sample submission data.')
-            ->assertSee('Your product has been submitted for review.')
+            ->assertDontSee('Admin preview with sample submission data.')
+            ->assertDontSee('Submission actions are in the confirmation card.')
+            ->assertDontSee('Quick Actions')
+            ->assertSee('Your product is in the review queue.')
+            ->assertSeeInOrder(['Received', 'In review', 'Approved', 'Scheduled'])
             ->assertSee('aria-disabled="true"', false);
         $this->get($badgeUrl)->assertOk()
             ->assertSee('Keep This Badge On Your Site');

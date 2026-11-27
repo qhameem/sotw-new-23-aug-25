@@ -37,6 +37,7 @@ use App\Support\ProductMediaSeo;
 use App\Support\ProductPublishSchedule;
 use App\Support\PublicUrlGuard;
 use App\Support\SocialLinkValidator;
+use App\Support\SubmissionSuccessModalSettings;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Http\Request;
@@ -790,10 +791,13 @@ class ProductController extends Controller
         $submissionDate = Carbon::now();
         $daysToLive = $submissionDate->diffInDays($submissionDate->copy()->addWeeks(10));
         $isBadgeSubmission = $product->submission_type === 'badge';
+        $modal = SubmissionSuccessModalSettings::get();
+        $showModal = $modal['enabled'] || (! $product->exists && filled($modal['title']));
 
         return view('products.submission_success', [
             'product' => $product,
             'daysToLive' => $daysToLive,
+            'submissionSuccessModal' => $showModal ? $modal : null,
             'badgeSnippet' => $isBadgeSubmission ? $this->badgeService->generateSnippet($product) : null,
             'launchDateFormatted' => $isBadgeSubmission
                 ? $this->badgeService->getLaunchDateFormatted($product->published_at)

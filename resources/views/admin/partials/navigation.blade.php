@@ -1,4 +1,4 @@
-<aside class="approval-sidebar" aria-label="Admin navigation">
+<aside id="admin-navigation-sidebar" class="approval-sidebar" aria-label="Admin navigation">
     <a href="{{ url('/') }}" class="approval-brand"><span class="approval-brand-mark"><x-admin.approval-icon /></span><span>Software on the web</span></a>
     <nav class="approval-navigation">
         @foreach(config('admin-navigation.primary') as $item)

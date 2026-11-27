@@ -10,6 +10,7 @@ use App\Services\BadgeService;
 use App\Services\ScreenshotService;
 use App\Support\FreeLaunchQueueSettings;
 use App\Support\PremiumLaunchPricing;
+use App\Support\SubmissionSuccessModalSettings;
 use App\Support\ToolSettings;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -66,7 +67,9 @@ class SettingsController extends Controller
         $availableProviderOrder = $screenshotDashboard['available_provider_order'];
         $appearanceSettings = app(ThemeController::class)->settingsData();
 
-        return view('admin.settings.index', array_merge($appearanceSettings, compact(
+        return view('admin.settings.index', array_merge($appearanceSettings, [
+            'submissionSuccessModal' => SubmissionSuccessModalSettings::get(),
+        ], compact(
             'googleAnalyticsCode',
             'hasHeaderCodeInjection',
             'premiumProductSpots',
@@ -374,6 +377,57 @@ class SettingsController extends Controller
 
             return back()->with('error', 'Failed to save admin sandbox mode. Please check logs.');
         }
+    }
+
+    public function storeSubmissionSuccessModal(Request $request)
+    {
+        $settings = $request->validate([
+            'submission_modal_enabled' => ['required', 'boolean'],
+            'submission_modal_delay' => ['required', 'integer', 'between:0,3600'],
+            'submission_modal_title' => [
+                'required_if:submission_modal_enabled,1',
+                'required_if:submission_modal_action,preview',
+                'required_if:submission_modal_ad_type,banner,card,offer',
+                'required_with:submission_modal_body',
+                'nullable', 'string', 'max:150',
+            ],
+            'submission_modal_body' => ['nullable', 'string', 'max:5000'],
+            'submission_modal_ad_type' => ['required', 'in:none,banner,card,offer'],
+            'submission_modal_ad_title' => ['exclude_if:submission_modal_ad_type,none', 'required', 'string', 'max:150'],
+            'submission_modal_ad_image' => ['exclude_if:submission_modal_ad_type,none', 'required', 'url:http,https', 'max:2048'],
+            'submission_modal_ad_body' => ['exclude_unless:submission_modal_ad_type,card', 'nullable', 'string', 'max:1000'],
+            'submission_modal_ad_url' => ['exclude_if:submission_modal_ad_type,none', 'required', 'url:http,https', 'max:2048'],
+            'submission_modal_ad_link_label' => ['exclude_unless:submission_modal_ad_type,card,offer', 'required', 'string', 'max:80'],
+            'submission_modal_ad_secondary_url' => ['exclude_unless:submission_modal_ad_type,card,offer', 'required_with:submission_modal_ad_secondary_label', 'nullable', 'url:http,https', 'max:2048'],
+            'submission_modal_ad_secondary_label' => ['exclude_unless:submission_modal_ad_type,card,offer', 'required_with:submission_modal_ad_secondary_url', 'nullable', 'string', 'max:80'],
+            'submission_modal_offer_disclosure' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:100'],
+            'submission_modal_offer_highlight' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:150'],
+            'submission_modal_offer_benefits' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:1500'],
+            'submission_modal_offer_bullet' => ['exclude_unless:submission_modal_ad_type,offer', 'required', 'in:check,circled-check,dot,none'],
+            'submission_modal_offer_promo' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:160'],
+            'submission_modal_offer_code' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:50'],
+            'submission_modal_offer_expiry' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'date_format:Y-m-d'],
+            'submission_modal_offer_price' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:150'],
+            'submission_modal_offer_footer' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:500'],
+            'submission_modal_offer_dismiss' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'string', 'max:50'],
+            'submission_modal_offer_accent' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'submission_modal_offer_width' => ['exclude_unless:submission_modal_ad_type,offer', 'required', 'in:compact,wide'],
+            'submission_modal_offer_button_width' => ['exclude_unless:submission_modal_ad_type,offer', 'required', 'in:full,auto'],
+            'submission_modal_offer_logo_background' => ['exclude_unless:submission_modal_ad_type,offer', 'nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $settings = collect($settings)->mapWithKeys(fn ($value, $key) => [Str::after($key, 'submission_modal_') => $value])->all();
+        $settings['enabled'] = $request->boolean('submission_modal_enabled');
+        $settings['delay'] = (int) $settings['delay'];
+
+        SubmissionSuccessModalSettings::save($settings);
+
+        if ($request->input('submission_modal_action') === 'preview') {
+            return redirect()->route('admin.settings.submission-success-preview', 'free');
+        }
+
+        return redirect()->to(route('admin.settings.index').'#settings-submission-success-preview')
+            ->with('success', 'Submission success modal saved.');
     }
 
     public function storeFreeLaunchQueue(Request $request)

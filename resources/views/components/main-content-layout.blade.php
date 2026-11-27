@@ -43,7 +43,7 @@
                     style="max-width: none; width: 100%; flex-basis: 100%;"
                 @endif
             >
-                <div class="flex-shrink-0">
+                <div @class(['flex-shrink-0', 'md:hidden' => $mobilePageHeaderOnly])>
                     @unless($hideDesktopPageHeader ?? false)
                         <div class="h-[75px] md:hidden w-full"></div>
                         <x-page-header :padding="$headerPadding" :hide-desktop="$mobilePageHeaderOnly">
@@ -116,11 +116,13 @@
                                     @include('partials._homepage-about-card')
                                 @endif
                             @endguest
-                            @if (isset($right_sidebar_content) && trim($right_sidebar_content))
-                                {!! $right_sidebar_content !!}
-                            @else
-                                @include('partials._right-sidebar')
-                            @endif
+                            @unless($hideSidebarContent)
+                                @if (isset($right_sidebar_content) && trim($right_sidebar_content))
+                                    {!! $right_sidebar_content !!}
+                                @else
+                                    @include('partials._right-sidebar')
+                                @endif
+                            @endunless
                         </div>
                     </div>
                 </div>
