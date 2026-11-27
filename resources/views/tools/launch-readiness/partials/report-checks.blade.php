@@ -79,7 +79,7 @@
                         <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:flex-nowrap">
                             <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-2">
                                 @if($showBadges)
-                                    <div class="inline-grid w-56 max-w-full shrink-0 grid-cols-2 self-start overflow-hidden rounded-md bg-slate-100 text-center text-xs font-semibold">
+                                    <div class="inline-grid w-56 max-w-full shrink-0 grid-cols-2 self-start overflow-hidden rounded-md bg-slate-100 text-left text-[11px] font-semibold">
                                         <span @class([
                                             'px-2 py-1',
                                             'bg-rose-100 text-rose-800' => $highImpact,
