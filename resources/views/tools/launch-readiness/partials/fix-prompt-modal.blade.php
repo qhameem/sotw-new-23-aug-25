@@ -17,8 +17,10 @@
             <button type="button" @click="closeFixPrompt()" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Close prompt">&times;</button>
         </div>
         <textarea x-ref="fixPromptTextarea" x-model="fixPrompt" readonly class="mt-5 min-h-72 w-full flex-1 resize-y rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-5 text-slate-700 focus:border-slate-300 focus:ring-slate-300"></textarea>
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex justify-end gap-2">
+            <button type="button" @click="closeFixPrompt()" class="inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Close</button>
             <button type="button" @click="copyFixPrompt()" class="inline-flex h-10 items-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800" x-text="fixPromptCopied ? 'Copied' : 'Copy prompt'"></button>
+            <span class="sr-only" role="status" x-text="fixPromptCopied ? 'Prompt copied to clipboard.' : ''"></span>
         </div>
     </div>
 </div>

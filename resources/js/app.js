@@ -380,6 +380,7 @@ function registerAlpineComponents(Alpine) {
         fixPromptModalOpen: false,
         fixPrompt: '',
         fixPromptCopied: false,
+        fixPromptTrigger: null,
         previousBodyOverflow: '',
         previousBodyPaddingRight: '',
 
@@ -501,27 +502,28 @@ function registerAlpineComponents(Alpine) {
             this.unlockShareScroll();
         },
 
-        openFixPrompt(prompt) {
+        openFixPrompt(prompt, trigger) {
             this.fixPrompt = String(prompt ?? '');
             this.fixPromptCopied = false;
+            this.fixPromptTrigger = trigger;
             this.fixPromptModalOpen = true;
             this.$nextTick(() => this.$refs.fixPromptTextarea?.focus());
         },
 
         closeFixPrompt() {
+            if (!this.fixPromptModalOpen) return;
+
             this.fixPromptModalOpen = false;
+            this.fixPromptTrigger?.focus();
+            this.fixPromptTrigger = null;
         },
 
-        async copyFixPrompt(prompt = this.fixPrompt) {
-            if (!prompt) return;
+        async copyFixPrompt() {
+            if (!this.fixPrompt) return;
 
             try {
-                await navigator.clipboard.writeText(prompt);
+                await navigator.clipboard.writeText(this.fixPrompt);
             } catch {
-                if (!this.fixPromptModalOpen) {
-                    this.openFixPrompt(prompt);
-                    return;
-                }
                 this.$refs.fixPromptTextarea?.select();
                 if (!document.execCommand('copy')) return;
             }

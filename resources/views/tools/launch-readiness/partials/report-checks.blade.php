@@ -76,10 +76,9 @@
                     </div>
                     @if(($isPriority || $priority->isEmpty()) && !empty($remediationPrompt))
                         <button type="button" data-fix-prompt="{{ $remediationPrompt }}"
-                            @click="copyFixPrompt($el.dataset.fixPrompt)"
+                            @click="openFixPrompt($el.dataset.fixPrompt, $el)"
                             class="text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline">
-                            <span x-show="!fixPromptCopied || fixPromptModalOpen">Copy fix prompt</span>
-                            <span x-cloak x-show="fixPromptCopied && !fixPromptModalOpen" role="status">Copied</span>
+                            Fix prompt
                         </button>
                     @endif
                 </div>
