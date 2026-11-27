@@ -512,14 +512,18 @@ function registerAlpineComponents(Alpine) {
             this.fixPromptModalOpen = false;
         },
 
-        async copyFixPrompt() {
-            if (!this.fixPrompt) return;
+        async copyFixPrompt(prompt = this.fixPrompt) {
+            if (!prompt) return;
 
             try {
-                await navigator.clipboard.writeText(this.fixPrompt);
-            } catch (error) {
+                await navigator.clipboard.writeText(prompt);
+            } catch {
+                if (!this.fixPromptModalOpen) {
+                    this.openFixPrompt(prompt);
+                    return;
+                }
                 this.$refs.fixPromptTextarea?.select();
-                document.execCommand('copy');
+                if (!document.execCommand('copy')) return;
             }
 
             this.fixPromptCopied = true;

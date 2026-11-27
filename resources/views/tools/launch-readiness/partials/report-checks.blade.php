@@ -75,19 +75,11 @@
                         </span>
                     </div>
                     @if(($isPriority || $priority->isEmpty()) && !empty($remediationPrompt))
-                        <button type="button" x-data="{ copied: false }"
-                            @click="
-                                try {
-                                    await navigator.clipboard.writeText(@js($remediationPrompt));
-                                    copied = true;
-                                    setTimeout(() => copied = false, 1800);
-                                } catch {
-                                    openFixPrompt(@js($remediationPrompt));
-                                }
-                            "
+                        <button type="button" data-fix-prompt="{{ $remediationPrompt }}"
+                            @click="copyFixPrompt($el.dataset.fixPrompt)"
                             class="text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline">
-                            <span x-show="!copied">Copy fix prompt</span>
-                            <span x-cloak x-show="copied" role="status">Copied</span>
+                            <span x-show="!fixPromptCopied || fixPromptModalOpen">Copy fix prompt</span>
+                            <span x-cloak x-show="fixPromptCopied && !fixPromptModalOpen" role="status">Copied</span>
                         </button>
                     @endif
                 </div>
