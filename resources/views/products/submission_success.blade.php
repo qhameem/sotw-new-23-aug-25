@@ -11,10 +11,17 @@
 
 @section('content')
     @php
+        $editUrl = $product->exists ? route('products.edit', $product) : null;
         $referenceId = 'SOTW-' . str_pad((string) $product->id, 6, '0', STR_PAD_LEFT);
         $submittedAt = $product->created_at?->timezone(config('app.timezone'))->format('M j, Y \\a\\t g:i A');
     @endphp
     <div class="p-4 mx-auto max-w-7xl">
+        @unless($product->exists)
+            <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                Admin preview with sample submission data.
+                <a href="{{ route('admin.settings.index') }}#settings-submission-success-preview" class="underline">Back to Settings</a>
+            </div>
+        @endunless
         <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-2">Submission Received</h2>
             <p class="text-sm text-gray-700 mb-4">
@@ -110,7 +117,7 @@
                     class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition">
                     Track My Submissions
                 </a>
-                <a href="{{ route('products.edit', $product) }}"
+                <a @if($editUrl) href="{{ $editUrl }}" @else role="link" aria-disabled="true" @endif
                     class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-300 text-gray-800 text-sm font-medium hover:bg-gray-50 transition">
                     Edit This Submission
                 </a>
@@ -130,7 +137,7 @@
                 Show all my submissions
             </a>
             @if(isset($product))
-                <a href="{{ route('products.edit', $product) }}"
+                <a @if($editUrl) href="{{ $editUrl }}" @else role="link" aria-disabled="true" @endif
                     class="block text-center w-full underline underline-offset-2 text-sm text-blue-600 hover:text-primary-500 transition ease-in-out duration-150 py-2">
                     Edit this submission
                 </a>
@@ -149,7 +156,7 @@
                 Show all my submissions
             </a>
             @if(isset($product))
-                <a href="{{ route('products.edit', $product) }}"
+                <a @if($editUrl) href="{{ $editUrl }}" @else role="link" aria-disabled="true" @endif
                     class="block w-full underline underline-offset-2 text-sm text-blue-600 hover:text-primary-500 transition ease-in-out duration-150">
                     Edit this submission
                 </a>

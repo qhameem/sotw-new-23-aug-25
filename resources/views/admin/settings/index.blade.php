@@ -52,6 +52,7 @@
                 'settings-premium-product-spots' => 'Premium Product Spots',
                 'settings-product-publishing-time' => 'Product Publishing Time',
                 'settings-add-product-sandbox-mode' => 'Add Product Sandbox Mode',
+                'settings-submission-success-preview' => 'Submission Success Preview',
                 'settings-free-launch-queue' => 'Free Launch Queue',
                 'settings-tool-url-settings' => 'Tool URL Settings',
                 'settings-header-code-injection' => 'Header Code Injection',
@@ -263,6 +264,21 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div id="settings-submission-success-preview" tabindex="-1" class="settings-section mt-10 bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Submission Success Preview</h3>
+                <p class="mt-2 text-sm text-gray-500">View the confirmation page users see after submitting a product.</p>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    @foreach(['free' => 'Preview Free Submission', 'badge' => 'Preview Badge Submission'] as $type => $label)
+                        <a href="{{ route('admin.settings.submission-success-preview', $type) }}"
+                            class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
             </div>
         </div>
 

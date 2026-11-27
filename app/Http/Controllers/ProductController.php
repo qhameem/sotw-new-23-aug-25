@@ -770,34 +770,35 @@ class ProductController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        return $this->renderSubmissionSuccess($product);
+    }
+
+    public function previewSubmissionSuccess(string $type)
+    {
+        $product = new Product([
+            'submission_type' => $type,
+            'published_at' => now()->addWeek(),
+        ]);
+        $product->id = 1;
+        $product->created_at = now();
+
+        return $this->renderSubmissionSuccess($product);
+    }
+
+    private function renderSubmissionSuccess(Product $product)
+    {
         $submissionDate = Carbon::now();
-        $tentativeLiveDate = $submissionDate->copy()->addWeeks(10);
-        $daysToLive = $submissionDate->diffInDays($tentativeLiveDate);
+        $daysToLive = $submissionDate->diffInDays($submissionDate->copy()->addWeeks(10));
+        $isBadgeSubmission = $product->submission_type === 'badge';
 
-        $settings = json_decode(Storage::disk('local')->get('settings.json'), true);
-        $totalSpots = $settings['premium_product_spots'] ?? 6;
-        $spotsTaken = PremiumProduct::where('expires_at', '>', now())->count();
-        $spotsAvailable = $totalSpots - $spotsTaken;
-
-        // Badge-specific data for the success page
-        $badgeSnippet = null;
-        $launchDate = null;
-        $launchDateFormatted = null;
-
-        if ($product->submission_type === 'badge') {
-            $badgeSnippet = $this->badgeService->generateSnippet($product);
-            $launchDate = $product->published_at;
-            $launchDateFormatted = $this->badgeService->getLaunchDateFormatted($product->published_at);
-        }
-
-        return view('products.submission_success', compact(
-            'product',
-            'daysToLive',
-            'spotsAvailable',
-            'badgeSnippet',
-            'launchDate',
-            'launchDateFormatted'
-        ));
+        return view('products.submission_success', [
+            'product' => $product,
+            'daysToLive' => $daysToLive,
+            'badgeSnippet' => $isBadgeSubmission ? $this->badgeService->generateSnippet($product) : null,
+            'launchDateFormatted' => $isBadgeSubmission
+                ? $this->badgeService->getLaunchDateFormatted($product->published_at)
+                : null,
+        ]);
     }
 
     public function edit(Product $product)

@@ -248,6 +248,9 @@ Route::middleware(['auth', 'profile.complete', 'role:admin'])->prefix('admin')->
     Route::patch('settings/home-hero/features/{feature}', [\App\Http\Controllers\Admin\HomeHeroController::class, 'updateFeature'])->where('feature', '[0-2]')->name('home-hero.features.update');
     Route::post('settings/home-hero/features/{feature}/icon', [\App\Http\Controllers\Admin\HomeHeroController::class, 'updateFeatureIcon'])->where('feature', '[0-2]')->name('home-hero.features.icon.update');
     Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+    Route::get('settings/submission-success-preview/{type}', [ProductController::class, 'previewSubmissionSuccess'])
+        ->whereIn('type', ['free', 'badge'])
+        ->name('settings.submission-success-preview');
     Route::get('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'index'])->name('settings.product-description-templates.index');
     Route::post('settings/product-description-templates', [\App\Http\Controllers\Admin\ProductDescriptionTemplateController::class, 'store'])->name('settings.product-description-templates.store');
     Route::post('settings/export-database', [\App\Http\Controllers\Admin\SettingsController::class, 'exportDatabase'])->name('settings.exportDatabase');
