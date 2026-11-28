@@ -107,33 +107,44 @@
         <header class="sticky top-0 z-20 bg-white/90 backdrop-blur">
             <div class="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
                 <div @class([
-                    'mx-auto flex flex-wrap items-center justify-between gap-3',
+                    'mx-auto grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 sm:flex sm:flex-wrap sm:gap-x-6',
                     'max-w-4xl' => $usesCheckerWidth,
                     'max-w-5xl' => request()->routeIs('launch-readiness.results.show'),
                     'max-w-3xl' => request()->routeIs('launch-readiness.guides.show'),
                 ])>
                     <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
                         aria-label="{{ $toolBrandingSiteName }}"
-                        class="flex shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                        class="flex w-fit shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:mr-auto">
                         <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-10 w-10 object-contain">
                         @if(request()->routeIs('launch-readiness.results.show'))
                             <span class="text-sm font-bold text-slate-900">{{ $toolBrandingSiteName }}</span>
                         @endif
                     </a>
 
-                    <div class="flex items-center gap-3">
+                    <nav aria-label="Checker navigation" class="order-last col-span-2 flex items-center gap-5 sm:order-none sm:gap-7">
                         <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}"
                             @if($isPublicScans) aria-current="page" @endif
                             @class([
-                                'inline-flex items-center gap-1.5 whitespace-nowrap py-2 text-sm font-medium underline-offset-4 transition hover:text-slate-900',
+                                'inline-flex items-center gap-1.5 whitespace-nowrap py-2 text-sm font-medium underline-offset-4 transition hover:text-slate-900 hover:underline',
                                 'text-slate-900 underline' => $isPublicScans,
                                 'text-slate-600' => ! $isPublicScans,
                             ])>
-                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                                <path d="M5 20v-4m7 4V9m7 11V4" />
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m3 17 6-6 4 4 8-8m-6 0h6v6" />
                             </svg>
                             <span>Public Scans</span>
                         </a>
+                        <a href="{{ route('products.create') }}"
+                            class="inline-flex items-center gap-1.5 py-2 text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 8v8M8 12h8" />
+                            </svg>
+                            <span>Submit to Software on the Web</span>
+                        </a>
+                    </nav>
+
+                    <div class="flex shrink-0 items-center justify-self-end">
                         @if($toolUser)
                             @include('tools.launch-readiness.partials.user-menu')
                         @elseif(request()->routeIs('launch-readiness.auth.login'))
