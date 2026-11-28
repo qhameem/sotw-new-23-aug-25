@@ -84,7 +84,15 @@
         <a href="{{ route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $item]) }}"
             aria-label="View report for {{ $domain }}" class="whitespace-nowrap text-blue-700 underline underline-offset-4 hover:text-blue-900">View report</a>
         @if($canVisit)
-            <a href="{{ $url }}" target="_blank" rel="noopener noreferrer nofollow ugc" aria-label="Visit {{ $domain }} (opens in a new tab)"
+            @php
+                [$destination, $fragment] = array_pad(explode('#', $url, 2), 2, null);
+                [$destination, $queryString] = array_pad(explode('?', $destination, 2), 2, '');
+                $parameters = array_filter(explode('&', $queryString), fn ($parameter) =>
+                    $parameter !== '' && urldecode(explode('=', $parameter, 2)[0]) !== 'ref');
+                $parameters[] = 'ref='.rawurlencode(parse_url(config('app.url'), PHP_URL_HOST) ?: request()->getHost());
+                $visitUrl = $destination.'?'.implode('&', $parameters).($fragment === null ? '' : '#'.$fragment);
+            @endphp
+            <a href="{{ $visitUrl }}" target="_blank" rel="noopener noreferrer nofollow ugc" aria-label="Visit {{ $domain }} (opens in a new tab)"
                 class="inline-flex items-center gap-1 whitespace-nowrap text-neutral-700 hover:text-neutral-950">
                 <span class="underline underline-offset-4">Visit site</span>
                 <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l8-8M5 4h7v7" /></svg>

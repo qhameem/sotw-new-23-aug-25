@@ -487,7 +487,7 @@ class LaunchReadinessToolTest extends TestCase
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
 
         foreach ([
-            ['token' => 'lower-score', 'url' => 'https://lower.test', 'score' => 70, 'scanned_at' => now()],
+            ['token' => 'lower-score', 'url' => 'https://lower.test/?tag=a&tag=b&ref=old#details', 'score' => 70, 'scanned_at' => now()],
             ['token' => 'older-high-score', 'url' => 'https://older.test', 'score' => 95, 'scanned_at' => now()->subHour()],
             ['token' => 'newer-high-score', 'url' => 'https://newer.test', 'score' => 95, 'scanned_at' => now()->subMinute()],
         ] as $scan) {
@@ -516,6 +516,8 @@ class LaunchReadinessToolTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Highest score');
+        $referrer = parse_url(config('app.url'), PHP_URL_HOST);
+        $response->assertSee('href="https://lower.test/?tag=a&amp;tag=b&amp;ref='.$referrer.'#details"', false);
         $this->assertSame(
             ['newer-high-score', 'older-high-score', 'lower-score'],
             collect($response->viewData('history')->items())->pluck('result_token')->all(),
