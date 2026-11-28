@@ -2,7 +2,6 @@
 
 return [
     'daily_limit' => (int) env('LAUNCH_READINESS_DAILY_LIMIT', 20),
-    'public_scans_page_sizes' => [12, 20, 30, 50],
 
     'admin_emails' => array_values(array_filter(array_map(
         static fn (string $email): string => strtolower(trim($email)),

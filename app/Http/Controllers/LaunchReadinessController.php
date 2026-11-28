@@ -179,7 +179,7 @@ class LaunchReadinessController extends Controller
     {
         $query = trim((string) $request->query('q'));
         $sort = $request->query('sort') === 'score' ? 'score' : 'latest';
-        $allowedPerPage = config('launch_readiness.public_scans_page_sizes');
+        $allowedPerPage = ToolSettings::PUBLIC_SCANS_PAGE_SIZES;
         $defaultPerPage = $allowedPerPage[0];
         $perPage = (int) $request->query('per_page', $defaultPerPage);
 

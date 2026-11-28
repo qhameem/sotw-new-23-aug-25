@@ -11,6 +11,8 @@ class ToolSettings
 
     public const LAUNCH_READINESS_KEY = 'launch_readiness';
 
+    public const PUBLIC_SCANS_PAGE_SIZES = [12, 20, 30, 50];
+
     private const SETTINGS_FILE = 'settings.json';
 
     private const DEFAULTS = [

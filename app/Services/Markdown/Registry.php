@@ -112,7 +112,7 @@ class Registry
         abort_if(array_diff(array_keys($query), $allowedQuery) !== [], 404);
         abort_if(isset($query['view']) && ! in_array($query['view'], ['latest', 'featured', 'popular'], true), 404);
         abort_if(isset($query['sort']) && ! in_array($query['sort'], ['latest', 'score'], true), 404);
-        $publicScansPageSizes = array_map('strval', config('launch_readiness.public_scans_page_sizes'));
+        $publicScansPageSizes = array_map('strval', ToolSettings::PUBLIC_SCANS_PAGE_SIZES);
         abort_if(isset($query['per_page']) && ! in_array($query['per_page'], ['10', ...$publicScansPageSizes], true), 404);
         if (isset($query['page'])) {
             abort_unless(filter_var($query['page'], FILTER_VALIDATE_INT) && (int) $query['page'] > 0, 404);
