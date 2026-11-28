@@ -485,6 +485,10 @@ Route::prefix('tools/{toolSlug}')
         Route::post('/analyze', [LaunchReadinessController::class, 'analyze'])->middleware('throttle:30,1')->name('analyze');
         Route::get('/public-scans', [LaunchReadinessController::class, 'history'])->name('history');
         Route::get('/history', [LaunchReadinessController::class, 'redirectHistory'])->name('history.redirect');
+        Route::get('/terms-and-conditions', [LaunchReadinessController::class, 'policy'])
+            ->defaults('policy', 'terms')->name('policies.terms');
+        Route::get('/privacy-policy', [LaunchReadinessController::class, 'policy'])
+            ->defaults('policy', 'privacy')->name('policies.privacy');
         Route::get('/results/{toolScan:result_token}', [LaunchReadinessController::class, 'show'])->name('results.show');
 
         Route::middleware('guest:tool_user')->group(function () {

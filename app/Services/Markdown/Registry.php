@@ -340,6 +340,9 @@ class Registry
         if (isset(config('agent_access.skip_uris')[$uri])) {
             return config('agent_access.skip_uris')[$uri];
         }
+        if (str_starts_with($name ?? '', 'launch-readiness.policies.')) {
+            return 'Tool policy is published in HTML.';
+        }
         if (str_starts_with($uri, 'api/') || str_starts_with($uri, 'admin/')) {
             return 'API or administration endpoint.';
         }

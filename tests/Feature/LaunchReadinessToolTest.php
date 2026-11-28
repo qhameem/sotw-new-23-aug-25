@@ -373,6 +373,24 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertStringContainsString('og:description', $openGraphCheck['summary'] ?? '');
     }
 
+    public function test_launch_readiness_policy_pages_are_linked_from_the_footer(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        $parameters = ['toolSlug' => $slug];
+        $checker = $this->get(route('launch-readiness.index', $parameters));
+
+        foreach (['terms' => 'Terms and Conditions', 'privacy' => 'Privacy Policy'] as $policy => $label) {
+            $url = route('launch-readiness.policies.'.$policy, $parameters);
+            $checker->assertSee('href="'.$url.'"', false);
+
+            $this->get($url)
+                ->assertOk()
+                ->assertSee('aria-label="Breadcrumb"', false)
+                ->assertSee('aria-current="page" class="font-medium text-neutral-800">'.$label, false)
+                ->assertSee('href="'.route('launch-readiness.index', $parameters).'"', false);
+        }
+    }
+
     public function test_launch_readiness_history_redirects_to_public_scans_with_query_parameters(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);

@@ -11,7 +11,7 @@
         $isPublicScans = request()->routeIs('launch-readiness.history');
         $ogImage = ($isPublicScans ? $toolPublicScansSeo['og_image_url'] : null)
             ?? $toolOgImage ?? $globalDefaultOgImageUrl ?? null;
-        $usesCheckerWidth = $isPublicScans || request()->routeIs('launch-readiness.index');
+        $usesCheckerWidth = $isPublicScans || request()->routeIs('launch-readiness.index', 'launch-readiness.policies.*');
     @endphp
 
     <title>{{ $pageTitle }}</title>
@@ -163,8 +163,10 @@
         <footer class="border-t border-slate-200/80 bg-white">
             <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p>&copy; {{ date('Y') }} {{ $toolBrandingSiteName }}</p>
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">Public Scans</a>
+                    <a href="{{ route('launch-readiness.policies.terms', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">Terms and Conditions</a>
+                    <a href="{{ route('launch-readiness.policies.privacy', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">Privacy Policy</a>
                     <a href="https://softwareontheweb.com" class="transition hover:text-slate-700">Software on the Web</a>
                 </div>
             </div>

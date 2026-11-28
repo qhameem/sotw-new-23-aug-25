@@ -155,6 +155,11 @@ class LaunchReadinessController extends Controller
         ]));
     }
 
+    public function policy(string $toolSlug, string $policy): View
+    {
+        return view('tools.launch-readiness.policies.'.$policy, $this->pageData->merge());
+    }
+
     public function guide(string $toolSlug, string $guideSlug): View
     {
         $guide = $this->guideLibrary->findBySlug($guideSlug);

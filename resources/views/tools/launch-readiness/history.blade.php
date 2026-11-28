@@ -53,18 +53,7 @@
 
     <div class="space-y-7">
         <div>
-            <nav aria-label="Breadcrumb" class="mb-5 text-xs text-neutral-600">
-                <ol class="flex flex-wrap items-center gap-x-1 gap-y-1">
-                    <li>
-                        <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
-                            class="underline underline-offset-4 hover:text-neutral-950">Launch Readiness Checker</a>
-                    </li>
-                    <li class="flex items-center gap-1">
-                        <span aria-hidden="true">/</span>
-                        <span aria-current="page" class="font-medium text-neutral-800">Public Scans</span>
-                    </li>
-                </ol>
-            </nav>
+            @include('tools.launch-readiness.partials.breadcrumb', ['currentPageLabel' => 'Public Scans'])
             <div class="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <h1 class="text-4xl font-bold tracking-tight text-neutral-950 sm:text-[44px]">{{ $toolPublicScansSeo['h1'] }}</h1>
                 <p class="text-base leading-6 text-neutral-600 sm:col-start-1 sm:row-start-2">Browse website scans shared by users and guests.</p>
