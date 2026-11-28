@@ -8,6 +8,7 @@
         $pageTitle = trim((string) $__env->yieldContent('title', 'Launch Readiness Checker'));
         $pageDescription = trim((string) $__env->yieldContent('meta_description', 'Free homepage audit for launch readiness, SEO, and AI visibility.'));
         $ogTitle = trim((string) $__env->yieldContent('og_title', $pageTitle));
+        $isPublicScans = request()->routeIs('launch-readiness.history');
     @endphp
 
     <title>{{ $pageTitle }}</title>
@@ -108,19 +109,28 @@
                     'max-w-5xl' => request()->routeIs('launch-readiness.results.show'),
                     'max-w-3xl' => request()->routeIs('launch-readiness.guides.show'),
                 ])>
-                    <div class="flex flex-wrap items-center gap-3 sm:gap-6">
-                        <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
-                            aria-label="{{ $toolBrandingSiteName }}"
-                            class="flex shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                            <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-9 w-9 object-contain">
-                            @if(request()->routeIs('launch-readiness.results.show'))
-                                <span class="text-sm font-bold text-slate-900">{{ $toolBrandingSiteName }}</span>
-                            @endif
-                        </a>
-                        <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="text-sm text-slate-600 transition hover:text-slate-900">History</a>
-                    </div>
+                    <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
+                        aria-label="{{ $toolBrandingSiteName }}"
+                        class="flex shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                        <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-10 w-10 object-contain">
+                        @if(request()->routeIs('launch-readiness.results.show'))
+                            <span class="text-sm font-bold text-slate-900">{{ $toolBrandingSiteName }}</span>
+                        @endif
+                    </a>
 
                     <div class="flex items-center gap-3">
+                        <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}"
+                            @if($isPublicScans) aria-current="page" @endif
+                            @class([
+                                'inline-flex items-center gap-1.5 whitespace-nowrap py-2 text-sm font-medium underline-offset-4 transition hover:text-slate-900',
+                                'text-slate-900 underline' => $isPublicScans,
+                                'text-slate-600' => ! $isPublicScans,
+                            ])>
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                <path d="M5 20v-4m7 4V9m7 11V4" />
+                            </svg>
+                            <span>Public Scans</span>
+                        </a>
                         @if($toolUser)
                             @include('tools.launch-readiness.partials.user-menu')
                         @elseif(request()->routeIs('launch-readiness.auth.login'))
@@ -149,7 +159,7 @@
             <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p>&copy; {{ date('Y') }} {{ $toolBrandingSiteName }}</p>
                 <div class="flex items-center gap-4">
-                    <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">History</a>
+                    <a href="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="transition hover:text-slate-700">Public Scans</a>
                     <a href="https://softwareontheweb.com" class="transition hover:text-slate-700">Software on the Web</a>
                 </div>
             </div>

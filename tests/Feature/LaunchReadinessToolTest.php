@@ -373,6 +373,16 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertStringContainsString('og:description', $openGraphCheck['summary'] ?? '');
     }
 
+    public function test_launch_readiness_history_redirects_to_public_scans_with_query_parameters(): void
+    {
+        $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        $query = '?q=example.com&sort=score&per_page=20&page=2';
+
+        $this->get("/tools/{$slug}/history{$query}")
+            ->assertStatus(301)
+            ->assertRedirect("/tools/{$slug}/public-scans{$query}");
+    }
+
     public function test_launch_readiness_history_page_renders_custom_layout(): void
     {
         $slug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
@@ -400,10 +410,17 @@ class LaunchReadinessToolTest extends TestCase
         $response = $this->get(route('launch-readiness.history', ['toolSlug' => $slug]));
 
         $response->assertOk();
+        $response->assertSee('Public Scans');
+        $response->assertSee('aria-current="page"', false);
         $response->assertSee('Search domains...');
-        $response->assertSee('10 / page');
+        $response->assertSee('12 / page');
+        $response->assertViewHas('history', fn ($history) => $history->perPage() === 12);
         $response->assertSee('Go to');
         $response->assertSee('Passed');
+
+        $this->get(route('launch-readiness.history', ['toolSlug' => $slug, 'per_page' => 10]))
+            ->assertOk()
+            ->assertViewHas('history', fn ($history) => $history->perPage() === 12);
     }
 
     public function test_launch_readiness_history_page_only_shows_latest_saved_scan_per_url(): void

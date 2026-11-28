@@ -39,7 +39,7 @@ class Registry
             'todolists.index' => ['static:todo', 'To do list', 'Public features and instructions for the to do list.', 'Docs / Guides'],
             'launch-readiness.index' => ['tool', 'Launch readiness checker', 'Homepage launch readiness, SEO and AI checks.', 'Docs / Guides'],
             'launch-readiness.guides.show' => ['guide', 'Launch readiness guide', 'Guidance for interpreting homepage checks.', 'Docs / Guides'],
-            'launch-readiness.history' => ['history', 'Public scan history', 'Publicly saved launch readiness scans.', 'Docs / Guides'],
+            'launch-readiness.history' => ['history', 'Public Scans', 'Publicly saved launch readiness scans.', 'Docs / Guides'],
             'articles.index' => ['articles', 'Articles', 'Published software articles.', 'Articles'],
             'articles.category' => ['articles', 'Article category', 'Published articles in a category.', 'Articles'],
             'articles.tag' => ['articles', 'Article tag', 'Published articles with a tag.', 'Articles'],
@@ -112,7 +112,8 @@ class Registry
         abort_if(array_diff(array_keys($query), $allowedQuery) !== [], 404);
         abort_if(isset($query['view']) && ! in_array($query['view'], ['latest', 'featured', 'popular'], true), 404);
         abort_if(isset($query['sort']) && ! in_array($query['sort'], ['latest', 'score'], true), 404);
-        abort_if(isset($query['per_page']) && ! in_array((string) $query['per_page'], ['10', '20', '30', '50'], true), 404);
+        $publicScansPageSizes = array_map('strval', config('launch_readiness.public_scans_page_sizes'));
+        abort_if(isset($query['per_page']) && ! in_array($query['per_page'], ['10', ...$publicScansPageSizes], true), 404);
         if (isset($query['page'])) {
             abort_unless(filter_var($query['page'], FILTER_VALIDATE_INT) && (int) $query['page'] > 0, 404);
         }
@@ -231,7 +232,7 @@ class Registry
             yield $settings->path('todo_list');
             yield $settings->path('launch_readiness');
         } elseif ($name === 'launch-readiness.history') {
-            yield $settings->path('launch_readiness').'/history';
+            yield route($name, ['toolSlug' => $settings->slug('launch_readiness')], false);
         } elseif ($name === 'launch-readiness.guides.show') {
             foreach (app(LaunchReadinessGuideLibrary::class)->all() as $guide) {
                 yield $settings->path('launch_readiness').'/'.$guide['slug'];
@@ -347,7 +348,7 @@ class Registry
                 return 'Authenticated content.';
             }
         }
-        if (str_starts_with(ltrim($route->getActionName(), '\\'), 'Illuminate\\Routing\\RedirectController') || in_array($name, ['products.weekly.redirect', 'products.monthly.redirect', 'products.yearly.redirect'], true) || in_array($uri, ['{product_name}', 'free-todo-list-tool/{path?}'], true)) {
+        if (str_starts_with(ltrim($route->getActionName(), '\\'), 'Illuminate\\Routing\\RedirectController') || in_array($name, ['launch-readiness.history.redirect', 'products.weekly.redirect', 'products.monthly.redirect', 'products.yearly.redirect'], true) || in_array($uri, ['{product_name}', 'free-todo-list-tool/{path?}'], true)) {
             return 'Legacy or current-period redirect.';
         }
         if (in_array($name, ['agent.index', 'agent.full', 'agent.policy', 'agent.robots', 'agent.markdown', 'agent.catalog'], true) || $name === 'products.document') {

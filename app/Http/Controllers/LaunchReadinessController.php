@@ -167,15 +167,24 @@ class LaunchReadinessController extends Controller
         ]));
     }
 
+    public function redirectHistory(Request $request, string $toolSlug): RedirectResponse
+    {
+        $destination = route('launch-readiness.history', ['toolSlug' => $toolSlug]);
+        $queryString = $request->server('QUERY_STRING', '');
+
+        return redirect()->to($queryString === '' ? $destination : $destination.'?'.$queryString, 301);
+    }
+
     public function history(Request $request): View
     {
         $query = trim((string) $request->query('q'));
         $sort = $request->query('sort') === 'score' ? 'score' : 'latest';
-        $perPage = (int) $request->query('per_page', 10);
-        $allowedPerPage = [10, 20, 30, 50];
+        $allowedPerPage = config('launch_readiness.public_scans_page_sizes');
+        $defaultPerPage = $allowedPerPage[0];
+        $perPage = (int) $request->query('per_page', $defaultPerPage);
 
         if (! in_array($perPage, $allowedPerPage, true)) {
-            $perPage = 10;
+            $perPage = $defaultPerPage;
         }
 
         $history = $this->toolTablesReady()

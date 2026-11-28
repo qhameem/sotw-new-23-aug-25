@@ -18,7 +18,7 @@ Registry-driven route coverage. Markdown responses exclude noindex variants and 
 | `/tools/{todo-slug}` (todolists.index) | Static Markdown template / shared public configuration | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
 | `/tools/{toolSlug}` (launch-readiness.index) | ToolSettings; public copy; LaunchReadinessBranding/audit catalog | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
 | `/tools/{toolSlug}/{guideSlug}` (launch-readiness.guides.show) | LaunchReadinessGuideLibrary | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
-| `/tools/{toolSlug}/history` (launch-readiness.history) | LaunchReadinessController; publicly saved scans | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
+| `/tools/{toolSlug}/public-scans` (launch-readiness.history) | LaunchReadinessController; publicly saved scans | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
 | `/articles` (articles.index) | ArticleController; ArticleDiscoveryService and published queries | Public, published, indexable variants | Yes, if indexable |
 | `/articles/category/{articleCategory}` (articles.category) | ArticleController; ArticleDiscoveryService and published queries | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |
 | `/articles/tag/{articleTag}` (articles.tag) | ArticleController; ArticleDiscoveryService and published queries | Public, published, indexable variants | Up to 50 candidates per route family; only eligible pages |

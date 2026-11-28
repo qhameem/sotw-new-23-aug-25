@@ -483,7 +483,8 @@ Route::prefix('tools/{toolSlug}')
         Route::get('/', \App\Http\Controllers\PublicToolController::class)
             ->withoutMiddleware('configured.tool:launch_readiness')->name('index');
         Route::post('/analyze', [LaunchReadinessController::class, 'analyze'])->middleware('throttle:30,1')->name('analyze');
-        Route::get('/history', [LaunchReadinessController::class, 'history'])->name('history');
+        Route::get('/public-scans', [LaunchReadinessController::class, 'history'])->name('history');
+        Route::get('/history', [LaunchReadinessController::class, 'redirectHistory'])->name('history.redirect');
         Route::get('/results/{toolScan:result_token}', [LaunchReadinessController::class, 'show'])->name('results.show');
 
         Route::middleware('guest:tool_user')->group(function () {

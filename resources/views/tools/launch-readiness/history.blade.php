@@ -1,7 +1,7 @@
 @extends('layouts.launch-readiness')
 
-@section('title', 'Launch Readiness History - Software on the Web')
-@section('og_title', 'Public launch-readiness scan history')
+@section('title', 'Public Scans - Launch Readiness Checker')
+@section('og_title', 'Public Launch Readiness Scans')
 @section('meta_description', 'Browse saved launch-readiness scans from all users and guests.')
 
 @section('content')
@@ -36,9 +36,9 @@
     <div class="mx-auto max-w-4xl space-y-8">
         <section class="flex flex-col gap-5 pt-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-                <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Scan History</h1>
+                <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Public Scans</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-500">
-                    View all previously completed site checks.
+                    Browse website scans shared by users and guests.
                 </p>
             </div>
 
