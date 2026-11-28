@@ -24,7 +24,7 @@
 
 @section('content')
     <div
-        class="mx-auto max-w-4xl space-y-8"
+        class="space-y-8"
         x-data="launchReadinessAnalyzer({ csrfToken: @js(csrf_token()), initialNotice: '', hasScanResult: @js(!empty($report['summary']['final_url'])), toolName: @js($toolBrandingSiteName) })"
     >
         <section class="pt-4 text-center">

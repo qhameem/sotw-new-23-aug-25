@@ -9,6 +9,7 @@
         $pageDescription = trim((string) $__env->yieldContent('meta_description', 'Free homepage audit for launch readiness, SEO, and AI visibility.'));
         $ogTitle = trim((string) $__env->yieldContent('og_title', $pageTitle));
         $isPublicScans = request()->routeIs('launch-readiness.history');
+        $usesCheckerWidth = $isPublicScans || request()->routeIs('launch-readiness.index');
     @endphp
 
     <title>{{ $pageTitle }}</title>
@@ -105,7 +106,7 @@
             <div class="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
                 <div @class([
                     'mx-auto flex flex-wrap items-center justify-between gap-3',
-                    'max-w-4xl' => request()->routeIs('launch-readiness.index'),
+                    'max-w-4xl' => $usesCheckerWidth,
                     'max-w-5xl' => request()->routeIs('launch-readiness.results.show'),
                     'max-w-3xl' => request()->routeIs('launch-readiness.guides.show'),
                 ])>
@@ -152,7 +153,9 @@
         </header>
 
         <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-12">
-            @yield('content')
+            <div @class(['mx-auto max-w-4xl' => $usesCheckerWidth])>
+                @yield('content')
+            </div>
         </main>
 
         <footer class="border-t border-slate-200/80 bg-white">
