@@ -8,6 +8,7 @@ use App\Services\CategoryClassifier;
 use App\Services\FaviconExtractorService;
 use App\Services\LogoExtractorService;
 use App\Services\NameExtractorService;
+use App\Services\ProductLogoResolver;
 use App\Services\RelatedProductService;
 use App\Services\ScreenshotService;
 use App\Services\SlugService;
@@ -27,6 +28,8 @@ class ProductAutofillLinkExtractionTest extends TestCase
                 <body>
                     <a href="/blog">Blog</a>
                     <footer>
+                        <a href="https://chatgpt.com?hints=search&amp;q=Visit+https%3A%2F%2Fexample.com%2Fpricing">Ask ChatGPT</a>
+                        <a href="/search?q=pricing">Search the help center</a>
                         <a href="/pricing">Pricing</a>
                         <a href="https://x.com/examplehq">X</a>
                         <a href="https://github.com/examplehq/product">GitHub</a>
@@ -56,6 +59,8 @@ class ProductAutofillLinkExtractionTest extends TestCase
                 <body>
                     <a href="https://docs.example.com/getting-started">Documentation</a>
                     <a href="https://community.example.com">Community</a>
+                    <a href="https://chatgpt.com?q=Check+pricing">Ask ChatGPT</a>
+                    <a href="https://example.com.example.net/pricing">Pricing</a>
                     <a href="https://example.com">Home</a>
                 </body>
             </html>
@@ -88,6 +93,7 @@ class ProductAutofillLinkExtractionTest extends TestCase
             $this->createMock(ScreenshotService::class),
             $this->createMock(BadgeService::class),
             $this->createMock(RelatedProductService::class),
+            $this->createMock(ProductLogoResolver::class),
         );
     }
 }

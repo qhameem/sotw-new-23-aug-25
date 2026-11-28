@@ -447,7 +447,7 @@ class ProductController extends Controller
             return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
         });
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && ! $hasCustomPricing) {
+        if (! $curated && $pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && ! $hasCustomPricing) {
             return back()->withErrors(['categories' => 'Please select at least one category from the Pricing group.'])->withInput();
         }
         if ($softwareIds->count() && $selected->intersect($softwareIds)->isEmpty() && ! $hasCustomSoftware) {
@@ -3927,6 +3927,7 @@ class ProductController extends Controller
         $makerLinks = [];
         $seenMakerLinks = [];
         $seenCandidates = [];
+        $pageHost = $this->normalizeAutofillHost((string) parse_url($pageUrl, PHP_URL_HOST));
 
         foreach ($this->collectAutofillLinkCandidates($doc) as $candidate) {
             $resolvedUrl = $this->resolveAutofillUrl($pageUrl, $candidate['href']);
@@ -3937,7 +3938,7 @@ class ProductController extends Controller
             $seenCandidates[$resolvedUrl] = true;
             $text = $candidate['text'];
 
-            if (! $pricingPageUrl && $this->isPricingLinkCandidate($resolvedUrl, $text)) {
+            if (! $pricingPageUrl && $this->isPricingLinkCandidate($pageHost, $resolvedUrl, $text)) {
                 $pricingPageUrl = $resolvedUrl;
 
                 continue;
@@ -4041,13 +4042,18 @@ class ProductController extends Controller
         return explode('#', $normalized, 2)[0];
     }
 
-    protected function isPricingLinkCandidate(string $url, string $text): bool
+    protected function isPricingLinkCandidate(string $pageHost, string $url, string $text): bool
     {
-        $haystack = strtolower($url.' '.$text);
+        $host = $this->normalizeAutofillHost((string) parse_url($url, PHP_URL_HOST));
+        if ($pageHost === '' || ($host !== $pageHost && ! str_ends_with($host, '.'.$pageHost))) {
+            return false;
+        }
 
-        return str_contains($haystack, 'pricing')
-            || str_contains($haystack, 'plans')
-            || preg_match('/\bplan\b/', $haystack) === 1;
+        $path = trim(rawurldecode((string) parse_url($url, PHP_URL_PATH)), '/');
+
+        return str_starts_with($host, 'pricing.')
+            || preg_match('~(?:^|/)(?:pricing(?:-and-plans)?|plans(?:-and-pricing)?|plan)(?:/|$)~i', $path) === 1
+            || ($path !== '' && preg_match('/^(?:view |see )?(?:pricing|plans|pricing and plans|plans and pricing)$/i', $text) === 1);
     }
 
     protected function isXProfileUrl(string $url): bool
@@ -4951,12 +4957,12 @@ class ProductController extends Controller
     {
         return collect($this->productCategoryGroupQueries())
             ->map(function ($query, $group) use ($preservedIds, $curated) {
-                if ($curated && ! in_array($group, ['regularCategories', 'useCaseCategories', 'platformCategories'], true)) {
+                if ($curated && $group === 'bestForCategories') {
                     return collect();
                 }
 
-                $categories = $query->where(function ($options) use ($preservedIds, $curated) {
-                    $options->availableForSubmission($curated)->orWhereIn('categories.id', $preservedIds);
+                $categories = $query->where(function ($options) use ($preservedIds, $curated, $group) {
+                    $options->availableForSubmission($curated && $group !== 'pricingCategories')->orWhereIn('categories.id', $preservedIds);
                 })->when($curated && $group === 'useCaseCategories', fn ($options) => $options
                     ->whereIn('categories.slug', array_keys(BroadUseCases::GROUPS)))->get();
                 if ($group === 'pricingCategories') {

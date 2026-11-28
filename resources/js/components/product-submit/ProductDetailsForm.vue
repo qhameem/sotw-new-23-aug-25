@@ -342,9 +342,9 @@
     </div>
 
     <!-- Pricing -->
-    <div v-if="!curatedSubmission" id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
+    <div v-if="allPricing.length" id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-sm font-bold text-gray-900">Pricing <span class="text-red-500">*</span> <span v-if="reviewMode" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+         <label class="block text-sm font-bold text-gray-900">Pricing <span v-if="!curatedSubmission" class="text-red-500">*</span> <span v-if="reviewMode && !curatedSubmission" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
          <p :class="{ invisible: !validationErrors.pricing }" :aria-hidden="!validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing || 'At least one pricing model is required' }}</p>
        </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>

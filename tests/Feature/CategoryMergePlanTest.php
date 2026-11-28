@@ -96,15 +96,20 @@ it('applies and reverses the category merge plan while preserving taxonomy URLs'
         ->assertJsonCount(5, 'platforms')
         ->assertJsonCount(0, 'useCases')
         ->assertJsonCount(0, 'bestFor')
-        ->assertJsonCount(0, 'pricing')
+        ->assertJsonCount(1, 'pricing')
+        ->assertJsonPath('pricing.0.id', $outsidePricing->id)
         ->assertJsonFragment(['name' => 'AI Agents & Automation'])
         ->assertJsonMissing(['name' => 'AI Agent']);
     $this->get(route('products.create'))->assertOk()
         ->assertViewHas('regularCategories', fn ($options) => $options->count() === 50)
         ->assertViewHas('platformCategories', fn ($options) => $options->count() === 5)
-        ->assertViewHas('pricingCategories', fn ($options) => $options->isEmpty())
+        ->assertViewHas('pricingCategories', fn ($options) => $options->pluck('id')->all() === [$outsidePricing->id])
         ->assertViewHas('useCaseCategories', fn ($options) => $options->isEmpty())
         ->assertViewHas('bestForCategories', fn ($options) => $options->isEmpty());
+
+    $selectionRule = Category::submissionOptionRule(curated: true);
+    expect(validator(['category' => $outsidePricing->id], ['category' => $selectionRule])->passes())->toBeTrue()
+        ->and(validator(['category' => $outsidePlan->id], ['category' => $selectionRule])->passes())->toBeFalse();
 
     Cache::forget(CategoryNavigationService::CACHE_KEY);
     app()->forgetInstance(CategoryNavigationService::class);

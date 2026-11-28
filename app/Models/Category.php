@@ -36,17 +36,22 @@ class Category extends Model implements Sitemapable
         return self::where('in_submission_plan', true)->exists();
     }
 
-    public function scopeAvailableForSubmission(Builder $query, bool $curated): Builder
+    public function scopeAvailableForSubmission(Builder $query, bool $curated, bool $includePricing = false): Builder
     {
-        return $query->submittable()->when($curated, fn (Builder $options) => $options->where(fn (Builder $allowed) => $allowed
-            ->where('categories.in_submission_plan', true)
-            ->orWhereIn('categories.slug', array_keys(BroadUseCases::GROUPS))));
+        return $query->submittable()->when($curated, fn (Builder $options) => $options->where(function (Builder $allowed) use ($includePricing) {
+            $allowed->where('categories.in_submission_plan', true)
+                ->orWhereIn('categories.slug', array_keys(BroadUseCases::GROUPS));
+
+            if ($includePricing) {
+                $allowed->orWhereHas('types', fn (Builder $types) => $types->whereIn('name', CategoryTypeRegistry::namesFor(CategoryTypeRegistry::PRICING)));
+            }
+        }));
     }
 
     public static function submissionOptionRule(bool $curated): Exists
     {
         return Rule::exists('categories', 'id')->where(fn ($query) => $query->whereIn(
-            'id', self::availableForSubmission($curated)->select('categories.id')->toBase()
+            'id', self::availableForSubmission($curated, includePricing: true)->select('categories.id')->toBase()
         ));
     }
 

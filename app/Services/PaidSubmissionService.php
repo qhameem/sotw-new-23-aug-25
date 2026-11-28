@@ -326,7 +326,7 @@ class PaidSubmissionService
             return ($category['type'] ?? null) === 'use_case' && filled(trim((string) ($category['name'] ?? '')));
         });
 
-        if ($pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
+        if (! $curated && $pricingIds->count() && $selected->intersect($pricingIds)->isEmpty() && !$hasCustomPricing) {
             throw ValidationException::withMessages([
                 'categories' => 'Please select at least one category from the Pricing group.',
             ]);

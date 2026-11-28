@@ -1230,7 +1230,7 @@ export function useProductForm() {
         platforms: availableCategoryIds(data.platforms, globalFormState.allPlatforms.value),
         useCases: availableCategoryIds(data.useCases, globalFormState.allUseCases.value),
         bestFor: [],
-        pricing: [],
+        pricing: availableCategoryIds(data.pricing, globalFormState.allPricing.value),
       };
     }
     if (data.categories && data.categories.length > 0 && (!form.categories || form.categories.length === 0)) {
@@ -1258,7 +1258,7 @@ export function useProductForm() {
       console.log('Applied autofill tech stacks:', data.tech_stacks);
     }
 
-    if (data.pricing && data.pricing.length > 0) {
+    if (data.pricing && data.pricing.length > 0 && !form.pricing?.length) {
       form.pricing = data.pricing;
       console.log('Applied autofill pricing:', data.pricing);
     }
@@ -1687,7 +1687,7 @@ export function useProductForm() {
       }
 
       // Add pricing categories - these should be valid category IDs (not submission options like 'free' or 'paid')
-      if (!curatedSubmission.value && form.pricing && form.pricing.length > 0) {
+      if (form.pricing && form.pricing.length > 0) {
         // Filter out non-numeric values like 'free' or 'paid' which are submission options, not category IDs
         const validPricing = form.pricing.filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id));
         allCategories.push(...validPricing);
