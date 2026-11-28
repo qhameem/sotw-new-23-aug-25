@@ -104,7 +104,7 @@
             <div class="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
                 <div @class([
                     'mx-auto flex flex-wrap items-center justify-between gap-3',
-                    'max-w-4xl' => request()->routeIs('launch-readiness.index'),
+                    'max-w-4xl' => request()->routeIs('launch-readiness.index', 'launch-readiness.history'),
                     'max-w-5xl' => request()->routeIs('launch-readiness.results.show'),
                     'max-w-3xl' => request()->routeIs('launch-readiness.guides.show'),
                 ])>
