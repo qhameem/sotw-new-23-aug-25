@@ -344,24 +344,19 @@
     <!-- Pricing -->
     <div v-if="allPricing.length" id="field-pricing" :class="[autofillLockClass('taxonomy'), reviewTint('pricing')]">
        <div class="mb-1 flex items-start justify-between gap-4">
-         <label class="block text-sm font-bold text-gray-900">Pricing <span v-if="!curatedSubmission" class="text-red-500">*</span> <span v-if="reviewMode && !curatedSubmission" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></label>
+         <span id="pricing-options-label" class="block text-sm font-bold text-gray-900">Pricing <span v-if="!curatedSubmission" class="text-red-500">*</span> <span v-if="reviewMode && !curatedSubmission" :class="{ invisible: hasPricing }" class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-800">Needs your input</span></span>
          <p :class="{ invisible: !validationErrors.pricing }" :aria-hidden="!validationErrors.pricing" class="inline-flex max-w-xs items-center justify-end rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-right !text-[11px] font-medium !text-amber-800 shadow-sm">{{ validationErrors.pricing || 'At least one pricing model is required' }}</p>
        </div>
        <div class="mb-2 text-xs text-gray-500">How do people pay for your product? Select the pricing models that apply.</div>
-       <div class="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 md:grid-cols-4">
-          <label
+       <div class="flex flex-wrap gap-2 p-1" role="group" aria-labelledby="pricing-options-label">
+          <CategoryChoiceChip
             v-for="price in allPricing"
             :key="price.id"
-            class="flex cursor-pointer items-center gap-2.5 py-1"
-          >
-            <input
-              type="checkbox"
-              :checked="modelValue.pricing.includes(price.id)"
-              class="h-5 w-5 shrink-0 cursor-pointer rounded-md border-gray-400 text-primary-500 focus:ring-primary-500 focus:ring-offset-2"
-              @change="togglePricing(price.id)"
-            >
-            <span class="text-sm font-medium leading-5" :class="modelValue.pricing.includes(price.id) ? 'text-gray-900' : 'text-gray-700'">{{ price.name }}</span>
-          </label>
+            :name="price.name"
+            :selected="modelValue.pricing.some(id => String(id) === String(price.id))"
+            checkbox
+            @toggle="togglePricing(price.id)"
+          />
        </div>
     </div>
 
@@ -1114,7 +1109,7 @@ function togglePlatform(id) {
 // Card Logic for Pricing
 function togglePricing(id) {
     const current = [...props.modelValue.pricing];
-    const index = current.indexOf(id);
+    const index = current.findIndex(selectedId => String(selectedId) === String(id));
     if (index === -1) {
         current.push(id);
     } else {
