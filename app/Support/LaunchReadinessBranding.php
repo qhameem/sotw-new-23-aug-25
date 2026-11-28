@@ -36,6 +36,10 @@ class LaunchReadinessBranding
             'homepage_h1' => 'Free Launch Readiness Checker',
             'homepage_title_tag' => 'Free Launch Readiness Checker | Audit Your Site Before You Launch',
             'homepage_meta_description' => 'Use this free launch readiness checker to audit your site before launch. Check SEO, trust, technical issues, and AI visibility in minutes.',
+            'public_scans_h1' => 'Public Scans',
+            'public_scans_title_tag' => 'Public Scans - Launch Readiness Checker',
+            'public_scans_meta_description' => 'Browse saved launch-readiness scans from all users and guests.',
+            'public_scans_og_image_path' => null,
             'font_url' => null,
             'font_family' => 'Inter',
             'font_size' => 16,
@@ -168,6 +172,18 @@ class LaunchReadinessBranding
     public function homepageMetaDescription(): string
     {
         return $this->normalizedTextSetting('homepage_meta_description', $this->defaults()['homepage_meta_description']);
+    }
+
+    public function publicScansSeo(): array
+    {
+        $defaults = $this->defaults();
+
+        return [
+            'h1' => $this->normalizedTextSetting('public_scans_h1', $defaults['public_scans_h1']),
+            'title_tag' => $this->normalizedTextSetting('public_scans_title_tag', $defaults['public_scans_title_tag']),
+            'meta_description' => $this->normalizedTextSetting('public_scans_meta_description', $defaults['public_scans_meta_description']),
+            'og_image_url' => $this->versionedPublicUrl($this->get()['public_scans_og_image_path'] ?? null),
+        ];
     }
 
     public function fontUrl(): ?string

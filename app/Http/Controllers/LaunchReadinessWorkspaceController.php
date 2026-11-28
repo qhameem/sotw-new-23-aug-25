@@ -228,6 +228,9 @@ class LaunchReadinessWorkspaceController extends Controller
             'homepage_h1' => ['required', 'string', 'max:160'],
             'homepage_title_tag' => ['required', 'string', 'max:255'],
             'homepage_meta_description' => ['required', 'string', 'max:255'],
+            'public_scans_h1' => ['sometimes', 'required', 'string', 'max:160'],
+            'public_scans_title_tag' => ['sometimes', 'required', 'string', 'max:255'],
+            'public_scans_meta_description' => ['sometimes', 'required', 'string', 'max:255'],
             'font_url' => [
                 'nullable',
                 'url',
@@ -249,9 +252,11 @@ class LaunchReadinessWorkspaceController extends Controller
             'logo' => ['nullable', 'file', 'mimes:svg,png,jpg,jpeg,webp,gif', 'max:2048'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,svg', 'max:512'],
             'og_image' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
+            'public_scans_og_image' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
             'remove_logo' => ['nullable', 'boolean'],
             'remove_favicon' => ['nullable', 'boolean'],
             'remove_og_image' => ['nullable', 'boolean'],
+            'remove_public_scans_og_image' => ['nullable', 'boolean'],
         ]);
 
         $current = $this->branding->get();
@@ -260,6 +265,10 @@ class LaunchReadinessWorkspaceController extends Controller
             'homepage_h1' => trim((string) $validated['homepage_h1']),
             'homepage_title_tag' => trim((string) $validated['homepage_title_tag']),
             'homepage_meta_description' => trim((string) $validated['homepage_meta_description']),
+            'public_scans_h1' => trim($validated['public_scans_h1'] ?? $current['public_scans_h1']),
+            'public_scans_title_tag' => trim($validated['public_scans_title_tag'] ?? $current['public_scans_title_tag']),
+            'public_scans_meta_description' => trim($validated['public_scans_meta_description'] ?? $current['public_scans_meta_description']),
+            'public_scans_og_image_path' => $current['public_scans_og_image_path'],
             'font_url' => blank($validated['font_url'] ?? null) ? null : trim((string) $validated['font_url']),
             'font_family' => 'Inter',
             'font_size' => (int) $validated['font_size'],
@@ -308,7 +317,18 @@ class LaunchReadinessWorkspaceController extends Controller
             $next['og_image_path'] = $this->branding->storeUploadedAsset($request->file('og_image'), 'og-image');
         }
 
+        if ($request->boolean('remove_public_scans_og_image')) {
+            $next['public_scans_og_image_path'] = null;
+        } elseif ($request->hasFile('public_scans_og_image')) {
+            $next['public_scans_og_image_path'] = $this->branding->storeUploadedAsset($request->file('public_scans_og_image'), 'public-scans-og-image');
+        }
+
         $this->branding->save($next);
+
+        if ($next['public_scans_og_image_path'] !== $current['public_scans_og_image_path']) {
+            $this->branding->deleteAsset($current['public_scans_og_image_path']);
+        }
+
         $this->branding->get();
         $newSlug = $this->toolSettings->updateSlug(ToolSettings::LAUNCH_READINESS_KEY, $validated['tool_slug']);
 

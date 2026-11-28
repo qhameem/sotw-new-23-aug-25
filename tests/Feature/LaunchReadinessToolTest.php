@@ -675,6 +675,9 @@ class LaunchReadinessToolTest extends TestCase
                 'homepage_h1' => 'Check if your website is ready to launch',
                 'homepage_title_tag' => 'Free Website Launch Checker | Audit Your Site Before You Launch',
                 'homepage_meta_description' => 'Use this free Website Launch Checker to audit your site before launch. Check SEO, trust, technical issues, and AI visibility in minutes.',
+                'public_scans_h1' => 'Community Website Scans',
+                'public_scans_title_tag' => 'Community Scan Results',
+                'public_scans_meta_description' => 'Explore website scans shared by the community.',
                 'font_url' => 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap',
                 'font_size' => 15,
                 'font_color' => '#1f2937',
@@ -682,6 +685,7 @@ class LaunchReadinessToolTest extends TestCase
                 'logo' => UploadedFile::fake()->image('logo.png', 200, 200),
                 'favicon' => UploadedFile::fake()->image('favicon.png', 32, 32),
                 'og_image' => UploadedFile::fake()->image('og-image.png', 1200, 630),
+                'public_scans_og_image' => UploadedFile::fake()->image('public-scans.png', 1200, 630),
             ]);
 
         $response->assertRedirect(route('launch-readiness.settings', ['toolSlug' => 'website-launch-checker', 'tab' => 'branding']));
@@ -727,6 +731,8 @@ class LaunchReadinessToolTest extends TestCase
         $dashboardResponse->assertSee('Website Launch Checker');
         $dashboardResponse->assertSee('/tools/website-launch-checker');
         $dashboardResponse->assertSee('Check if your website is ready to launch');
+        $dashboardResponse->assertSee('Public Scans SEO');
+        $dashboardResponse->assertSee('Community Scan Results');
         $dashboardResponse->assertSee('fonts.googleapis.com/css2?family=Manrope', false);
 
         $homepageResponse = $this->get(route('launch-readiness.index', ['toolSlug' => 'website-launch-checker']));
@@ -735,6 +741,15 @@ class LaunchReadinessToolTest extends TestCase
         $homepageResponse->assertSee('Free Website Launch Checker | Audit Your Site Before You Launch', false);
         $homepageResponse->assertSee('Use this free Website Launch Checker to audit your site before launch. Check SEO, trust, technical issues, and AI visibility in minutes.', false);
         $homepageResponse->assertSee(Storage::url($branding['og_image_path']), false);
+        $homepageResponse->assertDontSee('Community Scan Results');
+
+        Storage::disk('public')->assertExists($branding['public_scans_og_image_path']);
+        $this->get(route('launch-readiness.history', ['toolSlug' => 'website-launch-checker']))
+            ->assertOk()
+            ->assertSee('<title>Community Scan Results</title>', false)
+            ->assertSee('<meta name="description" content="Explore website scans shared by the community.">', false)
+            ->assertSee('Community Website Scans')
+            ->assertSee(Storage::url($branding['public_scans_og_image_path']), false);
     }
 
     public function test_non_admin_tool_user_cannot_update_dashboard_branding(): void

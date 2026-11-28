@@ -1,8 +1,7 @@
 @extends('layouts.launch-readiness')
 
-@section('title', 'Public Scans - Launch Readiness Checker')
-@section('og_title', 'Public Launch Readiness Scans')
-@section('meta_description', 'Browse saved launch-readiness scans from all users and guests.')
+@section('title', $toolPublicScansSeo['title_tag'])
+@section('meta_description', $toolPublicScansSeo['meta_description'])
 
 @section('content')
     @php
@@ -67,7 +66,7 @@
                 </ol>
             </nav>
             <div class="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <h1 class="text-4xl font-bold tracking-tight text-neutral-950 sm:text-[44px]">Public Scans</h1>
+                <h1 class="text-4xl font-bold tracking-tight text-neutral-950 sm:text-[44px]">{{ $toolPublicScansSeo['h1'] }}</h1>
                 <p class="text-base leading-6 text-neutral-600 sm:col-start-1 sm:row-start-2">Browse website scans shared by users and guests.</p>
                 <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
                     class="inline-flex min-h-11 w-fit items-center rounded-lg px-5 py-2.5 text-sm font-semibold hover:brightness-95 sm:col-start-2 sm:row-start-1 {{ $selectedControl }}">

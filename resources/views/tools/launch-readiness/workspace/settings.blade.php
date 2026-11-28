@@ -170,6 +170,42 @@
                                             >{{ old('homepage_meta_description', $toolHomepageMetaDescription) }}</textarea>
                                         </div>
 
+                                        <fieldset class="space-y-4 rounded-xl border border-[var(--lr-border)] p-4">
+                                            <legend class="px-1 text-sm font-semibold text-[var(--lr-text)]">Public Scans SEO</legend>
+
+                                            @foreach(['h1' => 'Page heading', 'title_tag' => 'Title tag'] as $key => $label)
+                                                <div>
+                                                    <label for="public_scans_{{ $key }}" class="mb-2 block text-sm font-semibold text-[var(--lr-text)]">{{ $label }}</label>
+                                                    <input id="public_scans_{{ $key }}" name="public_scans_{{ $key }}" type="text"
+                                                        value="{{ old('public_scans_'.$key, $toolPublicScansSeo[$key]) }}"
+                                                        maxlength="{{ $key === 'h1' ? 160 : 255 }}" required
+                                                        class="block h-12 w-full rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-4 text-sm text-[var(--lr-text)]">
+                                                </div>
+                                            @endforeach
+
+                                            <div>
+                                                <label for="public_scans_meta_description" class="mb-2 block text-sm font-semibold text-[var(--lr-text)]">Meta description</label>
+                                                <textarea id="public_scans_meta_description" name="public_scans_meta_description" rows="3" maxlength="255" required
+                                                    class="block w-full rounded-xl border border-[var(--lr-border)] bg-[var(--lr-panel-strong)] px-4 py-3 text-sm text-[var(--lr-text)]">{{ old('public_scans_meta_description', $toolPublicScansSeo['meta_description']) }}</textarea>
+                                            </div>
+
+                                            <div>
+                                                <label for="public_scans_og_image" class="mb-2 block text-sm font-semibold text-[var(--lr-text)]">Social sharing image</label>
+                                                @if($toolPublicScansSeo['og_image_url'])
+                                                    <img src="{{ $toolPublicScansSeo['og_image_url'] }}" alt="Current Public Scans sharing image" class="mb-3 w-40 rounded-lg">
+                                                @endif
+                                                <input id="public_scans_og_image" name="public_scans_og_image" type="file" accept=".png,.jpg,.jpeg,.webp"
+                                                    class="block w-full text-sm text-[var(--lr-muted)] file:mr-4 file:rounded-full file:border-0 file:bg-[var(--lr-panel-strong)] file:px-4 file:py-2 file:font-medium file:text-[var(--lr-text)]">
+                                                <p class="mt-2 text-xs text-[var(--lr-muted)]">Uses the tool’s sharing image by default. Recommended size is 1200 × 630 px.</p>
+                                                @if($toolPublicScansSeo['og_image_url'])
+                                                    <label class="mt-3 inline-flex items-center gap-2 text-sm text-[var(--lr-muted)]">
+                                                        <input type="checkbox" name="remove_public_scans_og_image" value="1" class="h-4 w-4 rounded border-[var(--lr-border)] text-[var(--lr-success)]">
+                                                        <span>Remove custom sharing image</span>
+                                                    </label>
+                                                @endif
+                                            </div>
+                                        </fieldset>
+
                                         <div>
                                             <label for="branding_font_url" class="mb-3 block text-sm font-semibold text-[var(--lr-text)]">Google Font link</label>
                                             <input

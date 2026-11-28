@@ -9,6 +9,8 @@
         $pageDescription = trim((string) $__env->yieldContent('meta_description', 'Free homepage audit for launch readiness, SEO, and AI visibility.'));
         $ogTitle = trim((string) $__env->yieldContent('og_title', $pageTitle));
         $isPublicScans = request()->routeIs('launch-readiness.history');
+        $ogImage = ($isPublicScans ? $toolPublicScansSeo['og_image_url'] : null)
+            ?? $toolOgImage ?? $globalDefaultOgImageUrl ?? null;
         $usesCheckerWidth = $isPublicScans || request()->routeIs('launch-readiness.index');
     @endphp
 
@@ -20,11 +22,11 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:title" content="{{ $ogTitle }}">
     <meta property="og:description" content="{{ $pageDescription }}">
-    <meta property="og:image" content="{{ $toolOgImage ?? ($globalDefaultOgImageUrl ?? null) }}">
+    <meta property="og:image" content="{{ $ogImage }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $ogTitle }}">
     <meta name="twitter:description" content="{{ $pageDescription }}">
-    <meta name="twitter:image" content="{{ $toolOgImage ?? ($globalDefaultOgImageUrl ?? null) }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
 
     @include('tools.launch-readiness.partials.favicon-links')
 

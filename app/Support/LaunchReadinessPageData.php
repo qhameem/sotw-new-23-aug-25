@@ -37,6 +37,7 @@ class LaunchReadinessPageData
             'toolHomepageH1' => $this->branding->homepageH1(),
             'toolHomepageTitleTag' => $this->branding->homepageTitleTag(),
             'toolHomepageMetaDescription' => $this->branding->homepageMetaDescription(),
+            'toolPublicScansSeo' => $this->branding->publicScansSeo(),
             'toolBrandingFontUrl' => $this->branding->fontUrl(),
             'toolBrandingFontCssStack' => $this->branding->fontCssStack(),
             'toolBrandingFontSize' => $this->branding->fontSize(),
