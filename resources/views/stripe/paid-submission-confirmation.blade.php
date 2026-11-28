@@ -44,7 +44,7 @@
     @endphp
 
     <div class="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-12">
-        <div class="w-full">
+        <div class="w-full space-y-6">
             <section class="overflow-hidden rounded-xl border border-gray-200 bg-white px-5 py-6 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
                 @if(session('status'))
                     <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
@@ -175,6 +175,7 @@
                     </div>
                 </div>
             </section>
+            @include('products.partials.submission-readiness')
         </div>
     </div>
 

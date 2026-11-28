@@ -23,6 +23,8 @@ At Software on the Web, accessible from https://softwareontheweb.com, we are com
 - To analyze website usage and improve our service
 - To process payments for premium listings or services
 
+We use submitted product URLs to run or look up a Launch Readiness scan. New, completed submission scans are listed in Public Scans with the website URL, scan time, and results, even before we approve your listing. To request removal, contact us using the address below.
+
 ### Third-Party Services
 
 We use Google Analytics to track user activity, and Stripe or PayPal for secure payment processing. These services may use cookies and other technologies to collect data as described in their privacy policies.
@@ -85,6 +87,8 @@ When creating an account, you agree to provide accurate and complete information
 ### 3. Listings and Submissions
 
 You may post or submit content (e.g. product listings) as long as it complies with applicable laws and our guidelines. We reserve the right to remove any content at our discretion.
+
+Submit only websites you own or have permission to check. We scan the submitted website in the background if it has no previous completed scan. Completed automatic scans appear in Public Scans. We reuse an existing public report when available.
 
 ### 4. Payments
 

@@ -35,6 +35,7 @@
                 <li>To analyze website usage and improve our service</li>
                 <li>To process payments for premium listings or services</li>
             </ul>
+            <p class="mb-4">We use submitted product URLs to run or look up a Launch Readiness scan. New, completed submission scans are listed in Public Scans with the website URL, scan time, and results, even before we approve your listing. To request removal, contact us using the address below.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">Third-Party Services</h3>
             <p class="mb-4">We use Google Analytics to track user activity, and Stripe or PayPal for secure payment processing. These services may use cookies and other technologies to collect data as described in their privacy policies.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">Your Rights</h3>
@@ -78,6 +79,7 @@
             <p class="mb-4">When creating an account, you agree to provide accurate and complete information. You are responsible for safeguarding your login credentials.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">3. Listings and Submissions</h3>
             <p class="mb-4">You may post or submit content (e.g. product listings) as long as it complies with applicable laws and our guidelines. We reserve the right to remove any content at our discretion.</p>
+            <p class="mb-4">Submit only websites you own or have permission to check. We scan the submitted website in the background if it has no previous completed scan. Completed automatic scans appear in Public Scans. We reuse an existing public report when available.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">4. Payments</h3>
             <p class="mb-4">Paid services (e.g. featured listings) are handled by secure third-party processors. Refunds and cancellations are governed by our <a href="{{ route('refund-policy') }}" class="text-blue-600 underline">Refund &amp; Cancellation Policy</a>.</p>
             <h3 class="text-2xl font-semibold text-gray-700 mt-6 mb-3">5. Affiliate Links & Ads</h3>

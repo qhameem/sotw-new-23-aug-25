@@ -75,6 +75,8 @@
             </div>
         </section>
 
+        @include('products.partials.submission-readiness')
+
         @if($isBadgeSubmission)
             <div class="rounded-2xl border border-gray-200 bg-white p-5 sm:p-7">
                 <h2 class="text-lg font-semibold text-gray-900 mb-2">What happens next</h2>

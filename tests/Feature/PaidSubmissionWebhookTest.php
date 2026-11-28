@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RenderReadinessScan;
 use App\Mail\PaidSubmissionPaidAdminNotification;
 use App\Mail\PaymentConfirmation;
 use App\Models\PaidSubmissionCheckout;
@@ -118,6 +119,8 @@ class PaidSubmissionWebhookTest extends TestCase
         $this->assertSame('paid', $product->submission_type);
         $this->assertTrue((bool) $product->approved);
         $this->assertSame($user->id, $product->user_id);
+        Queue::assertPushed(RenderReadinessScan::class, fn ($job) =>
+            $job->scan->id === $product->launch_readiness_scan_id && $job->saveToHistory);
 
         $checkout->refresh();
 

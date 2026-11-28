@@ -1,5 +1,10 @@
 <template>
   <section>
+    <p v-if="!modelValue.id && !modelValue.sandbox_mode" class="mb-4 text-sm text-gray-600">
+      Submitting a website for the first time runs a launch readiness scan in the background. Completed scans appear in Public Scans, even while your listing is under review.
+      <a href="/legal#privacy-policy" class="underline">Privacy Policy</a> ·
+      <a href="/legal#terms-of-use" class="underline">Terms of Use</a>
+    </p>
     <div v-if="!!modelValue.id && !isAdmin" class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <h3 class="mb-2 text-lg font-semibold text-gray-700">Save Changes</h3>
       <p class="mb-6 text-sm text-gray-600">You can save your edits directly without selecting a pricing option.</p>

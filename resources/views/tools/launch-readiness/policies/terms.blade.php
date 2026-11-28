@@ -14,6 +14,11 @@
     </section>
 
     <section>
+        <h2>Product submissions</h2>
+        <p>When you submit a product to Software on the Web, we scan the website if it has no previous completed scan. Completed automatic scans appear in Public Scans, even before the listing is approved. We reuse an existing public report when available.</p>
+    </section>
+
+    <section>
         <h2>Questions</h2>
         <p>Email <a href="mailto:{{ config('agent_access.contact') }}">{{ config('agent_access.contact') }}</a> for help with the checker.</p>
     </section>

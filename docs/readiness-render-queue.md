@@ -15,4 +15,5 @@ Example Supervisor program (adapt PHP path, application path and service user):
     stopwaitsecs=90
 
 Deploy the rebuilt frontend assets alongside the PHP code. With a sync queue
-connection, scans use the existing synchronous path.
+connection, manual scans use the existing synchronous path. Product submissions
+always enqueue on the database connection and need the readiness worker running.

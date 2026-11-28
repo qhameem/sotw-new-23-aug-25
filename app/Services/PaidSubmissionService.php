@@ -158,6 +158,8 @@ class PaidSubmissionService
         });
 
         if ($created) {
+            app(ProductSubmissionReadiness::class)->schedule($product);
+
             $admins = User::getAdmins();
 
             Notification::send($admins, new ProductSubmitted($product));

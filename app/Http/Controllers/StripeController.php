@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Mail\ProductScheduled;
 use App\Models\PremiumProduct;
 use App\Services\PaidSubmissionService;
+use App\Services\ProductSubmissionReadiness;
 use App\Models\User;
 use App\Support\ProductPublishSchedule;
 use Illuminate\Http\Request;
@@ -261,10 +262,12 @@ class StripeController extends Controller
         $this->authorizeCheckoutAccess($checkout);
 
         $freshCheckout = $checkout->fresh(['product', 'user']);
+        $product = $freshCheckout->product;
 
         return view('stripe.paid-submission-confirmation', [
             'checkout' => $freshCheckout,
-            'product' => $freshCheckout?->product,
+            'product' => $product,
+            'readiness' => $product ? app(ProductSubmissionReadiness::class)->summary($product) : null,
         ]);
     }
 

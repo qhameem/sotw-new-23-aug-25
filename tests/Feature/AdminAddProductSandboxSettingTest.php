@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RenderReadinessScan;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Type;
@@ -106,6 +107,8 @@ class AdminAddProductSandboxSettingTest extends TestCase
         $product = Product::where('slug', 'admin-direct-submit')->firstOrFail();
 
         $this->assertSame('free', $product->submission_type);
+        Queue::assertPushed(RenderReadinessScan::class, fn ($job) =>
+            $job->scan->id === $product->launch_readiness_scan_id && $job->saveToHistory);
     }
 
     private function createAdmin(): User

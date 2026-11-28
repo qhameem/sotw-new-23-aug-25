@@ -2,11 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RenderReadinessScan;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductSubmissionDraft;
+use App\Models\ToolScan;
 use App\Models\Type;
 use App\Models\User;
+use App\Services\BadgeService;
+use App\Services\LaunchReadinessAuditService;
+use App\Services\ProductSubmissionReadiness;
 use App\Support\CategoryTypeRegistry;
+use App\Support\ToolSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
@@ -179,6 +186,7 @@ class ProductSubmissionDraftTest extends TestCase
         Notification::fake();
         Queue::fake();
         Role::firstOrCreate(['name' => 'admin']);
+        $this->partialMock(BadgeService::class)->shouldReceive('verifyPlacementUrl')->once()->andReturn(['verified' => true]);
 
         $user = User::factory()->create();
         [$softwareCategory, $pricingCategory, $useCaseCategory] = $this->createSubmissionCategories();
@@ -204,7 +212,8 @@ class ProductSubmissionDraftTest extends TestCase
                 $pricingCategory->id,
                 $useCaseCategory->id,
             ],
-            'submission_type' => 'free',
+            'submission_type' => 'badge',
+            'badge_week_start' => now('UTC')->addWeeks(2)->next('Monday')->toDateString(),
             'draft_uuid' => $draft->uuid,
         ]);
 
@@ -220,6 +229,33 @@ class ProductSubmissionDraftTest extends TestCase
         $this->assertDatabaseMissing('product_submission_drafts', [
             'id' => $draft->id,
         ]);
+
+        $product = Product::findOrFail($response->json('product_id'));
+        $scan = ToolScan::findOrFail($product->launch_readiness_scan_id);
+        $this->assertFalse($scan->save_to_history);
+        app(ProductSubmissionReadiness::class)->schedule($product);
+        Queue::assertPushed(RenderReadinessScan::class, 1);
+        $statusUrl = route('products.submission.success', ['product' => $product, 'readiness_status' => 1]);
+        $this->get($response->json('redirect_url'))->assertOk()->assertSee('Scan in progress');
+        $this->getJson($statusUrl)->assertOk()->assertJsonPath('state', 'pending');
+
+        $report = $scan->audit_payload;
+        $report['status_label'] = 'Excellent score';
+        $report['launch_score'] = 93;
+        $report['passed_checks'] = 29;
+        $audit = $this->partialMock(LaunchReadinessAuditService::class);
+        $audit->shouldReceive('run')->once()->andReturn($report);
+        Queue::pushed(RenderReadinessScan::class)->sole()->handle($audit);
+        $this->assertTrue($scan->fresh()->save_to_history);
+        app(ProductSubmissionReadiness::class)->schedule($product);
+        Queue::assertPushed(RenderReadinessScan::class, 1);
+
+        $toolSlug = app(ToolSettings::class)->slug(ToolSettings::LAUNCH_READINESS_KEY);
+        $reportUrl = route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $scan]);
+        $this->getJson($statusUrl)->assertOk()->assertJsonPath('score', 93)->assertJsonPath('url', $reportUrl);
+        $this->get($response->json('redirect_url'))->assertOk()->assertSee('View full report')->assertSee($reportUrl);
+        $this->get(route('launch-readiness.history', ['toolSlug' => $toolSlug]))
+            ->assertOk()->assertSee('launch.example.com');
     }
 
     public function test_admin_submission_persists_optional_providers(): void

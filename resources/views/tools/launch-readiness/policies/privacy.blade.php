@@ -11,6 +11,7 @@
     <section>
         <h2>Who can see a scan</h2>
         <p>Anyone with the report link can open it. Turning on “Save to public history” also adds the website and its results to Public Scans.</p>
+        <p class="mt-2">When you submit a product to Software on the Web, we use its website URL to run or look up a scan. New, completed submission scans appear in Public Scans with the URL, scan time, and results. Previously unlisted reports stay unlisted.</p>
     </section>
 
     <section>

@@ -23,6 +23,7 @@ use App\Services\ProductEditorialContentService; // Ensure Storage facade is imp
 use App\Services\ProductLimitationResearchService;
 use App\Services\ProductLogoResolver; // Added for session management
 use App\Services\ProductLogoStorageService; // Added for logging
+use App\Services\ProductSubmissionReadiness;
 use App\Services\RelatedProductService;
 use App\Services\ScreenshotService;
 use App\Services\SlugService;
@@ -692,6 +693,8 @@ class ProductController extends Controller
                 ->delete();
         }
 
+        app(ProductSubmissionReadiness::class)->schedule($product);
+
         // Return JSON response for API calls, redirect for regular form submissions
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -771,7 +774,13 @@ class ProductController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        return $this->renderSubmissionSuccess($product);
+        $readiness = app(ProductSubmissionReadiness::class)->summary($product);
+
+        if (request()->boolean('readiness_status')) {
+            return response()->json($readiness ?? ['state' => 'unavailable'])->header('Cache-Control', 'no-store');
+        }
+
+        return $this->renderSubmissionSuccess($product, $readiness);
     }
 
     public function previewSubmissionSuccess(string $type)
@@ -786,7 +795,7 @@ class ProductController extends Controller
         return $this->renderSubmissionSuccess($product);
     }
 
-    private function renderSubmissionSuccess(Product $product)
+    private function renderSubmissionSuccess(Product $product, ?array $readiness = null)
     {
         $submissionDate = Carbon::now();
         $daysToLive = $submissionDate->diffInDays($submissionDate->copy()->addWeeks(10));
@@ -796,6 +805,7 @@ class ProductController extends Controller
 
         return view('products.submission_success', [
             'product' => $product,
+            'readiness' => $readiness,
             'daysToLive' => $daysToLive,
             'submissionSuccessModal' => $showModal ? $modal : null,
             'badgeSnippet' => $isBadgeSubmission ? $this->badgeService->generateSnippet($product) : null,
