@@ -476,6 +476,10 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertSame(1, $history->total());
         $this->assertSame('latest-history-scan-token', $history->items()[0]->result_token);
         $response->assertSee('92');
+
+        $this->get(route('launch-readiness.history', ['toolSlug' => $slug, 'filter' => 'errors']))
+            ->assertOk()
+            ->assertViewHas('history', fn ($history) => $history->isEmpty());
     }
 
     public function test_launch_readiness_history_can_sort_by_highest_score_then_latest_scan(): void
@@ -515,6 +519,24 @@ class LaunchReadinessToolTest extends TestCase
         $this->assertSame(
             ['newer-high-score', 'older-high-score', 'lower-score'],
             collect($response->viewData('history')->items())->pluck('result_token')->all(),
+        );
+
+        $list = $this->get(route('launch-readiness.history', [
+            'toolSlug' => $slug,
+            'view' => 'list',
+            'filter' => 'high',
+            'sort' => 'score',
+            'q' => '.test',
+        ]));
+
+        $list->assertOk()
+            ->assertViewHas('viewMode', 'list')
+            ->assertSee('View report')
+            ->assertSee('Visit site')
+            ->assertSee('q=.test&amp;sort=score&amp;filter=high', false);
+        $this->assertSame(
+            ['newer-high-score', 'older-high-score'],
+            $list->viewData('history')->pluck('result_token')->all(),
         );
     }
 

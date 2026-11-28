@@ -33,110 +33,131 @@
         }
     @endphp
 
-    <div class="mx-auto max-w-4xl space-y-8">
-        <section class="flex flex-col gap-5 pt-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-                <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Public Scans</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500">
-                    Browse website scans shared by users and guests.
-                </p>
+    @php
+        $listView = $viewMode === 'list';
+        $state = array_filter([
+            'q' => $query,
+            'sort' => $sort === 'score' ? $sort : null,
+            'filter' => $filter === 'all' ? null : $filter,
+            'view' => $listView ? $viewMode : null,
+            'per_page' => $perPage === $allowedPerPage[0] ? null : $perPage,
+        ], fn ($value) => $value !== null && $value !== '');
+        $historyPath = route('launch-readiness.history', ['toolSlug' => $toolSlug]);
+        $scansUrl = fn (array $changes = []) => route('launch-readiness.history', [
+            'toolSlug' => $toolSlug,
+            ...array_replace($state, $changes),
+        ]);
+        $listColumns = 'lg:grid-cols-[minmax(0,1.55fr)_3.25rem_minmax(0,1.55fr)_7rem_minmax(0,11rem)]';
+        $selectedControl = 'bg-[var(--lr-brand)] text-[color:var(--lr-button-label)] shadow-[0_3px_0_var(--lr-brand-edge)]';
+        $idleControl = 'text-neutral-700 hover:bg-neutral-100';
+    @endphp
+
+    <div class="space-y-7">
+        <div>
+            <nav aria-label="Breadcrumb" class="mb-5 text-xs text-neutral-600">
+                <ol class="flex flex-wrap items-center gap-x-1 gap-y-1">
+                    <li>
+                        <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
+                            class="underline underline-offset-4 hover:text-neutral-950">Launch Readiness Checker</a>
+                    </li>
+                    <li class="flex items-center gap-1">
+                        <span aria-hidden="true">/</span>
+                        <span aria-current="page" class="font-medium text-neutral-800">Public Scans</span>
+                    </li>
+                </ol>
+            </nav>
+            <div class="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <h1 class="text-4xl font-bold tracking-tight text-neutral-950 sm:text-[44px]">Public Scans</h1>
+                <p class="text-base leading-6 text-neutral-600 sm:col-start-1 sm:row-start-2">Browse website scans shared by users and guests.</p>
+                <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
+                    class="inline-flex min-h-11 w-fit items-center rounded-lg px-5 py-2.5 text-sm font-semibold hover:brightness-95 sm:col-start-2 sm:row-start-1 {{ $selectedControl }}">
+                    Scan your site
+                </a>
             </div>
+        </div>
 
-            <div class="flex w-full flex-col gap-3 sm:flex-row lg:max-w-lg lg:justify-end">
-                <div class="flex shrink-0 rounded-xl border border-slate-200 bg-white p-1 shadow-sm shadow-slate-200/30" aria-label="Sort history">
-                    <a
-                        href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'latest'])) }}"
-                        class="inline-flex h-9 items-center rounded-lg px-3 text-xs font-medium transition {{ $sort === 'latest' ? 'bg-[var(--lr-brand)] text-[color:var(--lr-button-label)] shadow-[0_2px_0_var(--lr-brand-edge)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
-                    >Latest</a>
-                    <a
-                        href="{{ route('launch-readiness.history', array_filter(['toolSlug' => $toolSlug, 'q' => $query ?: null, 'per_page' => $perPage, 'sort' => 'score'])) }}"
-                        class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition {{ $sort === 'score' ? 'bg-[var(--lr-brand)] text-[color:var(--lr-button-label)] shadow-[0_2px_0_var(--lr-brand-edge)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
-                    >
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.75 4a.75.75 0 0 1 .75.75v8.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06L3 13.44V4.75A.75.75 0 0 1 3.75 4ZM11 5.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75Zm0 5a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" /></svg>
-                        Highest score
-                    </a>
-                </div>
+        <div class="space-y-3">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 sm:flex">
+                <nav aria-label="Sort scans" class="flex w-fit items-center gap-0.5 rounded-xl border border-neutral-200 bg-white p-1">
+                    @foreach(['latest' => 'Latest', 'score' => 'Highest score'] as $option => $label)
+                        <a href="{{ $scansUrl(['sort' => $option === 'latest' ? null : $option]) }}"
+                            @if($sort === $option) aria-current="true" @endif
+                            class="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-sm font-semibold sm:px-3.5 {{ $sort === $option ? $selectedControl : $idleControl }}">{{ $label }}</a>
+                    @endforeach
+                </nav>
 
-                <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="min-w-0 flex-1">
-                    <input type="hidden" name="per_page" value="{{ $perPage }}">
-                    <input type="hidden" name="sort" value="{{ $sort }}">
-                <label for="q" class="sr-only">Search domains</label>
-                <div class="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm shadow-slate-200/30">
-                    <svg class="mr-2 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.473 9.765l3.63 3.631a.75.75 0 1 0 1.06-1.06l-3.63-3.632A5.5 5.5 0 0 0 9 3.5ZM5 9a4 4 0 1 1 8 0a4 4 0 0 1-8 0Z" clip-rule="evenodd" />
-                    </svg>
-                    <input id="q" name="q" type="text" value="{{ $query }}" placeholder="Search domains..." class="h-full w-full border-0 bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0">
-                </div>
+                <form method="GET" action="{{ $historyPath }}" role="search"
+                    class="order-last col-span-2 flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 focus-within:ring-2 focus-within:ring-neutral-400 sm:order-none">
+                    @foreach(\Illuminate\Support\Arr::except($state, 'q') as $name => $value)
+                        <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                    @endforeach
+                    <button type="submit" class="inline-flex h-11 w-7 shrink-0 items-center justify-center text-neutral-600" aria-label="Search scans">
+                        @svg('carbon-search', 'h-5 w-5')
+                    </button>
+                    <label for="q" class="sr-only">Search domains</label>
+                    <input id="q" name="q" type="search" value="{{ $query }}" placeholder="Search domains..."
+                        class="w-full min-w-0 border-0 bg-transparent p-0 text-base text-neutral-950 focus:outline-none focus:ring-0">
                 </form>
+
+                <nav aria-label="Scan layout" class="flex items-center gap-0.5 rounded-xl border border-neutral-200 bg-white p-1">
+                    @foreach(['grid' => 'Grid view', 'list' => 'List view'] as $option => $label)
+                        <a href="{{ $scansUrl(['view' => $option === 'grid' ? null : $option, 'page' => $currentPage > 1 ? $currentPage : null]) }}"
+                            aria-label="{{ $label }}" title="{{ $label }}"
+                            @if($viewMode === $option) aria-current="true" @endif
+                            class="inline-flex h-11 w-10 items-center justify-center rounded-lg sm:w-11 {{ $viewMode === $option ? $selectedControl : $idleControl }}">
+                            @if($option === 'grid')
+                                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" />
+                                    <rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" />
+                                </svg>
+                            @else
+                                @svg('carbon-list', 'h-5 w-5')
+                            @endif
+                        </a>
+                    @endforeach
+                </nav>
             </div>
-        </section>
+
+            <nav aria-label="Filter scans" class="flex flex-wrap gap-2">
+                @foreach($filters as $option => $label)
+                    <a href="{{ $scansUrl(['filter' => $option === 'all' ? null : $option]) }}"
+                        @if($filter === $option) aria-current="true" @endif
+                        class="inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-colors {{ $filter === $option ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 bg-transparent text-neutral-700 hover:border-neutral-400 hover:bg-neutral-100' }}">{{ $label }}</a>
+                @endforeach
+            </nav>
+        </div>
 
         @unless($toolTablesReady ?? false)
             <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                The tool database tables are not migrated yet, so public history is not available yet.
+                The tool database tables are not migrated yet, so public scans are unavailable.
             </div>
         @endunless
 
-        <section class="space-y-6">
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                @forelse($history as $item)
-                    <a
-                        href="{{ route('launch-readiness.results.show', ['toolSlug' => $toolSlug, 'toolScan' => $item]) }}"
-                        class="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <div class="flex items-start gap-3">
-                                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
-                                        @include('tools.launch-readiness.partials.scan-favicon', ['iconScan' => $item])
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="truncate text-[15px] font-semibold text-slate-900 group-hover:text-slate-950">{{ $item->final_url ?: $item->submitted_url }}</p>
-                                        <p class="mt-1 text-xs text-slate-400">{{ optional($item->scanned_at)->diffForHumans() }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @include('tools.launch-readiness.partials.score-ring', ['score' => $item->launch_score])
+        <section aria-label="Scan results" class="space-y-6">
+            @if($history->isEmpty())
+                <div class="rounded-2xl border border-neutral-200 bg-white px-6 py-14 text-center">
+                    <p class="font-semibold text-neutral-950">No scans found.</p>
+                    <p class="mt-2 text-sm text-neutral-600">
+                        {{ $query !== '' || $filter !== 'all' ? 'Try a different search or filter.' : 'Run a scan with “Save to public history” enabled to share it here.' }}
+                    </p>
+                </div>
+            @else
+                <div @class(['overflow-hidden rounded-2xl border border-[#e1e1db] bg-white' => $listView])>
+                    @if($listView)
+                        <div aria-hidden="true" class="hidden items-center gap-4 bg-[#f2f2ee] px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-neutral-600 lg:grid {{ $listColumns }}">
+                            <span class="pl-14">Website</span><span>Score</span><span>Results</span><span>Scanned</span><span></span>
                         </div>
-
-                        <div class="mt-6 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
-                            <div>
-                                <p class="text-[11px] text-slate-400">Passed</p>
-                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-                                    <svg class="h-4 w-4 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L9.25 10.69 7.78 9.22a.75.75 0 1 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4-4Z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $item->passed_checks }}</span>
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-[11px] text-slate-400">Warnings</p>
-                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-                                    <svg class="h-4 w-4 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l4.58 8.145c.75 1.334-.213 2.993-1.742 2.993H5.419c-1.53 0-2.492-1.66-1.743-2.993l4.58-8.145ZM11 7a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0V7Zm-1 6a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 13Z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $item->warning_checks }}</span>
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-[11px] text-slate-400">Errors</p>
-                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-                                    <svg class="h-4 w-4 shrink-0 text-rose-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.53-10.47a.75.75 0 0 0-1.06-1.06L10 8.94 7.53 6.47a.75.75 0 0 0-1.06 1.06L8.94 10l-2.47 2.47a.75.75 0 1 0 1.06 1.06L10 11.06l2.47 2.47a.75.75 0 0 0 1.06-1.06L11.06 10l2.47-2.47Z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $item->failed_checks }}</span>
-                                </p>
-                            </div>
-                        </div>
-                    </a>
-                @empty
-                    <div class="sm:col-span-2 xl:col-span-3 rounded-xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm shadow-slate-200/30">
-                        <p class="text-sm font-medium text-slate-900">No saved scans found yet.</p>
-                        <p class="mt-2 text-sm text-slate-500">Run a scan with “Save to history” enabled to populate the public feed.</p>
-                    </div>
-                @endforelse
-            </div>
+                    @endif
+                    <ul role="list" @class([
+                        'divide-y divide-[#eaeae5]' => $listView,
+                        'grid gap-5 sm:grid-cols-2 xl:grid-cols-3' => ! $listView,
+                    ])>
+                        @foreach($history as $item)
+                            @include('tools.launch-readiness.partials.public-scan')
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             @if($history->total() > 0)
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -179,11 +200,10 @@
                                 </a>
                             </div>
 
-                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex flex-wrap items-center gap-2">
-                                <input type="hidden" name="sort" value="{{ $sort }}">
-                                @if($query !== '')
-                                    <input type="hidden" name="q" value="{{ $query }}">
-                                @endif
+                            <form method="GET" action="{{ $historyPath }}" class="flex flex-wrap items-center gap-2">
+                                @foreach(\Illuminate\Support\Arr::except($state, 'per_page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
                                 <label for="per_page" class="sr-only">Results per page</label>
                                 <select
                                     id="per_page"
@@ -197,12 +217,10 @@
                                 </select>
                             </form>
 
-                            <form method="GET" action="{{ route('launch-readiness.history', ['toolSlug' => $toolSlug]) }}" class="flex items-center gap-2">
-                                <input type="hidden" name="sort" value="{{ $sort }}">
-                                @if($query !== '')
-                                    <input type="hidden" name="q" value="{{ $query }}">
-                                @endif
-                                <input type="hidden" name="per_page" value="{{ $perPage }}">
+                            <form method="GET" action="{{ $historyPath }}" class="flex items-center gap-2">
+                                @foreach($state as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
                                 <span class="text-xs font-medium text-slate-900">Go to</span>
                                 <label for="goto_page" class="sr-only">Go to page</label>
                                 <input

@@ -179,6 +179,16 @@ class LaunchReadinessController extends Controller
     {
         $query = trim((string) $request->query('q'));
         $sort = $request->query('sort') === 'score' ? 'score' : 'latest';
+        $viewMode = $request->query('view') === 'list' ? 'list' : 'grid';
+        $filters = [
+            'all' => 'All scans',
+            'high' => '90 and up',
+            'medium' => '70 to 89',
+            'low' => 'Below 70',
+            'errors' => 'Has errors',
+        ];
+        $filter = $request->query('filter');
+        $filter = is_string($filter) && isset($filters[$filter]) ? $filter : 'all';
         $allowedPerPage = ToolSettings::PUBLIC_SCANS_PAGE_SIZES;
         $defaultPerPage = $allowedPerPage[0];
         $perPage = (int) $request->query('per_page', $defaultPerPage);
@@ -188,7 +198,7 @@ class LaunchReadinessController extends Controller
         }
 
         $history = $this->toolTablesReady()
-            ? $this->latestHistoryQuery($query, $sort)
+            ? $this->latestHistoryQuery($query, $sort, $filter)
                 ->paginate($perPage)
                 ->withQueryString()
             : new LengthAwarePaginator(
@@ -206,6 +216,9 @@ class LaunchReadinessController extends Controller
             'history' => $history,
             'query' => $query,
             'sort' => $sort,
+            'viewMode' => $viewMode,
+            'filter' => $filter,
+            'filters' => $filters,
             'perPage' => $perPage,
             'allowedPerPage' => $allowedPerPage,
             'toolTablesReady' => $this->toolTablesReady(),
@@ -269,7 +282,7 @@ class LaunchReadinessController extends Controller
             ->get();
     }
 
-    private function latestHistoryQuery(string $query, string $sort = 'latest')
+    private function latestHistoryQuery(string $query, string $sort, string $filter)
     {
         $latestScanIds = ToolScan::query()
             ->selectRaw('MAX(id) as id')
@@ -285,6 +298,14 @@ class LaunchReadinessController extends Controller
             ->groupBy(DB::raw('LOWER(normalized_url)'));
 
         $history = ToolScan::query()->whereIn('id', $latestScanIds);
+
+        match ($filter) {
+            'high' => $history->where('launch_score', '>=', 90),
+            'medium' => $history->whereBetween('launch_score', [70, 89]),
+            'low' => $history->where('launch_score', '<', 70),
+            'errors' => $history->where('failed_checks', '>', 0),
+            default => null,
+        };
 
         if ($sort === 'score') {
             $history->orderByDesc('launch_score');
