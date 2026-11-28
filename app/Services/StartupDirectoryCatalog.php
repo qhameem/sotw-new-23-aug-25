@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Models\StartupDirectory;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class StartupDirectoryCatalog
 {
+    public const PAGE_SIZES = [50 => '50', 100 => '100', 250 => '250', 500 => '500', 'all' => 'All'];
+
     public const SORTS = [
         'dr' => 'Highest DR',
         'dr_asc' => 'Lowest DR',
@@ -58,8 +61,24 @@ class StartupDirectoryCatalog
             'name' => $query,
         };
 
+        $pageSize = $request->query('per_page');
+        $pageSize = is_string($pageSize) && isset(self::PAGE_SIZES[$pageSize]) ? $pageSize : '50';
+        if ($pageSize !== '50') {
+            $filters['per_page'] = $pageSize;
+        }
+
+        $query->orderBy('name')->orderBy('id');
+        if ($pageSize === 'all') {
+            $rows = $query->get();
+            $directories = new LengthAwarePaginator($rows, $rows->count(), max(1, $rows->count()), 1, [
+                'path' => $request->url(),
+            ]);
+        } else {
+            $directories = $query->paginate((int) $pageSize);
+        }
+
         return [
-            'directories' => $query->orderBy('name')->orderBy('id')->paginate(50)->appends($filters),
+            'directories' => $directories->appends($filters),
             'directoryFilters' => $filters,
             'directoryCount' => $directoryCount,
             'directoryDrUpdatedAt' => $drUpdatedAt === null ? null : Carbon::parse($drUpdatedAt),

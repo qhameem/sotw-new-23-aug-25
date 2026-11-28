@@ -70,6 +70,11 @@
     .directory-add summary { cursor: pointer; list-style: none; }
     .directory-add summary::-webkit-details-marker { display: none; }
     .directory-result-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; font-size: .8125rem; }
+    .directory-page-size { position: relative; }
+    .directory-page-size summary { gap: .45rem; cursor: pointer; list-style: none; }
+    .directory-page-size summary::-webkit-details-marker { display: none; }
+    .directory-page-size-options { position: absolute; z-index: 2; inset-inline-start: 0; top: calc(100% + .25rem); display: grid; gap: .2rem; min-width: max-content; padding: .3rem; border: 1px solid var(--grid-border); border-radius: .4rem; background: var(--color-body-bg, white); }
+    .directory-page-size-options a[aria-current] { font-weight: 700; background: var(--grid-header); }
     .directory-filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
     .directory-chip { min-height: 1.75rem; padding-block: .15rem; gap: .45rem; background: var(--grid-header); }
     .directory-chip-remove { position: relative; display: inline-grid; place-items: center; width: 1em; font-size: 1.1rem; line-height: 1; }

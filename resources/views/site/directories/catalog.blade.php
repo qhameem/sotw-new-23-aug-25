@@ -3,6 +3,7 @@
     $pricing = \App\Models\StartupDirectory::PRICING;
     $linkTypes = \App\Models\StartupDirectory::LINK_TYPES;
     $sorts = \App\Services\StartupDirectoryCatalog::SORTS;
+    $pageSizes = \App\Services\StartupDirectoryCatalog::PAGE_SIZES;
     $directoryHeading = $page->directory_heading ?? 'Browse startup directories';
     $headingTag = ($useDirectoryBreadcrumb ?? false) ? 'h1' : 'h2';
     $directoryIntro = $page->directory_intro ?? 'Compare submission options. Pricing and link policies can change, so check the directory before submitting.';
@@ -10,6 +11,11 @@
     $activeSort = $directoryFilters['sort'] ?? 'dr';
     $catalogLink = fn (array $filters) => $filters ? $catalogUrl.'?'.http_build_query($filters) : $catalogUrl;
     $sortUrl = fn ($sort) => $catalogLink(array_replace($directoryFilters, ['sort' => $sort]));
+    $pageSize = $directoryFilters['per_page'] ?? '50';
+    $sizeOnly = \Illuminate\Support\Arr::only($directoryFilters, ['per_page']);
+    $pageSizeUrl = fn (string $size) => $catalogLink($size === '50'
+        ? \Illuminate\Support\Arr::except($directoryFilters, ['per_page'])
+        : array_replace($directoryFilters, ['per_page' => $size]));
 @endphp
 
 @include('site.directories.styles')
@@ -41,6 +47,7 @@
     <span class="sr-only" data-directory-announcement role="status"></span>
     <div class="directory-filter-panel" data-directory-fragment>
         <form method="GET" action="{{ $catalogUrl }}#directory-catalog" class="directory-toolbar" id="directory-filters">
+            <input type="hidden" name="per_page" value="{{ $sizeOnly['per_page'] ?? '' }}">
             <div class="directory-toolbar-row">
                 <div class="directory-search">
                     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -103,12 +110,25 @@
         </form>
 
         <div class="directory-result-bar">
-            <span class="text-gray-600" data-directory-count>
-                @if($directories->isNotEmpty())
-                    {{ number_format($directories->firstItem()) }}–{{ number_format($directories->lastItem()) }} of
-                @endif
-                {{ number_format($directories->total()) }} {{ isset($directoryFilters['q']) ? ($directories->total() === 1 ? 'match' : 'matches') : ($directories->total() === 1 ? 'directory' : 'directories') }}
-            </span>
+            <details class="directory-page-size">
+                <summary class="directory-control">
+                    <span data-directory-count>
+                        @if($directories->isNotEmpty())
+                            {{ number_format($directories->firstItem()) }}–{{ number_format($directories->lastItem()) }} of
+                        @endif
+                        {{ number_format($directories->total()) }} {{ isset($directoryFilters['q']) ? ($directories->total() === 1 ? 'match' : 'matches') : ($directories->total() === 1 ? 'directory' : 'directories') }}
+                    </span>
+                    <span aria-hidden="true">▾</span>
+                </summary>
+                <nav class="directory-page-size-options" aria-label="Directories per page">
+                    @foreach($pageSizes as $value => $label)
+                        @php($size = (string) $value)
+                        <a href="{{ $pageSizeUrl($size) }}#directory-catalog"
+                            data-directory-navigation data-directory-page-size="{{ $size }}" class="directory-control"
+                            @if($size === $pageSize) aria-current="true" @endif>{{ $label }}{{ $size === 'all' ? ' directories' : ' per page' }}</a>
+                    @endforeach
+                </nav>
+            </details>
             <div class="directory-filter-chips">
                 @foreach(['category' => $categories, 'pricing' => $pricing, 'link_type' => $linkTypes] as $name => $options)
                     @if(isset($directoryFilters[$name]))
@@ -120,7 +140,7 @@
                     @endif
                 @endforeach
             </div>
-            <a href="{{ $catalogUrl }}#directory-catalog" data-directory-navigation data-directory-clear-all class="underline" @if(!$directoryFilters) hidden @endif>Clear all</a>
+            <a href="{{ $catalogLink($sizeOnly) }}#directory-catalog" data-directory-navigation data-directory-clear-all class="underline" @if($directoryFilters === $sizeOnly) hidden @endif>Clear all</a>
             @if($editable)
                 <span id="directory-save-status" role="status"></span>
                 <span class="text-gray-500">Click a value to edit it. Open Row details for more fields.</span>
@@ -230,6 +250,7 @@
             if (fragments.length !== replacements.length) throw new Error('Directory results missing');
 
             const focused = document.activeElement;
+            const sizeFocused = focused?.closest('.directory-page-size');
             const field = focused?.form?.id === 'directory-filters' ? focused.name : null;
             const search = searchField();
             const nextSearch = replacements[0].querySelector('.directory-search');
@@ -240,6 +261,7 @@
             const searchWrapper = search.closest('.directory-search');
             fragments.forEach((fragment, index) => fragment.replaceWith(replacements[index]));
             nextSearch.replaceWith(searchWrapper);
+            if (sizeFocused) catalog.querySelector('.directory-page-size summary').focus({ preventScroll: true });
             if (focused === search) {
                 search.focus({ preventScroll: true });
                 search.setSelectionRange(...selection);

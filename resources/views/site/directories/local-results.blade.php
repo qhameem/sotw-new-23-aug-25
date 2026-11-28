@@ -20,9 +20,12 @@
                 b.dr == null ? -1 : sort === 'dr' ? b.dr - a.dr : a.dr - b.dr);
         }
 
-        const pageSize = 50;
+        const sizeOptions = catalog.querySelectorAll('[data-directory-page-size]');
+        const size = params.get('per_page') ?? '50';
+        if (!Array.from(sizeOptions).some(option => option.dataset.directoryPageSize === size)) return false;
+        const pageSize = size === 'all' ? Math.max(1, rows.length) : Number(size);
         const last = Math.max(1, Math.ceil(rows.length / pageSize));
-        const page = Number(params.get('page') || 1);
+        const page = size === 'all' ? 1 : Number(params.get('page') || 1);
         if (!Number.isInteger(page) || page < 1 || page > last) return false;
 
         for (const control of form.querySelectorAll('[name]')) {
@@ -65,6 +68,15 @@
             }
             return target.href;
         };
+        const sizeMenu = catalog.querySelector('.directory-page-size');
+        if (sizeMenu.contains(document.activeElement)) sizeMenu.querySelector('summary').focus({ preventScroll: true });
+        sizeMenu.open = false;
+        for (const option of sizeOptions) {
+            const value = option.dataset.directoryPageSize;
+            option.href = linkUrl({ per_page: value === '50' ? null : value, page: null });
+            if (value === size) option.setAttribute('aria-current', 'true');
+            else option.removeAttribute('aria-current');
+        }
         const chips = catalog.querySelector('.directory-filter-chips');
         chips.replaceChildren();
         for (const key of filters) {
@@ -85,8 +97,9 @@
             chip.append(label.trim(), cross);
             chips.append(chip);
         }
-        catalog.querySelector('[data-directory-clear-all]').hidden =
-            !search && sort === 'dr' && !filters.some(key => params.has(key));
+        const clearAll = catalog.querySelector('[data-directory-clear-all]');
+        clearAll.href = linkUrl({ q: null, sort: null, category: null, pricing: null, link_type: null, page: null });
+        clearAll.hidden = !search && sort === 'dr' && !filters.some(key => params.has(key));
 
         const headings = catalog.querySelectorAll('.directory-table th');
         for (const [index, ascending, descending] of [[0, 'name', 'name_desc'], [1, 'dr_asc', 'dr']]) {

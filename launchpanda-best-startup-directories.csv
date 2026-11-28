@@ -16,7 +16,6 @@ Brick Launch,https://bricklaun.ch,44,Dofollow,
 Uneed,https://uneed.best,77,Dofollow,
 Promote Project,https://promoteproject.com,49,Dofollow,Free*
 G2,https://g2.com,91,Nofollow,Free
-Hacker News,https://news.ycombinator.com,91,Dofollow,Free
 Product Hunt,https://producthunt.com,91,Dofollow,Free
 Startup Fame,https://startupfa.me,85,Dofollow,Free
 DangAI,https://dang.ai,83,Nofollow,Free
@@ -200,48 +199,22 @@ SEO Listing,https://seolisting.io,2,Dofollow,
 FindTools AI,https://findtools.ai,1,Dofollow,
 Round32,https://round32.fun,0,Dofollow,
 ThisTool,https://thistool.com,0,Dofollow,
-Chrome Web Store,https://chromewebstore.google.com,100,Nofollow,Free
-Google Business Profile,https://google.com,100,Dofollow,Free
 Trustpilot,https://trustpilot.com,94,Nofollow,Freemium
-Unsplash,https://unsplash.com,94,Dofollow,Free
 Women in Technology,https://witchat.github.io,94,Nofollow,Free
 Better Business BureaU,https://bbb.org,93,Dofollow,Free
 FMHY,https://fmhy.pages.dev,93,Dofollow,Free
 SourceForge,https://sourceforge.net,93,Dofollow,Free
 AI Toolhouse,https://aitoolhouse.gumroad.com,92,Dofollow,Paid
-Notion Marketplace,https://notion.so,92,Nofollow,Freemium
-Slack App Directory,https://slack.com,92,Nofollow,Free
-Tech | Time,https://time.com,92,Nofollow,Free
 "BostInno Startups, Tech News and Events",https://bizjournals.com,91,Nofollow,Free
 Capterra,https://capterra.com,91,Dofollow,Freemium
 Clutch,https://clutch.co,91,Nofollow,Free
 Crunchbase,https://crunchbase.com,91,Nofollow,Free
-CrunchBase News,https://news.crunchbase.com,91,Nofollow,Free
-DEV Community,https://dev.to,91,Dofollow,Free
-Neil Patel AI Tools Directory,https://neilpatel.com,91,Nofollow,Free
-Spotlight by Y Combinator,https://ycombinator.com,91,Nofollow,Free
-Zapier App Directory,https://zapier.com,91,Nofollow,Free
 Firebase,https://firebase-community.appspot.com,90,Nofollow,Free
-Make App Directory,https://make.com,90,Nofollow,Free
-MIT Technology Review,https://technologyreview.com,90,Nofollow,Free
-n8n Integrations,https://n8n.io,90,Dofollow,Free
-Smashing Magazine,https://smashingmagazine.com,90,Nofollow,Free
-Angie's List,https://angieslist.com,89,Dofollow,Free
-Awwwards,https://awwwards.com,89,Nofollow,Paid
-Open Collective,https://opencollective.com,89,Nofollow,Free
-BuzzFeed News,https://buzzfeednews.com,88,Nofollow,Free
-Devpost,https://devpost.com,88,Nofollow,Free
-Angellist,https://angel.co,87,Dofollow,Free
 FinancesOnline,https://financesonline.com,87,Nofollow,Free
 GoodFirms,https://goodfirms.co,87,Nofollow,Free
-MakeUseOf,https://makeuseof.com,87,Nofollow,Free
 Software Advice,https://softwareadvice.com,87,Dofollow,Paid
-Wellfound (AngelList),https://wellfound.com,87,Nofollow,Free
-Built In,https://builtin.com,86,Nofollow,Paid
-Cloud Native Computing Foundation,https://slack.cncf.io,86,Nofollow,Free
 Geek Wire,https://geekwire.com,86,Dofollow,Paid
 Manta,https://manta.com,86,Dofollow,Free
-SitePoint Forums,https://sitepoint.com,86,Nofollow,Free
 Softonic,https://softonic.com,86,Nofollow,Free
 The Register UK,https://theregister.co.uk,86,Nofollow,Free
 Babel Slack,https://slack.babeljs.io,85,Nofollow,Free
@@ -290,7 +263,6 @@ SaaS Genius,https://saasgenius.com/submit-saas-product/,57,Nofollow,Paid (price 
 Tech Directory,https://techdirectory.io/submit,66,Dofollow,Paid from $29 USD
 All Top Startups,https://alltopstartups.com/submit-startup/,58,Dofollow,Paid (price unknown)
 Saas AI Tools,https://saasaitools.com/submit,53,Nofollow,Free
-TechCrunch,https://techcrunch.com/,92,Nofollow,Paid (price unknown)
 Webwiki,https://webwiki.com/info/add-website.html,77,,Free
 Software World,https://softwareworld.co/submit-software/,75,,Free
 SaasWorthy,https://www.saasworthy.com/submit,72,,Free
@@ -329,7 +301,6 @@ Startup Resources,https://startupresources.io/submit/,,,
 Startup Xplore,https://startupxplore.com/,,,
 StartupBase,https://startupbase.com/submit,,,
 StartupBlink,https://www.startupblink.com/,,,Free*
-The Next Web,https://thenextweb.com/,,,
 The Startup INC,https://www.thestartupinc.com/,,,Paid from $20 USD (one-time)
 VentureBeat,https://venturebeat.com/,,,
 1000.tools,https://1000.tools/my/tools/create,,,Paid from $5.99 USD/month
@@ -593,7 +564,6 @@ NewAIForYou,https://newaiforyou.com/submit,,,Paid from $9.9 USD (one-time)
 NewTool,https://newtool.site/submit,,Dofollow,Free*; paid from $9.9 USD (one-time)
 No Code Founders,https://www.nocodefounders.com/list-your-tool,,,Paid from $500 USD (one-time)
 NoCode.Tech,https://www.nocode.tech/,,,
-Official MCP Registry,https://registry.modelcontextprotocol.io/,,,Free*
 OneMillionDirectory,https://onemilliondirectory.com/submit,,,Free
 Open Makers,https://openmakers.io/add-product,,Dofollow,Free
 Open SaaS Directory,https://opensaas.directory/,,,Free*
@@ -874,20 +844,14 @@ Build a Streak,https://www.buildastreak.com/,0.1,Dofollow,Free
 LaunchSquare,https://launchsquare.co/,0,Nofollow,Free
 Cnet,https://cnet.com,92,Nofollow,Free
 Mashable,https://in.mashable.com,92,Nofollow,Free
-The Verge,https://theverge.com,92,Nofollow,Free
-Engadget,https://engadget.com,91,Nofollow,Free
 Zdnet,https://zdnet.com,91,Nofollow,Free
 ARS Technica,https://arstechnica.com,90,Nofollow,Free
-Slate,https://slate.com,89,Nofollow,Free
-Digital Trends,https://digitaltrends.com,89,Nofollow,Free
-Info World,https://infoworld.com,87,Nofollow,Free
 Kotaku,https://kotaku.com,87,Nofollow,Free
 Boing Boing,https://boingboing.net,86,Dofollow,Free
 Digg,https://digg.com,85,Nofollow,Free
 Pocket Lint,https://pocket-lint.com,85,Nofollow,Free
 Life Hack,https://lifehack.org,84,Nofollow,Free
 Apple Insider,https://appleinsider.com,83,Nofollow,Free
-India Mart,https://seller.indiamart.com,82,Nofollow,Free
 Tech Hive,https://techhive.com,81,Nofollow,Free
 Scamadviser,https://scamadviser.com,80,Nofollow,Free
 Tech Dirt,https://techdirt.com,80,Nofollow,Free
@@ -900,7 +864,6 @@ Up Labs,https://uplabs.com,76,Nofollow,Free
 Webrazzi,https://webrazzi.com,76,Dofollow,Free + paid
 ToucheArcade,https://toucharcade.com,74,Nofollow,Free
 Addictive Tips,https://addictivetips.com,73,Nofollow,Free
-Agni,https://office.angi.com,72,Nofollow,Free
 Pando,https://pando.com,72,Nofollow,Free
 Starter Story,https://starterstory.com,71,Dofollow,Free
 Listly,https://list.ly,69,Dofollow,Free
@@ -1069,7 +1032,6 @@ API List,https://apilist.fun,,,Free
 Apppicker,https://apppicker.com,,,Free
 Appradar,https://appradar.com,,,Free
 Audienti,https://audienti.com,,,Free
-Auth0 Blog,https://auth0.com,,,Free
 B2B Stack,https://b2bstack.com.br,,,Free
 Bensbites,https://bensbites.co,,,Free
 Beta Family,https://betafamily.com,,,Free
@@ -1078,33 +1040,27 @@ Botlist,https://botlist.co,,,Free
 Broadwise,https://broadwise.org,,,Free
 Built With,https://builtwith.com,,,Free
 Builtinchicago,https://builtinchicago.org,,,Free
-Carrd,https://carrd.co,,,Free
 Catyai,https://catyai.io,,,Free
 Chataiapps,https://chataiapps.com,,,Free
 Chatbots,https://chatbots.org,,,Free
-Css Tricks,https://css-tricks.com,,,Free
 Cssmania,https://cssmania.com,,,Free
 Dealify,https://dealify.com,,,Free
 Demandcurve,https://demandcurve.com,,,Free
 Digiprotoolz,https://digiprotoolz.com,,,Free
-DigitalOcean Community,https://digitalocean.com,,,Free
 Digitalsamaritan,https://digitalsamaritan.co,,,Free
 Discova,https://discova.co,,,Free
 Disrupt500,https://disrupt500.com,,,Free
-Docker Hub,https://hub.docker.com,,,Free
 Dribbble Jobs,https://dribbble.com,,,Free
 Email Geeks,https://email.geeks.chat,,,Free
 Evolmagazine,https://evolmagazine.com,,,Free
 Favird,https://favird.com,,,Free
 Fiddy,https://fiddy.co,,,Free
-Firefox Add-ons,https://addons.mozilla.org,,,Free
 Firespotting,https://firespotting.com,,,Free
 Founder Path,https://founderpath.com,,,Free
 Freecodecamp,https://freecodecamp.org,,,Free
 Glitch,https://glitch.com,,,Free
 Hacker,https://hacker.bargains,,,Free
 Hipreneurs,https://hipreneurs.com,,,Free
-Hugging Face,https://huggingface.co,,,Free
 Huntcaster,https://huntcaster.com,,,Free
 Iamwire,https://iamwire.com,,,Free
 Ideahunt,https://ideahunt.io,,,Free
@@ -1112,8 +1068,6 @@ In Thehackerstreet,https://in.thehackerstreet.com,,,Free
 Indieai,https://indieai.co,,,Free
 Indiepa,https://indiepa.ge,,,Free
 Instaaa,https://instaaa.com,,,Free
-Instructables,https://instructables.com,,,Free
-Jsfiddle,https://jsfiddle.net,,,Free
 Kaggle,https://kaggle.com,,,Free
 Landing Mycloudmedia Co,https://landing.mycloudmedia.co.uk,,,Free
 Leadingai,https://leadingai.tools,,,Free
@@ -1132,8 +1086,6 @@ Marsx,https://marsx.dev,,,Free
 Momb Socio Kybernetics,https://momb.socio-kybernetics.net,,,Free
 Munich Startups List,https://munich.startups-list.com,,,Free
 Nocodelist,https://nocodelist.co,,,Free
-Nuget,https://nuget.org,,,Free
-Packagist,https://packagist.org,,,Free
 Papers With Code,https://paperswithcode.com,,,Free
 Payai X,https://payai-x.com,,,Free
 Peakfreelance,https://peakfreelance.com,,,Free
@@ -1142,10 +1094,8 @@ Pitchground,https://pitchground.com,,,Free
 Portal 10Words,https://portal.10words.io,,,Free
 Preapps,https://preapps.com,,,Free
 Productled,https://productled.com,,,Free
-Pypi,https://pypi.org,,,Free
 Repl.it,https://replit.com,,,Free
 Revgenius,https://revgenius.com,,,Free
-Rubygems,https://rubygems.org,,,Free
 SaaS Mantra,https://saasmantra.com,,,Free
 Saaspromo,https://saaspromo.com,,,Free
 Saijogeorge,https://saijogeorge.com,,,Free
@@ -1167,7 +1117,6 @@ Submit Brand,https://bestaibrands.com,,,Free
 Submitatool,https://submitatool.com,,,Free
 Superpath,https://superpath.co,,,Free
 Switbai,https://switbai.com,,,Free
-Tally,https://tally.so,,,Free
 Taprefer,https://taprefer.com,,,Free
 Techattitude,https://techattitude.com,,,Free
 Techgreet,https://techgreet.com,,,Free
@@ -1180,15 +1129,11 @@ Toolplateai,https://toolplateai.io,,,Free
 Toolsml,https://toolsml.com,,,Free
 Top10Collect,https://top10collect.com,,,Free
 Topsimilarsites,https://topsimilarsites.com,,,Free
-Twilio Blog,https://twilio.com,,,Free
 Uneedbest,https://uneedbest.com,,,Free
 Usemyai,https://usemyai.pro,,,Free
 Vendor Crozdesk,https://vendor.crozdesk.com,,,Free
 Venturebreak,https://venturebreak.com,,,Free
 Wip,https://wip.chat,,,Free
-WooCommerce Blog,https://woocommerce.com,,,Free
-WordPress Plugin Directory,https://wordpress.org,,,Free
-Fast Company Tech,https://fastcompany.com,91,Nofollow,Free
 Android Authority,https://androidauthority.com,87,Nofollow,Free
 Callupcontact,https://callupcontact.com,76,Dofollow,"Free online business directory for companies to list their services, contact information, and business profiles."
 AI Tools by Neil Patel,https://aitools.neilpatel.com,91,Dofollow,Free + paid
@@ -1256,7 +1201,6 @@ Tooliq,https://tooliq.ai,,,Free
 Tools Hub AI,https://toolshubai.com,,,Free
 Toolsland,https://toolsland.ai,,,Free
 Yet Another AI Tool Directory,https://yaatd.com,,,Free
-Slash Dot,https://slashdot.org,82,Nofollow,Free
 Spiceworks,https://spiceworks.com,82,Nofollow,Free
 Cloudwards,https://cloudwards.net,73,Nofollow,Free
 Merchant Maverick,https://merchantmaverick.com,72,Nofollow,Free
@@ -1278,11 +1222,8 @@ Android Apps Review,https://androidappsreview.com,32,Nofollow,Free
 Discover CRM,https://discovercrm.com,28,Dofollow,Free
 Suitapp,https://suitapp.de,25,Dofollow,Free
 App Review Central,https://appreviewcentral.net,22,Nofollow,Free
-Yelp,https://biz.yelp.com,93,Nofollow,Free
-Hackernoon,https://hackernoon.com,82,Dofollow,Free
 E27,https://e27.co,72,Dofollow,Free
 Gust,https://gust.com,70,Nofollow,Free
-Business to Community,https://business2community.com,68,Nofollow,Free
 Lobsters,https://lobste.rs,68,Nofollow,Free
 MakerPad Showcase,https://makerpad.co,58,Nofollow,Free
 Getlatka,https://getlatka.com,55,Nofollow,Free
@@ -1301,7 +1242,6 @@ On Deck,https://beondeck.com,,,Free
 Pioneer,https://pioneer.app,,,Free
 Remoteok,https://remoteok.io,,,Free
 SaaS Community,https://saas.community,,,Free
-"Reddit (r/SaaS, r/SideProject)",https://reddit.com,95,Nofollow,Free
 ufind.best,https://ufind.best,66,Dofollow,Free + paid
 LaunchIgniter,https://launchigniter.com,48,Dofollow,Free + paid
 Prefundia,https://prefundia.com,42,Dofollow,Free
@@ -1313,11 +1253,8 @@ Emoji Launch,https://emojilaunch.com,15,Dofollow,Free
 Spectacle,https://spectacle.is,15,Dofollow,Free
 Launch Vibe,https://launchvibe.app,12,Dofollow,Free
 Fastlaunch,https://fastlaunch.io,,,Free
-AWeber Blog,https://aweber.com,,,Free
-Campaign Monitor Blog,https://campaignmonitor.com,,,Free
 Email Love,https://emaillove.com,,,Free
 Find Your Newsletter,https://findnewsletters.com,,,Free
-Ghost,https://ghost.org,,,Free
 Hecto,https://hecto.io,,,Free
 Inboxreads,https://inboxreads.co,,,Free
 Inboxstash,https://inboxstash.com,,,Free
@@ -1362,9 +1299,6 @@ Seomode,https://seomode.co,,,Free
 Submit SaaS,https://submitsaas.com,,,Free
 Top AI Directories,https://topaidirectories.com,,,Free
 Webdirectorycenter,https://webdirectorycenter.com,,,Free
-Shopify App Store,https://apps.shopify.com,91,Nofollow,Free
-Stripe App Marketplace,https://marketplace.stripe.com,91,Nofollow,Free
-Appexchange Salesforce,https://appexchange.salesforce.com,88,Nofollow,Free
 Pipedrive Marketplace,https://marketplace.pipedrive.com,84,Nofollow,Free
 Rapidapi,https://rapidapi.com,80,Nofollow,Free
 Integrately,https://integrately.com,60,Nofollow,Free
