@@ -81,16 +81,16 @@
                     @foreach(['latest' => 'Latest', 'score' => 'Highest score'] as $option => $label)
                         <a href="{{ $scansUrl(['sort' => $option === 'latest' ? null : $option]) }}"
                             @if($sort === $option) aria-current="true" @endif
-                            class="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-sm font-semibold sm:px-3.5 {{ $sort === $option ? $selectedControl : $idleControl }}">{{ $label }}</a>
+                            class="inline-flex min-h-9 items-center whitespace-nowrap rounded-lg px-2.5 text-sm font-semibold sm:px-3.5 {{ $sort === $option ? $selectedControl : $idleControl }}">{{ $label }}</a>
                     @endforeach
                 </nav>
 
                 <form method="GET" action="{{ $historyPath }}" role="search"
-                    class="order-last col-span-2 flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 focus-within:ring-2 focus-within:ring-neutral-400 sm:order-none">
+                    class="order-last col-span-2 flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 focus-within:ring-2 focus-within:ring-neutral-400 sm:order-none">
                     @foreach(\Illuminate\Support\Arr::except($state, 'q') as $name => $value)
                         <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                     @endforeach
-                    <button type="submit" class="inline-flex h-11 w-7 shrink-0 items-center justify-center text-neutral-600" aria-label="Search scans">
+                    <button type="submit" class="inline-flex h-9 w-7 shrink-0 items-center justify-center text-neutral-600" aria-label="Search scans">
                         @svg('carbon-search', 'h-5 w-5')
                     </button>
                     <label for="q" class="sr-only">Search domains</label>
@@ -103,7 +103,7 @@
                         <a href="{{ $scansUrl(['view' => $option === 'grid' ? null : $option, 'page' => $currentPage > 1 ? $currentPage : null]) }}"
                             aria-label="{{ $label }}" title="{{ $label }}"
                             @if($viewMode === $option) aria-current="true" @endif
-                            class="inline-flex h-11 w-10 items-center justify-center rounded-lg sm:w-11 {{ $viewMode === $option ? $selectedControl : $idleControl }}">
+                            class="inline-flex h-9 w-10 items-center justify-center rounded-lg sm:w-11 {{ $viewMode === $option ? $selectedControl : $idleControl }}">
                             @if($option === 'grid')
                                 <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                                     <rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" />
@@ -121,7 +121,7 @@
                 @foreach($filters as $option => $label)
                     <a href="{{ $scansUrl(['filter' => $option === 'all' ? null : $option]) }}"
                         @if($filter === $option) aria-current="true" @endif
-                        class="inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-colors {{ $filter === $option ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 bg-transparent text-neutral-700 hover:border-neutral-400 hover:bg-neutral-100' }}">{{ $label }}</a>
+                        class="inline-flex min-h-8 items-center rounded-md border px-2.5 text-xs font-medium transition-colors {{ $filter === $option ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 bg-transparent text-neutral-700 hover:border-neutral-400 hover:bg-neutral-100' }}">{{ $label }}</a>
                 @endforeach
             </nav>
         </div>
