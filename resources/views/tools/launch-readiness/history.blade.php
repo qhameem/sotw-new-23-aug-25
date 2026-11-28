@@ -33,7 +33,7 @@
         }
     @endphp
 
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="mx-auto max-w-4xl space-y-8">
         <section class="flex flex-col gap-5 pt-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h1 class="text-[28.7px] font-semibold tracking-[-1.5px] text-black sm:text-[52px]">Scan History</h1>
