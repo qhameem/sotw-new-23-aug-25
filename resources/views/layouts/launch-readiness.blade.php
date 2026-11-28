@@ -112,7 +112,7 @@
                         <a href="{{ route('launch-readiness.index', ['toolSlug' => $toolSlug]) }}"
                             aria-label="{{ $toolBrandingSiteName }}"
                             class="flex shrink-0 items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                            <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-8 w-8 object-contain">
+                            <img src="{{ $toolBrandingLogoUrl }}" alt="" class="h-9 w-9 object-contain">
                             @if(request()->routeIs('launch-readiness.results.show'))
                                 <span class="text-sm font-bold text-slate-900">{{ $toolBrandingSiteName }}</span>
                             @endif
